@@ -9,7 +9,6 @@ package io.camunda.optimize.service;
 
 import static io.camunda.optimize.service.util.configuration.OptimizeProfile.CCSM;
 import static io.camunda.optimize.service.util.configuration.OptimizeProfile.CLOUD;
-import static io.camunda.optimize.service.util.configuration.OptimizeProfile.PLATFORM;
 
 import com.google.common.collect.Lists;
 import io.camunda.identity.sdk.Identity;
@@ -25,7 +24,6 @@ import io.camunda.optimize.service.tenant.TenantService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import io.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,7 +113,7 @@ public class UIConfigurationService {
   }
 
   private boolean isEnterpriseMode(final OptimizeProfile optimizeProfile) {
-    if (Arrays.asList(CLOUD, PLATFORM).contains(optimizeProfile)) {
+    if (optimizeProfile.equals(CLOUD)) {
       return true;
     } else if (optimizeProfile.equals(CCSM)) {
       return configurationService.getSecurityConfiguration().getLicense().isEnterprise();

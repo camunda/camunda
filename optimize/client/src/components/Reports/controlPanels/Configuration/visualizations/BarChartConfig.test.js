@@ -35,7 +35,7 @@ const barReport = {
   },
 };
 
-it('should not display color picker for hyper reports (distributed by userTask/assignee/candidateGroup)', () => {
+it('should not display color picker for hyper reports (distributed by userTask/assignee)', () => {
   const node = shallow(
     <BarChartConfig
       report={{

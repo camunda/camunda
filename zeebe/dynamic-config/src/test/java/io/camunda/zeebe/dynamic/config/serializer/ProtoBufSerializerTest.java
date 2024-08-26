@@ -36,6 +36,7 @@ import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -222,7 +223,8 @@ final class ProtoBufSerializerTest {
         topologyWithExporterState(),
         topologyWithExporterDisableOperation(),
         topologyWithExporterEnableOperation(),
-        topologyWithUninitializedPartitionConfig());
+        topologyWithUninitializedPartitionConfig(),
+        topologyWithRoutingState());
   }
 
   private static ClusterConfiguration topologyWithOneMemberNoPartitions() {
@@ -369,5 +371,15 @@ final class ProtoBufSerializerTest {
             MemberId.from("0"),
             MemberState.initializeAsActive(
                 Map.of(1, PartitionState.active(1, DynamicPartitionConfig.uninitialized()))));
+  }
+
+  private static ClusterConfiguration topologyWithRoutingState() {
+    return new ClusterConfiguration(
+        ClusterConfiguration.INITIAL_VERSION,
+        Map.of(),
+        Optional.empty(),
+        Optional.empty(),
+        Optional.of(
+            new RoutingState(1, Set.of(1, 2, 3), new RoutingState.MessageCorrelation.HashMod(2))));
   }
 }

@@ -21,7 +21,6 @@
 // import static org.assertj.core.api.Assertions.assertThat;
 //
 // import io.camunda.optimize.AbstractAlertIT;
-// import io.camunda.optimize.dto.engine.AuthorizationDto;
 // import io.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 // import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 // import io.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;

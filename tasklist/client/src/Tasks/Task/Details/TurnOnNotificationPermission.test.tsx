@@ -24,7 +24,7 @@ describe('<TurnOnNotificationPermission/>', () => {
     expect(dialog).toBeInTheDocument();
     expect(
       within(dialog).getByText(
-        'Turn on notifications in your browser to get notified when new tasks are assigned to you',
+        'Turn on notifications in your browser to get notified when new tasks are assigned to you.',
       ),
     ).toBeInTheDocument();
     expect(

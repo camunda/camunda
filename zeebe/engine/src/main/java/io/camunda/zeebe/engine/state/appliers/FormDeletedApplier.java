@@ -26,5 +26,6 @@ public class FormDeletedApplier implements TypedEventApplier<FormIntent, FormRec
     formState.deleteFormInFormByIdAndVersionColumnFamily(value);
     formState.deleteFormInFormVersionColumnFamily(value);
     formState.deleteFormInFormKeyByFormIdAndDeploymentKeyColumnFamily(value);
+    formState.deleteFormInFormKeyByFormIdAndVersionTagColumnFamily(value);
   }
 }

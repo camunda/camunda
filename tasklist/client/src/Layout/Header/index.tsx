@@ -7,17 +7,11 @@
  */
 
 import {useEffect, useState} from 'react';
-import {useTranslation, Trans} from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 import {t} from 'i18next';
 import {observer} from 'mobx-react-lite';
 import {Link as RouterLink, matchPath, useLocation} from 'react-router-dom';
-import {
-  Link,
-  Dropdown,
-  SwitcherDivider,
-  OnChangeData,
-  Layer,
-} from '@carbon/react';
+import {Dropdown, Layer, OnChangeData, SwitcherDivider} from '@carbon/react';
 import {ArrowRight} from '@carbon/react/icons';
 import {C3Navigation} from '@camunda/camunda-composite-components';
 import {pages} from 'modules/routing';
@@ -28,6 +22,7 @@ import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {getStateLocally} from 'modules/utils/localStorage';
 import styles from './styles.module.scss';
 import {languageItems, SelectionOption} from 'modules/internationalization';
+import {useLicense} from '../../modules/queries/useLicense';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
   const BASE_INFO_SIDEBAR_ITEMS = [
@@ -92,11 +87,11 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
 
 const Header: React.FC = observer(() => {
   const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
-  const IS_ENTERPRISE = window.clientConfig?.isEnterprise === true;
   const location = useLocation();
   const isProcessesPage =
     matchPath(pages.processes(), location.pathname) !== null;
   const {data: currentUser} = useCurrentUser();
+  const {data: license} = useLicense();
   const {selectedTheme, changeTheme} = themeStore;
   const {displayName, salesPlanType} = currentUser ?? {
     displayName: null,
@@ -172,45 +167,10 @@ const Header: React.FC = observer(() => {
             },
           },
         ],
-        tags:
-          IS_ENTERPRISE || IS_SAAS
-            ? []
-            : [
-                {
-                  key: 'non-production-license',
-                  label: t('headerNonProductionLicenseLabel'),
-                  color: 'cool-gray',
-                  tooltip: {
-                    content: (
-                      <div>
-                        <Trans i18nKey="headerNonProductionLicenseText">
-                          Non-Production License. If you would like information
-                          on production usage, please refer to our{' '}
-                          <Link
-                            className={styles.inlineLink}
-                            href="https://legal.camunda.com/#self-managed-non-production-terms"
-                            target="_blank"
-                            inline
-                          >
-                            terms & conditions page
-                          </Link>{' '}
-                          or{' '}
-                          <Link
-                            className={styles.inlineLink}
-                            href="https://camunda.com/contact/"
-                            target="_blank"
-                            inline
-                          >
-                            contact sales
-                          </Link>
-                          .
-                        </Trans>
-                      </div>
-                    ),
-                    buttonLabel: t('headerNonProductionLicenseLabel'),
-                  },
-                },
-              ],
+        licenseTag: {
+          show: license !== undefined && license.licenseType !== 'saas',
+          isProductionLicense: license?.validLicense ?? false,
+        },
       }}
       infoSideBar={{
         isOpen: false,

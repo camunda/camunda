@@ -235,7 +235,9 @@ public final class ProcessDeploymentTest {
     final var deployment =
         ENGINE
             .deployment()
-            .withXmlResource("process.bpmn", process)
+            .withXmlResource(
+                "process.bpmn",
+                Bpmn.createExecutableProcess(processId).versionTag("v1.0").startEvent().done())
             .withXmlResource("process2.bpmn", process2)
             .deploy()
             .getValue();
@@ -259,6 +261,7 @@ public final class ProcessDeploymentTest {
     assertThat(firstProcessRecord.getRecordVersion()).isEqualTo(2);
     assertThat(firstProcessRecord.getValue().getResourceName()).isEqualTo("process.bpmn");
     assertThat(firstProcessRecord.getValue().getVersion()).isEqualTo(1);
+    assertThat(firstProcessRecord.getValue().getVersionTag()).isEqualTo("v1.0");
     assertThat(firstProcessRecord.getValue().getDeploymentKey())
         .isEqualTo(deployment.getDeploymentKey());
     assertThat(firstProcessRecord.getKey())
@@ -270,6 +273,7 @@ public final class ProcessDeploymentTest {
     assertThat(secondProcessRecord.getRecordVersion()).isEqualTo(2);
     assertThat(secondProcessRecord.getValue().getResourceName()).isEqualTo("process2.bpmn");
     assertThat(secondProcessRecord.getValue().getVersion()).isEqualTo(1);
+    assertThat(secondProcessRecord.getValue().getVersionTag()).isEqualTo("");
     assertThat(secondProcessRecord.getValue().getDeploymentKey())
         .isEqualTo(deployment.getDeploymentKey());
     assertThat(secondProcessRecord.getKey())

@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -63,6 +64,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -220,7 +222,8 @@ final class JsonSerializableToJsonTest {
                 "processDefinitionKey": 123,
                 "duplicate": false,
                 "tenantId": "<default>",
-                "deploymentKey": -1
+                "deploymentKey": -1,
+                "versionTag": ""
               }
             ],
             "resources": [
@@ -301,6 +304,7 @@ final class JsonSerializableToJsonTest {
               final int processVersion = 12;
               final DirectBuffer checksum = wrapString("checksum");
               final long deploymentKey = 1234;
+              final String versionTag = "v1.0";
               final DeploymentRecord record = new DeploymentRecord();
               record
                   .setDeploymentKey(deploymentKey)
@@ -317,7 +321,8 @@ final class JsonSerializableToJsonTest {
                   .setVersion(processVersion)
                   .setChecksum(checksum)
                   .setDuplicate(true)
-                  .setDeploymentKey(deploymentKey);
+                  .setDeploymentKey(deploymentKey)
+                  .setVersionTag(versionTag);
               record
                   .decisionRequirementsMetadata()
                   .add()
@@ -339,6 +344,7 @@ final class JsonSerializableToJsonTest {
                   .setDecisionRequirementsKey(1L)
                   .setDecisionRequirementsId("drg-id")
                   .setDeploymentKey(deploymentKey)
+                  .setVersionTag(versionTag)
                   .setDuplicate(true);
               record
                   .formMetadata()
@@ -349,7 +355,8 @@ final class JsonSerializableToJsonTest {
                   .setResourceName("form1.form")
                   .setChecksum(checksum)
                   .setDeploymentKey(deploymentKey)
-                  .setDuplicate(true);
+                  .setDuplicate(true)
+                  .setVersionTag(versionTag);
               return record;
             },
         """
@@ -369,7 +376,8 @@ final class JsonSerializableToJsonTest {
               "resourceName": "resource",
               "duplicate": true,
               "tenantId": "<default>",
-              "deploymentKey": 1234
+              "deploymentKey": 1234,
+              "versionTag": "v1.0"
             }
           ],
           "decisionsMetadata": [
@@ -382,7 +390,8 @@ final class JsonSerializableToJsonTest {
               "decisionKey": 2,
               "duplicate": true,
               "tenantId": "<default>",
-              "deploymentKey": 1234
+              "deploymentKey": 1234,
+              "versionTag": "v1.0"
             }
           ],
           "decisionRequirementsMetadata": [
@@ -407,7 +416,8 @@ final class JsonSerializableToJsonTest {
               "resourceName": "form1.form",
               "duplicate": true,
               "tenantId": "<default>",
-              "deploymentKey": 1234
+              "deploymentKey": 1234,
+              "versionTag": "v1.0"
             }
           ],
           "tenantId": "<default>",
@@ -464,6 +474,7 @@ final class JsonSerializableToJsonTest {
               final int processVersion = 12;
               final DirectBuffer checksum = wrapString("checksum");
               final long deploymentKey = 1234;
+              final String versionTag = "v1.0";
 
               final ProcessRecord record = new ProcessRecord();
               record
@@ -474,7 +485,8 @@ final class JsonSerializableToJsonTest {
                   .setResourceName(wrapString(resourceName))
                   .setVersion(processVersion)
                   .setChecksum(checksum)
-                  .setDeploymentKey(deploymentKey);
+                  .setDeploymentKey(deploymentKey)
+                  .setVersionTag(versionTag);
 
               return record;
             },
@@ -489,12 +501,13 @@ final class JsonSerializableToJsonTest {
           "resourceName": "resource",
           "duplicate": false,
           "tenantId": "<default>",
-          "deploymentKey": 1234
+          "deploymentKey": 1234,
+          "versionTag": "v1.0"
         }
         """
       },
       new Object[] {
-        "ProcessRecord (with empty deployment key)",
+        "ProcessRecord (with empty deployment key and version tag)",
         (Supplier<UnifiedRecordValue>)
             () -> {
               final String resourceName = "resource";
@@ -527,7 +540,8 @@ final class JsonSerializableToJsonTest {
           "resourceName": "resource",
           "duplicate": false,
           "tenantId": "<default>",
-          "deploymentKey": -1
+          "deploymentKey": -1,
+          "versionTag": ""
         }
         """
       },
@@ -1575,7 +1589,8 @@ final class JsonSerializableToJsonTest {
                     .setDecisionKey(2L)
                     .setDecisionRequirementsKey(3L)
                     .setDecisionRequirementsId("decision-requirements-id")
-                    .setDeploymentKey(4L),
+                    .setDeploymentKey(4L)
+                    .setVersionTag("v1.0"),
         """
         {
           "decisionId": "decision-id",
@@ -1586,12 +1601,13 @@ final class JsonSerializableToJsonTest {
           "decisionRequirementsId": "decision-requirements-id",
           "duplicate": false,
           "tenantId": "<default>",
-          "deploymentKey": 4
+          "deploymentKey": 4,
+          "versionTag": "v1.0"
         }
         """
       },
       {
-        "DecisionRecord (with empty deployment key)",
+        "DecisionRecord (with empty deployment key and version tag)",
         (Supplier<UnifiedRecordValue>)
             () ->
                 new DecisionRecord()
@@ -1611,7 +1627,8 @@ final class JsonSerializableToJsonTest {
           "decisionRequirementsId": "decision-requirements-id",
           "duplicate": false,
           "tenantId": "<default>",
-          "deploymentKey": -1
+          "deploymentKey": -1,
+          "versionTag": ""
         }
         """
       },
@@ -2114,7 +2131,8 @@ final class JsonSerializableToJsonTest {
               "checksum": "c2hhMQ==",
               "duplicate": false,
               "tenantId": "<default>",
-              "deploymentKey": -1
+              "deploymentKey": -1,
+              "versionTag": ""
             }],
             "decisionsMetadata": [],
             "decisionRequirementsMetadata": [],
@@ -2525,6 +2543,54 @@ final class JsonSerializableToJsonTest {
         """
         {
           "time": 0
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// AuthorizationRecord ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Authorization record",
+        (Supplier<AuthorizationRecord>)
+            () ->
+                new AuthorizationRecord()
+                    .setAuthorizationKey(1L)
+                    .setOwnerKey("owner")
+                    .setOwnerType(AuthorizationOwnerType.USER)
+                    .setResourceKey("resource")
+                    .setResourceType("type")
+                    .setPermissions(List.of("permission")),
+        """
+        {
+          "authorizationKey": 1,
+          "ownerKey": "owner",
+          "ownerType": "USER",
+          "resourceKey": "resource",
+          "resourceType": "type",
+          "permissions": ["permission"]
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty AuthorizationRecord /////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty AuthorizationRecord",
+        (Supplier<AuthorizationRecord>)
+            () ->
+                new AuthorizationRecord()
+                    .setOwnerKey("owner")
+                    .setOwnerType(AuthorizationOwnerType.USER)
+                    .setResourceKey("resource")
+                    .setResourceType("type"),
+        """
+        {
+          "authorizationKey": -1,
+          "ownerKey": "owner",
+          "ownerType": "USER",
+          "resourceKey": "resource",
+          "resourceType": "type",
+          "permissions": []
         }
         """
       },

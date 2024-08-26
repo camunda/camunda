@@ -51,7 +51,6 @@ export function isOfType(filter, availableFilter) {
     case 'instanceStartDate':
     case 'instanceEndDate':
     case 'assignee':
-    case 'candidateGroup':
       return availableFilter.type === filter.type;
     case 'variable':
       return (

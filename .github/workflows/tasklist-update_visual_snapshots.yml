@@ -42,5 +42,5 @@ jobs:
       - name: Commit screenshots
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: updated snapshots"
+          commit_message: "test: updated tasklist snapshots"
           file_pattern: "tasklist/client/**/*.png"

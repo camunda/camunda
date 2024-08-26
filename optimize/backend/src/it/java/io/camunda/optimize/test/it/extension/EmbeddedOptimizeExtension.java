@@ -10,7 +10,6 @@ package io.camunda.optimize.test.it.extension;
 import static io.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static io.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
-import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
 import static io.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,9 +19,6 @@ import io.camunda.optimize.ApplicationContextProvider;
 import io.camunda.optimize.OptimizeRequestExecutor;
 import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
-import io.camunda.optimize.rest.engine.EngineContext;
-import io.camunda.optimize.rest.engine.EngineContextFactory;
-import io.camunda.optimize.rest.engine.PlatformEngineContextFactory;
 import io.camunda.optimize.service.KpiEvaluationSchedulerService;
 import io.camunda.optimize.service.KpiService;
 import io.camunda.optimize.service.LocalizationService;
@@ -37,9 +33,6 @@ import io.camunda.optimize.service.db.schema.DatabaseSchemaManager;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.writer.InstantDashboardMetadataWriter;
 import io.camunda.optimize.service.digest.DigestService;
-import io.camunda.optimize.service.identity.PlatformIdentityService;
-import io.camunda.optimize.service.identity.PlatformUserIdentityCache;
-import io.camunda.optimize.service.identity.PlatformUserTaskIdentityCache;
 import io.camunda.optimize.service.importing.AbstractImportScheduler;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportSchedulerManagerService;
@@ -48,7 +41,6 @@ import io.camunda.optimize.service.importing.ingested.IngestedDataImportSchedule
 import io.camunda.optimize.service.importing.ingested.mediator.StoreIngestedImportProgressMediator;
 import io.camunda.optimize.service.importing.zeebe.mediator.StorePositionBasedImportProgressMediator;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
-import io.camunda.optimize.service.tenant.CamundaPlatformTenantService;
 import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
@@ -60,8 +52,6 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -289,10 +279,6 @@ public class EmbeddedOptimizeExtension
     CompletableFuture.allOf(synchronizationCompletables.toArray(new CompletableFuture[0])).join();
   }
 
-  private Collection<EngineContext> getConfiguredEngines() {
-    return getBean(PlatformEngineContextFactory.class).getConfiguredEngines();
-  }
-
   public EngineConfiguration getDefaultEngineConfiguration() {
     return getConfigurationService()
         .getEngineConfiguration(DEFAULT_ENGINE_ALIAS)
@@ -327,16 +313,6 @@ public class EmbeddedOptimizeExtension
   }
 
   public void reloadConfiguration() {
-    if (Arrays.asList(applicationContext.getEnvironment().getActiveProfiles())
-        .contains(PLATFORM_PROFILE)) {
-      // reset engine context factory first to ensure we have new clients before reinitializing any
-      // other object
-      // as they might make use of the engine client
-      final EngineContextFactory engineContextFactory = getBean(PlatformEngineContextFactory.class);
-      engineContextFactory.close();
-      engineContextFactory.init();
-    }
-
     final Map<String, ?> refreshableServices =
         getApplicationContext().getBeansOfType(ConfigurationReloadable.class);
     for (final Map.Entry<String, ?> entry : refreshableServices.entrySet()) {
@@ -356,10 +332,6 @@ public class EmbeddedOptimizeExtension
         configObjectMapper.readValue(serializedDefaultConfiguration, ConfigurationService.class),
         getBean(ConfigurationService.class));
     log.info("done resetting config");
-  }
-
-  public void reloadEngineTenantCache() {
-    getPlatformTenantService().reloadConfiguration(null);
   }
 
   public final WebTarget target(final String path) {
@@ -443,14 +415,6 @@ public class EmbeddedOptimizeExtension
     return getBean(KpiEvaluationSchedulerService.class);
   }
 
-  public PlatformUserIdentityCache getUserIdentityCache() {
-    return getBean(PlatformUserIdentityCache.class);
-  }
-
-  public PlatformUserTaskIdentityCache getUserTaskIdentityCache() {
-    return getBean(PlatformUserTaskIdentityCache.class);
-  }
-
   public LocalizationService getLocalizationService() {
     return getBean(LocalizationService.class);
   }
@@ -471,16 +435,8 @@ public class EmbeddedOptimizeExtension
     return getBean(DigestService.class);
   }
 
-  public CamundaPlatformTenantService getPlatformTenantService() {
-    return getBean(CamundaPlatformTenantService.class);
-  }
-
   public KpiService getKpiService() {
     return getApplicationContext().getBean(KpiService.class);
-  }
-
-  public PlatformIdentityService getIdentityService() {
-    return getBean(PlatformIdentityService.class);
   }
 
   public SettingsService getSettingsService() {

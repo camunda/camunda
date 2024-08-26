@@ -298,6 +298,7 @@ class ClusterConfigurationManagementIntegrationTest {
           service.start(
               actorScheduler,
               new StaticConfiguration(
+                  false,
                   new ControllablePartitionDistributor().withPartitions(partitions),
                   clusterMembers,
                   cluster.getMembershipService().getLocalMember().id(),

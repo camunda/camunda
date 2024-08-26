@@ -52,6 +52,38 @@ final class ClusterConfigurationModifierTest {
                       1, PartitionState.active(1, config), 2, PartitionState.active(2, config))));
 
   @Nested
+  final class RoutingStateInitializerTest {
+    @Test
+    void shouldNotInitializeRoutingStateIfPartitionScalingIsDisabled() {
+      // given
+      final var routingStateInitializer = new RoutingStateInitializer(false, 3);
+
+      // when
+      final var newConfiguration = routingStateInitializer.modify(currentConfiguration).join();
+
+      // then
+      ClusterConfigurationAssert.assertThatClusterTopology(newConfiguration).hasNoRoutingState();
+    }
+
+    @Test
+    void shouldInitializeRoutingStateIfPartitionScalingIsEnabled() {
+      // given
+      final var routingStateInitializer = new RoutingStateInitializer(true, 5);
+
+      // when
+      final var newConfiguration = routingStateInitializer.modify(currentConfiguration).join();
+
+      // then
+      ClusterConfigurationAssert.assertThatClusterTopology(newConfiguration).hasRoutingState();
+      ClusterConfigurationAssert.assertThatClusterTopology(newConfiguration)
+          .routingState()
+          .hasVersion(1)
+          .hasActivatedPartitions(5)
+          .correlatesMessagesToPartitions(5);
+    }
+  }
+
+  @Nested
   class ExporterStateInitializerTest {
 
     @ParameterizedTest
@@ -59,8 +91,7 @@ final class ClusterConfigurationModifierTest {
     void shouldUpdateExporterConfig(final ExporterConfigParameter parameter) {
       // given
       final var exporterStateInitializer =
-          new ClusterConfigurationModifier.ExporterStateInitializer(
-              parameter.configuredExporters(), localMemberId, executor);
+          new ExporterStateInitializer(parameter.configuredExporters(), localMemberId, executor);
 
       // when
       final var newConfiguration = exporterStateInitializer.modify(currentConfiguration).join();
@@ -103,8 +134,7 @@ final class ClusterConfigurationModifierTest {
 
       // when
       final var newConfiguration =
-          new ClusterConfigurationModifier.ExporterStateInitializer(
-                  Set.of("expA", "expB"), localMemberId, executor)
+          new ExporterStateInitializer(Set.of("expA", "expB"), localMemberId, executor)
               .modify(currentConfiguration)
               .join();
 
@@ -121,8 +151,7 @@ final class ClusterConfigurationModifierTest {
     void shouldNotUpdateMemberStateIfNoExporterChanges() {
       // when
       final var newConfiguration =
-          new ClusterConfigurationModifier.ExporterStateInitializer(
-                  Set.of("expA", "expB"), localMemberId, executor)
+          new ExporterStateInitializer(Set.of("expA", "expB"), localMemberId, executor)
               .modify(currentConfiguration)
               .join();
 

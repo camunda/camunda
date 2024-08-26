@@ -79,7 +79,6 @@ export default class Filter extends Component {
       case 'canceledFlowNodes':
         return NodeFilter;
       case 'assignee':
-      case 'candidateGroup':
         return AssigneeFilter;
       default:
         return () => null;

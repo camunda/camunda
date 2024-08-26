@@ -66,7 +66,7 @@ services:
       - identity-network
   keycloak:
     container_name: keycloak
-    image: bitnami/keycloak:25.0.4@sha256:b3ebfd5ac239ca67782bff20637501cea383e71d0fa5c1c0917cd4c3908de4b8
+    image: bitnami/keycloak:25.0.4@sha256:c9569482317a4235d5a718743b1b57856efe14d973d2612c2b579ca60a5b6d4f
     ports:
       - "18080:8080"
     environment:
@@ -105,7 +105,7 @@ services:
       - identity-network
   elasticsearch:
     profiles: ["", "elasticsearch"]
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.9.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.13.0}
     container_name: elasticsearch
     environment:
       - cluster.name=elasticsearch

@@ -20,7 +20,6 @@ import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.exceptions.OptimizeElasticsearchConnectionException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
-import io.camunda.optimize.service.util.configuration.condition.CamundaCloudCondition;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BadRequestException;
@@ -30,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -48,7 +46,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @RequiredArgsConstructor
 @Component
 @RestControllerEndpoint(id = "backups")
-@Conditional(CamundaCloudCondition.class)
 public class BackupRestService {
   private final BackupService backupService;
   private final LocalizationService localizationService;
@@ -144,7 +141,7 @@ public class BackupRestService {
         .body(getErrorResponseDto(exception));
   }
 
-  private ErrorResponseDto getErrorResponseDto(Throwable e) {
+  private ErrorResponseDto getErrorResponseDto(final Throwable e) {
     final Class<?> errorClass = e.getClass();
     final String errorCode;
 

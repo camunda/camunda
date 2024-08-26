@@ -14,7 +14,7 @@ type FilterParam =
   | 'assigned-to-me'
   | 'completed'
   | 'custom';
-type SortByParam = 'creation' | 'follow-up' | 'due' | 'completion';
+type SortByParam = 'creation' | 'follow-up' | 'due' | 'completion' | 'priority';
 
 class TasksPage {
   private page: Page;

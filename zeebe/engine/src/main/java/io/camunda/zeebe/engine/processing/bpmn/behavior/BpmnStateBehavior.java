@@ -149,6 +149,13 @@ public final class BpmnStateBehavior {
     return Optional.ofNullable(process);
   }
 
+  public Optional<DeployedProcess> getProcessByProcessIdAndVersionTag(
+      final DirectBuffer processId, final String versionTag, final String tenantId) {
+    final var process =
+        processState.getProcessByProcessIdAndVersionTag(processId, versionTag, tenantId);
+    return Optional.ofNullable(process);
+  }
+
   public Either<Failure, Long> getDeploymentKey(
       final long processDefinitionKey, final String tenantId) {
     return getProcess(processDefinitionKey, tenantId)

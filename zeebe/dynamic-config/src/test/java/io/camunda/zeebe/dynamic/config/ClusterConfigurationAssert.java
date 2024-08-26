@@ -95,6 +95,21 @@ public final class ClusterConfigurationAssert
     return this;
   }
 
+  public ClusterConfigurationAssert hasRoutingState() {
+    assertThat(actual.routingState()).isPresent();
+    return this;
+  }
+
+  public ClusterConfigurationAssert hasNoRoutingState() {
+    assertThat(actual.routingState()).isEmpty();
+    return this;
+  }
+
+  public RoutingStateAssert routingState() {
+    assertThat(actual.routingState()).isPresent();
+    return RoutingStateAssert.assertThat(actual.routingState().orElseThrow());
+  }
+
   /**
    * Asserts that the actual topology has the same topology as the expected topology ignoring
    * timestamps and versions.
@@ -124,6 +139,13 @@ public final class ClusterConfigurationAssert
         .usingRecursiveComparison()
         .ignoringFieldsMatchingRegexes(".*startedAt", ".*version")
         .isEqualTo(optionalExpectedOngoingChange);
+
+    // compare routing state without version
+    assertThat(actual.routingState())
+        .usingRecursiveComparison()
+        .ignoringFieldsOfTypesMatchingRegexes(".*version")
+        .isEqualTo(expected.routingState());
+
     return this;
   }
 }

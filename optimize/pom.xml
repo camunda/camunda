@@ -25,17 +25,13 @@
     <surefire-plugin.version>3.4.0</surefire-plugin.version>
 
     <!-- database config -->
-    <elasticsearch.version>7.17.23</elasticsearch.version>
-    <opensearch.version>2.10.1</opensearch.version>
-    <awssdk.version>2.27.10</awssdk.version>
-    <!-- The default es 8 version we are going to be testing with-->
-    <elasticsearch8.test.version>8.9.0</elasticsearch8.test.version>
+    <elasticsearch.client.version>7.17.23</elasticsearch.client.version>
+    <opensearch.client.version>2.10.1</opensearch.client.version>
+    <awssdk.version>2.27.12</awssdk.version>
     <!-- The default opensearch version we are going to be testing with-->
-    <opensearch.test.version>2.8.0</opensearch.test.version>
+    <opensearch.test.version>2.9.0</opensearch.test.version>
     <!--The least supported elasticsearch version we should test against-->
-    <elasticsearch.test.version>8.9.0</elasticsearch.test.version>
-    <!--the ElasticSearch version of the previous Optimize version -->
-    <previous.optimize.elasticsearch.version>8.9.0</previous.optimize.elasticsearch.version>
+    <elasticsearch.test.version>8.13.0</elasticsearch.test.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.23.1</elasticsearch.log4j.version>
 
@@ -44,7 +40,7 @@
     <apache.http5-client.version>5.3.1</apache.http5-client.version>
     <apache.http5-core.version>5.2.5</apache.http5-core.version>
     <guava.version>33.3.0-jre</guava.version>
-    <spring.boot.version>3.3.2</spring.boot.version>
+    <spring.boot.version>3.3.3</spring.boot.version>
     <spring.version>6.1.12</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
@@ -60,7 +56,7 @@
 
     <!-- testing config -->
     <h2.version>2.3.230</h2.version>
-    <postgres.version>42.7.3</postgres.version>
+    <postgres.version>42.7.4</postgres.version>
     <mockito.version>5.12.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <junit.jupiter.version>5.11.0</junit.jupiter.version>
@@ -78,7 +74,7 @@
 
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
-    <spring-boot.version>3.3.2</spring-boot.version>
+    <spring-boot.version>3.3.3</spring-boot.version>
   </properties>
 
   <modules>
@@ -549,24 +545,6 @@
     </pluginManagement>
 
     <plugins>
-      <plugin>
-        <groupId>com.amashchenko.maven.plugin</groupId>
-        <artifactId>gitflow-maven-plugin</artifactId>
-        <version>1.21.0</version>
-        <configuration>
-          <gitFlowConfig>
-            <productionBranch>optimize-latest</productionBranch>
-            <developmentBranch>main</developmentBranch>
-            <supportBranchPrefix>stable/</supportBranchPrefix>
-            <releaseBranchPrefix>release/optimize-</releaseBranchPrefix>
-          </gitFlowConfig>
-          <commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
-          <useSnapshotInRelease>true</useSnapshotInRelease>
-          <useSnapshotInSupport>true</useSnapshotInSupport>
-          <skipTestProject>true</skipTestProject>
-          <skipTag>true</skipTag>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>

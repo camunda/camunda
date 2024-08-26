@@ -28,6 +28,7 @@ const MOCK_TASK = {
   processName: 'Big form process',
   creationDate: '2023-03-03T14:16:18.441+0100',
   completionDate: null,
+  priority: 50,
   taskDefinitionId: 'Activity_0aecztp',
   processInstanceKey: '4503599627371425',
   dueDate: null,

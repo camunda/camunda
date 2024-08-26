@@ -48,8 +48,8 @@ export function convertFilterToDefaultValues(availableFilter, filters) {
     return filters.find(({type}) => type === availableFilter.type)?.data ?? null;
   }
 
-  // assignee / candidate group
-  if (availableFilter.type === 'assignee' || availableFilter.type === 'candidateGroup') {
+  // assignee
+  if (availableFilter.type === 'assignee') {
     return (
       filters.find(
         ({type, data}) =>
@@ -141,7 +141,7 @@ export function getDefaultFilter(availableFilters) {
         });
       }
 
-      if (availableFilter.type === 'assignee' || availableFilter.type === 'candidateGroup') {
+      if (availableFilter.type === 'assignee') {
         return filters.push({
           type: availableFilter.type,
           filterLevel: 'view',

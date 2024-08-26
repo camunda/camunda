@@ -192,7 +192,7 @@
   dependencies:
     "@babel/helper-plugin-utils" "^7.24.0"
 
-"@babel/runtime@^7.10.0", "@babel/runtime@^7.12.5", "@babel/runtime@^7.15.4", "@babel/runtime@^7.19.4", "@babel/runtime@^7.22.15", "@babel/runtime@^7.23.2", "@babel/runtime@^7.24.7", "@babel/runtime@^7.24.8", "@babel/runtime@^7.5.5", "@babel/runtime@^7.8.7", "@babel/runtime@^7.9.2":
+"@babel/runtime@^7.10.0", "@babel/runtime@^7.12.5", "@babel/runtime@^7.15.4", "@babel/runtime@^7.19.4", "@babel/runtime@^7.22.15", "@babel/runtime@^7.23.2", "@babel/runtime@^7.24.7", "@babel/runtime@^7.24.8", "@babel/runtime@^7.5.5", "@babel/runtime@^7.8.7":
   version "7.25.0"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.25.0.tgz#3af9a91c1b739c569d5d80cc917280919c544ecb"
   integrity sha512-7dRy4DwXwtzBrPbZflqxnvfxLF8kdZXPkhymtDeFoFqE6ldzjQFgYTtYIFARcLEYDrqfBfYcZt1WqFxRoyC9Rw==
@@ -266,15 +266,15 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.3"
 
-"@bpmn-io/form-js-carbon-styles@1.9.1":
-  version "1.9.1"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.9.1.tgz#041dbd36baeaea5ef6c8c9c2f2232186800f6a6c"
-  integrity sha512-EDwOspZX6uZnfzp5b8OdnFWDRq84CoNb5xW6RZxCOM9EcSmLfElGoEaDNhpI4iuBoRIXh5jmqqyl2UOOTKXmag==
+"@bpmn-io/form-js-carbon-styles@1.10.0":
+  version "1.10.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.10.0.tgz#3f690bb47039394b72a5ed842f7c3275ce5faa9b"
+  integrity sha512-phuslRgen2wcq1KhoJtAZMv51U9HbuS1k5YCUkHm8esje+t00kjAhggK9DxEZ4K5DGUdNnB/ZUzqdPIKn1WWPw==
 
-"@bpmn-io/form-js-viewer@1.9.1":
-  version "1.9.1"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.9.1.tgz#83c4a9a75c20345f8d1ff1b8cb40fb084f5d185f"
-  integrity sha512-Ue2WkqD4JQ1L+KpqS7vLIGNg7kEFJdcyIMsz+uvxbRpsdcPOSi+1tkfrKOSq9aWAm0yBL6Hef2YXq6hlmdRf+g==
+"@bpmn-io/form-js-viewer@1.10.0":
+  version "1.10.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.10.0.tgz#0f96c1ab3b19cde6c5ffe43122c09feb9814d613"
+  integrity sha512-70wKEvmKd7xGZtg3t41eBC3EBANIMe7k0Mt+1vdQbao5oTlT0zHK0XrwEaSEOKTEwMvALZmSyCGGBRYtdgzHkg==
   dependencies:
     "@carbon/grid" "^11.22.0"
     big.js "^6.2.1"
@@ -282,12 +282,12 @@
     didi "^10.2.2"
     dompurify "^3.1.2"
     feelers "^1.3.1"
-    feelin "^3.1.0"
+    feelin "^3.1.2"
     flatpickr "^4.6.13"
     ids "^1.0.5"
     lodash "^4.17.21"
     luxon "^3.5.0"
-    marked "^13.0.0"
+    marked "^14.0.0"
     min-dash "^4.2.1"
     preact "^10.5.14"
 
@@ -900,6 +900,13 @@
   dependencies:
     "@lezer/common" "^1.0.0"
 
+"@lezer/lr@^1.4.1", "@lezer/lr@^1.4.2":
+  version "1.4.2"
+  resolved "https://registry.yarnpkg.com/@lezer/lr/-/lr-1.4.2.tgz#931ea3dea8e9de84e90781001dae30dea9ff1727"
+  integrity sha512-pu0K1jCIdnQ12aWNaAVU5bzi7Bd1w54J3ECgANPmYLtQKP0HBj2cE/5coBD66MT10xbtIuUr7tg0Shbsvk0mDA==
+  dependencies:
+    "@lezer/common" "^1.0.0"
+
 "@lezer/markdown@^1.1.0":
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/@lezer/markdown/-/markdown-1.3.0.tgz#a954d48aa3256d07173353f80086f1a3bc6f965f"
@@ -1369,13 +1376,12 @@
     lz-string "^1.5.0"
     pretty-format "^27.0.2"
 
-"@testing-library/jest-dom@6.4.8":
-  version "6.4.8"
-  resolved "https://registry.yarnpkg.com/@testing-library/jest-dom/-/jest-dom-6.4.8.tgz#9c435742b20c6183d4e7034f2b329d562c079daa"
-  integrity sha512-JD0G+Zc38f5MBHA4NgxQMR5XtO5Jx9g86jqturNTt2WUfRmLDIY7iKkWHDCCTiDuFMre6nxAD5wHw9W5kI4rGw==
+"@testing-library/jest-dom@6.5.0":
+  version "6.5.0"
+  resolved "https://registry.yarnpkg.com/@testing-library/jest-dom/-/jest-dom-6.5.0.tgz#50484da3f80fb222a853479f618a9ce5c47bfe54"
+  integrity sha512-xGGHpBXYSHUUr6XsKBfs85TWlYKpTc37cSBBVrXcib2MkHLboWlkClhWF37JKlDb9KEq3dHs+f2xR7XJEWGBxA==
   dependencies:
     "@adobe/css-tools" "^4.4.0"
-    "@babel/runtime" "^7.9.2"
     aria-query "^5.0.0"
     chalk "^3.0.0"
     css.escape "^1.5.1"
@@ -1514,10 +1520,10 @@
   dependencies:
     "@types/unist" "^2"
 
-"@types/mixpanel-browser@2.49.1":
-  version "2.49.1"
-  resolved "https://registry.yarnpkg.com/@types/mixpanel-browser/-/mixpanel-browser-2.49.1.tgz#baf011f4f2818fda99d68874813914551e6c4442"
-  integrity sha512-W9VZxD7haNMenkRwXxPZBJLhED7Sx1l89nZsGcWi3WzdIk417k/KnpmfDFn2sEyL31G/h0rY1E6erAny+8ItOw==
+"@types/mixpanel-browser@2.50.0":
+  version "2.50.0"
+  resolved "https://registry.yarnpkg.com/@types/mixpanel-browser/-/mixpanel-browser-2.50.0.tgz#965af33ddd3e0c114c4080573ae2d80aa4c04f45"
+  integrity sha512-RkGTkkDUw3Tm/GEmcS/x8t2mNrt34jgrEWLVM6oSnoe/+bk/WQP1EWaHLk3pCDc3IaXHNoweoNMa1iWLLF0yFQ==
 
 "@types/ms@*":
   version "0.7.34"
@@ -3169,7 +3175,7 @@ feelers@^1.3.1:
     lezer-feel "^1.2.4"
     min-dom "^4.1.0"
 
-feelin@^3.0.1, feelin@^3.1.0:
+feelin@^3.0.1:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/feelin/-/feelin-3.1.0.tgz#82f2f449c77e55782d1d9bdcd60661bbeb820cf7"
   integrity sha512-ITPATtpwDWeLr7FKEAai7mJPlIH0td+D58f61+ZFDOs6Gg+8mFIo1LlhltQOeLkmZlOdvC/RsovbZ7SqxUfoyQ==
@@ -3177,6 +3183,15 @@ feelin@^3.0.1, feelin@^3.1.0:
     "@lezer/lr" "^1.3.9"
     lezer-feel "^1.2.8"
     luxon "^3.4.4"
+
+feelin@^3.1.2:
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/feelin/-/feelin-3.1.2.tgz#8f171a06801230130b8c379187b98c28778b1d0e"
+  integrity sha512-fu8MVT54I58IU0OOuyUyx4E0hOwTZ5dKmPyv99Q93UMZhPCZwdu+s0jvI+O85WvV+P6CTbs9qwb2h9GjRtoI6w==
+  dependencies:
+    "@lezer/lr" "^1.4.2"
+    lezer-feel "^1.2.9"
+    luxon "^3.5.0"
 
 fflate@^0.4.4:
   version "0.4.8"
@@ -3835,10 +3850,10 @@ js-yaml@^4.1.0:
   dependencies:
     argparse "^2.0.1"
 
-jsdom@24.1.1:
-  version "24.1.1"
-  resolved "https://registry.yarnpkg.com/jsdom/-/jsdom-24.1.1.tgz#f41df8f4f3b2fbfa7e1bdc5df62c9804fd14a9d0"
-  integrity sha512-5O1wWV99Jhq4DV7rCLIoZ/UIhyQeDR7wHVyZAHAshbrvZsLs+Xzz7gtwnlJTJDjleiTKh54F4dXrX70vJQTyJQ==
+jsdom@25.0.0:
+  version "25.0.0"
+  resolved "https://registry.yarnpkg.com/jsdom/-/jsdom-25.0.0.tgz#d1612b4ddab85af56821b2f731e15faae135f4e1"
+  integrity sha512-OhoFVT59T7aEq75TVw9xxEfkXgacpqAhQaYgP9y/fDqWQCMB/b1H66RfmPm/MaeaAIU9nDwMOVTlPN51+ao6CQ==
   dependencies:
     cssstyle "^4.0.1"
     data-urls "^5.0.0"
@@ -3956,6 +3971,14 @@ lezer-feel@^1.2.3, lezer-feel@^1.2.4, lezer-feel@^1.2.8:
   dependencies:
     "@lezer/highlight" "^1.2.0"
     "@lezer/lr" "^1.4.0"
+
+lezer-feel@^1.2.9:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/lezer-feel/-/lezer-feel-1.3.0.tgz#366aecf6b650f53296f0273942fe497cd9d55dc9"
+  integrity sha512-b7oBzdbcdHJU+WIVwqELi/pLLg0UiojC/80E2zFBGrZsWTSOsSQLNhHsfRocYzWLUPpOC4pWaFlhJM4m93J5Fg==
+  dependencies:
+    "@lezer/highlight" "^1.2.0"
+    "@lezer/lr" "^1.4.1"
 
 lilconfig@^2.0.5:
   version "2.1.0"
@@ -4115,10 +4138,10 @@ make-dir@^4.0.0:
   dependencies:
     semver "^7.5.3"
 
-marked@^13.0.0:
-  version "13.0.3"
-  resolved "https://registry.yarnpkg.com/marked/-/marked-13.0.3.tgz#5c5b4a5d0198060c7c9bc6ef9420a7fed30f822d"
-  integrity sha512-rqRix3/TWzE9rIoFGIn8JmsVfhiuC8VIQ8IdX5TfzmeBucdY05/0UlzKaw0eVtpcN/OdVFpBk7CjKGo9iHJ/zA==
+marked@^14.0.0:
+  version "14.1.0"
+  resolved "https://registry.yarnpkg.com/marked/-/marked-14.1.0.tgz#736ae774ff06ddf03e55a071f9322fe240cb89cb"
+  integrity sha512-P93GikH/Pde0hM5TAXEd8I4JAYi8IB03n8qzW8Bh1BIEFpEyBoYxi/XWZA53LSpTeLBiMQOoSMj0u5E/tiVYTA==
 
 mathml-tag-names@^2.1.3:
   version "2.1.3"
@@ -4541,10 +4564,10 @@ moddle@^6.0.0, moddle@^6.2.3:
   dependencies:
     min-dash "^4.0.0"
 
-monaco-editor@0.50.0:
-  version "0.50.0"
-  resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.50.0.tgz#44e62b124c8aed224e1d310bbbe6ffd6d5122413"
-  integrity sha512-8CclLCmrRRh+sul7C08BmPBP3P8wVWfBHomsTcndxg5NRCEPfu/mc2AGU8k37ajjDVXcXFc12ORAMUkmk+lkFA==
+monaco-editor@0.51.0:
+  version "0.51.0"
+  resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.51.0.tgz#922a6103f6742b5a62fbb097276c5a6619d879db"
+  integrity sha512-xaGwVV1fq343cM7aOYB6lVE4Ugf0UyimdD/x5PWcWBMKENwectaEu77FAN7c5sFiyumqeJdX1RPTh1ocioyDjw==
 
 mri@^1.1.0:
   version "1.2.0"

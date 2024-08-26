@@ -43,7 +43,6 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.Varia
 import io.camunda.optimize.service.db.es.filter.util.IncidentFilterQueryUtil;
 import io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -202,7 +201,6 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   }
 
   private boolean isAssigneeFiltersEnabled() {
-    return ConfigurationService.getOptimizeProfile(environment).equals(OptimizeProfile.PLATFORM)
-        || configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled();
+    return configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled();
   }
 }

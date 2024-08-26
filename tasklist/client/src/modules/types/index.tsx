@@ -56,6 +56,7 @@ type Task = {
   followUpDate: string | null;
   dueDate: string | null;
   completionDate: string | null;
+  priority: number | null;
   assignee: string | null;
   taskState: TaskState;
   sortValues: [string, string];
@@ -121,7 +122,12 @@ type TasksSearchBody = {
   processInstanceKey?: string;
   pageSize?: number;
   sort?: Array<{
-    field: 'completionTime' | 'creationTime' | 'followUpDate' | 'dueDate';
+    field:
+      | 'completionTime'
+      | 'creationTime'
+      | 'followUpDate'
+      | 'dueDate'
+      | 'priority';
     order: 'ASC' | 'DESC';
   }>;
   searchAfter?: PaginationSearchPair;
@@ -136,6 +142,11 @@ type TasksSearchBody = {
   }>;
 };
 
+type License = {
+  validLicense: boolean;
+  licenseType: string;
+};
+
 export type {
   CurrentUser,
   Variable,
@@ -148,4 +159,5 @@ export type {
   TasksSearchBody,
   FullVariable,
   TruncatedVariable,
+  License,
 };

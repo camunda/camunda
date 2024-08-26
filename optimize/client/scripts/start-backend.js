@@ -215,7 +215,7 @@ function setVersionInfo() {
 
         backendVersion = data.project.version;
         const properties = data.project.properties;
-        elasticSearchVersion = properties['elasticsearch8.test.version'];
+        elasticSearchVersion = properties['elasticsearch.test.version'];
         zeebeVersion = properties['zeebe.version'];
         identityVersion = properties['identity.version'];
         resolve();

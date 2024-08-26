@@ -11,6 +11,7 @@ import static io.camunda.tasklist.util.ConversionUtils.stringIsEmpty;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map;
 import java.util.function.Function;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -41,13 +42,17 @@ public class OpenSearchProperties {
   private String username;
   private String password;
 
+  private boolean awsEnabled = false;
+
   @NestedConfigurationProperty private SslProperties ssl;
+
+  @NestedConfigurationProperty private Map<String, InterceptorPluginProperties> interceptorPlugins;
 
   public String getClusterName() {
     return clusterName;
   }
 
-  public void setClusterName(String clusterName) {
+  public void setClusterName(final String clusterName) {
     this.clusterName = clusterName;
   }
 
@@ -57,7 +62,7 @@ public class OpenSearchProperties {
   }
 
   @Deprecated
-  public void setHost(String host) {
+  public void setHost(final String host) {
     this.host = host;
   }
 
@@ -67,15 +72,15 @@ public class OpenSearchProperties {
   }
 
   @Deprecated
-  public void setPort(int port) {
+  public void setPort(final int port) {
     this.port = port;
   }
 
-  private <T> T getFromURIorDefault(Function<URI, T> valueFromURI, T defaultValue) {
+  private <T> T getFromURIorDefault(final Function<URI, T> valueFromURI, final T defaultValue) {
     if (!stringIsEmpty(url)) {
       try {
         return valueFromURI.apply(new URI(url));
-      } catch (URISyntaxException e) {
+      } catch (final URISyntaxException e) {
         return defaultValue;
       }
     }
@@ -86,7 +91,7 @@ public class OpenSearchProperties {
     return dateFormat;
   }
 
-  public void setDateFormat(String dateFormat) {
+  public void setDateFormat(final String dateFormat) {
     this.dateFormat = dateFormat;
   }
 
@@ -94,7 +99,7 @@ public class OpenSearchProperties {
     return elsDateFormat;
   }
 
-  public void setElsDateFormat(String elsDateFormat) {
+  public void setElsDateFormat(final String elsDateFormat) {
     this.elsDateFormat = elsDateFormat;
   }
 
@@ -102,7 +107,7 @@ public class OpenSearchProperties {
     return batchSize;
   }
 
-  public void setBatchSize(int batchSize) {
+  public void setBatchSize(final int batchSize) {
     this.batchSize = batchSize;
   }
 
@@ -110,7 +115,7 @@ public class OpenSearchProperties {
     return createSchema;
   }
 
-  public void setCreateSchema(boolean createSchema) {
+  public void setCreateSchema(final boolean createSchema) {
     this.createSchema = createSchema;
   }
 
@@ -118,7 +123,7 @@ public class OpenSearchProperties {
     return password;
   }
 
-  public void setPassword(String password) {
+  public void setPassword(final String password) {
     this.password = password;
   }
 
@@ -126,7 +131,7 @@ public class OpenSearchProperties {
     return username;
   }
 
-  public void setUsername(String username) {
+  public void setUsername(final String username) {
     this.username = username;
   }
 
@@ -137,7 +142,7 @@ public class OpenSearchProperties {
     return url;
   }
 
-  public void setUrl(String url) {
+  public void setUrl(final String url) {
     this.url = url;
   }
 
@@ -145,7 +150,7 @@ public class OpenSearchProperties {
     return socketTimeout;
   }
 
-  public void setSocketTimeout(Integer socketTimeout) {
+  public void setSocketTimeout(final Integer socketTimeout) {
     this.socketTimeout = socketTimeout;
   }
 
@@ -153,7 +158,7 @@ public class OpenSearchProperties {
     return connectTimeout;
   }
 
-  public void setConnectTimeout(Integer connectTimeout) {
+  public void setConnectTimeout(final Integer connectTimeout) {
     this.connectTimeout = connectTimeout;
   }
 
@@ -161,7 +166,24 @@ public class OpenSearchProperties {
     return ssl;
   }
 
-  public void setSsl(SslProperties ssl) {
+  public void setSsl(final SslProperties ssl) {
     this.ssl = ssl;
+  }
+
+  public Map<String, InterceptorPluginProperties> getInterceptorPlugins() {
+    return interceptorPlugins;
+  }
+
+  public void setInterceptorPlugins(
+      final Map<String, InterceptorPluginProperties> interceptorPlugins) {
+    this.interceptorPlugins = interceptorPlugins;
+  }
+
+  public boolean isAwsEnabled() {
+    return awsEnabled;
+  }
+
+  public void setAwsEnabled(boolean awsEnabled) {
+    this.awsEnabled = awsEnabled;
   }
 }

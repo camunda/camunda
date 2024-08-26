@@ -131,6 +131,11 @@
       <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+
     <!-- OAuth0 -->
     <dependency>
       <groupId>io.camunda</groupId>

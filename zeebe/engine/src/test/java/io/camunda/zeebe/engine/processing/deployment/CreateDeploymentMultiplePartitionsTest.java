@@ -458,7 +458,11 @@ public final class CreateDeploymentMultiplePartitionsTest {
             .deployment()
             .withXmlResource(
                 "process.bpmn",
-                Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+                Bpmn.createExecutableProcess(processId)
+                    .versionTag("v1.0")
+                    .startEvent()
+                    .endEvent()
+                    .done())
             .deploy();
 
     // then
@@ -474,6 +478,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
           assertThat(record.getRecordVersion()).isEqualTo(2);
           assertThat(record.getValue().getResourceName()).isEqualTo("process.bpmn");
           assertThat(record.getValue().getVersion()).isEqualTo(1);
+          assertThat(record.getValue().getVersionTag()).isEqualTo("v1.0");
           assertThat(record.getValue().getDeploymentKey()).isEqualTo(deployment.getKey());
           assertThat(record.getKey()).isEqualTo(record.getValue().getProcessDefinitionKey());
         });
