@@ -98,9 +98,12 @@ public final class ExclusiveGatewayProcessor
     }
 
     final var outgoingSequenceFlows = element.getOutgoing();
-    if (outgoingSequenceFlows.size() == 1 && outgoingSequenceFlows.getFirst().getCondition() == null) {
-      // only one flow without a condition, can just be taken
-      return Either.right(Optional.of(element.getOutgoing().getFirst()));
+    if (outgoingSequenceFlows.size() == 1) {
+      final var singleOutgoingSequenceFlow = outgoingSequenceFlows.getFirst();
+      if (singleOutgoingSequenceFlow.getCondition() == null) {
+        // only one flow without a condition, can just be taken
+        return Either.right(Optional.of(singleOutgoingSequenceFlow));
+      }
     }
 
     for (final ExecutableSequenceFlow sequenceFlow : element.getOutgoingWithCondition()) {
