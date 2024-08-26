@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.locks.ReentrantLock;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
@@ -76,10 +77,6 @@ public class VariableZeebeRecordProcessorElasticSearch {
       final Record record, final VariableRecordValueImpl recordValue) throws PersistenceException {
     final VariableEntity entity = getVariableEntity(record, recordValue);
 
-    if (entity.getName() == "a3") {
-      System.out.println("Variable entity: " + entity);
-    }
-
     TaskVariableSnapshotEntity snapshot = new TaskVariableSnapshotEntity();
 
     // Variable Data
@@ -88,26 +85,23 @@ public class VariableZeebeRecordProcessorElasticSearch {
     Optional.ofNullable(entity.getValue()).ifPresent(snapshot::setVariableValue);
     Optional.ofNullable(entity.getName()).ifPresent(snapshot::setVariableName);
     Optional.of(entity.getIsPreview()).ifPresent(snapshot::setPreview);
+    Optional.ofNullable(entity.getScopeFlowNodeId()).ifPresent(snapshot::setVariableScopeKey);
 
     // Set temporary ID for snapshot
     Optional.ofNullable(entity.getId()).ifPresent(snapshot::setId);
 
     // If the variable is related to a task (scopeKey == flowNodeInstanceId)
     if (!Objects.equals(entity.getProcessInstanceId(), entity.getScopeFlowNodeId())) {
-      System.out.println("check if task already imported");
-      final Optional<TaskEntity> taskImported =
-          taskAlreadyImported(entity.getScopeFlowNodeId(), entity.getProcessInstanceId());
-      if (taskImported.isPresent()) {
-        if (taskImported.get().getFlowNodeInstanceId().equals(entity.getScopeFlowNodeId())) {
+
           System.out.println("associate variable with task");
-          snapshot = associateVariableWithTask(entity, taskImported.get(), snapshot);
+          snapshot = associateVariableWithTask(snapshot);
 
           try {
             return new UpdateRequest()
                 .index(taskVariableSnapshotTemplate.getFullQualifiedName())
                 .id(snapshot.getId())
                 .upsert(objectMapper.writeValueAsString(snapshot), XContentType.JSON)
-                .routing(taskImported.get().getId())
+                .routing(snapshot.getFlowNodeBpmnId())
                 .doc(objectMapper.writeValueAsString(snapshot), XContentType.JSON)
                 .retryOnConflict(UPDATE_RETRY_COUNT);
           } catch (final IOException e) {
@@ -115,17 +109,12 @@ public class VariableZeebeRecordProcessorElasticSearch {
                 String.format(
                     "Error preparing the query to upsert task instance [%s]", entity.getId()),
                 e);
-          }
         }
-      } else {
-        LOGGER.info("Task not imported yet - throw an exception in order to retry");
-        throw new PersistenceException("Task not imported yet");
-        //includeVariableWithEmptyTask(snapshot, entity);
       }
-    }
+
 
     if (entity.getProcessInstanceId().equals(entity.getScopeFlowNodeId())) {
-      System.out.println("associate Process variable with task");
+      System.out.println("associate Process variable with Process");
       snapshot = associateProcessVariablesWithTasks(entity, snapshot);
 
       try {
@@ -157,21 +146,6 @@ public class VariableZeebeRecordProcessorElasticSearch {
     }
   }
 
-  private void includeVariableWithEmptyTask(
-      final TaskVariableSnapshotEntity snapshot, final VariableEntity entity) {
-    // Leave task data empty and include variable data in the snapshot
-    snapshot.setVariableValue(entity.getValue());
-    snapshot.setVariableName(entity.getName());
-    snapshot.setVariableFullValue(entity.getFullValue());
-    snapshot.setPreview(entity.getIsPreview());
-
-    // Setting join field with parent task relationship
-    final Map<String, Object> joinField = new HashMap<>();
-    joinField.put("name", "task-variable");
-    joinField.put("parent", null); // Task not imported
-    snapshot.setJoinField(joinField);
-  }
-
   // Replace for TaskVariableSnapshotStore once the POC is Ready
   private Optional<TaskEntity> taskAlreadyImported(
       final String scopeFlowNodeId, final String processInstanceId) {
@@ -188,19 +162,17 @@ public class VariableZeebeRecordProcessorElasticSearch {
   private TaskVariableSnapshotEntity associateProcessVariablesWithTasks(
       final VariableEntity entity, final TaskVariableSnapshotEntity snapshot) {
     final Map<String, Object> joinField = new HashMap<>();
-    joinField.put("name", "process-variable");
+    joinField.put("name", "processVariable");
     joinField.put("parent", entity.getProcessInstanceId());
     snapshot.setJoinField(joinField);
     return snapshot;
   }
 
   private TaskVariableSnapshotEntity associateVariableWithTask(
-      final VariableEntity entity,
-      final TaskEntity taskImported,
       final TaskVariableSnapshotEntity snapshot) {
     final Map<String, Object> joinField = new HashMap<>();
-    joinField.put("name", "task-variable");
-    joinField.put("parent", taskImported.getId());
+    joinField.put("name", "taskVariable");
+    joinField.put("parent", snapshot.getVariableScopeKey());
     snapshot.setJoinField(joinField);
     return snapshot;
   }

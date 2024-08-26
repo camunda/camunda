@@ -30,7 +30,6 @@ import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.camunda.zeebe.client.api.response.AssignUserTaskResponse;
 import java.io.IOException;
 import java.util.*;
 import org.apache.commons.collections4.CollectionUtils;
@@ -154,11 +153,11 @@ public class TaskService {
 
     if (taskBefore.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)) {
       try {
-            zeebeClient
-                .newUserTaskAssignCommand(Long.parseLong(taskId))
-                .assignee(taskAssignee)
-                .send()
-                .join();
+        zeebeClient
+            .newUserTaskAssignCommand(Long.parseLong(taskId))
+            .assignee(taskAssignee)
+            .send()
+            .join();
       } catch (final ClientException exception) {
         throw new TasklistRuntimeException(exception.getMessage());
       }

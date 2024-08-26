@@ -18,8 +18,7 @@ import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.schema.templates.TasklistTaskVariableSnapshotTemplate;
-import io.camunda.tasklist.store.VariableStore;
-import io.camunda.tasklist.store.VariableStore.GetVariablesRequest;
+import io.camunda.tasklist.store.TaskVariableSnapshotStore;
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToTaskEntityMapper;
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToVariableEntityMapper;
 import io.camunda.zeebe.protocol.record.Record;
@@ -30,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.locks.ReentrantLock;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
@@ -61,20 +61,21 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
 
   @Autowired private TasklistTaskVariableSnapshotTemplate taskVariableSnapshotTemplate;
 
-  @Autowired private VariableStore variableStore;
+  @Autowired private TaskVariableSnapshotStore snapshotStore;
+
+  private final ReentrantLock lock = new ReentrantLock();
 
   public void processUserTaskRecord(
       final Record<UserTaskRecordValue> record, final BulkRequest bulkRequest)
       throws PersistenceException {
 
+    lock.lock();
+
     System.out.println("Processing user task record");
     final Optional<TaskEntity> taskEntity = userTaskRecordToTaskEntityMapper.map(record);
     if (taskEntity.isPresent()) {
-      // Check if variables have already been imported
-      final TaskVariableSnapshotEntity snapshot = findOrCreateSnapshotEntity(taskEntity.get());
-
       // Update the snapshot with task data
-      updateTaskFields(snapshot, taskEntity.get());
+      final TaskVariableSnapshotEntity snapshot = createTaskVariableParent(taskEntity.get());
 
       // Persist task and snapshot
       bulkRequest.add(getTaskQuery(taskEntity.get(), record));
@@ -92,52 +93,16 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     // else skip task
   }
 
-  private TaskVariableSnapshotEntity findOrCreateSnapshotEntity(final TaskEntity taskEntity)
-      throws PersistenceException {
-    // Logic to find an existing snapshot with the task's flowNodeInstanceId or processInstanceId
-    // If found, return the snapshot; otherwise, create a new one with just the task data
-
+  private TaskVariableSnapshotEntity createTaskVariableParent(final TaskEntity taskEntity) {
     final TaskVariableSnapshotEntity snapshot = new TaskVariableSnapshotEntity();
-
-    // Retrieve all variables associated with this taskId
-    final List<TaskVariableEntity> relatedVariables =
-        Optional.ofNullable(
-                variableStore.getTaskVariablesPerTaskId(
-                    List.of(new GetVariablesRequest().setTaskId(taskEntity.getId()))))
-            .map(
-                variablesMap ->
-                    variablesMap.get(taskEntity.getId())) // Safely get the list for the task ID
-            .orElse(List.of()); // Default to an empty list if none are found
-
-    System.out.println("Related variables: " + relatedVariables.size());
-
-    if (!relatedVariables.isEmpty()) {
-      // Update each variable found to reference the task by setting the join relationship
-      for (final TaskVariableEntity variable : relatedVariables) {
-        System.out.println("Updating variable  snapshot with task info:" + variable.getId());
-        updateVariableSnapshotWithTaskInfo(variable, taskEntity, snapshot);
-      }
-    }
-
-    // Set join field for task
-    final Map<String, Object> joinField = new HashMap<>();
-    joinField.put("name", "task");
-    snapshot.setJoinField(joinField);
-
-    // Set temporary ID for snapshot
-    Optional.ofNullable(taskEntity.getId()).ifPresent(snapshot::setId);
-
-    return snapshot;
-  }
-
-  private void updateTaskFields(
-      final TaskVariableSnapshotEntity snapshot, final TaskEntity taskEntity) {
     // Update snapshot with task data
+    Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
+        .ifPresent(snapshot::setId); // The ID is necessary for the join
     Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
         .ifPresent(snapshot::setFlowNodeInstanceId);
     Optional.ofNullable(taskEntity.getProcessInstanceId())
         .ifPresent(snapshot::setProcessInstanceId);
-    Optional.ofNullable(taskEntity.getId()).ifPresent(snapshot::setTaskId);
+    Optional.ofNullable(taskEntity.getFlowNodeBpmnId()).ifPresent(snapshot::setTaskId);
     Optional.of(taskEntity.getKey()).ifPresent(snapshot::setKey);
     Optional.of(taskEntity.getPartitionId()).ifPresent(snapshot::setPartitionId);
     Optional.ofNullable(taskEntity.getCompletionTime())
@@ -160,6 +125,12 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
         .ifPresent(snapshot::setExternalFormReference);
     Optional.ofNullable(taskEntity.getCustomHeaders()).ifPresent(snapshot::setCustomHeaders);
     Optional.ofNullable(taskEntity.getFormKey()).ifPresent(snapshot::setFormKey);
+
+    final Map<String, Object> joinField = new HashMap<>();
+    joinField.put("name", "task");
+    joinField.put("parent", null);
+    snapshot.setJoinField(joinField);
+    return snapshot;
   }
 
   private UpdateRequest persistSnapshot(final TaskVariableSnapshotEntity entity)
@@ -229,57 +200,6 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
       throw new PersistenceException(
           String.format(
               "Error preparing the query to upsert variable instance [%s]  for list view",
-              variable.getId()),
-          e);
-    }
-  }
-
-  private UpdateRequest updateVariableSnapshotWithTaskInfo(
-      final TaskVariableEntity variable,
-      final TaskEntity taskEntity,
-      final TaskVariableSnapshotEntity snapshot)
-      throws PersistenceException {
-    try {
-      // Set the join relationship for the variable with the parent task
-      final Map<String, Object> joinFieldForVariable = new HashMap<>();
-      joinFieldForVariable.put("name", "variable");
-      joinFieldForVariable.put("parent", taskEntity.getId());
-      snapshot.setJoinField(joinFieldForVariable);
-
-      // Update the snapshot with the variable ID and relationship
-      snapshot.setVariableName(variable.getName());
-      snapshot.setVariableValue(variable.getValue());
-      snapshot.setVariableFullValue(variable.getFullValue());
-      snapshot.setPreview(variable.getIsPreview());
-
-      // Create or update the snapshot in Elasticsearch
-      final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put("variableName", variable.getName());
-      updateFields.put("variableValue", variable.getValue());
-      updateFields.put("variableFullValue", variable.getFullValue());
-      updateFields.put("preview", variable.getIsPreview());
-      updateFields.put("taskId", taskEntity.getId());
-      updateFields.put("flowNodeInstanceId", taskEntity.getFlowNodeInstanceId());
-      updateFields.put("processInstanceId", taskEntity.getProcessInstanceId());
-      updateFields.put("partitionId", taskEntity.getPartitionId());
-      updateFields.put(
-          "completionTime",
-          taskEntity.getCompletionTime() != null
-              ? taskEntity.getCompletionTime().toString()
-              : null);
-      updateFields.put(
-          "creationTime",
-          taskEntity.getCreationTime() != null ? taskEntity.getCreationTime().toString() : null);
-
-      return new UpdateRequest()
-          .index(taskVariableSnapshotTemplate.getFullQualifiedName())
-          .id(variable.getId())
-          .doc(updateFields)
-          .retryOnConflict(UPDATE_RETRY_COUNT);
-    } catch (final Exception e) {
-      throw new PersistenceException(
-          String.format(
-              "Error preparing the query to update variable snapshot instance [%s] for list view",
               variable.getId()),
           e);
     }

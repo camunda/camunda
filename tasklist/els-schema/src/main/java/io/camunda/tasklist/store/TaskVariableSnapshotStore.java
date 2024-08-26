@@ -7,9 +7,8 @@
  */
 package io.camunda.tasklist.store;
 
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskVariableSnapshotEntity;
+import java.util.List;
 
 public interface TaskVariableSnapshotStore {
-  public TaskVariableSnapshotEntity retrieveVariableByScopeKey(final String scopeKey);
+  public List<String> retrieveVariableByScopeKey(final String scopeKey);
 }

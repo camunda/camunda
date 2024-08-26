@@ -8,7 +8,6 @@
 package io.camunda.tasklist.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import java.util.Map;
 
 public class TaskVariableSnapshotEntity {
@@ -107,6 +106,10 @@ public class TaskVariableSnapshotEntity {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Boolean isPreview = null;
+
+  // add variableScopeKey
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String variableScopeKey;
 
   private Map<String, Object> joinField; // Add this field
 
@@ -396,6 +399,16 @@ public class TaskVariableSnapshotEntity {
 
   public TaskVariableSnapshotEntity setPreview(final Boolean preview) {
     isPreview = preview;
+    return this;
+  }
+
+  // Getters and setters for variableScopeKey
+  public String getVariableScopeKey() {
+    return variableScopeKey;
+  }
+
+  public TaskVariableSnapshotEntity setVariableScopeKey(final String variableScopeKey) {
+    this.variableScopeKey = variableScopeKey;
     return this;
   }
 

@@ -53,6 +53,7 @@ public class TasklistTaskVariableSnapshotTemplate extends AbstractTemplateDescri
   public static final String EXTERNAL_FORM_REFERENCE = "externalFormReference";
   public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
   public static final String CUSTOM_HEADERS = "customHeaders";
+  public static final String VARIABLE_SCOPE_KEY = "variableScopeKey";
   public static final String PRIORITY = "priority";
 
   @Override
@@ -120,6 +121,8 @@ public class TasklistTaskVariableSnapshotTemplate extends AbstractTemplateDescri
         return of(CUSTOM_HEADERS);
       case ("priority"):
         return of(PRIORITY);
+      case ("variableScopeKey"):
+        return of(VARIABLE_SCOPE_KEY);
       default:
         return empty();
     }

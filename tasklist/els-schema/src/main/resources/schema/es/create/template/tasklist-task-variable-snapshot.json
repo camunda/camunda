@@ -5,8 +5,8 @@
       "join_field": {
         "type": "join",
         "relations": {
-          "task": "task-variable",
-          "process": "process-variable"
+          "task": "taskVariable",
+          "process": "processVariable"
         }
       },
       "flowNodeBpmnId": {
@@ -105,6 +105,9 @@
       "variable_fullValue": {
         "type": "keyword",
         "ignore_above": 8191
+      },
+      "variable_scopeKey": {
+        "type": "keyword"
       },
       "isPreview": {
         "type": "boolean"
