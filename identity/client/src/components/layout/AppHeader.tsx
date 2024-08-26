@@ -11,7 +11,7 @@ const AppHeader = () => {
   const showLicense: boolean =
     license == null
       ? true
-      : license.licenseType === undefined && license.licenseType != "saas";
+      : license.licenseType === undefined || license.licenseType != "saas";
   const isProductionLicense: boolean =
     license == null ? false : license.validLicense;
 
