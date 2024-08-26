@@ -134,7 +134,7 @@ function createWebappLinks(webappLinks: Record<string, string> | null): C3Naviga
 
 function createNavBarProps(
   validLicense: boolean,
-  licenseType: 'self-managed' | 'saas' | 'unknown',
+  licenseType: 'production' | 'saas' | 'unknown',
   pathname: string,
   optimizeDatabase?: string
 ): C3NavigationNavBarProps {
