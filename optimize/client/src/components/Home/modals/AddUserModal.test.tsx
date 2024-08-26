@@ -13,7 +13,7 @@ import {getOptimizeProfile} from 'config';
 
 import AddUserModal from './AddUserModal';
 
-const optimizeProfile: Awaited<ReturnType<typeof getOptimizeProfile>> = 'platform';
+const optimizeProfile: Awaited<ReturnType<typeof getOptimizeProfile>> = 'ccsm';
 
 const props = {
   optimizeProfile,
