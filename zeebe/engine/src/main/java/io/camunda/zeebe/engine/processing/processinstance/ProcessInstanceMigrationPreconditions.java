@@ -727,19 +727,19 @@ public final class ProcessInstanceMigrationPreconditions {
   }
 
   /**
-   * It should not be possible for a mapped element's boundary events to be merged into a single
-   * boundary event. This would mean an element instance is subscribed multiple times to the same
-   * boundary event.
+   * It should not be possible for a mapped element's catch events to be merged into a single catch
+   * event. This would mean an element instance is subscribed multiple times to the same catch
+   * event.
    *
-   * <p>To avoid this, we check each boundary event attached to the source element and ensure that
-   * they are the target of a mapping instruction only once.
+   * <p>To avoid this, we check each catch event attached to the source element and ensure that they
+   * are the target of a mapping instruction only once.
    *
    * @param processInstanceKey process instance key to be logged
    * @param sourceProcessDefinition source process definition to check
    * @param sourceElementId source element id to check
    * @param mappingInstructions mapping instructions (source element id to target element id)
    */
-  public static void requireNoDuplicateTargetsInBoundaryEventMappings(
+  public static void requireNoDuplicateTargetsInCatchEventMappings(
       final long processInstanceKey,
       final DeployedProcess sourceProcessDefinition,
       final String sourceElementId,
@@ -749,33 +749,33 @@ public final class ProcessInstanceMigrationPreconditions {
       return;
     }
 
-    final var sourceBoundaryEventIdsByTargetBoundaryEventId = new HashMap<String, List<String>>();
-    sourceElementWithEvents.getBoundaryElementIds().stream()
-        .map(BufferUtil::bufferAsString)
+    final var sourceCatchEventIdsByTargetCatchEventId = new HashMap<String, List<String>>();
+    sourceElementWithEvents.getEvents().stream()
+        .map(catchEvent -> BufferUtil.bufferAsString(catchEvent.getId()))
         .filter(mappingInstructions::containsKey)
         .forEach(
-            sourceBoundaryEventId -> {
-              final String targetBoundaryEventId = mappingInstructions.get(sourceBoundaryEventId);
-              sourceBoundaryEventIdsByTargetBoundaryEventId
-                  .computeIfAbsent(targetBoundaryEventId, k -> new ArrayList<>())
-                  .add(sourceBoundaryEventId);
+            sourceCatchEventId -> {
+              final String targetCatchEventId = mappingInstructions.get(sourceCatchEventId);
+              sourceCatchEventIdsByTargetCatchEventId
+                  .computeIfAbsent(targetCatchEventId, k -> new ArrayList<>())
+                  .add(sourceCatchEventId);
             });
 
-    sourceBoundaryEventIdsByTargetBoundaryEventId.forEach(
-        (targetBoundaryEventId, sourceBoundaryEventIds) -> {
-          if (sourceBoundaryEventIds.size() > 1) {
+    sourceCatchEventIdsByTargetCatchEventId.forEach(
+        (targetCatchEventId, sourceCatchEventIds) -> {
+          if (sourceCatchEventIds.size() > 1) {
             final var reason =
                 String.format(
                     """
                     Expected to migrate process instance '%s' but active element with id '%s' \
-                    has a boundary event attached that is mapped to a boundary event with id '%s'. \
-                    There are multiple mapping instructions that target this boundary event: '%s'. \
-                    Boundary events cannot be merged by process instance migration. \
-                    Please ensure the mapping instructions target a boundary event only once.""",
+                    has a catch event attached that is mapped to a catch event with id '%s'. \
+                    There are multiple mapping instructions that target this catch event: '%s'. \
+                    Catch events cannot be merged by process instance migration. \
+                    Please ensure the mapping instructions target a catch event only once.""",
                     processInstanceKey,
                     sourceElementId,
-                    targetBoundaryEventId,
-                    sourceBoundaryEventIds.stream().sorted().collect(Collectors.joining("', '")));
+                    targetCatchEventId,
+                    sourceCatchEventIds.stream().sorted().collect(Collectors.joining("', '")));
             throw new ProcessInstanceMigrationPreconditionFailedException(
                 reason, RejectionType.INVALID_STATE);
           }

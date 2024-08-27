@@ -252,7 +252,7 @@ public class ProcessInstanceMigrationMigrateProcessor
         elementId,
         targetElementId,
         sourceElementIdToTargetElementId);
-    requireNoDuplicateTargetsInBoundaryEventMappings(
+    requireNoDuplicateTargetsInCatchEventMappings(
         processInstanceKey, sourceProcessDefinition, elementId, sourceElementIdToTargetElementId);
     requireNoConcurrentCommand(eventScopeInstanceState, elementInstance, processInstanceKey);
 

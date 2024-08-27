@@ -610,11 +610,11 @@ public class MigrateBoundaryEventTest {
         .extracting(Record::getRejectionReason)
         .asString()
         .contains("Expected to migrate process instance '" + processInstanceKey + "'")
-        .contains("active element with id 'A' has a boundary event attached")
-        .contains("boundary event attached that is mapped to a boundary event with id 'boundary3'")
+        .contains("active element with id 'A' has a catch event attached")
+        .contains("catch event attached that is mapped to a catch event with id 'boundary3'")
         .contains(
-            "There are multiple mapping instructions that target this boundary event: 'boundary1', 'boundary2'")
-        .contains("Boundary events cannot be merged by process instance migration")
-        .contains("Please ensure the mapping instructions target a boundary event only once");
+            "There are multiple mapping instructions that target this catch event: 'boundary1', 'boundary2'")
+        .contains("Catch events cannot be merged by process instance migration")
+        .contains("Please ensure the mapping instructions target a catch event only once");
   }
 }

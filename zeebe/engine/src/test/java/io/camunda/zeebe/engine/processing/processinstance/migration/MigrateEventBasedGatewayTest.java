@@ -456,4 +456,90 @@ public class MigrateEventBasedGatewayTest {
         .contains(
             "Intermediate catch events must stay attached to the same event-based gateway instance");
   }
+
+  @Test
+  public void shouldRejectCommandWhenMappedCatchEventsAreMerged() {
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .eventBasedGateway("gateway")
+                    .intermediateCatchEvent(
+                        "timerA", b -> b.timerWithDurationExpression("durationA"))
+                    .endEvent("A")
+                    .moveToLastGateway()
+                    .intermediateCatchEvent(
+                        "timerB", b -> b.timerWithDurationExpression("durationB"))
+                    .endEvent("B")
+                    .moveToLastGateway()
+                    .intermediateCatchEvent(
+                        "timerC", b -> b.timerWithDurationExpression("durationC"))
+                    .endEvent("C")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .eventBasedGateway("gateway2")
+                    .intermediateCatchEvent(
+                        "timerA2", b -> b.timerWithDurationExpression("durationA"))
+                    .intermediateCatchEvent(
+                        "timerC2", b -> b.timerWithDurationExpression("durationC"))
+                    .endEvent("AC")
+                    .moveToLastGateway()
+                    .intermediateCatchEvent(
+                        "timerB2", b -> b.timerWithDurationExpression("durationB"))
+                    .endEvent("B")
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(
+                Map.ofEntries(
+                    Map.entry("durationA", "PT5M"),
+                    Map.entry("durationB", "PT10M"),
+                    Map.entry("durationC", "PT15M")))
+            .create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("gateway")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("gateway", "gateway2")
+            .addMappingInstruction("timerA", "timerA2")
+            .addMappingInstruction("timerB", "timerB2")
+            .addMappingInstruction("timerC", "timerA2")
+            .expectRejection()
+            .migrate();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .extracting(Record::getRejectionReason)
+        .asString()
+        .contains("Expected to migrate process instance '" + processInstanceKey + "'")
+        .contains("active element with id 'gateway' has a catch event attached")
+        .contains("catch event attached that is mapped to a catch event with id 'timerA2'")
+        .contains(
+            "There are multiple mapping instructions that target this catch event: 'timerA', 'timerC'")
+        .contains("Catch events cannot be merged by process instance migration")
+        .contains("Please ensure the mapping instructions target a catch event only once");
+  }
 }
