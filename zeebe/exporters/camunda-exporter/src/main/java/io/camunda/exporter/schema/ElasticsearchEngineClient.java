@@ -65,8 +65,6 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   @Override
-  // change this to be a string instead and force them to use the libraries of ELS/Opensearch to
-  //  build the map object and then serialise it themselves
   public void createComponentTemplate(final ComponentTemplateDescriptor templateDescriptor) {
     final PutComponentTemplateRequest request = putComponentTemplateRequest(templateDescriptor);
 
