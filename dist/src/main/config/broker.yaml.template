@@ -1081,7 +1081,7 @@
       # to see how to use this in practise.
       # queryApi:
         # Enables the query api in the broker.
-        # This setting can also be set using the environmentvariable ZEEBE_BROKER_EXPERIMENTAL_QUERYAPI_ENABLED
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_QUERYAPI_ENABLED
         # enabled: false
 
       # engine:
