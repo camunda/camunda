@@ -141,12 +141,6 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     return Thread.currentThread().getContextClassLoader().getResourceAsStream(classpathFileName);
   }
 
-  private InputStream descriptorSettings(final IndexDescriptor descriptor) {
-    final var sanitisedSettings =
-        descriptor.getSettings() == null ? "{}" : descriptor.getSettings();
-    return IOUtils.toInputStream(sanitisedSettings, StandardCharsets.UTF_8);
-  }
-
   private PutIndexTemplateRequest putIndexTemplateRequest(
       final IndexTemplateDescriptor indexTemplateDescriptor) {
 
