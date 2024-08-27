@@ -36,7 +36,7 @@ public class FlownodeInstanceQueryController {
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<FlownodeInstanceSearchQueryResponse> searchFlownodeInstance(
+  public ResponseEntity<FlownodeInstanceSearchQueryResponse> searchFlownodeInstances(
       @RequestBody(required = false) final FlownodeInstanceSearchQueryRequest query) {
     return SearchQueryRequestMapper.toFlownodeInstanceQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
