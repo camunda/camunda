@@ -1,14 +1,22 @@
 {
   "enabled": true,
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": [
+    "config:recommended"
+  ],
   "commitMessagePrefix": "deps:",
-  "baseBranches": ["/^stable\\/8\\..*/", "stable/operate-8.5", "main"],
+  "baseBranches": [
+    "/^stable\\/8\\..*/",
+    "stable/operate-8.5",
+    "main"
+  ],
   "dependencyDashboard": true,
   "prConcurrentLimit": 30,
   "prHourlyLimit": 2,
   "updateNotScheduled": false,
-  "schedule": ["at any time"],
+  "schedule": [
+    "at any time"
+  ],
   "helmv3": {
     "registryAliases": {
       "helm-camunda-io": "https://helm.camunda.io"
@@ -26,17 +34,16 @@
   "packageRules": [
     {
       "description": "Only patch updates for our maintenance branches to avoid breaking changes.",
-      "matchBaseBranches": ["/^stable\\/8\\..*/", "stable/operate-8.5"],
+      "matchBaseBranches": [
+        "/^stable\\/8\\..*/",
+        "stable/operate-8.5"
+      ],
       "matchUpdateTypes": ["minor", "major"],
       "enabled": false
     },
     {
       "matchManagers": ["maven"],
-      "matchPackagePrefixes": [
-        "org.opensearch.client",
-        "org.elasticsearch",
-        "co.elastic"
-      ],
+      "matchPackagePrefixes": ["org.opensearch.client", "org.elasticsearch", "co.elastic"],
       "matchUpdateTypes": ["minor", "major"],
       "enabled": false
     },
@@ -180,7 +187,10 @@
   ],
   "dockerfile": {
     "fileMatch": ["(^|\\/)([\\w-]+\\.)?[Dd]ockerfile$"],
-    "ignorePaths": ["zeebe/benchmarks/**", "clients/go/vendor/**"]
+    "ignorePaths": [
+      "zeebe/benchmarks/**",
+      "clients/go/vendor/**"
+    ]
   },
   "customManagers": [
     {
@@ -195,7 +205,7 @@
       "customType": "regex",
       "fileMatch": ["package\\.json"],
       "matchStrings": [
-        "mcr\\.microsoft\\.com\\/playwright:(?<currentValue>.*?)\\s"
+        "mcr\\.microsoft\\.com\\\/playwright:(?<currentValue>.*?)\\s"
       ],
       "depNameTemplate": "mcr.microsoft.com/playwright",
       "datasourceTemplate": "docker"
