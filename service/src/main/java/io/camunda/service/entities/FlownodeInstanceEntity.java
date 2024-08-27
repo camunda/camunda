@@ -7,4 +7,20 @@
  */
 package io.camunda.service.entities;
 
-public record FlownodeInstanceEntity() {}
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record FlownodeInstanceEntity(
+    Long key,
+    Long processInstanceKey,
+    Long processDefinitionKey,
+    String startDate,
+    String endDate,
+    String flowNodeId,
+    String flowNodeName,
+    String treePath,
+    String type,
+    String state,
+    Boolean incident,
+    Long incidentKey,
+    String tenantId) {}
