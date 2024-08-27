@@ -54,6 +54,17 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
+  public static FlownodeInstanceSearchQueryResponse toFlownodeInstanceSearchQueryResponse(
+      final SearchQueryResult<FlownodeInstanceEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new FlownodeInstanceSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toFlownodeInstance)
+                .orElseGet(Collections::emptyList));
+  }
+
   public static UserTaskSearchQueryResponse toUserTaskSearchQueryResponse(
       final SearchQueryResult<UserTaskEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -171,6 +182,15 @@ public final class SearchQueryResponseMapper {
   private static List<DecisionRequirementsItem> toDecisionRequirements(
       final List<DecisionRequirementsEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionRequirements).toList();
+  }
+
+  private static List<FlownodeInstanceItem> toFlownodeInstance(
+      final List<FlownodeInstanceEntity> instances) {
+    return instances.stream().map(SearchQueryResponseMapper::toFlownodeInstance).toList();
+  }
+
+  private static FlownodeInstanceItem toFlownodeInstance(final FlownodeInstanceEntity instance) {
+    return new FlownodeInstanceItem();
   }
 
   private static DecisionDefinitionItem toDecisionDefinition(final DecisionDefinitionEntity d) {

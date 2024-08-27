@@ -34,6 +34,10 @@ public final class SortOptionBuilders {
     return new DecisionRequirementsSort.Builder();
   }
 
+  public static FlownodeInstanceSort.Builder flownodeInstance() {
+    return new FlownodeInstanceSort.Builder();
+  }
+
   public static UserSort.Builder user() {
     return new UserSort.Builder();
   }
