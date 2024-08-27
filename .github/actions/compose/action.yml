@@ -12,7 +12,7 @@ inputs:
     description: "Additional flags to pass to the compose command"
     required: false
   timeout:
-    description: "Timeout for the healthcheck"
+    description: "Timeout for the healthcheck (in seconds)"
     required: false
     default: "300"
 runs:
