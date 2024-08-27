@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.MultiInstanceOutputColle
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -177,10 +178,6 @@ public final class MultiInstanceBodyProcessor
       return satisfiesCompletionConditionOrFailure;
     }
 
-    if (!element.getLoopCharacteristics().isSequential()) {
-      return Either.right(satisfiesCompletionConditionOrFailure.get());
-    }
-
     // test that input collection variable can be evaluated correctly
     return readInputCollectionVariable(element, flowScopeContext)
         .map(ok -> satisfiesCompletionConditionOrFailure.get());
@@ -208,19 +205,19 @@ public final class MultiInstanceBodyProcessor
       }
       return;
     }
+    final var inputCollectionOrFailure = readInputCollectionVariable(element, flowScopeContext);
+    if (inputCollectionOrFailure.isLeft()) {
+      // this incident is un-resolvable
+      incidentBehavior.createIncident(inputCollectionOrFailure.getLeft(), childContext);
+      return;
+    }
+
+    final ElementInstance multiInstanceElementInstance =
+        stateBehavior.getElementInstance(flowScopeContext);
 
     if (loopCharacteristics.isSequential()) {
-
-      final var inputCollectionOrFailure = readInputCollectionVariable(element, flowScopeContext);
-      if (inputCollectionOrFailure.isLeft()) {
-        // this incident is un-resolvable
-        incidentBehavior.createIncident(inputCollectionOrFailure.getLeft(), childContext);
-        return;
-      }
-
       final var inputCollection = inputCollectionOrFailure.get();
-      final var loopCounter =
-          stateBehavior.getElementInstance(flowScopeContext).getMultiInstanceLoopCounter();
+      final var loopCounter = multiInstanceElementInstance.getMultiInstanceLoopCounter();
 
       if (loopCounter < inputCollection.size()) {
         createInnerInstance(element, flowScopeContext);
@@ -232,7 +229,11 @@ public final class MultiInstanceBodyProcessor
     }
 
     if (!childInstanceCreated && stateBehavior.canBeCompleted(childContext)) {
-      stateTransitionBehavior.completeElement(flowScopeContext);
+      final int inputCollectionSize = inputCollectionOrFailure.get().size();
+      if (isAllChildrenHasCompletedOrTerminated(
+          multiInstanceElementInstance, inputCollectionSize)) {
+        stateTransitionBehavior.completeElement(flowScopeContext);
+      }
     }
   }
 
@@ -250,6 +251,14 @@ public final class MultiInstanceBodyProcessor
       // all remaining child instances were terminated.
       stateTransitionBehavior.completeElement(flowScopeContext);
     }
+  }
+
+  private static boolean isAllChildrenHasCompletedOrTerminated(
+      final ElementInstance multiInstanceElementInstance, final int inputCollectionSize) {
+    final int completedOrTerminatedChildren =
+        multiInstanceElementInstance.getNumberOfCompletedElementInstances()
+            + multiInstanceElementInstance.getNumberOfTerminatedElementInstances();
+    return inputCollectionSize == completedOrTerminatedChildren;
   }
 
   private void activate(
