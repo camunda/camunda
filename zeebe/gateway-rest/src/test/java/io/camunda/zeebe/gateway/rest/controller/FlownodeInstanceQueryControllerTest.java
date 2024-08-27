@@ -48,7 +48,22 @@ public class FlownodeInstanceQueryControllerTest extends RestControllerTest {
   static final SearchQueryResult<FlownodeInstanceEntity> SEARCH_QUERY_RESULT =
       new Builder<FlownodeInstanceEntity>()
           .total(1L)
-          .items(List.of(new FlownodeInstanceEntity()))
+          .items(
+              List.of(
+                  new FlownodeInstanceEntity(
+                      1L,
+                      2L,
+                      3L,
+                      "2023-05-17",
+                      "2023-05-23",
+                      "flowNodeId",
+                      "flowNodeName",
+                      "processInstanceKey/flowNodeId",
+                      "SERVICE_TASK",
+                      "COMPLETED",
+                      false,
+                      null,
+                      "<default>")))
           .sortValues(new Object[] {"v"})
           .build();
 
