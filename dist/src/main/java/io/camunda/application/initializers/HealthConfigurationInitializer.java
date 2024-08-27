@@ -66,7 +66,9 @@ public class HealthConfigurationInitializer
 
   protected boolean shouldEnableProbes(final List<String> activeProfiles) {
     return activeProfiles.stream()
-        .anyMatch(Set.of(Profile.OPERATE.getId(), Profile.TASKLIST.getId())::contains);
+        .anyMatch(
+            Set.of(Profile.OPERATE.getId(), Profile.TASKLIST.getId(), Profile.IDENTITY.getId())
+                ::contains);
   }
 
   protected boolean shouldReadinessState(final List<String> activeProfiles) {
