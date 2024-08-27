@@ -7,7 +7,13 @@ on:
       - main
       - stable/*
       - release-*
-  pull_request: {}
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+      - unlabeled
   merge_group: {}
   workflow_dispatch: {}
 
