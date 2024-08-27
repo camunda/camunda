@@ -54,7 +54,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -384,11 +383,8 @@ public class ProcessInstanceMigrationMigrateProcessor
                 return false;
               }
 
-              if (elementInstance.isInterrupted()
-                  && executableCatchEvent.getFlowScope().getElementType()
-                      == BpmnElementType.EVENT_SUB_PROCESS) {
-                // Start event of an event subprocess that interrupted the flow scope shouldn't be
-                // subscribed again
+              if (elementInstance.isInterrupted()) {
+                // The flow scope is interrupted, so we shouldn't subscribe to any catch event
                 return false;
               }
 
