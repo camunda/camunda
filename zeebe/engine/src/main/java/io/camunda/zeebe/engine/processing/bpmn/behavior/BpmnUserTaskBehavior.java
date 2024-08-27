@@ -99,9 +99,10 @@ public final class BpmnUserTaskBehavior {
             p ->
                 evaluateFormIdExpressionToFormKey(
                         userTaskProps.getFormId(),
-                        scopeKey,
-                        userTaskProps.getBindingType(),
-                        context)
+                        userTaskProps.getFormBindingType(),
+                        userTaskProps.getFormVersionTag(),
+                        context,
+                        scopeKey)
                     .map(p::formKey))
         .flatMap(
             p ->
@@ -182,9 +183,10 @@ public final class BpmnUserTaskBehavior {
 
   public Either<Failure, Long> evaluateFormIdExpressionToFormKey(
       final Expression formIdExpression,
-      final long scopeKey,
       final ZeebeBindingType bindingType,
-      final BpmnElementContext context) {
+      final String versionTag,
+      final BpmnElementContext context,
+      final long scopeKey) {
     if (formIdExpression == null) {
       return Either.right(null);
     }
@@ -192,21 +194,22 @@ public final class BpmnUserTaskBehavior {
         .evaluateStringExpression(formIdExpression, scopeKey)
         .flatMap(
             formId -> {
-              final var form = findFormByIdAndBindingType(formId, bindingType, context, scopeKey);
+              final var form = findLinkedForm(formId, bindingType, versionTag, context, scopeKey);
               return form.map(PersistedForm::getFormKey);
             });
   }
 
-  private Either<Failure, PersistedForm> findFormByIdAndBindingType(
+  private Either<Failure, PersistedForm> findLinkedForm(
       final String formId,
       final ZeebeBindingType bindingType,
+      final String versionTag,
       final BpmnElementContext context,
       final long scopeKey) {
     return switch (bindingType) {
       case deployment -> findFormByIdInSameDeployment(formId, context, scopeKey);
       case latest -> findLatestFormById(formId, context.getTenantId(), scopeKey);
-      // will be implemented with https://github.com/camunda/camunda/issues/21041
-      case versionTag -> Either.left(new Failure("Binding type 'versionTag' not supported"));
+      case versionTag ->
+          findFormByIdAndVersionTag(formId, versionTag, context.getTenantId(), scopeKey);
     };
   }
 
@@ -251,6 +254,25 @@ public final class BpmnUserTaskBehavior {
                                 + " at least a form with this id should be available."
                                 + " To resolve the Incident please deploy a form with the same id",
                             formId),
+                        ErrorType.FORM_NOT_FOUND,
+                        scopeKey)));
+  }
+
+  private Either<Failure, PersistedForm> findFormByIdAndVersionTag(
+      final String formId, final String versionTag, final String tenantId, final long scopeKey) {
+    return formState
+        .findFormByIdAndVersionTag(wrapString(formId), versionTag, tenantId)
+        .<Either<Failure, PersistedForm>>map(Either::right)
+        .orElseGet(
+            () ->
+                Either.left(
+                    new Failure(
+                        String.format(
+                            """
+                            Expected to use a form with id '%s' and version tag '%s', but no such form found. \
+                            To resolve the incident, deploy a form with the given id and version tag.
+                            """,
+                            formId, versionTag),
                         ErrorType.FORM_NOT_FOUND,
                         scopeKey)));
   }

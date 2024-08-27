@@ -75,6 +75,20 @@ public class DecisionBehavior {
                     .formatted(decisionId, deploymentKey)));
   }
 
+  public Either<Failure, PersistedDecision> findDecisionByIdAndVersionTagAndTenant(
+      final String decisionId, final String versionTag, final String tenantId) {
+    return Either.ofOptional(
+            decisionState.findDecisionByIdAndVersionTag(
+                tenantId, BufferUtil.wrapString(decisionId), versionTag))
+        .orElse(
+            new Failure(
+                """
+                Expected to evaluate decision with id '%s' and version tag '%s', but no such decision found. \
+                To resolve this incident, deploy a decision with the given id and version tag.\
+                """
+                    .formatted(decisionId, versionTag)));
+  }
+
   public Either<Failure, PersistedDecision> findDecisionByKeyAndTenant(
       final long decisionKey, final String tenantId) {
     return Either.ofOptional(decisionState.findDecisionByTenantAndKey(tenantId, decisionKey))
