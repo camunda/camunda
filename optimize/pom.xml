@@ -22,7 +22,7 @@
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
     <!-- maven plugins -->
-    <surefire-plugin.version>3.4.0</surefire-plugin.version>
+    <surefire-plugin.version>3.5.0</surefire-plugin.version>
 
     <!-- database config -->
     <elasticsearch.client.version>7.17.23</elasticsearch.client.version>
