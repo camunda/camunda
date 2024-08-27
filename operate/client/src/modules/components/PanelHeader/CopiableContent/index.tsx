@@ -11,11 +11,16 @@ import {CodeSnippet, Layer} from '@carbon/react';
 type Props = {
   content: string;
   copyButtonDescription: string;
+  className?: string;
 };
 
-const CopiableContent: React.FC<Props> = ({content, copyButtonDescription}) => {
+const CopiableContent: React.FC<Props> = ({
+  content,
+  copyButtonDescription,
+  className,
+}) => {
   return (
-    <Layer>
+    <Layer className={className}>
       <CodeSnippet
         type="inline"
         title={copyButtonDescription}
