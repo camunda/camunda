@@ -11,15 +11,22 @@ import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.entities.FlownodeInstanceEntity;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.search.query.FlownodeInstanceQuery;
+import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
+import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import java.util.List;
+import java.util.function.Function;
 
-public class FlownodeInstanceServices
+public final class FlownodeInstanceServices
     extends SearchQueryService<
         FlownodeInstanceServices, FlownodeInstanceQuery, FlownodeInstanceEntity> {
+
+  public FlownodeInstanceServices(
+      final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
+    this(brokerClient, dataStoreClient, null, null);
+  }
 
   public FlownodeInstanceServices(
       final BrokerClient brokerClient,
@@ -30,12 +37,17 @@ public class FlownodeInstanceServices
   }
 
   @Override
-  public SearchQueryResult<FlownodeInstanceEntity> search(final FlownodeInstanceQuery query) {
-    return new SearchQueryResult<>(1, List.of(new FlownodeInstanceEntity()), new Object[] {"v"});
+  public FlownodeInstanceServices withAuthentication(final Authentication authentication) {
+    return new FlownodeInstanceServices(brokerClient, searchClient, transformers, authentication);
   }
 
   @Override
-  public FlownodeInstanceServices withAuthentication(final Authentication authentication) {
-    return new FlownodeInstanceServices(brokerClient, searchClient, transformers, authentication);
+  public SearchQueryResult<FlownodeInstanceEntity> search(final FlownodeInstanceQuery query) {
+    return executor.search(query, FlownodeInstanceEntity.class);
+  }
+
+  public SearchQueryResult<FlownodeInstanceEntity> search(
+      final Function<FlownodeInstanceQuery.Builder, ObjectBuilder<FlownodeInstanceQuery>> fn) {
+    return search(SearchQueryBuilders.flownodeInstanceSearchQuery(fn));
   }
 }

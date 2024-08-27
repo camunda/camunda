@@ -64,6 +64,11 @@ public final class SearchQueryBuilders {
     return new FlownodeInstanceQuery.Builder();
   }
 
+  public static FlownodeInstanceQuery flownodeInstanceSearchQuery(
+      final Function<FlownodeInstanceQuery.Builder, ObjectBuilder<FlownodeInstanceQuery>> fn) {
+    return fn.apply(flownodeInstanceSearchQuery()).build();
+  }
+
   public static UserQuery.Builder userSearchQuery() {
     return new UserQuery.Builder();
   }
