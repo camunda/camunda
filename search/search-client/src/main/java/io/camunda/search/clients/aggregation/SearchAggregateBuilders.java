@@ -35,4 +35,13 @@ public class SearchAggregateBuilders {
   public static SearchCardinalityAggregate cardinality(final Long value) {
     return cardinality(c -> c.value(value));
   }
+
+  public static SearchTermsAggregate.Builder terms() {
+    return new SearchTermsAggregate.Builder();
+  }
+
+  public static SearchTermsAggregate terms(
+      final Function<SearchTermsAggregate.Builder, ObjectBuilder<SearchTermsAggregate>> fn) {
+    return fn.apply(terms()).build();
+  }
 }
