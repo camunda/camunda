@@ -39,6 +39,7 @@ jobs:
     env:
       DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
+      DOCKER_INTERNAL_IMAGE_DOCKER_HUB: europe-west1-docker.pkg.dev/team-infosec/optimize-8
       DOCKER_LATEST_TAG: latest
     strategy:
       fail-fast: true
@@ -145,6 +146,21 @@ jobs:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
 
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: 'projects/271764561088/locations/global/workloadIdentityPools/github/providers/camunda'
+          service_account: 'github-actions@team-infosec.iam.gserviceaccount.com'
+
+      - name: Login to infosec registry
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
+        with:
+          registry: europe-west1-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
       - name: Checkout release branch
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
@@ -249,12 +265,14 @@ jobs:
           echo "Tagging optimize release docker image with version ${RELEASE_VERSION}"
           tags=("${DOCKER_IMAGE_TEAM}:${RELEASE_VERSION}")
           tags+=("${DOCKER_IMAGE_DOCKER_HUB}:${RELEASE_VERSION}")
+          tags+=("${DOCKER_INTERNAL_IMAGE_DOCKER_HUB}:${RELEASE_VERSION}")
 
           # Major and minor versions are always tagged as the latest
           if [ "${MAJOR_OR_MINOR}" = true ] || [ "${DOCKER_LATEST}" = true ]; then
               echo "Tagging optimize release docker image with \`${DOCKER_LATEST_TAG}\`"
               tags+=("${DOCKER_IMAGE_TEAM}:${DOCKER_LATEST_TAG}")
               tags+=("${DOCKER_IMAGE_DOCKER_HUB}:${DOCKER_LATEST_TAG}")
+              tags+=("${DOCKER_INTERNAL_IMAGE_DOCKER_HUB}:${DOCKER_LATEST_TAG}")
           fi
 
           printf -v tag_arguments -- "-t %s " "${tags[@]}"
