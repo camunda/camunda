@@ -13,6 +13,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -364,5 +367,93 @@ public class MigrateEventBasedGatewayTest {
                 .findAny())
         .describedAs("Expect that a new timer is created for the unmapped catch event")
         .isPresent();
+  }
+
+  @Test
+  public void shouldRejectCommandWhenMappedCatchEventIsAttachedToDifferentElement() {
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .eventBasedGateway("gateway")
+                    .intermediateCatchEvent(
+                        "timerA", b -> b.timerWithDurationExpression("durationA"))
+                    .endEvent("A")
+                    .moveToLastGateway()
+                    .intermediateCatchEvent(
+                        "timerB", b -> b.timerWithDurationExpression("durationB"))
+                    .endEvent("B")
+                    .moveToLastGateway()
+                    .intermediateCatchEvent(
+                        "timerC", b -> b.timerWithDurationExpression("durationC"))
+                    .endEvent("C")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .eventBasedGateway("gateway2")
+                    .intermediateCatchEvent(
+                        "timerA2", b -> b.timerWithDurationExpression("durationA"))
+                    .intermediateCatchEvent(
+                        "timerC2", b -> b.timerWithDurationExpression("durationC"))
+                    .endEvent("AC")
+                    .moveToLastGateway()
+                    .intermediateCatchEvent(
+                        "timerB2", b -> b.timerWithDurationExpression("durationB"))
+                    .endEvent("B")
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(
+                Map.ofEntries(
+                    Map.entry("durationA", "PT5M"),
+                    Map.entry("durationB", "PT10M"),
+                    Map.entry("durationC", "PT15M")))
+            .create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("gateway")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("gateway", "gateway2")
+            .addMappingInstruction("timerA", "timerA2")
+            .addMappingInstruction("timerB", "timerB2")
+            .addMappingInstruction("timerC", "timerC2")
+            .expectRejection()
+            .migrate();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .extracting(Record::getRejectionReason)
+        .asString()
+        .contains("Expected to migrate process instance '" + processInstanceKey + "'")
+        .contains(
+            "active event-based gateway with id 'gateway' is mapped to an element with id 'gateway2'")
+        .contains(
+            "and has an intermediate catch event with id 'timerC' that is mapped to an element with id 'timerC2'")
+        .contains(
+            "These mappings detach the intermediate catch event from the event-based gateway in the target process")
+        .contains(
+            "Intermediate catch events must stay attached to the same event-based gateway instance");
   }
 }

@@ -28,12 +28,14 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
@@ -145,6 +147,14 @@ public final class ProcessInstanceMigrationPreconditions {
       has a boundary event with id '%s' that is mapped to an element with id '%s'. \
       These mappings detach the boundary event from the element in the target process. \
       Boundary events must stay attached to the same element instance.""";
+  private static final String ERROR_INTERMEDIATE_CATCH_EVENT_DETACHED_FROM_EVENT_BASED_GATEWAY =
+      """
+      Expected to migrate process instance '%s' \
+      but active event-based gateway with id '%s' is mapped to an element with id '%s' and \
+      has an intermediate catch event with id '%s' that is mapped to an element with id '%s'. \
+      These mappings detach the intermediate catch event \
+      from the event-based gateway in the target process. \
+      Intermediate catch events must stay attached to the same event-based gateway instance.""";
   private static final String ERROR_PENDING_DISTRIBUTION =
       """
       Expected to migrate process instance '%s' \
@@ -639,35 +649,77 @@ public final class ProcessInstanceMigrationPreconditions {
       final String sourceElementId,
       final String targetElementId,
       final Map<String, String> sourceElementIdToTargetElementId) {
+    final var sourceElement =
+        sourceProcessDefinition
+            .getProcess()
+            .getElementById(sourceElementId, ExecutableCatchEventSupplier.class);
+    requireMappedCatchEventsToStayAttachedToSameElement(
+        processInstanceKey,
+        targetProcessDefinition,
+        sourceElementId,
+        targetElementId,
+        sourceElementIdToTargetElementId,
+        sourceElement,
+        ExecutableCatchEventSupplier::getBoundaryElementIds,
+        ERROR_BOUNDARY_EVENT_DETACHED);
+  }
+
+  public static void requireMappedIntermediateCatchEventsToStayAttachedToSameEventBasedGateway(
+      final long processInstanceKey,
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final String sourceElementId,
+      final String targetElementId,
+      final Map<String, String> sourceElementIdToTargetElementId) {
     final var sourceElement = sourceProcessDefinition.getProcess().getElementById(sourceElementId);
-    if (!(sourceElement instanceof final ExecutableCatchEventSupplier sourceElementWithEvents)) {
+    if (sourceElement.getElementType() != BpmnElementType.EVENT_BASED_GATEWAY) {
       return;
     }
+    final var sourceEventBasedGateway = (ExecutableCatchEventSupplier) sourceElement;
+    requireMappedCatchEventsToStayAttachedToSameElement(
+        processInstanceKey,
+        targetProcessDefinition,
+        sourceElementId,
+        targetElementId,
+        sourceElementIdToTargetElementId,
+        sourceEventBasedGateway,
+        ExecutableCatchEventSupplier::getInterruptingElementIds,
+        ERROR_INTERMEDIATE_CATCH_EVENT_DETACHED_FROM_EVENT_BASED_GATEWAY);
+  }
 
-    for (final var boundaryIdBuffer : sourceElementWithEvents.getBoundaryElementIds()) {
-      final String sourceBoundaryEventId = BufferUtil.bufferAsString(boundaryIdBuffer);
-      if (!sourceElementIdToTargetElementId.containsKey(sourceBoundaryEventId)) {
-        // only check mapped boundary events
+  private static void requireMappedCatchEventsToStayAttachedToSameElement(
+      final long processInstanceKey,
+      final DeployedProcess targetProcessDefinition,
+      final String sourceElementId,
+      final String targetElementId,
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final ExecutableCatchEventSupplier sourceCatchEventSupplier,
+      final Function<ExecutableCatchEventSupplier, Collection<DirectBuffer>> eventIdSupplier,
+      final String errorMessageTemplate) {
+    for (final var eventIdBuffer : eventIdSupplier.apply(sourceCatchEventSupplier)) {
+      final String sourceCatchEventId = BufferUtil.bufferAsString(eventIdBuffer);
+      if (!sourceElementIdToTargetElementId.containsKey(sourceCatchEventId)) {
+        // only check mapped catch events
         continue;
       }
 
-      final var targetBoundaryEventId = sourceElementIdToTargetElementId.get(sourceBoundaryEventId);
+      final var targetCatchEventId = sourceElementIdToTargetElementId.get(sourceCatchEventId);
       final var targetElement =
           targetProcessDefinition
               .getProcess()
               .getElementById(targetElementId, ExecutableCatchEventSupplier.class);
-      if (targetElement.getBoundaryElementIds().stream()
+      if (eventIdSupplier.apply(targetElement).stream()
           .map(BufferUtil::bufferAsString)
-          .noneMatch(targetBoundaryEventId::equals)) {
-        // boundary event has become detached from element instance
+          .noneMatch(targetCatchEventId::equals)) {
+        // catch event has become detached from element instance
         final var reason =
             String.format(
-                ERROR_BOUNDARY_EVENT_DETACHED,
+                errorMessageTemplate,
                 processInstanceKey,
                 sourceElementId,
                 targetElementId,
-                sourceBoundaryEventId,
-                targetBoundaryEventId);
+                sourceCatchEventId,
+                targetCatchEventId);
         throw new ProcessInstanceMigrationPreconditionFailedException(
             reason, RejectionType.INVALID_STATE);
       }
