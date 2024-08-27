@@ -5,17 +5,20 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service;
+package io.camunda.optimize.service;
 
-import io.camunda.service.license.CamundaLicense;
-import io.camunda.service.license.LicenseType;
+import io.camunda.optimize.license.CamundaLicense;
+import io.camunda.optimize.license.LicenseType;
+import org.springframework.stereotype.Component;
 
-public final class ManagementServices {
+@Component
+public class CamundaLicenseService {
 
   private final CamundaLicense license;
 
-  public ManagementServices(final CamundaLicense license) {
-    this.license = license;
+  public CamundaLicenseService() {
+    final String camundaLicense = System.getenv(CamundaLicense.CAMUNDA_LICENSE_ENV_VAR_KEY);
+    license = new CamundaLicense(camundaLicense);
   }
 
   public boolean isCamundaLicenseValid() {

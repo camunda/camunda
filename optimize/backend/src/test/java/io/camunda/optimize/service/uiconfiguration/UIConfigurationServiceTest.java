@@ -19,7 +19,9 @@ import static org.mockito.Mockito.when;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.users.Users;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
+import io.camunda.optimize.license.LicenseType;
 import io.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
+import io.camunda.optimize.service.CamundaLicenseService;
 import io.camunda.optimize.service.SettingsService;
 import io.camunda.optimize.service.UIConfigurationService;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
@@ -55,6 +57,7 @@ public class UIConfigurationServiceTest {
 
   @Mock private OptimizeVersionService versionService;
   @Mock private TenantService tenantService;
+  @Mock private CamundaLicenseService camundaLicenseService;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private SettingsService settingService;
@@ -158,11 +161,27 @@ public class UIConfigurationServiceTest {
     assertThat(configurationResponse.getMaxNumDataSourcesForReport()).isEqualTo(50);
   }
 
+  @Test
+  public void testCamundaLicenseInformationIsReturned() {
+    // given
+    initializeMocks();
+    when(environment.getActiveProfiles()).thenReturn(new String[] {CLOUD_PROFILE});
+
+    // when
+    final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
+
+    // then
+    assertThat(configurationResponse.getLicenseType()).isEqualTo("saas");
+    assertThat(configurationResponse.isValidLicense()).isEqualTo(true);
+  }
+
   private void initializeMocks() {
     when(configurationService.getConfiguredWebhooks()).thenReturn(Collections.emptyMap());
     when(identity.users()).thenReturn(identityUsers);
     when(identityUsers.isAvailable()).thenReturn(true);
     when(environment.getProperty(CAMUNDA_OPTIMIZE_DATABASE, ELASTICSEARCH_DATABASE_PROPERTY))
         .thenReturn(DatabaseType.ELASTICSEARCH.toString());
+    when(camundaLicenseService.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
+    when(camundaLicenseService.isCamundaLicenseValid()).thenReturn(true);
   }
 }

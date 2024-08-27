@@ -5,15 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.license;
+package io.camunda.optimize.license;
 
-import io.camunda.zeebe.util.VisibleForTesting;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.LicenseKeyImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This class is a duplicate of src/main/java/io/camunda/service/license/CamundaLicense.java
+ *
+ * <p>This class exists because Optimize is not part of the single application, and cannot use any
+ * of the monorepo's modules. Once Optimize is added, the `service` implementation of
+ * `CamundaLicense` can be used, and this Optimize duplicate can be removed
+ */
 public class CamundaLicense {
 
   public static final String CAMUNDA_LICENSE_ENV_VAR_KEY = "CAMUNDA_LICENSE_KEY";
@@ -21,9 +27,6 @@ public class CamundaLicense {
   private boolean isValid;
   private LicenseType licenseType;
   private boolean isInitialized;
-
-  @VisibleForTesting
-  protected CamundaLicense() {}
 
   public CamundaLicense(final String license) {
     initializeWithLicense(license);
@@ -86,7 +89,6 @@ public class CamundaLicense {
     isValid = false;
   }
 
-  @VisibleForTesting
   protected LicenseKey getLicenseKey(final String licenseStr) throws InvalidLicenseException {
     return new LicenseKeyImpl(licenseStr);
   }

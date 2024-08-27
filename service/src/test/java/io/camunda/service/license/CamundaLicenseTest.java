@@ -26,9 +26,8 @@ public class CamundaLicenseTest {
 
   private static final String TEST_LICENSE = "whatever";
   private static final String LICENSE_TYPE_KEY = "licenseType";
-  private static final String SELF_MANAGED_LICENSE_TYPE = "self-managed";
+  private static final String PRODUCTION_LICENSE_TYPE = "production";
   private static final String SAAS_LICENSE_TYPE = "saas";
-  private static final String UNKNOWN_LICENSE_TYPE = "unknown";
   private static final String TEST_EXCEPTION_MESSAGE = "test exception";
 
   @Test
@@ -36,6 +35,10 @@ public class CamundaLicenseTest {
     // given
     final CamundaLicense testLicense = spy(CamundaLicense.class);
     final LicenseKey mockKey = mock(LicenseKey.class);
+
+    final Map<String, String> testProperties = new HashMap<>();
+    testProperties.put(LICENSE_TYPE_KEY, PRODUCTION_LICENSE_TYPE);
+    when(mockKey.getProperties()).thenReturn(testProperties);
 
     Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
 
@@ -68,7 +71,7 @@ public class CamundaLicenseTest {
     final LicenseKey mockKey = mock(LicenseKey.class);
 
     final Map<String, String> testProperties = new HashMap<>();
-    testProperties.put(LICENSE_TYPE_KEY, SELF_MANAGED_LICENSE_TYPE);
+    testProperties.put(LICENSE_TYPE_KEY, PRODUCTION_LICENSE_TYPE);
     when(mockKey.getProperties()).thenReturn(testProperties);
 
     Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
@@ -77,7 +80,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals(SELF_MANAGED_LICENSE_TYPE, testLicense.getLicenseType());
+    assertEquals(LicenseType.PRODUCTION, testLicense.getLicenseType());
   }
 
   @Test
@@ -95,7 +98,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals(UNKNOWN_LICENSE_TYPE, testLicense.getLicenseType());
+    assertEquals(LicenseType.UNKNOWN, testLicense.getLicenseType());
   }
 
   @Test
@@ -114,7 +117,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals(SAAS_LICENSE_TYPE, testLicense.getLicenseType());
+    assertEquals(LicenseType.SAAS, testLicense.getLicenseType());
     assertTrue(testLicense.isValid());
   }
 }
