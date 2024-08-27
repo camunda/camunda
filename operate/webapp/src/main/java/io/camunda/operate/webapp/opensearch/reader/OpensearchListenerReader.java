@@ -74,7 +74,7 @@ public class OpensearchListenerReader extends OpensearchAbstractReader implement
             .map(
                 hit -> {
                   final JobEntity entity = hit.source();
-                  return ListenerDto.fromJobEntity(entity);
+                  return ListenerDto.fromJobEntity(entity).setSortValues(hit.sort().toArray());
                 })
             .collect(Collectors.toUnmodifiableList());
     return new ListenerResponseDto(listenerDtos, totalHitCount);

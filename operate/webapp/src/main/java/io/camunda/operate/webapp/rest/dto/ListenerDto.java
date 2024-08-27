@@ -12,6 +12,7 @@ import io.camunda.operate.entities.ListenerEventType;
 import io.camunda.operate.entities.ListenerState;
 import io.camunda.operate.entities.ListenerType;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.Objects;
 
 public class ListenerDto {
@@ -21,6 +22,8 @@ public class ListenerDto {
   private String jobType;
   private ListenerEventType event;
   private OffsetDateTime time;
+
+  private Object[] sortValues;
 
   public ListenerType getListenerType() {
     return listenerType;
@@ -76,6 +79,15 @@ public class ListenerDto {
     return this;
   }
 
+  public Object[] getSortValues() {
+    return sortValues;
+  }
+
+  public ListenerDto setSortValues(final Object[] sortValues) {
+    this.sortValues = sortValues;
+    return this;
+  }
+
   public static ListenerDto fromJobEntity(final JobEntity jobEntity) {
     return new ListenerDto()
         .setListenerType(ListenerType.fromZeebeJobKind(jobEntity.getJobKind()))
@@ -100,35 +112,34 @@ public class ListenerDto {
       return false;
     }
     final ListenerDto that = (ListenerDto) o;
-    return Objects.equals(listenerType, that.listenerType)
+    return listenerType == that.listenerType
         && Objects.equals(listenerKey, that.listenerKey)
-        && Objects.equals(state, that.state)
+        && state == that.state
         && Objects.equals(jobType, that.jobType)
-        && Objects.equals(event, that.event)
-        && Objects.equals(time, that.time);
+        && event == that.event
+        && Objects.equals(time, that.time)
+        && Arrays.equals(sortValues, that.sortValues);
   }
 
   @Override
   public String toString() {
     return "ListenerDto{"
-        + "listenerType='"
+        + "listenerType="
         + listenerType
-        + '\''
         + ", listenerKey='"
         + listenerKey
         + '\''
-        + ", state='"
+        + ", state="
         + state
-        + '\''
         + ", jobType='"
         + jobType
         + '\''
-        + ", event='"
+        + ", event="
         + event
-        + '\''
-        + ", time='"
+        + ", time="
         + time
-        + '\''
+        + ", sortValues="
+        + Arrays.toString(sortValues)
         + '}';
   }
 }

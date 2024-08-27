@@ -81,24 +81,29 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
                     .size(request.getPageSize()));
 
     final Long totalHitCount;
-    final List<JobEntity> jobEntities;
+    final List<ListenerDto> listeners;
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       totalHitCount = response.getHits().getTotalHits().value;
-      jobEntities =
+      listeners =
           ElasticsearchUtil.mapSearchHits(
-              response.getHits().getHits(), objectMapper, JobEntity.class);
-
+              response.getHits().getHits(),
+              (searchHit) -> {
+                final JobEntity entity =
+                    fromSearchHit(searchHit.getSourceAsString(), objectMapper, JobEntity.class);
+                final ListenerDto dto = ListenerDto.fromJobEntity(entity);
+                dto.setSortValues(searchHit.getSortValues());
+                return dto;
+              });
+      if (request.getSearchBefore() != null) {
+        Collections.reverse(listeners);
+      }
     } catch (final IOException e) {
       final String message =
           String.format("Exception occurred while searching for listeners: %s", e.getMessage());
       LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
-    final List<ListenerDto> listeners =
-        jobEntities.stream()
-            .map(job -> ListenerDto.fromJobEntity(job))
-            .collect(Collectors.toUnmodifiableList());
     return new ListenerResponseDto(listeners, totalHitCount);
   }
 }
