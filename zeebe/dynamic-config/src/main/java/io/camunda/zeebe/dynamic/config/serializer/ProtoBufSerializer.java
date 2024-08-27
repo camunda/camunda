@@ -38,6 +38,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
@@ -412,6 +413,11 @@ public class ProtoBufSerializer
       case final PartitionEnableExporterOperation enableExporterOperation ->
           builder.setPartitionEnableExporter(
               encodeEnabledExporterOperation(enableExporterOperation));
+      case final PartitionBootstrapOperation bootstrapOperation ->
+          builder.setPartitionBootstrap(
+              Topology.PartitionBootstrapOperation.newBuilder()
+                  .setPartitionId(bootstrapOperation.partitionId())
+                  .build());
       default ->
           throw new IllegalArgumentException(
               "Unknown operation type: " + operation.getClass().getSimpleName());
@@ -558,6 +564,10 @@ public class ProtoBufSerializer
           enableExporterOperation.getPartitionId(),
           enableExporterOperation.getExporterId(),
           initializeFrom);
+    } else if (topologyChangeOperation.hasPartitionBootstrap()) {
+      return new PartitionBootstrapOperation(
+          MemberId.from(topologyChangeOperation.getMemberId()),
+          topologyChangeOperation.getPartitionBootstrap().getPartitionId());
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
