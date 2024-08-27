@@ -64,7 +64,7 @@ public class CreateUserTest extends ClientRestTest {
   void shouldRaiseExceptionOnRequestError() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/users/", () -> new ProblemDetail().title("Not Found").status(404));
+        REST_API_PATH + "/users", () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
