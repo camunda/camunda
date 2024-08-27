@@ -13,6 +13,7 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.ResourceSample;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class OpensearchMetrics {
@@ -32,7 +33,8 @@ public class OpensearchMetrics {
     return Timer.resource(meterRegistry, meterName("flush.duration.seconds"))
         .description("Flush duration of bulk exporters in seconds")
         .tag(PARTITION_LABEL, partitionIdLabel)
-        .publishPercentileHistogram();
+        .publishPercentileHistogram()
+        .minimumExpectedValue(Duration.ofMillis(10));
   }
 
   public void recordBulkSize(final int bulkSize) {

@@ -12,6 +12,7 @@ import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ElasticsearchMetrics {
@@ -39,6 +40,7 @@ public class ElasticsearchMetrics {
             .description("Flush duration of bulk exporters in seconds")
             .tags(PARTITION_LABEL, partitionIdLabel)
             .publishPercentileHistogram()
+            .minimumExpectedValue(Duration.ofMillis(10))
             .register(meterRegistry);
 
     bulkSize =
