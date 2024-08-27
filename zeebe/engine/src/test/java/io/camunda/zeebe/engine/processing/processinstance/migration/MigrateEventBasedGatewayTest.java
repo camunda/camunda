@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -268,5 +269,100 @@ public class MigrateEventBasedGatewayTest {
         .describedAs(
             "Expect that a new message subscription is created for the unmapped catch event")
         .hasBpmnProcessId(targetProcessId);
+  }
+
+  @Test
+  public void shouldWriteMigratedEventsForTimerOfMappedTimerCatchEvent() {
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "_v2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .eventBasedGateway("gateway")
+                    .intermediateCatchEvent(
+                        "timerA", b -> b.timerWithDurationExpression("durationA"))
+                    .endEvent("A")
+                    .moveToLastGateway()
+                    .intermediateCatchEvent(
+                        "timerB", b -> b.timerWithDurationExpression("durationB"))
+                    .endEvent("B")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .eventBasedGateway("gateway2")
+                    .intermediateCatchEvent(
+                        "timerA2", b -> b.timerWithDurationExpression("durationA"))
+                    .endEvent("A")
+                    .moveToLastGateway()
+                    .intermediateCatchEvent(
+                        "timerB2", b -> b.timerWithDurationExpression("durationB"))
+                    .endEvent("B")
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(sourceProcessId)
+            .withVariables(Map.of("durationA", "PT5M", "durationB", "PT10M"))
+            .create();
+
+    final var timerRecordA =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withHandlerNodeId("timerA")
+            .getFirst();
+    final var timerRecordB =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withHandlerNodeId("timerB")
+            .getFirst();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("gateway", "gateway2")
+        .addMappingInstruction("timerA", "timerA2")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.MIGRATED)
+                .withRecordKey(timerRecordA.getKey())
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasTargetElementId("timerA2")
+        .describedAs("Expect that the other data is unchanged")
+        .hasDueDate(timerRecordA.getValue().getDueDate())
+        .hasRepetitions(timerRecordA.getValue().getRepetitions())
+        .hasTenantId(timerRecordA.getValue().getTenantId())
+        .hasProcessInstanceKey(timerRecordA.getValue().getProcessInstanceKey())
+        .hasElementInstanceKey(timerRecordA.getValue().getElementInstanceKey());
+
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CANCELED)
+                .withRecordKey(timerRecordB.getKey())
+                .findAny())
+        .describedAs("Expect that the existing timer is canceled for the unmapped catch event")
+        .isPresent();
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withHandlerNodeId("timerB2")
+                .findAny())
+        .describedAs("Expect that a new timer is created for the unmapped catch event")
+        .isPresent();
   }
 }
