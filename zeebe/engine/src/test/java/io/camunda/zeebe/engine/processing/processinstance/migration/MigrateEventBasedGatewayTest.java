@@ -447,14 +447,11 @@ public class MigrateEventBasedGatewayTest {
         .extracting(Record::getRejectionReason)
         .asString()
         .contains("Expected to migrate process instance '" + processInstanceKey + "'")
+        .contains("active element with id 'gateway' is mapped to an element with id 'gateway2'")
         .contains(
-            "active event-based gateway with id 'gateway' is mapped to an element with id 'gateway2'")
-        .contains(
-            "and has an intermediate catch event with id 'timerC' that is mapped to an element with id 'timerC2'")
-        .contains(
-            "These mappings detach the intermediate catch event from the event-based gateway in the target process")
-        .contains(
-            "Intermediate catch events must stay attached to the same event-based gateway instance");
+            "and has a catch event with id 'timerC' that is mapped to a catch event with id 'timerC2'")
+        .contains("These mappings detach the catch event from the element in the target process")
+        .contains("Catch events must stay attached to the same element instance");
   }
 
   @Test

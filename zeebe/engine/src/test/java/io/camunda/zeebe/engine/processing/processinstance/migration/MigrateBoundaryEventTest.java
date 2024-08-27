@@ -537,9 +537,9 @@ public class MigrateBoundaryEventTest {
         .contains("Expected to migrate process instance '" + processInstanceKey + "'")
         .contains("active element with id 'A' is mapped to an element with id 'A'")
         .contains(
-            "and has a boundary event with id 'boundary' that is mapped to an element with id 'boundary'")
-        .contains("These mappings detach the boundary event from the element in the target process")
-        .contains("Boundary events must stay attached to the same element instance");
+            "and has a catch event with id 'boundary' that is mapped to a catch event with id 'boundary'")
+        .contains("These mappings detach the catch event from the element in the target process")
+        .contains("Catch events must stay attached to the same element instance");
   }
 
   @Test

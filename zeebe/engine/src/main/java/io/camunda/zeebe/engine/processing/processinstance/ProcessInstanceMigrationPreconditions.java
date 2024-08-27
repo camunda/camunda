@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAct
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -28,14 +29,12 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
@@ -140,21 +139,13 @@ public final class ProcessInstanceMigrationPreconditions {
       Expected to migrate process instance '%s' \
       but target element with id '%s' has one or more boundary events of types '%s'. \
       Migrating target elements with boundary events of these types is not possible yet.""";
-  private static final String ERROR_BOUNDARY_EVENT_DETACHED =
+  private static final String ERROR_CATCH_EVENT_DETACHED_FROM_ELEMENT =
       """
       Expected to migrate process instance '%s' \
       but active element with id '%s' is mapped to an element with id '%s' and \
-      has a boundary event with id '%s' that is mapped to an element with id '%s'. \
-      These mappings detach the boundary event from the element in the target process. \
-      Boundary events must stay attached to the same element instance.""";
-  private static final String ERROR_INTERMEDIATE_CATCH_EVENT_DETACHED_FROM_EVENT_BASED_GATEWAY =
-      """
-      Expected to migrate process instance '%s' \
-      but active event-based gateway with id '%s' is mapped to an element with id '%s' and \
-      has an intermediate catch event with id '%s' that is mapped to an element with id '%s'. \
-      These mappings detach the intermediate catch event \
-      from the event-based gateway in the target process. \
-      Intermediate catch events must stay attached to the same event-based gateway instance.""";
+      has a catch event with id '%s' that is mapped to a catch event with id '%s'. \
+      These mappings detach the catch event from the element in the target process. \
+      Catch events must stay attached to the same element instance.""";
   private static final String ERROR_PENDING_DISTRIBUTION =
       """
       Expected to migrate process instance '%s' \
@@ -642,29 +633,23 @@ public final class ProcessInstanceMigrationPreconditions {
     }
   }
 
-  public static void requireMappedBoundaryEventsToStayAttachedToSameElement(
-      final long processInstanceKey,
-      final DeployedProcess sourceProcessDefinition,
-      final DeployedProcess targetProcessDefinition,
-      final String sourceElementId,
-      final String targetElementId,
-      final Map<String, String> sourceElementIdToTargetElementId) {
-    final var sourceElement =
-        sourceProcessDefinition
-            .getProcess()
-            .getElementById(sourceElementId, ExecutableCatchEventSupplier.class);
-    requireMappedCatchEventsToStayAttachedToSameElement(
-        processInstanceKey,
-        targetProcessDefinition,
-        sourceElementId,
-        targetElementId,
-        sourceElementIdToTargetElementId,
-        sourceElement,
-        ExecutableCatchEventSupplier::getBoundaryElementIds,
-        ERROR_BOUNDARY_EVENT_DETACHED);
-  }
-
-  public static void requireMappedIntermediateCatchEventsToStayAttachedToSameEventBasedGateway(
+  /**
+   * It should not be possible for a mapped element's catch events to be moved to another element.
+   * This would mean an element instance is subscribed to a catch event that does not belong to this
+   * element. Triggering the catch event could lead to unexpected behavior.
+   *
+   * <p>To avoid this, we check each catch event of the source element and ensure that they are
+   * mapped to a catch event on the target element. This check includes all catch events like
+   * boundary events, intermediate catch events, and start events (e.g. from event-subprocesses).
+   *
+   * @param processInstanceKey process instance key to be logged
+   * @param sourceProcessDefinition source process definition to check
+   * @param targetProcessDefinition target process definition to check
+   * @param sourceElementId source element id to check
+   * @param targetElementId target element id to check
+   * @param sourceElementIdToTargetElementId mapping instructions (source element id to target
+   */
+  public static void requireMappedCatchEventsToStayAttachedToSameElement(
       final long processInstanceKey,
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
@@ -672,31 +657,11 @@ public final class ProcessInstanceMigrationPreconditions {
       final String targetElementId,
       final Map<String, String> sourceElementIdToTargetElementId) {
     final var sourceElement = sourceProcessDefinition.getProcess().getElementById(sourceElementId);
-    if (sourceElement.getElementType() != BpmnElementType.EVENT_BASED_GATEWAY) {
+    if (!(sourceElement instanceof final ExecutableCatchEventSupplier sourceCatchEventSupplier)) {
       return;
     }
-    final var sourceEventBasedGateway = (ExecutableCatchEventSupplier) sourceElement;
-    requireMappedCatchEventsToStayAttachedToSameElement(
-        processInstanceKey,
-        targetProcessDefinition,
-        sourceElementId,
-        targetElementId,
-        sourceElementIdToTargetElementId,
-        sourceEventBasedGateway,
-        ExecutableCatchEventSupplier::getInterruptingElementIds,
-        ERROR_INTERMEDIATE_CATCH_EVENT_DETACHED_FROM_EVENT_BASED_GATEWAY);
-  }
-
-  private static void requireMappedCatchEventsToStayAttachedToSameElement(
-      final long processInstanceKey,
-      final DeployedProcess targetProcessDefinition,
-      final String sourceElementId,
-      final String targetElementId,
-      final Map<String, String> sourceElementIdToTargetElementId,
-      final ExecutableCatchEventSupplier sourceCatchEventSupplier,
-      final Function<ExecutableCatchEventSupplier, Collection<DirectBuffer>> eventIdSupplier,
-      final String errorMessageTemplate) {
-    for (final var eventIdBuffer : eventIdSupplier.apply(sourceCatchEventSupplier)) {
+    for (final var eventIdBuffer :
+        sourceCatchEventSupplier.getEvents().stream().map(ExecutableFlowElement::getId).toList()) {
       final String sourceCatchEventId = BufferUtil.bufferAsString(eventIdBuffer);
       if (!sourceElementIdToTargetElementId.containsKey(sourceCatchEventId)) {
         // only check mapped catch events
@@ -708,13 +673,13 @@ public final class ProcessInstanceMigrationPreconditions {
           targetProcessDefinition
               .getProcess()
               .getElementById(targetElementId, ExecutableCatchEventSupplier.class);
-      if (eventIdSupplier.apply(targetElement).stream()
-          .map(BufferUtil::bufferAsString)
+      if (targetElement.getEvents().stream()
+          .map(catchEvent -> BufferUtil.bufferAsString(catchEvent.getId()))
           .noneMatch(targetCatchEventId::equals)) {
-        // catch event has become detached from element instance
+        // catch event has become detached from element
         final var reason =
             String.format(
-                errorMessageTemplate,
+                ERROR_CATCH_EVENT_DETACHED_FROM_ELEMENT,
                 processInstanceKey,
                 sourceElementId,
                 targetElementId,
