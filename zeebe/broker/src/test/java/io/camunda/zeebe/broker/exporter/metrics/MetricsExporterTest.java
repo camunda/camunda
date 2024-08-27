@@ -40,7 +40,8 @@ class MetricsExporterTest {
   void shouldObserveJobLifetime() {
     // given
     final var meterRegistry = new SimpleMeterRegistry();
-    final var metrics = new ExecutionLatencyMetrics(meterRegistry);
+    final var partitionId = 1;
+    final var metrics = new ExecutionLatencyMetrics(meterRegistry, 1);
     final var exporter =
         new MetricsExporter(metrics, DEFAULT_KEY_CACHE, DEFAULT_KEY_CACHE, meterRegistry);
     exporter.open(new ExporterTestController());
@@ -56,7 +57,7 @@ class MetricsExporterTest {
             .withValueType(ValueType.JOB)
             .withIntent(JobIntent.CREATED)
             .withTimestamp(1651505728460L)
-            .withKey(Protocol.encodePartitionId(1, 1))
+            .withKey(Protocol.encodePartitionId(partitionId, 1))
             .build());
 
     // pass a job batch activated to simulate the full lifetime
@@ -77,11 +78,12 @@ class MetricsExporterTest {
             .withValueType(ValueType.JOB)
             .withIntent(JobIntent.COMPLETED)
             .withTimestamp(1651505729571L)
-            .withKey(Protocol.encodePartitionId(1, 1))
+            .withKey(Protocol.encodePartitionId(partitionId, 1))
             .build());
 
     // then
-    final var jobLifeTime = meterRegistry.timer("zeebe.job.life.time", "partition", "0");
+    final var jobLifeTime =
+        meterRegistry.timer("zeebe.job.life.time", "partition", String.valueOf(partitionId));
 
     assertThat(jobLifeTime.count())
         .isEqualTo(1)

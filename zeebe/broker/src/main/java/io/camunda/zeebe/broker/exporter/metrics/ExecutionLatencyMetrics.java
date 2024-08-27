@@ -40,17 +40,19 @@ public class ExecutionLatencyMetrics {
       new ConcurrentHashMap<>();
   private final Map<Integer, AtomicInteger> currentCacheInstanceProcessInstances =
       new ConcurrentHashMap<>();
+  private final int partitionId;
 
   public ExecutionLatencyMetrics() {
-    this(new SimpleMeterRegistry());
+    this(new SimpleMeterRegistry(), 1);
   }
 
-  public ExecutionLatencyMetrics(final MeterRegistry meterRegistry) {
+  public ExecutionLatencyMetrics(final MeterRegistry meterRegistry, final int partitionId) {
     this.meterRegistry = meterRegistry;
+    this.partitionId = partitionId;
   }
 
   public void observeProcessInstanceExecutionTime(
-      final int partitionId, final long creationTimeMs, final long completionTimeMs) {
+      final long creationTimeMs, final long completionTimeMs) {
     Timer.builder("zeebe.process.instance.execution.time")
         .description("The execution time of processing a complete process instance")
         .tag("partition", Integer.toString(partitionId))
@@ -59,8 +61,7 @@ public class ExecutionLatencyMetrics {
         .record(completionTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
   }
 
-  public void observeJobLifeTime(
-      final int partitionId, final long creationTimeMs, final long completionTimeMs) {
+  public void observeJobLifeTime(final long creationTimeMs, final long completionTimeMs) {
     Timer.builder("zeebe.job.life.time")
         .description("The life time of an job")
         .tag("partition", Integer.toString(partitionId))
@@ -69,8 +70,7 @@ public class ExecutionLatencyMetrics {
         .record(completionTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
   }
 
-  public void observeJobActivationTime(
-      final int partitionId, final long creationTimeMs, final long activationTimeMs) {
+  public void observeJobActivationTime(final long creationTimeMs, final long activationTimeMs) {
     Timer.builder("zeebe.job.activation.time")
         .description("The time until an job was activated")
         .tag("partition", Integer.toString(partitionId))
@@ -79,16 +79,15 @@ public class ExecutionLatencyMetrics {
         .record(activationTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
   }
 
-  public void setCurrentJobsCount(final int partitionId, final int count) {
-    setCurrentCachedInstanceGauge(partitionId, count, "jobs");
+  public void setCurrentJobsCount(final int count) {
+    setCurrentCachedInstanceGauge(count, "jobs");
   }
 
-  public void setCurrentProcessInstanceCount(final int partitionId, final int count) {
-    setCurrentCachedInstanceGauge(partitionId, count, "processInstances");
+  public void setCurrentProcessInstanceCount(final int count) {
+    setCurrentCachedInstanceGauge(count, "processInstances");
   }
 
-  private void setCurrentCachedInstanceGauge(
-      final int partitionId, final int count, final String type) {
+  private void setCurrentCachedInstanceGauge(final int count, final String type) {
     final var collection =
         "jobs".equals(type) ? currentCachedInstanceJobsCount : currentCacheInstanceProcessInstances;
 

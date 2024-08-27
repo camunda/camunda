@@ -76,7 +76,7 @@ public class MetricsExporter implements Exporter {
   @Override
   public void configure(final Context context) throws Exception {
     meterRegistry = context.getMeterRegistry();
-    executionLatencyMetrics = new ExecutionLatencyMetrics(meterRegistry);
+    executionLatencyMetrics = new ExecutionLatencyMetrics(meterRegistry, context.getPartitionId());
     context.setFilter(
         new RecordFilter() {
           private static final Set<ValueType> ACCEPTED_VALUE_TYPES =
@@ -114,23 +114,21 @@ public class MetricsExporter implements Exporter {
       return;
     }
 
-    final var partitionId = record.getPartitionId();
     final var recordKey = record.getKey();
 
     final var currentValueType = record.getValueType();
     if (currentValueType == ValueType.JOB) {
-      handleJobRecord(record, partitionId, recordKey);
+      handleJobRecord(record, recordKey);
     } else if (currentValueType == ValueType.JOB_BATCH) {
-      handleJobBatchRecord(record, partitionId);
+      handleJobBatchRecord(record);
     } else if (currentValueType == ValueType.PROCESS_INSTANCE) {
-      handleProcessInstanceRecord(record, partitionId, recordKey);
+      handleProcessInstanceRecord(record, recordKey);
     }
 
     controller.updateLastExportedRecordPosition(record.getPosition());
   }
 
-  private void handleProcessInstanceRecord(
-      final Record<?> record, final int partitionId, final long recordKey) {
+  private void handleProcessInstanceRecord(final Record<?> record, final long recordKey) {
     final var currentIntent = record.getIntent();
 
     if (currentIntent == ProcessInstanceIntent.ELEMENT_ACTIVATING
@@ -140,34 +138,31 @@ public class MetricsExporter implements Exporter {
         && isProcessInstanceRecord(record)) {
       final var creationTime = processInstanceCache.remove(recordKey);
       executionLatencyMetrics.observeProcessInstanceExecutionTime(
-          partitionId, creationTime, record.getTimestamp());
+          creationTime, record.getTimestamp());
     }
-    executionLatencyMetrics.setCurrentProcessInstanceCount(
-        partitionId, processInstanceCache.size());
+    executionLatencyMetrics.setCurrentProcessInstanceCount(processInstanceCache.size());
   }
 
-  private void handleJobRecord(
-      final Record<?> record, final int partitionId, final long recordKey) {
+  private void handleJobRecord(final Record<?> record, final long recordKey) {
     final var currentIntent = record.getIntent();
 
     if (currentIntent == JobIntent.CREATED) {
       jobCache.store(recordKey, record.getTimestamp());
     } else if (currentIntent == JobIntent.COMPLETED) {
       final var creationTime = jobCache.remove(recordKey);
-      executionLatencyMetrics.observeJobLifeTime(partitionId, creationTime, record.getTimestamp());
+      executionLatencyMetrics.observeJobLifeTime(creationTime, record.getTimestamp());
     }
-    executionLatencyMetrics.setCurrentJobsCount(partitionId, jobCache.size());
+    executionLatencyMetrics.setCurrentJobsCount(jobCache.size());
   }
 
-  private void handleJobBatchRecord(final Record<?> record, final int partitionId) {
+  private void handleJobBatchRecord(final Record<?> record) {
     final var currentIntent = record.getIntent();
 
     if (currentIntent == JobBatchIntent.ACTIVATED) {
       final var value = (JobBatchRecordValue) record.getValue();
       for (final long jobKey : value.getJobKeys()) {
         final var creationTime = jobCache.get(jobKey);
-        executionLatencyMetrics.observeJobActivationTime(
-            partitionId, creationTime, record.getTimestamp());
+        executionLatencyMetrics.observeJobActivationTime(creationTime, record.getTimestamp());
       }
     }
   }
