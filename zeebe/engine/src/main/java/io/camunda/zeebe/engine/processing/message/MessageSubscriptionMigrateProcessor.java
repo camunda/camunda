@@ -26,6 +26,9 @@ public class MessageSubscriptionMigrateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
+  private final MessageSubscriptionRecord messageSubscriptionRecord =
+      new MessageSubscriptionRecord();
+
   public MessageSubscriptionMigrateProcessor(
       final MessageSubscriptionState subscriptionState,
       final Writers writers,
@@ -64,11 +67,14 @@ public class MessageSubscriptionMigrateProcessor
       return;
     }
 
+    // copy the value provided by the state, as the event applier will cause to overwrite it
+    messageSubscriptionRecord.reset();
+    messageSubscriptionRecord.copyFrom(subscription.getRecord());
+
     stateWriter.appendFollowUpEvent(
         subscription.getKey(),
         MessageSubscriptionIntent.MIGRATED,
-        subscription
-            .getRecord()
+        messageSubscriptionRecord
             .setBpmnProcessId(value.getBpmnProcessIdBuffer())
             .setInterrupting(value.isInterrupting()));
   }
