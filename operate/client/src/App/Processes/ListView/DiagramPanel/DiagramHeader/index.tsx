@@ -12,7 +12,12 @@ import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 import {ProcessOperations} from '../../ProcessOperations';
 import {Restricted} from 'modules/components/Restricted';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {PanelHeader, Dd, Dl, Dt} from './styled';
+import {
+  PanelHeader,
+  Description,
+  DescriptionTitle,
+  DescriptionData,
+} from './styled';
 import {IS_VERSION_TAG_ENABLED} from 'modules/feature-flags';
 
 type ProcessDetails = {
@@ -49,25 +54,27 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
       >
         {hasSelectedProcess && (
           <>
-            <Dl>
-              <Dt>Process name</Dt>
-              <Dd title={processName} role="heading">
+            <Description>
+              <DescriptionTitle>Process name</DescriptionTitle>
+              <DescriptionData title={processName} role="heading">
                 {processName}
-              </Dd>
-            </Dl>
+              </DescriptionData>
+            </Description>
 
-            <Dl>
-              <Dt>Process ID</Dt>
-              <Dd>
+            <Description>
+              <DescriptionTitle>Process ID</DescriptionTitle>
+              <DescriptionData>
                 <CopiableProcessID bpmnProcessId={bpmnProcessId} />
-              </Dd>
-            </Dl>
+              </DescriptionData>
+            </Description>
 
             {hasVersionTag && IS_VERSION_TAG_ENABLED && (
-              <Dl>
-                <Dt>Version tag</Dt>
-                <Dd title={versionTag}>{versionTag}</Dd>
-              </Dl>
+              <Description>
+                <DescriptionTitle>Version tag</DescriptionTitle>
+                <DescriptionData title={versionTag}>
+                  {versionTag}
+                </DescriptionData>
+              </Description>
             )}
           </>
         )}

@@ -15,17 +15,17 @@ const PanelHeader = styled(BasePanelHeader)`
   gap: var(--cds-spacing-09);
 `;
 
-const Dl = styled.dl`
+const Description = styled.dl`
   overflow: hidden;
 `;
 
-const Dt = styled.dt`
+const DescriptionTitle = styled.dt`
   ${styles.label01};
   color: var(--cds-text-secondary);
   margin-bottom: 2px;
 `;
 
-const Dd = styled.dd`
+const DescriptionData = styled.dd`
   ${styles.label02};
   color: var(--cds-text-secondary);
   text-overflow: ellipsis;
@@ -33,4 +33,4 @@ const Dd = styled.dd`
   white-space: nowrap;
 `;
 
-export {PanelHeader, Dl, Dt, Dd};
+export {PanelHeader, Description, DescriptionTitle, DescriptionData};
