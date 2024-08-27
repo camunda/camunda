@@ -123,7 +123,7 @@ public class OpenSearchClientBuilder {
         return false;
       }
     }
-    log.info("Not using AWS credentials for OpenSearch");
+    log.info("AWS Credentials are disabled. Using basic auth.");
     return false;
   }
 
