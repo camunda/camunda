@@ -38,6 +38,11 @@ public final class SortOptionBuilders {
     return new FlownodeInstanceSort.Builder();
   }
 
+  public static FlownodeInstanceSort flownodeInstance(
+      final Function<FlownodeInstanceSort.Builder, ObjectBuilder<FlownodeInstanceSort>> fn) {
+    return fn.apply(flownodeInstance()).build();
+  }
+
   public static UserSort.Builder user() {
     return new UserSort.Builder();
   }
