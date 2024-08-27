@@ -13,7 +13,10 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public final class DbRoutingState implements RoutingState {
 
@@ -25,23 +28,38 @@ public final class DbRoutingState implements RoutingState {
 
   private final ColumnFamily<DbString, RoutingInfo> columnFamily;
   private final DbString key = new DbString();
-  private final RoutingInfo value = new RoutingInfo();
+  private final RoutingInfo currentRoutingInfo = new RoutingInfo();
+  private final RoutingInfo staticRoutingInfo = new RoutingInfo();
 
   public DbRoutingState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final int staticPartitionCount) {
     columnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.CLOCK, transactionContext, key, value);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.CLOCK, transactionContext, key, currentRoutingInfo);
+    initializeRoutingInfo(staticRoutingInfo, staticPartitionCount);
   }
 
   @Override
   public Set<Integer> partitions() {
     key.wrapString(CURRENT_KEY);
-    return columnFamily.get(key).getPartitions();
+    return Optional.ofNullable(columnFamily.get(key)).orElse(staticRoutingInfo).getPartitions();
   }
 
   @Override
   public MessageCorrelation messageCorrelation() {
     key.wrapString(CURRENT_KEY);
-    return columnFamily.get(key).getMessageCorrelation();
+    return Optional.ofNullable(columnFamily.get(key))
+        .orElse(staticRoutingInfo)
+        .getMessageCorrelation();
+  }
+
+  private static void initializeRoutingInfo(
+      final RoutingInfo routingInfo, final int partitionCount) {
+    final var partitions =
+        IntStream.rangeClosed(1, partitionCount).boxed().collect(Collectors.toUnmodifiableSet());
+    routingInfo.setPartitions(partitions);
+    routingInfo.setMessageCorrelation(new MessageCorrelation.HashMod(partitionCount));
   }
 }
