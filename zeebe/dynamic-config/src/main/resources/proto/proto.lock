@@ -636,6 +636,11 @@
                 "id": 10,
                 "name": "partitionEnableExporter",
                 "type": "PartitionEnableExporterOperation"
+              },
+              {
+                "id": 11,
+                "name": "partitionBootstrap",
+                "type": "PartitionBootstrapOperation"
               }
             ]
           },
@@ -742,6 +747,16 @@
                 "id": 3,
                 "name": "initializeFrom",
                 "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "PartitionBootstrapOperation",
+            "fields": [
+              {
+                "id": 1,
+                "name": "partitionId",
+                "type": "int32"
               }
             ]
           },
