@@ -16,7 +16,7 @@ import {useUiConfig} from 'hooks';
 import Header from './Header';
 
 const defaultUiConfig = {
-  optimizeProfile: 'platform',
+  optimizeProfile: 'ccsm',
   enterpriseMode: true,
   webappsLinks: {
     optimize: 'http://optimize.com',

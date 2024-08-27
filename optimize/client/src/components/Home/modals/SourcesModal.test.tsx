@@ -25,7 +25,7 @@ jest.mock('./service', () => ({
 
 jest.mock('config', () => ({
   areTenantsAvailable: jest.fn().mockReturnValue(true),
-  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+  getOptimizeProfile: jest.fn().mockReturnValue('ccsm'),
 }));
 
 jest.mock('hooks', () => ({
@@ -214,7 +214,6 @@ it('should change the selected tenants based on the popover in C7', async () => 
 });
 
 it('should display the only tenant value as text in self managed mode', async () => {
-  (getOptimizeProfile as jest.Mock).mockReturnValueOnce('ccsm');
   (getTenantsWithDefinitions as jest.Mock).mockReturnValueOnce([{id: 'engineering'}]);
   (getDefinitionsWithTenants as jest.Mock).mockReturnValueOnce([
     {key: 'testDef', name: null, type: 'process', tenants: [{id: '<default>', name: 'Default'}]},

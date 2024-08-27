@@ -16,7 +16,7 @@ import {ConfigureProcessModal} from './ConfigureProcessModal';
 
 jest.mock('config', () => ({
   isEmailEnabled: jest.fn().mockReturnValue(true),
-  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+  getOptimizeProfile: jest.fn().mockReturnValue('ccsm'),
 }));
 
 jest.mock('services', () => ({
