@@ -11,6 +11,7 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.service.entities.DecisionDefinitionEntity;
 import io.camunda.service.entities.DecisionRequirementsEntity;
+import io.camunda.service.entities.FlownodeInstanceEntity;
 import io.camunda.service.entities.ProcessInstanceEntity;
 import io.camunda.service.entities.UserEntity;
 import io.camunda.service.entities.UserTaskEntity;
@@ -19,6 +20,8 @@ import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.FlownodeInstanceItem;
+import io.camunda.zeebe.gateway.protocol.rest.FlownodeInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
@@ -66,6 +69,17 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toDecisionRequirements)
+                .orElseGet(Collections::emptyList));
+  }
+
+  public static FlownodeInstanceSearchQueryResponse toFlownodeInstanceSearchQueryResponse(
+      final SearchQueryResult<FlownodeInstanceEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new FlownodeInstanceSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toFlownodeInstance)
                 .orElseGet(Collections::emptyList));
   }
 
@@ -135,6 +149,15 @@ public final class SearchQueryResponseMapper {
   private static List<DecisionRequirementsItem> toDecisionRequirements(
       final List<DecisionRequirementsEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionRequirements).toList();
+  }
+
+  private static List<FlownodeInstanceItem> toFlownodeInstance(
+      final List<FlownodeInstanceEntity> instances) {
+    return instances.stream().map(SearchQueryResponseMapper::toFlownodeInstance).toList();
+  }
+
+  private static FlownodeInstanceItem toFlownodeInstance(final FlownodeInstanceEntity instance) {
+    return new FlownodeInstanceItem();
   }
 
   private static DecisionDefinitionItem toDecisionDefinition(final DecisionDefinitionEntity d) {
