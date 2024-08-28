@@ -102,7 +102,7 @@ public class ElasticsearchEngineClientIT {
   }
 
   @Test
-  void IndexTemplateShouldInheritComposedOfComponentTemplate() throws IOException {
+  void shouldHaveIndexInheritComposedTemplate() throws IOException {
     // given
     createComponentTemplate("component_template", "componentTemplate.json");
 
