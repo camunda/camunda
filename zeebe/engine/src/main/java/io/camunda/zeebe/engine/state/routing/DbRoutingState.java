@@ -49,15 +49,17 @@ public final class DbRoutingState implements MutableRoutingState {
   }
 
   @Override
-  public void initializeRoutingInfo(final int partitionCount) {
+  public boolean isInitialized() {
     key.wrapString(CURRENT_KEY);
-    if (columnFamily.exists(key)) {
-      return;
-    }
+    return columnFamily.exists(key);
+  }
 
+  @Override
+  public void initializeRoutingInfo(final int partitionCount) {
     final var partitions =
         IntStream.rangeClosed(1, partitionCount).boxed().collect(Collectors.toUnmodifiableSet());
 
+    key.wrapString(CURRENT_KEY);
     currentRoutingInfo.reset();
     currentRoutingInfo.setPartitions(partitions);
     currentRoutingInfo.setMessageCorrelation(new MessageCorrelation.HashMod(partitionCount));

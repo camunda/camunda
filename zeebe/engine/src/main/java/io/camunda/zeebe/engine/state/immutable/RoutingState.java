@@ -14,6 +14,8 @@ public interface RoutingState {
 
   MessageCorrelation messageCorrelation();
 
+  boolean isInitialized();
+
   sealed interface MessageCorrelation {
     record HashMod(int partitionCount) implements MessageCorrelation {
       public HashMod {
