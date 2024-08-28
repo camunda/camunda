@@ -20,12 +20,12 @@
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
     <!-- maven plugins -->
-    <surefire-plugin.version>3.4.0</surefire-plugin.version>
+    <surefire-plugin.version>3.5.0</surefire-plugin.version>
 
     <!-- database config -->
     <elasticsearch.client.version>7.17.23</elasticsearch.client.version>
     <opensearch.client.version>2.10.1</opensearch.client.version>
-    <awssdk.version>2.27.12</awssdk.version>
+    <awssdk.version>2.27.14</awssdk.version>
     <!-- The default opensearch version we are going to be testing with-->
     <opensearch.test.version>2.9.0</opensearch.test.version>
     <!--The least supported elasticsearch version we should test against-->
@@ -53,7 +53,7 @@
     <version.yarn>v1.22.19</version.yarn>
 
     <!-- testing config -->
-    <mockito.version>5.12.0</mockito.version>
+    <mockito.version>5.13.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <junit.jupiter.version>5.11.0</junit.jupiter.version>
     <junit.platform.version>1.11.0</junit.platform.version>
