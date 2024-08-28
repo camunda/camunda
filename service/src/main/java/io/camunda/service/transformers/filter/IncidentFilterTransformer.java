@@ -18,6 +18,7 @@ import io.camunda.service.search.filter.IncidentFilter;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.service.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
 import java.util.List;
+import java.util.Optional;
 
 public class IncidentFilterTransformer implements FilterTransformer<IncidentFilter> {
 
@@ -79,11 +80,13 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
   }
 
   private SearchQuery getCreationTimeQuery(final DateValueFilter creationTimeFilter) {
-    if (creationTimeFilter != null) {
-      final var transformer = getDateValueFilterTransformer();
-      return transformer.apply(new DateFieldFilter("creationTime", creationTimeFilter));
-    }
-    return null;
+    return Optional.ofNullable(creationTimeFilter)
+        .map(
+            filter -> {
+              final var transformer = getDateValueFilterTransformer();
+              return transformer.apply(new DateFieldFilter("creationTime", creationTimeFilter));
+            })
+        .orElse(null);
   }
 
   private SearchQuery getFlowNodeInstanceIdQuery(final List<String> flowNodeInstanceIds) {
