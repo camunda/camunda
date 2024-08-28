@@ -11,6 +11,7 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
+import io.camunda.tasklist.entities.FlowNodeType;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.TaskVariableSnapshotEntity;
@@ -69,9 +70,6 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
       final Record<UserTaskRecordValue> record, final BulkRequest bulkRequest)
       throws PersistenceException {
 
-    lock.lock();
-
-    System.out.println("Processing user task record");
     final Optional<TaskEntity> taskEntity = userTaskRecordToTaskEntityMapper.map(record);
     if (taskEntity.isPresent()) {
       // Update the snapshot with task data
@@ -125,11 +123,13 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
         .ifPresent(snapshot::setExternalFormReference);
     Optional.ofNullable(taskEntity.getCustomHeaders()).ifPresent(snapshot::setCustomHeaders);
     Optional.ofNullable(taskEntity.getFormKey()).ifPresent(snapshot::setFormKey);
+    Optional.ofNullable(taskEntity.getState()).ifPresent(snapshot::setState);
 
     final Map<String, Object> joinField = new HashMap<>();
     joinField.put("name", "task");
-    joinField.put("parent", null);
-    snapshot.setJoinField(joinField);
+    joinField.put("parent", taskEntity.getProcessInstanceId());
+    snapshot.setDataType(String.valueOf(FlowNodeType.USER_TASK));
+    snapshot.setJoin(joinField);
     return snapshot;
   }
 
@@ -142,6 +142,7 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
           .index(taskVariableSnapshotTemplate.getFullQualifiedName())
           .id(entity.getId())
           .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+          .routing(entity.getProcessInstanceId())
           .doc(jsonMap)
           .retryOnConflict(UPDATE_RETRY_COUNT);
     } catch (final IOException e) {

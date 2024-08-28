@@ -10,7 +10,6 @@ package io.camunda.tasklist.zeebeimport.v860.processors.es;
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskVariableSnapshotEntity;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
@@ -26,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.locks.ReentrantLock;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
@@ -62,7 +60,7 @@ public class VariableZeebeRecordProcessorElasticSearch {
     // Process the variable and try to join with any existing task
     if (record.getIntent().name() != Intent.MIGRATED.name()) {
       bulkRequest.add(persistVariable(record, recordValue));
-      bulkRequest.add(persistTaskVariableSnapshot(record, recordValue));
+      bulkRequest.add(persistVariableToListView(record, recordValue));
     }
   }
 
@@ -71,110 +69,6 @@ public class VariableZeebeRecordProcessorElasticSearch {
     final VariableEntity entity = getVariableEntity(record, recordValue);
 
     return getVariableQuery(entity);
-  }
-
-  private UpdateRequest persistTaskVariableSnapshot(
-      final Record record, final VariableRecordValueImpl recordValue) throws PersistenceException {
-    final VariableEntity entity = getVariableEntity(record, recordValue);
-
-    TaskVariableSnapshotEntity snapshot = new TaskVariableSnapshotEntity();
-
-    // Variable Data
-    Optional.ofNullable(entity.getValue()).ifPresent(snapshot::setVariableValue);
-    Optional.ofNullable(entity.getFullValue()).ifPresent(snapshot::setVariableFullValue);
-    Optional.ofNullable(entity.getValue()).ifPresent(snapshot::setVariableValue);
-    Optional.ofNullable(entity.getName()).ifPresent(snapshot::setVariableName);
-    Optional.of(entity.getIsPreview()).ifPresent(snapshot::setPreview);
-    Optional.ofNullable(entity.getScopeFlowNodeId()).ifPresent(snapshot::setVariableScopeKey);
-
-    // Set temporary ID for snapshot
-    Optional.ofNullable(entity.getId()).ifPresent(snapshot::setId);
-
-    // If the variable is related to a task (scopeKey == flowNodeInstanceId)
-    if (!Objects.equals(entity.getProcessInstanceId(), entity.getScopeFlowNodeId())) {
-
-          System.out.println("associate variable with task");
-          snapshot = associateVariableWithTask(snapshot);
-
-          try {
-            return new UpdateRequest()
-                .index(taskVariableSnapshotTemplate.getFullQualifiedName())
-                .id(snapshot.getId())
-                .upsert(objectMapper.writeValueAsString(snapshot), XContentType.JSON)
-                .routing(snapshot.getFlowNodeBpmnId())
-                .doc(objectMapper.writeValueAsString(snapshot), XContentType.JSON)
-                .retryOnConflict(UPDATE_RETRY_COUNT);
-          } catch (final IOException e) {
-            throw new PersistenceException(
-                String.format(
-                    "Error preparing the query to upsert task instance [%s]", entity.getId()),
-                e);
-        }
-      }
-
-
-    if (entity.getProcessInstanceId().equals(entity.getScopeFlowNodeId())) {
-      System.out.println("associate Process variable with Process");
-      snapshot = associateProcessVariablesWithTasks(entity, snapshot);
-
-      try {
-        return new UpdateRequest()
-            .index(taskVariableSnapshotTemplate.getFullQualifiedName())
-            .id(snapshot.getId())
-            .upsert(objectMapper.writeValueAsString(snapshot), XContentType.JSON)
-            .routing(entity.getProcessInstanceId())
-            .doc(objectMapper.writeValueAsString(snapshot), XContentType.JSON)
-            .retryOnConflict(UPDATE_RETRY_COUNT);
-      } catch (final IOException e) {
-        throw new PersistenceException(
-            String.format("Error preparing the query to upsert task instance [%s]", entity.getId()),
-            e);
-      }
-    }
-
-    try {
-      return new UpdateRequest()
-          .index(taskVariableSnapshotTemplate.getFullQualifiedName())
-          .id(snapshot.getId())
-          .upsert(objectMapper.writeValueAsString(snapshot), XContentType.JSON)
-          .doc(objectMapper.writeValueAsString(snapshot), XContentType.JSON)
-          .retryOnConflict(UPDATE_RETRY_COUNT);
-    } catch (final IOException e) {
-      throw new PersistenceException(
-          String.format("Error preparing the query to upsert task instance [%s]", entity.getId()),
-          e);
-    }
-  }
-
-  // Replace for TaskVariableSnapshotStore once the POC is Ready
-  private Optional<TaskEntity> taskAlreadyImported(
-      final String scopeFlowNodeId, final String processInstanceId) {
-    final var taskByProcessDefId = taskStore.getTaskIdsByProcessInstanceId(processInstanceId);
-    for (final var taskId : taskByProcessDefId) {
-      final var task = taskStore.getTask(taskId);
-      if(task.getFlowNodeInstanceId().equals(scopeFlowNodeId)){
-        return Optional.of(task);
-      }
-    }
-    return Optional.empty();
-  }
-
-  private TaskVariableSnapshotEntity associateProcessVariablesWithTasks(
-      final VariableEntity entity, final TaskVariableSnapshotEntity snapshot) {
-    final Map<String, Object> joinField = new HashMap<>();
-    joinField.put("name", "processVariable");
-    joinField.put("parent", entity.getProcessInstanceId());
-    snapshot.setJoinField(joinField);
-    return snapshot;
-  }
-
-  private TaskVariableSnapshotEntity associateVariableWithTask(
-      final TaskVariableSnapshotEntity snapshot) {
-    final Map<String, Object> joinField = new HashMap<>();
-    joinField.put("name", "taskVariable");
-    joinField.put("parent", snapshot.getVariableScopeKey());
-    snapshot.setJoinField(joinField);
-    return snapshot;
   }
 
   private UpdateRequest getVariableQuery(final VariableEntity entity) throws PersistenceException {
@@ -225,5 +119,88 @@ public class VariableZeebeRecordProcessorElasticSearch {
     }
     entity.setFullValue(recordValue.getValue());
     return entity;
+  }
+
+  private UpdateRequest persistVariableToListView(
+      final Record record, final VariableRecordValueImpl recordValue) throws PersistenceException {
+    final VariableEntity entity = getVariableEntity(record, recordValue);
+    TaskVariableSnapshotEntity snapshot = createSnapshotFromEntity(entity);
+
+    if (isTaskOrSubProcessScope(entity)) {
+      LOGGER.info("Processing Task Variable");
+      snapshot = associateVariableWithTask(snapshot);
+      return prepareUpdateRequest(snapshot, snapshot.getVariableScopeKey());
+    } else if (isProcessScope(entity)) {
+      LOGGER.info("Processing Process Variable");
+      snapshot = associateProcessVariablesWithTasks(entity, snapshot);
+      return prepareUpdateRequest(snapshot, entity.getProcessInstanceId());
+    }
+
+    return prepareUpdateRequest(snapshot, null);
+  }
+
+  private TaskVariableSnapshotEntity createSnapshotFromEntity(final VariableEntity entity) {
+    final TaskVariableSnapshotEntity snapshot = new TaskVariableSnapshotEntity();
+    Optional.ofNullable(entity.getValue()).ifPresent(snapshot::setVariableValue);
+    Optional.ofNullable(entity.getFullValue()).ifPresent(snapshot::setVariableFullValue);
+    Optional.ofNullable(entity.getName()).ifPresent(snapshot::setVariableName);
+    Optional.of(entity.getIsPreview()).ifPresent(snapshot::setPreview);
+    Optional.ofNullable(entity.getScopeFlowNodeId()).ifPresent(snapshot::setVariableScopeKey);
+    Optional.ofNullable(entity.getId()).ifPresent(snapshot::setId);
+
+    return snapshot;
+  }
+
+  private boolean isTaskOrSubProcessScope(final VariableEntity entity) {
+    return !Objects.equals(entity.getProcessInstanceId(), entity.getScopeFlowNodeId());
+  }
+
+  private boolean isProcessScope(final VariableEntity entity) {
+    return Objects.equals(entity.getProcessInstanceId(), entity.getScopeFlowNodeId());
+  }
+
+  private UpdateRequest prepareUpdateRequest(
+      final TaskVariableSnapshotEntity snapshot, final String routingKey)
+      throws PersistenceException {
+    try {
+      snapshot.setDataType("VARIABLE");
+      final UpdateRequest request =
+          new UpdateRequest()
+              .index(taskVariableSnapshotTemplate.getFullQualifiedName())
+              .id(snapshot.getId())
+              .upsert(objectMapper.writeValueAsString(snapshot), XContentType.JSON)
+              .routing(routingKey)
+              .doc(objectMapper.writeValueAsString(snapshot), XContentType.JSON)
+              .retryOnConflict(UPDATE_RETRY_COUNT);
+
+      if (routingKey != null) {
+        request.routing(routingKey);
+      }
+
+      return request;
+    } catch (final IOException e) {
+      throw new PersistenceException(
+          String.format("Error preparing the query to upsert task instance [%s]", snapshot.getId()),
+          e);
+    }
+  }
+
+  private TaskVariableSnapshotEntity associateProcessVariablesWithTasks(
+      final VariableEntity entity, final TaskVariableSnapshotEntity snapshot) {
+    return associateVariableWithParent(snapshot, "processVariable", entity.getProcessInstanceId());
+  }
+
+  private TaskVariableSnapshotEntity associateVariableWithTask(
+      final TaskVariableSnapshotEntity snapshot) {
+    return associateVariableWithParent(snapshot, "taskVariable", snapshot.getVariableScopeKey());
+  }
+
+  private TaskVariableSnapshotEntity associateVariableWithParent(
+      final TaskVariableSnapshotEntity snapshot, final String name, final String parentId) {
+    final Map<String, Object> joinField = new HashMap<>();
+    joinField.put("name", name);
+    joinField.put("parent", parentId);
+    snapshot.setJoin(joinField);
+    return snapshot;
   }
 }

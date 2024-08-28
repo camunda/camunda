@@ -11,4 +11,6 @@ import java.util.List;
 
 public interface TaskVariableSnapshotStore {
   public List<String> retrieveVariableByScopeKey(final String scopeKey);
+
+  public void copyProcessVariablesToTaskVariables(final String scopeKey, final String variable);
 }

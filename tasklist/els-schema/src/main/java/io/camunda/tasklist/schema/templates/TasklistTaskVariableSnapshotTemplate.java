@@ -55,6 +55,7 @@ public class TasklistTaskVariableSnapshotTemplate extends AbstractTemplateDescri
   public static final String CUSTOM_HEADERS = "customHeaders";
   public static final String VARIABLE_SCOPE_KEY = "variableScopeKey";
   public static final String PRIORITY = "priority";
+  public static final String JOIN_FIELD_NAME = "join";
 
   @Override
   public String getIndexName() {
@@ -123,6 +124,8 @@ public class TasklistTaskVariableSnapshotTemplate extends AbstractTemplateDescri
         return of(PRIORITY);
       case ("variableScopeKey"):
         return of(VARIABLE_SCOPE_KEY);
+      case ("join"):
+        return of(JOIN_FIELD_NAME);
       default:
         return empty();
     }

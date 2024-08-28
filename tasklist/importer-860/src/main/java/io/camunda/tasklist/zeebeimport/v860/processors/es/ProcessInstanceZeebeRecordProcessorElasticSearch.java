@@ -87,7 +87,12 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
     if (isVariableScopeType(recordValue) && FLOW_NODE_STATES.contains(record.getIntent().name())) {
       final FlowNodeInstanceEntity flowNodeInstance = createFlowNodeInstance(record);
       bulkRequest.add(getFlowNodeInstanceQuery(flowNodeInstance));
-      bulkRequest.add(persistSnapshot(flowNodeInstance));
+
+      final UpdateRequest processUserTaskAndProcessListView = persistSnapshot(flowNodeInstance);
+
+      if (processUserTaskAndProcessListView != null) {
+        bulkRequest.add(persistSnapshot(flowNodeInstance));
+      }
     }
 
     if (isProcessEvent(recordValue)
@@ -187,21 +192,47 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
       throws PersistenceException {
     final TaskVariableSnapshotEntity entity = new TaskVariableSnapshotEntity();
 
-    entity.setId(flowNodeInstance.getProcessInstanceId());
-
     final Map<String, Object> joinField = new HashMap<>();
-    joinField.put("name", "process");
-    entity.setJoinField(joinField);
+    if (flowNodeInstance.getType().equals(FlowNodeType.PROCESS)) {
+      entity.setId(flowNodeInstance.getId());
+      joinField.put("name", "process");
+      entity.setJoin(joinField);
+      entity.setDataType(String.valueOf(FlowNodeType.PROCESS));
+      return getUpdateRequest(flowNodeInstance, entity, null);
+    } else if (flowNodeInstance.getType().equals(FlowNodeType.SUB_PROCESS)) {
+      entity.setId(flowNodeInstance.getId());
+      joinField.put("name", "task");
+      joinField.put("parent", flowNodeInstance.getProcessInstanceId());
+      entity.setDataType(String.valueOf(FlowNodeType.SUB_PROCESS));
+      entity.setJoin(joinField);
+      return getUpdateRequest(flowNodeInstance, entity, flowNodeInstance.getProcessInstanceId());
+    } else {
+      return null;
+    }
+  }
 
+  private UpdateRequest getUpdateRequest(
+      final FlowNodeInstanceEntity flowNodeInstance,
+      final TaskVariableSnapshotEntity entity,
+      final String routingKey)
+      throws PersistenceException {
     try {
       final Map<String, Object> jsonMap =
           objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class);
-      return new UpdateRequest()
-          .index(taskVariableSnapshotTemplate.getFullQualifiedName())
-          .id(entity.getId())
-          .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-          .doc(jsonMap)
-          .retryOnConflict(UPDATE_RETRY_COUNT);
+      final UpdateRequest updateRequest =
+          new UpdateRequest()
+              .index(taskVariableSnapshotTemplate.getFullQualifiedName())
+              .id(entity.getId())
+              .routing(routingKey)
+              .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+              .doc(jsonMap)
+              .retryOnConflict(UPDATE_RETRY_COUNT);
+
+      if (flowNodeInstance.getType().equals(FlowNodeType.USER_TASK)) {
+        updateRequest.routing(flowNodeInstance.getProcessInstanceId());
+      }
+
+      return updateRequest;
     } catch (final IOException e) {
       throw new PersistenceException("Error preparing the query to upsert snapshot entity", e);
     }

@@ -2,11 +2,12 @@
   "mappings": {
     "dynamic": true,
     "properties": {
-      "join_field": {
+      "join": {
         "type": "join",
+        "eager_global_ordinals": true,
         "relations": {
-          "task": "taskVariable",
-          "process": "processVariable"
+          "task": ["taskVariable"],
+          "process": ["processVariable","task"]
         }
       },
       "flowNodeBpmnId": {
@@ -111,6 +112,9 @@
       },
       "isPreview": {
         "type": "boolean"
+      },
+      "dataType": {
+        "type": "keyword"
       }
     }
   }

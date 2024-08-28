@@ -36,7 +36,7 @@ public class TaskVariableSnapshotEntity {
   private Long position;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  private String state;
+  private TaskState state;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long key;
@@ -111,7 +111,10 @@ public class TaskVariableSnapshotEntity {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String variableScopeKey;
 
-  private Map<String, Object> joinField; // Add this field
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String dataType;
+
+  private Map<String, Object> join; // Add this field
 
   public String getId() {
     return id;
@@ -185,11 +188,11 @@ public class TaskVariableSnapshotEntity {
     return this;
   }
 
-  public String getState() {
+  public TaskState getState() {
     return state;
   }
 
-  public TaskVariableSnapshotEntity setState(final String state) {
+  public TaskVariableSnapshotEntity setState(final TaskState state) {
     this.state = state;
     return this;
   }
@@ -412,13 +415,23 @@ public class TaskVariableSnapshotEntity {
     return this;
   }
 
-  // Getters and setters for all fields
-  public Map<String, Object> getJoinField() {
-    return joinField;
+  // Getters and setters for dataype
+  public String getDataType() {
+    return dataType;
   }
 
-  public TaskVariableSnapshotEntity setJoinField(final Map<String, Object> joinField) {
-    this.joinField = joinField;
+  public TaskVariableSnapshotEntity setDataType(final String dataType) {
+    this.dataType = dataType;
+    return this;
+  }
+
+  // Getters and setters for all fields
+  public Map<String, Object> getJoin() {
+    return join;
+  }
+
+  public TaskVariableSnapshotEntity setJoin(final Map<String, Object> join) {
+    this.join = join;
     return this;
   }
 }
