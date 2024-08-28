@@ -284,60 +284,6 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
                 processInstanceKey, "A", "MULTI_INSTANCE_BODY"));
   }
 
-  @Test
-  public void shouldRejectMigrationForActiveBusinessRuleTask() {
-    // given
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(SOURCE_PROCESS)
-                    .startEvent()
-                    .businessRuleTask(
-                        "A", b -> b.zeebeCalledDecisionId("decision").zeebeResultVariable("result"))
-                    .endEvent()
-                    .done())
-            .withXmlResource(
-                Bpmn.createExecutableProcess(TARGET_PROCESS)
-                    .startEvent()
-                    .businessRuleTask(
-                        "A", b -> b.zeebeCalledDecisionId("decision").zeebeResultVariable("result"))
-                    .userTask("B")
-                    .endEvent()
-                    .done())
-            .deploy();
-    final long targetProcessDefinitionKey = extractTargetProcessDefinitionKey(deployment);
-
-    final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(SOURCE_PROCESS).create();
-
-    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId("A")
-        .await();
-
-    // when
-    final var rejection =
-        ENGINE
-            .processInstance()
-            .withInstanceKey(processInstanceKey)
-            .migration()
-            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-            .addMappingInstruction("A", "A")
-            .expectRejection()
-            .migrate();
-
-    // then
-    assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
-    Assertions.assertThat(rejection.getRejectionReason())
-        .contains(
-            String.format(
-                """
-                Expected to migrate process instance '%s' but active element with id '%s' \
-                has an unsupported type. The migration of a %s is not supported""",
-                processInstanceKey, "A", "BUSINESS_RULE_TASK"));
-  }
-
   private static long extractTargetProcessDefinitionKey(
       final Record<DeploymentRecordValue> deployment) {
     return deployment.getValue().getProcessesMetadata().stream()
