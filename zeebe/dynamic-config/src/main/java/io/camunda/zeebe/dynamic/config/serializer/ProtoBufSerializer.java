@@ -421,6 +421,7 @@ public class ProtoBufSerializer
           builder.setPartitionBootstrap(
               Topology.PartitionBootstrapOperation.newBuilder()
                   .setPartitionId(bootstrapOperation.partitionId())
+                  .setPriority(bootstrapOperation.priority())
                   .build());
       default ->
           throw new IllegalArgumentException(
@@ -571,7 +572,8 @@ public class ProtoBufSerializer
     } else if (topologyChangeOperation.hasPartitionBootstrap()) {
       return new PartitionBootstrapOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),
-          topologyChangeOperation.getPartitionBootstrap().getPartitionId());
+          topologyChangeOperation.getPartitionBootstrap().getPartitionId(),
+          topologyChangeOperation.getPartitionBootstrap().getPriority());
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any

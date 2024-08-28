@@ -129,6 +129,7 @@ message PartitionEnableExporterOperation {
 
 message PartitionBootstrapOperation {
   int32 partitionId = 1;
+  int32 priority = 2;
 }
 
 message MemberJoinOperation {}
