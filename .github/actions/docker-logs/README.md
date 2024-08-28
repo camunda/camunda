@@ -22,8 +22,8 @@ steps:
 - name: Start Elasticsearch
   uses: ./.github/actions/compose
   with:
-    compose_file: .github/actions/compose/docker-compose.cambpm.yml
-    project_name: cambpm
+    compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
+    project_name: elasticsearch
   env:
     ELASTIC_VERSION: 8.13.0
     ELASTIC_JVM_MEMORY: 1

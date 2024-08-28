@@ -13,17 +13,16 @@ services:
       # internally make usage of scroll contexts this lead to hits on the scroll limit.
       # Thus this increased scroll context limit.
       - search.max_open_scroll_context=1000
-      - http.port=${ELASTIC_HTTP_PORT:-9200}
+      - http.port=9200
       - ES_JAVA_OPTS=-Xms${ELASTIC_JVM_MEMORY:-1}g -Xmx${ELASTIC_JVM_MEMORY:-1}g
       - path.repo=/var/tmp
     ports:
-      - ${ELASTIC_HTTP_PORT:-9200}:${ELASTIC_HTTP_PORT:-9200}
+      - 9200:9200
     healthcheck:
-      # single node elasticsearch, means it easily tips over into yellow, which is acceptable in this case
       test:
         [
           "CMD-SHELL",
-          "curl -f http://localhost:${ELASTIC_HTTP_PORT:-9200}/_cat/health | grep -qE 'green|yellow'",
+          "curl -f http://localhost:9200/_cat/health | grep -qE 'green|yellow'",
         ]
       interval: 30s
       timeout: 5s
