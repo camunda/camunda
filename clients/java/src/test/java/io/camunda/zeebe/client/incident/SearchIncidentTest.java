@@ -19,13 +19,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.IncidentSearchQueryRequest;
+import io.camunda.zeebe.client.protocol.rest.SearchQueryPageRequest;
+import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class SearchIncidentTest extends ClientRestTest {
 
   @Test
-  public void shouldSearchIncident() {
+  public void shouldSearchIncidentWithEmptyQuery() {
     // when
     client.newIncidentQuery().send().join();
 
@@ -68,5 +72,82 @@ public class SearchIncidentTest extends ClientRestTest {
     assertThat(filter.getState()).isEqualTo("state");
     assertThat(filter.getType()).isEqualTo("type");
     assertThat(filter.getHasActiveOperation()).isFalse();
+  }
+
+  @Test
+  void shouldSearchIncidentWithFullSorting() {
+    // when
+    client
+        .newIncidentQuery()
+        .sort(
+            s ->
+                s.key()
+                    .asc()
+                    .type()
+                    .asc()
+                    .processDefinitionKey()
+                    .asc()
+                    .processInstanceKey()
+                    .asc()
+                    .tenantId()
+                    .asc()
+                    .flowNodeInstanceId()
+                    .asc()
+                    .flowNodeId()
+                    .asc()
+                    .state()
+                    .asc()
+                    .jobKey()
+                    .asc()
+                    .creationTime()
+                    .desc())
+        .send()
+        .join();
+
+    // then
+    final IncidentSearchQueryRequest request =
+        gatewayService.getLastRequest(IncidentSearchQueryRequest.class);
+    final List<SearchQuerySortRequest> sorts = request.getSort();
+    assertThat(sorts).hasSize(10);
+    assertSort(sorts.get(0), "key", "asc");
+    assertSort(sorts.get(1), "type", "asc");
+    assertSort(sorts.get(2), "processDefinitionKey", "asc");
+    assertSort(sorts.get(3), "processInstanceKey", "asc");
+    assertSort(sorts.get(4), "tenantId", "asc");
+    assertSort(sorts.get(5), "flowNodeInstanceId", "asc");
+    assertSort(sorts.get(6), "flowNodeId", "asc");
+    assertSort(sorts.get(7), "state", "asc");
+    assertSort(sorts.get(8), "jobKey", "asc");
+    assertSort(sorts.get(9), "creationTime", "desc");
+  }
+
+  @Test
+  void shouldSearchWithFullPagination() {
+    // when
+    client
+        .newIncidentQuery()
+        .page(
+            p ->
+                p.from(23)
+                    .limit(5)
+                    .searchBefore(Arrays.asList("b"))
+                    .searchAfter(Arrays.asList("a")))
+        .send()
+        .join();
+
+    // then
+    final IncidentSearchQueryRequest request =
+        gatewayService.getLastRequest(IncidentSearchQueryRequest.class);
+    final SearchQueryPageRequest pageRequest = request.getPage();
+    assertThat(pageRequest.getFrom()).isEqualTo(23);
+    assertThat(pageRequest.getLimit()).isEqualTo(5);
+    assertThat(pageRequest.getSearchBefore()).isEqualTo(Arrays.asList("b"));
+    assertThat(pageRequest.getSearchAfter()).isEqualTo(Arrays.asList("a"));
+  }
+
+  private void assertSort(
+      final SearchQuerySortRequest sort, final String name, final String order) {
+    assertThat(sort.getField()).isEqualTo(name);
+    assertThat(sort.getOrder()).isEqualTo(order);
   }
 }
