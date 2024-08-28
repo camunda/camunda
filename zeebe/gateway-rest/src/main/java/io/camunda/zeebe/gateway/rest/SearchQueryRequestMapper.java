@@ -306,12 +306,7 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getJobKey()).ifPresent(builder::jobKeys);
       ofNullable(filter.getType()).ifPresent(builder::types);
       ofNullable(filter.getHasActiveOperation())
-          .ifPresent(
-              b -> {
-                if (b) {
-                  builder.hasActiveOperation();
-                }
-              });
+          .ifPresentOrElse(builder::hasActiveOperation, () -> {});
     }
     return builder.build();
   }
