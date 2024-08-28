@@ -41,6 +41,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.apache.http.client.config.RequestConfig;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesRequest;
@@ -238,7 +239,15 @@ public class ElasticsearchBackupRepository implements BackupRepository {
             .waitForCompletion(true);
     final var listener = new CreateSnapshotListener(snapshotRequest, onSuccess, onFailure);
 
-    esClient.snapshot().createAsync(request, RequestOptions.DEFAULT, listener);
+    // as the following request might take longer than 30 seconds (we wait for completion),
+    // overwriting the default socket timeout is required
+    RequestConfig requestConfig = RequestConfig.custom()
+        .setSocketTimeout(60000)
+        .build();
+    RequestOptions options = RequestOptions.DEFAULT.toBuilder()
+        .setRequestConfig(requestConfig)
+        .build();
+    esClient.snapshot().createAsync(request, options, listener);
   }
 
   private ActionListener<AcknowledgedResponse> getDeleteListener() {
@@ -423,6 +432,10 @@ public class ElasticsearchBackupRepository implements BackupRepository {
             break;
           }
           if (currentSnapshot.state() == IN_PROGRESS) {
+            LOGGER.debug(
+                String.format(
+                    "Snapshot [%s] for backupId [%d] found, but it's still IN_PROGRESS - waiting to complete.",
+                    snapshotRequest.snapshotName(), backupId));
             ThreadUtil.sleepFor(100);
           } else {
             handleSnapshotReceived(currentSnapshot);
