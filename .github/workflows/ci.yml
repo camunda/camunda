@@ -71,7 +71,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":alarm: CHRIS IS TESTING SOMETHING Build on `main` ${{ (env.HAS_CANCELED && canceled) || (${{ env.HAS_FAILED }} && failed) || wtf }} !!!!! Was canceled:  has failed: ${{ env.HAS_FAILED }}:alarm:"
+                    "text": ":alarm: CHRIS IS TESTING SOMETHING Build on `main` ${{ env.NOTIFY_TYPE }} !!!!! Was canceled: ${{ env.HAS_CANCELED }} has failed: ${{ env.HAS_FAILED }}:alarm:"
                   }
                 },
                 {
@@ -105,5 +105,6 @@ jobs:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
           FLAKY_UNIT_TESTS: ${{needs.check-results.outputs.flakyUnitTests}}
           FLAKY_ITS: ${{needs.check-results.outputs.flakyITs}}
+          NOTIFY_TYPE: ${{ (needs.check-results.outputs.hasCanceled && "canceled") || (needs.check-results.outputs.hasFailed && "failed") || "wtf" }}
           HAS_CANCELED: ${{needs.check-results.outputs.hasCanceled}}
           HAS_FAILED: ${{needs.check-results.outputs.hasFailed}}
