@@ -16,6 +16,8 @@ import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.json.JsonpDeserializer;
+import io.camunda.exporter.exceptions.ExporterElasticsearchException;
+import io.camunda.exporter.schema.descriptors.ComponentTemplateDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
@@ -23,6 +25,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ElasticsearchEngineClient implements SearchEngineClient {
   private final ElasticsearchClient client;
@@ -58,13 +61,13 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   @Override
-  public void createComponentTemplate(final String templateName, final String mappingsJson) {
-    final PutComponentTemplateRequest request =
-        putComponentTemplateRequest(templateName, mappingsJson);
+  public void createComponentTemplate(final ComponentTemplateDescriptor templateDescriptor) {
+    final PutComponentTemplateRequest request = putComponentTemplateRequest(templateDescriptor);
 
     try {
       client.cluster().putComponentTemplate(request);
-      log.debug("Component template [{}] was successfully created", templateName);
+      log.debug(
+          "Component template [{}] was successfully created", templateDescriptor.getTemplateName());
     } catch (final IOException e) {
       log.error("Component template [{}] was NOT created", templateDescriptor.getTemplateName(), e);
       throw new ExporterElasticsearchException(e.getMessage());

@@ -11,26 +11,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
-import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplateMapping;
+import co.elastic.clients.elasticsearch.cluster.ComponentTemplateNode;
+import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import io.camunda.exporter.schema.descriptors.ComponentTemplateDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.zeebe.exporter.TestSupport;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -39,12 +35,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class ElasticsearchEngineClientIT {
   @Container
   private static final ElasticsearchContainer CONTAINER = TestSupport.createDefaultContainer();
-
-  private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchEngineClientIT.class);
-  private static final IndexTemplateMapping MAPPINGS =
-      new IndexTemplateMapping.Builder()
-          .mappings(m -> m.properties("test", type -> type.keyword(kw -> kw)))
-          .build();
 
   private static ElasticsearchClient elsClient;
   private static ElasticsearchEngineClient elsEngineClient;
@@ -61,26 +51,8 @@ public class ElasticsearchEngineClientIT {
 
     // And create the API client
     elsClient = new ElasticsearchClient(transport);
-  }
 
-  private static String serialiseElsDataStructures(final Object elsDataStructure) {
-    final var writer = new StringWriter();
-    final var mapper = elsClient._jsonpMapper();
-    try (final var generator = mapper.jsonProvider().createGenerator(writer)) {
-      mapper.serialize(elsDataStructure, generator);
-    }
-
-    return writer.toString();
-  }
-
-  @BeforeEach
-  public void startEngineClient() {
-    final var resourceRetriever = mock(ResourceRetriever.class);
-    doReturn(IOUtils.toInputStream(serialiseElsDataStructures(MAPPINGS), StandardCharsets.UTF_8))
-        .when(resourceRetriever)
-        .getResourceAsStream(any());
-
-    elsEngineClient = new ElasticsearchEngineClient(elsClient, LOG, resourceRetriever);
+    elsEngineClient = new ElasticsearchEngineClient(elsClient);
   }
 
   @Test
@@ -91,27 +63,31 @@ public class ElasticsearchEngineClientIT {
 
     final var descriptor = mock(IndexDescriptor.class);
     doReturn(indexName).when(descriptor).getIndexName();
+    doReturn("newProperties.json").when(descriptor).getMappingsClasspathFilename();
 
     // when
-    final var newProperties =
-        new TypeMapping.Builder().properties("field", p -> p.keyword(kw -> kw)).build();
 
-    elsEngineClient.putMapping(descriptor, serialiseElsDataStructures(newProperties));
+    elsEngineClient.putMapping(
+        descriptor,
+        IOUtils.resourceToString(
+            "newProperties.json", StandardCharsets.UTF_8, getClass().getClassLoader()));
 
     // then
     final var index = elsClient.indices().get(req -> req.index(indexName)).get(indexName);
 
-    assertThat(index.mappings().properties().get("field").isKeyword()).isTrue();
+    assertThat(index.mappings().properties().get("email").isKeyword()).isTrue();
   }
 
   @Test
   void shouldCreateComponentTemplateCorrectly() throws IOException {
     // given
-    final var mappingsJson = serialiseElsDataStructures(MAPPINGS);
     final var componentTemplateName = "test";
+    final var descriptor = mock(ComponentTemplateDescriptor.class);
+    when(descriptor.getTemplateName()).thenReturn(componentTemplateName);
+    when(descriptor.getTemplateClasspathFileName()).thenReturn("componentTemplate.json");
 
     // when
-    elsEngineClient.createComponentTemplate(componentTemplateName, mappingsJson);
+    elsEngineClient.createComponentTemplate(descriptor);
 
     // then
     final var templates =
@@ -121,8 +97,12 @@ public class ElasticsearchEngineClientIT {
 
     final var componentTemplate = templates.componentTemplates().getFirst();
     assertThat(componentTemplate.name()).isEqualTo(componentTemplateName);
-    assertThat(componentTemplate.componentTemplate().template().mappings().toString())
-        .isEqualTo(MAPPINGS.mappings().toString());
+
+    final var json = getClass().getClassLoader().getResourceAsStream("componentTemplate.json");
+    final var expectedComponentTemplate =
+        elsEngineClient.deserializeJson(ComponentTemplateNode._DESERIALIZER, json);
+    assertThat(componentTemplate.componentTemplate().toString())
+        .isEqualTo(expectedComponentTemplate.toString());
   }
 
   @Test
@@ -136,6 +116,7 @@ public class ElasticsearchEngineClientIT {
 
     final var templateName = "template_name";
     doReturn(templateName).when(descriptor).getTemplateName();
+    doReturn("mappings.json").when(descriptor).getMappingsClasspathFilename();
 
     // when
     elsEngineClient.createIndexTemplate(descriptor);
@@ -147,7 +128,11 @@ public class ElasticsearchEngineClientIT {
     assertThat(indexTemplates.size()).isEqualTo(1);
 
     final var retrievedTemplate = indexTemplates.getFirst().indexTemplate().template();
-    assertThat(retrievedTemplate.mappings().toString()).isEqualTo(MAPPINGS.mappings().toString());
+    final var template =
+        elsEngineClient.deserializeJson(
+            IndexTemplateSummary._DESERIALIZER,
+            getClass().getClassLoader().getResourceAsStream("mappings.json"));
+    assertThat(retrievedTemplate.mappings().toString()).isEqualTo(template.mappings().toString());
   }
 
   @Test
@@ -158,6 +143,12 @@ public class ElasticsearchEngineClientIT {
     doReturn(qualifiedIndexName).when(descriptor).getFullQualifiedName();
     doReturn("alias").when(descriptor).getAlias();
     doReturn("index_name").when(descriptor).getIndexName();
+    doReturn("mappings.json").when(descriptor).getMappingsClasspathFilename();
+
+    final var template =
+        elsEngineClient.deserializeJson(
+            IndexTemplateSummary._DESERIALIZER,
+            getClass().getClassLoader().getResourceAsStream("mappings.json"));
 
     // when
     elsEngineClient.createIndex(descriptor);
@@ -166,6 +157,6 @@ public class ElasticsearchEngineClientIT {
     final var index =
         elsClient.indices().get(req -> req.index(qualifiedIndexName)).get(qualifiedIndexName);
 
-    assertThat(index.mappings().toString()).isEqualTo(MAPPINGS.mappings().toString());
+    assertThat(index.mappings().toString()).isEqualTo(template.mappings().toString());
   }
 }
