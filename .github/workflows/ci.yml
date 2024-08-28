@@ -509,6 +509,7 @@ jobs:
     outputs:
       flakyUnitTests: ${{ needs.java-unit-tests.outputs.flakyTests }}
       flakyITs: ${{ needs.integration-tests.outputs.flakyTests }}
+      wasCanceled: ${{ (contains(needs.*.result, 'cancelled') && 1) || 0 }}
     needs:
       - actionlint
       - java-unit-tests
@@ -535,7 +536,7 @@ jobs:
     name: Send slack notification on build failure
     runs-on: ubuntu-latest
     needs: [ check-results ]
-    if: failure() && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    if: failure()
     steps:
       - id: slack-notify
         name: Send slack notification
@@ -544,7 +545,7 @@ jobs:
           # For posting a rich message using Block Kit
           payload: |
             {
-              "text": ":alarm: Build on `main` failed! :alarm:\n${{ github.event.head_commit.url }}",
+              "text": ":alarm: CHRIS IS TESTING SOMETHING Build on `main` failed! :alarm:\n${{ github.event.head_commit.url }}",
              	"blocks": [
                 {
                   "type": "section",
@@ -584,6 +585,7 @@ jobs:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
           FLAKY_UNIT_TESTS: ${{needs.check-results.outputs.flakyUnitTests}}
           FLAKY_ITS: ${{needs.check-results.outputs.flakyITs}}
+          WAS_CANCELED: ${{needs.check-results.outputs.wasCanceled}}
 
   deploy-snapshots:
     name: Deploy snapshot artifacts
