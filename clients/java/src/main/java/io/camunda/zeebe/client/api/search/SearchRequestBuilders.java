@@ -82,12 +82,12 @@ public final class SearchRequestBuilders {
     return filter;
   }
 
-  /** Create a decision definition filter. */
+  /** Create an incident filter. */
   public static IncidentFilter incidentFilter() {
     return new IncidentFilterImpl() {};
   }
 
-  /** Create a decision definition filter by using a fluent builder. */
+  /** Create an incident filter by using a fluent builder. */
   public static IncidentFilter incidentFilter(final Consumer<IncidentFilter> fn) {
     final IncidentFilter filter = incidentFilter();
     fn.accept(filter);
