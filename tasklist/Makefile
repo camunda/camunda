@@ -1,136 +1,95 @@
 ## Environment
 SHELL := /bin/bash
-IDENTITY_CONFIG:=/tmp/.env.identity.tmp
-DATABASE_CONFIG:=/tmp/.env.database.tmp
-MULTI_TENANCY_CONFIG:=/tmp/.env.multi-tenancy.tmp
+MAVEN_CONTEXT:=/tmp/.env.maven-context.tmp
+COMPOSE_FILE:=config/docker-compose.yml
+DATABASE:=elasticsearch
+SPRING_PROFILES_ACTIVE:=dev,dev-data,auth
+WITH_IDENTITY:=false
+WITH_OAUTH:=false
+WITH_MULTI_TENANCY:=false
+# Bash script to write or replace a variable in a file with the format VAR=value, args: variable name, variable value, target file
+WRITE_OR_REPLACE_SCRIPT:=./config/write_or_replace_var.sh
+
 
 .PHONY: env-up
-env-up: elasticsearch-env
-	@DATABASE=elasticsearch docker compose up -d zeebe
-	@mvn clean install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
-	@set -o allexport && source $(ELASTICSEARCH_CONFIG) && set +o allexport && env \
-		CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=$${EXT_CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS} \
-		CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=$${EXT_CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS} \
-		CAMUNDA_TASKLIST_$${DATABASE_CAPS}_URL=$${EXT_DATABASE_${DATABASE_CAPS}_URL} \
-		CAMUNDA_TASKLIST_ZEEBE$${DATABASE_CAPS}_URL=$${EXT_DATABASE_${DATABASE_CAPS}_URL} \
-	mvn -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneTasklist" -Dspring.profiles.active=dev,dev-data,auth
-
-.PHONY: env-up-os
-env-up-os: opensearch-env
-	@DATABASE=opensearch docker compose up -d zeebe
-	@mvn clean install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
-	@set -o allexport && source $(DATABASE_CONFIG) && set +o allexport && env \
-		CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=$${EXT_CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS} \
-		CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=$${EXT_CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS} \
-		CAMUNDA_TASKLIST_$${DATABASE_CAPS}_URL=$${EXT_DATABASE_${DATABASE_CAPS}_URL} \
-		CAMUNDA_TASKLIST_ZEEBE$${DATABASE_CAPS}_URL=$${EXT_DATABASE_${DATABASE_CAPS}_URL} \
-	mvn -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneTasklist" -Dspring.profiles.active=dev,dev-data,auth
+env-up: $(DATABASE) setup-maven-context
+	$(eval SERVICES := zeebe)
+	$(call run-env)
 
 # Set the env var ZEEBE_TASKLIST_AUTH0_CLIENTSECRET in your shell please, eg: export ZEEBE_TASKLIST_AUTH0_CLIENTSECRET=<client-secret>
 .PHONY: env-sso-up
-env-sso-up:
-	@DATABASE=elasticsearch docker compose up -d elasticsearch zeebe
-	@mvn clean install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
-	@CAMUNDA_TASKLIST_AUTH0_CLAIMNAME=https://camunda.com/orgs
-	   CAMUNDA_TASKLIST_AUTH0_CLIENTID=CLGSo9RQ1K290Fvy2ohDomndvLR3Qgl3 \
-       CAMUNDA_TASKLIST_AUTH0_CLIENTSECRET=DBXQsK6Csz7Y_jCV5xSN6FbYv1ZiOSgnIuaaJ-JVYnZqBPFm78Cuez2S-7QahBr6 \
-       CAMUNDA_TASKLIST_AUTH0_DOMAIN=weblogin.cloud.ultrawombat.com \
-       CAMUNDA_TASKLIST_AUTH0_ORGANIZATION=6ff582aa-a62e-4a28-aac7-4d2224d8c58a \
-       CAMUNDA_TASKLIST_CLOUD_CLUSTER_ID=449ac2ad-d3c6-4c73-9c68-7752e39ae616 \
-       CAMUNDA_TASKLIST_CLOUD_CONSOLE_URL=https://console.cloud.ultrawombat.com/ \
-       CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID=6ff582aa-a62e-4a28-aac7-4d2224d8c58a \
-       CAMUNDA_TASKLIST_CLOUD_PERMISSION_AUDIENCE=cloud.ultrawombat.com \
-       CAMUNDA_TASKLIST_CLOUD_PERMISSIONURL=https://accounts.cloud.ultrawombat.com/external/organizations/ \
-       mvn -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneTasklist" -Dspring.profiles.active=dev,dev-data,sso-auth
+env-sso-up: elasticsearch setup-maven-context
+	$(eval SERVICES := zeebe)
+	$(eval SPRING_PROFILES_ACTIVE = dev,dev-data,sso-auth)
+	@set -o allexport && source $(MAVEN_CONTEXT) set +o allexport && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_AUTH0_CLAIMNAME "https://camunda.com/orgs" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_AUTH0_CLIENTID "CLGSo9RQ1K290Fvy2ohDomndvLR3Qgl3" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_AUTH0_CLIENTSECRET "DBXQsK6Csz7Y_jCV5xSN6FbYv1ZiOSgnIuaaJ-JVYnZqBPFm78Cuez2S-7QahBr6" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_AUTH0_DOMAIN "weblogin.cloud.ultrawombat.com" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_AUTH0_ORGANIZATION "6ff582aa-a62e-4a28-aac7-4d2224d8c58a" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_CLOUD_CLUSTER_ID "449ac2ad-d3c6-4c73-9c68-7752e39ae616" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_CLOUD_CONSOLE_URL "https://console.cloud.ultrawombat.com/" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID "6ff582aa-a62e-4a28-aac7-4d2224d8c58a" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_CLOUD_PERMISSION_AUDIENCE "cloud.ultrawombat.com" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_CLOUD_PERMISSIONURL "https://accounts.cloud.ultrawombat.com/external/organizations/" $(MAVEN_CONTEXT)
+	$(call run-env)
+
+.PHONY: env-identity-up
+env-identity-up: $(DATABASE) identity setup-maven-context
+	$(eval SERVICES := zeebe_identity)
+	$(eval SPRING_PROFILES_ACTIVE = dev,dev-data,identity-auth)
+	@set -o allexport && source $(MAVEN_CONTEXT) set +o allexport && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL $${EXT_CAMUNDA_IDENTITY_ISSUER_BACKEND_URL} $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IDENTITY_BASEURL $${EXT_CAMUNDA_IDENTITY_URL} $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) SERVER_PORT 8082 $(MAVEN_CONTEXT)
+	$(call run-env)
+
+.PHONY: env-identity-oauth-up
+env-identity-oauth-up: $(DATABASE) identity-oauth setup-maven-context
+	$(eval SERVICES := zeebe_oauth)
+	$(eval SPRING_PROFILES_ACTIVE = dev,dev-data,identity-auth)
+	@set -o allexport && source $(MAVEN_CONTEXT) set +o allexport && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL $${EXT_CAMUNDA_IDENTITY_ISSUER_BACKEND_URL} $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IDENTITY_BASEURL $${EXT_CAMUNDA_IDENTITY_URL} $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI $${EXT_SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI} $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI $${EXT_SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI} $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) ZEEBE_AUTHORIZATION_SERVER_URL $${EXT_ZEEBE_AUTHORIZATION_SERVER_URL} $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) SERVER_PORT 8082 $(MAVEN_CONTEXT)
+	$(call run-env)
+
+.PHONY: env-identity-mt-up
+env-identity-mt-up: $(DATABASE) identity-oauth multi-tenancy setup-maven-context
+	$(eval SERVICES := zeebe_mt)
+	$(eval SPRING_PROFILES_ACTIVE = dev,dev-data,identity-auth)
+	@set -o allexport && source $(MAVEN_CONTEXT) set +o allexport && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL $${EXT_CAMUNDA_IDENTITY_ISSUER_BACKEND_URL} $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IDENTITY_BASEURL $${EXT_CAMUNDA_IDENTITY_URL} $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI $${EXT_SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI} $(MAVEN_CONTEXT) && \
+        $(WRITE_OR_REPLACE_SCRIPT) SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI $${EXT_SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI} $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) ZEEBE_AUTHORIZATION_SERVER_URL $${EXT_ZEEBE_AUTHORIZATION_SERVER_URL} $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) SERVER_PORT 8082 $(MAVEN_CONTEXT)
+	$(call run-env)
 
 .PHONY: operate-up
 operate-up:
-	@DATABASE=elasticsearch docker compose up -d operate
-
-.PHONY: operate-up-os
-operate-os-up:
-	@DATABASE=opensearch docker compose up -d operate
-
-.PHONY: env-identity-up
-env-identity-up: elasticsearch-env identity-env
-	@DATABASE=elasticsearch docker compose -f ./config/docker-compose.identity.yml up -d identity zeebe
-	@mvn install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
-	@set -o allexport && source $(IDENTITY_CONFIG) && source $(DATABASE_CONFIG) && set +o allexport && env \
-		CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL=$${EXT_CAMUNDA_IDENTITY_ISSUER_BACKEND_URL} \
-		CAMUNDA_TASKLIST_IDENTITY_BASEURL=$${EXT_CAMUNDA_IDENTITY_URL} \
-		CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=$${EXT_CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS} \
-		CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=$${EXT_CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS} \
-		CAMUNDA_TASKLIST_$${DATABASE_CAPS}_URL=$${EXT_DATABASE_${DATABASE_CAPS}_URL} \
-		CAMUNDA_TASKLIST_ZEEBE$${DATABASE_CAPS}_URL=$${EXT_DATABASE_${DATABASE_CAPS}_URL} \
-		SERVER_PORT=8082 \
-	mvn -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneTasklist" -Dspring.profiles.active=dev,dev-data,identity-auth
-
-.PHONY: env-identity-os-up
-env-identity-os-up: opensearch-env identity-env
-	@DATABASE=opensearch docker compose -f ./config/docker-compose.identity.yml up -d identity zeebe
-	@mvn install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
-	@set -o allexport && source $(IDENTITY_CONFIG) && source $(OPENSEARCH_CONFIG) && set +o allexport && env \
-		CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL=$${EXT_CAMUNDA_IDENTITY_ISSUER_BACKEND_URL} \
-		CAMUNDA_TASKLIST_IDENTITY_BASEURL=$${EXT_CAMUNDA_IDENTITY_URL} \
-		CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=$${EXT_CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS} \
-		CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=$${EXT_CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS} \
-		CAMUNDA_TASKLIST_$${DATABASE_CAPS}_URL=$${EXT_DATABASE_${DATABASE_CAPS}_URL} \
-		CAMUNDA_TASKLIST_ZEEBE$${DATABASE_CAPS}_URL=$${EXT_DATABASE_${DATABASE_CAPS}_URL} \
-		SERVER_PORT=8082 \
-	mvn -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneTasklist" -Dspring.profiles.active=dev,dev-data,identity-auth
+	@DATABASE=$(DATABASE) docker compose up -d operate
 
 .PHONY: operate-identity-up
 operate-identity-up:
-	@DATABASE=elasticsearch docker compose -f ./config/docker-compose.identity.yml up -d operate
+	@DATABASE=$(DATABASE) docker compose -f $(COMPOSE_FILE) up -d operate_identity
 
-.PHONY: operate-identity-os
-operate-identity-os-up:
-	@DATABASE=opensearch docker compose -f ./config/docker-compose.identity.yml up -d operate
-
-.PHONY: env-identity-mt-up
-env-identity-mt-up: multi-tenancy-env elasticsearch-env
-	@docker compose -f ./config/docker-compose.identity.mt.yml up -d identity elasticsearch zeebe
-	@mvn install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
-	@set -o allexport && source $(IDENTITY_CONFIG) && source $(DATABASE_CONFIG) && source $(MULTI_TENANCY_CONFIG) && set +o allexport && env \
-		CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL=$${EXT_CAMUNDA_IDENTITY_ISSUER_BACKEND_URL} \
-		CAMUNDA_TASKLIST_IDENTITY_BASEURL=$${EXT_CAMUNDA_IDENTITY_URL} \
-		CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=$${EXT_CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS} \
-		CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=$${EXT_CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS} \
-		CAMUNDA_TASKLIST_$${DATABASE_CAPS}_URL=$${EXT_DATABASE_${DATABASE_CAPS}_URL} \
-		CAMUNDA_TASKLIST_ZEEBE$${DATABASE_CAPS}_URL=$${EXT_DATABASE_${DATABASE_CAPS}_URL} \
-        ZEEBE_AUTHORIZATION_SERVER_URL=$${EXT_ZEEBE_AUTHORIZATION_SERVER_URL} \
-		SERVER_PORT=8082 \
-	mvn -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneTasklist" -Dspring.profiles.active=dev,dev-data,identity-auth
-
-.PHONY: env-identity-mt-os-up
-env-identity-mt-os-up: multi-tenancy-env opensearch-env
-	@DATABASE=opensearch docker compose -f ./config/docker-compose.identity.mt.yml up -d identity zeebe
-	@mvn install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
-	@set -o allexport && source $(IDENTITY_CONFIG) && source $(DATABASE_CONFIG) && source $(MULTI_TENANCY_CONFIG) && set +o allexport && env \
-		CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL=$${EXT_CAMUNDA_IDENTITY_ISSUER_BACKEND_URL} \
-		CAMUNDA_TASKLIST_IDENTITY_BASEURL=$${EXT_CAMUNDA_IDENTITY_URL} \
-		CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=$${EXT_CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS} \
-		CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=$${EXT_CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS} \
-		CAMUNDA_TASKLIST_$${DATABASE_CAPS}_URL=$${EXT_DATABASE_${DATABASE_CAPS}_URL} \
-		CAMUNDA_TASKLIST_ZEEBE$${DATABASE_CAPS}_URL=$${EXT_DATABASE_${DATABASE_CAPS}_URL} \
-		ZEEBE_AUTHORIZATION_SERVER_URL=$${EXT_ZEEBE_AUTHORIZATION_SERVER_URL} \
-		SERVER_PORT=8082 \
-	mvn -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneTasklist" -Dspring.profiles.active=dev,dev-data,identity-auth
+.PHONY: operate-identity-oauth-up
+operate-identity-oauth-up:
+	@DATABASE=$(DATABASE) docker compose -f $(COMPOSE_FILE) up -d operate_oauth
 
 .PHONY: operate-identity-mt-up
 operate-identity-mt-up:
-	@DATABASE=elasticsearch docker compose -f ./config/docker-compose.identity.mt.yml up -d operate
-
-.PHONY: operate-identity-mt-os-up
-operate-identity-mt-os-up:
-	@DATABASE=opensearch docker compose -f ./config/docker-compose.identity.mt.yml up -d operate
+	@DATABASE=$(DATABASE) docker compose -f $(COMPOSE_FILE) up -d operate_mt
 
 .PHONY: env-down
 env-down:
-	@DATABASE=opensearch docker compose -f ./config/docker-compose.identity.yml down
-	@DATABASE=opensearch docker compose down -v
-	@DATABASE=elasticsearch docker compose -f ./config/docker-compose.identity.yml down
-	@DATABASE=elasticsearch docker compose down -v
+	@DATABASE=opensearch docker compose -f ./config/docker-compose.yml down -v
+	@DATABASE=elasticsearch docker compose -f ./config/docker-compose.yml down -v
 	@mvn clean
 
 .PHONY: env-status
@@ -142,28 +101,50 @@ env-clean: env-down
 	@docker system prune -a
 
 .PHONY: start-e2e
-start-e2e:
-	@curl --request DELETE --url http://localhost:9200/e2e* \
-    && docker rm -f zeebe-e2e || true \
-    && docker compose up --force-recreate -d elasticsearch zeebe-e2e \
-    && mvn install -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild  \
-    && CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX=e2etasklist \
-       CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX=e2e \
-       CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=localhost:26503 \
-       CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://localhost:8088 \
-       CAMUNDA_TASKLIST_IMPORTER_READERBACKOFF=0 \
-       CAMUNDA_TASKLIST_IMPORTER_SCHEDULERBACKOFF=0 \
-       SERVER_PORT=8081 \
-    mvn -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneTasklist" -Dspring.profiles.active=e2e-test -Dcamunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616
+start-e2e: elasticsearch setup-maven-context
+	@curl --request DELETE --url http://localhost:9200/e2e* || true
+	@docker rm -f zeebe-e2e || true
+	$(eval SERVICES := zeebe-e2e)
+	$(eval SPRING_PROFILES_ACTIVE = e2e-test)
+	@set -o allexport && source $(MAVEN_CONTEXT) set +o allexport && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX "e2etasklist" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX "e2e" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS "localhost:26503" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS "http://localhost:8088" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IMPORTER_READERBACKOFF "0" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IMPORTER_SCHEDULERBACKOFF "0" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_CLOUD_CLUSTERID "449ac2ad-d3c6-4c73-9c68-7752e39ae616" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) SERVER_PORT 8081 $(MAVEN_CONTEXT)
+	$(call run-env)
 
 .PHONY: lint
 lint:
 	@mvn spotless:apply
 
-define setup_env
+elasticsearch:
+	$(eval DATABASE := elasticsearch)
+	$(eval DATABASE_CAPS := ELASTICSEARCH)
+	$(call parse_env_file,env.database.elasticsearch,elasticsearch)
+
+opensearch:
+	$(eval DATABASE := opensearch)
+	$(eval DATABASE_CAPS := OPENSEARCH)
+	$(call parse_env_file,env.database.opensearch,opensearch)
+
+identity:
+	$(eval WITH_IDENTITY := true)
+	$(call parse_env_file,env.identity)
+
+identity-oauth: identity
+	$(eval WITH_OAUTH := true)
+	$(call parse_env_file,env.identity-oauth)
+
+multi-tenancy:
+	$(eval WITH_MULTI_TENANCY := true)
+	$(call parse_env_file,env.multi-tenancy)
+
+define parse_env_file
 	$(eval ENV_FILE := $(1))
- 	$(eval DATABASE := $(2))
- 	$(eval DATABASE_CAPS := $(shell echo "$(2)" | tr '[:lower:]' '[:upper:]'))
  	@grep -v '^#' ./config/envs/.$(ENV_FILE) | DATABASE=$(DATABASE) DATABASE_CAPS=$(DATABASE_CAPS) \
  		ZEEBE_CONTAINER_NAME=zeebe-$(DATABASE) \
  		TASKLIST_CONTAINER_NAME=tasklist-$(DATABASE) \
@@ -174,18 +155,13 @@ define setup_env
       fi; }
 endef
 
-elasticsearch-env:
-	@rm -f $(DATABASE_CONFIG)
-	$(call setup_env,env.database,elasticsearch)
+.PHONY: setup-maven-context
+setup-maven-context:
+	DATABASE_CAPS=$(DATABASE_CAPS) ./config/env_setup.sh $(WITH_IDENTITY) $(WITH_OAUTH) $(WITH_MULTI_TENANCY)
 
-opensearch-env:
-	@rm -f $($DATABASE_CONFIG)
-	$(call setup_env,env.database,opensearch)
+define run-env
+	@DATABASE=$(DATABASE) docker compose -f $(COMPOSE_FILE) up -d $(SERVICES)
+	@set -o allexport && source $(MAVEN_CONTEXT) && set +o allexport && \
+     	mvn -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneTasklist" -Dspring.profiles.active=$(SPRING_PROFILES_ACTIVE)
+endef
 
-identity-env:
-	@rm -f $(IDENTITY_CONFIG)
-	$(call setup_env,env.identity)
-
-multi-tenancy-env: identity-env
-	@rm -f $(MULTI_TENANCY_CONFIG)
-	$(call setup_env,env.multi-tenancy)
