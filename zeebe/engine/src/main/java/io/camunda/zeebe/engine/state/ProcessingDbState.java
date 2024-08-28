@@ -55,12 +55,14 @@ import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
+import io.camunda.zeebe.engine.state.routing.DbRoutingState;
 import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.user.DbUserState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
@@ -101,6 +103,8 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableUserState userState;
   private final MutableClockState clockState;
   private final MutableAuthorizationState authorizationState;
+  private final MutableRoutingState routingState;
+
   private final int partitionId;
 
   public ProcessingDbState(
@@ -147,6 +151,7 @@ public class ProcessingDbState implements MutableProcessingState {
     userState = new DbUserState(zeebeDb, transactionContext);
     clockState = new DbClockState(zeebeDb, transactionContext);
     authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
+    routingState = new DbRoutingState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -268,13 +273,18 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
-  public MutableClockState getClockState() {
-    return clockState;
+  public MutableAuthorizationState getAuthorizationState() {
+    return authorizationState;
   }
 
   @Override
-  public MutableAuthorizationState getAuthorizationState() {
-    return authorizationState;
+  public MutableRoutingState getRoutingState() {
+    return routingState;
+  }
+
+  @Override
+  public MutableClockState getClockState() {
+    return clockState;
   }
 
   @Override
