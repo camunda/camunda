@@ -11,14 +11,13 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.state.immutable.RoutingState;
+import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public final class DbRoutingState implements RoutingState {
+public final class DbRoutingState implements MutableRoutingState {
 
   /**
    * This state will later be extended to hold current and <i>desired</i> routing information. This
@@ -29,37 +28,39 @@ public final class DbRoutingState implements RoutingState {
   private final ColumnFamily<DbString, RoutingInfo> columnFamily;
   private final DbString key = new DbString();
   private final RoutingInfo currentRoutingInfo = new RoutingInfo();
-  private final RoutingInfo staticRoutingInfo = new RoutingInfo();
 
   public DbRoutingState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final TransactionContext transactionContext,
-      final int staticPartitionCount) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     columnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.CLOCK, transactionContext, key, currentRoutingInfo);
-    initializeRoutingInfo(staticRoutingInfo, staticPartitionCount);
   }
 
   @Override
   public Set<Integer> partitions() {
     key.wrapString(CURRENT_KEY);
-    return Optional.ofNullable(columnFamily.get(key)).orElse(staticRoutingInfo).getPartitions();
+    return columnFamily.get(key).getPartitions();
   }
 
   @Override
   public MessageCorrelation messageCorrelation() {
     key.wrapString(CURRENT_KEY);
-    return Optional.ofNullable(columnFamily.get(key))
-        .orElse(staticRoutingInfo)
-        .getMessageCorrelation();
+    return columnFamily.get(key).getMessageCorrelation();
   }
 
-  private static void initializeRoutingInfo(
-      final RoutingInfo routingInfo, final int partitionCount) {
+  @Override
+  public void initializeRoutingInfo(final int partitionCount) {
+    key.wrapString(CURRENT_KEY);
+    if (columnFamily.exists(key)) {
+      return;
+    }
+
     final var partitions =
         IntStream.rangeClosed(1, partitionCount).boxed().collect(Collectors.toUnmodifiableSet());
-    routingInfo.setPartitions(partitions);
-    routingInfo.setMessageCorrelation(new MessageCorrelation.HashMod(partitionCount));
+
+    currentRoutingInfo.reset();
+    currentRoutingInfo.setPartitions(partitions);
+    currentRoutingInfo.setMessageCorrelation(new MessageCorrelation.HashMod(partitionCount));
+    columnFamily.insert(key, currentRoutingInfo);
   }
 }
