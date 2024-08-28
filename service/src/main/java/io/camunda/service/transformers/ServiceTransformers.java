@@ -21,6 +21,7 @@ import io.camunda.service.search.filter.UserFilter;
 import io.camunda.service.search.filter.UserTaskFilter;
 import io.camunda.service.search.filter.VariableFilter;
 import io.camunda.service.search.filter.VariableValueFilter;
+import io.camunda.service.search.query.AuthorizationQuery;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
 import io.camunda.service.search.query.DecisionRequirementsQuery;
 import io.camunda.service.search.query.IncidentQuery;
@@ -30,6 +31,7 @@ import io.camunda.service.search.query.TypedSearchQuery;
 import io.camunda.service.search.query.UserQuery;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.query.VariableQuery;
+import io.camunda.service.search.sort.AuthorizationSort;
 import io.camunda.service.search.sort.DecisionDefinitionSort;
 import io.camunda.service.search.sort.DecisionRequirementsSort;
 import io.camunda.service.search.sort.IncidentSort;
@@ -106,6 +108,9 @@ public final class ServiceTransformers {
         new TypedSearchQueryTransformer<DecisionRequirementsFilter, DecisionRequirementsSort>(
             mappers));
     mappers.put(UserQuery.class, new TypedSearchQueryTransformer<UserFilter, UserSort>(mappers));
+    mappers.put(
+        AuthorizationQuery.class,
+        new TypedSearchQueryTransformer<AuthorizationFilter, AuthorizationSort>(mappers));
     mappers.put(
         IncidentQuery.class,
         new TypedSearchQueryTransformer<IncidentFilter, IncidentSort>(mappers));
