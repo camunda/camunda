@@ -22,10 +22,10 @@ import java.util.Optional;
 
 public class IncidentFilterTransformer implements FilterTransformer<IncidentFilter> {
 
-  private final ServiceTransformers transformers;
+  private final ServiceTransformers serviceTransformers;
 
   public IncidentFilterTransformer(final ServiceTransformers transformers) {
-    this.transformers = transformers;
+    serviceTransformers = transformers;
   }
 
   @Override
@@ -114,6 +114,6 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
   }
 
   private FilterTransformer<DateFieldFilter> getDateValueFilterTransformer() {
-    return transformers.getFilterTransformer(DateValueFilter.class);
+    return serviceTransformers.getFilterTransformer(DateValueFilter.class);
   }
 }
