@@ -102,24 +102,26 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   private PutComponentTemplateRequest putComponentTemplateRequest(
-      final String templateName, final String mappingsJson) {
-    try (final var mappingsStream = IOUtils.toInputStream(mappingsJson, StandardCharsets.UTF_8)) {
+      final ComponentTemplateDescriptor templateDescriptor) {
+    try (final var template =
+        getClass()
+            .getClassLoader()
+            .getResourceAsStream(templateDescriptor.getTemplateClasspathFileName())) {
       return new PutComponentTemplateRequest.Builder()
-          .name(templateName)
-          .template(
-              t ->
-                  t.mappings(
-                      deserializeJson(IndexTemplateSummary._DESERIALIZER, mappingsStream)
-                          .mappings()))
-          .create(true)
+          .name(templateDescriptor.getTemplateName())
+          .withJson(template)
+          .create(templateDescriptor.create())
           .build();
     } catch (final IOException e) {
       throw new RuntimeException(
-          "Failed to load mappings json into stream for template: [" + templateName + "]", e);
+          "Failed to load json into stream for component template: ["
+              + templateDescriptor.getTemplateName()
+              + "]",
+          e);
     }
   }
 
-  private <T> T deserializeJson(final JsonpDeserializer<T> deserializer, final InputStream json) {
+  public <T> T deserializeJson(final JsonpDeserializer<T> deserializer, final InputStream json) {
     try (final var parser = client._jsonpMapper().jsonProvider().createParser(json)) {
       return deserializer.deserialize(parser, client._jsonpMapper());
     }
