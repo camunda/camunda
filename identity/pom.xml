@@ -14,6 +14,7 @@
   <modules>
     <module>client</module>
     <module>common</module>
+    <module>migration</module>
   </modules>
 
   <properties>
