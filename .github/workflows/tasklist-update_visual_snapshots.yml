@@ -21,12 +21,13 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
-      - name: Setup yarn cache
+      - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "yarn"
-          cache-dependency-path: tasklist/client/yarn.lock
+      - uses: ./.github/actions/setup-yarn-cache
+        with:
+          directory: tasklist/client
       - name: Install node dependencies
         working-directory: ./tasklist/client
         run: yarn

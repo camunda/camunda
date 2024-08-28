@@ -75,12 +75,14 @@ jobs:
       - name: Setup yarn
         run: npm install -g yarn
 
-      - name: Setup yarn cache
+      - name: Setup NodeJS
         uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
-          cache: "yarn"
-          cache-dependency-path: optimize/client/yarn.lock
+
+      - uses: ./.github/actions/setup-yarn-cache
+        with:
+          directory: optimize/client
 
       - name: Build backend & frontend
         run: mvn clean install -DskipTests -Dskip.docker -pl optimize/backend -am

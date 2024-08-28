@@ -195,7 +195,7 @@ jobs:
   go-client:
     name: Go client tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
