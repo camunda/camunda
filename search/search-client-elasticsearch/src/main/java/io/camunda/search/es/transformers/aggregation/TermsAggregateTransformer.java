@@ -8,8 +8,8 @@
 package io.camunda.search.es.transformers.aggregation;
 
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
-import co.elastic.clients.elasticsearch._types.aggregations.MultiTermsAggregate;
-import co.elastic.clients.elasticsearch._types.aggregations.MultiTermsBucket;
+import co.elastic.clients.elasticsearch._types.aggregations.LongTermsAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
 import io.camunda.search.clients.aggregation.Bucket;
 import io.camunda.search.clients.aggregation.SearchAggregate;
 import io.camunda.search.clients.aggregation.SearchAggregateBuilders;
@@ -21,21 +21,24 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 public class TermsAggregateTransformer
-    extends AggregateOptionTransformer<MultiTermsAggregate, SearchTermsAggregate> {
+    extends AggregateOptionTransformer<LongTermsAggregate, SearchTermsAggregate> {
 
   public TermsAggregateTransformer(final ElasticsearchTransformers transformers) {
     super(transformers);
   }
 
   @Override
-  public SearchTermsAggregate apply(final MultiTermsAggregate value) {
+  public SearchTermsAggregate apply(final LongTermsAggregate value) {
     final var transformedBuckets = of(value.buckets().array());
     return SearchAggregateBuilders.terms().buckets(transformedBuckets).build();
   }
 
-  public List<Bucket> of(final List<MultiTermsBucket> buckets) {
+  public List<Bucket> of(final List<LongTermsBucket> buckets) {
     return buckets.stream()
-        .map(b -> new Bucket(getTransformedAggregates(b.aggregations())))
+        .map(
+            b ->
+                new Bucket(
+                    b.keyAsString(), b.docCount(), getTransformedAggregates(b.aggregations())))
         .toList();
   }
 
