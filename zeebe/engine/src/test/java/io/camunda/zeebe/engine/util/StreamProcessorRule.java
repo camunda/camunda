@@ -281,8 +281,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
 
     @Override
     protected void before() {
-      streams =
-          new TestStreams(partitionCount, tempFolder, closeables, actorSchedulerRule.get(), clock);
+      streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get(), clock);
       streams.withStreamProcessorMode(streamProcessorMode);
       streams.maxCommandsInBatch(maxCommandsInBatch);
 

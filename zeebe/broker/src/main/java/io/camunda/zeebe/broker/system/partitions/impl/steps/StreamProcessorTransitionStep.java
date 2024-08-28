@@ -20,7 +20,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
@@ -153,7 +152,6 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
 
     return StreamProcessor.builder()
         .meterRegistry(context.getMeterRegistry())
-        .clusterContext(new ClusterContextImpl(context.getPartitionCount()))
         .logStream(context.getLogStream())
         .actorSchedulingService(context.getActorSchedulingService())
         .zeebeDb(context.getZeebeDb())

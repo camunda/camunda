@@ -184,7 +184,7 @@ public final class ExporterRule implements TestRule {
 
     @Override
     protected void before() {
-      streams = new TestStreams(1, tempFolder, closeables, actorSchedulerRule.get(), clock);
+      streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get(), clock);
       streams.createLogStream(STREAM_NAME, partitionId);
     }
   }

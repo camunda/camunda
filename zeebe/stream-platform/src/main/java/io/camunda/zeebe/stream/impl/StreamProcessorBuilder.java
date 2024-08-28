@@ -10,7 +10,6 @@ package io.camunda.zeebe.stream.impl;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
-import io.camunda.zeebe.stream.api.ClusterContext;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
@@ -179,11 +178,6 @@ public final class StreamProcessorBuilder {
   public StreamProcessorBuilder setScheduledTaskCheckInterval(
       final Duration scheduledTaskCheckInterval) {
     streamProcessorContext.setScheduledTaskCheckInterval(scheduledTaskCheckInterval);
-    return this;
-  }
-
-  public StreamProcessorBuilder clusterContext(final ClusterContext clusterContext) {
-    streamProcessorContext.setClusterContext(clusterContext);
     return this;
   }
 }

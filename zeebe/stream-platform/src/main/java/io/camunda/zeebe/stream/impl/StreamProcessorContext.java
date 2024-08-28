@@ -12,7 +12,6 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.ActorControl;
-import io.camunda.zeebe.stream.api.ClusterContext;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
@@ -58,7 +57,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private ControllableStreamClock clock;
   private MeterRegistry meterRegistry;
   private Duration scheduledTaskCheckInterval = Duration.ofSeconds(1);
-  private ClusterContext clusterContext;
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -256,13 +254,5 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
       final Duration scheduledTaskCheckInterval) {
     this.scheduledTaskCheckInterval = scheduledTaskCheckInterval;
     return this;
-  }
-
-  public ClusterContext getClusterContext() {
-    return clusterContext;
-  }
-
-  public void setClusterContext(final ClusterContext clusterContext) {
-    this.clusterContext = clusterContext;
   }
 }
