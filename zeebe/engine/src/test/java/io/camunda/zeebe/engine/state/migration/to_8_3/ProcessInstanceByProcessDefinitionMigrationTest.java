@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -131,7 +132,7 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
           createElementInstance(processInstanceKey, processDefinitionKey, BpmnElementType.PROCESS));
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       elementInstanceKey.wrapLong(processInstanceKey);
@@ -157,7 +158,7 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
               elementInstanceKey, processDefinitionKey, BpmnElementType.START_EVENT));
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       this.elementInstanceKey.wrapLong(elementInstanceKey);
@@ -173,7 +174,8 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
       // given
 
       // when
-      final var actual = sut.needsToRun(new MigrationTaskContextImpl(processingState));
+      final var actual =
+          sut.needsToRun(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       assertThat(actual).isTrue();
@@ -196,7 +198,8 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
           createElementInstance(processInstanceKey, processDefinitionKey, BpmnElementType.PROCESS));
 
       // when
-      final var actual = sut.needsToRun(new MigrationTaskContextImpl(processingState));
+      final var actual =
+          sut.needsToRun(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       assertThat(actual).isFalse();
@@ -221,7 +224,8 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
           102L, createElementInstance(102L, processDefinitionKey, BpmnElementType.PROCESS));
 
       // when
-      final var actual = sut.needsToRun(new MigrationTaskContextImpl(processingState));
+      final var actual =
+          sut.needsToRun(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       assertThat(actual).isTrue();

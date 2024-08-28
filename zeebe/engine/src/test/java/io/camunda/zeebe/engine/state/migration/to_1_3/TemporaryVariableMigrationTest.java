@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +52,9 @@ public class TemporaryVariableMigrationTest {
 
       // when
       when(mockProcessingState.isEmpty(ZbColumnFamilies.TEMPORARY_VARIABLE_STORE)).thenReturn(true);
-      final var actual = sutMigration.needsToRun(new MigrationTaskContextImpl(mockProcessingState));
+      final var actual =
+          sutMigration.needsToRun(
+              new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState));
 
       // then
       assertThat(actual).isFalse();
@@ -65,7 +68,9 @@ public class TemporaryVariableMigrationTest {
       // when
       when(mockProcessingState.isEmpty(ZbColumnFamilies.TEMPORARY_VARIABLE_STORE))
           .thenReturn(false);
-      final var actual = sutMigration.needsToRun(new MigrationTaskContextImpl(mockProcessingState));
+      final var actual =
+          sutMigration.needsToRun(
+              new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState));
 
       // then
       assertThat(actual).isTrue();
@@ -77,7 +82,8 @@ public class TemporaryVariableMigrationTest {
       final var mockProcessingState = mock(MutableProcessingState.class, RETURNS_DEEP_STUBS);
 
       // when
-      sutMigration.runMigration(new MigrationTaskContextImpl(mockProcessingState));
+      sutMigration.runMigration(
+          new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState));
 
       // then
       verify(mockProcessingState.getMigrationState())
@@ -115,7 +121,9 @@ public class TemporaryVariableMigrationTest {
       // given database with legacy records
 
       // when
-      final var actual = sutMigration.needsToRun(new MigrationTaskContextImpl(processingState));
+      final var actual =
+          sutMigration.needsToRun(
+              new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       assertThat(actual).describedAs("Migration should run").isTrue();
@@ -127,8 +135,11 @@ public class TemporaryVariableMigrationTest {
       // given database with legacy records
 
       // when
-      sutMigration.runMigration(new MigrationTaskContextImpl(processingState));
-      final var actual = sutMigration.needsToRun(new MigrationTaskContextImpl(processingState));
+      sutMigration.runMigration(
+          new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
+      final var actual =
+          sutMigration.needsToRun(
+              new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       assertThat(actual).describedAs("Migration should run").isFalse();
@@ -152,7 +163,8 @@ public class TemporaryVariableMigrationTest {
           EVENT_SCOPE_KEY, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
       // when
-      sutMigration.runMigration(new MigrationTaskContextImpl(processingState));
+      sutMigration.runMigration(
+          new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       final EventTrigger oldEventTrigger =

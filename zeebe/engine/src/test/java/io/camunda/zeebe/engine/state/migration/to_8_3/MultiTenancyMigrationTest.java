@@ -60,6 +60,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import java.util.ArrayList;
@@ -110,7 +111,7 @@ public class MultiTenancyMigrationTest {
               .setChecksum(wrapString("checksum")));
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       assertProcessPersisted(
@@ -140,7 +141,7 @@ public class MultiTenancyMigrationTest {
               .setChecksum(wrapString("checksum")));
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       assertProcessPersisted(
@@ -171,7 +172,7 @@ public class MultiTenancyMigrationTest {
               .setChecksum(wrapString("checksum")));
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       assertProcessPersisted(
@@ -202,7 +203,7 @@ public class MultiTenancyMigrationTest {
               .setChecksum(wrapString("checksum")));
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       assertThat(
@@ -282,7 +283,7 @@ public class MultiTenancyMigrationTest {
               .setDecisionKey(456)
               .setTenantId(""));
 
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       final PersistedDecision persistedDecision =
           decisionState
@@ -319,7 +320,7 @@ public class MultiTenancyMigrationTest {
               .setDecisionKey(456)
               .setTenantId(""));
 
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       final DeployedDrg deployedDrg =
           decisionState
@@ -357,7 +358,7 @@ public class MultiTenancyMigrationTest {
               .setDecisionKey(456)
               .setTenantId(""));
 
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       final List<PersistedDecision> persistedDecisions =
           decisionState.findDecisionsByTenantAndDecisionRequirementsKey(
@@ -396,7 +397,7 @@ public class MultiTenancyMigrationTest {
               .setDecisionKey(456)
               .setTenantId(""));
 
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       final PersistedDecision persistedDecision =
           decisionState
@@ -434,7 +435,7 @@ public class MultiTenancyMigrationTest {
               .setDecisionKey(456)
               .setTenantId(""));
 
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       final DeployedDrg deployedDrg =
           decisionState
@@ -495,7 +496,7 @@ public class MultiTenancyMigrationTest {
       legacyState.storeDecisionRecord(decisionV2);
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
 
@@ -553,7 +554,7 @@ public class MultiTenancyMigrationTest {
       legacyState.put(123, messageRecord);
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       final AtomicReference<StoredMessage> message = new AtomicReference<>();
@@ -617,7 +618,7 @@ public class MultiTenancyMigrationTest {
           putMessageStartSubscriptionRecord(processDefinitionKey);
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       final AtomicReference<MessageStartEventSubscription> subscriptionRef =
@@ -641,7 +642,7 @@ public class MultiTenancyMigrationTest {
           putMessageStartSubscriptionRecord(processDefinitionKey);
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       final AtomicReference<MessageStartEventSubscription> subscriptionRef =
@@ -736,7 +737,7 @@ public class MultiTenancyMigrationTest {
       legacyState.put(key, record);
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       final AtomicReference<MessageSubscription> subscriptionRef = new AtomicReference<>();
@@ -816,7 +817,7 @@ public class MultiTenancyMigrationTest {
       legacyState.put(key, record);
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       final var subscription =
@@ -912,7 +913,7 @@ public class MultiTenancyMigrationTest {
       legacyState.create(jobKey, jobRecord);
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       final List<JobRecord> actualJobs = new ArrayList<>();
@@ -981,7 +982,7 @@ public class MultiTenancyMigrationTest {
       legacyState.insertProcessVersion(processId, 5);
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       processIdKey.wrapString(processId);
@@ -997,7 +998,7 @@ public class MultiTenancyMigrationTest {
       legacyState.insertProcessVersion(processId, 0);
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       processIdKey.wrapString(processId);

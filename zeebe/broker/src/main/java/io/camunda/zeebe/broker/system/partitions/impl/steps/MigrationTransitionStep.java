@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import java.time.InstantSource;
 
@@ -49,7 +50,8 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
             context.getBrokerCfg().getExperimental().getEngine().createEngineConfiguration(),
             InstantSource.system());
 
-    final var dbMigrator = new DbMigratorImpl(processingState);
+    final var dbMigrator =
+        new DbMigratorImpl(new ClusterContextImpl(context.getPartitionCount()), processingState);
     try {
       dbMigrator.runMigrations();
     } catch (final Exception e) {

@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.ProcessInstanceByProcessDe
 import io.camunda.zeebe.engine.state.migration.to_8_4.MultiTenancySignalSubscriptionStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_5.ColumnFamilyPrefixCorrectionMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.stream.api.ClusterContext;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,13 +64,15 @@ public class DbMigratorImpl implements DbMigrator {
   private final MutableMigrationTaskContext migrationTaskContext;
   private final List<MigrationTask> migrationTasks;
 
-  public DbMigratorImpl(final MutableProcessingState processingState) {
-    this(processingState, MIGRATION_TASKS);
+  public DbMigratorImpl(
+      final ClusterContext clusterContext, final MutableProcessingState processingState) {
+    this(new MigrationTaskContextImpl(clusterContext, processingState), MIGRATION_TASKS);
   }
 
   public DbMigratorImpl(
-      final MutableProcessingState processingState, final List<MigrationTask> migrationTasks) {
-    migrationTaskContext = new MigrationTaskContextImpl(processingState);
+      final MutableMigrationTaskContext migrationTaskContext,
+      final List<MigrationTask> migrationTasks) {
+    this.migrationTaskContext = migrationTaskContext;
     this.migrationTasks = migrationTasks;
   }
 

@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,7 +71,7 @@ public class MultiTenancyMigrationTest {
       legacyState.put(signalSubscriptionKey, signalSubscription);
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       final AtomicInteger subscriptionCounter = new AtomicInteger(0);
@@ -111,7 +112,7 @@ public class MultiTenancyMigrationTest {
       legacyState.put(signalSubscriptionKey, signalSubscription);
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       final AtomicInteger subscriptionCounter = new AtomicInteger(0);
@@ -151,7 +152,7 @@ public class MultiTenancyMigrationTest {
       legacyState.put(signalSubscriptionKey, signalSubscription);
 
       // when
-      sut.runMigration(new MigrationTaskContextImpl(processingState));
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       final AtomicInteger subscriptionCounter = new AtomicInteger(0);

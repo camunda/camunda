@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -77,7 +78,7 @@ public class JobBackoffRestoreMigrationTest {
     backoffColumnFamily.deleteExisting(backoffJobKey);
 
     // when
-    final var context = new MigrationTaskContextImpl(processingState);
+    final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
     assertThat(jobBackoffRestoreMigration.needsToRun(context)).isTrue();
     jobBackoffRestoreMigration.runMigration(context);
 
@@ -104,7 +105,7 @@ public class JobBackoffRestoreMigrationTest {
     assertThat(backoffColumnFamily.count()).isEqualTo(1);
 
     // when
-    final var context = new MigrationTaskContextImpl(processingState);
+    final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
     assertThat(jobBackoffRestoreMigration.needsToRun(context)).isTrue();
     jobBackoffRestoreMigration.runMigration(context);
 
@@ -129,7 +130,7 @@ public class JobBackoffRestoreMigrationTest {
     assertThat(backoffColumnFamily.count()).isEqualTo(2);
 
     // when
-    final var context = new MigrationTaskContextImpl(processingState);
+    final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
     assertThat(jobBackoffRestoreMigration.needsToRun(context)).isTrue();
     jobBackoffRestoreMigration.runMigration(context);
 
@@ -155,7 +156,7 @@ public class JobBackoffRestoreMigrationTest {
     assertThat(backoffColumnFamily.count()).isEqualTo(1);
 
     // when
-    final var context = new MigrationTaskContextImpl(processingState);
+    final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
     assertThat(jobBackoffRestoreMigration.needsToRun(context)).isTrue();
     jobBackoffRestoreMigration.runMigration(context);
 
@@ -181,7 +182,7 @@ public class JobBackoffRestoreMigrationTest {
     backoffKey.wrapLong(backoffRecord.getRecurringTime());
 
     // when
-    final var context = new MigrationTaskContextImpl(processingState);
+    final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
     assertThat(jobBackoffRestoreMigration.needsToRun(context)).isTrue();
     jobBackoffRestoreMigration.runMigration(context);
 

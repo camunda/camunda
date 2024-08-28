@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -51,7 +52,9 @@ public class DecisionRequirementsMigrationTest {
               ZbColumnFamilies
                   .DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION))
           .thenReturn(true);
-      final var actual = sutMigration.needsToRun(new MigrationTaskContextImpl(mockProcessingState));
+      final var actual =
+          sutMigration.needsToRun(
+              new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState));
 
       // then
       assertThat(actual).isFalse();
@@ -69,7 +72,9 @@ public class DecisionRequirementsMigrationTest {
               ZbColumnFamilies
                   .DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION))
           .thenReturn(false);
-      final var actual = sutMigration.needsToRun(new MigrationTaskContextImpl(mockProcessingState));
+      final var actual =
+          sutMigration.needsToRun(
+              new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState));
 
       // then
       assertThat(actual).isFalse();
@@ -87,7 +92,9 @@ public class DecisionRequirementsMigrationTest {
               ZbColumnFamilies
                   .DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION))
           .thenReturn(true);
-      final var actual = sutMigration.needsToRun(new MigrationTaskContextImpl(mockProcessingState));
+      final var actual =
+          sutMigration.needsToRun(
+              new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState));
 
       // then
       assertThat(actual).isTrue();
@@ -99,7 +106,8 @@ public class DecisionRequirementsMigrationTest {
       final var mockProcessingState = mock(MutableProcessingState.class, RETURNS_DEEP_STUBS);
 
       // when
-      sutMigration.runMigration(new MigrationTaskContextImpl(mockProcessingState));
+      sutMigration.runMigration(
+          new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState));
 
       // then
       verify(mockProcessingState.getMigrationState()).migrateDrgPopulateDrgVersionByDrgIdAndKey();
@@ -152,7 +160,7 @@ public class DecisionRequirementsMigrationTest {
           key, sampleDecisionRequirementsRecord().setDecisionRequirementsKey(key));
 
       // when
-      final var context = new MigrationTaskContextImpl(processingState);
+      final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
       sutMigration.runMigration(context);
       final var shouldRun = sutMigration.needsToRun(context);
 
@@ -175,7 +183,8 @@ public class DecisionRequirementsMigrationTest {
       legacyDecisionState.putDecisionRequirements(drg2.getDecisionRequirementsKey(), drg2);
 
       // when
-      sutMigration.runMigration(new MigrationTaskContextImpl(processingState));
+      sutMigration.runMigration(
+          new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       assertContainsDecisionRequirements(drg1);

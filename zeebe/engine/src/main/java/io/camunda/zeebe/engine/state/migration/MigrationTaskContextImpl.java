@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.state.migration;
 
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.stream.api.ClusterContext;
 
-public record MigrationTaskContextImpl(MutableProcessingState processingState)
+public record MigrationTaskContextImpl(
+    ClusterContext clusterContext, MutableProcessingState processingState)
     implements MutableMigrationTaskContext {}
