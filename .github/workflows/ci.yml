@@ -509,7 +509,8 @@ jobs:
     outputs:
       flakyUnitTests: ${{ needs.java-unit-tests.outputs.flakyTests }}
       flakyITs: ${{ needs.integration-tests.outputs.flakyTests }}
-      wasCanceled: ${{ (contains(needs.*.result, 'cancelled') && 1) || 0 }}
+      hasCanceled: ${{ (contains(needs.*.result, 'cancelled') && 1) || 0 }}
+      hasFailed: ${{ contains(needs.*.result, 'failure')) && 1) || 0 }}
     needs:
       - actionlint
       - java-unit-tests
@@ -551,7 +552,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":alarm: Build on `main` failed! :alarm:"
+                    "text": ":alarm: Build on `main` failed! Was canceled: ${{ env.HAS_CANCELED }} has failed: ${{ env.HAS_FAILED }}:alarm:"
                   }
                 },
                 {
@@ -585,7 +586,8 @@ jobs:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
           FLAKY_UNIT_TESTS: ${{needs.check-results.outputs.flakyUnitTests}}
           FLAKY_ITS: ${{needs.check-results.outputs.flakyITs}}
-          WAS_CANCELED: ${{needs.check-results.outputs.wasCanceled}}
+          HAS_CANCELED: ${{needs.check-results.outputs.hasCanceled}}
+          HAS_FAILED: ${{needs.check-results.outputs.hasFailed}}
 
   deploy-snapshots:
     name: Deploy snapshot artifacts
