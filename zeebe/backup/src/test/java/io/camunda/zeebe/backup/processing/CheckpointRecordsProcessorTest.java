@@ -32,7 +32,6 @@ import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
-import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import io.camunda.zeebe.stream.impl.RecordProcessorContextImpl;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import java.nio.file.Path;
@@ -82,8 +81,7 @@ final class CheckpointRecordsProcessorTest {
         context,
         null,
         new DbKeyGenerator(1, zeebeDb, context),
-        StreamClock.controllable(InstantSource.system()),
-        new ClusterContextImpl(1));
+        StreamClock.controllable(InstantSource.system()));
   }
 
   @AfterEach

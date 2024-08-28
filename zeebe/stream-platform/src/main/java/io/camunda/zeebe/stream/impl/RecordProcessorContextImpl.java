@@ -9,7 +9,6 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.stream.api.ClusterContext;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
@@ -31,7 +30,6 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   private final InterPartitionCommandSender partitionCommandSender;
   private final KeyGenerator keyGenerator;
   private final ControllableStreamClock clock;
-  private final ClusterContext clusterContext;
 
   public RecordProcessorContextImpl(
       final int partitionId,
@@ -40,8 +38,7 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
       final TransactionContext transactionContext,
       final InterPartitionCommandSender partitionCommandSender,
       final KeyGeneratorControls keyGeneratorControls,
-      final ControllableStreamClock clock,
-      final ClusterContext clusterContext) {
+      final ControllableStreamClock clock) {
     this.partitionId = partitionId;
     this.scheduleService = scheduleService;
     this.zeebeDb = zeebeDb;
@@ -49,7 +46,6 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
     this.partitionCommandSender = partitionCommandSender;
     keyGenerator = keyGeneratorControls;
     this.clock = Objects.requireNonNull(clock);
-    this.clusterContext = clusterContext;
   }
 
   @Override
@@ -95,10 +91,5 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   @Override
   public ControllableStreamClock getClock() {
     return clock;
-  }
-
-  @Override
-  public ClusterContext clusterContext() {
-    return clusterContext;
   }
 }
