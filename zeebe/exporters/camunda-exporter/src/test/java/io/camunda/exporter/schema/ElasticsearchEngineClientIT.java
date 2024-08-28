@@ -16,6 +16,7 @@ import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.schema.descriptors.ComponentTemplateDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
@@ -47,7 +48,7 @@ public class ElasticsearchEngineClientIT {
 
     // Create the transport with a Jackson mapper
     final ElasticsearchTransport transport =
-        new RestClientTransport(restClient, new JacksonJsonpMapper());
+        new RestClientTransport(restClient, new JacksonJsonpMapper(new ObjectMapper()));
 
     // And create the API client
     elsClient = new ElasticsearchClient(transport);
