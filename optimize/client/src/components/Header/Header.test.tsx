@@ -25,6 +25,8 @@ const defaultUiConfig = {
   },
   onboarding: {orgId: 'orgId'},
   notificationsUrl: 'notificationsUrl',
+  validLicense: true,
+  licenseType: 'production',
 };
 
 jest.mock('hooks', () => ({
@@ -62,15 +64,33 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-it('should show license warning if enterpriseMode is not set', async () => {
-  (useUiConfig as jest.Mock).mockReturnValue({...defaultUiConfig, enterpriseMode: false});
+it('should show license tag if not in saas', async () => {
   const node = shallow(<Header />);
 
   await runLastEffect();
   await node.update();
 
-  const tags = node.find(C3Navigation).prop<C3NavigationProps['navbar']>('navbar').tags;
-  expect(tags?.find((tag) => tag.key === 'licenseWarning')).toBeDefined();
+  expect(
+    node.find(C3Navigation).prop<C3NavigationProps['navbar']>('navbar').licenseTag
+  ).toMatchObject({
+    isProductionLicense: true,
+    show: true,
+  });
+});
+
+it('should hide license tag in saas', async () => {
+  (useUiConfig as jest.Mock).mockReturnValue({...defaultUiConfig, licenseType: 'saas'});
+  const node = shallow(<Header />);
+
+  await runLastEffect();
+  await node.update();
+
+  expect(
+    node.find(C3Navigation).prop<C3NavigationProps['navbar']>('navbar').licenseTag
+  ).toMatchObject({
+    isProductionLicense: true,
+    show: false,
+  });
 });
 
 it('should not display navbar and sidebar if noAction prop is specified', () => {
