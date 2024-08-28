@@ -82,6 +82,7 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+          docker: false
           maven-cache-key-modifier: java-checks
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
