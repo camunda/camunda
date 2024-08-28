@@ -57,7 +57,7 @@ jobs:
     if: failure()
     steps:
       - id: notify-message
-        run: echo "RESULT=${{ ((needs.check-results.outputs.hasCanceled && 'canceled') || (needs.check-results.outputs.hasFailed && 'failed')) || 'wtf' }}" >> $GITHUB_ENV
+        run: echo "RESULT=${{ (needs.check-results.outputs.hasCanceled && 'canceled' || 'failed' }}" >> $GITHUB_ENV
 
       - id: slack-notify
         name: Send slack notification
