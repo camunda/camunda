@@ -43,12 +43,6 @@
     "rightsReserved": "Alle Rechte vorbehalten",
     "timezone": "Datum und Uhrzeit werden in der lokalen Zeitzone angezeigt:"
   },
-  "license": {
-    "nonProduction": "Lizenz: Kein Produktivbetrieb",
-    "referTo": "Für mehr Informationen zum Produktivbetrieb lesen Sie bitte unsere",
-    "terms": "Allgemeinen Geschäftsbedingungen (AGB)",
-    "contactSales": "wenden Sie sich an den Vertrieb"
-  },
   "saveGuard": {
     "header": "Ungespeicherte Änderungen",
     "text": "{label} hat ungespeicherte Änderungen. Wollen Sie speichern?",
