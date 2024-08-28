@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.exceptions;
 
-public class ExporterElasticsearchException extends RuntimeException {
-  public ExporterElasticsearchException(final String message) {
-    super(message);
+public class ElasticsearchExporterException extends RuntimeException {
+  public ElasticsearchExporterException(final String message, final Throwable cause) {
+    super(message, cause);
   }
 }

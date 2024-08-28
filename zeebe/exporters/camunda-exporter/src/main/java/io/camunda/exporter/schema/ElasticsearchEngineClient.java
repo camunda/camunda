@@ -16,7 +16,7 @@ import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.json.JsonpDeserializer;
-import io.camunda.exporter.exceptions.ExporterElasticsearchException;
+import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.schema.descriptors.ComponentTemplateDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
@@ -42,8 +42,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       client.indices().create(request);
       log.debug("Index [{}] was successfully created", indexDescriptor.getIndexName());
     } catch (final IOException e) {
-      log.error("Index [{}] was NOT created", indexDescriptor.getIndexName(), e);
-      throw new ExporterElasticsearchException(e.getMessage());
+      final var errMsg =
+          String.format("Index [%s] was not created", indexDescriptor.getIndexName());
+      log.error(errMsg, e);
+      throw new ElasticsearchExporterException(errMsg, e);
     }
   }
 
@@ -55,8 +57,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       client.indices().putIndexTemplate(request);
       log.debug("Template [{}] was successfully created", templateDescriptor.getTemplateName());
     } catch (final IOException e) {
-      log.error("Template [{}] was NOT created", templateDescriptor.getTemplateName(), e);
-      throw new ExporterElasticsearchException(e.getMessage());
+      final var errMsg =
+          String.format("Template [%s] was NOT created", templateDescriptor.getTemplateName());
+      log.error(errMsg, e);
+      throw new ElasticsearchExporterException(errMsg, e);
     }
   }
 
@@ -69,8 +73,11 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       log.debug(
           "Component template [{}] was successfully created", templateDescriptor.getTemplateName());
     } catch (final IOException e) {
-      log.error("Component template [{}] was NOT created", templateDescriptor.getTemplateName(), e);
-      throw new ExporterElasticsearchException(e.getMessage());
+      final var errMsg =
+          String.format(
+              "Component template [%s] was NOT created", templateDescriptor.getTemplateName());
+      log.error(errMsg, e);
+      throw new ElasticsearchExporterException(errMsg, e);
     }
   }
 
@@ -82,8 +89,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       client.indices().putMapping(request);
       log.debug("Mapping in [{}] was successfully updated", indexDescriptor.getIndexName());
     } catch (final IOException e) {
-      log.error("Mapping in [{}] was NOT updated", indexDescriptor.getIndexName(), e);
-      throw new ExporterElasticsearchException(e.getMessage());
+      final var errMsg =
+          String.format("Mapping in [{}] was NOT updated", indexDescriptor.getIndexName());
+      log.error(errMsg, e);
+      throw new ElasticsearchExporterException(errMsg, e);
     }
   }
 
@@ -96,7 +105,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           .properties(deserializeJson(TypeMapping._DESERIALIZER, propertiesStream).properties())
           .build();
     } catch (final IOException e) {
-      throw new RuntimeException(
+      throw new ElasticsearchExporterException(
           "Failed to load properties json into stream for put mapping into indexes matching the descriptor: ["
               + indexDescriptor
               + "]",
@@ -116,7 +125,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           .create(templateDescriptor.create())
           .build();
     } catch (final IOException e) {
-      throw new RuntimeException(
+      throw new ElasticsearchExporterException(
           "Failed to load json into stream for component template: ["
               + templateDescriptor.getTemplateName()
               + "]",
@@ -155,7 +164,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           .create(true)
           .build();
     } catch (final IOException e) {
-      throw new RuntimeException(
+      throw new ElasticsearchExporterException(
           "Failed to load file "
               + indexTemplateDescriptor.getMappingsClasspathFilename()
               + " from classpath.",
@@ -173,7 +182,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
               deserializeJson(IndexTemplateSummary._DESERIALIZER, templateMappings).mappings())
           .build();
     } catch (final IOException e) {
-      throw new RuntimeException(
+      throw new ElasticsearchExporterException(
           "Failed to load file "
               + indexDescriptor.getMappingsClasspathFilename()
               + " from classpath.",
