@@ -47,6 +47,19 @@ public interface PartitionChangeExecutor {
   ActorFuture<Void> leave(int partitionId);
 
   /**
+   * The implementation of this method must bootstrap the partition with a single replica. The
+   * implementation must be idempotent. * If the node restarts after this method was called, but
+   * before marking the operation as * completed, it will be retried after the restart.
+   *
+   * @param partitionId id of the partition
+   * @param priority priority of the member in the partition used for Raft's priority election
+   * @param partitionConfig the configuration of the partition
+   * @return a future that completes when the partition is bootstrapped
+   */
+  ActorFuture<Void> bootstrap(
+      int partitionId, int priority, DynamicPartitionConfig partitionConfig);
+
+  /**
    * Updates the priority of the member used for raft priority election for the given partition.
    *
    * @param partitionId id of the partition
