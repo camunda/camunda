@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.schema;
 
+import io.camunda.exporter.schema.descriptors.ComponentTemplateDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
 
@@ -15,25 +16,7 @@ public interface SearchEngineClient {
 
   void createIndexTemplate(final IndexTemplateDescriptor indexDescriptor);
 
-  /**
-   * The {@code mappingsJson} field should have a root mappings field, for example:
-   *
-   * <pre>{@code
-   * {
-   *   "mappings" : {
-   *     "properties" : {
-   *       "test" : {
-   *         "type" : "keyword"
-   *       }
-   *     }
-   *   }
-   * }
-   * }</pre>
-   *
-   * @param templateName name of the component template to create
-   * @param mappingsJson a json string representing the mappings block for the template
-   */
-  void createComponentTemplate(final String templateName, final String mappingsJson);
+  void createComponentTemplate(final ComponentTemplateDescriptor templateDescriptor);
 
   /**
    * The {@code propertiesJson} should have a root properties field, for example:
