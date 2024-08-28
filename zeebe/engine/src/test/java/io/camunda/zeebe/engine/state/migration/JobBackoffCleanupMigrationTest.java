@@ -72,7 +72,7 @@ public class JobBackoffCleanupMigrationTest {
     jobsColumnFamily.deleteExisting(jobKey);
 
     // when
-    jobBackoffCleanupMigration.runMigration(processingState);
+    jobBackoffCleanupMigration.runMigration(new MigrationTaskContextImpl(processingState));
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isTrue();
@@ -88,7 +88,7 @@ public class JobBackoffCleanupMigrationTest {
     jobState.fail(jobKey.getValue(), record);
 
     // when
-    jobBackoffCleanupMigration.runMigration(processingState);
+    jobBackoffCleanupMigration.runMigration(new MigrationTaskContextImpl(processingState));
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
@@ -108,7 +108,7 @@ public class JobBackoffCleanupMigrationTest {
     jobState.fail(jobKey.getValue(), record);
 
     // when
-    jobBackoffCleanupMigration.runMigration(processingState);
+    jobBackoffCleanupMigration.runMigration(new MigrationTaskContextImpl(processingState));
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();

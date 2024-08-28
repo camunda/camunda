@@ -60,7 +60,7 @@ public class DbMigratorImpl implements DbMigrator {
   // Be mindful of https://github.com/camunda/camunda/issues/7248. In particular, that issue
   // should be solved first, before adding any migration that can take a long time
 
-  private final MutableProcessingState processingState;
+  private final MutableMigrationTaskContext migrationTaskContext;
   private final List<MigrationTask> migrationTasks;
 
   public DbMigratorImpl(final MutableProcessingState processingState) {
@@ -69,7 +69,7 @@ public class DbMigratorImpl implements DbMigrator {
 
   public DbMigratorImpl(
       final MutableProcessingState processingState, final List<MigrationTask> migrationTasks) {
-    this.processingState = processingState;
+    migrationTaskContext = new MigrationTaskContextImpl(processingState);
     this.migrationTasks = migrationTasks;
   }
 
@@ -95,7 +95,8 @@ public class DbMigratorImpl implements DbMigrator {
   }
 
   private VersionCompatibilityCheck.CheckResult checkVersionCompatibility() {
-    final var migratedByVersion = processingState.getMigrationState().getMigratedByVersion();
+    final var migratedByVersion =
+        migrationTaskContext.processingState().getMigrationState().getMigratedByVersion();
     final var currentVersion = VersionUtil.getVersion();
     final CheckResult checkResult =
         VersionCompatibilityCheck.check(migratedByVersion, currentVersion);
@@ -122,7 +123,10 @@ public class DbMigratorImpl implements DbMigrator {
   }
 
   private void markMigrationsAsCompleted() {
-    processingState.getMigrationState().setMigratedByVersion(VersionUtil.getVersion());
+    migrationTaskContext
+        .processingState()
+        .getMigrationState()
+        .setMigratedByVersion(VersionUtil.getVersion());
   }
 
   private void logPreview(final List<MigrationTask> migrationTasks) {
@@ -149,7 +153,7 @@ public class DbMigratorImpl implements DbMigrator {
 
   private boolean handleMigrationTask(
       final MigrationTask migrationTask, final int index, final int total) {
-    if (migrationTask.needsToRun(processingState)) {
+    if (migrationTask.needsToRun(migrationTaskContext)) {
       runMigration(migrationTask, index, total);
       return true;
     } else {
@@ -170,7 +174,7 @@ public class DbMigratorImpl implements DbMigrator {
   private void runMigration(final MigrationTask migrationTask, final int index, final int total) {
     LOGGER.info("Starting {} migration ({}/{})", migrationTask.getIdentifier(), index, total);
     final var startTime = System.currentTimeMillis();
-    migrationTask.runMigration(processingState);
+    migrationTask.runMigration(migrationTaskContext);
     final var duration = System.currentTimeMillis() - startTime;
 
     LOGGER.debug("{} migration completed in {} ms.", migrationTask.getIdentifier(), duration);

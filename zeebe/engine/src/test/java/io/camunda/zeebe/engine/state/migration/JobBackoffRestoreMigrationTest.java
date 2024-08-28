@@ -77,8 +77,9 @@ public class JobBackoffRestoreMigrationTest {
     backoffColumnFamily.deleteExisting(backoffJobKey);
 
     // when
-    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isTrue();
-    jobBackoffRestoreMigration.runMigration(processingState);
+    final var context = new MigrationTaskContextImpl(processingState);
+    assertThat(jobBackoffRestoreMigration.needsToRun(context)).isTrue();
+    jobBackoffRestoreMigration.runMigration(context);
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
@@ -103,8 +104,9 @@ public class JobBackoffRestoreMigrationTest {
     assertThat(backoffColumnFamily.count()).isEqualTo(1);
 
     // when
-    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isTrue();
-    jobBackoffRestoreMigration.runMigration(processingState);
+    final var context = new MigrationTaskContextImpl(processingState);
+    assertThat(jobBackoffRestoreMigration.needsToRun(context)).isTrue();
+    jobBackoffRestoreMigration.runMigration(context);
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
@@ -127,8 +129,9 @@ public class JobBackoffRestoreMigrationTest {
     assertThat(backoffColumnFamily.count()).isEqualTo(2);
 
     // when
-    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isTrue();
-    jobBackoffRestoreMigration.runMigration(processingState);
+    final var context = new MigrationTaskContextImpl(processingState);
+    assertThat(jobBackoffRestoreMigration.needsToRun(context)).isTrue();
+    jobBackoffRestoreMigration.runMigration(context);
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
@@ -152,8 +155,9 @@ public class JobBackoffRestoreMigrationTest {
     assertThat(backoffColumnFamily.count()).isEqualTo(1);
 
     // when
-    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isTrue();
-    jobBackoffRestoreMigration.runMigration(processingState);
+    final var context = new MigrationTaskContextImpl(processingState);
+    assertThat(jobBackoffRestoreMigration.needsToRun(context)).isTrue();
+    jobBackoffRestoreMigration.runMigration(context);
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
@@ -177,8 +181,9 @@ public class JobBackoffRestoreMigrationTest {
     backoffKey.wrapLong(backoffRecord.getRecurringTime());
 
     // when
-    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isTrue();
-    jobBackoffRestoreMigration.runMigration(processingState);
+    final var context = new MigrationTaskContextImpl(processingState);
+    assertThat(jobBackoffRestoreMigration.needsToRun(context)).isTrue();
+    jobBackoffRestoreMigration.runMigration(context);
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();

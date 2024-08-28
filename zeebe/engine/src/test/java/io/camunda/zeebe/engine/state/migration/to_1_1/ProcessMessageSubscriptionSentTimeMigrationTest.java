@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.migration.MigrationTaskContextImpl;
 import io.camunda.zeebe.engine.state.migration.ProcessMessageSubscriptionSentTimeMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -37,11 +37,11 @@ public class ProcessMessageSubscriptionSentTimeMigrationTest {
     @Test
     public void noMigrationNeededWhenColumnIsEmpty() {
       // given
-      final var mockProcessingState = mock(ProcessingState.class);
+      final var mockProcessingState = mock(MutableProcessingState.class);
       when(mockProcessingState.isEmpty(ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_SENT_TIME))
           .thenReturn(true);
       // when
-      final var actual = sutMigration.needsToRun(mockProcessingState);
+      final var actual = sutMigration.needsToRun(new MigrationTaskContextImpl(mockProcessingState));
 
       // then
       assertThat(actual).isFalse();
@@ -50,12 +50,12 @@ public class ProcessMessageSubscriptionSentTimeMigrationTest {
     @Test
     public void migrationNeededWhenColumnIsNotEmpty() {
       // given
-      final var mockProcessingState = mock(ProcessingState.class);
+      final var mockProcessingState = mock(MutableProcessingState.class);
       when(mockProcessingState.isEmpty(ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_SENT_TIME))
           .thenReturn(false);
 
       // when
-      final var actual = sutMigration.needsToRun(mockProcessingState);
+      final var actual = sutMigration.needsToRun(new MigrationTaskContextImpl(mockProcessingState));
 
       // then
       assertThat(actual).isTrue();
@@ -67,7 +67,7 @@ public class ProcessMessageSubscriptionSentTimeMigrationTest {
       final var mockProcessingState = mock(MutableProcessingState.class, RETURNS_DEEP_STUBS);
 
       // when
-      sutMigration.runMigration(mockProcessingState);
+      sutMigration.runMigration(new MigrationTaskContextImpl(mockProcessingState));
 
       // then
       verify(mockProcessingState.getMigrationState())
@@ -110,7 +110,7 @@ public class ProcessMessageSubscriptionSentTimeMigrationTest {
       // given database with legacy records
 
       // when
-      final var actual = sutMigration.needsToRun(processingState);
+      final var actual = sutMigration.needsToRun(new MigrationTaskContextImpl(processingState));
 
       // then
       assertThat(actual).describedAs("Migration should run").isTrue();
@@ -121,8 +121,8 @@ public class ProcessMessageSubscriptionSentTimeMigrationTest {
       // given database with legacy records
 
       // when
-      sutMigration.runMigration(processingState);
-      final var actual = sutMigration.needsToRun(processingState);
+      sutMigration.runMigration(new MigrationTaskContextImpl(processingState));
+      final var actual = sutMigration.needsToRun(new MigrationTaskContextImpl(processingState));
 
       // then
       assertThat(actual).describedAs("Migration should run").isFalse();

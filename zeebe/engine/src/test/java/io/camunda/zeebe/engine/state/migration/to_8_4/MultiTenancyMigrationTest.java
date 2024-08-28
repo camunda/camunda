@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.state.migration.MigrationTaskContextImpl;
 import io.camunda.zeebe.engine.state.migration.to_8_4.legacy.LegacySignalSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
@@ -69,7 +70,7 @@ public class MultiTenancyMigrationTest {
       legacyState.put(signalSubscriptionKey, signalSubscription);
 
       // when
-      sut.runMigration(processingState);
+      sut.runMigration(new MigrationTaskContextImpl(processingState));
 
       // then
       final AtomicInteger subscriptionCounter = new AtomicInteger(0);
@@ -110,7 +111,7 @@ public class MultiTenancyMigrationTest {
       legacyState.put(signalSubscriptionKey, signalSubscription);
 
       // when
-      sut.runMigration(processingState);
+      sut.runMigration(new MigrationTaskContextImpl(processingState));
 
       // then
       final AtomicInteger subscriptionCounter = new AtomicInteger(0);
@@ -150,7 +151,7 @@ public class MultiTenancyMigrationTest {
       legacyState.put(signalSubscriptionKey, signalSubscription);
 
       // when
-      sut.runMigration(processingState);
+      sut.runMigration(new MigrationTaskContextImpl(processingState));
 
       // then
       final AtomicInteger subscriptionCounter = new AtomicInteger(0);

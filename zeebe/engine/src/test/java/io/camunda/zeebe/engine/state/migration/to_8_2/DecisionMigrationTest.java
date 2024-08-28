@@ -22,7 +22,7 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.migration.MigrationTaskContextImpl;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -41,14 +41,14 @@ public class DecisionMigrationTest {
     @Test
     public void noMigrationNeededWhenDecisionsColumnFamilyIsEmpty() {
       // given
-      final var mockProcessingState = mock(ProcessingState.class);
+      final var mockProcessingState = mock(MutableProcessingState.class);
 
       // when
       when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISIONS)).thenReturn(true);
       when(mockProcessingState.isEmpty(
               ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION))
           .thenReturn(true);
-      final var actual = sutMigration.needsToRun(mockProcessingState);
+      final var actual = sutMigration.needsToRun(new MigrationTaskContextImpl(mockProcessingState));
 
       // then
       assertThat(actual).isFalse();
@@ -57,7 +57,7 @@ public class DecisionMigrationTest {
     @Test
     public void noMigrationNeededWhenVersionColumnFamilyIsPopulated() {
       // given
-      final var mockProcessingState = mock(ProcessingState.class);
+      final var mockProcessingState = mock(MutableProcessingState.class);
 
       // when
       when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISIONS))
@@ -65,7 +65,7 @@ public class DecisionMigrationTest {
       when(mockProcessingState.isEmpty(
               ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION))
           .thenReturn(false);
-      final var actual = sutMigration.needsToRun(mockProcessingState);
+      final var actual = sutMigration.needsToRun(new MigrationTaskContextImpl(mockProcessingState));
 
       // then
       assertThat(actual).isFalse();
@@ -74,7 +74,7 @@ public class DecisionMigrationTest {
     @Test
     public void migrationNeededWhenDecisionHaveNotBeenMigratedYet() {
       // given
-      final var mockProcessingState = mock(ProcessingState.class);
+      final var mockProcessingState = mock(MutableProcessingState.class);
 
       // when
       when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISIONS))
@@ -82,7 +82,7 @@ public class DecisionMigrationTest {
       when(mockProcessingState.isEmpty(
               ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION))
           .thenReturn(true);
-      final var actual = sutMigration.needsToRun(mockProcessingState);
+      final var actual = sutMigration.needsToRun(new MigrationTaskContextImpl(mockProcessingState));
 
       // then
       assertThat(actual).isTrue();
@@ -94,7 +94,7 @@ public class DecisionMigrationTest {
       final var mockProcessingState = mock(MutableProcessingState.class, RETURNS_DEEP_STUBS);
 
       // when
-      sutMigration.runMigration(mockProcessingState);
+      sutMigration.runMigration(new MigrationTaskContextImpl(mockProcessingState));
 
       // then
       verify(mockProcessingState.getMigrationState())
@@ -143,8 +143,9 @@ public class DecisionMigrationTest {
       legacyDecisionState.putDecision(key, sampleDecisionRecord().setDecisionKey(key));
 
       // when
-      sutMigration.runMigration(processingState);
-      final var shouldRun = sutMigration.needsToRun(processingState);
+      final var context = new MigrationTaskContextImpl(processingState);
+      sutMigration.runMigration(context);
+      final var shouldRun = sutMigration.needsToRun(context);
 
       // then
       assertThat(shouldRun).isFalse();
@@ -159,7 +160,7 @@ public class DecisionMigrationTest {
       legacyDecisionState.putDecision(decision2.getDecisionKey(), decision2);
 
       // when
-      sutMigration.runMigration(processingState);
+      sutMigration.runMigration(new MigrationTaskContextImpl(processingState));
 
       // then
       assertContainsDecision(decision1);

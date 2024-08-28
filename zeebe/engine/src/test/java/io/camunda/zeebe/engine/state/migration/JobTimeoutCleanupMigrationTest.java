@@ -69,7 +69,7 @@ public class JobTimeoutCleanupMigrationTest {
     deadlinesColumnFamily.upsert(deadlineJobKey, DbNil.INSTANCE);
 
     // when
-    jobTimeoutCleanupMigration.runMigration(processingState);
+    jobTimeoutCleanupMigration.runMigration(new MigrationTaskContextImpl(processingState));
 
     // then
     assertThat(deadlinesColumnFamily.exists(deadlineJobKey)).isTrue();
@@ -84,7 +84,7 @@ public class JobTimeoutCleanupMigrationTest {
     jobsColumnFamily.deleteExisting(jobKey);
 
     // when
-    jobTimeoutCleanupMigration.runMigration(processingState);
+    jobTimeoutCleanupMigration.runMigration(new MigrationTaskContextImpl(processingState));
 
     // then
     assertThat(deadlinesColumnFamily.exists(deadlineJobKey)).isFalse();
@@ -102,7 +102,7 @@ public class JobTimeoutCleanupMigrationTest {
     deadlinesColumnFamily.upsert(deadlineJobKey, DbNil.INSTANCE);
 
     // when
-    jobTimeoutCleanupMigration.runMigration(processingState);
+    jobTimeoutCleanupMigration.runMigration(new MigrationTaskContextImpl(processingState));
 
     // then
     deadlineKey.wrapLong(firstDeadline);
