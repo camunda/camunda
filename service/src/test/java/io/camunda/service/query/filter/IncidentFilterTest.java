@@ -13,7 +13,6 @@ import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.entities.IncidentEntity;
 import io.camunda.service.search.filter.FilterBuilders;
-import io.camunda.service.search.filter.IncidentFilter.Builder;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.util.StubbedCamundaSearchClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -216,7 +215,7 @@ public final class IncidentFilterTest {
 
   @Test
   public void shouldQueryByHasActiveOperation() {
-    final var filter = FilterBuilders.incident(Builder::hasActiveOperation);
+    final var filter = FilterBuilders.incident(f -> f.hasActiveOperation(true));
     final var searchQuery = SearchQueryBuilders.incidentSearchQuery(q -> q.filter(filter));
 
     // when

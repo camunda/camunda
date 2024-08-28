@@ -123,8 +123,8 @@ public record IncidentFilter(
       return this;
     }
 
-    public Builder hasActiveOperation() {
-      hasActiveOperation = true;
+    public Builder hasActiveOperation(final boolean value) {
+      hasActiveOperation = value;
       return this;
     }
 

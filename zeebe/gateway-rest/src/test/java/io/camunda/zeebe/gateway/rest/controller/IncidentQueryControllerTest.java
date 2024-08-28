@@ -190,7 +190,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                         .processInstanceKeys(4L)
                         .states("s")
                         .types("ty")
-                        .hasActiveOperation()
+                        .hasActiveOperation(true)
                         .build())
                 .build());
   }
