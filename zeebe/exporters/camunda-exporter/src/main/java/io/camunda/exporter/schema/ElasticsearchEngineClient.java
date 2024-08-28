@@ -26,16 +26,10 @@ import org.slf4j.Logger;
 
 public class ElasticsearchEngineClient implements SearchEngineClient {
   private final ElasticsearchClient client;
-  private final Logger log;
-  private final ResourceRetriever resourceRetriever;
+  private final Logger log = LoggerFactory.getLogger(ElasticsearchEngineClient.class);
 
-  public ElasticsearchEngineClient(
-      final ElasticsearchClient client,
-      final Logger log,
-      final ResourceRetriever resourceRetriever) {
+  public ElasticsearchEngineClient(final ElasticsearchClient client) {
     this.client = client;
-    this.log = log;
-    this.resourceRetriever = resourceRetriever;
   }
 
   @Override
@@ -132,7 +126,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   private InputStream descriptorMappings(final IndexDescriptor descriptor) {
-    return resourceRetriever.getResourceAsStream(descriptor.getMappingsClasspathFilename());
+    //    return resourceRetriever.getResourceAsStream(descriptor.getMappingsClasspathFilename());
+    return getClass()
+        .getClassLoader()
+        .getResourceAsStream(descriptor.getMappingsClasspathFilename());
   }
 
   private PutIndexTemplateRequest putIndexTemplateRequest(
