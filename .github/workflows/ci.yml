@@ -552,7 +552,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":alarm: Build on `main` failed! Was canceled: ${{ env.HAS_CANCELED }} has failed: ${{ env.HAS_FAILED }}:alarm:"
+                    "text": ":alarm: CHRIS IS TESTING SOMETHING Build on `main` ${{ (env.HAS_CANCELED && "canceled") || (${{ env.HAS_FAILED }} && "failed") || "wtf" }} !!!!! Was canceled:  has failed: ${{ env.HAS_FAILED }}:alarm:"
                   }
                 },
                 {
