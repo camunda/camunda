@@ -28,8 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchEngineClient implements SearchEngineClient {
+  private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchEngineClient.class);
   private final ElasticsearchClient client;
-  private final Logger log = LoggerFactory.getLogger(ElasticsearchEngineClient.class);
 
   public ElasticsearchEngineClient(final ElasticsearchClient client) {
     this.client = client;
@@ -40,11 +40,11 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     final CreateIndexRequest request = createIndexRequest(indexDescriptor);
     try {
       client.indices().create(request);
-      log.debug("Index [{}] was successfully created", indexDescriptor.getIndexName());
+      LOG.debug("Index [{}] was successfully created", indexDescriptor.getIndexName());
     } catch (final IOException e) {
       final var errMsg =
           String.format("Index [%s] was not created", indexDescriptor.getIndexName());
-      log.error(errMsg, e);
+      LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
     }
   }
@@ -55,11 +55,11 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
     try {
       client.indices().putIndexTemplate(request);
-      log.debug("Template [{}] was successfully created", templateDescriptor.getTemplateName());
+      LOG.debug("Template [{}] was successfully created", templateDescriptor.getTemplateName());
     } catch (final IOException e) {
       final var errMsg =
           String.format("Template [%s] was NOT created", templateDescriptor.getTemplateName());
-      log.error(errMsg, e);
+      LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
     }
   }
@@ -70,13 +70,13 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
     try {
       client.cluster().putComponentTemplate(request);
-      log.debug(
+      LOG.debug(
           "Component template [{}] was successfully created", templateDescriptor.getTemplateName());
     } catch (final IOException e) {
       final var errMsg =
           String.format(
               "Component template [%s] was NOT created", templateDescriptor.getTemplateName());
-      log.error(errMsg, e);
+      LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
     }
   }
@@ -87,11 +87,11 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
     try {
       client.indices().putMapping(request);
-      log.debug("Mapping in [{}] was successfully updated", indexDescriptor.getIndexName());
+      LOG.debug("Mapping in [{}] was successfully updated", indexDescriptor.getIndexName());
     } catch (final IOException e) {
       final var errMsg =
           String.format("Mapping in [{}] was NOT updated", indexDescriptor.getIndexName());
-      log.error(errMsg, e);
+      LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
     }
   }
