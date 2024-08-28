@@ -44,6 +44,7 @@ public record PartitionState(State state, int priority, DynamicPartitionConfig c
     UNKNOWN,
     JOINING,
     ACTIVE,
-    LEAVING
+    LEAVING,
+    BOOTSTRAPPING
   }
 }
