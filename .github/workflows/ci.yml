@@ -510,7 +510,7 @@ jobs:
       flakyUnitTests: ${{ needs.java-unit-tests.outputs.flakyTests }}
       flakyITs: ${{ needs.integration-tests.outputs.flakyTests }}
       hasCanceled: ${{ (contains(needs.*.result, 'cancelled') && 1) || 0 }}
-      hasFailed: ${{ contains(needs.*.result, 'failure')) && 1) || 0 }}
+      hasFailed: ${{ (contains(needs.*.result, 'failure') && 1) || 0 }}
     needs:
       - actionlint
       - java-unit-tests
