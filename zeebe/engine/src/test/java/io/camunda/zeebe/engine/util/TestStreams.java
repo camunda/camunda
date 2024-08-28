@@ -42,6 +42,7 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessorContext;
@@ -85,6 +86,7 @@ public final class TestStreams {
     TypedEventRegistry.EVENT_REGISTRY.forEach((v, c) -> VALUE_TYPES.put(c, v));
   }
 
+  private final int partitionCount;
   private final TemporaryFolder dataDirectory;
   private final AutoCloseableRule closeables;
   private final ActorScheduler actorScheduler;
@@ -99,10 +101,12 @@ public final class TestStreams {
   private ListLogStorage listLogStorage;
 
   public TestStreams(
+      final int partitionCount,
       final TemporaryFolder dataDirectory,
       final AutoCloseableRule closeables,
       final ActorScheduler actorScheduler,
       final InstantSource clock) {
+    this.partitionCount = partitionCount;
     this.dataDirectory = dataDirectory;
     this.closeables = closeables;
     this.actorScheduler = actorScheduler;
@@ -287,7 +291,8 @@ public final class TestStreams {
             .maxCommandsInBatch(maxCommandsInBatch)
             .partitionCommandSender(mock(InterPartitionCommandSender.class))
             .meterRegistry(new SimpleMeterRegistry())
-            .clock(StreamClock.controllable(clock));
+            .clock(StreamClock.controllable(clock))
+            .clusterContext(new ClusterContextImpl(partitionCount));
 
     processorConfiguration.accept(builder);
 

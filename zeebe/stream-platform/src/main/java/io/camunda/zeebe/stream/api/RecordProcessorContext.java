@@ -33,4 +33,6 @@ public interface RecordProcessorContext {
   KeyGenerator getKeyGenerator();
 
   ControllableStreamClock getClock();
+
+  ClusterContext clusterContext();
 }

@@ -299,7 +299,8 @@ public final class StreamPlatform {
             .recordProcessors(recordProcessors)
             .listener(mockStreamProcessorListener)
             .scheduledCommandCache(scheduledCommandCache)
-            .partitionCommandSender(mock(InterPartitionCommandSender.class));
+            .partitionCommandSender(mock(InterPartitionCommandSender.class))
+            .clusterContext(new ClusterContextImpl(1));
 
     processorConfiguration.accept(builder);
 

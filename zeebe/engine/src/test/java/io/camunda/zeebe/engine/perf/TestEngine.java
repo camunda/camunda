@@ -45,6 +45,7 @@ public final class TestEngine {
 
     testStreams =
         new TestStreams(
+            partitionCount,
             testContext.temporaryFolder(),
             testContext.autoCloseableRule(),
             testContext.actorScheduler(),

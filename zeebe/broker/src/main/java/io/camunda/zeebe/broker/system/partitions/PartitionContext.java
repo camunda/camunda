@@ -76,4 +76,6 @@ public interface PartitionContext {
   ControllableStreamClock getStreamClock();
 
   void setStreamClock(ControllableStreamClock clock);
+
+  int getPartitionCount();
 }

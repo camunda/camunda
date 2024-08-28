@@ -88,7 +88,8 @@ public final class EngineErrorHandlingTest {
   @Before
   public void setUp() {
     streams =
-        new TestStreams(tempFolder, closeables, actorSchedulerRule.get(), InstantSource.system());
+        new TestStreams(
+            1, tempFolder, closeables, actorSchedulerRule.get(), InstantSource.system());
     mockCommandResponseWriter = streams.getMockedResponseWriter();
     streams.createLogStream(STREAM_NAME);
 
