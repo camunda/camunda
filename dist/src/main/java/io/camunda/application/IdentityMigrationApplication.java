@@ -8,7 +8,9 @@
 package io.camunda.application;
 
 import io.camunda.application.commons.CommonsModuleConfiguration;
+import io.camunda.identity.migration.MigrationRunner;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -18,6 +20,8 @@ import org.springframework.core.env.AbstractEnvironment;
 @ImportAutoConfiguration(
     value = {CommonsModuleConfiguration.class, GatewayModuleConfiguration.class})
 public class IdentityMigrationApplication {
+
+  @Autowired MigrationRunner migrationRunner;
 
   public static void main(final String[] args) {
     System.setProperty(AbstractEnvironment.ACTIVE_PROFILES_PROPERTY_NAME, "identity-migration");
