@@ -9,4 +9,4 @@ package io.camunda.search.clients.aggregation;
 
 import java.util.Map;
 
-public record Bucket(Map<String, SearchAggregate> aggregates) {}
+public record Bucket(String key, Long docCount, Map<String, SearchAggregate> aggregates) {}
