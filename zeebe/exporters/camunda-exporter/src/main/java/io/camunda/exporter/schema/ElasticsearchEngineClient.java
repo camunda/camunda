@@ -116,9 +116,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   private PutComponentTemplateRequest putComponentTemplateRequest(
       final ComponentTemplateDescriptor templateDescriptor) {
     try (final var template =
-        getClass()
-            .getClassLoader()
-            .getResourceAsStream(templateDescriptor.getTemplateClasspathFileName())) {
+        getResourceAsStream(templateDescriptor.getTemplateClasspathFileName())) {
       return new PutComponentTemplateRequest.Builder()
           .name(templateDescriptor.getTemplateName())
           .withJson(template)
@@ -139,17 +137,15 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private InputStream descriptorMappings(final IndexDescriptor descriptor) {
-    //    return resourceRetriever.getResourceAsStream(descriptor.getMappingsClasspathFilename());
-    return getClass()
-        .getClassLoader()
-        .getResourceAsStream(descriptor.getMappingsClasspathFilename());
+  private InputStream getResourceAsStream(final String classpathFileName) {
+    return Thread.currentThread().getContextClassLoader().getResourceAsStream(classpathFileName);
   }
 
   private PutIndexTemplateRequest putIndexTemplateRequest(
       final IndexTemplateDescriptor indexTemplateDescriptor) {
 
-    try (final var templateMappings = descriptorMappings(indexTemplateDescriptor)) {
+    try (final var templateMappings =
+        getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
 
       return new PutIndexTemplateRequest.Builder()
           .name(indexTemplateDescriptor.getTemplateName())
@@ -173,7 +169,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   private CreateIndexRequest createIndexRequest(final IndexDescriptor indexDescriptor) {
-    try (final var templateMappings = descriptorMappings(indexDescriptor)) {
+    try (final var templateMappings =
+        getResourceAsStream(indexDescriptor.getMappingsClasspathFilename())) {
 
       return new CreateIndexRequest.Builder()
           .index(indexDescriptor.getFullQualifiedName())
