@@ -12,8 +12,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <project.previousVersion>3.13.0</project.previousVersion>
-
-    <camunda.engine.version>7.19.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.21.0</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
@@ -56,8 +54,6 @@
     <version.yarn>v1.22.19</version.yarn>
 
     <!-- testing config -->
-    <h2.version>2.3.230</h2.version>
-    <postgres.version>42.7.4</postgres.version>
     <mockito.version>5.13.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <junit.jupiter.version>5.11.0</junit.jupiter.version>
@@ -115,38 +111,6 @@
 
   <profiles>
 
-    <!-- engine profiles-->
-    <profile>
-      <id>engine-latest</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-      </properties>
-    </profile>
-    <profile>
-      <id>engine-snapshot</id>
-      <properties>
-        <!--
-        Note: the below is intended for CI usage only, as part of
-        engine_compatibility job.
-        -->
-        <camunda.engine.version>${env.CAMBPM_SNAPSHOT_VERSION}</camunda.engine.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>engine-7.20</id>
-      <properties>
-        <camunda.engine.version>7.20.0</camunda.engine.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>engine-7.19</id>
-      <properties>
-        <camunda.engine.version>7.19.0</camunda.engine.version>
-      </properties>
-    </profile>
-
     <!-- release profile-->
     <profile>
       <id>release</id>
@@ -161,7 +125,6 @@
             <artifactId>maven-release-plugin</artifactId>
             <version>3.1.1</version>
             <configuration>
-              <releaseProfiles>engine-latest</releaseProfiles>
               <localCheckout>true</localCheckout>
             </configuration>
           </plugin>
@@ -486,11 +449,6 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-antrun-plugin</artifactId>
           <version>3.1.0</version>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.cargo</groupId>
-          <artifactId>cargo-maven3-plugin</artifactId>
-          <version>1.10.14</version>
         </plugin>
         <plugin>
           <groupId>org.sonatype.plugins</groupId>

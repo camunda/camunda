@@ -133,15 +133,6 @@ Note, that there are two kind of integration tests:
 
 While executing integration tests it might be useful snapshots of data from elasticsearch. Please refer to [wiki](https://github.com/camunda/camunda-optimize/wiki/Using-ES-snapshots) for more information.
 
-## Performance testing
-
-There are two kinds of performance tests:
-
-* [Import Performance Tests](../qa/import-performance-tests/README.md)
-* [Query Performance Tests](../qa/service-performance-tests/README.md)
-
-Have a look at the dedicated readme files to get more information about how to run them.
-
 ## Migration testing
 
 ### Prerequisites
@@ -155,7 +146,7 @@ To run the schema migration tests locally, execute the following cmds:
 
 ```shell
 // first build everything required for running the integration tests
-mvn clean install -Dskip.docker -DskipTests -Pproduction,it,engine-latest -pl optimize/backend,upgrade -am
+mvn clean install -Dskip.docker -DskipTests -Pproduction,it -pl optimize/backend,upgrade -am
 
 // then run the schema migration test
 mvn clean verify -f qa/upgrade-tests/pom.xml -Pupgrade-es-schema-tests

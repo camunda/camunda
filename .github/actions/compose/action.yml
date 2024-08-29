@@ -1,6 +1,6 @@
 name: Compose
 description: |
-  Compose Wrapper for elasticsearch / cambpm container
+  Compose Wrapper for elasticsearch container
 inputs:
   compose_file:
     description: "Full path to the compose file"
