@@ -3,12 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 )
 
 type c8runSettings struct {
@@ -23,6 +25,61 @@ func printHelp() {
 `
 	fmt.Print(optionsHelp)
 
+}
+
+func printStatus() {
+	endpoints, _ := os.ReadFile(".\\endpoints.txt")
+	fmt.Println(string(endpoints))
+}
+
+func queryElasticsearchHealth(name string, url string) {
+	healthy := false
+	for retries := 12; retries >= 0; retries-- {
+		fmt.Println("Waiting for " + name + " to start. " + strconv.Itoa(retries) + " retries left")
+		time.Sleep(10 * time.Second)
+		resp, err := http.Get(url)
+		if err != nil {
+			continue
+		}
+		if resp.StatusCode >= 200 && resp.StatusCode <= 400 {
+			healthy = true
+			break
+		}
+	}
+	if !healthy {
+		fmt.Println("Error: " + name + " did not start!")
+		os.Exit(1)
+	}
+	fmt.Println(name + " has successfully been started.")
+}
+
+func queryCamundaHealth(name string, url string) {
+	healthy := false
+	for retries := 24; retries >= 0; retries-- {
+		fmt.Println("Waiting for " + name + " to start. " + strconv.Itoa(retries) + " retries left")
+		time.Sleep(14 * time.Second)
+		resp, err := http.Get(url)
+		if err != nil {
+			continue
+		}
+		if resp.StatusCode >= 200 && resp.StatusCode <= 400 {
+			healthy = true
+			break
+		}
+	}
+	if !healthy {
+		fmt.Println("Error: " + name + " did not start!")
+		os.Exit(1)
+	}
+	operateUrl := "http://localhost:8080/operate/login"
+	openBrowserCmdString := "start " + operateUrl
+	openBrowserCmd := exec.Command("cmd", "/C", openBrowserCmdString)
+	openBrowserCmd.SysProcAttr = &syscall.SysProcAttr{
+		// CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
+	}
+	fmt.Println(name + " has successfully been started.")
+	openBrowserCmd.Run()
+	printStatus()
 }
 
 func stopProcess(pidfile string) {
@@ -49,7 +106,6 @@ func stopProcess(pidfile string) {
 }
 
 func parseCommandLineOptions(args []string, settings *c8runSettings) *c8runSettings {
-	fmt.Println("Args length ", len(args))
 	if len(args) == 0 {
 		return settings
 	}
@@ -95,7 +151,6 @@ func main() {
 	baseCommand := ""
 	// insideConfigFlag := false
 
-	fmt.Println(os.Args)
 	if os.Args[1] == "start" {
 		baseCommand = "start"
 	} else {
@@ -166,9 +221,9 @@ func main() {
 			os.Exit(1)
 		}
 		elasticsearchPidFile.Write([]byte(strconv.Itoa(elasticsearchCmd.Process.Pid)))
+		queryElasticsearchHealth("Elasticsearch", "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s")
 
 		connectorsCmdString := javaBinary + " -classpath " + parentDir + "\\*;" + parentDir + "\\custom_connectors\\*;" + parentDir + "\\camunda-zeebe-" + camundaVersion + "\\lib\\* io.camunda.connector.runtime.app.ConnectorRuntimeApplication --spring.config.location=" + parentDir + "\\connectors-application.properties"
-		fmt.Println(connectorsCmdString)
 		connectorsCmd := exec.Command("cmd", "/C", connectorsCmdString)
 		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
 		connectorsLogFile, err := os.OpenFile(connectorsLogPath, os.O_RDWR|os.O_CREATE, 0644)
@@ -219,6 +274,7 @@ func main() {
 			os.Exit(1)
 		}
 		camundaPidFile.Write([]byte(strconv.Itoa(camundaCmd.Process.Pid)))
+		queryCamundaHealth("Camunda", "http://localhost:8080/operate/login")
 	}
 
 	if baseCommand == "stop" {
