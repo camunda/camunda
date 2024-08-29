@@ -1,14 +1,18 @@
 @use '@carbon/react' as * with (
+  $css--reset: false,
   $css--default-type: false,
   $font-path: 'https://fonts.camunda.io'
 ); // the 'with' part is temporary solution and has to be deleted when whole Optimize will be carbonized
 
+@use '@carbon/react/scss/fonts/sans';
 @use '@carbon/react/scss/themes';
 @use '@carbon/react/scss/theme';
 @use '@carbon/react/scss/type';
 
 // temporary solution until we have a global reset (this is a workaround to use carbon font with reset disabled)
 @include type.reset();
+@include sans.medium();
+@include sans.bold();
 
 @import 'shared-styles/shared-styles.scss';
 @import 'react-grid-layout/css/styles.css';

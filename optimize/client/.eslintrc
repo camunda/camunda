@@ -3,11 +3,11 @@
   "env": {
     "browser": true,
     "node": true,
-    "jest": true,
+    "jest": true
   },
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "sourceType": "module",
+    "sourceType": "module"
   },
   "plugins": ["testcafe", "react-refresh", "license-header"],
   "rules": {
@@ -15,18 +15,18 @@
     "prettier/prettier": [
       "warn",
       {
-        "endOfLine": "auto",
-      },
+        "endOfLine": "auto"
+      }
     ],
-    "curly": "error",
+    "curly": "error"
   },
   "globals": {
-    "flushPromises": "readonly",
+    "flushPromises": "readonly"
   },
   "extends": [
     "plugin:react-hooks/recommended",
     "plugin:prettier/recommended",
-    "plugin:testcafe/recommended",
+    "plugin:testcafe/recommended"
   ],
-  "ignorePatterns": ["dist/**", "**/__mocks__/**"],
+  "ignorePatterns": ["dist/**", "**/__mocks__/**"]
 }
