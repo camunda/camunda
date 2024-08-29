@@ -17,6 +17,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.NoopExporterConfiguration.IndexSpecificSettings;
 import io.camunda.exporter.schema.descriptors.ComponentTemplateDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
@@ -115,7 +116,10 @@ public class ElasticsearchEngineClientIT {
             "index_template",
             "mappings.json");
 
-    elsEngineClient.createIndexTemplate(template);
+    final var settings = new IndexSpecificSettings();
+    settings.numberOfShards = "1";
+    settings.numberOfReplicas = "0";
+    elsEngineClient.createIndexTemplate(template, settings);
 
     // when
     elsClient.indices().create(req -> req.index("pattern_1"));
@@ -150,7 +154,10 @@ public class ElasticsearchEngineClientIT {
             "template_name",
             "mappings.json");
 
-    elsEngineClient.createIndexTemplate(indexTemplate);
+    final var settings = new IndexSpecificSettings();
+    settings.numberOfShards = "1";
+    settings.numberOfReplicas = "0";
+    elsEngineClient.createIndexTemplate(indexTemplate, settings);
 
     // then
     final var indexTemplates =
