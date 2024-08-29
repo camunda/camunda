@@ -238,6 +238,25 @@ public class UpdateJobTest {
   }
 
   @Test
+  public void shouldUpdateOnyJobRetriesSingleCommand(final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    createProcessInstance(jobType);
+    final var job = activateJob(client, true, jobType);
+    final long jobKey = job.getKey();
+    final int retries = 10;
+    final var initialDeadline = job.getDeadline();
+
+    // when
+    client.newUpdateJobCommand(jobKey).updateRetries(retries).send().join();
+
+    // then
+    assertRetriesUpdated(jobKey, true, retries);
+    final var deadline = retrieveCurrentDeadline(jobKey, JobIntent.UPDATE, JobIntent.UPDATED);
+    assertThat(deadline).isEqualTo(initialDeadline);
+  }
+
+  @Test
   public void shouldUpdateOnlyJobTimeoutMultiParam(final TestInfo testInfo) {
     // given
     final String jobType = "job-" + testInfo.getDisplayName();
@@ -250,6 +269,46 @@ public class UpdateJobTest {
 
     // when
     client.newUpdateJobCommand(jobKey).update(null, timeout).send().join();
+
+    // then
+    assertTimeoutIncreased(initialDeadline, jobKey, true);
+    final var retries = retrieveRetries(jobKey, JobIntent.UPDATE, JobIntent.UPDATED);
+    assertThat(retries).isEqualTo(initialRetries);
+  }
+
+  @Test
+  public void shouldUpdateOnlyJobTimeoutSingleCommand(final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    createProcessInstance(jobType);
+    final var job = activateJob(client, true, jobType);
+    final long jobKey = job.getKey();
+    final long timeout = Duration.ofMinutes(15).toMillis();
+    final var initialDeadline = job.getDeadline();
+    final var initialRetries = job.getRetries();
+
+    // when
+    client.newUpdateJobCommand(jobKey).updateTimeout(timeout).send().join();
+
+    // then
+    assertTimeoutIncreased(initialDeadline, jobKey, true);
+    final var retries = retrieveRetries(jobKey, JobIntent.UPDATE, JobIntent.UPDATED);
+    assertThat(retries).isEqualTo(initialRetries);
+  }
+
+  @Test
+  public void shouldUpdateOnlyJobTimeoutSingleCommandDuration(final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    createProcessInstance(jobType);
+    final var job = activateJob(client, true, jobType);
+    final long jobKey = job.getKey();
+    final Duration timeout = Duration.ofMinutes(15);
+    final var initialDeadline = job.getDeadline();
+    final var initialRetries = job.getRetries();
+
+    // when
+    client.newUpdateJobCommand(jobKey).updateTimeout(timeout).send().join();
 
     // then
     assertTimeoutIncreased(initialDeadline, jobKey, true);

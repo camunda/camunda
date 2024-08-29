@@ -72,6 +72,23 @@ public class JobUpdateCommandImpl implements UpdateJobCommandStep1, UpdateJobCom
     return this;
   }
 
+  @Override
+  public UpdateJobCommandStep2 updateRetries(final int retries) {
+    getChangesetEnsureInitialized().retries(retries);
+    return this;
+  }
+
+  @Override
+  public UpdateJobCommandStep2 updateTimeout(final long timeout) {
+    getChangesetEnsureInitialized().timeout(timeout);
+    return this;
+  }
+
+  @Override
+  public UpdateJobCommandStep2 updateTimeout(final Duration timeout) {
+    return updateTimeout(timeout.toMillis());
+  }
+
   private JobChangeset getChangesetEnsureInitialized() {
     JobChangeset changeset = httpRequestObject.getChangeset();
     if (changeset == null) {

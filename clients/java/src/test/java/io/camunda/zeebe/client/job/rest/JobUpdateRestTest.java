@@ -184,10 +184,25 @@ public class JobUpdateRestTest extends ClientRestTest {
     // given
     final long jobKey = 12;
     final int newRetries = 23;
-    final JobChangeset changeset = new JobChangeset().retries(newRetries);
 
     // when
     client.newUpdateJobCommand(jobKey).update(newRetries, null).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getChangeset().getRetries()).isEqualTo(newRetries);
+    assertThat(request.getChangeset().getTimeout()).isNull();
+  }
+
+  @Test
+  public void shouldUpdateOnlyRetries() {
+    // given
+    final long jobKey = 12;
+    final int newRetries = 23;
+    final JobChangeset changeset = new JobChangeset().retries(newRetries);
+
+    // when
+    client.newUpdateJobCommand(jobKey).updateRetries(newRetries).send().join();
 
     // then
     final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
@@ -208,6 +223,36 @@ public class JobUpdateRestTest extends ClientRestTest {
     final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
     assertThat(request.getChangeset().getRetries()).isNull();
     assertThat(request.getChangeset().getTimeout()).isEqualTo(newTimeout);
+  }
+
+  @Test
+  public void shouldUpdateOnlyTimeout() {
+    // given
+    final long jobKey = 12;
+    final long newTimeout = 100L;
+
+    // when
+    client.newUpdateJobCommand(jobKey).updateTimeout(newTimeout).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getChangeset().getRetries()).isNull();
+    assertThat(request.getChangeset().getTimeout()).isEqualTo(newTimeout);
+  }
+
+  @Test
+  public void shouldUpdateOnlyTimeoutDuration() {
+    // given
+    final long jobKey = 12;
+    final Duration newTimeout = Duration.ofMinutes(15);
+
+    // when
+    client.newUpdateJobCommand(jobKey).updateTimeout(newTimeout).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getChangeset().getRetries()).isNull();
+    assertThat(request.getChangeset().getTimeout()).isEqualTo(newTimeout.toMillis());
   }
 
   @Test
