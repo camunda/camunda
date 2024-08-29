@@ -603,7 +603,7 @@
                     <DATABASE>opensearch</DATABASE>
                   </environmentVariables>
                   <executable>docker-compose</executable>
-                  <workingDirectory>../config</workingDirectory>
+                  <workingDirectory>../../config</workingDirectory>
                   <arguments>
                     <argument>up</argument>
                     <argument>-d</argument>
@@ -621,7 +621,7 @@
                 <configuration>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
-                  <workingDirectory>../config</workingDirectory>
+                  <workingDirectory>../../config</workingDirectory>
                   <arguments>
                     <argument>down</argument>
                   </arguments>
@@ -667,7 +667,7 @@
                     <DATABASE>elasticsearch</DATABASE>
                   </environmentVariables>
                   <executable>docker-compose</executable>
-                  <workingDirectory>../config</workingDirectory>
+                  <workingDirectory>../../config</workingDirectory>
                   <arguments>
                     <argument>up</argument>
                     <argument>-d</argument>
@@ -685,7 +685,7 @@
                 <configuration>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
-                  <workingDirectory>../config</workingDirectory>
+                  <workingDirectory>../../config</workingDirectory>
                   <arguments>
                     <argument>down</argument>
                   </arguments>
