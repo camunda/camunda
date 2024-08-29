@@ -13,6 +13,7 @@ import io.camunda.service.CamundaServices;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
+import io.camunda.service.FlownodeInstanceServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.MessageServices;
@@ -78,6 +79,11 @@ public class CamundaServicesConfiguration {
   @Bean
   public IncidentServices incidentServices(final CamundaServices camundaServices) {
     return camundaServices.incidentServices();
+  }
+
+  @Bean
+  public FlownodeInstanceServices flownodeInstanceServices(final CamundaServices camundaServices) {
+    return camundaServices.flownodeInstanceServices();
   }
 
   @Bean
