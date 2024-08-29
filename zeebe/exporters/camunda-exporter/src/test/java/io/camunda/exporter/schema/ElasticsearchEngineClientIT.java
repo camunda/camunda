@@ -106,13 +106,16 @@ public class ElasticsearchEngineClientIT {
     // given
     createComponentTemplate("component_template", "componentTemplate.json");
 
-    createIndexTemplate(
-        "index_name",
-        "pattern*",
-        "alias",
-        List.of("component_template"),
-        "index_template",
-        "mappings.json");
+    final IndexTemplateDescriptor template =
+        TestUtil.createIndexTemplate(
+            "index_name",
+            "pattern*",
+            "alias",
+            List.of("component_template"),
+            "index_template",
+            "mappings.json");
+
+    elsEngineClient.createIndexTemplate(template);
 
     // when
     elsClient.indices().create(req -> req.index("pattern_1"));
@@ -138,8 +141,16 @@ public class ElasticsearchEngineClientIT {
   @Test
   void shouldCreateIndexTemplateCorrectly() throws IOException {
     // given, when
-    createIndexTemplate(
-        "index_name", "test*", "alias", Collections.emptyList(), "template_name", "mappings.json");
+    final var indexTemplate =
+        TestUtil.createIndexTemplate(
+            "index_name",
+            "test*",
+            "alias",
+            Collections.emptyList(),
+            "template_name",
+            "mappings.json");
+
+    elsEngineClient.createIndexTemplate(indexTemplate);
 
     // then
     final var indexTemplates =
@@ -178,26 +189,6 @@ public class ElasticsearchEngineClientIT {
         elsClient.indices().get(req -> req.index(qualifiedIndexName)).get(qualifiedIndexName);
 
     assertThat(index.mappings().toString()).isEqualTo(template.mappings().toString());
-  }
-
-  private void createIndexTemplate(
-      final String indexName,
-      final String indexPattern,
-      final String alias,
-      final List<String> composedOf,
-      final String templateName,
-      final String mappingsFileName) {
-    final var descriptor = mock(IndexTemplateDescriptor.class);
-    doReturn(indexName).when(descriptor).getIndexName();
-    doReturn(indexPattern).when(descriptor).getIndexPattern();
-    doReturn(alias).when(descriptor).getAlias();
-    doReturn(composedOf).when(descriptor).getComposedOf();
-
-    doReturn(templateName).when(descriptor).getTemplateName();
-    doReturn(mappingsFileName).when(descriptor).getMappingsClasspathFilename();
-
-    // when
-    elsEngineClient.createIndexTemplate(descriptor);
   }
 
   private void createComponentTemplate(
