@@ -66,10 +66,11 @@ public class MigrateExclusiveGatewayTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
 
-    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId("xor")
-        .await();
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("xor")
+            .getFirst();
 
     // when
     ENGINE
@@ -80,8 +81,12 @@ public class MigrateExclusiveGatewayTest {
         .addMappingInstruction("xor", "xor2")
         .migrate();
 
+    RecordingExporter.incidentRecords(IncidentIntent.MIGRATED)
+        .withRecordKey(incident.getKey())
+        .await();
+
     // then
-    ENGINE.incident().ofInstance(processInstanceKey).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
