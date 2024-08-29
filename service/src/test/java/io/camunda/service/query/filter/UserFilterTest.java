@@ -19,7 +19,6 @@ import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.util.StubbedBrokerClient;
 import io.camunda.service.util.StubbedCamundaSearchClient;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +28,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class UserFilterTest {
-  private UserServices<UserRecord> services;
+  private UserServices services;
   private StubbedCamundaSearchClient client;
   private StubbedBrokerClient brokerClient;
 
@@ -37,7 +36,7 @@ public class UserFilterTest {
   public void before() {
     client = new StubbedCamundaSearchClient();
     new UserSearchQueryStub().registerWith(client);
-    services = new UserServices<>(brokerClient, client);
+    services = new UserServices(brokerClient, client);
   }
 
   @Test
