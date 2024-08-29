@@ -48,7 +48,7 @@ public class UserControllerTest extends RestControllerTest {
 
   @Test
   void createUserShouldReturnNoContent() {
-
+    // given
     final UserWithPasswordRequest dto = new UserWithPasswordRequest();
     dto.setUsername("demo");
     dto.setPassword("password");
@@ -66,6 +66,7 @@ public class UserControllerTest extends RestControllerTest {
             dto.getUsername(), dto.getName(), dto.getEmail(), dto.getPassword()))
         .thenReturn(CompletableFuture.completedFuture(userRecord));
 
+    // when
     webClient
         .post()
         .uri("/v2/users")
@@ -76,12 +77,14 @@ public class UserControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
+    // then
     verify(userServices, times(1))
         .createUser(dto.getUsername(), dto.getName(), dto.getEmail(), dto.getPassword());
   }
 
   @Test
   void createUserThrowsExceptionWhenServiceThrowsException() {
+    // given
     final String message = "message";
 
     final UserWithPasswordRequest dto = new UserWithPasswordRequest();
@@ -98,6 +101,7 @@ public class UserControllerTest extends RestControllerTest {
     expectedBody.setDetail(RejectionType.ALREADY_EXISTS.name());
     expectedBody.setInstance(URI.create("/v2/users"));
 
+    // when then
     webClient
         .post()
         .uri("/v2/users")
