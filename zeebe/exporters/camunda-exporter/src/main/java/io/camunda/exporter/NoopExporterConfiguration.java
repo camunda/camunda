@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public final class NoopExporterConfiguration {
+  public final ZeebeConfig zeebe = new ZeebeConfig();
   public final ElasticsearchConfig elasticsearch = new ElasticsearchConfig();
 
   public static final class ElasticsearchConfig {
@@ -24,4 +25,6 @@ public final class NoopExporterConfiguration {
     public Integer numberOfShards = 1;
     public Integer numberOfReplicas = 0;
   }
+
+  public static final class ZeebeConfig {}
 }
