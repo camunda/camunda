@@ -111,9 +111,9 @@ runs:
           }]
         mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "zeebe,zeebe-snapshots", "name": "camunda Nexus"}]'
     - name: Configure Maven
+      if: inputs.java == 'true'
       uses: ./.github/actions/setup-maven-cache
       with:
-        java: ${{ inputs.java }}
         maven-cache-key-modifier: ${{ inputs.maven-cache-key-modifier }}
     - if: ${{ inputs.go == 'true' }}
       uses: actions/setup-go@v5

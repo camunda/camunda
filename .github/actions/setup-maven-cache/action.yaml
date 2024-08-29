@@ -5,10 +5,6 @@ name: Setup Maven Cache
 description: Configured GHA cache for Maven global cache dir (no save on PRs), see https://github.com/camunda/camunda/wiki/CI-&-Automation#caching-strategy
 
 inputs:
-  java:
-    description: If true, will set up Java; defaults to true
-    required: false
-    default: "true"
   maven-cache-key-modifier:
     description: A modifier key used for the maven cache, can be used to create isolated caches for certain jobs.
     default: "shared"
@@ -18,7 +14,6 @@ runs:
   using: composite
   steps:
     - name: Configure Maven
-      if: inputs.java == 'true'
       shell: bash
       # `--errors` ensures errors will also spit out a stack trace, which is always useful, and has no impact on normal builds
       #
@@ -53,21 +48,21 @@ runs:
         EOF
     - name: Cache local Maven repository
       # Only use the full cache action if we're on main or stable/* branches
-      if: inputs.java == 'true' && (startsWith(github.ref_name, 'stable/') || github.ref_name == 'main')
+      if: ${{ startsWith(github.ref_name, 'stable/') || github.ref_name == 'main' }}
       uses: actions/cache@v4
       with:
         # This is the path used by the `enhancedLocalRepository` set up in the 'Configure Maven' step.
         # `aether.enhancedLocalRepository.remotePrefix` defaults to 'cached'
         # `aether.enhancedLocalRepository.releasesPrefix` defaults to 'releases'
         path: ~/.m2/repository/cached/releases/
-        # it matters for caching as absolute paths on self-hosted and Github runners differ
+        # it matters for caching as absolute paths on self-hosted and GitHub runners differ
         # self-hosted: `/runner/` vs gh-hosted: `/home/runner`
         key: ${{ runner.environment }}-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
           ${{ runner.environment }}-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}
     - name: Restore maven cache
       # Restore cache (but don't save it) if we're not on main or stable/* branches
-      if: inputs.java == 'true' && !(startsWith(github.ref_name, 'stable/') || github.ref_name == 'main')
+      if: ${{ !(startsWith(github.ref_name, 'stable/') || github.ref_name == 'main') }}
       uses: actions/cache/restore@v4
       with:
         # This has to match the 'Cache local Maven repository' step above
