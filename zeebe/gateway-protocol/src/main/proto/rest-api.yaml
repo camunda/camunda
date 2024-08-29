@@ -1487,9 +1487,6 @@ components:
       properties:
         password:
           type: "string"
-        id:
-          type: "integer"
-          format: "int64"
         username:
           type: "string"
         name:
