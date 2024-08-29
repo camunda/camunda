@@ -7,11 +7,22 @@
  */
 package io.camunda.exporter.store;
 
+import static io.camunda.exporter.utils.BatchRequestBuilderUtils.bulkOperationBuilder;
+import static io.camunda.exporter.utils.BatchRequestBuilderUtils.indexBuilder;
+import static io.camunda.exporter.utils.BatchRequestBuilderUtils.indexWithRoutingBuilder;
+import static io.camunda.exporter.utils.BatchRequestBuilderUtils.updateActionBuilder;
+import static io.camunda.exporter.utils.BatchRequestBuilderUtils.updateOperationBuilder;
+import static io.camunda.exporter.utils.BatchRequestBuilderUtils.upsertWithDocBuilder;
+import static io.camunda.exporter.utils.BatchRequestBuilderUtils.upsertWithScriptBuilder;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import co.elastic.clients.elasticsearch.core.bulk.UpdateAction;
 import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
 import io.camunda.exporter.entities.ExporterEntity;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -49,7 +60,9 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public BatchRequest addWithId(final String index, final String id, final ExporterEntity entity)
       throws PersistenceException {
     LOGGER.debug("Add index request for index {} id {} and entity {} ", index, id, entity);
-    bulkRequestBuilder.operations(op -> op.index(idx -> idx.index(index).id(id).document(entity)));
+    final var idx = indexBuilder(index, id, entity).build();
+    final var op = bulkOperationBuilder(idx).build();
+    bulkRequestBuilder.operations(op);
     return this;
   }
 
@@ -59,9 +72,9 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       throws PersistenceException {
     LOGGER.debug(
         "Add index request with routing {} for index {} and entity {} ", routing, index, entity);
-    bulkRequestBuilder.operations(
-        op ->
-            op.index(idx -> idx.index(index).id(entity.getId()).document(entity).routing(routing)));
+    final var idx = indexWithRoutingBuilder(index, entity, routing).build();
+    final var op = bulkOperationBuilder(idx).build();
+    bulkRequestBuilder.operations(op);
     return this;
   }
 
@@ -78,15 +91,10 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         id,
         entity,
         updateFields);
-
-    final var updateOperation =
-        new UpdateOperation.Builder<ExporterEntity, Map<String, Object>>()
-            .index(index)
-            .id(id)
-            .action(a -> a.doc(updateFields).upsert(entity))
-            .retryOnConflict(UPDATE_RETRY_COUNT)
-            .build();
-    bulkRequestBuilder.operations(op -> op.update(updateOperation));
+    final var upsert = upsertWithDocBuilder(entity, updateFields).build();
+    final var updateOperation = updateOperationBuilder(index, id, upsert).build();
+    final var op = bulkOperationBuilder(updateOperation).build();
+    bulkRequestBuilder.operations(op);
 
     return this;
   }
@@ -106,16 +114,10 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         id,
         entity,
         updateFields);
-
-    final var updateOperation =
-        new UpdateOperation.Builder<ExporterEntity, Map<String, Object>>()
-            .index(index)
-            .id(id)
-            .routing(routing)
-            .action(a -> a.doc(updateFields).upsert(entity))
-            .retryOnConflict(UPDATE_RETRY_COUNT)
-            .build();
-    bulkRequestBuilder.operations(op -> op.update(updateOperation));
+    final var upsert = upsertWithDocBuilder(entity, updateFields).build();
+    final var updateOperation = updateOperationBuilder(index, id, upsert).routing(routing).build();
+    final var op = bulkOperationBuilder(updateOperation).build();
+    bulkRequestBuilder.operations(op);
 
     return this;
   }
@@ -136,17 +138,11 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         script,
         parameters);
 
-    final var updateOperation =
-        new UpdateOperation.Builder<ExporterEntity, Map<String, Object>>()
-            .index(index)
-            .id(id)
-            .action(
-                a ->
-                    a.script(scriptBuilder.getScriptWithParameters(script, parameters))
-                        .upsert(entity))
-            .retryOnConflict(UPDATE_RETRY_COUNT)
-            .build();
-    bulkRequestBuilder.operations(op -> op.update(updateOperation));
+    final Script scriptWithParameters = scriptBuilder.getScriptWithParameters(script, parameters);
+    final var upsert = upsertWithScriptBuilder(entity, scriptWithParameters).build();
+    final var updateOperation = updateOperationBuilder(index, id, upsert).build();
+    final var op = bulkOperationBuilder(updateOperation).build();
+    bulkRequestBuilder.operations(op);
 
     return this;
   }
@@ -169,18 +165,11 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         script,
         parameters);
 
-    final var updateOperation =
-        new UpdateOperation.Builder<ExporterEntity, Map<String, Object>>()
-            .index(index)
-            .id(id)
-            .routing(routing)
-            .action(
-                a ->
-                    a.script(scriptBuilder.getScriptWithParameters(script, parameters))
-                        .upsert(entity))
-            .retryOnConflict(UPDATE_RETRY_COUNT)
-            .build();
-    bulkRequestBuilder.operations(op -> op.update(updateOperation));
+    final Script scriptWithParameters = scriptBuilder.getScriptWithParameters(script, parameters);
+    final var upsert = upsertWithScriptBuilder(entity, scriptWithParameters).build();
+    final var updateOperation = updateOperationBuilder(index, id, upsert).routing(routing).build();
+    final var op = bulkOperationBuilder(updateOperation).build();
+    bulkRequestBuilder.operations(op);
 
     return this;
   }
@@ -192,14 +181,10 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     LOGGER.debug(
         "Add update request for index {} id {} and update fields {}", index, id, updateFields);
 
-    final var updateOperation =
-        new UpdateOperation.Builder<ExporterEntity, Map<String, Object>>()
-            .index(index)
-            .id(id)
-            .action(a -> a.doc(updateFields))
-            .retryOnConflict(UPDATE_RETRY_COUNT)
-            .build();
-    bulkRequestBuilder.operations(op -> op.update(updateOperation));
+    final var update = updateActionBuilder().doc(updateFields).build();
+    final var updateOperation = updateOperationBuilder(index, id, update).build();
+    final var op = bulkOperationBuilder(updateOperation).build();
+    bulkRequestBuilder.operations(op);
 
     return this;
   }
@@ -209,14 +194,17 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       throws PersistenceException {
     LOGGER.debug("Add update request for index {} id {} and entity {}", index, id, entity);
 
+    final var update =
+        new UpdateAction.Builder<ExporterEntity, ExporterEntity>().doc(entity).build();
     final var updateOperation =
         new UpdateOperation.Builder<ExporterEntity, ExporterEntity>()
             .index(index)
             .id(id)
-            .action(a -> a.doc(entity))
+            .action(update)
             .retryOnConflict(UPDATE_RETRY_COUNT)
             .build();
-    bulkRequestBuilder.operations(op -> op.update(updateOperation));
+    final var op = new BulkOperation.Builder().update(updateOperation).build();
+    bulkRequestBuilder.operations(op);
 
     return this;
   }
@@ -235,14 +223,11 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         script,
         parameters);
 
-    final var updateOperation =
-        new UpdateOperation.Builder<ExporterEntity, Map<String, Object>>()
-            .index(index)
-            .id(id)
-            .action(a -> a.script(scriptBuilder.getScriptWithParameters(script, parameters)))
-            .retryOnConflict(UPDATE_RETRY_COUNT)
-            .build();
-    bulkRequestBuilder.operations(op -> op.update(updateOperation));
+    final Script scriptWithParameters = scriptBuilder.getScriptWithParameters(script, parameters);
+    final var upsert = updateActionBuilder().script(scriptWithParameters).build();
+    final var updateOperation = updateOperationBuilder(index, id, upsert).build();
+    final var op = bulkOperationBuilder(updateOperation).build();
+    bulkRequestBuilder.operations(op);
 
     return this;
   }
