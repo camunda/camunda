@@ -21,7 +21,7 @@ public final class NoopExporterConfiguration {
   }
 
   public static final class IndexSpecificSettings {
-    public String numberOfShards;
-    public String numberOfReplicas;
+    public String numberOfShards = "1";
+    public String numberOfReplicas = "0";
   }
 }
