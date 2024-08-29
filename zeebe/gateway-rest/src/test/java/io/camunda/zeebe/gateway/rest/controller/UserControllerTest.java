@@ -52,11 +52,7 @@ public class UserControllerTest extends RestControllerTest {
   @Test
   void createUserShouldReturnNoContent() {
     // given
-    final UserWithPasswordRequest dto = new UserWithPasswordRequest();
-    dto.setUsername("demo");
-    dto.setPassword("password");
-    dto.setName("Demo");
-    dto.setEmail("demo@e.c");
+    final UserWithPasswordRequest dto = validRequest();
 
     final var userRecord =
         new UserRecord()
@@ -90,10 +86,7 @@ public class UserControllerTest extends RestControllerTest {
     // given
     final String message = "message";
 
-    final UserWithPasswordRequest dto = new UserWithPasswordRequest();
-    dto.setUsername("demo");
-    dto.setEmail("demo@e.c");
-    dto.setPassword("password");
+    final UserWithPasswordRequest dto = validRequest();
 
     when(userServices.createUser(
             dto.getUsername(), dto.getName(), dto.getEmail(), dto.getPassword()))
