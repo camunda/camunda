@@ -11,18 +11,21 @@ import static io.camunda.search.clients.core.RequestBuilders.searchRequest;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
+import io.camunda.search.clients.aggregation.SearchAggregation;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.clients.sort.SearchSortOptions;
 import io.camunda.search.clients.sort.SortOptionsBuilders;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
 public final record SearchQueryRequest(
     List<String> index,
     SearchQuery query,
+    Map<String, SearchAggregation> aggregations,
     List<SearchSortOptions> sort,
     Object[] searchAfter,
     Integer from,
@@ -37,6 +40,7 @@ public final record SearchQueryRequest(
 
     private List<String> index;
     private SearchQuery query;
+    private Map<String, SearchAggregation> aggregations;
     private List<SearchSortOptions> sort;
     private Object[] searchAfter;
     private Integer from;
@@ -53,6 +57,11 @@ public final record SearchQueryRequest(
 
     public Builder query(final SearchQuery value) {
       query = value;
+      return this;
+    }
+
+    public Builder aggregations(final Map<String, SearchAggregation> value) {
+      aggregations = value;
       return this;
     }
 
@@ -95,6 +104,7 @@ public final record SearchQueryRequest(
           Objects.requireNonNull(
               index, "Expected to create request for index, but given index was null."),
           query,
+          aggregations,
           sort,
           searchAfter,
           from,
