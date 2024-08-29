@@ -557,6 +557,7 @@ jobs:
       - zeebe-ci
       - optimize-frontend-unit-tests
       - optimize-backend-unit-tests
+      - protobuf-checks
     steps:
       - uses: actions/checkout@v4
       - name: Check for aborted jobs
