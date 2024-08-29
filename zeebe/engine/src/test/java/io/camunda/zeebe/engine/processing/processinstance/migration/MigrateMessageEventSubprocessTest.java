@@ -219,7 +219,7 @@ public class MigrateMessageEventSubprocessTest {
   }
 
   @Test
-  public void shouldMigrateMessageEventSubprocess() {
+  public void shouldMigrateSubscriptionForMappedStartEvent() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
