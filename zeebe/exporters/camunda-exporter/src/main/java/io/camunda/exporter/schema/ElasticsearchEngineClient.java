@@ -157,7 +157,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                           deserializeJson(IndexTemplateSummary._DESERIALIZER, templateMappings)
                               .mappings()))
           .composedOf(indexTemplateDescriptor.getComposedOf())
-          .create(true)
+          .create(indexTemplateDescriptor.create())
           .build();
     } catch (final IOException e) {
       throw new ElasticsearchExporterException(

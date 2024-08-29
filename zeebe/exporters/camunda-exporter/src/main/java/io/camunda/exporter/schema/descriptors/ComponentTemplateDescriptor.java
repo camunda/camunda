@@ -7,18 +7,6 @@
  */
 package io.camunda.exporter.schema.descriptors;
 
-public interface ComponentTemplateDescriptor {
+public interface ComponentTemplateDescriptor extends TemplateDetails {
   String getTemplateJson();
-
-  String getTemplateName();
-
-  /**
-   * Maps to the create query parameter, if true the corresponding request cannot replace or update
-   * an existing component template, defaults to false
-   *
-   * @return The component template request is create only
-   */
-  default Boolean create() {
-    return false;
-  }
 }
