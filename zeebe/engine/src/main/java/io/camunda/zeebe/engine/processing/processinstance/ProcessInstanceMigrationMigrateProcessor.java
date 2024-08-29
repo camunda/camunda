@@ -144,7 +144,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullTargetProcessDefinition(targetProcessDefinition, targetProcessDefinitionKey);
     requireReferredElementsExist(
         sourceProcessDefinition, targetProcessDefinition, mappingInstructions, processInstanceKey);
-    requireNoEventSubprocess(sourceProcessDefinition, targetProcessDefinition);
 
     final Map<String, String> mappedElementIds =
         mapElementIds(mappingInstructions, processInstance, targetProcessDefinition);
@@ -223,6 +222,13 @@ public class ProcessInstanceMigrationMigrateProcessor
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
+    requireNoEventSubprocessInSource(
+        sourceProcessDefinition, elementInstanceRecord, EnumSet.of(BpmnEventType.MESSAGE));
+    requireNoEventSubprocessInTarget(
+        targetProcessDefinition,
+        targetElementId,
+        elementInstanceRecord,
+        EnumSet.of(BpmnEventType.MESSAGE));
     requireNoBoundaryEventInSource(
         sourceProcessDefinition,
         elementInstanceRecord,
@@ -360,6 +366,7 @@ public class ProcessInstanceMigrationMigrateProcessor
             .getElementById(targetElementId, ExecutableCatchEventSupplier.class);
     final List<DirectBuffer> subscribedMessageNames = new ArrayList<>();
     final Map<String, Boolean> targetCatchEventIdToInterrupting = new HashMap<>();
+
     catchEventBehavior
         .subscribeToEvents(
             context,
@@ -373,6 +380,11 @@ public class ProcessInstanceMigrationMigrateProcessor
                 // the migrated subscription
                 targetCatchEventIdToInterrupting.put(
                     targetCatchEventId, executableCatchEvent.isInterrupting());
+                return false;
+              }
+
+              if (elementInstance.isInterrupted()) {
+                // The flow scope is interrupted, so we shouldn't subscribe to any catch event
                 return false;
               }
 
