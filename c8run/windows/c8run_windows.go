@@ -25,7 +25,31 @@ func printHelp() {
 
 }
 
+func stopProcess(pidfile string) {
+	if _, err := os.Stat(pidfile); err == nil {
+		commandPidText, _ := os.ReadFile(pidfile)
+		commandPidStripped := strings.TrimSpace(string(commandPidText))
+		commandPid, _ := strconv.Atoi(string(commandPidStripped))
+
+		for _, process := range process_tree(int(commandPid)) {
+			process.Kill()
+		}
+		os.Remove(pidfile)
+
+	} else if errors.Is(err, os.ErrNotExist) {
+		// path/to/whatever does *not* exist
+
+	} else {
+		// Schrodinger: file may or may not exist. See err for details.
+
+		// Therefore, do *NOT* use !os.IsNotExist(err) to test for file existence
+
+	}
+
+}
+
 func parseCommandLineOptions(args []string, settings *c8runSettings) *c8runSettings {
+	fmt.Println("Args length ", len(args))
 	if len(args) == 0 {
 		return settings
 	}
@@ -56,8 +80,11 @@ func main() {
 	parentDir := baseDir
 	// deploymentDir := filepath.Join(parentDir, "configuration", "resources")
 	elasticsearchVersion := "8.13.4"
+	camundaVersion := "8.6.0-alpha3"
 
 	elasticsearchPidPath := filepath.Join(baseDir, "elasticsearch.pid")
+	connectorsPidPath := filepath.Join(baseDir, "connectors.pid")
+	camundaPidPath := filepath.Join(baseDir, "camunda.pid")
 
 	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME", "io.camunda.zeebe.exporter.ElasticsearchExporter")
 	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", "http://localhost:9200")
@@ -68,6 +95,7 @@ func main() {
 	baseCommand := ""
 	// insideConfigFlag := false
 
+	fmt.Println(os.Args)
 	if os.Args[1] == "start" {
 		baseCommand = "start"
 	} else {
@@ -75,19 +103,10 @@ func main() {
 	}
 	fmt.Print("Command: " + baseCommand + "\n")
 
-	javaBinary := os.Getenv("JAVA")
-	javaHome := os.Getenv("JAVA_HOME")
+	var settings c8runSettings
+	parseCommandLineOptions(os.Args[2:], &settings)
 
-	if javaBinary == "" {
-		fmt.Print("JAVA_HOME is not set. Unexpected results may occur.\n")
-		fmt.Print("Set JAVA_HOME to the directory of your local JDK to avoid this message.\n")
-		os.Setenv("JAVA", "java")
-		javaBinary = "java"
-	} else {
-		fmt.Print("Setting JAVA property to " + javaHome + "\\bin\\java\n")
-		javaBinary = filepath.Join(javaHome, "bin", "java")
-		os.Setenv("JAVA", javaBinary)
-	}
+	javaBinary := "java"
 
 	if baseCommand == "start" {
 
@@ -132,8 +151,8 @@ func main() {
 		elasticsearchCmd := exec.Command("cmd", "/C", elasticsearchCmdString)
 
 		elasticsearchCmd.SysProcAttr = &syscall.SysProcAttr{
-			// CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-			CreationFlags: 0x00000008 | 0x00000200, // DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
+			CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
+			// CreationFlags: 0x00000008 | 0x00000200, // DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
 			// CreationFlags: 0x00000010, // CREATE_NEW_CONSOLE : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
 		}
 		elasticsearchCmd.Stdout = elasticsearchLogFile
@@ -143,33 +162,69 @@ func main() {
 
 		elasticsearchPidFile, err := os.OpenFile(elasticsearchPidPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
-			fmt.Print("Failed to open file: " + elasticsearchLogFilePath)
+			fmt.Print("Failed to open file: " + elasticsearchPidPath)
 			os.Exit(1)
 		}
 		elasticsearchPidFile.Write([]byte(strconv.Itoa(elasticsearchCmd.Process.Pid)))
 
+		connectorsCmdString := javaBinary + " -classpath " + parentDir + "\\*;" + parentDir + "\\custom_connectors\\*;" + parentDir + "\\camunda-zeebe-" + camundaVersion + "\\lib\\* io.camunda.connector.runtime.app.ConnectorRuntimeApplication --spring.config.location=" + parentDir + "\\connectors-application.properties"
+		fmt.Println(connectorsCmdString)
+		connectorsCmd := exec.Command("cmd", "/C", connectorsCmdString)
+		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
+		connectorsLogFile, err := os.OpenFile(connectorsLogPath, os.O_RDWR|os.O_CREATE, 0644)
+		if err != nil {
+			fmt.Print("Failed to open file: " + connectorsLogPath)
+			os.Exit(1)
+		}
+		connectorsCmd.SysProcAttr = &syscall.SysProcAttr{
+			CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
+			// CreationFlags: 0x00000008 | 0x00000200, // DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
+			// CreationFlags: 0x00000010, // CREATE_NEW_CONSOLE : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
+		}
+		connectorsCmd.Stdout = connectorsLogFile
+		connectorsCmd.Stderr = connectorsLogFile
+		connectorsCmd.Start()
+
+		connectorsPidFile, err := os.OpenFile(connectorsPidPath, os.O_RDWR|os.O_CREATE, 0644)
+		if err != nil {
+			fmt.Print("Failed to open file: " + connectorsPidPath)
+			os.Exit(1)
+		}
+		connectorsPidFile.Write([]byte(strconv.Itoa(connectorsCmd.Process.Pid)))
+		var extraArgs string
+		if settings.config != "" {
+			extraArgs = "--spring.config.location=" + settings.config
+		} else {
+			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, "configuration")
+		}
+		camundaCmdString := parentDir + "\\camunda-zeebe-" + camundaVersion + "\\bin\\camunda " + extraArgs
+		camundaCmd := exec.Command("cmd", "/C", camundaCmdString)
+		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
+		camundaLogFile, err := os.OpenFile(camundaLogPath, os.O_RDWR|os.O_CREATE, 0644)
+		if err != nil {
+			fmt.Print("Failed to open file: " + camundaLogPath)
+			os.Exit(1)
+		}
+		camundaCmd.SysProcAttr = &syscall.SysProcAttr{
+			CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
+			// CreationFlags: 0x00000008 | 0x00000200, // DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
+			// CreationFlags: 0x00000010, // CREATE_NEW_CONSOLE : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
+		}
+		camundaCmd.Stdout = camundaLogFile
+		camundaCmd.Stderr = camundaLogFile
+		camundaCmd.Start()
+		camundaPidFile, err := os.OpenFile(camundaPidPath, os.O_RDWR|os.O_CREATE, 0644)
+		if err != nil {
+			fmt.Print("Failed to open file: " + camundaPidPath)
+			os.Exit(1)
+		}
+		camundaPidFile.Write([]byte(strconv.Itoa(camundaCmd.Process.Pid)))
 	}
 
 	if baseCommand == "stop" {
-		if _, err := os.Stat(elasticsearchPidPath); err == nil {
-			elasticsearchPidText, _ := os.ReadFile(elasticsearchPidPath)
-			elasticsearchPidStripped := strings.TrimSpace(string(elasticsearchPidText))
-			elasticsearchPid, _ := strconv.Atoi(string(elasticsearchPidStripped))
-
-			for _, process := range process_tree(int(elasticsearchPid)) {
-				process.Kill()
-			}
-			os.Remove(elasticsearchPidPath)
-
-		} else if errors.Is(err, os.ErrNotExist) {
-			// path/to/whatever does *not* exist
-
-		} else {
-			// Schrodinger: file may or may not exist. See err for details.
-
-			// Therefore, do *NOT* use !os.IsNotExist(err) to test for file existence
-
-		}
+		stopProcess(elasticsearchPidPath)
+		stopProcess(connectorsPidPath)
+		stopProcess(camundaPidPath)
 	}
 
 }
