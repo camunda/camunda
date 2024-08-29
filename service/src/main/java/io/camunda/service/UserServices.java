@@ -52,4 +52,6 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
             .setEmail(email)
             .setPassword(password));
   }
+
+  public record CreateUserRequest(String username, String name, String email, String password) {}
 }
