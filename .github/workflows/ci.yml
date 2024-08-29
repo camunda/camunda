@@ -7,13 +7,7 @@ on:
       - main
       - stable/*
       - release-*
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - labeled
-      - unlabeled
+  pull_request: {}
   merge_group: {}
   workflow_dispatch: {}
 
@@ -514,8 +508,9 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       needs.detect-changes.outputs.protobuf-changes == 'true' &&
-      contains(fromJSON('["pull_request","push"]'), github.event_name) &&
-      !contains(github.event.pull_request.labels.*.name, 'breaking/protobuf')
+      !(contains(github.event.pull_request.body, 'BREAKING CHANGE:') ||
+        contains(github.event.merge_group.head_commit.message, 'BREAKING CHANGE:') ||
+        contains(github.event.push.head_commit.message, 'BREAKING CHANGE:'))
     steps:
       - uses: actions/checkout@v4
         # by the default the action will compare against the base branch, or if on push, against the
