@@ -68,4 +68,13 @@ public final class SearchQueryBuilders {
       final Function<UserQuery.Builder, ObjectBuilder<UserQuery>> fn) {
     return fn.apply(userSearchQuery()).build();
   }
+
+  public static IncidentQuery.Builder incidentSearchQuery() {
+    return new IncidentQuery.Builder();
+  }
+
+  public static IncidentQuery incidentSearchQuery(
+      final Function<IncidentQuery.Builder, ObjectBuilder<IncidentQuery>> fn) {
+    return fn.apply(incidentSearchQuery()).build();
+  }
 }

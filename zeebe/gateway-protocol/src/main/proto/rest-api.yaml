@@ -1072,6 +1072,53 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
+  /incidents/search:
+    post:
+      tags:
+        - Incident
+      summary: Query incident (experimental)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidentSearchQueryRequest"
+      responses:
+        '200':
+          description: >
+            The Incident Search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncidentSearchQueryResponse"
+        '400':
+          description: >
+            The Incident Search Query failed.
+            More details are provided in the response body.
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Not found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 components:
   schemas:
     UserTaskSearchQueryRequest:
@@ -1269,6 +1316,123 @@ components:
           type: integer
           format: int64
         tenantId:
+          type: string
+    IncidentSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/IncidentFilterRequest"
+    IncidentFilterRequest:
+      type: object
+      properties:
+        key:
+          type: integer
+          format: int64
+        processDefinitionKey:
+          type: integer
+          format: int64
+        processInstanceKey:
+          type: integer
+          format: int64
+        type:
+          type: string
+        message:
+          type: string
+        flowNodeId:
+          type: string
+        flowNodeInstanceId:
+          type: string
+        state:
+          type: string
+        jobKey:
+          type: integer
+          format: int64
+        tenantId:
+          type: string
+        hasActiveOperation:
+          type: boolean
+    IncidentSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentItem"
+    IncidentItem:
+      type: object
+      properties:
+        key:
+          type: integer
+          format: int64
+        processDefinitionKey:
+          type: integer
+          format: int64
+        processInstanceKey:
+          type: integer
+          format: int64
+        type:
+          type: string
+        message:
+          type: string
+        flowNodeId:
+          type: string
+        flowNodeInstanceId:
+          type: string
+        creationTime:
+          type: string
+        state:
+          type: string
+        jobKey:
+          type: integer
+          format: int64
+        tenantId:
+          type: string
+        hasActiveOperation:
+          type: boolean
+        lastOperation:
+          $ref: "#/components/schemas/OperationItem"
+        rootCauseInstance:
+          $ref: "#/components/schemas/ProcessInstanceReferenceItem"
+        rootCauseDecision:
+          $ref: "#/components/schemas/DecisionInstanceReferenceItem"
+    OperationItem:
+      description: " Operation"
+      type: object
+      properties:
+        id:
+          type: string
+        batchOperationId:
+          type: string
+        type:
+          type: string
+        state:
+          type: string
+        errorMessage:
+          type: string
+        completedDate:
+          type: string
+    ProcessInstanceReferenceItem:
+      description: "Process instance reference description"
+      type: object
+      properties:
+        instanceId:
+          type: string
+        processDefinitionId:
+          type: string
+        processDefinitionName:
+          type: string
+    DecisionInstanceReferenceItem:
+      description: "Decision instance reference description"
+      type: object
+      properties:
+        instanceId:
+          type: string
+        decisionName:
           type: string
     DecisionDefinitionSearchQueryResponse:
       allOf:
