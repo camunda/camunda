@@ -330,21 +330,17 @@ public final class ProcessInstanceMigrationPreconditions {
       final String elementId,
       final EnumSet<BpmnEventType> allowedEventTypes,
       final String errorTemplate) {
-    final AbstractFlowElement elementById =
+    final AbstractFlowElement sourceElement =
         sourceProcessDefinition.getProcess().getElementById(elementId);
 
-    if (!(ExecutableActivity.class.isAssignableFrom(elementById.getClass()))) {
+    if (!(sourceElement instanceof final ExecutableActivity sourceActivity)) {
       // no event subprocess event check needed because the given element cannot contain an event
       // subprocess
       return;
     }
 
     final List<ExecutableStartEvent> rejectedEvents =
-        sourceProcessDefinition
-            .getProcess()
-            .getElementById(elementId, ExecutableActivity.class)
-            .getEventSubprocesses()
-            .stream()
+        sourceActivity.getEventSubprocesses().stream()
             .flatMap(sub -> sub.getStartEvents().stream())
             .filter(start -> !allowedEventTypes.contains(start.getEventType()))
             .toList();
@@ -606,22 +602,16 @@ public final class ProcessInstanceMigrationPreconditions {
       final String elementId,
       final EnumSet<BpmnEventType> allowedEventTypes,
       final String errorTemplate) {
-    final AbstractFlowElement elementById =
+    final AbstractFlowElement sourceElement =
         sourceProcessDefinition.getProcess().getElementById(elementId);
 
-    if (!(ExecutableActivity.class.isAssignableFrom(elementById.getClass()))) {
-      // no boundary event check needed
+    if (!(sourceElement instanceof final ExecutableActivity sourceActivity)) {
+      // // no boundary event check needed because the given element cannot contain a boundary event
       return;
     }
 
-    final List<ExecutableBoundaryEvent> boundaryEvents =
-        sourceProcessDefinition
-            .getProcess()
-            .getElementById(elementId, ExecutableActivity.class)
-            .getBoundaryEvents();
-
     final var rejectedBoundaryEvents =
-        boundaryEvents.stream()
+        sourceActivity.getBoundaryEvents().stream()
             .filter(event -> !allowedEventTypes.contains(event.getEventType()))
             .toList();
 
