@@ -16,6 +16,7 @@ import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.json.JsonpDeserializer;
+import io.camunda.exporter.NoopExporterConfiguration.IndexSpecificSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.schema.descriptors.ComponentTemplateDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
@@ -50,8 +51,9 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   @Override
-  public void createIndexTemplate(final IndexTemplateDescriptor templateDescriptor) {
-    final PutIndexTemplateRequest request = putIndexTemplateRequest(templateDescriptor);
+  public void createIndexTemplate(
+      final IndexTemplateDescriptor templateDescriptor, final IndexSpecificSettings settings) {
+    final PutIndexTemplateRequest request = putIndexTemplateRequest(templateDescriptor, settings);
 
     try {
       client.indices().putIndexTemplate(request);
@@ -142,7 +144,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   private PutIndexTemplateRequest putIndexTemplateRequest(
-      final IndexTemplateDescriptor indexTemplateDescriptor) {
+      final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSpecificSettings settings) {
 
     try (final var templateMappings =
         getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
@@ -155,7 +157,13 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                   t.aliases(indexTemplateDescriptor.getAlias(), Alias.of(a -> a))
                       .mappings(
                           deserializeJson(IndexTemplateSummary._DESERIALIZER, templateMappings)
-                              .mappings()))
+                              .mappings())
+                      .settings(
+                          s ->
+                              s.index(
+                                  i ->
+                                      i.numberOfShards(settings.numberOfShards)
+                                          .numberOfReplicas(settings.numberOfReplicas))))
           .composedOf(indexTemplateDescriptor.getComposedOf())
           .create(true)
           .build();

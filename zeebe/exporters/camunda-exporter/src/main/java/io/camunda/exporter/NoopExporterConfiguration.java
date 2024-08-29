@@ -11,19 +11,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 public final class NoopExporterConfiguration {
-  public final ZeebeConfig zeebe = new ZeebeConfig();
   public final ElasticsearchConfig elasticsearch = new ElasticsearchConfig();
 
   public static final class ElasticsearchConfig {
     public String url;
     public IndexSpecificSettings defaultSettings = new IndexSpecificSettings();
-    public Map<String, IndexSpecificSettings> indexSettingsByName = new HashMap<>();
-
-    public static final class IndexSpecificSettings {
-      public String numberOfShards;
-      public String numberOfReplicas;
-    }
+    public Map<String, String> replicasByIndexName = new HashMap<>();
+    public Map<String, String> shardsByIndexName = new HashMap<>();
   }
 
-  public static final class ZeebeConfig {}
+  public static final class IndexSpecificSettings {
+    public String numberOfShards;
+    public String numberOfReplicas;
+  }
 }
