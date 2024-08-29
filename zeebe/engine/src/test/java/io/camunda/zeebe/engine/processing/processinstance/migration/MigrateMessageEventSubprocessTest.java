@@ -694,4 +694,91 @@ public class MigrateMessageEventSubprocessTest {
         .contains("These mappings detach the catch event from the element in the target process")
         .contains("Catch events must stay attached to the same element instance");
   }
+
+  @Ignore("This rejection will be supported with #21615")
+  @Test
+  public void shouldRejectCommandWhenMappedCatchEventsAreMerged() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .eventSubProcess(
+                        "subA1",
+                        s ->
+                            s.startEvent("startA1")
+                                .message(m -> m.name("msgA1").zeebeCorrelationKeyExpression("key1"))
+                                .endEvent())
+                    .eventSubProcess(
+                        "subB1",
+                        s ->
+                            s.startEvent("startB1")
+                                .message(m -> m.name("msgB1").zeebeCorrelationKeyExpression("key1"))
+                                .endEvent())
+                    .startEvent("start")
+                    .userTask("userTask1")
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .eventSubProcess(
+                        "sub2",
+                        s ->
+                            s.startEvent("start2")
+                                .message(m -> m.name("msg2").zeebeCorrelationKeyExpression("key2"))
+                                .endEvent())
+                    .startEvent("start")
+                    .userTask("userTask2")
+                    .endEvent("end")
+                    .done())
+            .deploy();
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(
+                Map.of(
+                    "key1",
+                    helper.getCorrelationValue() + "1",
+                    "key2",
+                    helper.getCorrelationValue() + "2"))
+            .create();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("userTask1")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("userTask1", "userTask2")
+            .addMappingInstruction("startA1", "start2")
+            .addMappingInstruction("startB1", "start2")
+            .expectRejection()
+            .migrate();
+
+    // then
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .extracting(Record::getRejectionReason)
+        .asString()
+        .contains("Expected to migrate process instance '" + processInstanceKey + "'")
+        .contains("active element with id '" + processId + "' has a catch event attached")
+        .contains("catch event attached that is mapped to a catch event with id 'start2'")
+        .contains(
+            "There are multiple mapping instructions that target this catch event: 'startA1', 'startA2'")
+        .contains("Catch events cannot be merged by process instance migration")
+        .contains("Please ensure the mapping instructions target a catch event only once");
+  }
 }
