@@ -6295,7 +6295,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(container_cpu_cfs_throttled_periods_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (pod) / sum(rate(container_cpu_cfs_periods_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (pod)",
+              "expr": "sum(rate(container_cpu_cfs_throttled_periods_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (pod) / sum(rate(container_cpu_cfs_periods_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (pod)",
               "instant": false,
               "legendFormat": "__auto",
               "range": true,
