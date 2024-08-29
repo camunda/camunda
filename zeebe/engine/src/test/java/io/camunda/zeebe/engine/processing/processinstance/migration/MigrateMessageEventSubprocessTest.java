@@ -353,6 +353,11 @@ public class MigrateMessageEventSubprocessTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("userTask1")
+        .await();
+
     // when
     ENGINE
         .processInstance()
