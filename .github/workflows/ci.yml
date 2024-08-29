@@ -507,15 +507,27 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     if: |
-      needs.detect-changes.outputs.protobuf-changes == 'true' &&
-      !(contains(github.event.pull_request.body, 'BREAKING CHANGE:') ||
-        contains(github.event.merge_group.head_commit.message, 'BREAKING CHANGE:') ||
-        contains(github.event.push.commits.*.message, 'BREAKING CHANGE:'))
+      needs.detect-changes.outputs.protobuf-changes == 'true'
     steps:
       - uses: actions/checkout@v4
+      - id: pr-body
+        name: Fetch latest PR body
+        if: github.event_name == 'pull_request'
+        run: |
+          {
+            echo 'result<<EOF'
+            gh pr view ${{ github.event.pull_request.number }} --json body | jq '.body'
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
         # by the default the action will compare against the base branch, or if on push, against the
         # previous commit
       - uses: bufbuild/buf-action@v1
+        if: |
+          !(contains(steps.pr-body.outputs.result, 'BREAKING CHANGE:') ||
+            contains(github.event.merge_group.head_commit.message, 'BREAKING CHANGE:') ||
+            contains(github.event.push.commits.*.message, 'BREAKING CHANGE:'))
         with:
           format: false
           lint: false
