@@ -141,9 +141,9 @@ public class VariableZeebeRecordProcessorElasticSearch {
 
   private TaskVariableSnapshotEntity createSnapshotFromEntity(final VariableEntity entity) {
     final TaskVariableSnapshotEntity snapshot = new TaskVariableSnapshotEntity();
-    Optional.ofNullable(entity.getValue()).ifPresent(snapshot::setVariableValue);
-    Optional.ofNullable(entity.getFullValue()).ifPresent(snapshot::setVariableFullValue);
-    Optional.ofNullable(entity.getName()).ifPresent(snapshot::setVariableName);
+    Optional.ofNullable(entity.getValue()).ifPresent(snapshot::setVarValue);
+    Optional.ofNullable(entity.getFullValue()).ifPresent(snapshot::setVarFullValue);
+    Optional.ofNullable(entity.getName()).ifPresent(snapshot::setVarName);
     Optional.of(entity.getIsPreview()).ifPresent(snapshot::setPreview);
     Optional.ofNullable(entity.getScopeFlowNodeId()).ifPresent(snapshot::setVariableScopeKey);
     Optional.ofNullable(entity.getId()).ifPresent(snapshot::setId);

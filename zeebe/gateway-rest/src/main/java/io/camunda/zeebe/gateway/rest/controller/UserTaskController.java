@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
 @RequestMapping(path = {"/v1/user-tasks", "/v2/user-tasks"})
-public class UserTaskController {
+public class      UserTaskController {
 
   private final UserTaskServices userTaskServices;
 

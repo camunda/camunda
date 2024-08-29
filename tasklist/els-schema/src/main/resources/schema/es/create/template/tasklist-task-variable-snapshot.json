@@ -63,12 +63,6 @@
       "formId": {
         "type": "keyword"
       },
-      "formVersion": {
-        "type": "long"
-      },
-      "isFormEmbedded": {
-        "type": "boolean"
-      },
       "followUpDate": {
         "format": "date_time || epoch_millis",
         "type": "date"
@@ -96,14 +90,14 @@
       "priority": {
         "type": "integer"
       },
-      "variable_name": {
+      "varName": {
         "type": "keyword"
       },
-      "variable_value": {
+      "varValue": {
         "type": "keyword",
         "ignore_above": 8191
       },
-      "variable_fullValue": {
+      "varFullValue": {
         "type": "keyword",
         "ignore_above": 8191
       },

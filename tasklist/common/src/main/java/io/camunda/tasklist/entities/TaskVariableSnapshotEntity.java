@@ -96,13 +96,13 @@ public class TaskVariableSnapshotEntity {
   private Integer priority;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  private String variableName;
+  private String varName;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  private String variableValue;
+  private String varValue;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  private String variableFullValue;
+  private String varFullValue;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Boolean isPreview = null;
@@ -369,30 +369,30 @@ public class TaskVariableSnapshotEntity {
     return this;
   }
 
-  public String getVariableName() {
-    return variableName;
+  public String getVarName() {
+    return varName;
   }
 
-  public TaskVariableSnapshotEntity setVariableName(final String variableName) {
-    this.variableName = variableName;
+  public TaskVariableSnapshotEntity setVarName(final String varName) {
+    this.varName = varName;
     return this;
   }
 
-  public String getVariableValue() {
-    return variableValue;
+  public String getVarValue() {
+    return varValue;
   }
 
-  public TaskVariableSnapshotEntity setVariableValue(final String variableValue) {
-    this.variableValue = variableValue;
+  public TaskVariableSnapshotEntity setVarValue(final String varValue) {
+    this.varValue = varValue;
     return this;
   }
 
-  public String getVariableFullValue() {
-    return variableFullValue;
+  public String getVarFullValue() {
+    return varFullValue;
   }
 
-  public TaskVariableSnapshotEntity setVariableFullValue(final String variableFullValue) {
-    this.variableFullValue = variableFullValue;
+  public TaskVariableSnapshotEntity setVarFullValue(final String varFullValue) {
+    this.varFullValue = varFullValue;
     return this;
   }
 

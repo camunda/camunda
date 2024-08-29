@@ -1119,6 +1119,10 @@ components:
           type: string
         bpmnDefinitionId:
           type: string
+        variables:
+          type: array
+          items:
+            $ref: "#/components/schemas/VariableValueFilterRequest"
         priority:
           type: object
           allOf:

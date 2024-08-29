@@ -25,9 +25,9 @@ public class TasklistTaskVariableSnapshotTemplate extends AbstractTemplateDescri
 
   public static final String ID = "id";
   public static final String TASK_ID = "taskId";
-  public static final String VARIABLE_NAME = "variableName";
-  public static final String VARIABLE_VALUE = "variableValue";
-  public static final String VARIABLE_FULL_VALUE = "variableFullValue";
+  public static final String VARIABLE_NAME = "varName";
+  public static final String VARIABLE_VALUE = "varValue";
+  public static final String VARIABLE_FULL_VALUE = "varFullValue";
   public static final String IS_PREVIEW = "isPreview";
   public static final String TENANT_ID = "tenantId";
   public static final String FLOW_NODE_BPMN_ID = "flowNodeBpmnId";
@@ -68,9 +68,9 @@ public class TasklistTaskVariableSnapshotTemplate extends AbstractTemplateDescri
         return of(ID);
       case ("taskId"):
         return of(TASK_ID);
-      case ("variableName"):
+      case ("varName"):
         return of(VARIABLE_NAME);
-      case ("variableValue"):
+      case ("varValue"):
         return of(VARIABLE_FULL_VALUE);
       case ("isValueTruncated"):
         return of(IS_PREVIEW);
