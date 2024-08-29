@@ -10,6 +10,7 @@ package io.camunda.application.commons.service;
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.CamundaServices;
+import io.camunda.service.ClockServices;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
@@ -98,5 +99,10 @@ public class CamundaServicesConfiguration {
   @Bean
   public AuthorizationServices authorizationServices(final CamundaServices camundaServices) {
     return camundaServices.authorizationServices();
+  }
+
+  @Bean
+  public ClockServices clockServices(final CamundaServices camundaServices) {
+    return camundaServices.clockServices();
   }
 }
