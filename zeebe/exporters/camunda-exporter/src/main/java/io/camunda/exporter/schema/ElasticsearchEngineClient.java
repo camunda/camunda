@@ -116,7 +116,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   private PutComponentTemplateRequest putComponentTemplateRequest(
       final ComponentTemplateDescriptor templateDescriptor) {
     try (final var template =
-        getResourceAsStream(templateDescriptor.getTemplateClasspathFileName())) {
+        IOUtils.toInputStream(templateDescriptor.getTemplateJson(), "UTF-8")) {
       return new PutComponentTemplateRequest.Builder()
           .name(templateDescriptor.getTemplateName())
           .withJson(template)

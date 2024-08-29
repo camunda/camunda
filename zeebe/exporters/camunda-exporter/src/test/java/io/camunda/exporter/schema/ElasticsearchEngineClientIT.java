@@ -201,10 +201,17 @@ public class ElasticsearchEngineClientIT {
   }
 
   private void createComponentTemplate(
-      final String componentTemplateName, final String templateFileName) {
+      final String componentTemplateName, final String templateFileName) throws IOException {
     final var descriptor = mock(ComponentTemplateDescriptor.class);
     when(descriptor.getTemplateName()).thenReturn(componentTemplateName);
-    when(descriptor.getTemplateClasspathFileName()).thenReturn(templateFileName);
+
+    final var fileContents =
+        IOUtils.resourceToString(
+            templateFileName,
+            StandardCharsets.UTF_8,
+            Thread.currentThread().getContextClassLoader());
+
+    when(descriptor.getTemplateJson()).thenReturn(fileContents);
 
     elsEngineClient.createComponentTemplate(descriptor);
   }

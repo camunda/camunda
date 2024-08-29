@@ -8,7 +8,7 @@
 package io.camunda.exporter.schema.descriptors;
 
 public interface ComponentTemplateDescriptor {
-  String getTemplateClasspathFileName();
+  String getTemplateJson();
 
   String getTemplateName();
 
