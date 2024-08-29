@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.service.UserTaskServices;
+import io.camunda.service.query.QueryParser;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -29,12 +30,18 @@ public class UserTaskQueryController {
 
   @Autowired private UserTaskServices userTaskServices;
 
+  private final QueryParser queryParser = new QueryParser();
+
   @PostMapping(
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Object> searchUserTasks(
       @RequestBody(required = false) final UserTaskSearchQueryRequest query) {
+
+    final var queryParsedTest = queryParser.parse(query.getFilter());
+    System.out.println(queryParsedTest);
+
     return SearchQueryRequestMapper.toUserTaskQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
