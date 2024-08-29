@@ -142,8 +142,6 @@ jobs:
     needs: [detect-changes]
     runs-on: [ self-hosted, linux, amd64, "16" ]
     timeout-minutes: 30
-    outputs:
-      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
       - uses: actions/checkout@v4
       - name: Install and allow strace tests
@@ -201,8 +199,6 @@ jobs:
     name: "[IT] ${{ matrix.name }}"
     needs: [ detect-changes ]
     timeout-minutes: 20
-    outputs:
-      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     runs-on: [ self-hosted, linux, amd64, "16" ]
     strategy:
       fail-fast: false
@@ -508,9 +504,6 @@ jobs:
     # This name is hard-coded in the branch rules; remember to update that if this name changes
     if: always()
     runs-on: ubuntu-latest
-    outputs:
-      flakyUnitTests: ${{ needs.java-unit-tests.outputs.flakyTests }}
-      flakyITs: ${{ needs.integration-tests.outputs.flakyTests }}
     needs:
       - actionlint
       - java-unit-tests
@@ -532,61 +525,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
-
-  notify-if-failed:
-    name: Send slack notification on build failure
-    runs-on: ubuntu-latest
-    needs: [ check-results ]
-    if: failure() && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
-    steps:
-      - id: slack-notify
-        name: Send slack notification
-        uses: slackapi/slack-github-action@v1.27.0
-        with:
-          # For posting a rich message using Block Kit
-          payload: |
-            {
-              "text": ":alarm: Build on `main` failed! :alarm:\n${{ github.event.head_commit.url }}",
-             	"blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":alarm: Build on `main` failed! :alarm:"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Please check the related commit: ${{ github.event.head_commit.url }}\n \\cc @zeebe-medic"
-                  }
-                },
-                {
-                  "type": "divider"
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Detected flaky unit tests:* \n ${{ env.FLAKY_UNIT_TESTS }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Detected flaky integration tests:* \n ${{ env.FLAKY_ITS }}"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          FLAKY_UNIT_TESTS: ${{needs.check-results.outputs.flakyUnitTests}}
-          FLAKY_ITS: ${{needs.check-results.outputs.flakyITs}}
-
   deploy-snapshots:
     name: Deploy snapshot artifacts
     needs: [ check-results ]
