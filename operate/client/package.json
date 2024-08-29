@@ -68,7 +68,7 @@
     "@camunda8/sdk": "^8.6.8",
     "@playwright/test": "1.46.1",
     "@testing-library/jest-dom": "6.5.0",
-    "@testing-library/react": "16.0.0",
+    "@testing-library/react": "16.0.1",
     "@testing-library/react-hooks": "8.0.1",
     "@testing-library/user-event": "14.5.2",
     "@types/carbon-components-react": "7.55.13",
