@@ -30,7 +30,7 @@ import org.junit.rules.TestWatcher;
 
 public class MigrateMessageEventSubprocessTest {
 
-  @ClassRule public static final EngineRule engine = EngineRule.singlePartition();
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -41,7 +41,7 @@ public class MigrateMessageEventSubprocessTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -71,13 +71,13 @@ public class MigrateMessageEventSubprocessTest {
                     .done())
             .deploy();
     final var processInstanceKey =
-        engine
+        ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
             .withVariable("key", helper.getCorrelationValue())
             .create();
 
-    engine.message().withName("msg").withCorrelationKey(helper.getCorrelationValue()).publish();
+    ENGINE.message().withName("msg").withCorrelationKey(helper.getCorrelationValue()).publish();
 
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -88,7 +88,7 @@ public class MigrateMessageEventSubprocessTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -136,7 +136,7 @@ public class MigrateMessageEventSubprocessTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -168,14 +168,14 @@ public class MigrateMessageEventSubprocessTest {
                     .done())
             .deploy();
     final var processInstanceKey =
-        engine
+        ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
             .withVariable("key", helper.getCorrelationValue())
             .create();
 
-    engine.message().withName("msg1").withCorrelationKey(helper.getCorrelationValue()).publish();
-    engine.message().withName("msg1").withCorrelationKey(helper.getCorrelationValue()).publish();
+    ENGINE.message().withName("msg1").withCorrelationKey(helper.getCorrelationValue()).publish();
+    ENGINE.message().withName("msg1").withCorrelationKey(helper.getCorrelationValue()).publish();
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -189,7 +189,7 @@ public class MigrateMessageEventSubprocessTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -222,7 +222,7 @@ public class MigrateMessageEventSubprocessTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -252,7 +252,7 @@ public class MigrateMessageEventSubprocessTest {
                     .done())
             .deploy();
     final var processInstanceKey =
-        engine
+        ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
             .withVariable("key1", helper.getCorrelationValue())
@@ -267,7 +267,7 @@ public class MigrateMessageEventSubprocessTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -301,7 +301,7 @@ public class MigrateMessageEventSubprocessTest {
         .describedAs("Expect that the correlation key is not re-evaluated")
         .hasCorrelationKey(helper.getCorrelationValue());
 
-    engine.message().withName("msg").withCorrelationKey(helper.getCorrelationValue()).publish();
+    ENGINE.message().withName("msg").withCorrelationKey(helper.getCorrelationValue()).publish();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -319,7 +319,7 @@ public class MigrateMessageEventSubprocessTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -342,7 +342,7 @@ public class MigrateMessageEventSubprocessTest {
                     .done())
             .deploy();
     final var processInstanceKey =
-        engine
+        ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
             .withVariable("key1", helper.getCorrelationValue())
@@ -352,7 +352,7 @@ public class MigrateMessageEventSubprocessTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -392,7 +392,7 @@ public class MigrateMessageEventSubprocessTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -415,7 +415,7 @@ public class MigrateMessageEventSubprocessTest {
                     .done())
             .deploy();
     final var processInstanceKey =
-        engine
+        ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
             .withVariable("key1", helper.getCorrelationValue())
@@ -425,7 +425,7 @@ public class MigrateMessageEventSubprocessTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -458,7 +458,7 @@ public class MigrateMessageEventSubprocessTest {
         .describedAs("Expect that the correlation key is not re-evaluated")
         .hasCorrelationKey(helper.getCorrelationValue());
 
-    engine.message().withName("msg").withCorrelationKey(helper.getCorrelationValue()).publish();
+    ENGINE.message().withName("msg").withCorrelationKey(helper.getCorrelationValue()).publish();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -476,7 +476,7 @@ public class MigrateMessageEventSubprocessTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -506,7 +506,7 @@ public class MigrateMessageEventSubprocessTest {
                     .done())
             .deploy();
     final var processInstanceKey =
-        engine
+        ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
             .withVariables(
@@ -521,7 +521,7 @@ public class MigrateMessageEventSubprocessTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -578,7 +578,7 @@ public class MigrateMessageEventSubprocessTest {
         .describedAs("Expect that the correlation key is not re-evaluated")
         .hasCorrelationKey(helper.getCorrelationValue() + "2");
 
-    engine
+    ENGINE
         .message()
         .withName("msg2")
         .withCorrelationKey(helper.getCorrelationValue() + "2")
