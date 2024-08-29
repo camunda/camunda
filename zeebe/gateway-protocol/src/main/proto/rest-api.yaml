@@ -578,6 +578,44 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+
+  /administration/clock/pin:
+    post:
+      tags:
+        - Administration
+        - Clock control
+      summary: Pin the Zeebe engine’s internal clock to a specific time (experimental)
+      description: |
+        Set a precise, static time for the Zeebe engine’s internal clock. When the clock is pinned,
+        it remains at the specified time and does not advance. To change the time, the clock must be
+        pinned again with a new timestamp.
+
+        :::note
+        This endpoint is experimental. It may undergo changes or improvements in future releases.
+        :::
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClockPinRequest"
+      responses:
+        "204":
+          description: >
+            The clock was successfully pinned to the specified time in epoch milliseconds.
+        "400":
+          description: The required timestamp parameter is missing.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
   /process-instances/search:
     post:
       tags:
@@ -1714,6 +1752,15 @@ components:
           default: 50
           maximum: 100
           nullable: true
+    ClockPinRequest:
+      type: object
+      properties:
+        timestamp:
+          description: The exact time in epoch milliseconds to which the clock should be pinned.
+          type: integer
+          format: int64
+      required:
+        - timestamp
     JobActivationRequest:
       type: object
       properties:

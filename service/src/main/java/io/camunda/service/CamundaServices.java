@@ -73,6 +73,10 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
     return new AuthorizationServices<>(brokerClient, searchClient, transformers, authentication);
   }
 
+  public ClockServices clockServices() {
+    return new ClockServices(brokerClient, searchClient, transformers, authentication);
+  }
+
   @Override
   public CamundaServices withAuthentication(final Authentication authentication) {
     return new CamundaServices(brokerClient, searchClient, transformers, authentication);
