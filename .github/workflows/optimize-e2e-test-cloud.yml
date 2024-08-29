@@ -41,9 +41,9 @@ jobs:
         roleId: ${{ secrets.VAULT_ROLE_ID }}
         secretId: ${{ secrets.VAULT_SECRET_ID }}
         secrets: |
-          secret/data/products/optimize/ci/jenkins AUTH0_CLIENTSECRET;
-          secret/data/products/optimize/ci/jenkins AUTH0_USEREMAIL;
-          secret/data/products/optimize/ci/jenkins AUTH0_USERPASSWORD;
+          secret/data/products/optimize/ci/camunda-optimize AUTH0_CLIENTSECRET;
+          secret/data/products/optimize/ci/camunda-optimize AUTH0_USEREMAIL;
+          secret/data/products/optimize/ci/camunda-optimize AUTH0_USERPASSWORD;
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
