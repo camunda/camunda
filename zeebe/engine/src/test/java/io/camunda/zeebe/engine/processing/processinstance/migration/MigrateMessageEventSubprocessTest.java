@@ -9,10 +9,12 @@ package io.camunda.zeebe.engine.processing.processinstance.migration;
 
 import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -22,8 +24,8 @@ import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
-import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -112,7 +114,7 @@ public class MigrateMessageEventSubprocessTest {
         .describedAs("Expect that version number did not change")
         .hasVersion(1);
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.records()
                 .limit(
                     r ->
@@ -177,7 +179,7 @@ public class MigrateMessageEventSubprocessTest {
     ENGINE.message().withName("msg1").withCorrelationKey(helper.getCorrelationValue()).publish();
     ENGINE.message().withName("msg1").withCorrelationKey(helper.getCorrelationValue()).publish();
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId("A")
@@ -200,7 +202,7 @@ public class MigrateMessageEventSubprocessTest {
         .migrate();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
@@ -592,5 +594,104 @@ public class MigrateMessageEventSubprocessTest {
         .describedAs(
             "Expect that the element inside the event subprocess in the target process is activated")
         .isNotNull();
+  }
+
+  @Ignore("This rejection will be supported with #21615")
+  @Test
+  public void shouldRejectCommandWhenMappedCatchEventIsAttachedToDifferentElement() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .eventSubProcess(
+                        "sub1",
+                        s ->
+                            s.startEvent("start1")
+                                .message(m -> m.name("msg1").zeebeCorrelationKeyExpression("key1"))
+                                .endEvent())
+                    .startEvent("start")
+                    .subProcess(
+                        "embedded1",
+                        e ->
+                            e.embeddedSubProcess()
+                                .startEvent()
+                                .userTask("userTask1")
+                                .endEvent()
+                                .subProcessDone())
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent("start")
+                    .subProcess(
+                        "embedded2",
+                        e ->
+                            e.embeddedSubProcess()
+                                .eventSubProcess(
+                                    "sub2",
+                                    s ->
+                                        s.startEvent("start2")
+                                            .message(
+                                                m ->
+                                                    m.name("msg2")
+                                                        .zeebeCorrelationKeyExpression("key2"))
+                                            .endEvent())
+                                .startEvent()
+                                .userTask("userTask2")
+                                .endEvent()
+                                .subProcessDone())
+                    .endEvent("end")
+                    .done())
+            .deploy();
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(
+                Map.of(
+                    "key1",
+                    helper.getCorrelationValue() + "1",
+                    "key2",
+                    helper.getCorrelationValue() + "2"))
+            .create();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("userTask1")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("embedded1", "embedded2")
+            .addMappingInstruction("userTask1", "userTask2")
+            .addMappingInstruction("start1", "start2")
+            .expectRejection()
+            .migrate();
+
+    // then
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .extracting(Record::getRejectionReason)
+        .asString()
+        .contains("Expected to migrate process instance '" + processInstanceKey + "'")
+        .contains(
+            "active element with id '%s' is mapped to an element with id '%s'"
+                .formatted(processId, targetProcessId))
+        .contains(
+            "and has a catch event with id 'start1' that is mapped to a catch event with id 'start2'")
+        .contains("These mappings detach the catch event from the element in the target process")
+        .contains("Catch events must stay attached to the same element instance");
   }
 }
