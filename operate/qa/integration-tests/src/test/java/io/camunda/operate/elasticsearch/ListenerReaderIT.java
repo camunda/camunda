@@ -25,6 +25,7 @@ import io.camunda.operate.webapp.rest.dto.ListenerDto;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import io.camunda.operate.webapp.rest.dto.ListenerResponseDto;
 import io.camunda.operate.webapp.rest.dto.UserDto;
+import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import io.camunda.operate.webapp.security.UserService;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -62,8 +63,22 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
     assertEquals(5L, response.getTotalCount());
     assertEquals(5, resultListeners.size());
-    // results should be ordered by finish date (latest first)
-    final ListenerDto actual0 = resultListeners.get(0);
+    // results should be ordered by finish date (latest first, but no date at the beginning)
+    final ListenerDto actual4 = resultListeners.get(0);
+    assertEquals("22", actual4.getListenerKey());
+    assertEquals(ListenerType.TASK_LISTENER, actual4.getListenerType());
+    assertEquals(ListenerEventType.UNSPECIFIED, actual4.getEvent());
+    assertEquals(ListenerState.FAILED, actual4.getState());
+    assertNull(actual4.getTime());
+
+    final ListenerDto actual3 = resultListeners.get(1);
+    assertEquals("21", actual3.getListenerKey());
+    assertEquals(ListenerType.TASK_LISTENER, actual3.getListenerType());
+    assertEquals(ListenerEventType.UNSPECIFIED, actual3.getEvent());
+    assertEquals(ListenerState.ACTIVE, actual3.getState());
+    assertNull(actual3.getTime());
+
+    final ListenerDto actual0 = resultListeners.get(2);
     assertEquals("12", actual0.getListenerKey());
     assertEquals(ListenerType.EXECUTION_LISTENER, actual0.getListenerType());
     assertEquals(ListenerEventType.END, actual0.getEvent());
@@ -71,36 +86,76 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     assertEquals("test_type", actual0.getJobType());
     assertNotNull(actual0.getTime());
 
-    final ListenerDto actual1 = resultListeners.get(1);
+    final ListenerDto actual1 = resultListeners.get(3);
     assertEquals("11", actual1.getListenerKey());
     assertEquals(ListenerType.EXECUTION_LISTENER, actual1.getListenerType());
     assertEquals(ListenerEventType.START, actual1.getEvent());
     assertEquals(ListenerState.COMPLETED, actual1.getState());
     assertNotNull(actual1.getTime());
 
-    final ListenerDto actual2 = resultListeners.get(2);
+    final ListenerDto actual2 = resultListeners.get(4);
     assertEquals("31", actual2.getListenerKey());
     assertEquals(ListenerType.TASK_LISTENER, actual2.getListenerType());
     assertEquals(ListenerEventType.UNSPECIFIED, actual2.getEvent());
     assertEquals(ListenerState.UNKNOWN, actual2.getState());
     assertNotNull(actual2.getTime());
-
-    final ListenerDto actual3 = resultListeners.get(3);
-    assertEquals("21", actual3.getListenerKey());
-    assertEquals(ListenerType.TASK_LISTENER, actual3.getListenerType());
-    assertEquals(ListenerEventType.UNSPECIFIED, actual3.getEvent());
-    assertEquals(ListenerState.ACTIVE, actual3.getState());
-    assertNull(actual3.getTime());
-
-    final ListenerDto actual4 = resultListeners.get(4);
-    assertEquals("22", actual4.getListenerKey());
-    assertEquals(ListenerType.TASK_LISTENER, actual4.getListenerType());
-    assertEquals(ListenerEventType.UNSPECIFIED, actual4.getEvent());
-    assertEquals(ListenerState.FAILED, actual4.getState());
-    assertNull(actual4.getTime());
   }
 
-  protected void createData() throws IOException {
+  @Test
+  public void testListenerReaderPaging() throws Exception {
+    Mockito.when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(DEFAULT_USER));
+
+    final ListenerRequestDto request1 =
+        new ListenerRequestDto().setPageSize(3).setFlowNodeId("test_task");
+    final ListenerResponseDto response1 = postListenerRequest("111", request1);
+    final List<ListenerDto> resultListeners1 = response1.getListeners();
+
+    assertEquals(5L, response1.getTotalCount());
+    assertEquals(3, resultListeners1.size());
+
+    assertEquals("22", resultListeners1.get(0).getListenerKey());
+    assertEquals("21", resultListeners1.get(1).getListenerKey());
+    assertEquals("12", resultListeners1.get(2).getListenerKey());
+
+    // next page - test searchAfter
+    final Object[] sortValuesFromLastInResultOfPage = resultListeners1.get(2).getSortValues();
+    final SortValuesWrapper[] sortValuesAfter =
+        SortValuesWrapper.createFrom(sortValuesFromLastInResultOfPage, objectMapper);
+    final ListenerRequestDto request2 =
+        new ListenerRequestDto()
+            .setPageSize(3)
+            .setFlowNodeId("test_task")
+            .setSearchAfter(sortValuesAfter);
+    final ListenerResponseDto response2 = postListenerRequest("111", request2);
+    final List<ListenerDto> resultListeners2 = response2.getListeners();
+
+    assertEquals(5L, response2.getTotalCount());
+    assertEquals(2, resultListeners2.size());
+
+    assertEquals("11", resultListeners2.get(0).getListenerKey());
+    assertEquals("31", resultListeners2.get(1).getListenerKey());
+
+    // test searchBefore (from last result)
+    final Object[] sortValuesFromLastResult = resultListeners2.get(1).getSortValues();
+    final SortValuesWrapper[] sortValuesBefore =
+        SortValuesWrapper.createFrom(sortValuesFromLastResult, objectMapper);
+    final ListenerRequestDto request3 =
+        new ListenerRequestDto()
+            .setPageSize(3)
+            .setFlowNodeId("test_task")
+            .setSearchBefore(sortValuesBefore);
+    final ListenerResponseDto response3 = postListenerRequest("111", request3);
+    final List<ListenerDto> resultListeners3 = response3.getListeners();
+
+    assertEquals(5L, response3.getTotalCount());
+    assertEquals(3, resultListeners3.size());
+
+    assertEquals("21", resultListeners3.get(0).getListenerKey());
+    assertEquals("12", resultListeners3.get(1).getListenerKey());
+    assertEquals("11", resultListeners3.get(2).getListenerKey());
+  }
+
+  private void createData() throws IOException {
 
     final JobEntity e1 =
         createJob()
