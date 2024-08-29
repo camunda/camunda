@@ -12,6 +12,7 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerClockPinRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerClockResetRequest;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import java.util.concurrent.CompletableFuture;
 
@@ -32,5 +33,9 @@ public final class ClockServices extends ApiServices<ClockServices> {
 
   public CompletableFuture<ClockRecord> pinClock(final long pinnedEpoch) {
     return sendBrokerRequest(new BrokerClockPinRequest(pinnedEpoch));
+  }
+
+  public CompletableFuture<ClockRecord> resetClock() {
+    return sendBrokerRequest(new BrokerClockResetRequest());
   }
 }
