@@ -5,16 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.entities;
+package io.camunda.service.exception;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.service.CamundaServiceException;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public record DecisionRequirementsEntity(
-    String tenantId,
-    Long key,
-    String decisionRequirementsId,
-    String name,
-    Integer version,
-    String resourceName,
-    String xml) {}
+public class NotFoundException extends CamundaServiceException {
+
+  public NotFoundException(String message) {
+    super(message);
+  }
+}
