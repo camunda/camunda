@@ -7,14 +7,12 @@
  */
 package io.camunda.exporter;
 
-import io.camunda.exporter.schema.ElasticsearchSchemaManager;
 import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
-import java.util.List;
 
 public class NoopExporter implements Exporter {
   private NoopExporterConfiguration configuration;
@@ -29,12 +27,6 @@ public class NoopExporter implements Exporter {
 
   @Override
   public void open(final Controller controller) {
-    searchEngineClient = ElasticsearchClientFactory.createClient(configuration.elasticsearch);
-    schemaManager =
-        new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(), List.of(), configuration.elasticsearch);
-    schemaManager.initialiseResources();
-
     Exporter.super.open(controller);
   }
 
