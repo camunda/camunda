@@ -395,6 +395,11 @@ public class MigrateTimerEventSubprocessTest {
             .deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("userTask1")
+        .await();
+
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
