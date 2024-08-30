@@ -8,6 +8,7 @@
 
 import styled from 'styled-components';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
+import {CopiableContent as BaseCopiableContent} from 'modules/components/PanelHeader/CopiableContent';
 
 const PanelHeader = styled(BasePanelHeader)`
   padding-right: 0;
@@ -19,4 +20,18 @@ const Section = styled.section`
   flex-direction: column;
 `;
 
-export {PanelHeader, Section};
+const CopiableContent = styled(BaseCopiableContent)`
+  display: inline-flex;
+  margin-left: var(--cds-spacing-09);
+  position: relative;
+  &:before {
+    content: ' ';
+    position: absolute;
+    left: calc(-1 * var(--cds-spacing-05));
+    height: var(--cds-spacing-06);
+    width: 1px;
+    background-color: var(--cds-border-subtle-01);
+  }
+`;
+
+export {PanelHeader, Section, CopiableContent};

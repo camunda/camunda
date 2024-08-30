@@ -12,7 +12,7 @@ import {forwardRef} from 'react';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 
 type Props = {
-  title: string;
+  title?: string;
   count?: number;
   children?: React.ReactNode;
   className?: string;
@@ -24,15 +24,17 @@ const PanelHeader = forwardRef<HTMLElement, Props>(
   ({title, count = 0, children, className, size = 'md'}, ref) => {
     return (
       <Header className={className} ref={ref} $size={size}>
-        <Title>
-          {title}
-          {count > 0 && (
-            <>
-              &nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;
-              {pluralSuffix(count, 'result')}
-            </>
-          )}
-        </Title>
+        {title !== undefined && (
+          <Title>
+            {title}
+            {count > 0 && (
+              <>
+                &nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;
+                {pluralSuffix(count, 'result')}
+              </>
+            )}
+          </Title>
+        )}
         {children}
       </Header>
     );
