@@ -16,6 +16,7 @@ import static io.camunda.exporter.utils.BatchRequestBuilderUtils.upsertWithDocBu
 import static io.camunda.exporter.utils.BatchRequestBuilderUtils.upsertWithScriptBuilder;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
@@ -259,7 +260,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         }
       }
       LOGGER.debug("************* FLUSH BULK FINISH *************");
-    } catch (final IOException ex) {
+    } catch (final IOException | ElasticsearchException ex) {
       throw new PersistenceException(
           "Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
     }

@@ -8,25 +8,33 @@
 package io.camunda.exporter.store;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkRequest.Builder;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
+import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
 import io.camunda.exporter.entities.TestExporterEntity;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 class ElasticsearchBatchRequestTest {
@@ -263,7 +271,7 @@ class ElasticsearchBatchRequestTest {
   }
 
   @Test
-  void execute() throws PersistenceException, IOException {
+  void shouldFlushTheBulkRequestToElasticsearch() throws PersistenceException, IOException {
     // Given
     final BulkRequest bulkRequest = mock(BulkRequest.class);
     final BulkResponse bulkResponse = mock(BulkResponse.class);
@@ -293,6 +301,48 @@ class ElasticsearchBatchRequestTest {
 
     // Then
     verify(requestBuilder).refresh(Refresh.True);
+    verify(requestBuilder).build();
+    verify(elasticsearchClient).bulk(bulkRequest);
+  }
+
+  @ParameterizedTest
+  @ValueSource(classes = {IOException.class, ElasticsearchException.class})
+  void shouldThrowPersistenceExceptionIfBulkRequestFails(final Class<? extends Throwable> throwable)
+      throws IOException {
+    // Given
+    final BulkRequest bulkRequest = mock(BulkRequest.class);
+
+    when(requestBuilder.build()).thenReturn(bulkRequest);
+    when(elasticsearchClient.bulk(bulkRequest)).thenThrow(throwable);
+
+    // When
+    final ThrowingCallable callable = () -> batchRequest.execute();
+
+    // Then
+    assertThatThrownBy(callable).isInstanceOf(PersistenceException.class);
+    verify(requestBuilder).build();
+    verify(elasticsearchClient).bulk(bulkRequest);
+  }
+
+  @Test
+  void shouldThrowPersistenceExceptionIfAResponseItemHasError() throws IOException {
+    // Given
+    final BulkRequest bulkRequest = mock(BulkRequest.class);
+
+    final BulkResponseItem item = mock(BulkResponseItem.class);
+    when(item.error()).thenReturn(new ErrorCause.Builder().reason("error").build());
+
+    final BulkResponse bulkResponse = mock(BulkResponse.class);
+    when(bulkResponse.items()).thenReturn(List.of(item));
+
+    when(requestBuilder.build()).thenReturn(bulkRequest);
+    when(elasticsearchClient.bulk(bulkRequest)).thenReturn(bulkResponse);
+
+    // When
+    final ThrowingCallable callable = () -> batchRequest.execute();
+
+    // Then
+    assertThatThrownBy(callable).isInstanceOf(PersistenceException.class);
     verify(requestBuilder).build();
     verify(elasticsearchClient).bulk(bulkRequest);
   }
