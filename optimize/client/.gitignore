@@ -8,7 +8,7 @@
 jest-test-results.xml
 
 # production
-/build
+/dist
 
 # internal modules
 /src/node_modules

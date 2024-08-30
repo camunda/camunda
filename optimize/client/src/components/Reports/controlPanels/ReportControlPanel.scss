@@ -13,8 +13,9 @@
 
   .controlSections {
     flex: 1;
-    @include scrollable;
     overflow-x: hidden;
+
+    @include scrollable;
 
     // This property causes scrollbar to apear over the content and not taking additional space
     // This feature is only supported by Chrome
