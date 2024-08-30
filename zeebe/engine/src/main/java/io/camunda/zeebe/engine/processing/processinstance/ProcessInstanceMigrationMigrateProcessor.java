@@ -240,14 +240,14 @@ public class ProcessInstanceMigrationMigrateProcessor
         targetElementId,
         elementInstanceRecord,
         EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER));
-    requireMappedBoundaryEventsToStayAttachedToSameElement(
+    requireMappedCatchEventsToStayAttachedToSameElement(
         processInstanceKey,
         sourceProcessDefinition,
         targetProcessDefinition,
         elementId,
         targetElementId,
         sourceElementIdToTargetElementId);
-    requireNoDuplicateTargetsInBoundaryEventMappings(
+    requireNoDuplicateTargetsInCatchEventMappings(
         processInstanceKey, sourceProcessDefinition, elementId, sourceElementIdToTargetElementId);
     requireNoConcurrentCommand(eventScopeInstanceState, elementInstance, processInstanceKey);
 
