@@ -49,7 +49,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
 
     ownerAuthorizationColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.AUTHORIZATIONS_BY_USERNAME_AND_PERMISSION,
+            ZbColumnFamilies.PERMISSIONS_BY_OWNER_KEY_RESOURCE_TYPE_AND_PERMISSION_TYPE,
             transactionContext,
             ownerAndResourceCompositeKey,
             persistedPermissions);
