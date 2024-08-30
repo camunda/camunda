@@ -9,6 +9,7 @@ package io.camunda.exporter.store;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -47,29 +48,36 @@ class ElasticsearchBatchRequestTest {
   private ElasticsearchScriptBuilder scriptBuilder;
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws IOException {
     elasticsearchClient = mock(ElasticsearchClient.class);
-    requestBuilder = mock(Builder.class);
+    requestBuilder = new Builder();
     scriptBuilder = mock(ElasticsearchScriptBuilder.class);
     batchRequest =
         new ElasticsearchBatchRequest(elasticsearchClient, requestBuilder, scriptBuilder);
+    final BulkResponse bulkResponse = mock(BulkResponse.class);
+    when(elasticsearchClient.bulk(any(BulkRequest.class))).thenReturn(bulkResponse);
   }
 
   @Test
-  void shouldAddABulkOperationWithSpecifiedIndexAndEntity() throws PersistenceException {
+  void shouldAddABulkOperationWithSpecifiedIndexAndEntity()
+      throws PersistenceException, IOException {
     // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
     // When
     batchRequest.add(INDEX, entity);
+    batchRequest.execute();
 
     // Then
-    final ArgumentCaptor<BulkOperation> captor = ArgumentCaptor.forClass(BulkOperation.class);
-    verify(requestBuilder).operations(captor.capture());
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(elasticsearchClient).bulk(captor.capture());
 
-    final var bulkOperation = captor.getValue();
+    // verify that an index operation is added
+    final List<BulkOperation> operations = captor.getValue().operations();
+    assertThat(operations).hasSize(1);
+
+    final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isIndex()).isTrue();
-
     final IndexOperation<TestExporterEntity> index = bulkOperation.index();
     assertThat(index.index()).isEqualTo(INDEX);
     assertThat(index.id()).isEqualTo(ID);
@@ -77,8 +85,7 @@ class ElasticsearchBatchRequestTest {
   }
 
   @Test
-  void shouldAddWithRouting() throws PersistenceException {
-
+  void shouldAddWithRouting() throws IOException, PersistenceException {
     // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
     final String routing = "routing";
@@ -86,11 +93,17 @@ class ElasticsearchBatchRequestTest {
     // When
     batchRequest.addWithRouting(INDEX, entity, routing);
 
-    // Then
-    final ArgumentCaptor<BulkOperation> captor = ArgumentCaptor.forClass(BulkOperation.class);
-    verify(requestBuilder).operations(captor.capture());
+    batchRequest.execute();
 
-    final var bulkOperation = captor.getValue();
+    // Then
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(elasticsearchClient).bulk(captor.capture());
+
+    // verify that an index operation is added
+    final List<BulkOperation> operations = captor.getValue().operations();
+    assertThat(operations).hasSize(1);
+
+    final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isIndex()).isTrue();
 
     final IndexOperation<TestExporterEntity> index = bulkOperation.index();
@@ -101,19 +114,24 @@ class ElasticsearchBatchRequestTest {
   }
 
   @Test
-  void shouldUpsertEntityWithUpdatedFields() throws PersistenceException {
+  void shouldUpsertEntityWithUpdatedFields() throws IOException, PersistenceException {
     // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
     final Map<String, Object> updateFields = Map.of("id", "id2");
 
     // When
     batchRequest.upsert(INDEX, ID, entity, updateFields);
+    batchRequest.execute();
 
     // Then
-    final ArgumentCaptor<BulkOperation> captor = ArgumentCaptor.forClass(BulkOperation.class);
-    verify(requestBuilder).operations(captor.capture());
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(elasticsearchClient).bulk(captor.capture());
 
-    final var bulkOperation = captor.getValue();
+    // verify that an index operation is added
+    final List<BulkOperation> operations = captor.getValue().operations();
+    assertThat(operations).hasSize(1);
+
+    final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isUpdate()).isTrue();
 
     final var update = bulkOperation.update();
@@ -124,7 +142,7 @@ class ElasticsearchBatchRequestTest {
   }
 
   @Test
-  void shouldUpsertWithRouting() throws PersistenceException {
+  void shouldUpsertWithRouting() throws PersistenceException, IOException {
     // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
     final Map<String, Object> updateFields = Map.of("id", "id2");
@@ -132,12 +150,17 @@ class ElasticsearchBatchRequestTest {
 
     // When
     batchRequest.upsertWithRouting(INDEX, ID, entity, updateFields, routing);
+    batchRequest.execute();
 
     // Then
-    final ArgumentCaptor<BulkOperation> captor = ArgumentCaptor.forClass(BulkOperation.class);
-    verify(requestBuilder).operations(captor.capture());
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(elasticsearchClient).bulk(captor.capture());
 
-    final var bulkOperation = captor.getValue();
+    // verify that an index operation is added
+    final List<BulkOperation> operations = captor.getValue().operations();
+    assertThat(operations).hasSize(1);
+
+    final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isUpdate()).isTrue();
 
     final var update = bulkOperation.update();
@@ -149,7 +172,7 @@ class ElasticsearchBatchRequestTest {
   }
 
   @Test
-  void shouldUpsertWithScript() throws PersistenceException {
+  void shouldUpsertWithScript() throws PersistenceException, IOException {
     // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
     final String script = "script";
@@ -160,12 +183,17 @@ class ElasticsearchBatchRequestTest {
 
     // When
     batchRequest.upsertWithScript(INDEX, ID, entity, script, params);
+    batchRequest.execute();
 
     // Then
-    final ArgumentCaptor<BulkOperation> captor = ArgumentCaptor.forClass(BulkOperation.class);
-    verify(requestBuilder).operations(captor.capture());
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(elasticsearchClient).bulk(captor.capture());
 
-    final var bulkOperation = captor.getValue();
+    // verify that an index operation is added
+    final List<BulkOperation> operations = captor.getValue().operations();
+    assertThat(operations).hasSize(1);
+
+    final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isUpdate()).isTrue();
 
     final var update = bulkOperation.update();
@@ -176,7 +204,7 @@ class ElasticsearchBatchRequestTest {
   }
 
   @Test
-  void shouldUpsertWithScriptAndRouting() throws PersistenceException {
+  void shouldUpsertWithScriptAndRouting() throws PersistenceException, IOException {
     // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
     final String script = "script";
@@ -188,12 +216,17 @@ class ElasticsearchBatchRequestTest {
 
     // When
     batchRequest.upsertWithScriptAndRouting(INDEX, ID, entity, script, params, routing);
+    batchRequest.execute();
 
     // Then
-    final ArgumentCaptor<BulkOperation> captor = ArgumentCaptor.forClass(BulkOperation.class);
-    verify(requestBuilder).operations(captor.capture());
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(elasticsearchClient).bulk(captor.capture());
 
-    final var bulkOperation = captor.getValue();
+    // verify that an index operation is added
+    final List<BulkOperation> operations = captor.getValue().operations();
+    assertThat(operations).hasSize(1);
+
+    final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isUpdate()).isTrue();
 
     final var update = bulkOperation.update();
@@ -205,17 +238,22 @@ class ElasticsearchBatchRequestTest {
   }
 
   @Test
-  void shouldUpdateWithFields() throws PersistenceException {
+  void shouldUpdateWithFields() throws PersistenceException, IOException {
     final Map<String, Object> updateFields = Map.of("id", "id2");
 
     // When
     batchRequest.update(INDEX, ID, updateFields);
+    batchRequest.execute();
 
     // Then
-    final ArgumentCaptor<BulkOperation> captor = ArgumentCaptor.forClass(BulkOperation.class);
-    verify(requestBuilder).operations(captor.capture());
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(elasticsearchClient).bulk(captor.capture());
 
-    final var bulkOperation = captor.getValue();
+    // verify that an index operation is added
+    final List<BulkOperation> operations = captor.getValue().operations();
+    assertThat(operations).hasSize(1);
+
+    final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isUpdate()).isTrue();
 
     final var update = bulkOperation.update();
@@ -225,18 +263,23 @@ class ElasticsearchBatchRequestTest {
   }
 
   @Test
-  void shouldUpdateWithEntity() throws PersistenceException {
+  void shouldUpdateWithEntity() throws IOException, PersistenceException {
     // Given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
     // When
     batchRequest.update(INDEX, ID, entity);
+    batchRequest.execute();
 
     // Then
-    final ArgumentCaptor<BulkOperation> captor = ArgumentCaptor.forClass(BulkOperation.class);
-    verify(requestBuilder).operations(captor.capture());
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(elasticsearchClient).bulk(captor.capture());
 
-    final var bulkOperation = captor.getValue();
+    // verify that an index operation is added
+    final List<BulkOperation> operations = captor.getValue().operations();
+    assertThat(operations).hasSize(1);
+
+    final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isUpdate()).isTrue();
 
     final var update = bulkOperation.update();
@@ -246,7 +289,7 @@ class ElasticsearchBatchRequestTest {
   }
 
   @Test
-  void shouldUpdateWithScript() throws PersistenceException {
+  void shouldUpdateWithScript() throws PersistenceException, IOException {
     // Given
     final String script = "script";
     final Map<String, Object> params = Map.of("id", "id2");
@@ -256,12 +299,17 @@ class ElasticsearchBatchRequestTest {
 
     // When
     batchRequest.updateWithScript(INDEX, ID, script, params);
+    batchRequest.execute();
 
     // Then
-    final ArgumentCaptor<BulkOperation> captor = ArgumentCaptor.forClass(BulkOperation.class);
-    verify(requestBuilder).operations(captor.capture());
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(elasticsearchClient).bulk(captor.capture());
 
-    final var bulkOperation = captor.getValue();
+    // verify that an index operation is added
+    final List<BulkOperation> operations = captor.getValue().operations();
+    assertThat(operations).hasSize(1);
+
+    final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isUpdate()).isTrue();
 
     final var update = bulkOperation.update();
@@ -271,38 +319,37 @@ class ElasticsearchBatchRequestTest {
   }
 
   @Test
-  void shouldFlushTheBulkRequestToElasticsearch() throws PersistenceException, IOException {
+  void shouldExecuteWithMultipleOperationsInBatch() throws PersistenceException, IOException {
     // Given
-    final BulkRequest bulkRequest = mock(BulkRequest.class);
-    final BulkResponse bulkResponse = mock(BulkResponse.class);
-
-    when(requestBuilder.build()).thenReturn(bulkRequest);
-    when(elasticsearchClient.bulk(bulkRequest)).thenReturn(bulkResponse);
-
+    final TestExporterEntity entity = new TestExporterEntity().setId(ID);
     // When
+    batchRequest.add(INDEX, entity);
+    batchRequest.update(INDEX, ID, entity);
     batchRequest.execute();
 
     // Then
-    verify(requestBuilder).build();
-    verify(elasticsearchClient).bulk(bulkRequest);
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(elasticsearchClient).bulk(captor.capture());
+
+    // verify that there are two operations in the bulk request
+    final List<BulkOperation> operations = captor.getValue().operations();
+    assertThat(operations).hasSize(2);
   }
 
   @Test
   void shouldExecuteWithRefresh() throws PersistenceException, IOException {
     // Given
-    final BulkRequest bulkRequest = mock(BulkRequest.class);
-    final BulkResponse bulkResponse = mock(BulkResponse.class);
-
-    when(requestBuilder.build()).thenReturn(bulkRequest);
-    when(elasticsearchClient.bulk(bulkRequest)).thenReturn(bulkResponse);
+    final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
     // When
+    batchRequest.add(INDEX, entity);
     batchRequest.executeWithRefresh();
 
     // Then
-    verify(requestBuilder).refresh(Refresh.True);
-    verify(requestBuilder).build();
-    verify(elasticsearchClient).bulk(bulkRequest);
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(elasticsearchClient).bulk(captor.capture());
+    final BulkRequest request = captor.getValue();
+    assertThat(request.refresh()).isEqualTo(Refresh.True);
   }
 
   @ParameterizedTest
@@ -310,24 +357,24 @@ class ElasticsearchBatchRequestTest {
   void shouldThrowPersistenceExceptionIfBulkRequestFails(final Class<? extends Throwable> throwable)
       throws IOException {
     // Given
-    final BulkRequest bulkRequest = mock(BulkRequest.class);
+    final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
-    when(requestBuilder.build()).thenReturn(bulkRequest);
-    when(elasticsearchClient.bulk(bulkRequest)).thenThrow(throwable);
+    // When
+    batchRequest.add(INDEX, entity);
+    when(elasticsearchClient.bulk(any(BulkRequest.class))).thenThrow(throwable);
 
     // When
     final ThrowingCallable callable = () -> batchRequest.execute();
 
     // Then
     assertThatThrownBy(callable).isInstanceOf(PersistenceException.class);
-    verify(requestBuilder).build();
-    verify(elasticsearchClient).bulk(bulkRequest);
+    verify(elasticsearchClient).bulk(any(BulkRequest.class));
   }
 
   @Test
   void shouldThrowPersistenceExceptionIfAResponseItemHasError() throws IOException {
     // Given
-    final BulkRequest bulkRequest = mock(BulkRequest.class);
+    final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
     final BulkResponseItem item = mock(BulkResponseItem.class);
     when(item.error()).thenReturn(new ErrorCause.Builder().reason("error").build());
@@ -335,15 +382,14 @@ class ElasticsearchBatchRequestTest {
     final BulkResponse bulkResponse = mock(BulkResponse.class);
     when(bulkResponse.items()).thenReturn(List.of(item));
 
-    when(requestBuilder.build()).thenReturn(bulkRequest);
-    when(elasticsearchClient.bulk(bulkRequest)).thenReturn(bulkResponse);
+    when(elasticsearchClient.bulk(any(BulkRequest.class))).thenReturn(bulkResponse);
 
     // When
+    batchRequest.add(INDEX, entity);
     final ThrowingCallable callable = () -> batchRequest.execute();
 
     // Then
     assertThatThrownBy(callable).isInstanceOf(PersistenceException.class);
-    verify(requestBuilder).build();
-    verify(elasticsearchClient).bulk(bulkRequest);
+    verify(elasticsearchClient).bulk(any(BulkRequest.class));
   }
 }
