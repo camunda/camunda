@@ -34,7 +34,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   // owner key + resource type + permission type -> permissions
   private final ColumnFamily<
           DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>>, PersistedPermissions>
-      ownerAuthorizationColumnFamily;
+      permissionsByOwnerKeyResourceTypeAndPermissionTypeColumnFamily;
 
   public DbAuthorizationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -46,7 +46,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     ownerKeyAndResourceTypeAndPermissionTypeCompositeKey =
         new DbCompositeKey<>(ownerKey, resourceTypeAndPermissionTypeCompositeKey);
 
-    ownerAuthorizationColumnFamily =
+    permissionsByOwnerKeyResourceTypeAndPermissionTypeColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PERMISSIONS_BY_OWNER_KEY_RESOURCE_TYPE_AND_PERMISSION_TYPE,
             transactionContext,
@@ -62,7 +62,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     ownerType.wrapString(authorizationRecord.getOwnerType().name());
     resourceType.wrapString(authorizationRecord.getResourceType());
     persistedPermissions.setPermissions(authorizationRecord.getPermissions());
-    ownerAuthorizationColumnFamily.insert(
+    permissionsByOwnerKeyResourceTypeAndPermissionTypeColumnFamily.insert(
         ownerKeyAndResourceTypeAndPermissionTypeCompositeKey, persistedPermissions);
   }
 
@@ -74,7 +74,8 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     this.resourceType.wrapString(resourceType);
 
     final var persistedPermissions =
-        ownerAuthorizationColumnFamily.get(ownerKeyAndResourceTypeAndPermissionTypeCompositeKey);
+        permissionsByOwnerKeyResourceTypeAndPermissionTypeColumnFamily.get(
+            ownerKeyAndResourceTypeAndPermissionTypeCompositeKey);
 
     return persistedPermissions == null ? null : persistedPermissions.copy();
   }
