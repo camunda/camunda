@@ -34,6 +34,7 @@ tar -czvf camunda8-run-%CAMUNDA_VERSION%-windows-x86_64.tar.gz ^
   c8run\custom_connectors ^
   c8run\configuration ^
   c8run\c8run.exe ^
+  c8run\endpoints.txt ^
   c8run\log ^
   c8run\windows\c8run_windows.go ^
   c8run\windows\process_tree.go ^
