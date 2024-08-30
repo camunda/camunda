@@ -54,7 +54,7 @@ runs:
       id: get-build-duration-millis
       shell: bash
       run: |
-        duration=$(expr $(date +'%s') - $(date --reference "$GITHUB_ACTION_PATH" +"%s"))
+        duration=$(expr $(date +'%s') - $(date -r "$GITHUB_ACTION_PATH" +"%s"))
 
         # only submit plausible durations below 72 hours
         if [ $duration -le 259200 ]; then
