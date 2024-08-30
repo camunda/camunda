@@ -34,6 +34,10 @@ public final class FilterBuilders {
     return new UserFilter.Builder();
   }
 
+  public static AuthorizationFilter.Builder authorization() {
+    return new AuthorizationFilter.Builder();
+  }
+
   public static ProcessInstanceFilter processInstance(
       final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
     return fn.apply(processInstance()).build();
@@ -58,6 +62,11 @@ public final class FilterBuilders {
 
   public static UserFilter user(final Function<UserFilter.Builder, ObjectBuilder<UserFilter>> fn) {
     return fn.apply(new UserFilter.Builder()).build();
+  }
+
+  public static AuthorizationFilter authorization(
+      final Function<AuthorizationFilter.Builder, ObjectBuilder<AuthorizationFilter>> fn) {
+    return fn.apply(new AuthorizationFilter.Builder()).build();
   }
 
   public static VariableFilter.Builder variable() {
@@ -94,5 +103,14 @@ public final class FilterBuilders {
   public static ComparableValueFilter comparableValue(
       final Function<ComparableValueFilter.Builder, ObjectBuilder<ComparableValueFilter>> fn) {
     return fn.apply(comparableValue()).build();
+  }
+
+  public static IncidentFilter.Builder incident() {
+    return new IncidentFilter.Builder();
+  }
+
+  public static IncidentFilter incident(
+      final Function<IncidentFilter.Builder, ObjectBuilder<IncidentFilter>> fn) {
+    return fn.apply(incident()).build();
   }
 }
