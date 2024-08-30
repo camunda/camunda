@@ -113,8 +113,9 @@ func parseCommandLineOptions(args []string, settings *c8runSettings) *c8runSetti
 	switch args[0] {
 	case "--config":
 		if len(args) > 1 {
-			argsToPop = 1
+			argsToPop = 2
 			settings.config = args[1]
+		} else {
 			printHelp()
 			os.Exit(1)
 		}
@@ -126,7 +127,7 @@ func parseCommandLineOptions(args []string, settings *c8runSettings) *c8runSetti
 		os.Exit(1)
 
 	}
-	return parseCommandLineOptions(args[argsToPop-1:], settings)
+	return parseCommandLineOptions(args[argsToPop:], settings)
 
 }
 
@@ -159,7 +160,9 @@ func main() {
 	fmt.Print("Command: " + baseCommand + "\n")
 
 	var settings c8runSettings
-	parseCommandLineOptions(os.Args[2:], &settings)
+	if len(os.Args) > 2 {
+		parseCommandLineOptions(os.Args[2:], &settings)
+	}
 
 	javaBinary := "java"
 
@@ -248,11 +251,12 @@ func main() {
 		connectorsPidFile.Write([]byte(strconv.Itoa(connectorsCmd.Process.Pid)))
 		var extraArgs string
 		if settings.config != "" {
-			extraArgs = "--spring.config.location=" + settings.config
+			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, settings.config)
 		} else {
 			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, "configuration")
 		}
 		camundaCmdString := parentDir + "\\camunda-zeebe-" + camundaVersion + "\\bin\\camunda " + extraArgs
+		fmt.Println(camundaCmdString)
 		camundaCmd := exec.Command("cmd", "/C", camundaCmdString)
 		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 		camundaLogFile, err := os.OpenFile(camundaLogPath, os.O_RDWR|os.O_CREATE, 0644)

@@ -23,18 +23,21 @@ if not exist "%connectorsFileName%" (
     curl -L -o "%connectorsFileName%" "https://repo1.maven.org/maven2/io/camunda/connector/connector-runtime-bundle/%CAMUNDA_CONNECTORS_VERSION%/%connectorsFileName%"
 )
 
-tar -czvf camunda8-run-$CAMUNDA_VERSION-$architecture.tar.gz ^
+go build -C windows -o ..\c8run.exe
+
+tar -czvf camunda8-run-%CAMUNDA_VERSION%-windows-x86_64.tar.gz ^
   -C ..\ ^
-  c8run/start.sh ^
-  c8run/start.bat ^
-  c8run/shutdown.sh ^
-  c8run/README.md ^
-  c8run/connectors-application.properties ^
-  c8run/%connectorsFileName% ^
-  c8run/internal/run.sh ^
-  c8run/internal/run.bat ^
-  c8run/elasticsearch-%ELASTICSEARCH_VERSION% ^
-  c8run/custom_connectors ^
-  c8run/configuration ^
-  c8run/camunda-zeebe-%CAMUNDA_VERSION%
+  c8run\README.md ^
+  c8run\connectors-application.properties ^
+  c8run\%connectorsFileName% ^
+  c8run\elasticsearch-%ELASTICSEARCH_VERSION% ^
+  c8run\custom_connectors ^
+  c8run\configuration ^
+  c8run\c8run.exe ^
+  c8run\log ^
+  c8run\windows\c8run_windows.go ^
+  c8run\windows\process_tree.go ^
+  c8run\windows\go.mod ^
+  c8run\windows\go.sum ^
+  c8run\camunda-zeebe-%CAMUNDA_VERSION%
 
