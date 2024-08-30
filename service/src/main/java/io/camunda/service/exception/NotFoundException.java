@@ -7,7 +7,9 @@
  */
 package io.camunda.service.exception;
 
-public class NotFoundException extends RuntimeException {
+import io.camunda.service.CamundaServiceException;
+
+public class NotFoundException extends CamundaServiceException {
 
   public NotFoundException(String message) {
     super(message);
