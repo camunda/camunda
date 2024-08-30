@@ -47,6 +47,13 @@ const InstancesTable: React.FC = observer(() => {
     state: {status, filteredProcessInstancesCount, processInstances},
   } = processInstancesStore;
 
+  /**
+   * Is true if at least one process instances from the store has a version tag.
+   */
+  const hasVersionTags = processInstances.some(({processId}) => {
+    return processesStore.getVersionTag(processId);
+  });
+
   const filters = useFilters();
   const location = useLocation();
 
@@ -327,7 +334,7 @@ const InstancesTable: React.FC = observer(() => {
             header: 'Version',
             key: 'processVersion',
           },
-          ...(IS_VERSION_TAG_ENABLED && processesStore.hasVersionTags
+          ...(IS_VERSION_TAG_ENABLED && hasVersionTags
             ? [
                 {
                   header: 'Version Tag',

@@ -94,15 +94,19 @@ describe('<InstancesTable /> - version tag', () => {
   });
 
   it('should show version tag column (only header)', async () => {
-    const processInstance = createProcessInstance({
+    const demoProcessInstance = createProcessInstance({
       bpmnProcessId: 'demoProcess',
+      version: 1,
+    });
+    const bigVarProcessInstance = createProcessInstance({
+      bpmnProcessId: 'bigVarProcess',
       version: 1,
     });
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstances().withSuccess({
-      totalCount: 1,
-      processInstances: [processInstance],
+      totalCount: 2,
+      processInstances: [demoProcessInstance, bigVarProcessInstance],
     });
 
     render(<InstancesTable />, {
@@ -110,15 +114,19 @@ describe('<InstancesTable /> - version tag', () => {
     });
 
     // wait for process instance to be rendered
-    expect(await screen.findByTestId('cell-processName')).toHaveTextContent(
-      processInstance.processName,
-    );
+    expect(await screen.findAllByTestId('cell-processName')).toHaveLength(2);
+
+    const versionTagCells = screen.getAllByTestId('cell-versionTag');
 
     /**
-     * Expect that no version tag is rendered, because demoProcess version 1
-     * has no related version tag.
+     * Expect that no version tag is rendered for demoProcess version 1
      */
-    expect(screen.getByTestId('cell-versionTag')).toHaveTextContent('--');
+    expect(versionTagCells[0]).toHaveTextContent('--');
+
+    /**
+     * Expect that version tag is rendered for bigVarProcess version 1
+     */
+    expect(versionTagCells[1]).toHaveTextContent('MyVersionTag');
 
     /**
      * Expect that the version tag column header is rendered, because there is at least
@@ -135,7 +143,7 @@ describe('<InstancesTable /> - version tag', () => {
       version: 1,
     });
 
-    mockFetchGroupedProcesses().withSuccess([groupedProcessesMock[0]!]);
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstances().withSuccess({
       totalCount: 1,
       processInstances: [processInstance],

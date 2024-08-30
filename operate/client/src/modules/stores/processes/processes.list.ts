@@ -15,7 +15,6 @@ class Processes extends ProcessesBase {
     super();
     makeObservable(this, {
       processVersions: computed,
-      hasVersionTags: computed,
     });
   }
 
@@ -32,13 +31,6 @@ class Processes extends ProcessesBase {
       },
       [],
     );
-  }
-
-  /**
-   * Returns true if there are is at least one process version with a version tag.
-   */
-  get hasVersionTags() {
-    return this.processVersions.some(({versionTag}) => versionTag !== null);
   }
 
   getVersionTag(processId: string) {
