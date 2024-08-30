@@ -84,7 +84,7 @@ public final class RequestMapper extends RequestUtil {
     final BrokerDeployResourceRequest brokerRequest = new BrokerDeployResourceRequest();
 
     for (final ProcessRequestObject process : grpcRequest.getProcessesList()) {
-      brokerRequest.addResource(process.getDefinition().toByteArray(), process.getName());
+      brokerRequest.addResource(process.getName(), process.getDefinition().toByteArray());
     }
     brokerRequest.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -99,7 +99,7 @@ public final class RequestMapper extends RequestUtil {
     brokerRequest.setTenantId(ensureTenantIdSet("DeployResource", tenantId));
 
     for (final Resource resource : grpcRequest.getResourcesList()) {
-      brokerRequest.addResource(resource.getContent().toByteArray(), resource.getName());
+      brokerRequest.addResource(resource.getName(), resource.getContent().toByteArray());
     }
 
     return brokerRequest;
