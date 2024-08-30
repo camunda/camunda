@@ -7,15 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance.migration;
 
+import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
@@ -540,7 +539,8 @@ public class MigrateProcessInstanceRejectionTest {
   }
 
   @Test
-  public void shouldRejectCommandWhenTheMigratedProcessInstanceSubscribedToAnEventSubprocess() {
+  public void
+      shouldRejectCommandWhenTheMigratedProcessInstanceSubscribedToASignalEventSubprocess() {
     // given
     final var deployment =
         ENGINE
@@ -550,14 +550,7 @@ public class MigrateProcessInstanceRejectionTest {
                     .eventSubProcess(
                         "eventSubProcess",
                         sub ->
-                            sub.startEvent(
-                                    "eventSubProcessStart",
-                                    s ->
-                                        s.message(
-                                            m ->
-                                                m.name("message")
-                                                    .zeebeCorrelationKeyExpression(
-                                                        "\"correlationKey\"")))
+                            sub.startEvent("eventSubProcessStart", s -> s.signal("signal"))
                                 .endEvent())
                     .startEvent()
                     .serviceTask("A", a -> a.zeebeJobType("A"))
@@ -573,10 +566,14 @@ public class MigrateProcessInstanceRejectionTest {
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
-    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+    RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+        .withBpmnProcessId("process")
+        .withSignalName("signal")
+        .await();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
-        .withMessageName("message")
-        .withCorrelationKey("correlationKey")
+        .withElementId("A")
         .await();
 
     final long targetProcessDefinitionKey =
@@ -600,9 +597,149 @@ public class MigrateProcessInstanceRejectionTest {
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            "Expected to migrate process instance but process instance has an event subprocess. "
-                + "Process instances with event subprocesses cannot be migrated yet.")
+            """
+            Expected to migrate process instance '%s' \
+            but active process with id '%s' has one or more event subprocesses with start events of types '%s'. \
+            Migrating event subprocesses with start events of these types is not possible yet."""
+                .formatted(processInstanceKey, "process", "SIGNAL"))
         .hasKey(processInstanceKey);
+  }
+
+  @Test
+  public void shouldRejectCommandWhenTheTargetProcessIsSubscribedToASignalEventSubprocess() {
+    // given
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent()
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process2")
+                    .eventSubProcess(
+                        "eventSubProcess",
+                        sub ->
+                            sub.startEvent("eventSubProcessStart", s -> s.signal("signal"))
+                                .endEvent())
+                    .startEvent()
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    final long targetProcessDefinitionKey =
+        extractTargetProcessDefinitionKey(deployment, "process2");
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "A")
+        .expectRejection()
+        .migrate();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            """
+      Expected to migrate process instance '%s' \
+      but target process with id '%s' has one or more event subprocesses with start events of types '%s'. \
+      Migrating event subprocesses with start events of these types is not possible yet."""
+                .formatted(processInstanceKey, "process2", "SIGNAL"))
+        .hasKey(processInstanceKey);
+  }
+
+  @Test
+  public void
+      shouldRejectMigrationForInterruptingActiveSignalEventSubprocessInsideEmbeddedProcess() {
+    // given
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent("start")
+                    .subProcess(
+                        "sub1",
+                        s ->
+                            s.embeddedSubProcess()
+                                .eventSubProcess(
+                                    "subsub1",
+                                    es ->
+                                        es.startEvent("signal_start1")
+                                            .signal("signal1")
+                                            .serviceTask("A", t -> t.zeebeJobType("task1"))
+                                            .endEvent())
+                                .startEvent()
+                                .serviceTask("B", t -> t.zeebeJobType("task2"))
+                                .endEvent())
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process2")
+                    .startEvent("start")
+                    .subProcess(
+                        "sub2",
+                        s ->
+                            s.embeddedSubProcess()
+                                .eventSubProcess(
+                                    "subsub2",
+                                    es ->
+                                        es.startEvent("signal_start2")
+                                            .signal("signal2")
+                                            .serviceTask("C", t -> t.zeebeJobType("task3"))
+                                            .endEvent())
+                                .startEvent()
+                                .serviceTask("D", t -> t.zeebeJobType("task4"))
+                                .endEvent())
+                    .done())
+            .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("B")
+        .await();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, "process2");
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("sub1", "sub2")
+        .addMappingInstruction("subsub1", "subsub2")
+        .addMappingInstruction("B", "D")
+        .expectRejection()
+        .migrate();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            """
+      Expected to migrate process instance '%s' \
+      but active process with id '%s' has one or more event subprocesses with start events of types '%s'. \
+      Migrating event subprocesses with start events of these types is not possible yet."""
+                .formatted(processInstanceKey, "sub1", "SIGNAL"));
   }
 
   @Test
@@ -662,65 +799,6 @@ public class MigrateProcessInstanceRejectionTest {
             but target element with id 'A' has one or more boundary events of types 'SIGNAL'. \
             Migrating target elements with boundary events of these types is not possible yet."""
                 .formatted(processInstanceKey))
-        .hasKey(processInstanceKey);
-  }
-
-  @Test
-  public void shouldRejectCommandWhenTheTargetProcessDefinitionSubscribedToAnEventSubprocess() {
-    // given
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess("process")
-                    .startEvent()
-                    .serviceTask("A", a -> a.zeebeJobType("A"))
-                    .endEvent()
-                    .done())
-            .withXmlResource(
-                Bpmn.createExecutableProcess("process2")
-                    .eventSubProcess(
-                        "eventSubProcess",
-                        sub ->
-                            sub.startEvent(
-                                    "eventSubProcessStart",
-                                    s ->
-                                        s.message(
-                                            m ->
-                                                m.name("message")
-                                                    .zeebeCorrelationKeyExpression(
-                                                        "\"correlationKey\"")))
-                                .endEvent())
-                    .startEvent()
-                    .serviceTask("A", a -> a.zeebeJobType("A"))
-                    .endEvent()
-                    .done())
-            .deploy();
-
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
-
-    final long targetProcessDefinitionKey =
-        extractTargetProcessDefinitionKey(deployment, "process2");
-
-    // when
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("A", "A")
-        .expectRejection()
-        .migrate();
-
-    // then
-    final var rejectionRecord =
-        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
-    assertThat(rejectionRecord)
-        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
-        .hasRejectionType(RejectionType.INVALID_STATE)
-        .hasRejectionReason(
-            "Expected to migrate process instance but target process has an event subprocess. "
-                + "Target processes with event subprocesses cannot be migrated yet.")
         .hasKey(processInstanceKey);
   }
 

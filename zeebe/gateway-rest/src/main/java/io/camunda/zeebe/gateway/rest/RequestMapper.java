@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationAssignRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationAssignRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
+import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
@@ -99,6 +101,10 @@ public class RequestMapper {
                 userTaskKey,
                 getRecordWithChangedAttributes(updateRequest),
                 getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction)));
+  }
+
+  public static Either<ProblemDetail, Long> getPinnedEpoch(final ClockPinRequest pinRequest) {
+    return getResult(validateClockPinRequest(pinRequest), pinRequest::getTimestamp);
   }
 
   public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(

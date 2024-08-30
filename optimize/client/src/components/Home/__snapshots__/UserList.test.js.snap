@@ -103,7 +103,7 @@ exports[`should match snapshot 1`] = `
     onClose={[Function]}
     onConfirm={[Function]}
     open={false}
-    optimizeProfile="platform"
+    optimizeProfile="ccsm"
   />
 </div>
 `;

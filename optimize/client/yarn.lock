@@ -2175,12 +2175,13 @@
     inherits "^2.0.4"
     tiny-svg "^3.0.0"
 
-"@camunda/camunda-composite-components@^0.6.2":
-  version "0.6.4"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.6.4.tgz#4804a24dff5ae32f2b4cf8add4a2622fa84a78b3"
-  integrity sha512-xyDUoz4R8DvI95q/HsTLfeCurhYzD98wk3LUKnEvvBHRBCpi4UqmVmCasHKDqJfu5LUSLhBuL+4kyOJYNP3a9A==
+"@camunda/camunda-composite-components@^0.8.1":
+  version "0.8.1"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.8.1.tgz#f6d308030172dd9761827b0ea50ec28e96c6e3f8"
+  integrity sha512-q2rGOahml4cbruU4yqX+RcTyNoR9GbLRcQBWLeAX9LrI7y+Y9gciWNZz96oJCNjroj78iCjQTgE/0QthZJoIXw==
   dependencies:
     jwt-decode "4.0.0"
+    react-error-boundary "4.0.13"
     react-markdown "8.0.7"
 
 "@camunda/camunda-optimize-composite-components@^0.0.16":
@@ -3816,7 +3817,14 @@
   dependencies:
     undici-types "~6.19.2"
 
-"@types/node@20.16.1", "@types/node@^20.14.5":
+"@types/node@20.16.2":
+  version "20.16.2"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.16.2.tgz#9e388f503a5af306e8c63319334887390966a11e"
+  integrity sha512-91s/n4qUPV/wg8eE9KHYW1kouTfDk2FPGjXbBMfRWP/2vg1rCXNQL1OCabwGs0XSdukuK+MwCDXE30QpSeMUhQ==
+  dependencies:
+    undici-types "~6.19.2"
+
+"@types/node@^20.14.5":
   version "20.16.1"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-20.16.1.tgz#0b44b15271d0e2191ca68faf1fbe506e06aed732"
   integrity sha512-zJDo7wEadFtSyNz5QITDfRcrhqDvQI1xQNQ0VoizPjM/dVAODqqIUWbJPkvsxmTI0MYRGRikcdjMPhOssnPejQ==
@@ -13266,6 +13274,13 @@ react-draggable@^4.0.3, react-draggable@^4.4.5:
     clsx "^1.1.1"
     prop-types "^15.8.1"
 
+react-error-boundary@4.0.13:
+  version "4.0.13"
+  resolved "https://registry.yarnpkg.com/react-error-boundary/-/react-error-boundary-4.0.13.tgz#80386b7b27b1131c5fbb7368b8c0d983354c7947"
+  integrity sha512-b6PwbdSv8XeOSYvjt8LpgpKrZ0yGdtZokYwkwV2wlcZbxgopHX/hgPl5VgpnoVOWd868n1hktM8Qm4b+02MiLQ==
+  dependencies:
+    "@babel/runtime" "^7.12.5"
+
 react-error-boundary@^3.1.4:
   version "3.1.4"
   resolved "https://registry.yarnpkg.com/react-error-boundary/-/react-error-boundary-3.1.4.tgz#255db92b23197108757a888b01e5b729919abde0"
@@ -14914,9 +14929,9 @@ style-to-object@^0.4.0:
     inline-style-parser "0.1.1"
 
 styled-components@^6.1.9:
-  version "6.1.12"
-  resolved "https://registry.yarnpkg.com/styled-components/-/styled-components-6.1.12.tgz#0d9d511aacfb9052936146dcc2856559e6fae4df"
-  integrity sha512-n/O4PzRPhbYI0k1vKKayfti3C/IGcPf+DqcrOB7O/ab9x4u/zjqraneT5N45+sIe87cxrCApXM8Bna7NYxwoTA==
+  version "6.1.13"
+  resolved "https://registry.yarnpkg.com/styled-components/-/styled-components-6.1.13.tgz#2d777750b773b31469bd79df754a32479e9f475e"
+  integrity sha512-M0+N2xSnAtwcVAQeFEsGWFFxXDftHUD7XrKla06QbpUMmbmtFBMMTcKWvFXtWxuD5qQkB8iU5gk6QASlx2ZRMw==
   dependencies:
     "@emotion/is-prop-valid" "1.2.2"
     "@emotion/unitless" "0.8.1"

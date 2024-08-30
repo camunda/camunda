@@ -11,6 +11,7 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.service.entities.DecisionDefinitionEntity;
 import io.camunda.service.entities.DecisionRequirementsEntity;
+import io.camunda.service.entities.IncidentEntity;
 import io.camunda.service.entities.ProcessInstanceEntity;
 import io.camunda.service.entities.UserEntity;
 import io.camunda.service.entities.UserTaskEntity;
@@ -19,6 +20,8 @@ import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
@@ -102,6 +105,17 @@ public final class SearchQueryResponseMapper {
     return response;
   }
 
+  public static IncidentSearchQueryResponse toIncidentSearchQueryResponse(
+      final SearchQueryResult<IncidentEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new IncidentSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toIncidents)
+                .orElseGet(Collections::emptyList));
+  }
+
   private static SearchQueryPageResponse toSearchQueryPageResponse(
       final SearchQueryResult<?> result) {
     return new SearchQueryPageResponse()
@@ -161,6 +175,28 @@ public final class SearchQueryResponseMapper {
 
   private static List<UserTaskItem> toUserTasks(final List<UserTaskEntity> tasks) {
     return tasks.stream().map(SearchQueryResponseMapper::toUserTask).toList();
+  }
+
+  private static List<IncidentItem> toIncidents(final List<IncidentEntity> incidents) {
+    return incidents.stream().map(SearchQueryResponseMapper::toIncident).toList();
+  }
+
+  private static IncidentItem toIncident(final IncidentEntity t) {
+    return new IncidentItem()
+        .key(t.key())
+        .processDefinitionKey(t.processDefinitionKey())
+        .processInstanceKey(t.processInstanceKey())
+        .type(t.type())
+        .flowNodeId(t.flowNodeId())
+        .flowNodeInstanceId(t.flowNodeInstanceId())
+        .creationTime(t.creationTime())
+        .state(t.state())
+        .jobKey(t.jobKey())
+        .tenantId(t.tenantId())
+        .hasActiveOperation(t.hasActiveOperation())
+        .lastOperation(null /*new OperationItem()*/)
+        .rootCauseInstance(null /*new ProcessInstanceReferenceItem()*/)
+        .rootCauseDecision(null /*new DecisionInstanceReferenceItem()*/);
   }
 
   private static UserTaskItem toUserTask(final UserTaskEntity t) {

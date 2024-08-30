@@ -19,7 +19,7 @@ import GroupBy from './GroupBy';
 jest.mock('hooks', () => ({
   useUiConfig: jest
     .fn()
-    .mockReturnValue({optimizeProfile: 'platform', userTaskAssigneeAnalyticsEnabled: true}),
+    .mockReturnValue({optimizeProfile: 'ccsm', userTaskAssigneeAnalyticsEnabled: true}),
 }));
 
 jest.mock('services', () => {

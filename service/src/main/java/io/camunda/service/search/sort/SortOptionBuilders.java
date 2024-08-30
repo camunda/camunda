@@ -67,4 +67,13 @@ public final class SortOptionBuilders {
   public static UserSort user(final Function<UserSort.Builder, ObjectBuilder<UserSort>> fn) {
     return fn.apply(user()).build();
   }
+
+  public static IncidentSort.Builder incident() {
+    return new IncidentSort.Builder();
+  }
+
+  public static IncidentSort incident(
+      final Function<IncidentSort.Builder, ObjectBuilder<IncidentSort>> fn) {
+    return fn.apply(incident()).build();
+  }
 }

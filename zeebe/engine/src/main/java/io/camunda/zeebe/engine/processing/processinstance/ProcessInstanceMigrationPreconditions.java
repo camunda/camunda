@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAct
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
@@ -46,7 +47,8 @@ public final class ProcessInstanceMigrationPreconditions {
           BpmnElementType.SUB_PROCESS,
           BpmnElementType.CALL_ACTIVITY,
           BpmnElementType.INTERMEDIATE_CATCH_EVENT,
-          BpmnElementType.RECEIVE_TASK);
+          BpmnElementType.RECEIVE_TASK,
+          BpmnElementType.EVENT_SUB_PROCESS);
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.complementOf(SUPPORTED_ELEMENT_TYPES);
   private static final Set<BpmnEventType> SUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPES =
@@ -76,12 +78,14 @@ public final class ProcessInstanceMigrationPreconditions {
       in the target process definition.""";
   private static final String ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_PROCESS_INSTANCE =
       """
-      Expected to migrate process instance but process instance has an event subprocess. \
-      Process instances with event subprocesses cannot be migrated yet.""";
+      Expected to migrate process instance '%s' \
+      but active process with id '%s' has one or more event subprocesses with start events of types '%s'. \
+      Migrating event subprocesses with start events of these types is not possible yet.""";
   private static final String ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_TARGET_PROCESS =
       """
-      Expected to migrate process instance but target process has an event subprocess. \
-      Target processes with event subprocesses cannot be migrated yet.""";
+      Expected to migrate process instance '%s' \
+      but target process with id '%s' has one or more event subprocesses with start events of types '%s'. \
+      Migrating event subprocesses with start events of these types is not possible yet.""";
   private static final String ERROR_UNSUPPORTED_ELEMENT_TYPE =
       """
       Expected to migrate process instance '%s' \
@@ -279,24 +283,79 @@ public final class ProcessInstanceMigrationPreconditions {
   }
 
   /**
-   * Checks whether the given source and target process definition contain event subprocesses.
+   * Checks whether the given source process definition contains an event subprocess. Throws an
+   * exception if the source process definition contains an event subprocess that is not allowed.
    *
-   * @param sourceProcessDefinition source process definition
-   * @param targetProcessDefinition target process definition
+   * @param sourceProcessDefinition source process definition to do the check
+   * @param elementInstanceRecord element instance to be logged
+   * @param allowedEventTypes allowed event types for the boundary event
    */
-  public static void requireNoEventSubprocess(
+  public static void requireNoEventSubprocessInSource(
       final DeployedProcess sourceProcessDefinition,
-      final DeployedProcess targetProcessDefinition) {
-    if (!sourceProcessDefinition.getProcess().getEventSubprocesses().isEmpty()) {
-      throw new ProcessInstanceMigrationPreconditionFailedException(
-          ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_PROCESS_INSTANCE,
-          RejectionType.INVALID_STATE);
+      final ProcessInstanceRecord elementInstanceRecord,
+      final EnumSet<BpmnEventType> allowedEventTypes) {
+    requireNoEventSubprocess(
+        sourceProcessDefinition,
+        elementInstanceRecord,
+        elementInstanceRecord.getElementId(),
+        allowedEventTypes,
+        ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_PROCESS_INSTANCE);
+  }
+
+  /**
+   * Checks whether the given target process definition contains an event subprocess. Throws an
+   * exception if the target process definition contains an event subprocess that is not allowed.
+   *
+   * @param targetProcessDefinition target process definition to do the check
+   * @param targetElementId target element id to retrieve the target element
+   * @param elementInstanceRecord element instance to be logged
+   * @param allowedEventTypes allowed event types for the boundary event
+   */
+  public static void requireNoEventSubprocessInTarget(
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final ProcessInstanceRecord elementInstanceRecord,
+      final EnumSet<BpmnEventType> allowedEventTypes) {
+    requireNoEventSubprocess(
+        targetProcessDefinition,
+        elementInstanceRecord,
+        targetElementId,
+        allowedEventTypes,
+        ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_TARGET_PROCESS);
+  }
+
+  private static void requireNoEventSubprocess(
+      final DeployedProcess sourceProcessDefinition,
+      final ProcessInstanceRecord elementInstanceRecord,
+      final String elementId,
+      final EnumSet<BpmnEventType> allowedEventTypes,
+      final String errorTemplate) {
+    final AbstractFlowElement sourceElement =
+        sourceProcessDefinition.getProcess().getElementById(elementId);
+
+    if (!(sourceElement instanceof final ExecutableActivity sourceActivity)) {
+      // no event subprocess event check needed because the given element cannot contain an event
+      // subprocess
+      return;
     }
 
-    if (!targetProcessDefinition.getProcess().getEventSubprocesses().isEmpty()) {
+    final List<ExecutableStartEvent> rejectedEvents =
+        sourceActivity.getEventSubprocesses().stream()
+            .flatMap(sub -> sub.getStartEvents().stream())
+            .filter(start -> !allowedEventTypes.contains(start.getEventType()))
+            .toList();
+
+    if (!rejectedEvents.isEmpty()) {
+      final String rejectedEventTypes =
+          rejectedEvents.stream()
+              .map(ExecutableStartEvent::getEventType)
+              .map(BpmnEventType::name)
+              .collect(Collectors.joining(","));
+      final String reason =
+          errorTemplate.formatted(
+              elementInstanceRecord.getProcessInstanceKey(), elementId, rejectedEventTypes);
       throw new ProcessInstanceMigrationPreconditionFailedException(
-          ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_TARGET_PROCESS,
-          RejectionType.INVALID_STATE);
+          reason, RejectionType.INVALID_STATE);
     }
   }
 
@@ -543,22 +602,16 @@ public final class ProcessInstanceMigrationPreconditions {
       final String elementId,
       final EnumSet<BpmnEventType> allowedEventTypes,
       final String errorTemplate) {
-    final AbstractFlowElement elementById =
+    final AbstractFlowElement sourceElement =
         sourceProcessDefinition.getProcess().getElementById(elementId);
 
-    if (!(ExecutableActivity.class.isAssignableFrom(elementById.getClass()))) {
-      // no boundary event check needed
+    if (!(sourceElement instanceof final ExecutableActivity sourceActivity)) {
+      // // no boundary event check needed because the given element cannot contain a boundary event
       return;
     }
 
-    final List<ExecutableBoundaryEvent> boundaryEvents =
-        sourceProcessDefinition
-            .getProcess()
-            .getElementById(elementId, ExecutableActivity.class)
-            .getBoundaryEvents();
-
     final var rejectedBoundaryEvents =
-        boundaryEvents.stream()
+        sourceActivity.getBoundaryEvents().stream()
             .filter(event -> !allowedEventTypes.contains(event.getEventType()))
             .toList();
 

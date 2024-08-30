@@ -47,7 +47,7 @@ export type UiConfig = {
   tenantsAvailable: boolean;
   optimizeVersion: string;
   optimizeDocsVersion: string;
-  optimizeProfile: 'platform' | 'cloud' | 'ccsm';
+  optimizeProfile: 'cloud' | 'ccsm';
   enterpriseMode: boolean;
   webappsEndpoints: WebappEndpoints;
   webappsLinks: WebappLinks;
@@ -61,6 +61,8 @@ export type UiConfig = {
   userSearchAvailable: boolean;
   optimizeDatabase: 'opensearch' | 'elasticsearch';
   userTaskAssigneeAnalyticsEnabled: boolean;
+  licenseType: 'production' | 'saas' | 'unknown';
+  validLicense: boolean;
 };
 
 let globalConfig: UiConfig;

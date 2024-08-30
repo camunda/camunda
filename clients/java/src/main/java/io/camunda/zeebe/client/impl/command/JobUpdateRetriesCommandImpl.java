@@ -16,13 +16,18 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1.UpdateRetriesJobCommandStep2;
 import io.camunda.zeebe.client.api.response.UpdateRetriesJobResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.UpdateRetriesJobResponseImpl;
+import io.camunda.zeebe.client.protocol.rest.JobChangeset;
+import io.camunda.zeebe.client.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
@@ -32,54 +37,87 @@ import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class JobUpdateRetriesCommandImpl
     implements UpdateRetriesJobCommandStep1, UpdateRetriesJobCommandStep2 {
 
   private final GatewayStub asyncStub;
-  private final Builder builder;
+  private final Builder grpcRequestObjectBuilder;
   private final Predicate<StatusCode> retryPredicate;
   private Duration requestTimeout;
+  private boolean useRest;
+  private final JobUpdateRequest httpRequestObject;
+  private final HttpClient httpClient;
+  private final RequestConfig.Builder httpRequestConfig;
+  private final long jobKey;
+  private final JsonMapper jsonMapper;
 
   public JobUpdateRetriesCommandImpl(
       final GatewayStub asyncStub,
       final long jobKey,
       final Duration requestTimeout,
-      final Predicate<StatusCode> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate,
+      final HttpClient httpClient,
+      final boolean preferRestOverGrpc,
+      final JsonMapper jsonMapper) {
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
-    builder = UpdateJobRetriesRequest.newBuilder();
-    builder.setJobKey(jobKey);
+    grpcRequestObjectBuilder = UpdateJobRetriesRequest.newBuilder();
+    grpcRequestObjectBuilder.setJobKey(jobKey);
+    this.httpClient = httpClient;
+    httpRequestConfig = httpClient.newRequestConfig();
+    httpRequestObject = new JobUpdateRequest();
+    useRest = preferRestOverGrpc;
+    this.jobKey = jobKey;
+    this.jsonMapper = jsonMapper;
   }
 
   @Override
   public UpdateRetriesJobCommandStep2 retries(final int retries) {
-    builder.setRetries(retries);
+    grpcRequestObjectBuilder.setRetries(retries);
+    getChangesetEnsureInitialized().setRetries(retries);
     return this;
   }
 
   @Override
   public FinalCommandStep<UpdateRetriesJobResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
   public ZeebeFuture<UpdateRetriesJobResponse> send() {
-    final UpdateJobRetriesRequest request = builder.build();
+    if (useRest) {
+      return sendRestRequest();
+    } else {
+      return sendGrpcRequest();
+    }
+  }
+
+  private ZeebeFuture<UpdateRetriesJobResponse> sendRestRequest() {
+    final HttpZeebeFuture<UpdateRetriesJobResponse> result = new HttpZeebeFuture<>();
+    httpClient.patch(
+        "/jobs/" + jobKey, jsonMapper.toJson(httpRequestObject), httpRequestConfig.build(), result);
+    return result;
+  }
+
+  private ZeebeFuture<UpdateRetriesJobResponse> sendGrpcRequest() {
+    final UpdateJobRetriesRequest request = grpcRequestObjectBuilder.build();
 
     final RetriableClientFutureImpl<UpdateRetriesJobResponse, UpdateJobRetriesResponse> future =
         new RetriableClientFutureImpl<>(
             UpdateRetriesJobResponseImpl::new,
             retryPredicate,
-            streamObserver -> send(request, streamObserver));
+            streamObserver -> sendGrpcRequest(request, streamObserver));
 
-    send(request, future);
+    sendGrpcRequest(request, future);
     return future;
   }
 
-  private void send(
+  private void sendGrpcRequest(
       final UpdateJobRetriesRequest request,
       final StreamObserver<GatewayOuterClass.UpdateJobRetriesResponse> streamObserver) {
     asyncStub
@@ -89,7 +127,28 @@ public final class JobUpdateRetriesCommandImpl
 
   @Override
   public UpdateRetriesJobCommandStep2 operationReference(final long operationReference) {
-    builder.setOperationReference(operationReference);
+    grpcRequestObjectBuilder.setOperationReference(operationReference);
     return this;
+  }
+
+  @Override
+  public UpdateRetriesJobCommandStep1 useRest() {
+    useRest = true;
+    return this;
+  }
+
+  @Override
+  public UpdateRetriesJobCommandStep1 useGrpc() {
+    useRest = false;
+    return this;
+  }
+
+  private JobChangeset getChangesetEnsureInitialized() {
+    JobChangeset changeset = httpRequestObject.getChangeset();
+    if (changeset == null) {
+      changeset = new JobChangeset();
+      httpRequestObject.setChangeset(changeset);
+    }
+    return changeset;
   }
 }
