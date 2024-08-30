@@ -1953,7 +1953,6 @@ components:
 
         The job cannot be completed or failed with this endpoint, use the complete job or fail job endpoints instead.
       type: object
-      additionalProperties: true
       properties:
         retries:
           type: integer
