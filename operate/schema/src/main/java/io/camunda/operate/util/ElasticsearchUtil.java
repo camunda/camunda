@@ -845,6 +845,14 @@ public abstract class ElasticsearchUtil {
     return options.build();
   }
 
+  public static SortOrder reverseOrder(final SortOrder sortOrder) {
+    if (sortOrder.equals(SortOrder.ASC)) {
+      return SortOrder.DESC;
+    } else {
+      return SortOrder.ASC;
+    }
+  }
+
   private static final class DelegatingActionListener<Response>
       implements ActionListener<Response> {
 

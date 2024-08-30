@@ -134,12 +134,4 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
         .sort(SortBuilders.fieldSort(JobTemplate.TIME).order(sortOrder).missing(missing))
         .sort(SortBuilders.fieldSort(JobTemplate.JOB_KEY).order(sortOrder));
   }
-
-  private SortOrder reverseOrder(final SortOrder sortOrder) {
-    if (sortOrder.equals(SortOrder.ASC)) {
-      return SortOrder.DESC;
-    } else {
-      return SortOrder.ASC;
-    }
-  }
 }
