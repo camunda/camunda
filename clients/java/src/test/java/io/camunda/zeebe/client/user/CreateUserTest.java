@@ -26,22 +26,31 @@ import io.camunda.zeebe.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
 public class CreateUserTest extends ClientRestTest {
+
+  public static final String USERNAME = "username";
+  public static final String NAME = "name";
+  public static final String EMAIL = "email@example.com";
+  public static final String PASSWORD = "password";
+
   @Test
   void shouldCreateUser() {
     // when
     client
         .newUserCreateCommand()
-        .username("username")
-        .name("name")
-        .email("email@example.com")
-        .password("password")
+        .username(USERNAME)
+        .name(NAME)
+        .email(EMAIL)
+        .password(PASSWORD)
         .send()
         .join();
 
     // then
     final UserWithPasswordRequest request =
         gatewayService.getLastRequest(UserWithPasswordRequest.class);
-    assertThat(request.getUsername()).isEqualTo("username");
+    assertThat(request.getUsername()).isEqualTo(USERNAME);
+    assertThat(request.getName()).isEqualTo(NAME);
+    assertThat(request.getEmail()).isEqualTo(EMAIL);
+    assertThat(request.getPassword()).isEqualTo(PASSWORD);
   }
 
   @Test
@@ -51,13 +60,61 @@ public class CreateUserTest extends ClientRestTest {
             () ->
                 client
                     .newUserCreateCommand()
-                    .name("name")
-                    .email("email@example.com")
-                    .password("password")
+                    .name(NAME)
+                    .email(EMAIL)
+                    .password(PASSWORD)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("username must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullEmail() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUserCreateCommand()
+                    .username(USERNAME)
+                    .name(NAME)
+                    .password(PASSWORD)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("email must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullName() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUserCreateCommand()
+                    .username(USERNAME)
+                    .email(EMAIL)
+                    .password(PASSWORD)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("name must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullPassword() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUserCreateCommand()
+                    .username(USERNAME)
+                    .name(NAME)
+                    .email(EMAIL)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("password must not be null");
   }
 
   @Test
@@ -71,10 +128,10 @@ public class CreateUserTest extends ClientRestTest {
             () ->
                 client
                     .newUserCreateCommand()
-                    .username("username")
-                    .name("name")
-                    .email("email@example.com")
-                    .password("password")
+                    .username(USERNAME)
+                    .name(NAME)
+                    .email(EMAIL)
+                    .password(PASSWORD)
                     .send()
                     .join())
         .hasCauseInstanceOf(ProblemException.class)

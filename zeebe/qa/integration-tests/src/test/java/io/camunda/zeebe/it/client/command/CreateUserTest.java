@@ -71,20 +71,19 @@ class CreateUserTest {
         .join();
 
     // when / then
-    final var problem =
-        assertThatThrownBy(
-                () ->
-                    client
-                        .newUserCreateCommand()
-                        .username("username")
-                        .name("name")
-                        .email("email@example.com")
-                        .password("password")
-                        .send()
-                        .join())
-            .hasCauseInstanceOf(ProblemException.class)
-            .hasMessageContaining("Failed with code 400: 'Bad Request'")
-            .hasMessageContaining("a user with this username already exists");
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUserCreateCommand()
+                    .username("username")
+                    .name("name")
+                    .email("email@example.com")
+                    .password("password")
+                    .send()
+                    .join())
+        .hasCauseInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 400: 'Bad Request'")
+        .hasMessageContaining("a user with this username already exists");
   }
 
   @Test

@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -340,13 +341,10 @@ public final class ZeebeAssertHelper {
       final String username, final Consumer<UserRecordValue> consumer) {
     final UserRecordValue user =
         RecordingExporter.userRecords()
-            .filter(
-                userRecordValueRecord ->
-                    userRecordValueRecord.getValue().getUsername().equals(username))
-            .limit(1)
-            .map(Record::getValue)
-            .toList()
-            .getLast();
+            .withIntent(UserIntent.CREATED)
+            .withUsernameKey(username)
+            .getFirst()
+            .getValue();
 
     assertThat(user).isNotNull();
     consumer.accept(user);
