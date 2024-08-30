@@ -34,6 +34,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("rawtypes")
 public class ElasticsearchBatchRequest implements BatchRequest {
   public static final int UPDATE_RETRY_COUNT = 3;
 
@@ -52,14 +53,12 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest add(final String index, final ExporterEntity entity)
-      throws PersistenceException {
+  public BatchRequest add(final String index, final ExporterEntity entity) {
     return addWithId(index, entity.getId(), entity);
   }
 
   @Override
-  public BatchRequest addWithId(final String index, final String id, final ExporterEntity entity)
-      throws PersistenceException {
+  public BatchRequest addWithId(final String index, final String id, final ExporterEntity entity) {
     LOGGER.debug("Add index request for index {} id {} and entity {} ", index, id, entity);
     final var idx = indexBuilder(index, id, entity).build();
     final var op = bulkOperationBuilder(idx).build();
@@ -69,8 +68,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest addWithRouting(
-      final String index, final ExporterEntity entity, final String routing)
-      throws PersistenceException {
+      final String index, final ExporterEntity entity, final String routing) {
     LOGGER.debug(
         "Add index request with routing {} for index {} and entity {} ", routing, index, entity);
     final var idx = indexWithRoutingBuilder(index, entity, routing).build();
@@ -84,8 +82,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final String index,
       final String id,
       final ExporterEntity entity,
-      final Map<String, Object> updateFields)
-      throws PersistenceException {
+      final Map<String, Object> updateFields) {
     LOGGER.debug(
         "Add upsert request for index {} id {} entity {} and update fields {}",
         index,
@@ -106,8 +103,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final String id,
       final ExporterEntity entity,
       final Map<String, Object> updateFields,
-      final String routing)
-      throws PersistenceException {
+      final String routing) {
     LOGGER.debug(
         "Add upsert request with routing {} for index {} id {} entity {} and update fields {}",
         routing,
@@ -129,8 +125,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final String id,
       final ExporterEntity entity,
       final String script,
-      final Map<String, Object> parameters)
-      throws PersistenceException {
+      final Map<String, Object> parameters) {
     LOGGER.debug(
         "Add upsert request with for index {} id {} entity {} and script {} with parameters {} ",
         index,
@@ -155,8 +150,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final ExporterEntity entity,
       final String script,
       final Map<String, Object> parameters,
-      final String routing)
-      throws PersistenceException {
+      final String routing) {
     LOGGER.debug(
         "Add upsert request with routing {} for index {} id {} entity {} and script {} with parameters {} ",
         routing,
@@ -177,8 +171,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest update(
-      final String index, final String id, final Map<String, Object> updateFields)
-      throws PersistenceException {
+      final String index, final String id, final Map<String, Object> updateFields) {
     LOGGER.debug(
         "Add update request for index {} id {} and update fields {}", index, id, updateFields);
 
@@ -191,8 +184,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest update(final String index, final String id, final ExporterEntity entity)
-      throws PersistenceException {
+  public BatchRequest update(final String index, final String id, final ExporterEntity entity) {
     LOGGER.debug("Add update request for index {} id {} and entity {}", index, id, entity);
 
     final var update =
@@ -215,8 +207,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final String index,
       final String id,
       final String script,
-      final Map<String, Object> parameters)
-      throws PersistenceException {
+      final Map<String, Object> parameters) {
     LOGGER.debug(
         "Add upsert request with for index {} id {} and script {} with parameters {} ",
         index,
