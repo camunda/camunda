@@ -1,0 +1,12 @@
+{
+  "mappings": {
+    "properties": {
+      "foo": {
+        "type": "text"
+      },
+      "bar": {
+        "type": "keyword"
+      }
+    }
+  }
+}
