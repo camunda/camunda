@@ -16,6 +16,7 @@ import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.valida
 import static io.camunda.zeebe.gateway.rest.validator.MessageCorrelateValidator.validateMessageCorrelationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateAuthorization;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
+import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateStartProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
@@ -24,6 +25,7 @@ import io.camunda.service.DocumentServices.DocumentMetadataModel;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceStartRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
@@ -39,6 +41,8 @@ import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationStartInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.StartProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
@@ -328,6 +332,26 @@ public class RequestMapper {
         HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), message);
   }
 
+  public static Either<ProblemDetail, ProcessInstanceStartRequest> toStartProcessInstance(
+      final StartProcessInstanceRequest request) {
+    return getResult(
+        validateStartProcessInstanceRequest(request),
+        () ->
+            new ProcessInstanceStartRequest(
+                getLongOrDefault(
+                    request, StartProcessInstanceRequest::getProcessDefinitionKey, -1L),
+                getStringOrEmpty(request, StartProcessInstanceRequest::getBpmnProcessId),
+                getIntOrDefault(request, StartProcessInstanceRequest::getVersion, -1),
+                getMapOrEmpty(request, StartProcessInstanceRequest::getVariables),
+                request.getTenantId(),
+                request.getAwaitCompletion(),
+                request.getRequestTimeout(),
+                request.getOperationReference(),
+                request.getStartInstructions().stream()
+                    .map(ProcessInstanceCreationStartInstruction::getElementId)
+                    .toList()));
+  }
+
   private static <R> Map<String, Object> getMapOrEmpty(
       final R request, final Function<R, Map<String, Object>> mapExtractor) {
     return request == null ? Map.of() : mapExtractor.apply(request);
@@ -340,8 +364,13 @@ public class RequestMapper {
   }
 
   private static <R> long getLongOrZero(final R request, final Function<R, Long> valueExtractor) {
+    return getLongOrDefault(request, valueExtractor, 0L);
+  }
+
+  private static <R> long getLongOrDefault(
+      final R request, final Function<R, Long> valueExtractor, final Long defaultValue) {
     final Long value = request == null ? null : valueExtractor.apply(request);
-    return value == null ? 0L : value;
+    return value == null ? defaultValue : value;
   }
 
   private static <R> List<String> getStringListOrEmpty(
@@ -351,8 +380,13 @@ public class RequestMapper {
   }
 
   private static <R> int getIntOrZero(final R request, final Function<R, Integer> valueExtractor) {
+    return getIntOrDefault(request, valueExtractor, 0);
+  }
+
+  private static <R> int getIntOrDefault(
+      final R request, final Function<R, Integer> valueExtractor, final Integer defaultValue) {
     final Integer value = request == null ? null : valueExtractor.apply(request);
-    return value == null ? 0 : value;
+    return value == null ? defaultValue : value;
   }
 
   public record CompleteUserTaskRequest(
