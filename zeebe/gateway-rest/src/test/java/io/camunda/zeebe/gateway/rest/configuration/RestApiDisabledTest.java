@@ -9,13 +9,13 @@ package io.camunda.zeebe.gateway.rest.configuration;
 
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import io.camunda.zeebe.gateway.rest.controller.ProcessInstanceQueryController;
+import io.camunda.zeebe.gateway.rest.controller.ProcessInstanceController;
 import io.camunda.zeebe.gateway.rest.controller.TopologyController;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 
 @WebMvcTest(
-    value = {ProcessInstanceQueryController.class, TopologyController.class},
+    value = {ProcessInstanceController.class, TopologyController.class},
     properties = "camunda.rest.enabled=false")
 public class RestApiDisabledTest extends RestApiConfigurationTest {
 
