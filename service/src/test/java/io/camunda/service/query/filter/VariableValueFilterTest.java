@@ -38,12 +38,12 @@ public class VariableValueFilterTest {
     // when
     final var filter =
         filterBuilder
+            .name("name")
             .eq("equals")
             .gt("greaterThen")
             .gte("greaterThenOrEqual")
             .lt("lessThen")
             .lte("lessThenOrEqual")
-            .name("name")
             .build();
 
     // then

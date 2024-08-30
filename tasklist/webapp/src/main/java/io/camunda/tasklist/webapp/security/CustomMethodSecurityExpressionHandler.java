@@ -7,9 +7,12 @@
  */
 package io.camunda.tasklist.webapp.security;
 
+import java.util.function.Supplier;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.expression.EvaluationContext;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionOperations;
 import org.springframework.security.core.Authentication;
@@ -22,8 +25,17 @@ public class CustomMethodSecurityExpressionHandler extends DefaultMethodSecurity
   @Autowired BeanFactory beanFactory;
 
   @Override
+  public EvaluationContext createEvaluationContext(
+      final Supplier<Authentication> authentication, final MethodInvocation mi) {
+    final StandardEvaluationContext context =
+        (StandardEvaluationContext) super.createEvaluationContext(authentication, mi);
+    context.setRootObject(createSecurityExpressionRoot(authentication.get(), mi));
+    return context;
+  }
+
+  @Override
   protected MethodSecurityExpressionOperations createSecurityExpressionRoot(
-      Authentication authentication, MethodInvocation invocation) {
+      final Authentication authentication, final MethodInvocation invocation) {
     final CustomSecurityExpressionRoot root = new CustomSecurityExpressionRoot(authentication);
     root.setUserReader(getUserReader());
     root.setThis(invocation.getThis());

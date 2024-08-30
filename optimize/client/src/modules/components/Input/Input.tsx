@@ -1,0 +1,78 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {forwardRef, ComponentPropsWithoutRef, UIEvent} from 'react';
+import classnames from 'classnames';
+
+import {Icon} from 'components';
+
+import './Input.scss';
+
+// We are overriding here the default placeholder type to let the use of translation function without type casting
+export interface InputProps extends Omit<ComponentPropsWithoutRef<'input'>, 'placeholder'> {
+  disabled?: boolean;
+  className?: string;
+  isInvalid?: boolean;
+  placeholder?: string | JSX.Element[];
+  onClear?: (evt: UIEvent<HTMLElement>) => void;
+}
+
+export default forwardRef<HTMLInputElement, InputProps>(function Input(
+  {isInvalid, onClear, placeholder, ...props},
+  ref
+): JSX.Element {
+  let inputEl: HTMLInputElement;
+  const setRef = (el: HTMLInputElement) => {
+    inputEl = el;
+    if (!ref) {
+      return;
+    }
+    if (typeof ref === 'function') {
+      return ref(el);
+    }
+    return (ref.current = el);
+  };
+
+  const triggerClear = (evt: UIEvent<HTMLElement>) => {
+    if ('type' in evt && 'keyCode' in evt && evt.type === 'keydown' && evt.keyCode !== 13) {
+      return;
+    }
+    onClear?.(evt);
+    if (inputEl) {
+      inputEl.focus();
+    }
+    if ('preventDefault' in evt) {
+      evt.preventDefault();
+    }
+  };
+
+  return (
+    <>
+      <input
+        required={!!onClear}
+        type="text"
+        onDoubleClick={() => {
+          if (props.type === 'text') {
+            inputEl.select();
+          }
+        }}
+        {...props}
+        placeholder={placeholder?.toString()}
+        className={classnames('Input', props.className, {isInvalid})}
+        ref={setRef}
+      >
+        {props.children}
+      </input>
+      {onClear && (
+        <button className="searchClear" onKeyDown={triggerClear} onMouseDown={triggerClear}>
+          <Icon type="clear" />
+        </button>
+      )}
+    </>
+  );
+});

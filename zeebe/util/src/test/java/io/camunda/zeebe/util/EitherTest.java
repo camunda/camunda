@@ -306,9 +306,9 @@ class EitherTest {
     }
   }
 
-  @DisplayName("Folding method tests")
+  @DisplayName("`fold` method tests")
   @Nested
-  class FoldingMethodTests {
+  class FoldMethodTests {
 
     @DisplayName("Folds `Left`s into target types using the left function.")
     @ParameterizedTest
@@ -318,7 +318,7 @@ class EitherTest {
       final Function<Object, String> rightMapper = o -> "Unexpected-" + o.toString();
       final String mappedValue = leftMapper.apply(value);
       assertThat(mappedValue).isNotEqualTo(value);
-      assertThat(Either.left(value).fold(rightMapper, leftMapper)).isEqualTo(mappedValue);
+      assertThat(Either.left(value).fold(leftMapper, rightMapper)).isEqualTo(mappedValue);
     }
 
     @DisplayName("Folds `Right`s into target types using the right function.")
@@ -329,7 +329,7 @@ class EitherTest {
       final Function<Object, String> rightMapper = o -> "Expected-" + o.toString();
       final String mappedValue = rightMapper.apply(value);
       assertThat(mappedValue).isNotEqualTo(value);
-      assertThat(Either.right(value).fold(rightMapper, leftMapper)).isEqualTo(mappedValue);
+      assertThat(Either.right(value).fold(leftMapper, rightMapper)).isEqualTo(mappedValue);
     }
   }
 }

@@ -1,7 +1,7 @@
 services:
   postgres:
     container_name: postgres
-    image: postgres:16.3-alpine
+    image: postgres:16.4-alpine
     ports:
       - "5432:5432"
     environment:
@@ -12,7 +12,7 @@ services:
       - identity-network
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -35,7 +35,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   opensearch:
-    image: opensearchproject/opensearch:2.15.0
+    image: opensearchproject/opensearch:2.16.0
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
@@ -61,7 +61,7 @@ services:
     depends_on:
       - postgres
     container_name: keycloak
-    image: bitnami/keycloak:25.0.2
+    image: bitnami/keycloak:25.0.4
     ports:
       - "18080:8080"
     environment:
@@ -122,6 +122,10 @@ services:
       - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
       - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
       - ZEEBE_BROKER_GATEWAY_ENABLE=true
+      - CAMUNDA_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
+      - CAMUNDA_IDENTITY_BASEURL=http://identity:8084
+      - CAMUNDA_IDENTITY_AUDIENCE=zeebe-api
+      - SPRING_PROFILES_ACTIVE=identity-auth
     ports:
       - 26500:26500
       - 8000:8000

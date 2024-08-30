@@ -178,6 +178,14 @@ public interface ZeebeUserTaskPropertiesBuilder<B extends ZeebeUserTaskPropertie
   B zeebeFormBindingType(final ZeebeBindingType bindingType);
 
   /**
+   * Sets the version tag for the user task's form.
+   *
+   * @param versionTag the version tag to set
+   * @return the builder object
+   */
+  B zeebeFormVersionTag(final String versionTag);
+
+  /**
    * Sets a static priority for the user task.
    *
    * @param priority the priority value to set

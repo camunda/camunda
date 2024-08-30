@@ -35,10 +35,13 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.IntStream;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
+import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.config.RequestConfig.Builder;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
@@ -131,14 +134,25 @@ public class HttpClientFactory {
     final PoolingAsyncClientConnectionManager connectionManager =
         PoolingAsyncClientConnectionManagerBuilder.create().setTlsStrategy(tlsStrategy).build();
 
-    return HttpAsyncClients.custom()
-        .setConnectionManager(connectionManager)
-        .setDefaultHeaders(Collections.singletonList(acceptHeader))
-        .setUserAgent("zeebe-client-java/" + VersionUtil.getVersion())
-        .evictExpiredConnections()
-        .setCharCodingConfig(CharCodingConfig.custom().setCharset(StandardCharsets.UTF_8).build())
-        .evictIdleConnections(TimeValue.ofSeconds(30))
-        .useSystemProperties(); // allow users to customize via system properties
+    final HttpAsyncClientBuilder builder =
+        HttpAsyncClients.custom()
+            .setConnectionManager(connectionManager)
+            .setDefaultHeaders(Collections.singletonList(acceptHeader))
+            .setUserAgent("zeebe-client-java/" + VersionUtil.getVersion())
+            .evictExpiredConnections()
+            .setCharCodingConfig(
+                CharCodingConfig.custom().setCharset(StandardCharsets.UTF_8).build())
+            .evictIdleConnections(TimeValue.ofSeconds(30))
+            .useSystemProperties(); // allow users to customize via system properties
+
+    final List<AsyncExecChainHandler> chainHandlers = config.getChainHandlers();
+    IntStream.range(0, chainHandlers.size())
+        .forEach(
+            i -> {
+              builder.addExecInterceptorLast("handler-" + i, chainHandlers.get(i));
+            });
+
+    return builder;
   }
 
   private Builder defaultClientRequestConfigBuilder() {

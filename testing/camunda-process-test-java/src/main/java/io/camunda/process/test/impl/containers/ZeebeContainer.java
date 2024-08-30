@@ -95,4 +95,12 @@ public class ZeebeContainer extends GenericContainer<ZeebeContainer> {
   private URI toUriWithPort(final int port) {
     return URI.create("http://" + getHost() + ":" + port);
   }
+
+  public URI getMonitoringApiAddress() {
+    return toUriWithPort(getMonitoringApiPort());
+  }
+
+  public int getMonitoringApiPort() {
+    return getMappedPort(ContainerRuntimePorts.ZEEBE_MONITORING_API);
+  }
 }

@@ -68,6 +68,19 @@ final class TestClient implements CloseableSilently {
     osClient = new OpenSearchClient(transport);
   }
 
+  TestClient(
+      final OpensearchExporterConfiguration config,
+      final RecordIndexRouter indexRouter,
+      final RestClient restClient) {
+    this.config = config;
+    this.indexRouter = indexRouter;
+
+    this.restClient = restClient;
+
+    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(MAPPER));
+    osClient = new OpenSearchClient(transport);
+  }
+
   @SuppressWarnings("rawtypes")
   GetResponse<Record> getExportedDocumentFor(final Record<?> record) {
     final var indexName = indexRouter.indexFor(record);

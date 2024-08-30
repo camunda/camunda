@@ -5,9 +5,9 @@
 # Both ubuntu and eclipse-temurin are pinned via digest and not by a strict version tag, as Renovate
 # has trouble with custom versioning schemes
 ARG BASE_IMAGE="ubuntu:jammy"
-ARG BASE_DIGEST="sha256:340d9b015b194dc6e2a13938944e0d016e57b9679963fdeb9ce021daac430221"
+ARG BASE_DIGEST="sha256:adbb90115a21969d2fe6fa7f9af4253e16d45f8d4c1e930182610c4731962658"
 ARG JDK_IMAGE="eclipse-temurin:21-jdk-jammy"
-ARG JDK_DIGEST="sha256:7b9c017c1c7272e8768a59422a7c37a9c870c9eae9926f715d4278bc5c3c3b9d"
+ARG JDK_DIGEST="sha256:273c9c69247d95a4f02333bdf4328d6df50b67d1d168c11ea76e58a27751e00b"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
@@ -15,7 +15,7 @@ ARG DIST="distball"
 ### Base image ###
 # All package installation, updates, etc., anything with APT should be done here in a single step
 # hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST} as base
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
 WORKDIR /
 
 # Upgrade all outdated packages and install missing ones (e.g. locales, tini)
@@ -33,7 +33,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 ### Build custom JRE using the base JDK image
 # hadolint ignore=DL3006
-FROM ${JDK_IMAGE}@${JDK_DIGEST} as jre-build
+FROM ${JDK_IMAGE}@${JDK_DIGEST} AS jre-build
 
 # Build a custom JRE which will strip down and compress modules to end up with a smaller Java \
 # distribution than the official JRE. This will also include useful debugging tools like
@@ -76,7 +76,7 @@ COPY --from=jre-build /jre ${JAVA_HOME}
 RUN java -Xshare:dump;
 
 ### Build zeebe from scratch ###
-FROM java as build
+FROM java AS build
 WORKDIR /zeebe
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
@@ -86,7 +86,7 @@ RUN --mount=type=cache,target=/root/.m2,rw \
 
 ### Extract zeebe from distball ###
 # hadolint ignore=DL3006
-FROM base as distball
+FROM base AS distball
 WORKDIR /zeebe
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} zeebe.tar.gz
@@ -98,12 +98,12 @@ RUN mkdir camunda-zeebe && \
 
 ### Image containing the zeebe distribution ###
 # hadolint ignore=DL3006
-FROM ${DIST} as dist
+FROM ${DIST} AS dist
 
 ### Application Image ###
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
-FROM java as app
+FROM java AS app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST

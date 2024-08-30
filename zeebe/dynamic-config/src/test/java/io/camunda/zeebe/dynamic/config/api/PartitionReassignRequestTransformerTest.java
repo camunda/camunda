@@ -103,7 +103,7 @@ class PartitionReassignRequestTransformerTest {
                 getSortedPartitionIds(partitionCount),
                 replicationFactor);
     var oldClusterTopology =
-        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig);
+        ConfigurationUtil.getClusterConfigFrom(true, oldDistribution, partitionConfig);
     for (int i = 0; i < max(oldClusterSize, newClusterSize); i++) {
       oldClusterTopology =
           oldClusterTopology.updateMember(
@@ -155,7 +155,7 @@ class PartitionReassignRequestTransformerTest {
                 getSortedPartitionIds(partitionCount),
                 oldReplicationFactor);
     var oldClusterTopology =
-        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig);
+        ConfigurationUtil.getClusterConfigFrom(true, oldDistribution, partitionConfig);
     for (int i = 0; i < max(oldClusterSize, newClusterSize); i++) {
       oldClusterTopology =
           oldClusterTopology.updateMember(

@@ -238,6 +238,7 @@ import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeTaskHeadersImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeTaskScheduleImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeUserTaskFormImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeUserTaskImpl;
+import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeVersionTagImpl;
 import io.camunda.zeebe.model.bpmn.instance.Definitions;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnDiagram;
@@ -666,6 +667,7 @@ public class Bpmn {
     ZeebeExecutionListenersImpl.registerType(bpmnModelBuilder);
     ZeebeExecutionListenerImpl.registerType(bpmnModelBuilder);
     ZeebePriorityDefinitionImpl.registerType(bpmnModelBuilder);
+    ZeebeVersionTagImpl.registerType(bpmnModelBuilder);
   }
 
   /**

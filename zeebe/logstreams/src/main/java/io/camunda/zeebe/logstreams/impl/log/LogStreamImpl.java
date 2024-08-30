@@ -18,6 +18,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorage.CommitListener;
+import java.time.InstantSource;
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
@@ -42,6 +43,7 @@ public final class LogStreamImpl implements LogStream, CommitListener {
       final int partitionId,
       final int maxFragmentSize,
       final LogStorage logStorage,
+      final InstantSource clock,
       final Limit requestLimit,
       final RateLimit writeRateLimit) {
     this.logName = logName;
@@ -54,6 +56,7 @@ public final class LogStreamImpl implements LogStream, CommitListener {
             logStorage,
             getWriteBuffersInitialPosition(),
             maxFragmentSize,
+            clock,
             new SequencerMetrics(partitionId),
             flowControl);
     logStorage.addCommitListener(this);

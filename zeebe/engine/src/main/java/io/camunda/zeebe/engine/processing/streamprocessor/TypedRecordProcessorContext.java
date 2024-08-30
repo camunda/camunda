@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import java.util.function.Supplier;
 
@@ -31,4 +32,6 @@ public interface TypedRecordProcessorContext {
   Supplier<ScheduledTaskState> getScheduledTaskStateFactory();
 
   EngineConfiguration getConfig();
+
+  ControllableStreamClock getClock();
 }

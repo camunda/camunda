@@ -298,6 +298,7 @@ class ClusterConfigurationManagementIntegrationTest {
           service.start(
               actorScheduler,
               new StaticConfiguration(
+                  false,
                   new ControllablePartitionDistributor().withPartitions(partitions),
                   clusterMembers,
                   cluster.getMembershipService().getLocalMember().id(),
@@ -309,7 +310,8 @@ class ClusterConfigurationManagementIntegrationTest {
             if (error == null) {
               service.registerPartitionChangeExecutor(new NoopPartitionChangeExecutor());
             }
-          });
+          },
+          Runnable::run);
       return startFuture;
     }
 

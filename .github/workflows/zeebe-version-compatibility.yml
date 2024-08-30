@@ -43,6 +43,8 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: -PskipFrontendBuild
       - name: Test rolling update
         run: >
           ./mvnw -B --no-snapshot-updates -pl zeebe/qa/update-tests
@@ -77,6 +79,8 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
         with:
           version: current-test
@@ -123,7 +127,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: slack-notify
-        uses: slackapi/slack-github-action@v1.26.0
+        uses: slackapi/slack-github-action@v1.27.0
         with:
           # For posting a rich message using Block Kit
           payload: |

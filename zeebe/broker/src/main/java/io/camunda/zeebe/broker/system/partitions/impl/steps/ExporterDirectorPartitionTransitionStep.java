@@ -117,6 +117,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
             .name(Actor.buildActorName("Exporter", context.getPartitionId()))
+            .clock(context.getStreamClock())
             .logStream(context.getLogStream())
             .zeebeDb(context.getZeebeDb())
             .partitionMessagingService(context.getMessagingService())
@@ -171,7 +172,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
       if (!startedExporters.containsKey(exporter)) {
         context
             .getExporterDirector()
-            .enableExporter(exporter.getId(), exporterEntry.getValue(), exporter);
+            .enableExporterWithRetry(exporter.getId(), exporterEntry.getValue(), exporter);
       }
     }
   }

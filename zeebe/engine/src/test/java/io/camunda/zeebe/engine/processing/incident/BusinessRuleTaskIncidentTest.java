@@ -149,6 +149,41 @@ public class BusinessRuleTaskIncidentTest {
   }
 
   @Test
+  public void shouldCreateIncidentIfDecisionWithVersionTagNotDeployedForBindingTypeVersionTag() {
+    // given
+    engine.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy();
+    engine
+        .deployment()
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                b ->
+                    b.zeebeCalledDecisionId(DECISION_ID)
+                        .zeebeBindingType(ZeebeBindingType.versionTag)
+                        .zeebeVersionTag("v1.0")
+                        .zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+
+    // when
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var taskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, taskActivating.getKey())
+        .hasErrorType(ErrorType.CALLED_DECISION_ERROR)
+        .hasErrorMessage(
+            """
+            Expected to evaluate decision with id 'jedi_or_sith' and version tag 'v1.0', but no such decision found. \
+            To resolve this incident, deploy a decision with the given id and version tag.\
+            """);
+  }
+
+  @Test
   public void shouldCreateIncidentIfDecisionEvaluationFailed() {
     // given
     engine

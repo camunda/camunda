@@ -148,7 +148,7 @@ const FieldsModal: React.FC<Props> = ({
             <>
               <ModalHeader
                 title={t('customFiltersModalApplyFiltersTitle')}
-                iconDescription={t('customFiltersModalCloseButton')}
+                iconDescription={t('optionsModalCloseButton')}
                 buttonOnClick={onClose}
               />
               <ModalBody hasForm>

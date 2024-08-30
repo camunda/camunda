@@ -182,8 +182,13 @@ public class FormDeletedApplierTest {
       final var deploymentKey = keyGenerator.nextKey();
       final var formId = Strings.newRandomValidBpmnId();
       final var version = 1;
-      final var tenant1Form = sampleFormRecord(formKey, formId, version, deploymentKey, TENANT_1);
-      final var tenant2Form = sampleFormRecord(formKey, formId, version, deploymentKey, TENANT_2);
+      final var versionTag = "v1.0";
+      final var tenant1Form =
+          sampleFormRecord(formKey, formId, version, deploymentKey, TENANT_1)
+              .setVersionTag(versionTag);
+      final var tenant2Form =
+          sampleFormRecord(formKey, formId, version, deploymentKey, TENANT_2)
+              .setVersionTag(versionTag);
 
       formCreatedApplier.applyState(tenant1Form.getFormKey(), tenant1Form);
       formCreatedApplier.applyState(tenant2Form.getFormKey(), tenant2Form);
@@ -202,6 +207,14 @@ public class FormDeletedApplierTest {
       assertThat(
               formState.findFormByIdAndDeploymentKey(
                   tenant2Form.getFormIdBuffer(), tenant2Form.getDeploymentKey(), TENANT_2))
+          .isNotEmpty();
+      assertThat(
+              formState.findFormByIdAndVersionTag(
+                  tenant1Form.getFormIdBuffer(), tenant1Form.getVersionTag(), TENANT_1))
+          .isEmpty();
+      assertThat(
+              formState.findFormByIdAndVersionTag(
+                  tenant2Form.getFormIdBuffer(), tenant2Form.getVersionTag(), TENANT_2))
           .isNotEmpty();
     }
 
@@ -230,6 +243,30 @@ public class FormDeletedApplierTest {
     }
 
     @Test
+    void shouldNotFindVersion1ByIdAndVersionTagAfterDeletingVersion1() {
+      // given
+      final var formV1 = sampleFormRecord().setVersionTag("v1.0");
+      final var formV2 = sampleFormRecord(2L, "form-id", 2, 2L, TENANT_1).setVersionTag("v2.0");
+      formCreatedApplier.applyState(formV1.getFormKey(), formV1);
+      formCreatedApplier.applyState(formV2.getFormKey(), formV2);
+
+      // when
+      formDeletedApplier.applyState(formV1.getFormKey(), formV1);
+
+      // then
+      assertThat(
+              formState.findFormByIdAndVersionTag(
+                  formV1.getFormIdBuffer(), formV1.getVersionTag(), formV1.getTenantId()))
+          .isEmpty();
+      assertThat(
+              formState.findFormByIdAndVersionTag(
+                  formV2.getFormIdBuffer(), formV2.getVersionTag(), formV2.getTenantId()))
+          .get()
+          .extracting(PersistedForm::getFormKey, PersistedForm::getVersion)
+          .containsExactly(2L, 2);
+    }
+
+    @Test
     void shouldNotFindVersion2ByIdAndDeploymentKeyAfterDeletingVersion2() {
       // given
       final var formV1 = sampleFormRecord();
@@ -248,6 +285,30 @@ public class FormDeletedApplierTest {
       assertThat(
               formState.findFormByIdAndDeploymentKey(
                   formV1.getFormIdBuffer(), formV1.getDeploymentKey(), formV1.getTenantId()))
+          .get()
+          .extracting(PersistedForm::getFormKey, PersistedForm::getVersion)
+          .containsExactly(1L, 1);
+    }
+
+    @Test
+    void shouldNotFindVersion2ByIdAndVersionTagAfterDeletingVersion2() {
+      // given
+      final var formV1 = sampleFormRecord().setVersionTag("v1.0");
+      final var formV2 = sampleFormRecord(2L, "form-id", 2, 2L, TENANT_1).setVersionTag("v2.0");
+      formCreatedApplier.applyState(formV1.getFormKey(), formV1);
+      formCreatedApplier.applyState(formV2.getFormKey(), formV2);
+
+      // when
+      formDeletedApplier.applyState(formV2.getFormKey(), formV2);
+
+      // then
+      assertThat(
+              formState.findFormByIdAndVersionTag(
+                  formV2.getFormIdBuffer(), formV2.getVersionTag(), formV2.getTenantId()))
+          .isEmpty();
+      assertThat(
+              formState.findFormByIdAndVersionTag(
+                  formV1.getFormIdBuffer(), formV1.getVersionTag(), formV1.getTenantId()))
           .get()
           .extracting(PersistedForm::getFormKey, PersistedForm::getVersion)
           .containsExactly(1L, 1);

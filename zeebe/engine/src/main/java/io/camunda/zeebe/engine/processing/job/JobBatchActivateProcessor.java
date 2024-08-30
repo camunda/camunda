@@ -27,10 +27,13 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.Either;
+import java.util.Collections;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
@@ -83,14 +86,14 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     final JobBatchRecord value = record.getValue();
     final long jobBatchKey = keyGenerator.nextKey();
 
-    final Either<TooLargeJob, Integer> result = jobBatchCollector.collectJobs(record);
-    final var activatedJobCount = result.getOrElse(0);
+    final Either<TooLargeJob, Map<JobKind, Integer>> result = jobBatchCollector.collectJobs(record);
+    final var activatedJobCountPerJobKind = result.getOrElse(Collections.emptyMap());
     result.ifLeft(
         largeJob ->
             raiseIncidentJobTooLargeForMessageSize(
                 largeJob.key(), largeJob.jobRecord(), largeJob.expectedEventLength()));
 
-    activateJobBatch(record, value, jobBatchKey, activatedJobCount);
+    activateJobBatch(record, value, jobBatchKey, activatedJobCountPerJobKind);
   }
 
   private void rejectCommand(final TypedRecord<JobBatchRecord> record) {
@@ -128,10 +131,11 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final TypedRecord<JobBatchRecord> record,
       final JobBatchRecord value,
       final long jobBatchKey,
-      final Integer activatedCount) {
+      final Map<JobKind, Integer> activatedJobsCountPerJobKind) {
     stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
     responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
-    jobMetrics.jobActivated(value.getType(), activatedCount);
+    activatedJobsCountPerJobKind.forEach(
+        (jobKind, count) -> jobMetrics.jobActivated(value.getType(), jobKind, count));
   }
 
   private void raiseIncidentJobTooLargeForMessageSize(

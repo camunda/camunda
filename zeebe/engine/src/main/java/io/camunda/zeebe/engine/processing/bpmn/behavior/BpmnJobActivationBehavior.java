@@ -20,8 +20,9 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.time.InstantSource;
 import java.util.Optional;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -43,19 +44,22 @@ public class BpmnJobActivationBehavior {
   private final SideEffectWriter sideEffectWriter;
   private final KeyGenerator keyGenerator;
   private final JobMetrics jobMetrics;
+  private final InstantSource clock;
 
   public BpmnJobActivationBehavior(
       final JobStreamer jobStreamer,
       final VariableState variableState,
       final Writers writers,
       final KeyGenerator keyGenerator,
-      final JobMetrics jobMetrics) {
+      final JobMetrics jobMetrics,
+      final InstantSource clock) {
     this.jobStreamer = jobStreamer;
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
     jobVariablesCollector = new JobVariablesCollector(variableState);
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
+    this.clock = clock;
   }
 
   public void publishWork(final long jobKey, final JobRecord jobRecord) {
@@ -63,6 +67,7 @@ public class BpmnJobActivationBehavior {
     wrappedJobRecord.wrapWithoutVariables(jobRecord);
 
     final String jobType = wrappedJobRecord.getType();
+    final JobKind jobKind = wrappedJobRecord.getJobKind();
     final String tenantId = wrappedJobRecord.getTenantId();
     final Optional<JobStream> optionalJobStream =
         jobStreamer.streamFor(
@@ -90,24 +95,23 @@ public class BpmnJobActivationBehavior {
       sideEffectWriter.appendSideEffect(
           () -> {
             jobStream.push(activatedJob);
-            jobMetrics.jobPush(jobType);
+            jobMetrics.jobPush(jobType, jobKind);
             return true;
           });
     } else {
-      notifyJobAvailable(jobType);
+      notifyJobAvailable(jobType, jobKind);
     }
   }
 
   public void notifyJobAvailableAsSideEffect(final JobRecord jobRecord) {
-    final String jobType = jobRecord.getType();
-    notifyJobAvailable(jobType);
+    notifyJobAvailable(jobRecord.getType(), jobRecord.getJobKind());
   }
 
-  private void notifyJobAvailable(final String jobType) {
+  private void notifyJobAvailable(final String jobType, final JobKind jobKind) {
     sideEffectWriter.appendSideEffect(
         () -> {
           jobStreamer.notifyWorkAvailable(jobType);
-          jobMetrics.jobNotification(jobType);
+          jobMetrics.jobNotification(jobType, jobKind);
           return true;
         });
   }
@@ -115,7 +119,7 @@ public class BpmnJobActivationBehavior {
   private void setJobProperties(
       final JobRecord jobRecord, final JobActivationProperties properties) {
     // we push the job immediately, so the deadline is always calculated from the current time
-    final var deadline = ActorClock.currentTimeMillis() + properties.timeout();
+    final var deadline = clock.millis() + properties.timeout();
     jobRecord.setDeadline(deadline);
     jobRecord.setWorker(properties.worker());
   }

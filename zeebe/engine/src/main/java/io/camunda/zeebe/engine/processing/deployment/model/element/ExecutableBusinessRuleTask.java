@@ -16,6 +16,7 @@ public final class ExecutableBusinessRuleTask extends ExecutableJobWorkerTask
   private Expression decisionId;
   private String resultVariable;
   private ZeebeBindingType bindingType;
+  private String versionTag;
 
   public ExecutableBusinessRuleTask(final String id) {
     super(id);
@@ -49,5 +50,15 @@ public final class ExecutableBusinessRuleTask extends ExecutableJobWorkerTask
   @Override
   public void setBindingType(final ZeebeBindingType bindingType) {
     this.bindingType = bindingType;
+  }
+
+  @Override
+  public String getVersionTag() {
+    return versionTag;
+  }
+
+  @Override
+  public void setVersionTag(final String versionTag) {
+    this.versionTag = versionTag;
   }
 }

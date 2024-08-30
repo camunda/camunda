@@ -1,48 +1,8 @@
 name: Zeebe CI
 
 on:
-  push:
-    branches:
-      - main
-      - stable/*
-      - release-*
-      - trying
-      - staging
-    paths:
-      - '.ci/docker/test/*'
-      - '.github/actions/**'
-      - '.github/workflows/zeebe-*'
-      - 'Dockerfile'
-      - 'bom/*'
-      - 'build-tools/**'
-      - 'clients/**'
-      - 'dist/**'
-      - 'parent/*'
-      - 'pom.xml'
-      - 'zeebe/**'
-  pull_request:
-    paths: # keep in sync with common-ci.yml trigger
-      - '.ci/docker/test/*'
-      - '.github/actions/**'
-      - '.github/workflows/zeebe-*'
-      - 'Dockerfile'
-      - 'bom/*'
-      - 'build-tools/**'
-      - 'clients/**'
-      - 'dist/**'
-      - 'parent/*'
-      - 'pom.xml'
-      - 'zeebe/**'
-  merge_group: { }
   workflow_dispatch: { }
   workflow_call: { }
-
-# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
-# Exception for main branch: complete builds for every commit needed for confidenence
-# Exception for deploy jobs that have to wait for each other to avoid overwriting
-concurrency:
-  cancel-in-progress: true
-  group: ${{ github.ref == 'refs/heads/main' && github.sha || format('{0}-{1}', github.workflow, github.ref) }}
 
 defaults:
   run:
@@ -54,177 +14,6 @@ env:
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
 
 jobs:
-  integration-tests:
-    name: "[IT] ${{ matrix.name }}"
-    timeout-minutes: 20
-    outputs:
-      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
-    runs-on: [ self-hosted, linux, amd64, "16" ]
-    strategy:
-      fail-fast: false
-      matrix:
-        group: [ modules, qa-integration, qa-update ]
-        include:
-          - group: modules
-            name: "Module Integration Tests"
-            maven-modules: "'!qa/integration-tests,!qa/update-tests'"
-            maven-build-threads: 2
-            maven-test-fork-count: 7
-            tcc-enabled: 'false'
-            tcc-concurrency: 1
-          - group: qa-integration
-            name: "QA Integration Tests"
-            maven-modules: "qa/integration-tests"
-            maven-build-threads: 1
-            maven-test-fork-count: 10
-            tcc-enabled: ${{ vars.TCC_ENABLED }}
-            tcc-concurrency: 1
-          - group: qa-update
-            name: "QA Update Tests"
-            maven-modules: "qa/update-tests"
-            maven-build-threads: 1
-            maven-test-fork-count: 10
-            tcc-enabled: ${{ vars.TCC_ENABLED }}
-            tcc-concurrency: 2
-    env:
-      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
-    services:
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          maven-cache-key-modifier: it-${{ matrix.group }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-platform-docker
-        with:
-          repository: localhost:5000/camunda/zeebe
-          version: current-test
-          push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
-      - name: Setup TCC
-        if: ${{ matrix.tcc-enabled == 'true' }}
-        uses: atomicjar/testcontainers-cloud-setup-action@v1
-        env:
-          TC_CLOUD_LOGS_VERBOSE: true
-          TC_CLOUD_CONCURRENCY: ${{ matrix.tcc-concurrency }}
-        with:
-          token: ${{ secrets.TC_CLOUD_TOKEN }}
-          logfile: .testcontainers-agent.log
-          wait: true
-          args: >
-            --private-registry-url=http://localhost:5000
-            --private-registry-allowed-image-name-globs=camunda/zeebe
-      - name: Create build output log file
-        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
-      - name: Maven Test Build
-        run: >
-          ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
-          -D forkCount=${{ matrix.maven-test-fork-count }}
-          -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
-          -P parallel-tests,extract-flaky-tests
-          -pl ${{ matrix.maven-modules }}
-          -f zeebe
-          verify
-          | tee "${BUILD_OUTPUT_FILE_PATH}"
-      - name: Terminate TCC
-        if: ${{ matrix.tcc-enabled == 'true'}}
-        uses: atomicjar/testcontainers-cloud-setup-action@v1
-        with:
-          action: terminate
-      - name: Analyze Test Runs
-        id: analyze-test-run
-        if: always()
-        uses: ./.github/actions/analyze-test-runs
-        with:
-          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
-      - name: Upload test artifacts
-        uses: ./.github/actions/collect-test-artifacts
-        if: ${{ failure() || cancelled() }}
-        with:
-          name: "[IT] ${{ matrix.name }}"
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          job_name: "integration-tests/${{ matrix.group }}"
-          build_status: ${{ job.status }}
-          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  unit-tests:
-    name: Unit tests
-    runs-on: [ self-hosted, linux, amd64, "16" ]
-    timeout-minutes: 30
-    outputs:
-      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install and allow strace tests
-        run: |
-          sudo apt-get -qq update && sudo apt-get install -y strace
-          sudo sysctl -w kernel.yama.ptrace_scope=0
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          go: false
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - uses: ./.github/actions/build-zeebe
-        with:
-          go: false
-          maven-extra-args: -T1C -PskipFrontendBuild
-      - name: Create build output log file
-        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
-      - name: Maven Test Build
-        # we use the verify goal here as flaky test extraction is bound to the post-integration-test
-        # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
-        run: >
-          ./mvnw -T2 -B --no-snapshot-updates
-          -D skipITs -D skipChecks -D surefire.rerunFailingTestsCount=3
-          -D junitThreadCount=16
-          -P skip-random-tests,parallel-tests,extract-flaky-tests
-          -f zeebe
-          verify
-          | tee "${BUILD_OUTPUT_FILE_PATH}"
-      - name: Analyze Test Runs
-        id: analyze-test-run
-        if: always()
-        uses: ./.github/actions/analyze-test-runs
-        with:
-          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
-      - name: Upload test artifacts
-        uses: ./.github/actions/collect-test-artifacts
-        if: ${{ failure() || cancelled() }}
-        with:
-          name: "unit tests"
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
   smoke-tests:
     name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
     timeout-minutes: 20
@@ -290,7 +79,7 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           job_name: "smoke-tests/${{ matrix.os }}"
-          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
+          build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -338,7 +127,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
+          build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -399,7 +188,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
+          build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -432,7 +221,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
+          build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -458,7 +247,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
+          build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -489,30 +278,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-  java-checks:
-    name: Java checks
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          go: false
-          maven-cache-key-modifier: java-checks
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
+          build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -573,7 +339,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
+          build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -585,17 +351,11 @@ jobs:
     name: Test summary
     if: always()
     runs-on: ubuntu-latest
-    outputs:
-      flakyUnitTests: ${{ needs.unit-tests.outputs.flakyTests }}
-      flakyIntegrationTests: ${{ needs.integration-tests.outputs.flakyTests }}
     needs:
-      - integration-tests
-      - unit-tests
       - smoke-tests
       - property-tests
       - performance-tests
       - go-client
-      - java-checks
       - go-lint
       - go-apidiff
       - docker-checks
@@ -609,60 +369,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
-
-  deploy-snapshots:
-    name: Deploy snapshot artifacts
-    needs: [ test-summary ]
-    runs-on: ubuntu-latest
-    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
-    concurrency:
-      group: deploy-maven-snapshot
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-      - uses: actions/setup-java@v4.2.2
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
-      - name: 'Create settings.xml'
-        uses: s4u/maven-settings-action@v3.0.0
-        with:
-          githubServer: false
-          servers: |
-            [{
-              "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.ARTIFACTS_USR }}",
-              "password": "${{ steps.secrets.outputs.ARTIFACTS_PSW }}"
-            }]
-          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "zeebe,zeebe-snapshots", "name": "camunda Nexus"}]'
-      # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
-      # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
-      # not resolve-able by the Javadoc generator
-      - run: ./mvnw -B -D skipTests -D skipChecks compile generate-sources source:jar javadoc:jar deploy
-        env:
-          MAVEN_USERNAME: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
-          MAVEN_PASSWORD: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   deploy-docker-snapshot:
     name: Deploy snapshot Docker image
@@ -692,6 +398,15 @@ jobs:
           platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
   deploy-benchmark-images:
     name: Deploy benchmark images
     needs: [ test-summary ]
@@ -751,59 +466,6 @@ jobs:
       monitor: true
       build: true
     secrets: inherit
-  notify-if-failed:
-    name: Send slack notification on build failure
-    runs-on: ubuntu-latest
-    needs: [ test-summary, deploy-snapshots, deploy-docker-snapshot, deploy-snyk-projects ]
-    if: failure() && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
-    steps:
-      - id: slack-notify
-        name: Send slack notification
-        uses: slackapi/slack-github-action@v1.26.0
-        with:
-          # For posting a rich message using Block Kit
-          payload: |
-            {
-              "text": ":alarm: Build on `main` failed! :alarm:\n${{ github.event.head_commit.url }}",
-             	"blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":alarm: Build on `main` failed! :alarm:"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Please check the related commit: ${{ github.event.head_commit.url }}\n \\cc @zeebe-medic"
-                  }
-                },
-                {
-                  "type": "divider"
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Detected flaky unit tests:* \n ${{ env.FLAKY_UNIT_TESTS }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Detected flaky integration tests:* \n ${{ env.FLAKY_INTEGRATION_TESTS }}"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          FLAKY_UNIT_TESTS: ${{needs.test-summary.outputs.flakyUnitTests}}
-          FLAKY_INTEGRATION_TESTS: ${{needs.test-summary.outputs.flakyIntegrationTests}}
   auto-merge:
     # This workflow will auto merge a PR authored by backport-action.
     # It runs only on open PRs ready for review.
@@ -833,25 +495,12 @@ jobs:
           gh pr review ${{ github.event.pull_request.number }} --approve
           # Call the API directly to work around https://github.com/cli/cli/issues/8352
           gh api graphql -f query='mutation PullRequestAutoMerge {enablePullRequestAutoMerge(input: {pullRequestId: "${{ github.event.pull_request.node_id }}"}) {clientMutationId}}'
-  # This job will trigger another workflow such that it will trigger a re-run of this failing workflow
-  # We can't automatically do this here, since you can only re-run a workflow if it has finished,
-  # and while this job is running, the workflow clearly hasn't finished
-  #
-  # It will only retry if the workflow failed, the run count is < 3 (to avoid infinite loops), and
-  # the author is backport-action, renovate, or camundait (for release PRs)
-  retry-workflow:
-    name: Retry release, renovate, or backport PRs automatically
-    needs: [ test-summary ]
-    if: |
-      failure() &&
-      fromJSON(github.run_attempt) < 3 &&
-      github.repository == 'camunda/camunda' &&
-      (github.actor == 'backport-action' || github.actor == 'renovate[bot]' || github.actor == 'camundait') &&
-      github.event_name != 'merge_queue'
-    runs-on: ubuntu-latest
-    env:
-      GH_REPO: ${{ github.repository }}
-      GH_TOKEN: ${{ github.token }}
-    steps:
-      - name: Retry workflow run ${{ github.run_id }}
-        run: gh workflow run retry-workflow.yml -F run_id=${{ github.run_id }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

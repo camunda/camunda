@@ -7,7 +7,7 @@
  */
 
 import styled from 'styled-components';
-import {AddVariableButton as BaseAddVariableButton} from '../Variables/AddVariableButton';
+import {AddVariableButton as BaseAddVariableButton} from '../Variables/Footer/AddVariableButton';
 
 const EmptyMessageContainer = styled.div`
   display: flex;

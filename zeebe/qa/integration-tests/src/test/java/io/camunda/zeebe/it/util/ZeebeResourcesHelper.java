@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
@@ -29,12 +30,17 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 
-public class ZeebeResourcesHelper {
+public class ZeebeResourcesHelper implements CloseableSilently {
 
   private final ZeebeClient client;
 
   public ZeebeResourcesHelper(final ZeebeClient client) {
     this.client = client;
+  }
+
+  @Override
+  public void close() {
+    client.close();
   }
 
   public void waitUntilDeploymentIsDone(final long key) {

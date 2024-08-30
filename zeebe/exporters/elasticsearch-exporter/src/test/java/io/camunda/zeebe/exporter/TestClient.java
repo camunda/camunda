@@ -54,6 +54,19 @@ final class TestClient implements CloseableSilently {
     esClient = new ElasticsearchClient(transport);
   }
 
+  TestClient(
+      final ElasticsearchExporterConfiguration config,
+      final RecordIndexRouter indexRouter,
+      final RestClient restClient) {
+    this.config = config;
+    this.indexRouter = indexRouter;
+
+    this.restClient = restClient;
+
+    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(MAPPER));
+    esClient = new ElasticsearchClient(transport);
+  }
+
   @SuppressWarnings("rawtypes")
   GetResponse<Record> getExportedDocumentFor(final Record<?> record) {
     final var indexName = indexRouter.indexFor(record);

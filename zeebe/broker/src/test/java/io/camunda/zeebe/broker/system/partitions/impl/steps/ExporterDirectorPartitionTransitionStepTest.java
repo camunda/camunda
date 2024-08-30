@@ -212,7 +212,7 @@ class ExporterDirectorPartitionTransitionStepTest {
 
     // then
     verify(mockedExporterDirector, timeout(1000))
-        .enableExporter(eq(reEnabledExporterId), any(), any());
+        .enableExporterWithRetry(eq(reEnabledExporterId), any(), any());
   }
 
   private void setExportersInContext(

@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
+import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
 public interface ZeebeClientBuilder {
 
@@ -160,7 +161,18 @@ public interface ZeebeClientBuilder {
   /** Time interval between keep alive messages sent to the gateway. The default is 45 seconds. */
   ZeebeClientBuilder keepAlive(Duration keepAlive);
 
+  /**
+   * Custom implementations of the gRPC {@code ClientInterceptor} middleware API. The interceptors
+   * will be applied to every gRPC call that the client makes. More details can be found at {@link
+   * https://grpc.io/docs/guides/interceptors/}.
+   */
   ZeebeClientBuilder withInterceptors(ClientInterceptor... interceptor);
+
+  /**
+   * Custom implementations of the Apache HttpClient {@code AsyncExecChainHandler} middleware API.
+   * The middleware implementations will be called on every REST API call that the client makes.
+   */
+  ZeebeClientBuilder withChainHandlers(AsyncExecChainHandler... chainHandler);
 
   ZeebeClientBuilder withJsonMapper(JsonMapper jsonMapper);
 

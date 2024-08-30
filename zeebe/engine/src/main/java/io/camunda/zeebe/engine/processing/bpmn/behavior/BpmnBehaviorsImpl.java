@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -23,7 +24,7 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
+import java.time.InstantSource;
 
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
@@ -47,6 +48,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnSignalBehavior signalBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final JobUpdateBehaviour jobUpdateBehaviour;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -56,11 +58,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final int partitionsCount,
       final DueDateTimerChecker timerChecker,
-      final JobStreamer jobStreamer) {
+      final JobStreamer jobStreamer,
+      final InstantSource clock) {
     expressionBehavior =
         new ExpressionProcessor(
-            ExpressionLanguageFactory.createExpressionLanguage(
-                new ZeebeFeelEngineClock(ActorClock.current())),
+            ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock)),
             new VariableStateEvaluationContextLookup(processingState.getVariableState()));
 
     variableBehavior =
@@ -76,7 +78,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             writers.state(),
             writers.sideEffect(),
             timerChecker,
-            partitionsCount);
+            partitionsCount,
+            clock);
 
     eventTriggerBehavior =
         new EventTriggerBehavior(
@@ -125,7 +128,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             eventTriggerBehavior,
             stateBehavior,
-            writers);
+            writers,
+            clock);
 
     jobActivationBehavior =
         new BpmnJobActivationBehavior(
@@ -133,7 +137,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getVariableState(),
             writers,
             processingState.getKeyGenerator(),
-            jobMetrics);
+            jobMetrics,
+            clock);
 
     multiInstanceOutputCollectionBehavior =
         new MultiInstanceOutputCollectionBehavior(stateBehavior, expressionBehavior());
@@ -159,7 +164,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             expressionBehavior,
             stateBehavior,
             processingState.getFormState(),
-            processingState.getUserTaskState());
+            processingState.getUserTaskState(),
+            clock);
 
     jobBehavior =
         new BpmnJobBehavior(
@@ -176,6 +182,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     compensationSubscriptionBehaviour =
         new BpmnCompensationSubscriptionBehaviour(
             processingState.getKeyGenerator(), processingState, writers, stateBehavior);
+
+    jobUpdateBehaviour = new JobUpdateBehaviour(processingState.getJobState(), writers, clock);
   }
 
   @Override
@@ -276,5 +284,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour() {
     return compensationSubscriptionBehaviour;
+  }
+
+  @Override
+  public JobUpdateBehaviour jobUpdateBehaviour() {
+    return jobUpdateBehaviour;
   }
 }

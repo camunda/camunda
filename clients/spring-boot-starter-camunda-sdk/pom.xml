@@ -21,12 +21,7 @@
 
   <properties>
     <version.java>17</version.java>
-    <commons-beanutils.version>1.9.4</commons-beanutils.version>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
-    <java-jwt.version>4.4.0</java-jwt.version>
-    <junit-platform-commons.version>1.10.3</junit-platform-commons.version>
-    <spring-boot-test.version>3.2.5</spring-boot-test.version>
-    <wiremock-standalone.version>3.9.1</wiremock-standalone.version>
   </properties>
 
   <dependencies>
@@ -121,6 +116,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>
@@ -158,35 +158,26 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-aop</artifactId>
-      <version>${version.spring}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-      <version>${java-jwt.version}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.junit.platform</groupId>
       <artifactId>junit-platform-commons</artifactId>
-      <version>${junit-platform-commons.version}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>commons-beanutils</groupId>
       <artifactId>commons-beanutils</artifactId>
-      <version>${commons-beanutils.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>commons-collections</groupId>
-          <artifactId>commons-collections</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
+
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
@@ -196,7 +187,6 @@
     <dependency>
       <groupId>org.wiremock</groupId>
       <artifactId>wiremock-standalone</artifactId>
-      <version>${wiremock-standalone.version}</version>
       <scope>test</scope>
     </dependency>
 

@@ -7,14 +7,9 @@
  */
 
 .sortItem {
-  width: 100%;
+  width: fit-content;
   display: flex;
   gap: var(--cds-spacing-03);
-}
-
-.menuItem {
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -24,4 +19,17 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   padding-right: var(--cds-spacing-03);
+}
+
+.overflowMenu {
+  width: fit-content;
+
+  :global(cds--overflow-menu-options__option),
+  :global(.cds--overflow-menu-options__btn) {
+    width: 100%;
+  }
+
+  :global(.cds--overflow-menu-options__btn) {
+    max-inline-size: unset;
+  }
 }

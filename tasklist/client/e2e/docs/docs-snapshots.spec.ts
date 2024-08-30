@@ -23,6 +23,7 @@ type TaskSpec = {
   taskState: string;
   dueDate?: Date;
   completionDate?: Date;
+  priority?: number;
   followUpDate?: Date;
   context?: string;
 };
@@ -98,6 +99,7 @@ function toTask(
     dueDate,
     followUpDate,
     completionDate,
+    priority,
     taskState,
     context,
   }: TaskSpec,
@@ -109,6 +111,7 @@ function toTask(
     processName: processName,
     creationDate: creationDate.toISOString(),
     completionDate: completionDate ? completionDate.toISOString() : null,
+    priority: priority ?? 50,
     assignee: assignee,
     taskState: taskState,
     sortValues: ['1715692084940', '2251799813685299'],

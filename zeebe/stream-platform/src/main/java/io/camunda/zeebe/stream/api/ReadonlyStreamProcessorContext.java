@@ -24,4 +24,6 @@ public interface ReadonlyStreamProcessorContext {
    * @return true when scheduled tasks should run async, concurrently to the processing actor.
    */
   boolean enableAsyncScheduledTasks();
+
+  StreamClock getClock();
 }

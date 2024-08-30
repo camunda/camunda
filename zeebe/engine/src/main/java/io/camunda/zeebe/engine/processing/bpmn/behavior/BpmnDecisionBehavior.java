@@ -78,7 +78,7 @@ public final class BpmnDecisionBehavior {
 
     final var decisionId = decisionIdOrFailure.get();
     final var decisionOrFailure =
-        findDecisionByIdAndBindingType(decisionId, element.getBindingType(), context);
+        findCalledDecision(decisionId, element.getBindingType(), element.getVersionTag(), context);
     final Either<Failure, ParsedDecisionRequirementsGraph> drgOrFailure =
         decisionOrFailure
             .flatMap(decisionBehavior::findParsedDrgByDecision)
@@ -124,13 +124,16 @@ public final class BpmnDecisionBehavior {
     return resultOrFailure;
   }
 
-  private Either<Failure, PersistedDecision> findDecisionByIdAndBindingType(
+  private Either<Failure, PersistedDecision> findCalledDecision(
       final String decisionId,
       final ZeebeBindingType bindingType,
+      final String versionTag,
       final BpmnElementContext context) {
     return switch (bindingType) {
       case deployment -> getDecisionVersionInSameDeployment(decisionId, context);
       case latest -> getLatestDecisionVersion(decisionId, context.getTenantId());
+      case versionTag ->
+          getLatestDecisionVersionWithVersionTag(decisionId, versionTag, context.getTenantId());
     };
   }
 
@@ -147,6 +150,12 @@ public final class BpmnDecisionBehavior {
   private Either<Failure, PersistedDecision> getLatestDecisionVersion(
       final String decisionId, final String tenantId) {
     return decisionBehavior.findLatestDecisionByIdAndTenant(decisionId, tenantId);
+  }
+
+  private Either<Failure, PersistedDecision> getLatestDecisionVersionWithVersionTag(
+      final String decisionId, final String versionTag, final String tenantId) {
+    return decisionBehavior.findDecisionByIdAndVersionTagAndTenant(
+        decisionId, versionTag, tenantId);
   }
 
   private Either<Failure, String> evalDecisionIdExpression(

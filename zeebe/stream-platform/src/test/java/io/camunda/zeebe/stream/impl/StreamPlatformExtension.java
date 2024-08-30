@@ -109,7 +109,7 @@ public class StreamPlatformExtension implements BeforeEachCallback {
         final var factory = DefaultZeebeDbFactory.defaultFactory();
 
         // streams
-        streamPlatform = new StreamPlatform(tempFolder, closables, actorScheduler, factory);
+        streamPlatform = new StreamPlatform(tempFolder, closables, actorScheduler, factory, clock);
 
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);

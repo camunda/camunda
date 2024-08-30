@@ -31,6 +31,7 @@ public class ZeebeCalledDecisionImpl extends BpmnModelElementInstanceImpl
   private static Attribute<String> decisionIdAttribute;
   private static Attribute<String> resultVariableAttribute;
   private static Attribute<ZeebeBindingType> bindingTypeAttribute;
+  private static Attribute<String> versionTagAttribute;
 
   public ZeebeCalledDecisionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -64,6 +65,12 @@ public class ZeebeCalledDecisionImpl extends BpmnModelElementInstanceImpl
             .defaultValue(ZeebeBindingType.latest)
             .build();
 
+    versionTagAttribute =
+        typeBuilder
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_VERSION_TAG)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .build();
+
     typeBuilder.build();
   }
 
@@ -95,5 +102,15 @@ public class ZeebeCalledDecisionImpl extends BpmnModelElementInstanceImpl
   @Override
   public void setBindingType(final ZeebeBindingType bindingType) {
     bindingTypeAttribute.setValue(this, bindingType);
+  }
+
+  @Override
+  public String getVersionTag() {
+    return versionTagAttribute.getValue(this);
+  }
+
+  @Override
+  public void setVersionTag(final String versionTag) {
+    versionTagAttribute.setValue(this, versionTag);
   }
 }

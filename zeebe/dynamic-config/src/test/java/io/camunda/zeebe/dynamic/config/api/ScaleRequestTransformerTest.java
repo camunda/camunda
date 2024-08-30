@@ -87,7 +87,7 @@ class ScaleRequestTransformerTest {
                 getSortedPartitionIds(partitionCount),
                 replicationFactor);
     final var oldClusterTopology =
-        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig);
+        ConfigurationUtil.getClusterConfigFrom(true, oldDistribution, partitionConfig);
 
     //  when
     final var operationsEither =
@@ -121,7 +121,7 @@ class ScaleRequestTransformerTest {
                 getSortedPartitionIds(partitionCount),
                 replicationFactor);
     final var oldClusterTopology =
-        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig);
+        ConfigurationUtil.getClusterConfigFrom(true, oldDistribution, partitionConfig);
 
     // when
     final var operations =

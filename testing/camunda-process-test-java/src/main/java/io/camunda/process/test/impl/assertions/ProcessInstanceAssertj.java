@@ -42,10 +42,12 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
     implements ProcessInstanceAssert {
 
   private final CamundaDataSource dataSource;
+  private final VariableAssertj variableAssertj;
 
   public ProcessInstanceAssertj(final CamundaDataSource dataSource, final long processInstanceKey) {
     super(processInstanceKey, ProcessInstanceAssertj.class);
     this.dataSource = dataSource;
+    variableAssertj = new VariableAssertj(dataSource, processInstanceKey);
   }
 
   @Override
@@ -86,6 +88,24 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
     return this;
   }
 
+  @Override
+  public ProcessInstanceAssert hasVariableNames(final String... variableNames) {
+    variableAssertj.hasVariableNames(variableNames);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasVariable(final String variableName, final Object variableValue) {
+    variableAssertj.hasVariable(variableName, variableValue);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasVariables(final Map<String, Object> variables) {
+    variableAssertj.hasVariables(variables);
+    return this;
+  }
+
   private void hasProcessInstanceInState(
       final ProcessInstanceState expectedState, final Predicate<ProcessInstanceDto> waitCondition) {
 
@@ -114,7 +134,9 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
       final String failureMessage =
           String.format(
               "%s should be %s but was %s.",
-              formatProcessInstance(), formatState(expectedState), actualState);
+              AssertFormatUtil.formatProcessInstance(actual),
+              formatState(expectedState),
+              actualState);
       fail(failureMessage);
     }
   }
@@ -170,9 +192,9 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
       final String failureMessage =
           String.format(
               "%s should have %s elements %s but the following elements were not %s:\n%s",
-              formatProcessInstance(),
+              AssertFormatUtil.formatProcessInstance(actual),
               formatState(expectedState),
-              formatElementNames(elementNames),
+              AssertFormatUtil.formatNames(elementNames),
               formatState(expectedState),
               elementsNotInState);
       fail(failureMessage);
@@ -185,16 +207,6 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
 
   private static boolean isEnded(final FlowNodeInstanceDto flowNodeInstance) {
     return flowNodeInstance.getEndDate() != null;
-  }
-
-  private String formatProcessInstance() {
-    return String.format("Process instance [key: %s]", actual);
-  }
-
-  private static String formatElementNames(final String[] elementNames) {
-    return Arrays.stream(elementNames)
-        .map(elementName -> String.format("'%s'", elementName))
-        .collect(Collectors.joining(", ", "[", "]"));
   }
 
   private static String formatState(final ProcessInstanceState state) {

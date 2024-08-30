@@ -15,6 +15,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.stream.api.EventFilter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Map;
 
 public final class ExporterDirectorContext {
@@ -31,6 +32,7 @@ public final class ExporterDirectorContext {
   private Duration distributionInterval = DEFAULT_DISTRIBUTION_INTERVAL;
   private EventFilter positionsToSkipFilter;
   private MeterRegistry meterRegistry;
+  private InstantSource clock;
 
   public int getId() {
     return id;
@@ -70,6 +72,10 @@ public final class ExporterDirectorContext {
 
   public MeterRegistry getMeterRegistry() {
     return meterRegistry;
+  }
+
+  public InstantSource getClock() {
+    return clock;
   }
 
   public ExporterDirectorContext id(final int id) {
@@ -121,6 +127,11 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext positionsToSkipFilter(final EventFilter skipPositionsFilter) {
     positionsToSkipFilter = skipPositionsFilter;
+    return this;
+  }
+
+  public ExporterDirectorContext clock(final InstantSource clock) {
+    this.clock = clock;
     return this;
   }
 

@@ -26,6 +26,7 @@ import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
 import io.grpc.ClientInterceptor;
 import java.util.List;
+import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -35,9 +36,10 @@ public class ZeebeClientConfigurationImplTest {
       final CamundaClientProperties properties,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
+      final List<AsyncExecChainHandler> chainHandlers,
       final ZeebeClientExecutorService executorService) {
     return new ZeebeClientConfigurationImpl(
-        legacyProperties, properties, jsonMapper, interceptors, executorService);
+        legacyProperties, properties, jsonMapper, interceptors, chainHandlers, executorService);
   }
 
   private static ZeebeClientConfigurationProperties legacyProperties() {
@@ -59,7 +61,13 @@ public class ZeebeClientConfigurationImplTest {
   @Test
   void shouldCreateSingletonCredentialProvider() {
     final ZeebeClientConfigurationImpl configuration =
-        configuration(legacyProperties(), properties(), jsonMapper(), List.of(), executorService());
+        configuration(
+            legacyProperties(),
+            properties(),
+            jsonMapper(),
+            List.of(),
+            List.of(),
+            executorService());
     final CredentialsProvider credentialsProvider1 = configuration.getCredentialsProvider();
     final CredentialsProvider credentialsProvider2 = configuration.getCredentialsProvider();
     assertThat(credentialsProvider1).isSameAs(credentialsProvider2);

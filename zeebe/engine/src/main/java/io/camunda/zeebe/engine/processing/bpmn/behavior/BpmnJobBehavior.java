@@ -123,9 +123,10 @@ public final class BpmnJobBehavior {
                 userTaskBehavior
                     .evaluateFormIdExpressionToFormKey(
                         jobWorkerProps.getFormId(),
-                        scopeKey,
-                        jobWorkerProps.getBindingType(),
-                        context)
+                        jobWorkerProps.getFormBindingType(),
+                        jobWorkerProps.getFormVersionTag(),
+                        context,
+                        scopeKey)
                     .map(key -> Objects.toString(key, null))
                     .map(p::formKey));
   }
@@ -154,7 +155,7 @@ public final class BpmnJobBehavior {
         JobKind.BPMN_ELEMENT,
         JobListenerEventType.UNSPECIFIED,
         element.getJobWorkerProperties().getTaskHeaders());
-    jobMetrics.jobCreated(jobProperties.getType());
+    jobMetrics.jobCreated(jobProperties.getType(), JobKind.BPMN_ELEMENT);
   }
 
   public void createNewExecutionListenerJob(
@@ -172,7 +173,7 @@ public final class BpmnJobBehavior {
         JobKind.EXECUTION_LISTENER,
         jobListenerEventType,
         Collections.emptyMap());
-    jobMetrics.jobCreated(jobProperties.getType());
+    jobMetrics.jobCreated(jobProperties.getType(), JobKind.EXECUTION_LISTENER);
   }
 
   private Either<Failure, String> evalTypeExp(final Expression type, final long scopeKey) {
@@ -276,7 +277,7 @@ public final class BpmnJobBehavior {
       // Note that this logic is duplicated in JobCancelProcessor, if you change this please change
       // it there as well.
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
-      jobMetrics.jobCanceled(job.getType());
+      jobMetrics.jobCanceled(job.getType(), job.getJobKind());
     }
   }
 

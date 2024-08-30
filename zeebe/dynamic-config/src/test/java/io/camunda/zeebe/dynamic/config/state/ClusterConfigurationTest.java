@@ -17,10 +17,12 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class ClusterConfigurationTest {
@@ -252,6 +254,7 @@ class ClusterConfigurationTest {
                     Map.of(1, PartitionState.active(1, emptyPartitionConfig)))),
             Optional.of(
                 new CompletedChange(changeId, Status.COMPLETED, Instant.now(), Instant.now())),
+            Optional.empty(),
             Optional.empty());
 
     ClusterConfigurationAssert.assertThatClusterTopology(finalTopology).hasSameTopologyAs(expected);
@@ -302,6 +305,7 @@ class ClusterConfigurationTest {
                 MemberState.initializeAsActive(
                     Map.of(1, PartitionState.active(1, DynamicPartitionConfig.uninitialized())))),
             Optional.empty(),
+            Optional.empty(),
             Optional.empty());
 
     final DynamicPartitionConfig validConfig =
@@ -313,6 +317,7 @@ class ClusterConfigurationTest {
             Map.of(
                 member(1),
                 MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, validConfig)))),
+            Optional.empty(),
             Optional.empty(),
             Optional.empty());
 
@@ -327,6 +332,25 @@ class ClusterConfigurationTest {
     ClusterConfigurationAssert.assertThatClusterTopology(mergeUninitializedToValid)
         .member(1)
         .hasPartitionSatisfying(1, p -> PartitionStateAssert.assertThat(p).hasConfig(validConfig));
+  }
+
+  @Test
+  void shouldMergeRoutingState() {
+    // given
+    final var oldRoutingState = Optional.of(new RoutingState(1, Set.of(1, 2, 3), new HashMod(3)));
+    final var oldConfig =
+        new ClusterConfiguration(1, Map.of(), Optional.empty(), Optional.empty(), oldRoutingState);
+
+    final var newRoutingState =
+        Optional.of(new RoutingState(2, Set.of(1, 2, 3, 4), new HashMod(4)));
+    final var newConfig =
+        new ClusterConfiguration(1, Map.of(), Optional.empty(), Optional.empty(), newRoutingState);
+
+    // when
+    final var merged = oldConfig.merge(newConfig);
+
+    // then
+    assertThat(merged.routingState()).isEqualTo(newRoutingState);
   }
 
   private MemberId member(final int id) {

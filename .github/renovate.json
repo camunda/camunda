@@ -1,4 +1,5 @@
 {
+  "enabled": true,
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
@@ -72,13 +73,13 @@
       "allowedVersions": "!/0.8.9/"
     },
     {
-      "description" : "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
+      "description": "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
       "matchManagers": ["maven"],
       "matchPackagePatterns": [".*"],
       "allowedVersions": "!/-SNAPSHOT$/"
     },
     {
-      "description" : "Exclude internal Maven modules and Maven dependencies lacking metadata.",
+      "description": "Exclude internal Maven modules and Maven dependencies lacking metadata.",
       "matchManagers": ["maven"],
       "matchPackagePatterns": [
         "io.camunda:operate-parent",
@@ -107,11 +108,44 @@
       "additionalBranchPrefix": "fe-"
     },
     {
+      "description": "Exclude frontend deps until Optimize migrates to react-router v6 and react v18",
+      "matchManagers": ["npm", "nvm"],
+      "matchFileNames": ["optimize/**"],
+      "matchPackagePatterns": [
+        "@carbon/react",
+        "old-bpmn-js",
+        "react",
+        "react-dom",
+        "react-router",
+        "react-router-dom",
+        "@types/react",
+        "@types/react-dom",
+        "@types/react-router-dom"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Exclude Optimize backend dependencies",
+      "matchManagers": ["maven"],
+      "matchFileNames": ["optimize/**"],
+      "matchPackagePatterns": [
+        "io.camunda.optimize:optimize-data-generator",
+        "io.camunda.optimize:camunda-optimize",
+        "io.camunda.optimize:util",
+        "io.camunda:identity-sdk",
+        "io.camunda:identity-spring-boot-starter",
+        "io.camunda:zeebe-client-java",
+        "io.camunda:zeebe-protocol",
+        "ant-contrib:ant-contrib"
+      ],
+      "enabled": false
+    },
+    {
       "matchPackageNames": ["mcr.microsoft.com/playwright"],
       "additionalBranchPrefix": "fe-"
     },
     {
-      "matchPackagePrefixes": ["@types/"],
+      "matchPackagePrefixes": ["@types"],
       "groupName": "definitelyTyped"
     },
     {

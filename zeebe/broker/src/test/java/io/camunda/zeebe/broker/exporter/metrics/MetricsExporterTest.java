@@ -92,13 +92,15 @@ class MetricsExporterTest {
   }
 
   @Test
-  void shouldCleanupProcessInstancesWithSameStartTime() {
+  void shouldCleanupProcessInstancesWithSameStartTime() throws Exception {
     // given
     final var processCache = new TtlKeyCache();
     final var exporter =
         new MetricsExporter(new ExecutionLatencyMetrics(), processCache, new TtlKeyCache());
     final var controller = new ExporterTestController();
     exporter.open(controller);
+    exporter.configure(new ExporterTestContext());
+
     exporter.export(
         ImmutableRecord.<ProcessInstanceRecord>builder()
             .withRecordType(RecordType.EVENT)
@@ -126,13 +128,14 @@ class MetricsExporterTest {
   }
 
   @Test
-  void shouldCleanupJobWithSameStartTime() {
+  void shouldCleanupJobWithSameStartTime() throws Exception {
     // given
     final var jobCache = new TtlKeyCache();
     final var exporter =
         new MetricsExporter(new ExecutionLatencyMetrics(), new TtlKeyCache(), jobCache);
     final var controller = new ExporterTestController();
     exporter.open(controller);
+    exporter.configure(new ExporterTestContext());
     exporter.export(
         ImmutableRecord.builder()
             .withRecordType(RecordType.EVENT)

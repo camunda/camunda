@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 
 final class TestTopologyManager implements BrokerTopologyManager {
   private final BrokerClusterStateImpl topology;
+  private ClusterConfiguration clusterConfiguration = ClusterConfiguration.uninitialized();
 
   TestTopologyManager() {
     this(new BrokerClusterStateImpl());
@@ -34,6 +35,11 @@ final class TestTopologyManager implements BrokerTopologyManager {
     return this;
   }
 
+  TestTopologyManager withClusterConfiguration(final ClusterConfiguration clusterConfiguration) {
+    this.clusterConfiguration = clusterConfiguration;
+    return this;
+  }
+
   @Override
   public BrokerClusterState getTopology() {
     return topology;
@@ -41,7 +47,7 @@ final class TestTopologyManager implements BrokerTopologyManager {
 
   @Override
   public ClusterConfiguration getClusterConfiguration() {
-    throw new UnsupportedOperationException("not implemented");
+    return clusterConfiguration;
   }
 
   @Override

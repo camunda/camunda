@@ -26,5 +26,6 @@ public class FormCreatedV2Applier implements TypedEventApplier<FormIntent, FormR
     formState.storeFormInFormByIdAndVersionColumnFamily(value);
     formState.updateLatestVersion(value);
     formState.storeFormInFormKeyByFormIdAndDeploymentKeyColumnFamily(value);
+    formState.storeFormInFormKeyByFormIdAndVersionTagColumnFamily(value);
   }
 }

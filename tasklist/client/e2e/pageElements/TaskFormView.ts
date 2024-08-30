@@ -39,11 +39,6 @@ class TaskFormView {
     this.checkbox = this.form.getByLabel('Checkbox');
     this.tagList = this.form.getByPlaceholder('Search');
   }
-  async fillDate(date: string) {
-    await this.dateInput.click();
-    await this.dateInput.fill(date);
-    await this.dateInput.press('Enter');
-  }
 
   async forEachDynamicListItem(
     locator: Locator,
@@ -55,16 +50,9 @@ class TaskFormView {
       await fn(element, elements.indexOf(element), elements);
     }
   }
-  async fillDateField(label: string, value: string) {
-    const field = this.page.getByLabel(label);
-    await field.click();
-    await field.fill(value);
-    await field.press('Enter');
-  }
-
-  async enterTime(time: string) {
-    await this.timeInput.click();
-    await this.page.getByText(time).click();
+  async fillDatetimeField(name: string, value: string) {
+    await this.page.getByRole('textbox', {name}).fill(value);
+    await this.page.getByRole('textbox', {name}).press('Enter');
   }
 
   async selectDropdownValue(value: string) {

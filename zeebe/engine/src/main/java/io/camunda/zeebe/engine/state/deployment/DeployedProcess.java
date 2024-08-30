@@ -32,6 +32,10 @@ public final class DeployedProcess {
     return persistedProcess.getVersion();
   }
 
+  public String getVersionTag() {
+    return persistedProcess.getVersionTag();
+  }
+
   public long getKey() {
     return persistedProcess.getKey();
   }

@@ -38,6 +38,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.TlsConfigUtil;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import io.grpc.BindableService;
 import io.grpc.Server;
@@ -46,8 +47,10 @@ import io.grpc.ServerInterceptor;
 import io.grpc.ServerInterceptors;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.StatusException;
+import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.StatusProto;
+import io.netty.handler.ssl.SslContextBuilder;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
@@ -223,7 +226,7 @@ public final class Gateway implements CloseableSilently {
     builder.executor(grpcExecutor);
   }
 
-  private void applySecurityConfiguration(final ServerBuilder<?> serverBuilder) {
+  private void applySecurityConfiguration(final NettyServerBuilder serverBuilder) {
     final SecurityCfg securityCfg = gatewayCfg.getSecurity();
     if (securityCfg.isEnabled()) {
       setSecurityConfig(serverBuilder, securityCfg);
@@ -258,37 +261,30 @@ public final class Gateway implements CloseableSilently {
         .permitKeepAliveWithoutCalls(false);
   }
 
-  private void setSecurityConfig(final ServerBuilder<?> serverBuilder, final SecurityCfg security) {
+  private void setSecurityConfig(
+      final NettyServerBuilder serverBuilder, final SecurityCfg security) {
     final var certificateChainPath = security.getCertificateChainPath();
     final var privateKeyPath = security.getPrivateKeyPath();
+    final var keyStorePath = security.getKeyStore().getFilePath();
+    final var keyStorePassword = security.getKeyStore().getPassword();
 
-    if (certificateChainPath == null) {
+    TlsConfigUtil.validateTlsConfig(certificateChainPath, privateKeyPath, keyStorePath);
+
+    try {
+      final SslContextBuilder sslContextBuilder;
+      if (keyStorePath != null) {
+        final var privateKey = TlsConfigUtil.getPrivateKey(keyStorePath, keyStorePassword);
+        final var certChain = TlsConfigUtil.getCertificateChain(keyStorePath, keyStorePassword);
+        sslContextBuilder = SslContextBuilder.forServer(privateKey, certChain);
+      } else {
+        sslContextBuilder = SslContextBuilder.forServer(certificateChainPath, privateKeyPath);
+      }
+      final var sslContext = GrpcSslContexts.configure(sslContextBuilder).build();
+      serverBuilder.sslContext(sslContext);
+    } catch (final Exception e) {
       throw new IllegalArgumentException(
-          "Expected to find a valid path to a certificate chain but none was found. "
-              + "Edit the gateway configuration file to provide one or to disable TLS.");
+          "Failed to start messaging service; invalid server TLS configuration", e);
     }
-
-    if (privateKeyPath == null) {
-      throw new IllegalArgumentException(
-          "Expected to find a valid path to a private key but none was found. "
-              + "Edit the gateway configuration file to provide one or to disable TLS.");
-    }
-
-    if (!certificateChainPath.exists()) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected to find a certificate chain file at the provided location '%s' but none was found.",
-              certificateChainPath));
-    }
-
-    if (!privateKeyPath.exists()) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected to find a private key file at the provided location '%s' but none was found.",
-              privateKeyPath));
-    }
-
-    serverBuilder.useTransportSecurity(certificateChainPath, privateKeyPath);
   }
 
   @Override

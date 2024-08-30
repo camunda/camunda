@@ -39,6 +39,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
@@ -75,6 +76,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private DynamicPartitionConfig partitionConfig;
   private CommandApiService commandApiService;
   private MeterRegistry meterRegistry;
+  private ControllableStreamClock clock;
 
   @Override
   public int getPartitionId() {
@@ -167,6 +169,16 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public void setDynamicPartitionConfig(final DynamicPartitionConfig partitionConfig) {
     this.partitionConfig = partitionConfig;
+  }
+
+  @Override
+  public ControllableStreamClock getStreamClock() {
+    return clock;
+  }
+
+  @Override
+  public void setStreamClock(final ControllableStreamClock clock) {
+    this.clock = clock;
   }
 
   @Override

@@ -11,7 +11,9 @@ import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
@@ -25,7 +27,9 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -41,9 +45,16 @@ public final class ProcessInstanceMigrationPreconditions {
           BpmnElementType.SERVICE_TASK,
           BpmnElementType.USER_TASK,
           BpmnElementType.SUB_PROCESS,
-          BpmnElementType.CALL_ACTIVITY);
+          BpmnElementType.CALL_ACTIVITY,
+          BpmnElementType.INTERMEDIATE_CATCH_EVENT,
+          BpmnElementType.RECEIVE_TASK,
+          BpmnElementType.EVENT_SUB_PROCESS,
+          BpmnElementType.EXCLUSIVE_GATEWAY,
+          BpmnElementType.BUSINESS_RULE_TASK);
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.complementOf(SUPPORTED_ELEMENT_TYPES);
+  private static final Set<BpmnEventType> SUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPES =
+      EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER);
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to migrate process instance but no process instance found with key '%d'";
@@ -69,17 +80,30 @@ public final class ProcessInstanceMigrationPreconditions {
       in the target process definition.""";
   private static final String ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_PROCESS_INSTANCE =
       """
-      Expected to migrate process instance but process instance has an event subprocess. \
-      Process instances with event subprocesses cannot be migrated yet.""";
+      Expected to migrate process instance '%s' \
+      but active process with id '%s' has one or more event subprocesses with start events of types '%s'. \
+      Migrating event subprocesses with start events of these types is not possible yet.""";
   private static final String ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_TARGET_PROCESS =
       """
-      Expected to migrate process instance but target process has an event subprocess. \
-      Target processes with event subprocesses cannot be migrated yet.""";
+      Expected to migrate process instance '%s' \
+      but target process with id '%s' has one or more event subprocesses with start events of types '%s'. \
+      Migrating event subprocesses with start events of these types is not possible yet.""";
   private static final String ERROR_UNSUPPORTED_ELEMENT_TYPE =
       """
       Expected to migrate process instance '%s' \
       but active element with id '%s' has an unsupported type. \
       The migration of a %s is not supported.""";
+  private static final String ERROR_UNSUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPE =
+      """
+      Expected to migrate process instance '%s' \
+      but active element with id '%s' is intermediate catch event of type '%s'. \
+      Migrating active intermediate catch event of this type is not possible yet.""";
+  private static final String ERROR_UNSUPPORTED_ATTACHED_TO_EVENT_BASED_GATEWAY =
+      """
+      Expected to migrate process instance '%s' \
+      but active element with id '%s' is an intermediate catch event \
+      attached to an event-based gateway. \
+      Migrating active events attached to an event-based gateway is not possible yet.""";
   private static final String ERROR_UNMAPPED_ACTIVE_ELEMENT =
       """
       Expected to migrate process instance '%s' \
@@ -261,24 +285,79 @@ public final class ProcessInstanceMigrationPreconditions {
   }
 
   /**
-   * Checks whether the given source and target process definition contain event subprocesses.
+   * Checks whether the given source process definition contains an event subprocess. Throws an
+   * exception if the source process definition contains an event subprocess that is not allowed.
    *
-   * @param sourceProcessDefinition source process definition
-   * @param targetProcessDefinition target process definition
+   * @param sourceProcessDefinition source process definition to do the check
+   * @param elementInstanceRecord element instance to be logged
+   * @param allowedEventTypes allowed event types for the boundary event
    */
-  public static void requireNoEventSubprocess(
+  public static void requireNoEventSubprocessInSource(
       final DeployedProcess sourceProcessDefinition,
-      final DeployedProcess targetProcessDefinition) {
-    if (!sourceProcessDefinition.getProcess().getEventSubprocesses().isEmpty()) {
-      throw new ProcessInstanceMigrationPreconditionFailedException(
-          ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_PROCESS_INSTANCE,
-          RejectionType.INVALID_STATE);
+      final ProcessInstanceRecord elementInstanceRecord,
+      final EnumSet<BpmnEventType> allowedEventTypes) {
+    requireNoEventSubprocess(
+        sourceProcessDefinition,
+        elementInstanceRecord,
+        elementInstanceRecord.getElementId(),
+        allowedEventTypes,
+        ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_PROCESS_INSTANCE);
+  }
+
+  /**
+   * Checks whether the given target process definition contains an event subprocess. Throws an
+   * exception if the target process definition contains an event subprocess that is not allowed.
+   *
+   * @param targetProcessDefinition target process definition to do the check
+   * @param targetElementId target element id to retrieve the target element
+   * @param elementInstanceRecord element instance to be logged
+   * @param allowedEventTypes allowed event types for the boundary event
+   */
+  public static void requireNoEventSubprocessInTarget(
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final ProcessInstanceRecord elementInstanceRecord,
+      final EnumSet<BpmnEventType> allowedEventTypes) {
+    requireNoEventSubprocess(
+        targetProcessDefinition,
+        elementInstanceRecord,
+        targetElementId,
+        allowedEventTypes,
+        ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_TARGET_PROCESS);
+  }
+
+  private static void requireNoEventSubprocess(
+      final DeployedProcess sourceProcessDefinition,
+      final ProcessInstanceRecord elementInstanceRecord,
+      final String elementId,
+      final EnumSet<BpmnEventType> allowedEventTypes,
+      final String errorTemplate) {
+    final AbstractFlowElement sourceElement =
+        sourceProcessDefinition.getProcess().getElementById(elementId);
+
+    if (!(sourceElement instanceof final ExecutableActivity sourceActivity)) {
+      // no event subprocess event check needed because the given element cannot contain an event
+      // subprocess
+      return;
     }
 
-    if (!targetProcessDefinition.getProcess().getEventSubprocesses().isEmpty()) {
+    final List<ExecutableStartEvent> rejectedEvents =
+        sourceActivity.getEventSubprocesses().stream()
+            .flatMap(sub -> sub.getStartEvents().stream())
+            .filter(start -> !allowedEventTypes.contains(start.getEventType()))
+            .toList();
+
+    if (!rejectedEvents.isEmpty()) {
+      final String rejectedEventTypes =
+          rejectedEvents.stream()
+              .map(ExecutableStartEvent::getEventType)
+              .map(BpmnEventType::name)
+              .collect(Collectors.joining(","));
+      final String reason =
+          errorTemplate.formatted(
+              elementInstanceRecord.getProcessInstanceKey(), elementId, rejectedEventTypes);
       throw new ProcessInstanceMigrationPreconditionFailedException(
-          ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_TARGET_PROCESS,
-          RejectionType.INVALID_STATE);
+          reason, RejectionType.INVALID_STATE);
     }
   }
 
@@ -290,16 +369,48 @@ public final class ProcessInstanceMigrationPreconditions {
    * @param processInstanceKey process instance key to be logged
    */
   public static void requireSupportedElementType(
-      final ProcessInstanceRecord elementInstanceRecord, final long processInstanceKey) {
-    if (UNSUPPORTED_ELEMENT_TYPES.contains(elementInstanceRecord.getBpmnElementType())) {
+      final ProcessInstanceRecord elementInstanceRecord,
+      final long processInstanceKey,
+      final DeployedProcess sourceProcessDefinition) {
+    final var bpmnElementType = elementInstanceRecord.getBpmnElementType();
+    if (UNSUPPORTED_ELEMENT_TYPES.contains(bpmnElementType)) {
       final String reason =
           String.format(
               ERROR_UNSUPPORTED_ELEMENT_TYPE,
               processInstanceKey,
               elementInstanceRecord.getElementId(),
-              elementInstanceRecord.getBpmnElementType());
+              bpmnElementType);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
+    }
+
+    final var bpmnEventType = elementInstanceRecord.getBpmnEventType();
+    if (bpmnElementType == BpmnElementType.INTERMEDIATE_CATCH_EVENT) {
+      if (!SUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPES.contains(bpmnEventType)) {
+        final String reason =
+            String.format(
+                ERROR_UNSUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPE,
+                processInstanceKey,
+                elementInstanceRecord.getElementId(),
+                bpmnEventType);
+        throw new ProcessInstanceMigrationPreconditionFailedException(
+            reason, RejectionType.INVALID_STATE);
+      }
+
+      final var intermediateCatchEvent =
+          sourceProcessDefinition
+              .getProcess()
+              .getElementById(
+                  elementInstanceRecord.getElementIdBuffer(), ExecutableCatchEventElement.class);
+      if (intermediateCatchEvent.isConnectedToEventBasedGateway()) {
+        final var reason =
+            String.format(
+                ERROR_UNSUPPORTED_ATTACHED_TO_EVENT_BASED_GATEWAY,
+                processInstanceKey,
+                elementInstanceRecord.getElementId());
+        throw new ProcessInstanceMigrationPreconditionFailedException(
+            reason, RejectionType.INVALID_STATE);
+      }
     }
   }
 
@@ -493,14 +604,16 @@ public final class ProcessInstanceMigrationPreconditions {
       final String elementId,
       final EnumSet<BpmnEventType> allowedEventTypes,
       final String errorTemplate) {
-    final List<ExecutableBoundaryEvent> boundaryEvents =
-        sourceProcessDefinition
-            .getProcess()
-            .getElementById(elementId, ExecutableActivity.class)
-            .getBoundaryEvents();
+    final AbstractFlowElement sourceElement =
+        sourceProcessDefinition.getProcess().getElementById(elementId);
+
+    if (!(sourceElement instanceof final ExecutableActivity sourceActivity)) {
+      // // no boundary event check needed because the given element cannot contain a boundary event
+      return;
+    }
 
     final var rejectedBoundaryEvents =
-        boundaryEvents.stream()
+        sourceActivity.getBoundaryEvents().stream()
             .filter(event -> !allowedEventTypes.contains(event.getEventType()))
             .toList();
 
@@ -525,11 +638,12 @@ public final class ProcessInstanceMigrationPreconditions {
       final String sourceElementId,
       final String targetElementId,
       final Map<String, String> sourceElementIdToTargetElementId) {
-    final var sourceElement =
-        sourceProcessDefinition
-            .getProcess()
-            .getElementById(sourceElementId, ExecutableCatchEventSupplier.class);
-    for (final var boundaryIdBuffer : sourceElement.getBoundaryElementIds()) {
+    final var sourceElement = sourceProcessDefinition.getProcess().getElementById(sourceElementId);
+    if (!(sourceElement instanceof final ExecutableCatchEventSupplier sourceElementWithEvents)) {
+      return;
+    }
+
+    for (final var boundaryIdBuffer : sourceElementWithEvents.getBoundaryElementIds()) {
       final String sourceBoundaryEventId = BufferUtil.bufferAsString(boundaryIdBuffer);
       if (!sourceElementIdToTargetElementId.containsKey(sourceBoundaryEventId)) {
         // only check mapped boundary events
@@ -557,6 +671,62 @@ public final class ProcessInstanceMigrationPreconditions {
             reason, RejectionType.INVALID_STATE);
       }
     }
+  }
+
+  /**
+   * It should not be possible for a mapped element's boundary events to be merged into a single
+   * boundary event. This would mean an element instance is subscribed multiple times to the same
+   * boundary event.
+   *
+   * <p>To avoid this, we check each boundary event attached to the source element and ensure that
+   * they are the target of a mapping instruction only once.
+   *
+   * @param processInstanceKey process instance key to be logged
+   * @param sourceProcessDefinition source process definition to check
+   * @param sourceElementId source element id to check
+   * @param mappingInstructions mapping instructions (source element id to target element id)
+   */
+  public static void requireNoDuplicateTargetsInBoundaryEventMappings(
+      final long processInstanceKey,
+      final DeployedProcess sourceProcessDefinition,
+      final String sourceElementId,
+      final Map<String, String> mappingInstructions) {
+    final var sourceElement = sourceProcessDefinition.getProcess().getElementById(sourceElementId);
+    if (!(sourceElement instanceof final ExecutableCatchEventSupplier sourceElementWithEvents)) {
+      return;
+    }
+
+    final var sourceBoundaryEventIdsByTargetBoundaryEventId = new HashMap<String, List<String>>();
+    sourceElementWithEvents.getBoundaryElementIds().stream()
+        .map(BufferUtil::bufferAsString)
+        .filter(mappingInstructions::containsKey)
+        .forEach(
+            sourceBoundaryEventId -> {
+              final String targetBoundaryEventId = mappingInstructions.get(sourceBoundaryEventId);
+              sourceBoundaryEventIdsByTargetBoundaryEventId
+                  .computeIfAbsent(targetBoundaryEventId, k -> new ArrayList<>())
+                  .add(sourceBoundaryEventId);
+            });
+
+    sourceBoundaryEventIdsByTargetBoundaryEventId.forEach(
+        (targetBoundaryEventId, sourceBoundaryEventIds) -> {
+          if (sourceBoundaryEventIds.size() > 1) {
+            final var reason =
+                String.format(
+                    """
+                    Expected to migrate process instance '%s' but active element with id '%s' \
+                    has a boundary event attached that is mapped to a boundary event with id '%s'. \
+                    There are multiple mapping instructions that target this boundary event: '%s'. \
+                    Boundary events cannot be merged by process instance migration. \
+                    Please ensure the mapping instructions target a boundary event only once.""",
+                    processInstanceKey,
+                    sourceElementId,
+                    targetBoundaryEventId,
+                    sourceBoundaryEventIds.stream().sorted().collect(Collectors.joining("', '")));
+            throw new ProcessInstanceMigrationPreconditionFailedException(
+                reason, RejectionType.INVALID_STATE);
+          }
+        });
   }
 
   /**
