@@ -39,7 +39,7 @@ public final class TasklistURIs {
   public static final String IDENTITY_CALLBACK_URI = "/identity-callback";
   public static final String REQUESTED_URL = "requestedUrl";
   public static final String COOKIE_JSESSIONID = "TASKLIST-SESSION";
-  public static final String START_PUBLIC_PROCESS = "/new/";
+  public static final String START_PUBLIC_PROCESS = ROOT_URL + "/new/";
   public static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
   public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
 
