@@ -83,18 +83,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final String id,
       final ExporterEntity entity,
       final Map<String, Object> updateFields) {
-    LOGGER.debug(
-        "Add upsert request for index {} id {} entity {} and update fields {}",
-        index,
-        id,
-        entity,
-        updateFields);
-    final var upsert = upsertWithDocBuilder(entity, updateFields).build();
-    final var updateOperation = updateOperationBuilder(index, id, upsert).build();
-    final var op = bulkOperationBuilder(updateOperation).build();
-    bulkRequestBuilder.operations(op);
-
-    return this;
+    return upsertWithRouting(index, id, entity, updateFields, null);
   }
 
   @Override
@@ -126,21 +115,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final ExporterEntity entity,
       final String script,
       final Map<String, Object> parameters) {
-    LOGGER.debug(
-        "Add upsert request with for index {} id {} entity {} and script {} with parameters {} ",
-        index,
-        id,
-        entity,
-        script,
-        parameters);
-
-    final Script scriptWithParameters = scriptBuilder.getScriptWithParameters(script, parameters);
-    final var upsert = upsertWithScriptBuilder(entity, scriptWithParameters).build();
-    final var updateOperation = updateOperationBuilder(index, id, upsert).build();
-    final var op = bulkOperationBuilder(updateOperation).build();
-    bulkRequestBuilder.operations(op);
-
-    return this;
+    return upsertWithScriptAndRouting(index, id, entity, script, parameters, null);
   }
 
   @Override
