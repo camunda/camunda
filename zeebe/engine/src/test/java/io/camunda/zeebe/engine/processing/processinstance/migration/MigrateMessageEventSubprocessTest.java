@@ -428,6 +428,11 @@ public class MigrateMessageEventSubprocessTest {
             .withVariable("key1", helper.getCorrelationValue())
             .create();
 
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("userTask1")
+        .await();
+
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
@@ -523,6 +528,12 @@ public class MigrateMessageEventSubprocessTest {
                     "key2",
                     helper.getCorrelationValue() + "2"))
             .create();
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withMessageName("msg1")
+        .withCorrelationKey(helper.getCorrelationValue() + "1")
+        .await();
 
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);

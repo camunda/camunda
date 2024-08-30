@@ -223,12 +223,14 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
     requireNoEventSubprocessInSource(
-        sourceProcessDefinition, elementInstanceRecord, EnumSet.of(BpmnEventType.MESSAGE));
+        sourceProcessDefinition,
+        elementInstanceRecord,
+        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER));
     requireNoEventSubprocessInTarget(
         targetProcessDefinition,
         targetElementId,
         elementInstanceRecord,
-        EnumSet.of(BpmnEventType.MESSAGE));
+        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER));
     requireNoBoundaryEventInSource(
         sourceProcessDefinition,
         elementInstanceRecord,

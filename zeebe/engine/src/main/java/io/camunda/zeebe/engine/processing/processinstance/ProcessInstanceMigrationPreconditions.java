@@ -49,7 +49,8 @@ public final class ProcessInstanceMigrationPreconditions {
           BpmnElementType.INTERMEDIATE_CATCH_EVENT,
           BpmnElementType.RECEIVE_TASK,
           BpmnElementType.EVENT_SUB_PROCESS,
-          BpmnElementType.EXCLUSIVE_GATEWAY);
+          BpmnElementType.EXCLUSIVE_GATEWAY,
+          BpmnElementType.BUSINESS_RULE_TASK);
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.complementOf(SUPPORTED_ELEMENT_TYPES);
   private static final Set<BpmnEventType> SUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPES =
