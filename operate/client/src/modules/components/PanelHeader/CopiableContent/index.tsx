@@ -6,25 +6,30 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {CodeSnippetContainer} from './styled';
-import {CodeSnippet} from '@carbon/react';
+import {CodeSnippet, Layer} from '@carbon/react';
 
 type Props = {
   content: string;
   copyButtonDescription: string;
+  className?: string;
 };
 
-const CopiableContent: React.FC<Props> = ({content, copyButtonDescription}) => {
+const CopiableContent: React.FC<Props> = ({
+  content,
+  copyButtonDescription,
+  className,
+}) => {
   return (
-    <CodeSnippetContainer>
+    <Layer className={className}>
       <CodeSnippet
         type="inline"
+        title={copyButtonDescription}
         aria-label={copyButtonDescription}
         feedback="Copied to clipboard"
       >
         {content}
       </CodeSnippet>
-    </CodeSnippetContainer>
+    </Layer>
   );
 };
 
