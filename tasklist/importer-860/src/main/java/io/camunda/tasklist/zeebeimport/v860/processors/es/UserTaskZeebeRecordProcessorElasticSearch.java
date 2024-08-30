@@ -23,7 +23,6 @@ import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToTa
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToVariableEntityMapper;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import jakarta.json.Json;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -112,12 +111,12 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
           TaskVariableTemplate.VALUE,
           "null".equals(variable.getValue())
               ? "null"
-              : objectMapper.writeValueAsString(Json.createValue(variable.getValue())));
+              : objectMapper.writeValueAsString(variable.getValue()));
       updateFields.put(
           TaskVariableTemplate.FULL_VALUE,
           "null".equals(variable.getFullValue())
               ? "null"
-              : objectMapper.writeValueAsString(Json.createValue(variable.getFullValue())));
+              : objectMapper.writeValueAsString(variable.getFullValue()));
       updateFields.put(TaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
 
       return new UpdateRequest()
