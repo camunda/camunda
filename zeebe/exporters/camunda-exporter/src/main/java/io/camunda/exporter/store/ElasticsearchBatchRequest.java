@@ -214,18 +214,18 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       bulkRequestBuilder.refresh(Refresh.True);
     }
     final BulkRequest bulkRequest = bulkRequestBuilder.build();
+    if (bulkRequest.operations().isEmpty()) {
+      return;
+    }
     try {
-      LOGGER.debug("************* FLUSH BULK START *************");
       final BulkResponse bulkResponse = esClient.bulk(bulkRequest);
       final List<BulkResponseItem> items = bulkResponse.items();
       for (final BulkResponseItem item : items) {
         if (item.error() != null) {
-          LOGGER.error(
-              "Bulk request execution failed. {}. Cause: {}.", item, item.error().reason());
+          LOGGER.warn("Bulk request execution failed. {}. Cause: {}.", item, item.error().reason());
           throw new PersistenceException("Operation failed: " + item.error().reason());
         }
       }
-      LOGGER.debug("************* FLUSH BULK FINISH *************");
     } catch (final IOException | ElasticsearchException ex) {
       throw new PersistenceException(
           "Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
