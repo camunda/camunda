@@ -12,5 +12,5 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 
 public interface AuthorizationState {
   PersistedPermissions getPermissions(
-      Long ownerKey, AuthorizationOwnerType ownerType, String resourceKey, String resourceType);
+      Long ownerKey, AuthorizationOwnerType ownerType, String resourceType);
 }

@@ -38,8 +38,7 @@ public class AuthorizationStateTest {
   void shouldReturnNullIfNoAuthorizationForOwnerAndResourceExists() {
     // when
     final var persistedAuth =
-        authorizationState.getPermissions(
-            1L, AuthorizationOwnerType.USER, "resource", "resource-type");
+        authorizationState.getPermissions(1L, AuthorizationOwnerType.USER, "resource");
     // then
     assertThat(persistedAuth).isNull();
   }
@@ -63,7 +62,6 @@ public class AuthorizationStateTest {
         authorizationState.getPermissions(
             authorizationRecord.getOwnerKey(),
             authorizationRecord.getOwnerType(),
-            authorizationRecord.getResourceKey(),
             authorizationRecord.getResourceType());
     assertThat(persistedAuthorization.getPermissions())
         .isEqualTo(authorizationRecord.getPermissions());
@@ -124,14 +122,12 @@ public class AuthorizationStateTest {
         authorizationState.getPermissions(
             authorizationRecordOne.getOwnerKey(),
             authorizationRecordOne.getOwnerType(),
-            authorizationRecordOne.getResourceKey(),
             authorizationRecordOne.getResourceType());
 
     final var authorizationTwo =
         authorizationState.getPermissions(
             authorizationRecordTwo.getOwnerKey(),
             authorizationRecordTwo.getOwnerType(),
-            authorizationRecordTwo.getResourceKey(),
             authorizationRecordTwo.getResourceType());
 
     assertThat(authorizationOne).isNotEqualTo(authorizationTwo);

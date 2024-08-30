@@ -51,7 +51,6 @@ public class AuthorizationCreateProcessor
         authorizationState.getPermissions(
             authorizationToCreate.getOwnerKey(),
             authorizationToCreate.getOwnerType(),
-            authorizationToCreate.getResourceKey(),
             authorizationToCreate.getResourceType());
 
     if (authorization != null) {
