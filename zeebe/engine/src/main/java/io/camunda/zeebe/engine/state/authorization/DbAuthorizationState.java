@@ -25,7 +25,6 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   private final PersistedPermissions persistedPermissions = new PersistedPermissions();
 
   private final DbLong ownerKey;
-  private final DbString ownerType;
   private final DbString resourceType;
   private final DbString permissionType;
   private final DbCompositeKey<DbString, DbString> resourceTypeAndPermissionTypeCompositeKey;
@@ -44,10 +43,13 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
           DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>>>
       authorizationKeyByResourceIdAndOwnerKeyColumnFamily;
 
+  private final DbString ownerType;
+  // owner key -> owner type
+  private final ColumnFamily<DbLong, DbString> ownerTypeByOwnerKeyColumnFamily;
+
   public DbAuthorizationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     ownerKey = new DbLong();
-    ownerType = new DbString();
     resourceType = new DbString();
     permissionType = new DbString();
     resourceTypeAndPermissionTypeCompositeKey = new DbCompositeKey<>(resourceType, permissionType);
@@ -69,6 +71,11 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
             transactionContext,
             resourceIdAndOwnerKeyCompositeKey,
             ownerKeyAndResourceTypeAndPermissionTypeCompositeKey);
+
+    ownerType = new DbString();
+    ownerTypeByOwnerKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.OWNER_TYPE_BY_OWNER_KEY, transactionContext, ownerKey, ownerType);
   }
 
   @Override
