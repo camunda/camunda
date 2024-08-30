@@ -7,6 +7,8 @@
  */
 package io.camunda.identity.migration;
 
+import static java.util.Arrays.asList;
+
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -37,12 +39,12 @@ public class MigrationRunner implements ApplicationRunner {
 
   @Override
   public void run(final ApplicationArguments args) throws Exception {
+
     final String command =
         args.containsOption("command") ? args.getOptionValues("command").getFirst() : "migrate";
-    final String mode =
-        args.containsOption("mode") ? args.getOptionValues("mode").getFirst() : "resume";
-    final String entities =
-        args.containsOption("entities") ? args.getOptionValues("entities").getFirst() : null;
+    if (!asList("migrate", "status").contains(command)) {
+      throw new IllegalArgumentException("Unknown command: " + command);
+    }
 
     // TODO: place holder to logic
     System.out.println("Migration Logic");
