@@ -7,13 +7,8 @@
  */
 package io.camunda.exporter.schema.descriptors;
 
-import java.util.List;
-
-public interface IndexTemplateDescriptor extends IndexDescriptor, TemplateDetails {
-
-  String getIndexPattern();
-
-  List<String> getComposedOf();
+public interface TemplateDetails {
+  String getTemplateName();
 
   /**
    * Maps to the create query parameter, if true the corresponding request cannot replace or update
