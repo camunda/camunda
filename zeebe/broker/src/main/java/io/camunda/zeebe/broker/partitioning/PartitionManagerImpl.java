@@ -34,7 +34,6 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupProcessShutdownException;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
@@ -45,6 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -332,8 +332,26 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
   @Override
   public ActorFuture<Void> bootstrap(
       final int partitionId, final int priority, final DynamicPartitionConfig partitionConfig) {
-    return CompletableActorFuture.completedExceptionally(
-        new UnsupportedOperationException("Not yet implemented"));
+    final int targetPriority = priority;
+
+    final MemberId localMember = managementService.getMembershipService().getLocalMember().id();
+    final var members = Set.of(localMember);
+
+    final MemberId primary = localMember;
+
+    final var partitionMetadata =
+        new PartitionMetadata(
+            PartitionId.from(GROUP_NAME, partitionId),
+            members,
+            Map.of(localMember, targetPriority),
+            targetPriority,
+            primary);
+
+    final ActorFuture<Void> future = concurrencyControl.createFuture();
+
+    concurrencyControl.run(
+        () -> bootstrapPartition(partitionMetadata, partitionConfig).onComplete(future));
+    return future;
   }
 
   @Override
