@@ -191,7 +191,7 @@ public final class SearchQueryResponseMapper {
 
   private static FlowNodeInstanceItem toFlowNodeInstance(final FlowNodeInstanceEntity instance) {
     return new FlowNodeInstanceItem()
-        .flowNodeInstanceKey(instance.flowNodeInstanceKey())
+        .flowNodeInstanceKey(instance.key())
         .flowNodeId(instance.flowNodeId())
         .flowNodeName(instance.flowNodeName())
         .processDefinitionKey(instance.processDefinitionKey())

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
+
 import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.service.search.query.FlowNodeInstanceQuery;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryRequest;
@@ -15,6 +17,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import jakarta.validation.ValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -51,10 +54,18 @@ public class FlowNodeInstanceQueryController {
               .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toFlownodeInstanceSearchQueryResponse(result));
-    } catch (final Throwable e) {
+    } catch (final ValidationException e) {
       final var problemDetail =
           RestErrorMapper.createProblemDetail(
               HttpStatus.BAD_REQUEST,
+              e.getMessage(),
+              "Validation failed for Flownode Instance Search Query");
+      REST_LOGGER.warn("An exception occurred in searchFlowNodeInstances.", e);
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    } catch (final Throwable e) {
+      final var problemDetail =
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.INTERNAL_SERVER_ERROR,
               e.getMessage(),
               "Failed to execute Flownode Instance Search Query");
       return RestErrorMapper.mapProblemToResponse(problemDetail);

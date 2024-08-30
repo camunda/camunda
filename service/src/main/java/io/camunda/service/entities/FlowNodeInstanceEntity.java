@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record FlowNodeInstanceEntity(
-    Long flowNodeInstanceKey,
+    Long key,
     Long processInstanceKey,
     Long processDefinitionKey,
     String startDate,
@@ -23,4 +23,6 @@ public record FlowNodeInstanceEntity(
     String state,
     Boolean incident,
     Long incidentKey,
+    Long scopeKey,
+    String bpmnProcessId,
     String tenantId) {}

@@ -17,24 +17,28 @@ package io.camunda.zeebe.client.api.search;
 
 import io.camunda.zeebe.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.zeebe.client.api.search.filter.DecisionRequirementsFilter;
+import io.camunda.zeebe.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.zeebe.client.api.search.filter.IncidentFilter;
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
 import io.camunda.zeebe.client.api.search.filter.VariableValueFilter;
 import io.camunda.zeebe.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.zeebe.client.api.search.sort.DecisionRequirementsSort;
+import io.camunda.zeebe.client.api.search.sort.FlownodeInstanceSort;
 import io.camunda.zeebe.client.api.search.sort.IncidentSort;
 import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
 import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.DecisionRequirementsFilterImpl;
+import io.camunda.zeebe.client.impl.search.filter.FlownodeInstanceFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.IncidentFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.UserTaskFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.VariableValueFilterImpl;
 import io.camunda.zeebe.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.DecisionRequirementsSortImpl;
+import io.camunda.zeebe.client.impl.search.sort.FlownodeInstanceSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.IncidentSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.ProcessInstanceSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.UserTaskSortImpl;
@@ -179,6 +183,27 @@ public final class SearchRequestBuilders {
   public static DecisionRequirementsSort decisionRequirementsSort(
       final Consumer<DecisionRequirementsSort> fn) {
     final DecisionRequirementsSort sort = decisionRequirementsSort();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static FlownodeInstanceFilter flownodeInstanceFilter() {
+    return new FlownodeInstanceFilterImpl();
+  }
+
+  public static FlownodeInstanceFilter flownodeInstanceFilter(
+      final Consumer<FlownodeInstanceFilter> fn) {
+    final FlownodeInstanceFilter filter = flownodeInstanceFilter();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static FlownodeInstanceSort flownodeInstanceSort() {
+    return new FlownodeInstanceSortImpl();
+  }
+
+  public static FlownodeInstanceSort flownodeInstanceSort(final Consumer<FlownodeInstanceSort> fn) {
+    final FlownodeInstanceSort sort = flownodeInstanceSort();
     fn.accept(sort);
     return sort;
   }

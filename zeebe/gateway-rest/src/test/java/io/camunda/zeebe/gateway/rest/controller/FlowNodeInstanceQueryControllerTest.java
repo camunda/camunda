@@ -63,6 +63,8 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                       "COMPLETED",
                       false,
                       null,
+                      null,
+                      "bpmnProcessId",
                       "<default>")))
           .sortValues(new Object[] {"v"})
           .build();

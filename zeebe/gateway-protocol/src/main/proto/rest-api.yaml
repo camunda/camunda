@@ -1873,7 +1873,6 @@ components:
           format: int64
           minimum: 1
 
-    FlownodeInstanceSearchQueryRequest:
     FlowNodeInstanceSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
