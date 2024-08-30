@@ -1528,7 +1528,8 @@ components:
       type: object
       properties:
         ownerKey:
-          type: string
+          type: integer
+          format: int64
         ownerType:
           type: string
           enum:

@@ -24,7 +24,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
 
   private final PersistedPermissions persistedPermissions = new PersistedPermissions();
 
-  private final DbString ownerKey;
+  private final DbLong ownerKey;
   private final DbString ownerType;
   private final DbString resourceKey;
   private final DbString resourceType;
@@ -39,7 +39,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
 
   public DbAuthorizationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    ownerKey = new DbString();
+    ownerKey = new DbLong();
     ownerType = new DbString();
     resourceKey = new DbString();
     resourceType = new DbString();
@@ -60,7 +60,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   public void createAuthorization(final AuthorizationRecord authorizationRecord) {
     persistedAuthorization.setAuthorization(authorizationRecord);
 
-    ownerKey.wrapString(authorizationRecord.getOwnerKey());
+    ownerKey.wrapLong(authorizationRecord.getOwnerKey());
     ownerType.wrapString(authorizationRecord.getOwnerType().name());
     resourceKey.wrapString(authorizationRecord.getResourceKey());
     resourceType.wrapString(authorizationRecord.getResourceType());
@@ -71,11 +71,11 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
 
   @Override
   public PersistedPermissions getPermissions(
-      final String ownerKey,
+      final Long ownerKey,
       final AuthorizationOwnerType ownerType,
       final String resourceKey,
       final String resourceType) {
-    this.ownerKey.wrapString(ownerKey);
+    this.ownerKey.wrapLong(ownerKey);
     this.ownerType.wrapString(ownerType.name());
     this.resourceKey.wrapString(resourceKey);
     this.resourceType.wrapString(resourceType);

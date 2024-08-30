@@ -41,7 +41,7 @@ public class CreateAuthorizationTest {
         ENGINE
             .authorization()
             .newAuthorization()
-            .withOwnerKey(owner)
+            .withOwnerKey(1L)
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceKey("resource")
             .withResourceType("bpmn-id")
@@ -70,7 +70,7 @@ public class CreateAuthorizationTest {
         ENGINE
             .authorization()
             .newAuthorization()
-            .withOwnerKey(owner)
+            .withOwnerKey(1L)
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceKey("resource")
             .withResourceType("bpmn-id")
@@ -81,7 +81,7 @@ public class CreateAuthorizationTest {
         ENGINE
             .authorization()
             .newAuthorization()
-            .withOwnerKey(owner)
+            .withOwnerKey(1L)
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceKey("resource")
             .withResourceType("bpmn-id")

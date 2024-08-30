@@ -39,7 +39,7 @@ public class AuthorizationStateTest {
     // when
     final var persistedAuth =
         authorizationState.getPermissions(
-            "owner" + UUID.randomUUID(), AuthorizationOwnerType.USER, "resource", "resource-type");
+            1L, AuthorizationOwnerType.USER, "resource", "resource-type");
     // then
     assertThat(persistedAuth).isNull();
   }
@@ -51,7 +51,7 @@ public class AuthorizationStateTest {
     // when
     final AuthorizationRecord authorizationRecord =
         new AuthorizationRecord()
-            .setOwnerKey("owner" + UUID.randomUUID())
+            .setOwnerKey(1L)
             .setOwnerType(AuthorizationOwnerType.GROUP)
             .setResourceKey("resource")
             .setResourceType("resourceType")
@@ -78,7 +78,7 @@ public class AuthorizationStateTest {
     final AuthorizationRecord authorizationRecord =
         new AuthorizationRecord()
             .setAuthorizationKey(1L)
-            .setOwnerKey(owner)
+            .setOwnerKey(2L)
             .setOwnerType(AuthorizationOwnerType.GROUP)
             .setResourceKey("my-resource-key")
             .setResourceType("process-definition")
@@ -103,7 +103,7 @@ public class AuthorizationStateTest {
     final AuthorizationRecord authorizationRecordOne =
         new AuthorizationRecord()
             .setAuthorizationKey(1L)
-            .setOwnerKey("owner" + UUID.randomUUID())
+            .setOwnerKey(2L)
             .setOwnerType(AuthorizationOwnerType.GROUP)
             .setResourceKey("resource")
             .setResourceType("resourceType")
@@ -113,7 +113,7 @@ public class AuthorizationStateTest {
     final AuthorizationRecord authorizationRecordTwo =
         new AuthorizationRecord()
             .setAuthorizationKey(2L)
-            .setOwnerKey("owner" + UUID.randomUUID())
+            .setOwnerKey(2L)
             .setOwnerType(AuthorizationOwnerType.GROUP)
             .setResourceKey("resource")
             .setResourceType("resourceType")

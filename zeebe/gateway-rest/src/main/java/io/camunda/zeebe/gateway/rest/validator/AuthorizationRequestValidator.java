@@ -20,8 +20,7 @@ public final class AuthorizationRequestValidator {
   public static Optional<ProblemDetail> validateAuthorizationAssignRequest(
       final AuthorizationAssignRequest authorizationAssignRequest) {
     final List<String> violations = new ArrayList<>();
-    if (authorizationAssignRequest.getOwnerKey() == null
-        || authorizationAssignRequest.getOwnerKey().isBlank()) {
+    if (authorizationAssignRequest.getOwnerKey() == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("ownerKey"));
     }
 

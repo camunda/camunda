@@ -25,7 +25,7 @@ import org.immutables.value.Value;
 public interface AuthorizationRecordValue extends RecordValue {
   Long getAuthorizationKey();
 
-  String getOwnerKey();
+  Long getOwnerKey();
 
   AuthorizationOwnerType getOwnerType();
 

@@ -39,7 +39,7 @@ public class CreateAuthorizationMultiPartitionTest {
     ENGINE
         .authorization()
         .newAuthorization()
-        .withOwnerKey("owner" + System.currentTimeMillis())
+        .withOwnerKey(1L)
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceKey("resource")
         .withResourceType("bpmn-id")
