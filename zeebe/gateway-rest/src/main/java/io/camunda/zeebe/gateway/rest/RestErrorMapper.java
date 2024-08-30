@@ -38,9 +38,9 @@ public class RestErrorMapper {
           case NOT_FOUND:
             yield RestErrorMapper.createProblemDetail(HttpStatus.NOT_FOUND, message, title);
           case INVALID_STATE:
+          case ALREADY_EXISTS:
             yield RestErrorMapper.createProblemDetail(HttpStatus.CONFLICT, message, title);
           case INVALID_ARGUMENT:
-          case ALREADY_EXISTS:
             yield RestErrorMapper.createProblemDetail(HttpStatus.BAD_REQUEST, message, title);
           default:
             {
