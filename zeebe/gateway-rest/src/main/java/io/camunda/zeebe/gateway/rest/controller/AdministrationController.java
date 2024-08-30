@@ -41,6 +41,15 @@ public class AdministrationController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::pinClock);
   }
 
+  @PostMapping(
+      path = "/clock/reset",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public CompletableFuture<ResponseEntity<Object>> resetClock() {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () -> clockServices.withAuthentication(RequestMapper.getAuthentication()).resetClock());
+  }
+
   private CompletableFuture<ResponseEntity<Object>> pinClock(final long pinnedEpoch) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->

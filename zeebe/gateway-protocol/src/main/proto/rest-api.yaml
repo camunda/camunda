@@ -615,6 +615,29 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /administration/clock/reset:
+    post:
+      tags:
+        - Administration
+        - Clock control
+      summary: Reset the Zeebe engine’s internal clock to the system time (experimental)
+      description: |
+        Resets the Zeebe engine’s internal clock to the current system time,
+        enabling it to tick in real-time. This operation is useful for returning the clock to
+        normal behavior after it has been pinned to a specific time.
+
+        :::note
+        This endpoint is experimental and may undergo changes or improvements in future releases.
+        :::
+      responses:
+        "204":
+          description: The clock was successfully reset to the system time
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
   /process-instances/search:
     post:
