@@ -29,6 +29,7 @@ import {TaskFilters, useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {encodeTaskOpenedRef} from 'modules/utils/reftags';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
 import {DateLabel} from './DateLabel';
+import {PriorityLabel} from './PriorityLabel';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 import {useIsCurrentTaskOpen} from './useIsCurrentTaskOpen';
@@ -43,6 +44,7 @@ type Props = {
   followUpDate: TaskType['followUpDate'];
   dueDate: TaskType['dueDate'];
   completionDate: TaskType['completionDate'];
+  priority: TaskType['priority'];
   currentUser: CurrentUser;
   position: number;
 };
@@ -117,6 +119,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
       followUpDate: followUpDateString,
       dueDate: dueDateString,
       completionDate: completionDateString,
+      priority,
       currentUser,
       position,
     },
@@ -195,10 +198,9 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
               </div>
             )}
 
-            <div className={cn(styles.flex, styles.flexColumn)}>
-              <span>
-                <AssigneeTag currentUser={currentUser} assignee={assignee} />
-              </span>
+            <div className={cn(styles.flex, styles.flexRow)}>
+              <AssigneeTag currentUser={currentUser} assignee={assignee} />
+              {priority === null ? null : <PriorityLabel priority={priority} />}
             </div>
             <div
               data-testid="dates"

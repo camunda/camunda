@@ -6,8 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {RequestHandler} from 'msw';
+import {IS_VERSION_TAG_ENABLED} from 'modules/feature-flags';
+import {RequestHandler, rest} from 'msw';
 
-const handlers: RequestHandler[] = [];
+const processVersionTagHandler = [
+  rest.get('/api/processes/:processId', async (req, res, ctx) => {
+    const response = await ctx.fetch(req);
+    const body = await response.json();
+
+    return res(
+      ctx.json({
+        ...body,
+        versionTag: 'myVersionTag',
+      }),
+    );
+  }),
+];
+
+const handlers: RequestHandler[] = IS_VERSION_TAG_ENABLED
+  ? processVersionTagHandler
+  : [];
 
 export {handlers};

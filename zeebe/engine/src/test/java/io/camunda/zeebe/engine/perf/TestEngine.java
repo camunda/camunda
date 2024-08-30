@@ -23,6 +23,7 @@ import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FeatureFlags;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -46,7 +47,8 @@ public final class TestEngine {
         new TestStreams(
             testContext.temporaryFolder(),
             testContext.autoCloseableRule(),
-            testContext.actorScheduler());
+            testContext.actorScheduler(),
+            InstantSource.system());
     testStreams.withStreamProcessorMode(StreamProcessorMode.PROCESSING);
     // for performance reasons we want to enable batch processing
     testStreams.maxCommandsInBatch(100);

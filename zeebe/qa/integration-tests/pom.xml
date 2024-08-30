@@ -15,6 +15,7 @@
   <name>Zeebe QA Integration Tests</name>
 
   <dependencies>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker</artifactId>

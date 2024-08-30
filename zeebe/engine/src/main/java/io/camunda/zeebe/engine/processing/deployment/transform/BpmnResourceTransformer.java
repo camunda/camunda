@@ -23,6 +23,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeVersionTag;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -30,7 +31,9 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.io.DirectBufferInputStream;
@@ -38,7 +41,7 @@ import org.camunda.bpm.model.xml.ModelParseException;
 
 public final class BpmnResourceTransformer implements DeploymentResourceTransformer {
 
-  private final BpmnTransformer bpmnTransformer = BpmnFactory.createTransformer();
+  private final BpmnTransformer bpmnTransformer;
 
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -55,14 +58,16 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final ProcessState processState,
       final ExpressionProcessor expressionProcessor,
       final boolean enableStraightThroughProcessingLoopDetector,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final InstantSource clock) {
+    bpmnTransformer = BpmnFactory.createTransformer(clock);
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
     this.processState = processState;
     validator =
         BpmnFactory.createValidator(
-            expressionProcessor, config.getValidatorsResultsOutputMaxSize());
+            clock, expressionProcessor, config.getValidatorsResultsOutputMaxSize());
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
   }
 
@@ -199,6 +204,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
           .setResourceName(deploymentResource.getResourceNameBuffer())
           .setTenantId(tenantId)
           .setDeploymentKey(deploymentEvent.getDeploymentKey());
+      getOptionalVersionTag(process).ifPresent(processMetadata::setVersionTag);
 
       final var isDuplicate =
           isDuplicateOfLatest(deploymentResource, resourceDigest, lastProcess, lastDigest);
@@ -219,6 +225,11 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     return modelInstance.getDefinitions().getChildElementsByType(Process.class).stream()
         .filter(Process::isExecutable)
         .toList();
+  }
+
+  private Optional<String> getOptionalVersionTag(final Process process) {
+    return Optional.ofNullable(process.getSingleExtensionElement(ZeebeVersionTag.class))
+        .map(ZeebeVersionTag::getValue);
   }
 
   private boolean isDuplicateOfLatest(

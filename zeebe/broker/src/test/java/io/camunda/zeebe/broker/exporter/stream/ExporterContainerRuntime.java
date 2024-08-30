@@ -24,6 +24,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.file.Path;
+import java.time.InstantSource;
 import org.agrona.CloseHelper;
 
 /**
@@ -92,7 +93,8 @@ public final class ExporterContainerRuntime implements CloseableSilently {
       final MeterRegistry meterRegistry) {
 
     final var container =
-        new ExporterContainer(descriptor, partitionId, initializationInfo, meterRegistry);
+        new ExporterContainer(
+            descriptor, partitionId, initializationInfo, meterRegistry, InstantSource.system());
     container.initContainer(actor.getActorControl(), metrics, state, ExporterPhase.EXPORTING);
 
     return container;

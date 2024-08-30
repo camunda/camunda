@@ -56,7 +56,7 @@ class ConfigurationUtilTest {
 
     // when
     final var topology =
-        ConfigurationUtil.getClusterConfigFrom(partitionDistribution, partitionConfig);
+        ConfigurationUtil.getClusterConfigFrom(true, partitionDistribution, partitionConfig);
 
     // then
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
@@ -222,6 +222,39 @@ class ConfigurationUtilTest {
 
     // then
     assertThat(partitionDistribution).containsExactlyInAnyOrderElementsOf(expected);
+  }
+
+  @Test
+  void shouldInitializeRoutingState() {
+    // given
+    final PartitionMetadata partitionOne =
+        new PartitionMetadata(
+            PartitionId.from(GROUP_NAME, 1),
+            Set.of(member(1), member(2), member(0)),
+            Map.of(member(0), 1, member(1), 2, member(2), 3),
+            3,
+            member(2));
+    final PartitionMetadata partitionTwo =
+        new PartitionMetadata(
+            PartitionId.from(GROUP_NAME, 2),
+            Set.of(member(1), member(2), member(0)),
+            Map.of(member(2), 1, member(1), 2, member(0), 3),
+            3,
+            member(0));
+
+    final var partitionDistribution = Set.of(partitionTwo, partitionOne);
+
+    // when
+    final var topology =
+        ConfigurationUtil.getClusterConfigFrom(true, partitionDistribution, partitionConfig);
+
+    // then
+    ClusterConfigurationAssert.assertThatClusterTopology(topology)
+        .hasRoutingState()
+        .routingState()
+        .hasVersion(1)
+        .hasActivatedPartitions(2)
+        .correlatesMessagesToPartitions(2);
   }
 
   private MemberId member(final int id) {

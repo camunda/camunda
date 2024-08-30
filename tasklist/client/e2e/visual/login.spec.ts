@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@/visual-fixtures';
 
 test.describe('login page', () => {
   test('empty page', async ({page}) => {

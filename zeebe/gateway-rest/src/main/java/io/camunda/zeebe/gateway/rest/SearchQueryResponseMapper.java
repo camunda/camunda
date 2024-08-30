@@ -11,18 +11,26 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.service.entities.DecisionDefinitionEntity;
 import io.camunda.service.entities.DecisionRequirementsEntity;
+import io.camunda.service.entities.IncidentEntity;
 import io.camunda.service.entities.ProcessInstanceEntity;
+import io.camunda.service.entities.UserEntity;
 import io.camunda.service.entities.UserTaskEntity;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
+import io.camunda.zeebe.util.Either;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -72,6 +80,39 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toUserTasks)
+                .orElseGet(Collections::emptyList));
+  }
+
+  public static UserSearchResponse toUserSearchQueryResponse(
+      final SearchQueryResult<UserEntity> result) {
+    final var response = new UserSearchResponse();
+    final var total = result.total();
+    final var sortValues = result.sortValues();
+    final var items = result.items();
+
+    final var page = new SearchQueryPageResponse();
+    page.setTotalItems(total);
+    response.setPage(page);
+
+    if (sortValues != null) {
+      page.setLastSortValues(Arrays.asList(sortValues));
+    }
+
+    if (items != null) {
+      response.setItems(toUsers(items).get());
+    }
+
+    return response;
+  }
+
+  public static IncidentSearchQueryResponse toIncidentSearchQueryResponse(
+      final SearchQueryResult<IncidentEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new IncidentSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toIncidents)
                 .orElseGet(Collections::emptyList));
   }
 
@@ -136,6 +177,28 @@ public final class SearchQueryResponseMapper {
     return tasks.stream().map(SearchQueryResponseMapper::toUserTask).toList();
   }
 
+  private static List<IncidentItem> toIncidents(final List<IncidentEntity> incidents) {
+    return incidents.stream().map(SearchQueryResponseMapper::toIncident).toList();
+  }
+
+  private static IncidentItem toIncident(final IncidentEntity t) {
+    return new IncidentItem()
+        .key(t.key())
+        .processDefinitionKey(t.processDefinitionKey())
+        .processInstanceKey(t.processInstanceKey())
+        .type(t.type())
+        .flowNodeId(t.flowNodeId())
+        .flowNodeInstanceId(t.flowNodeInstanceId())
+        .creationTime(t.creationTime())
+        .state(t.state())
+        .jobKey(t.jobKey())
+        .tenantId(t.tenantId())
+        .hasActiveOperation(t.hasActiveOperation())
+        .lastOperation(null /*new OperationItem()*/)
+        .rootCauseInstance(null /*new ProcessInstanceReferenceItem()*/)
+        .rootCauseDecision(null /*new DecisionInstanceReferenceItem()*/);
+  }
+
   private static UserTaskItem toUserTask(final UserTaskEntity t) {
     return new UserTaskItem()
         .tenantIds(t.tenantId())
@@ -156,6 +219,20 @@ public final class SearchQueryResponseMapper {
         .followUpDate(t.followUpDate())
         .externalFormReference(t.externalFormReference())
         .processDefinitionVersion(t.processDefinitionVersion())
-        .customHeaders(t.customHeaders());
+        .customHeaders(t.customHeaders())
+        .priority(t.priority());
+  }
+
+  public static Either<ProblemDetail, List<UserResponse>> toUsers(final List<UserEntity> users) {
+    return Either.right(
+        users.stream().map(SearchQueryResponseMapper::toUser).map(Either::get).toList());
+  }
+
+  public static Either<ProblemDetail, UserResponse> toUser(final UserEntity user) {
+    return Either.right(
+        new UserResponse()
+            .username(user.value().username())
+            .email(user.value().email())
+            .name(user.value().name()));
   }
 }

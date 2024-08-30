@@ -7,55 +7,76 @@
  */
 package io.camunda.service.search.filter;
 
-import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 
-public final record VariableValueFilter(
-    String name, Object eq, Object neq, Object gt, Object gte, Object lt, Object lte)
-    implements FilterBase {
+public final class VariableValueFilter extends ComparableValues implements FilterBase {
+  private final String name;
 
-  public static final class Builder implements ObjectBuilder<VariableValueFilter> {
+  public VariableValueFilter(
+      final String name,
+      final Object eq,
+      final Object neq,
+      final Object gt,
+      final Object gte,
+      final Object lt,
+      final Object lte) {
+    super(eq, neq, gt, gte, lt, lte);
+    this.name = name;
+  }
+
+  public String name() {
+    return name;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name) + super.hashCode();
+  }
+
+  @Override
+  public boolean equals(final Object obj) {
+    if (obj == this) {
+      return true;
+    }
+    if (obj == null || obj.getClass() != getClass()) {
+      return false;
+    }
+    final var that = (VariableValueFilter) obj;
+    return Objects.equals(name, that.name) && super.equals(that);
+  }
+
+  @Override
+  public String toString() {
+    return "VariableValueFilter["
+        + "name="
+        + name
+        + ", "
+        + "eq="
+        + eq
+        + ", "
+        + "neq="
+        + neq
+        + ", "
+        + "gt="
+        + gt
+        + ", "
+        + "gte="
+        + gte
+        + ", "
+        + "lt="
+        + lt
+        + ", "
+        + "lte="
+        + lte
+        + ']';
+  }
+
+  public static final class Builder extends ComparableValueBuilder<VariableValueFilter> {
 
     private String name;
-    private Object eq;
-    private Object neq;
-    private Object gt;
-    private Object gte;
-    private Object lt;
-    private Object lte;
 
     public Builder name(final String value) {
       name = value;
-      return this;
-    }
-
-    public Builder eq(final Object value) {
-      eq = value;
-      return this;
-    }
-
-    public Builder neq(final Object value) {
-      neq = value;
-      return this;
-    }
-
-    public Builder gt(final Object value) {
-      gt = value;
-      return this;
-    }
-
-    public Builder gte(final Object value) {
-      gte = value;
-      return this;
-    }
-
-    public Builder lt(final Object value) {
-      lt = value;
-      return this;
-    }
-
-    public Builder lte(final Object value) {
-      lte = value;
       return this;
     }
 

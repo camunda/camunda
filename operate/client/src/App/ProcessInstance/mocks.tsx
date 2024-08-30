@@ -40,6 +40,8 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
+import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
+import {mockProcess} from './ProcessInstanceHeader/index.setup';
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 
@@ -66,6 +68,7 @@ const mockRequests = (contextPath: string = '') => {
     ...mockIncidents,
     count: 2,
   });
+  mockFetchProcess(contextPath).withSuccess(mockProcess);
 };
 
 type FlowNodeSelectorProps = {

@@ -12,6 +12,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
@@ -35,6 +36,8 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
@@ -61,6 +64,7 @@ import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -422,6 +426,23 @@ public final class RecordingExporter implements Exporter {
   public static CompensationSubscriptionRecordStream compensationSubscriptionRecords() {
     return new CompensationSubscriptionRecordStream(
         records(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionRecordValue.class));
+  }
+
+  public static UserRecordStream userRecords() {
+    return new UserRecordStream(records(ValueType.USER, UserRecordValue.class));
+  }
+
+  public static ClockRecordStream clockRecords() {
+    return new ClockRecordStream(records(ValueType.CLOCK, ClockRecordValue.class));
+  }
+
+  public static ClockRecordStream clockRecords(final ClockIntent intent) {
+    return clockRecords().withIntent(intent);
+  }
+
+  public static AuthorizationRecordStream authorizationRecords() {
+    return new AuthorizationRecordStream(
+        records(ValueType.AUTHORIZATION, AuthorizationRecordValue.class));
   }
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {

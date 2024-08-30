@@ -54,7 +54,8 @@ public class TaskMapper {
             .setFollowUpDate(taskDTO.getFollowUpDate())
             .setCandidateGroups(taskDTO.getCandidateGroups())
             .setCandidateUsers(taskDTO.getCandidateUsers())
-            .setImplementation(taskDTO.getImplementation());
+            .setImplementation(taskDTO.getImplementation())
+            .setPriority(taskDTO.getPriority());
 
     if (taskDTO.getVariables() != null) {
       final VariableSearchResponse[] allVariables =
@@ -123,7 +124,8 @@ public class TaskMapper {
         .setCandidateGroups(taskDTO.getCandidateGroups())
         .setCandidateUsers(taskDTO.getCandidateUsers())
         .setTenantId(taskDTO.getTenantId())
-        .setImplementation(taskDTO.getImplementation());
+        .setImplementation(taskDTO.getImplementation())
+        .setPriority(taskDTO.getPriority());
   }
 
   public TaskQueryDTO toTaskQuery(final TaskSearchRequest searchRequest) {
@@ -149,7 +151,8 @@ public class TaskMapper {
         .setSearchAfterOrEqual(searchRequest.getSearchAfterOrEqual())
         .setSearchBefore(searchRequest.getSearchBefore())
         .setSearchBeforeOrEqual(searchRequest.getSearchBeforeOrEqual())
-        .setImplementation(searchRequest.getImplementation());
+        .setImplementation(searchRequest.getImplementation())
+        .setPriority(searchRequest.getPriority());
   }
 
   public String getName(final TaskDTO task) {

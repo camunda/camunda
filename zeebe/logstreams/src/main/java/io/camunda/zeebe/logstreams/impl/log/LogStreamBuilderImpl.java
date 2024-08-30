@@ -13,6 +13,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import java.time.InstantSource;
 import java.util.Objects;
 
 public final class LogStreamBuilderImpl implements LogStreamBuilder {
@@ -22,6 +23,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private ActorSchedulingService actorSchedulingService;
   private LogStorage logStorage;
   private String logName;
+  private InstantSource clock;
   private Limit requestLimit;
   private RateLimit writeRateLimit;
 
@@ -57,6 +59,12 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   }
 
   @Override
+  public LogStreamBuilder withClock(final InstantSource clock) {
+    this.clock = clock;
+    return this;
+  }
+
+  @Override
   public LogStreamBuilder withRequestLimit(final Limit requestLimit) {
     this.requestLimit = requestLimit;
     return this;
@@ -73,12 +81,13 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
     validate();
 
     return new LogStreamImpl(
-        logName, partitionId, maxFragmentSize, logStorage, requestLimit, writeRateLimit);
+        logName, partitionId, maxFragmentSize, logStorage, clock, requestLimit, writeRateLimit);
   }
 
   private void validate() {
     Objects.requireNonNull(actorSchedulingService, "Must specify a actor scheduler");
     Objects.requireNonNull(logStorage, "Must specify a log storage");
+    Objects.requireNonNull(clock, "Must specify a clock source");
 
     if (maxFragmentSize < MINIMUM_FRAGMENT_SIZE) {
       throw new IllegalArgumentException(

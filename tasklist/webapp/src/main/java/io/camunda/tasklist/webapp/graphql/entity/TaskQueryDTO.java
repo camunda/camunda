@@ -46,6 +46,7 @@ public class TaskQueryDTO {
   @GraphQLField private TaskOrderBy[] sort;
   private TaskByCandidateUserOrGroup taskByCandidateUserOrGroup;
   @GraphQLField private TaskImplementation implementation;
+  private RangeValueFilter priority;
 
   // Constructor used by GraphQL, it should initialize fields annotated with @GraphQLField
   @GraphQLConstructor
@@ -86,6 +87,7 @@ public class TaskQueryDTO {
     this.dueDate = dueDate;
     this.sort = sort;
     this.implementation = implementation;
+    priority = priority;
   }
 
   public TaskQueryDTO() {}
@@ -94,7 +96,7 @@ public class TaskQueryDTO {
     return state;
   }
 
-  public TaskQueryDTO setState(TaskState state) {
+  public TaskQueryDTO setState(final TaskState state) {
     this.state = state;
     return this;
   }
@@ -103,7 +105,7 @@ public class TaskQueryDTO {
     return assigned;
   }
 
-  public TaskQueryDTO setAssigned(Boolean assigned) {
+  public TaskQueryDTO setAssigned(final Boolean assigned) {
     this.assigned = assigned;
     return this;
   }
@@ -112,7 +114,7 @@ public class TaskQueryDTO {
     return assignee;
   }
 
-  public TaskQueryDTO setAssignee(String assignee) {
+  public TaskQueryDTO setAssignee(final String assignee) {
     this.assignee = assignee;
     return this;
   }
@@ -121,7 +123,7 @@ public class TaskQueryDTO {
     return taskVariables;
   }
 
-  public TaskQueryDTO setTaskVariables(TaskByVariables[] taskVariables) {
+  public TaskQueryDTO setTaskVariables(final TaskByVariables[] taskVariables) {
     this.taskVariables = taskVariables;
     return this;
   }
@@ -130,7 +132,7 @@ public class TaskQueryDTO {
     return tenantIds;
   }
 
-  public TaskQueryDTO setTenantIds(String[] tenantIds) {
+  public TaskQueryDTO setTenantIds(final String[] tenantIds) {
     this.tenantIds = tenantIds;
     return this;
   }
@@ -184,7 +186,7 @@ public class TaskQueryDTO {
     return taskDefinitionId;
   }
 
-  public TaskQueryDTO setTaskDefinitionId(String taskDefinitionId) {
+  public TaskQueryDTO setTaskDefinitionId(final String taskDefinitionId) {
     this.taskDefinitionId = taskDefinitionId;
     return this;
   }
@@ -202,7 +204,7 @@ public class TaskQueryDTO {
     return candidateUser;
   }
 
-  public TaskQueryDTO setCandidateUser(String candidateUser) {
+  public TaskQueryDTO setCandidateUser(final String candidateUser) {
     this.candidateUser = candidateUser;
     return this;
   }
@@ -211,7 +213,7 @@ public class TaskQueryDTO {
     return processDefinitionId;
   }
 
-  public TaskQueryDTO setProcessDefinitionId(String processDefinitionId) {
+  public TaskQueryDTO setProcessDefinitionId(final String processDefinitionId) {
     this.processDefinitionId = processDefinitionId;
     return this;
   }
@@ -220,7 +222,7 @@ public class TaskQueryDTO {
     return processInstanceId;
   }
 
-  public TaskQueryDTO setProcessInstanceId(String processInstanceId) {
+  public TaskQueryDTO setProcessInstanceId(final String processInstanceId) {
     this.processInstanceId = processInstanceId;
     return this;
   }
@@ -229,7 +231,7 @@ public class TaskQueryDTO {
     return followUpDate;
   }
 
-  public TaskQueryDTO setFollowUpDate(DateFilter followUpDate) {
+  public TaskQueryDTO setFollowUpDate(final DateFilter followUpDate) {
     this.followUpDate = followUpDate;
     return this;
   }
@@ -238,7 +240,7 @@ public class TaskQueryDTO {
     return dueDate;
   }
 
-  public TaskQueryDTO setDueDate(DateFilter dueDate) {
+  public TaskQueryDTO setDueDate(final DateFilter dueDate) {
     this.dueDate = dueDate;
     return this;
   }
@@ -247,7 +249,7 @@ public class TaskQueryDTO {
     return sort;
   }
 
-  public TaskQueryDTO setSort(TaskOrderBy[] sort) {
+  public TaskQueryDTO setSort(final TaskOrderBy[] sort) {
     this.sort = sort;
     return this;
   }
@@ -257,7 +259,7 @@ public class TaskQueryDTO {
   }
 
   public TaskQueryDTO setTaskByCandidateUserOrGroup(
-      TaskByCandidateUserOrGroup taskByCandidateUserOrGroup) {
+      final TaskByCandidateUserOrGroup taskByCandidateUserOrGroup) {
     this.taskByCandidateUserOrGroup = taskByCandidateUserOrGroup;
     return this;
   }
@@ -266,7 +268,7 @@ public class TaskQueryDTO {
     return implementation;
   }
 
-  public TaskQueryDTO setImplementation(TaskImplementation implementation) {
+  public TaskQueryDTO setImplementation(final TaskImplementation implementation) {
     this.implementation = implementation;
     return this;
   }
@@ -275,7 +277,7 @@ public class TaskQueryDTO {
     return assignees;
   }
 
-  public TaskQueryDTO setAssignees(String[] assignees) {
+  public TaskQueryDTO setAssignees(final String[] assignees) {
     this.assignees = assignees;
     return this;
   }
@@ -284,7 +286,7 @@ public class TaskQueryDTO {
     return candidateGroups;
   }
 
-  public TaskQueryDTO setCandidateGroups(String[] candidateGroups) {
+  public TaskQueryDTO setCandidateGroups(final String[] candidateGroups) {
     this.candidateGroups = candidateGroups;
     return this;
   }
@@ -293,13 +295,53 @@ public class TaskQueryDTO {
     return candidateUsers;
   }
 
-  public TaskQueryDTO setCandidateUsers(String[] candidateUsers) {
+  public TaskQueryDTO setCandidateUsers(final String[] candidateUsers) {
     this.candidateUsers = candidateUsers;
     return this;
   }
 
+  public RangeValueFilter getPriority() {
+    return priority;
+  }
+
+  public TaskQueryDTO setPriority(final RangeValueFilter priority) {
+    this.priority = priority;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    int result =
+        Objects.hash(
+            state,
+            assigned,
+            assignee,
+            taskDefinitionId,
+            candidateGroup,
+            candidateUser,
+            processDefinitionId,
+            processInstanceId,
+            pageSize,
+            followUpDate,
+            dueDate,
+            taskByCandidateUserOrGroup,
+            implementation,
+            priority);
+    result = 31 * result + Arrays.hashCode(assignees);
+    result = 31 * result + Arrays.hashCode(candidateGroups);
+    result = 31 * result + Arrays.hashCode(candidateUsers);
+    result = 31 * result + Arrays.hashCode(taskVariables);
+    result = 31 * result + Arrays.hashCode(tenantIds);
+    result = 31 * result + Arrays.hashCode(searchAfter);
+    result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
+    result = 31 * result + Arrays.hashCode(searchBefore);
+    result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
+    result = 31 * result + Arrays.hashCode(sort);
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -329,65 +371,8 @@ public class TaskQueryDTO {
         && Objects.equals(followUpDate, that.followUpDate)
         && Objects.equals(dueDate, that.dueDate)
         && Arrays.equals(sort, that.sort)
-        && Objects.equals(taskByCandidateUserOrGroup, that.taskByCandidateUserOrGroup);
-  }
-
-  @Override
-  public int hashCode() {
-    int result =
-        Objects.hash(
-            state,
-            assigned,
-            assignee,
-            taskDefinitionId,
-            candidateGroup,
-            candidateUser,
-            processDefinitionId,
-            processInstanceId,
-            pageSize,
-            followUpDate,
-            dueDate,
-            taskByCandidateUserOrGroup,
-            implementation);
-    result = 31 * result + Arrays.hashCode(assignees);
-    result = 31 * result + Arrays.hashCode(candidateGroups);
-    result = 31 * result + Arrays.hashCode(candidateUsers);
-    result = 31 * result + Arrays.hashCode(taskVariables);
-    result = 31 * result + Arrays.hashCode(tenantIds);
-    result = 31 * result + Arrays.hashCode(searchAfter);
-    result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
-    result = 31 * result + Arrays.hashCode(searchBefore);
-    result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
-    result = 31 * result + Arrays.hashCode(sort);
-    return result;
-  }
-
-  public TaskQuery toTaskQuery() {
-    return new TaskQuery()
-        .setState(this.state)
-        .setAssigned(this.assigned)
-        .setAssignee(this.assignee)
-        .setAssignees(this.assignees)
-        .setTaskDefinitionId(this.taskDefinitionId)
-        .setCandidateGroup(this.candidateGroup)
-        .setCandidateGroups(this.candidateGroups)
-        .setCandidateUser(this.candidateUser)
-        .setCandidateUsers(this.candidateUsers)
-        .setTaskByCandidateUserOrGroups(this.taskByCandidateUserOrGroup)
-        .setProcessDefinitionId(this.processDefinitionId)
-        .setProcessInstanceId(this.processInstanceId)
-        .setPageSize(this.pageSize)
-        .setTaskVariables(this.taskVariables)
-        .setTenantIds(this.tenantIds)
-        .setSearchAfter(this.searchAfter)
-        .setSearchAfterOrEqual(this.searchAfterOrEqual)
-        .setSearchBefore(this.searchBefore)
-        .setSearchBefore(this.searchBefore)
-        .setSearchBeforeOrEqual(this.searchBeforeOrEqual)
-        .setFollowUpDate(this.followUpDate)
-        .setDueDate(this.dueDate)
-        .setSort(this.sort)
-        .setImplementation(this.implementation);
+        && Objects.equals(taskByCandidateUserOrGroup, that.taskByCandidateUserOrGroup)
+        && Objects.equals(priority, that.priority);
   }
 
   @Override
@@ -445,6 +430,37 @@ public class TaskQueryDTO {
         + taskByCandidateUserOrGroup
         + ", implementation="
         + implementation
+        + ", priority="
+        + priority
         + '}';
+  }
+
+  public TaskQuery toTaskQuery() {
+    return new TaskQuery()
+        .setState(state)
+        .setAssigned(assigned)
+        .setAssignee(assignee)
+        .setAssignees(assignees)
+        .setTaskDefinitionId(taskDefinitionId)
+        .setCandidateGroup(candidateGroup)
+        .setCandidateGroups(candidateGroups)
+        .setCandidateUser(candidateUser)
+        .setCandidateUsers(candidateUsers)
+        .setTaskByCandidateUserOrGroups(taskByCandidateUserOrGroup)
+        .setProcessDefinitionId(processDefinitionId)
+        .setProcessInstanceId(processInstanceId)
+        .setPageSize(pageSize)
+        .setTaskVariables(taskVariables)
+        .setTenantIds(tenantIds)
+        .setSearchAfter(searchAfter)
+        .setSearchAfterOrEqual(searchAfterOrEqual)
+        .setSearchBefore(searchBefore)
+        .setSearchBefore(searchBefore)
+        .setSearchBeforeOrEqual(searchBeforeOrEqual)
+        .setFollowUpDate(followUpDate)
+        .setDueDate(dueDate)
+        .setSort(sort)
+        .setImplementation(implementation)
+        .setPriority(priority);
   }
 }

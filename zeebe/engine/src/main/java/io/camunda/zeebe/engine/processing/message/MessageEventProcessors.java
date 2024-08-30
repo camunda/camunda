@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
+import java.time.InstantSource;
 import java.util.function.Supplier;
 
 public final class MessageEventProcessors {
@@ -40,7 +41,8 @@ public final class MessageEventProcessors {
       final Writers writers,
       final EngineConfiguration config,
       final FeatureFlags featureFlags,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final InstantSource clock) {
 
     final MutableMessageState messageState = processingState.getMessageState();
     final MutableMessageCorrelationState messageCorrelationState =
@@ -84,7 +86,8 @@ public final class MessageEventProcessors {
                 subscriptionState,
                 subscriptionCommandSender,
                 writers,
-                keyGenerator))
+                keyGenerator,
+                clock))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
@@ -94,7 +97,8 @@ public final class MessageEventProcessors {
                 messageCorrelationState,
                 subscriptionState,
                 subscriptionCommandSender,
-                writers))
+                writers,
+                clock))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.DELETE,
@@ -108,7 +112,11 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.REJECT,
             new MessageSubscriptionRejectProcessor(
-                messageState, subscriptionState, subscriptionCommandSender, writers))
+                messageState,
+                subscriptionState,
+                messageCorrelationState,
+                subscriptionCommandSender,
+                writers))
         .onCommand(
             ValueType.MESSAGE_CORRELATION,
             MessageCorrelationIntent.CORRELATE,
@@ -129,6 +137,7 @@ public final class MessageEventProcessors {
                 subscriptionCommandSender,
                 config.getMessagesTtlCheckerInterval(),
                 config.getMessagesTtlCheckerBatchLimit(),
-                featureFlags.enableMessageTTLCheckerAsync()));
+                featureFlags.enableMessageTTLCheckerAsync(),
+                clock));
   }
 }

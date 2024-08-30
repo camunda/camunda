@@ -196,6 +196,7 @@ public class ResourceDeletionDeleteProcessor
             .setDecisionId(BufferUtil.bufferAsString(persistedDecision.getDecisionId()))
             .setDecisionName(BufferUtil.bufferAsString(persistedDecision.getDecisionName()))
             .setVersion(persistedDecision.getVersion())
+            .setVersionTag(persistedDecision.getVersionTag())
             .setDecisionKey(persistedDecision.getDecisionKey())
             .setDecisionRequirementsId(
                 BufferUtil.bufferAsString(persistedDecision.getDecisionRequirementsId()))
@@ -213,6 +214,7 @@ public class ResourceDeletionDeleteProcessor
         new ProcessRecord()
             .setBpmnProcessId(processIdBuffer)
             .setVersion(process.getVersion())
+            .setVersionTag(process.getVersionTag())
             .setKey(process.getKey())
             .setResourceName(process.getResourceName())
             .setTenantId(process.getTenantId())
@@ -304,6 +306,7 @@ public class ResourceDeletionDeleteProcessor
             .setResource(persistedForm.getResource())
             .setChecksum(persistedForm.getChecksum())
             .setVersion(persistedForm.getVersion())
+            .setVersionTag(persistedForm.getVersionTag())
             .setDeploymentKey(persistedForm.getDeploymentKey());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), FormIntent.DELETED, form);

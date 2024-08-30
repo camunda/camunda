@@ -35,6 +35,13 @@ jest.mock('modules/components/InfiniteScroller', () => {
   return {InfiniteScroller};
 });
 
+jest.mock('modules/stores/licenseTag', () => ({
+  licenseTagStore: {
+    fetchLicense: jest.fn(),
+    state: {isTagVisible: false},
+  },
+}));
+
 global.beforeEach(() => {
   localStorage.clear();
 

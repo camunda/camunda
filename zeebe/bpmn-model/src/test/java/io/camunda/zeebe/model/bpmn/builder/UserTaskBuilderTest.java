@@ -287,6 +287,27 @@ class UserTaskBuilderTest {
   }
 
   @Test
+  void shouldSetFormVersionTag() {
+    // when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("userTask")
+            .zeebeFormVersionTag("v1")
+            .endEvent()
+            .done();
+
+    // then
+    final ModelElementInstance userTask = instance.getModelElementById("userTask");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) userTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeFormDefinition.class))
+        .hasSize(1)
+        .extracting(ZeebeFormDefinition::getVersionTag)
+        .containsExactly("v1");
+  }
+
+  @Test
   void shouldSetPriorityOnZeebeUserTask() {
     final String priority = "20";
     final BpmnModelInstance instance =

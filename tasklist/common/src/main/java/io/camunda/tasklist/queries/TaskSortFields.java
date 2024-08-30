@@ -11,5 +11,6 @@ public enum TaskSortFields {
   completionTime,
   creationTime,
   followUpDate,
-  dueDate
+  dueDate,
+  priority
 }

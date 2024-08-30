@@ -306,6 +306,15 @@ const api = {
       },
     });
   },
+  getLicense: () => {
+    return new Request(getFullURL('/v2/license'), {
+      ...BASE_REQUEST_OPTIONS,
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  },
 } as const;
 
 export {api};

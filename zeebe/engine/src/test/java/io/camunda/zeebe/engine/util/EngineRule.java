@@ -19,6 +19,8 @@ import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
+import io.camunda.zeebe.engine.util.client.AuthorizationClient;
+import io.camunda.zeebe.engine.util.client.ClockClient;
 import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
@@ -29,6 +31,7 @@ import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.ResourceDeletionClient;
 import io.camunda.zeebe.engine.util.client.SignalClient;
+import io.camunda.zeebe.engine.util.client.UserClient;
 import io.camunda.zeebe.engine.util.client.UserTaskClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
@@ -43,6 +46,7 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
+import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
@@ -203,6 +207,10 @@ public final class EngineRule extends ExternalResource {
     interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
   }
 
+  public void snapshot() {
+    environmentRule.snapshot();
+  }
+
   public void forEachPartition(final Consumer<Integer> partitionIdConsumer) {
     int partitionId = PARTITION_ID;
     for (int i = 0; i < partitionCount; i++) {
@@ -262,8 +270,20 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.getProcessingState();
   }
 
+  public ProcessingState getProcessingState(final int partitionId) {
+    return environmentRule.getProcessingState(partitionId);
+  }
+
   public StreamProcessor getStreamProcessor(final int partitionId) {
     return environmentRule.getStreamProcessor(partitionId);
+  }
+
+  public StreamClock getStreamClock() {
+    return getStreamClock(PARTITION_ID);
+  }
+
+  public StreamClock getStreamClock(final int partitionId) {
+    return environmentRule.getStreamClock(partitionId);
   }
 
   public long getLastProcessedPosition() {
@@ -316,6 +336,14 @@ public final class EngineRule extends ExternalResource {
 
   public UserTaskClient userTask() {
     return new UserTaskClient(environmentRule);
+  }
+
+  public UserClient user() {
+    return new UserClient(environmentRule);
+  }
+
+  public AuthorizationClient authorization() {
+    return new AuthorizationClient(environmentRule);
   }
 
   public Record<JobRecordValue> createJob(final String type, final String processId) {
@@ -429,6 +457,10 @@ public final class EngineRule extends ExternalResource {
           "Cannot intercept inter-partition commands before the engine is started");
     }
     interPartitionCommandSenders.forEach(sender -> sender.intercept(interceptor));
+  }
+
+  public ClockClient clock() {
+    return new ClockClient(environmentRule);
   }
 
   private static final class VersatileBlob implements DbKey, DbValue {

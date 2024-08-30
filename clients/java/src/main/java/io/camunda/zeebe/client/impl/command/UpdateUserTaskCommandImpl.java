@@ -141,6 +141,12 @@ public final class UpdateUserTaskCommandImpl implements UpdateUserTaskCommandSte
     return this;
   }
 
+  @Override
+  public UpdateUserTaskCommandStep1 priority(final Integer priority) {
+    getChangesetEnsureInitialized().put(Changeset.JSON_PROPERTY_PRIORITY, priority);
+    return this;
+  }
+
   private Changeset getChangesetEnsureInitialized() {
     Changeset changeset = request.getChangeset();
     if (changeset == null) {

@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +36,6 @@ public class JobZeebeRecordProcessor {
 
   private static final Set<String> JOB_EVENTS = new HashSet<>();
   private static final Set<String> FAILED_JOB_EVENTS = new HashSet<>();
-  private static final String ID_PATTERN = "%s_%s";
 
   static {
     JOB_EVENTS.add(JobIntent.CREATED.name());
@@ -44,12 +44,11 @@ public class JobZeebeRecordProcessor {
     JOB_EVENTS.add(JobIntent.FAILED.name());
     JOB_EVENTS.add(JobIntent.RETRIES_UPDATED.name());
     JOB_EVENTS.add(JobIntent.CANCELED.name());
+    JOB_EVENTS.add(JobIntent.ERROR_THROWN.name());
     JOB_EVENTS.add(JobIntent.MIGRATED.name());
-    JOB_EVENTS.add(JobIntent.FAIL.name());
-    JOB_EVENTS.add(JobIntent.FAILED.name());
 
-    FAILED_JOB_EVENTS.add(JobIntent.FAIL.name());
     FAILED_JOB_EVENTS.add(JobIntent.FAILED.name());
+    FAILED_JOB_EVENTS.add(JobIntent.ERROR_THROWN.name());
   }
 
   @Autowired private JobTemplate jobTemplate;
@@ -60,26 +59,34 @@ public class JobZeebeRecordProcessor {
       final boolean concurrencyMode)
       throws PersistenceException {
     LOGGER.debug("Importing Job records.");
-    for (final List<Record<JobRecordValue>> jobRecords : records.values()) {
-      processLastRecord(
-          jobRecords,
-          JOB_EVENTS,
-          rethrowConsumer(
-              record -> {
-                final JobRecordValue recordValue = (JobRecordValue) record.getValue();
-                processJob(record, recordValue, batchRequest, concurrencyMode);
-              }));
+    for (final List<Record<JobRecordValue>> flowNodeJobRecords : records.values()) {
+      final Map<Long, List<Record<JobRecordValue>>> groupedByJobKey =
+          flowNodeJobRecords.stream()
+              .collect(Collectors.groupingBy(jobRecord -> jobRecord.getKey()));
+      for (final List<Record<JobRecordValue>> jobRecords : groupedByJobKey.values()) {
+        processLastRecord(
+            jobRecords,
+            JOB_EVENTS,
+            rethrowConsumer(
+                record -> {
+                  final JobRecordValue recordValue = (JobRecordValue) record.getValue();
+                  processJob(record, recordValue, batchRequest, concurrencyMode);
+                }));
+      }
     }
   }
 
   private <T extends RecordValue> void processLastRecord(
-      final List<Record<T>> records,
+      final List<Record<JobRecordValue>> records,
       final Set<String> events,
       final Consumer<Record<? extends RecordValue>> recordProcessor) {
     if (records.size() >= 1) {
       for (int i = records.size() - 1; i >= 0; i--) {
         final String intentStr = records.get(i).getIntent().name();
         if (events.contains(intentStr)) {
+          if (i > 0 && FAILED_JOB_EVENTS.contains(intentStr)) {
+            recordProcessor.accept(records.get(i - 1));
+          }
           recordProcessor.accept(records.get(i));
           break;
         }
@@ -95,16 +102,11 @@ public class JobZeebeRecordProcessor {
       throws PersistenceException {
     final JobEntity jobEntity =
         new JobEntity()
-            .setId(
-                String.format(
-                    ID_PATTERN,
-                    recordValue.getProcessInstanceKey(),
-                    recordValue.getElementInstanceKey()))
+            .setId(Long.toString(record.getKey()))
             .setKey(record.getKey())
             .setPartitionId(record.getPartitionId())
             .setProcessInstanceKey(recordValue.getProcessInstanceKey())
             .setFlowNodeInstanceId(recordValue.getElementInstanceKey())
-            .setFlowNodeId(recordValue.getElementId())
             .setTenantId(recordValue.getTenantId())
             .setType(recordValue.getType())
             .setWorker(recordValue.getWorker())
@@ -114,7 +116,8 @@ public class JobZeebeRecordProcessor {
             .setErrorCode(recordValue.getErrorCode())
             .setEndTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
             .setCustomHeaders(recordValue.getCustomHeaders())
-            .setJobKind(recordValue.getJobKind().name());
+            .setJobKind(recordValue.getJobKind().name())
+            .setFlowNodeId(recordValue.getElementId());
 
     if (recordValue.getJobListenerEventType() != null) {
       jobEntity.setListenerEventType(recordValue.getJobListenerEventType().name());
@@ -123,12 +126,18 @@ public class JobZeebeRecordProcessor {
     if (jobDeadline >= 0) {
       jobEntity.setDeadline(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(jobDeadline)));
     }
-    if (FAILED_JOB_EVENTS.contains(record.getIntent().name()) && recordValue.getRetries() > 0) {
-      jobEntity.setJobFailedWithRetriesLeft(true);
-    } else {
-      jobEntity.setJobFailedWithRetriesLeft(false);
+
+    if (FAILED_JOB_EVENTS.contains(record.getIntent().name())) {
+      // set flowNodeId to null to not overwrite it (because zeebe puts an error message there)
+      jobEntity.setFlowNodeId(null);
+      if (recordValue.getRetries() > 0) {
+        jobEntity.setJobFailedWithRetriesLeft(true);
+      } else {
+        jobEntity.setJobFailedWithRetriesLeft(false);
+      }
     }
     final Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(FLOW_NODE_ID, jobEntity.getFlowNodeId());
     updateFields.put(JOB_WORKER, jobEntity.getWorker());
     updateFields.put(JOB_STATE, jobEntity.getState());
     updateFields.put(RETRIES, jobEntity.getRetries());
@@ -138,23 +147,21 @@ public class JobZeebeRecordProcessor {
     updateFields.put(CUSTOM_HEADERS, jobEntity.getCustomHeaders());
     updateFields.put(JOB_DEADLINE, jobEntity.getDeadline());
 
-    if (concurrencyMode) {
-      batchRequest.upsertWithScript(
-          jobTemplate.getFullQualifiedName(),
-          jobEntity.getId(),
-          jobEntity,
-          getJobUpdateScript(),
-          updateFields);
-    } else {
-      batchRequest.upsert(
-          jobTemplate.getFullQualifiedName(), jobEntity.getId(), jobEntity, updateFields);
-    }
+    batchRequest.upsertWithScript(
+        jobTemplate.getFullQualifiedName(),
+        jobEntity.getId(),
+        jobEntity,
+        getJobUpdateScript(),
+        updateFields);
   }
 
   private String getJobUpdateScript() {
     return String.format(
         "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
             + "ctx._source.%s = params.%s; " // position
+            + "if (params.%s != null) {"
+            + "   ctx._source.%s = params.%s; " // flowNodeId
+            + "}"
             + "ctx._source.%s = params.%s; " // state
             + "ctx._source.%s = params.%s; " // retries
             + "ctx._source.%s = params.%s; " // worker
@@ -171,6 +178,9 @@ public class JobZeebeRecordProcessor {
         POSITION,
         POSITION,
         POSITION,
+        FLOW_NODE_ID,
+        FLOW_NODE_ID,
+        FLOW_NODE_ID,
         JOB_STATE,
         JOB_STATE,
         RETRIES,

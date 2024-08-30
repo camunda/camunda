@@ -157,7 +157,7 @@ public class RestErrorMapper {
         .build();
   }
 
-  public static CompletableFuture<ResponseEntity<Object>> mapProblemToCompletedResponse(
+  public static <T> CompletableFuture<ResponseEntity<T>> mapProblemToCompletedResponse(
       final ProblemDetail problemDetail) {
     return CompletableFuture.completedFuture(RestErrorMapper.mapProblemToResponse(problemDetail));
   }

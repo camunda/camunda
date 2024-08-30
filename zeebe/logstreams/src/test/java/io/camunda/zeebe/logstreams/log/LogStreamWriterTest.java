@@ -223,6 +223,19 @@ public final class LogStreamWriterTest {
     return event;
   }
 
+  @Test
+  public void shouldWriteEventWithTimestampFromClock() {
+    // given
+    logStreamRule.getClock().setCurrentTime(123456789L);
+    final long position = tryWrite(TestEntry.ofDefaults());
+
+    // when
+    final LoggedEvent event = getWrittenEvent(position);
+
+    // then
+    assertThat(event.getTimestamp()).isEqualTo(123456789L);
+  }
+
   private List<LoggedEvent> getWrittenEvents(final long position) {
     final List<LoggedEvent> events = new ArrayList<>();
 

@@ -13,6 +13,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import java.time.InstantSource;
 
 public final class SyncLogStreamBuilder implements LogStreamBuilder {
   private final LogStreamBuilder delegate;
@@ -53,6 +54,12 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   @Override
   public SyncLogStreamBuilder withLogName(final String logName) {
     delegate.withLogName(logName);
+    return this;
+  }
+
+  @Override
+  public SyncLogStreamBuilder withClock(final InstantSource clock) {
+    delegate.withClock(clock);
     return this;
   }
 

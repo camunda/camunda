@@ -25,6 +25,10 @@ import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockGetUser} from 'modules/mocks/api/getUser';
 
+jest.mock('modules/stores/process', () => ({
+  processStore: {state: {process: {}}, fetchProcess: jest.fn()},
+}));
+
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     authenticationStore.authenticate();

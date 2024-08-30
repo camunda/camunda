@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.clock.ClockProcessors;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionAcknow
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationEventProcessors;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
@@ -38,6 +40,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorCo
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
+import io.camunda.zeebe.engine.processing.user.UserEventProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskEventProcessors;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -53,6 +56,7 @@ import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
+import java.time.InstantSource;
 import java.util.function.Supplier;
 
 public final class EngineProcessors {
@@ -76,11 +80,13 @@ public final class EngineProcessors {
 
     typedRecordProcessors.withListener(processingState);
 
+    final var clock = typedRecordProcessorContext.getClock();
     final int partitionId = typedRecordProcessorContext.getPartitionId();
     final var config = typedRecordProcessorContext.getConfig();
 
     final DueDateTimerChecker timerChecker =
-        new DueDateTimerChecker(scheduledTaskStateFactory.get().getTimerState(), featureFlags);
+        new DueDateTimerChecker(
+            scheduledTaskStateFactory.get().getTimerState(), featureFlags, clock);
 
     final var jobMetrics = new JobMetrics(partitionId);
     final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
@@ -99,7 +105,8 @@ public final class EngineProcessors {
             timerChecker,
             jobStreamer,
             jobMetrics,
-            decisionBehavior);
+            decisionBehavior,
+            clock);
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
@@ -121,7 +128,8 @@ public final class EngineProcessors {
         processingState.getKeyGenerator(),
         featureFlags,
         commandDistributionBehavior,
-        config);
+        config,
+        clock);
     addMessageProcessors(
         bpmnBehaviors,
         subscriptionCommandSender,
@@ -131,7 +139,8 @@ public final class EngineProcessors {
         writers,
         config,
         featureFlags,
-        commandDistributionBehavior);
+        commandDistributionBehavior,
+        clock);
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
@@ -144,7 +153,8 @@ public final class EngineProcessors {
             timerChecker,
             commandDistributionBehavior,
             partitionId,
-            partitionsCount);
+            partitionsCount,
+            clock);
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
@@ -155,7 +165,8 @@ public final class EngineProcessors {
         bpmnBehaviors,
         writers,
         jobMetrics,
-        config);
+        config,
+        clock);
 
     addIncidentProcessors(
         processingState,
@@ -185,6 +196,27 @@ public final class EngineProcessors {
     UserTaskEventProcessors.addUserTaskProcessors(
         typedRecordProcessors, processingState, bpmnBehaviors, writers);
 
+    UserEventProcessors.addUserProcessors(
+        processingState.getKeyGenerator(),
+        typedRecordProcessors,
+        processingState,
+        writers,
+        commandDistributionBehavior);
+
+    ClockProcessors.addClockProcessors(
+        typedRecordProcessors,
+        writers,
+        processingState.getKeyGenerator(),
+        clock,
+        commandDistributionBehavior);
+
+    AuthorizationEventProcessors.addAuthorizationProcessors(
+        processingState.getKeyGenerator(),
+        typedRecordProcessors,
+        processingState,
+        writers,
+        commandDistributionBehavior);
+
     return typedRecordProcessors;
   }
 
@@ -196,7 +228,8 @@ public final class EngineProcessors {
       final DueDateTimerChecker timerChecker,
       final JobStreamer jobStreamer,
       final JobMetrics jobMetrics,
-      final DecisionBehavior decisionBehavior) {
+      final DecisionBehavior decisionBehavior,
+      final InstantSource clock) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -205,7 +238,8 @@ public final class EngineProcessors {
         subscriptionCommandSender,
         partitionsCount,
         timerChecker,
-        jobStreamer);
+        jobStreamer,
+        clock);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
@@ -218,7 +252,8 @@ public final class EngineProcessors {
       final DueDateTimerChecker timerChecker,
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
-      final int partitionsCount) {
+      final int partitionsCount,
+      final InstantSource clock) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -229,7 +264,8 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior,
         partitionId,
-        partitionsCount);
+        partitionsCount,
+        clock);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
@@ -242,7 +278,8 @@ public final class EngineProcessors {
       final KeyGenerator keyGenerator,
       final FeatureFlags featureFlags,
       final CommandDistributionBehavior distributionBehavior,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final InstantSource clock) {
 
     // on deployment partition CREATE Command is received and processed
     // it will cause a distribution to other partitions
@@ -254,7 +291,8 @@ public final class EngineProcessors {
             keyGenerator,
             featureFlags,
             distributionBehavior,
-            config);
+            config,
+            clock);
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
 
     // periodically retries deployment distribution
@@ -303,7 +341,8 @@ public final class EngineProcessors {
       final Writers writers,
       final EngineConfiguration config,
       final FeatureFlags featureFlags,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final InstantSource clock) {
     MessageEventProcessors.addMessageProcessors(
         bpmnBehaviors,
         typedRecordProcessors,
@@ -313,7 +352,8 @@ public final class EngineProcessors {
         writers,
         config,
         featureFlags,
-        commandDistributionBehavior);
+        commandDistributionBehavior,
+        clock);
   }
 
   private static void addDecisionProcessors(

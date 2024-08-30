@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.stream.api.EventFilter;
+import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import java.time.Duration;
@@ -121,6 +122,7 @@ public final class ExporterRule implements TestRule {
             .id(EXPORTER_PROCESSOR_ID)
             .name(PROCESSOR_NAME)
             .logStream(stream.getAsyncLogStream())
+            .clock(StreamClock.system())
             .zeebeDb(capturedZeebeDb)
             .exporterMode(exporterMode)
             .distributionInterval(distributionInterval)
@@ -182,7 +184,7 @@ public final class ExporterRule implements TestRule {
 
     @Override
     protected void before() {
-      streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
+      streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get(), clock);
       streams.createLogStream(STREAM_NAME, partitionId);
     }
   }

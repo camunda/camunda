@@ -19,7 +19,9 @@ import io.camunda.zeebe.client.api.response.CompleteJobResponse;
 import java.io.InputStream;
 import java.util.Map;
 
-public interface CompleteJobCommandStep1 extends FinalCommandStep<CompleteJobResponse> {
+public interface CompleteJobCommandStep1
+    extends CommandWithCommunicationApiStep<CompleteJobCommandStep1>,
+        FinalCommandStep<CompleteJobResponse> {
 
   /**
    * Set the variables to complete the job with.

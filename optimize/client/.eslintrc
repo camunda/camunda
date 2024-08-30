@@ -1,0 +1,14 @@
+{
+  "plugins": ["prettier", "testcafe"],
+  "rules": {
+    "license-header/header": [ "error", "./resources/license-header.js" ],
+    "prettier/prettier": ["warn", {
+      "endOfLine": "auto"
+    }],
+    "curly": "error"
+  },
+  "globals": {
+    "flushPromises": "readonly"
+  },
+  "extends": ["react-app", "plugin:camunda-licensed/commercial", "plugin:testcafe/recommended"]
+}

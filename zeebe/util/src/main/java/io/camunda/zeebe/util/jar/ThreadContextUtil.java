@@ -9,6 +9,7 @@ package io.camunda.zeebe.util.jar;
 
 import io.camunda.zeebe.util.CheckedRunnable;
 import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 import org.agrona.LangUtil;
 
 /**
@@ -77,6 +78,26 @@ public final class ThreadContextUtil {
     try {
       currentThread.setContextClassLoader(classLoader);
       return callable.call();
+    } finally {
+      currentThread.setContextClassLoader(contextClassLoader);
+    }
+  }
+
+  /**
+   * Executes the given {@code Supplier}, swapping the thread context class loader for the given
+   * class loader, and swapping it back with the previous class loader afterwards.
+   *
+   * @param supplier the operation to execute
+   * @param classLoader the class loader to temporarily assign to the current thread's context class
+   *     loader
+   */
+  public static <V> V supplyWithClassLoader(
+      final Supplier<V> supplier, final ClassLoader classLoader) {
+    final var currentThread = Thread.currentThread();
+    final var contextClassLoader = currentThread.getContextClassLoader();
+    try {
+      currentThread.setContextClassLoader(classLoader);
+      return supplier.get();
     } finally {
       currentThread.setContextClassLoader(contextClassLoader);
     }

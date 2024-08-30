@@ -15,6 +15,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionSt
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -45,6 +47,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -104,6 +107,10 @@ public final class EventAppliers implements EventApplier {
     registerCommandDistributionAppliers(state);
     registerEscalationAppliers();
     registerResourceDeletionAppliers();
+
+    registerUserAppliers(state);
+    registerAuthorizationAppliers(state);
+    registerClockAppliers(state);
     return this;
   }
 
@@ -118,6 +125,7 @@ public final class EventAppliers implements EventApplier {
     register(TimerIntent.CREATED, new TimerCreatedApplier(state.getTimerState()));
     register(TimerIntent.CANCELED, new TimerCancelledApplier(state.getTimerState()));
     register(TimerIntent.TRIGGERED, new TimerTriggeredApplier(state.getTimerState()));
+    register(TimerIntent.MIGRATED, new TimerMigrationApplier(state.getTimerState()));
   }
 
   private void registerDeploymentAppliers(final MutableProcessingState state) {
@@ -216,7 +224,7 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.TIMED_OUT, new JobTimedOutApplier(state));
     register(JobIntent.RECURRED_AFTER_BACKOFF, new JobRecurredApplier(state));
     register(JobIntent.TIMEOUT_UPDATED, new JobTimeoutUpdatedApplier(state));
-    register(JobIntent.UPDATED, new JobNoopApplier());
+    register(JobIntent.UPDATED, new JobUpdatedApplier(state));
     register(JobIntent.MIGRATED, new JobMigratedApplier(state));
   }
 
@@ -228,7 +236,13 @@ public final class EventAppliers implements EventApplier {
   private void registerMessageCorrelationAppliers(final MutableProcessingState state) {
     register(MessageCorrelationIntent.CORRELATING, new MessageCorrelationCorrelatingApplier(state));
     register(MessageCorrelationIntent.CORRELATED, new MessageCorrelationCorrelatedApplier(state));
-    register(MessageCorrelationIntent.NOT_CORRELATED, NOOP_EVENT_APPLIER);
+    register(
+        MessageCorrelationIntent.NOT_CORRELATED, new MessageCorrelationNotCorrelatedApplier(state));
+  }
+
+  private void registerUserAppliers(final MutableProcessingState state) {
+    register(UserIntent.CREATED, new UserCreatedApplier(state));
+    register(UserIntent.UPDATED, new UserUpdatedApplier(state));
   }
 
   private void registerMessageSubscriptionAppliers(final MutableProcessingState state) {
@@ -401,6 +415,10 @@ public final class EventAppliers implements EventApplier {
         new CommandDistributionFinishedApplier(distributionState));
   }
 
+  private void registerAuthorizationAppliers(final MutableProcessingState state) {
+    register(AuthorizationIntent.CREATED, new AuthorizationCreatedApplier(state));
+  }
+
   private void registerEscalationAppliers() {
     register(EscalationIntent.ESCALATED, NOOP_EVENT_APPLIER);
     register(EscalationIntent.NOT_ESCALATED, NOOP_EVENT_APPLIER);
@@ -409,6 +427,11 @@ public final class EventAppliers implements EventApplier {
   private void registerResourceDeletionAppliers() {
     register(ResourceDeletionIntent.DELETING, NOOP_EVENT_APPLIER);
     register(ResourceDeletionIntent.DELETED, NOOP_EVENT_APPLIER);
+  }
+
+  private void registerClockAppliers(final MutableProcessingState state) {
+    register(ClockIntent.PINNED, new ClockPinnedApplier(state.getClockState()));
+    register(ClockIntent.RESETTED, new ClockResettedApplier(state.getClockState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

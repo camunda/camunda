@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import org.agrona.DirectBuffer;
@@ -51,14 +52,14 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
   @Override
   public Either<Failure, Void> createMetadata(
       final DeploymentResource resource, final DeploymentRecord deployment) {
-    return parseFormId(resource)
+    return parseForm(resource)
         .flatMap(
-            formId ->
-                checkForDuplicateFormId(formId, resource, deployment)
+            form ->
+                checkForDuplicateFormId(form.id, resource, deployment)
                     .map(
                         noDuplicates -> {
                           final FormMetadataRecord formRecord = deployment.formMetadata().add();
-                          appendMetadataToFormRecord(formRecord, formId, resource, deployment);
+                          appendMetadataToFormRecord(formRecord, form, resource, deployment);
                           return null;
                         }));
   }
@@ -91,15 +92,14 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
     return Either.right(null);
   }
 
-  private Either<Failure, String> parseFormId(final DeploymentResource resource) {
+  private Either<Failure, Form> parseForm(final DeploymentResource resource) {
     try {
-      final String formId = JSON_MAPPER.readValue(resource.getResource(), FormIdPOJO.class).getId();
-
-      return validateFormId(formId);
+      final var form = JSON_MAPPER.readValue(resource.getResource(), Form.class);
+      return validateForm(form);
     } catch (final JsonProcessingException e) {
       final var failureMessage =
           String.format(
-              "Failed to parse formId from form JSON. '%s': %s",
+              "Failed to parse form JSON. '%s': %s",
               resource.getResourceName(), e.getCause().getMessage());
       return Either.left(new Failure(failureMessage));
     } catch (final IOException e) {
@@ -128,18 +128,19 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
 
   private void appendMetadataToFormRecord(
       final FormMetadataRecord formRecord,
-      final String formId,
+      final Form form,
       final DeploymentResource resource,
       final DeploymentRecord deployment) {
     final LongSupplier newFormKey = keyGenerator::nextKey;
     final DirectBuffer checksum = checksumGenerator.apply(resource.getResource());
     final String tenantId = deployment.getTenantId();
 
-    formRecord.setFormId(formId);
+    formRecord.setFormId(form.id);
     formRecord.setChecksum(checksum);
     formRecord.setResourceName(resource.getResourceName());
     formRecord.setTenantId(tenantId);
     formRecord.setDeploymentKey(deployment.getDeploymentKey());
+    Optional.ofNullable(form.versionTag).ifPresent(formRecord::setVersionTag);
 
     formState
         .findLatestFormById(wrapString(formRecord.getFormId()), tenantId)
@@ -158,7 +159,7 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
               } else {
                 formRecord
                     .setFormKey(newFormKey.getAsLong())
-                    .setVersion(formState.getNextFormVersion(formId, tenantId));
+                    .setVersion(formState.getNextFormVersion(form.id, tenantId));
               }
             },
             () -> formRecord.setFormKey(newFormKey.getAsLong()).setVersion(INITIAL_VERSION));
@@ -172,29 +173,16 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
         new FormRecord().wrap(formRecord, resource.getResource()));
   }
 
-  private Either<Failure, String> validateFormId(final String formId) {
-    if (formId == null) {
+  private Either<Failure, Form> validateForm(final Form form) {
+    if (form.id == null) {
       return Either.left(new Failure("Expected the form id to be present, but none given"));
     }
-    if (formId.isBlank()) {
+    if (form.id.isBlank()) {
       return Either.left(new Failure("Expected the form id to be filled, but it is blank"));
     }
-
-    return Either.right(formId);
+    return Either.right(form);
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
-  private static class FormIdPOJO {
-    private String id;
-
-    public FormIdPOJO() {}
-
-    public String getId() {
-      return id;
-    }
-
-    public void setId(final String id) {
-      this.id = id;
-    }
-  }
+  private record Form(String id, String versionTag) {}
 }

@@ -34,6 +34,15 @@ public final class RateMeasurement {
     observations = new LinkedBlockingDeque<>(numberOfObservations);
   }
 
+  /**
+   * Updates the rate measurement with the given value.
+   *
+   * <p>The new observation will be ignored if it is not the first or measured after the previous at
+   * least by the resolution time.
+   *
+   * @param value to update the rate measurement with.
+   * @return true if the observation was added, false if the observation was skipped.
+   */
   public boolean observe(final long value) {
     final var now = clock.getAsLong();
     currentValue = value;

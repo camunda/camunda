@@ -312,7 +312,8 @@ final class ClusterConfigurationManagerTest {
             topologyWithoutMember.version() + 1,
             topologyWithoutMember.members(),
             topologyWithoutMember.lastChange(),
-            topologyWithoutMember.pendingChanges());
+            topologyWithoutMember.pendingChanges(),
+            topologyWithoutMember.routingState());
     clusterTopologyManager.onGossipReceived(notConflictingTopology);
 
     // then

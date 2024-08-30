@@ -107,6 +107,9 @@ beforeAll(() => {
       };
     })(),
   });
+
+  // temporary fix while jsdom doesn't implement this: https://github.com/jsdom/jsdom/issues/1695
+  window.HTMLElement.prototype.scrollIntoView = function () {};
 });
 
 afterEach(() => {

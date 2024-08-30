@@ -20,9 +20,13 @@ on:
         required: true
         type: string
       pushDocker:
-        description: "whether the built docker images are pushed to camunda registry"
+        description: "Whether the built docker images are pushed to camunda registry"
         type: boolean
         default: true
+      previewEnv:
+        description: "Defines whether this is a preview environment build or not. If true, the image will be pushed to the Harbor Docker registry."
+        type: boolean
+        default: false
 
 defaults:
   run:
@@ -62,7 +66,7 @@ jobs:
       #########################################################################
       # Setup: import secrets from vault
       - name: Import Secrets
-        id: secrets  # important to refer to it in later steps
+        id: secrets # important to refer to it in later steps
         uses: hashicorp/vault-action@v3
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -86,10 +90,15 @@ jobs:
           nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       #########################################################################
+      # Build Operate frontend
+      - name: Build frontend
+        uses: ./.github/actions/build-operate-fe
+
+      #########################################################################
       # Build: maven artifacts and Docker images
       - name: Build Maven
         run: |
-          mvn clean deploy -B -T1C -P -docker -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          mvn clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -D skipOptimize -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       #########################################################################
       # Docker login and image tagging
@@ -105,7 +114,7 @@ jobs:
       - name: Build Docker image
         uses: ./.github/actions/build-platform-docker
         with:
-          repository: registry.camunda.cloud/team-operate/camunda-operate
+          repository: ${{ inputs.previewEnv && 'registry.camunda.cloud/team-camunda/operate' || 'registry.camunda.cloud/team-operate/camunda-operate' }}
           version: |
             ${{ env.IMAGE_TAG }}
             ${{ env.CI_IMAGE_TAG }}

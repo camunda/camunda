@@ -92,11 +92,14 @@ public class TaskResponse {
 
   private TaskImplementation implementation;
 
+  @Schema(description = "The assigned priority of the task. Only for Zeebe User Tasks.")
+  private int priority;
+
   public String getId() {
     return id;
   }
 
-  public TaskResponse setId(String id) {
+  public TaskResponse setId(final String id) {
     this.id = id;
     return this;
   }
@@ -105,7 +108,7 @@ public class TaskResponse {
     return name;
   }
 
-  public TaskResponse setName(String name) {
+  public TaskResponse setName(final String name) {
     this.name = name;
     return this;
   }
@@ -114,7 +117,7 @@ public class TaskResponse {
     return taskDefinitionId;
   }
 
-  public TaskResponse setTaskDefinitionId(String taskDefinitionId) {
+  public TaskResponse setTaskDefinitionId(final String taskDefinitionId) {
     this.taskDefinitionId = taskDefinitionId;
     return this;
   }
@@ -123,7 +126,7 @@ public class TaskResponse {
     return processName;
   }
 
-  public TaskResponse setProcessName(String processName) {
+  public TaskResponse setProcessName(final String processName) {
     this.processName = processName;
     return this;
   }
@@ -132,7 +135,7 @@ public class TaskResponse {
     return creationDate;
   }
 
-  public TaskResponse setCreationDate(String creationDate) {
+  public TaskResponse setCreationDate(final String creationDate) {
     this.creationDate = creationDate;
     return this;
   }
@@ -141,7 +144,7 @@ public class TaskResponse {
     return completionDate;
   }
 
-  public TaskResponse setCompletionDate(String completionDate) {
+  public TaskResponse setCompletionDate(final String completionDate) {
     this.completionDate = completionDate;
     return this;
   }
@@ -150,7 +153,7 @@ public class TaskResponse {
     return assignee;
   }
 
-  public TaskResponse setAssignee(String assignee) {
+  public TaskResponse setAssignee(final String assignee) {
     this.assignee = assignee;
     return this;
   }
@@ -159,7 +162,7 @@ public class TaskResponse {
     return taskState;
   }
 
-  public TaskResponse setTaskState(TaskState taskState) {
+  public TaskResponse setTaskState(final TaskState taskState) {
     this.taskState = taskState;
     return this;
   }
@@ -168,7 +171,7 @@ public class TaskResponse {
     return formKey;
   }
 
-  public TaskResponse setFormKey(String formKey) {
+  public TaskResponse setFormKey(final String formKey) {
     this.formKey = formKey;
     return this;
   }
@@ -177,7 +180,7 @@ public class TaskResponse {
     return formId;
   }
 
-  public TaskResponse setFormId(String formId) {
+  public TaskResponse setFormId(final String formId) {
     this.formId = formId;
     return this;
   }
@@ -186,7 +189,7 @@ public class TaskResponse {
     return formVersion;
   }
 
-  public TaskResponse setFormVersion(Long formVersion) {
+  public TaskResponse setFormVersion(final Long formVersion) {
     this.formVersion = formVersion;
     return this;
   }
@@ -195,7 +198,7 @@ public class TaskResponse {
     return isFormEmbedded;
   }
 
-  public TaskResponse setIsFormEmbedded(Boolean isFormEmbedded) {
+  public TaskResponse setIsFormEmbedded(final Boolean isFormEmbedded) {
     this.isFormEmbedded = isFormEmbedded;
     return this;
   }
@@ -204,7 +207,7 @@ public class TaskResponse {
     return processDefinitionKey;
   }
 
-  public TaskResponse setProcessDefinitionKey(String processDefinitionKey) {
+  public TaskResponse setProcessDefinitionKey(final String processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
@@ -213,7 +216,7 @@ public class TaskResponse {
     return processInstanceKey;
   }
 
-  public TaskResponse setProcessInstanceKey(String processInstanceKey) {
+  public TaskResponse setProcessInstanceKey(final String processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
     return this;
   }
@@ -222,7 +225,7 @@ public class TaskResponse {
     return tenantId;
   }
 
-  public TaskResponse setTenantId(String tenantId) {
+  public TaskResponse setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -231,7 +234,7 @@ public class TaskResponse {
     return dueDate;
   }
 
-  public TaskResponse setDueDate(OffsetDateTime dueDate) {
+  public TaskResponse setDueDate(final OffsetDateTime dueDate) {
     this.dueDate = dueDate;
     return this;
   }
@@ -240,7 +243,7 @@ public class TaskResponse {
     return followUpDate;
   }
 
-  public TaskResponse setFollowUpDate(OffsetDateTime followUpDate) {
+  public TaskResponse setFollowUpDate(final OffsetDateTime followUpDate) {
     this.followUpDate = followUpDate;
     return this;
   }
@@ -249,7 +252,7 @@ public class TaskResponse {
     return candidateGroups;
   }
 
-  public TaskResponse setCandidateGroups(String[] candidateGroups) {
+  public TaskResponse setCandidateGroups(final String[] candidateGroups) {
     this.candidateGroups = candidateGroups;
     return this;
   }
@@ -258,7 +261,7 @@ public class TaskResponse {
     return candidateUsers;
   }
 
-  public TaskResponse setCandidateUsers(String[] candidateUsers) {
+  public TaskResponse setCandidateUsers(final String[] candidateUsers) {
     this.candidateUsers = candidateUsers;
     return this;
   }
@@ -267,13 +270,49 @@ public class TaskResponse {
     return implementation;
   }
 
-  public TaskResponse setImplementation(TaskImplementation implementation) {
+  public TaskResponse setImplementation(final TaskImplementation implementation) {
     this.implementation = implementation;
     return this;
   }
 
+  public int getPriority() {
+    return priority;
+  }
+
+  public TaskResponse setPriority(final int priority) {
+    this.priority = priority;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    int result =
+        Objects.hash(
+            id,
+            name,
+            taskDefinitionId,
+            processName,
+            creationDate,
+            completionDate,
+            assignee,
+            taskState,
+            formKey,
+            formId,
+            formVersion,
+            isFormEmbedded,
+            processDefinitionKey,
+            processInstanceKey,
+            tenantId,
+            dueDate,
+            followUpDate,
+            priority);
+    result = 31 * result + Arrays.hashCode(candidateGroups);
+    result = 31 * result + Arrays.hashCode(candidateUsers);
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -298,34 +337,9 @@ public class TaskResponse {
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(dueDate, that.dueDate)
         && Objects.equals(followUpDate, that.followUpDate)
+        && priority == that.priority
         && Arrays.equals(candidateGroups, that.candidateGroups)
         && Arrays.equals(candidateUsers, that.candidateUsers);
-  }
-
-  @Override
-  public int hashCode() {
-    int result =
-        Objects.hash(
-            id,
-            name,
-            taskDefinitionId,
-            processName,
-            creationDate,
-            completionDate,
-            assignee,
-            taskState,
-            formKey,
-            formId,
-            formVersion,
-            isFormEmbedded,
-            processDefinitionKey,
-            processInstanceKey,
-            tenantId,
-            dueDate,
-            followUpDate);
-    result = 31 * result + Arrays.hashCode(candidateGroups);
-    result = 31 * result + Arrays.hashCode(candidateUsers);
-    return result;
   }
 
   @Override
@@ -350,6 +364,7 @@ public class TaskResponse {
         .add("followUpDate='" + followUpDate + "'")
         .add("candidateGroups=" + Arrays.toString(candidateGroups))
         .add("candidateUsers=" + Arrays.toString(candidateUsers))
+        .add("priority=" + priority)
         .toString();
   }
 }

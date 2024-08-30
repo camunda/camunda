@@ -15,12 +15,13 @@ runs:
     - name: Setup yarn
       run: npm install -g yarn
       shell: bash
-    - name: Setup yarn cache
+    - name: Setup NodeJS
       uses: actions/setup-node@v4
       with:
         node-version: "20"
-        cache: "yarn"
-        cache-dependency-path: ${{ inputs.directory }}/yarn.lock
+    - uses: ./.github/actions/setup-yarn-cache
+      with:
+        directory: ${{ inputs.directory }}
     - name: Install node dependencies
       working-directory: ${{ inputs.directory }}
       shell: bash

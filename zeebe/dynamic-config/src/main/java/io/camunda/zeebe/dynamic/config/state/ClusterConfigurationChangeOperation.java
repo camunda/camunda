@@ -107,5 +107,15 @@ public sealed interface ClusterConfigurationChangeOperation {
     record PartitionEnableExporterOperation(
         MemberId memberId, int partitionId, String exporterId, Optional<String> initializeFrom)
         implements PartitionChangeOperation {}
+
+    /**
+     * Operation to bootstrap a new partition in the given member. The operation starts the
+     * partitions as a single replica. More replicas should be added in subsequent operations.
+     *
+     * @param memberId the member id of the member that will apply this operation
+     * @param partitionId id of the partition to bootstrap
+     */
+    record PartitionBootstrapOperation(MemberId memberId, int partitionId)
+        implements PartitionChangeOperation {}
   }
 }

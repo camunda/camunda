@@ -3,7 +3,7 @@ ARG BASE_IMAGE="alpine:3.20.2"
 ARG BASE_DIGEST="sha256:0a4eaa0eecf5f8c050e5bba433f58c052be7587ee8af3e8b3910ef9ab5fbe9f5"
 
 # Prepare Operate Distribution
-FROM ${BASE_IMAGE}@${BASE_DIGEST} as prepare
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS prepare
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 WORKDIR /tmp/operate
 
@@ -16,7 +16,7 @@ RUN sed -i '/^exec /i cat /usr/local/operate/notice.txt' bin/operate
 
 ### Base image ###
 # hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST} as base
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
 
 # Install Tini
 RUN apk update && apk add --no-cache tini
@@ -26,7 +26,7 @@ RUN apk update && apk add --no-cache tini
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
 
-FROM base as app
+FROM base AS app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST

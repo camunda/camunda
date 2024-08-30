@@ -15,8 +15,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "yarn"
-          cache-dependency-path: tasklist/client/yarn.lock
+      - uses: ./.github/actions/setup-yarn-cache
+        with:
+          directory: tasklist/client
       - run: yarn install --frozen-lockfile
         name: Install dependencies
       - run: yarn ts-check
@@ -42,8 +43,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "yarn"
-          cache-dependency-path: tasklist/client/yarn.lock
+      - uses: ./.github/actions/setup-yarn-cache
+        with:
+          directory: tasklist/client
       - run: yarn install --frozen-lockfile
         name: Install dependencies
       - run: yarn eslint
@@ -69,8 +71,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "yarn"
-          cache-dependency-path: tasklist/client/yarn.lock
+      - uses: ./.github/actions/setup-yarn-cache
+        with:
+          directory: tasklist/client
       - run: yarn install --frozen-lockfile
         name: Install dependencies
       - run: yarn stylelint
@@ -96,8 +99,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "yarn"
-          cache-dependency-path: tasklist/client/yarn.lock
+      - uses: ./.github/actions/setup-yarn-cache
+        with:
+          directory: tasklist/client
       - run: yarn install --frozen-lockfile
         name: Install dependencies
       - run: yarn test:ci
@@ -116,7 +120,7 @@ jobs:
     name: Visual regression tests
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.46.0
+      image: mcr.microsoft.com/playwright:v1.46.1
       options: --user 1001:1000
     defaults:
       run:
@@ -124,12 +128,13 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-      - name: Setup yarn cache
+      - name: SetSetup NodeJShe
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "yarn"
-          cache-dependency-path: tasklist/client/yarn.lock
+      - uses: ./.github/actions/setup-yarn-cache
+        with:
+          directory: tasklist/client
       - name: Install node dependencies
         run: yarn
       - name: Build frontend
@@ -158,7 +163,7 @@ jobs:
     name: a11y tests
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.46.0
+      image: mcr.microsoft.com/playwright:v1.46.1
       options: --user 1001:1000
     defaults:
       run:
@@ -166,12 +171,13 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-      - name: Setup yarn cache
+      - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "yarn"
-          cache-dependency-path: tasklist/client/yarn.lock
+      - uses: ./.github/actions/setup-yarn-cache
+        with:
+          directory: tasklist/client
       - name: Install node dependencies
         run: yarn
       - name: Build frontend

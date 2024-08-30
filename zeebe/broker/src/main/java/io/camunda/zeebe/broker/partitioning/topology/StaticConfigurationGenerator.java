@@ -40,31 +40,28 @@ public final class StaticConfigurationGenerator {
   public static StaticConfiguration getStaticConfiguration(
       final BrokerCfg brokerCfg, final MemberId localMemberId) {
     final var clusterCfg = brokerCfg.getCluster();
+    final var enablePartitionScaling =
+        brokerCfg.getExperimental().getFeatures().isEnablePartitionScaling();
     final var partitioningCfg = brokerCfg.getExperimental().getPartitioning();
-    final var allMembers = StaticConfigurationGenerator.getRaftGroupMembers(clusterCfg);
+    final var partitionCount = clusterCfg.getPartitionsCount();
+    final var replicationFactor = clusterCfg.getReplicationFactor();
 
-    final var commonConfig = generateConfig(brokerCfg);
+    final var partitionDistributor = getPartitionDistributor(partitioningCfg);
+    final var clusterMembers = getRaftGroupMembers(clusterCfg);
+    final var partitionIds = getSortedPartitionIds(partitionCount);
+    final var partitionConfig = generatePartitionConfig(brokerCfg);
 
     return new StaticConfiguration(
-        StaticConfigurationGenerator.getPartitionDistributor(partitioningCfg),
-        allMembers,
+        enablePartitionScaling,
+        partitionDistributor,
+        clusterMembers,
         localMemberId,
-        StaticConfigurationGenerator.getSortedPartitionIds(clusterCfg.getPartitionsCount()),
-        clusterCfg.getReplicationFactor(),
-        commonConfig);
+        partitionIds,
+        replicationFactor,
+        partitionConfig);
   }
 
-  private static DynamicPartitionConfig generateConfig(final BrokerCfg brokerCfg) {
-    final Map<String, ExporterState> exporters = new HashMap<>();
-    brokerCfg
-        .getExporters()
-        .forEach(
-            (exporterId, ignore) ->
-                exporters.put(exporterId, new ExporterState(0, State.ENABLED, Optional.empty())));
-    return new DynamicPartitionConfig(new ExportersConfig(Map.copyOf(exporters)));
-  }
-
-  static PartitionDistributor getPartitionDistributor(final PartitioningCfg partitionCfg) {
+  private static PartitionDistributor getPartitionDistributor(final PartitioningCfg partitionCfg) {
     return buildPartitionDistributor(partitionCfg);
   }
 
@@ -97,11 +94,21 @@ public final class StaticConfigurationGenerator {
         .collect(Collectors.toSet());
   }
 
-  static List<PartitionId> getSortedPartitionIds(final int partitionCount) {
+  private static List<PartitionId> getSortedPartitionIds(final int partitionCount) {
     // partition ids start from 1
     return IntStream.rangeClosed(1, partitionCount)
         .mapToObj(p -> PartitionId.from(PartitionManagerImpl.GROUP_NAME, p))
         .sorted()
         .toList();
+  }
+
+  private static DynamicPartitionConfig generatePartitionConfig(final BrokerCfg brokerCfg) {
+    final Map<String, ExporterState> exporters = new HashMap<>();
+    brokerCfg
+        .getExporters()
+        .forEach(
+            (exporterId, ignore) ->
+                exporters.put(exporterId, new ExporterState(0, State.ENABLED, Optional.empty())));
+    return new DynamicPartitionConfig(new ExportersConfig(Map.copyOf(exporters)));
   }
 }

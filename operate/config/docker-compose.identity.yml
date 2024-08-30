@@ -2,7 +2,7 @@ version: "3.6"
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -23,7 +23,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
   postgres:
     container_name: postgres
-    image: postgres:16.3-alpine
+    image: postgres:16.4-alpine
     ports:
       - "5432:5432"
     environment:
@@ -34,7 +34,7 @@ services:
     depends_on:
       - postgres
     container_name: keycloak
-    image: bitnami/keycloak:25.0.2
+    image: bitnami/keycloak:25.0.4
     volumes:
       - keycloak-theme:/opt/bitnami/keycloak/themes/identity
     ports:
@@ -106,7 +106,7 @@ services:
       - 8000:8000
     restart: always
   operate:
-    image: camunda/operate:8.5.4
+    image: camunda/operate:8.5.5
     container_name: operate
     environment:
       - SERVER_PORT=8081

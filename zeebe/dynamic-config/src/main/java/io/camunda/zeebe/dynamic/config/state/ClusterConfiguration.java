@@ -37,14 +37,15 @@ public record ClusterConfiguration(
     long version,
     Map<MemberId, MemberState> members,
     Optional<CompletedChange> lastChange,
-    Optional<ClusterChangePlan> pendingChanges) {
+    Optional<ClusterChangePlan> pendingChanges,
+    Optional<RoutingState> routingState) {
 
   public static final int INITIAL_VERSION = 1;
   private static final int UNINITIALIZED_VERSION = -1;
 
   public static ClusterConfiguration uninitialized() {
     return new ClusterConfiguration(
-        UNINITIALIZED_VERSION, Map.of(), Optional.empty(), Optional.empty());
+        UNINITIALIZED_VERSION, Map.of(), Optional.empty(), Optional.empty(), Optional.empty());
   }
 
   public boolean isUninitialized() {
@@ -52,7 +53,8 @@ public record ClusterConfiguration(
   }
 
   public static ClusterConfiguration init() {
-    return new ClusterConfiguration(INITIAL_VERSION, Map.of(), Optional.empty(), Optional.empty());
+    return new ClusterConfiguration(
+        INITIAL_VERSION, Map.of(), Optional.empty(), Optional.empty(), Optional.empty());
   }
 
   public ClusterConfiguration addMember(final MemberId memberId, final MemberState state) {
@@ -65,7 +67,7 @@ public record ClusterConfiguration(
 
     final var newMembers =
         ImmutableMap.<MemberId, MemberState>builder().putAll(members).put(memberId, state).build();
-    return new ClusterConfiguration(version, newMembers, lastChange, pendingChanges);
+    return new ClusterConfiguration(version, newMembers, lastChange, pendingChanges, routingState);
   }
 
   /**
@@ -103,7 +105,7 @@ public record ClusterConfiguration(
     }
 
     final var newMembers = mapBuilder.buildKeepingLast();
-    return new ClusterConfiguration(version, newMembers, lastChange, pendingChanges);
+    return new ClusterConfiguration(version, newMembers, lastChange, pendingChanges, routingState);
   }
 
   public ClusterConfiguration startConfigurationChange(
@@ -121,7 +123,8 @@ public record ClusterConfiguration(
           newVersion,
           members,
           lastChange,
-          Optional.of(ClusterChangePlan.init(newVersion, operations)));
+          Optional.of(ClusterChangePlan.init(newVersion, operations)),
+          routingState);
     }
   }
 
@@ -148,8 +151,17 @@ public record ClusterConfiguration(
               .flatMap(Optional::stream)
               .reduce(ClusterChangePlan::merge);
 
+      final var mergedRoutingState =
+          Stream.of(routingState, other.routingState)
+              .flatMap(Optional::stream)
+              .reduce(RoutingState::merge);
+
       return new ClusterConfiguration(
-          version, ImmutableMap.copyOf(mergedMembers), lastChange, mergedChanges);
+          version,
+          ImmutableMap.copyOf(mergedMembers),
+          lastChange,
+          mergedChanges,
+          mergedRoutingState);
     }
   }
 
@@ -199,7 +211,11 @@ public record ClusterConfiguration(
     }
     final ClusterConfiguration result =
         new ClusterConfiguration(
-            version, members, lastChange, Optional.of(pendingChanges.orElseThrow().advance()));
+            version,
+            members,
+            lastChange,
+            Optional.of(pendingChanges.orElseThrow().advance()),
+            routingState);
 
     if (!result.hasPendingChanges()) {
       // The last change has been applied. Clean up the members that are marked as LEFT in the
@@ -218,7 +234,11 @@ public record ClusterConfiguration(
       // configuration.
       final var completedChange = pendingChanges.orElseThrow().completed();
       return new ClusterConfiguration(
-          result.version() + 1, currentMembers, Optional.of(completedChange), Optional.empty());
+          result.version() + 1,
+          currentMembers,
+          Optional.of(completedChange),
+          Optional.empty(),
+          routingState);
     }
 
     return result;
@@ -283,7 +303,7 @@ public record ClusterConfiguration(
       // A conflict would not happen if the cancel is only called when the operation is truly stuck.
       final var newVersion = version + 2;
       return new ClusterConfiguration(
-          newVersion, members, Optional.of(cancelledChange), Optional.empty());
+          newVersion, members, Optional.of(cancelledChange), Optional.empty(), routingState);
     } else {
       return this;
     }
