@@ -2,7 +2,7 @@ services:
   optimize:
     profiles: ["", "elasticsearch"]
     container_name: optimize
-    image: camunda/optimize:latest
+    image: camunda/optimize:8-latest
     depends_on:
       - elasticsearch
       - identity
@@ -34,7 +34,7 @@ services:
   optimize-opensearch:
     profiles: [ "opensearch" ]
     container_name: optimize-opensearch
-    image: camunda/optimize:latest
+    image: camunda/optimize:8-latest
     depends_on:
       - elasticsearch
       - identity
