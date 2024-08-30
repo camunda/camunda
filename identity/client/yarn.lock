@@ -2534,7 +2534,7 @@ __metadata:
     react-router-dom: "npm:6.26.1"
     react-transition-group: "npm:4.4.5"
     sass: "npm:1.77.8"
-    styled-components: "npm:6.1.12"
+    styled-components: "npm:6.1.13"
     typescript: "npm:5.5.4"
     vite: "npm:5.4.2"
   languageName: unknown
@@ -4420,9 +4420,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"styled-components@npm:6.1.12":
-  version: 6.1.12
-  resolution: "styled-components@npm:6.1.12"
+"styled-components@npm:6.1.13":
+  version: 6.1.13
+  resolution: "styled-components@npm:6.1.13"
   dependencies:
     "@emotion/is-prop-valid": "npm:1.2.2"
     "@emotion/unitless": "npm:0.8.1"
@@ -4436,7 +4436,7 @@ __metadata:
   peerDependencies:
     react: ">= 16.8.0"
     react-dom: ">= 16.8.0"
-  checksum: 10c0/1ad728aea763a26dbce5ede380ef54b0aacae177166d19346eed97eab8e46935b8797d3ba8e1db689605175d5f9c9892a60d91d2e797e2ea61901fb7f58ed1a5
+  checksum: 10c0/dd0379179c6ce9655c97285e9f6475b533d4cc4cad72e8f16824c5454803a9d12126877d8b2837cd5b54520250c55cde97a183e813eed720d2575362d9646663
   languageName: node
   linkType: hard
 
