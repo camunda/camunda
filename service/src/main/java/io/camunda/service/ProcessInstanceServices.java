@@ -17,7 +17,16 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ProcessInstanceServices
     extends SearchQueryService<
@@ -50,4 +59,49 @@ public final class ProcessInstanceServices
       final Function<ProcessInstanceQuery.Builder, ObjectBuilder<ProcessInstanceQuery>> fn) {
     return search(SearchQueryBuilders.processInstanceSearchQuery(fn));
   }
+
+  public CompletableFuture<ProcessInstanceCreationRecord> startProcessInstance(
+      final ProcessInstanceStartRequest request) {
+    final var brokerRequest =
+        new BrokerCreateProcessInstanceRequest()
+            .setBpmnProcessId(request.bpmnProcessId())
+            .setKey(request.processDefinitionKey())
+            .setVersion(request.version())
+            .setTenantId(request.tenantId())
+            .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(request.variables())))
+            .setStartInstructionsFromStrings(request.startInstructions());
+
+    if (request.operationReference() != null) {
+      brokerRequest.setOperationReference(request.operationReference());
+    }
+    return sendBrokerRequest(brokerRequest);
+  }
+
+  public CompletableFuture<ProcessInstanceResultRecord> startProcessInstanceWithResult(
+      final ProcessInstanceStartRequest request) {
+    final var brokerRequest =
+        new BrokerCreateProcessInstanceWithResultRequest()
+            .setBpmnProcessId(request.bpmnProcessId())
+            .setKey(request.processDefinitionKey())
+            .setVersion(request.version())
+            .setTenantId(request.tenantId())
+            .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(request.variables())))
+            .setStartInstructionsFromStrings(request.startInstructions());
+
+    if (request.operationReference() != null) {
+      brokerRequest.setOperationReference(request.operationReference());
+    }
+    return sendBrokerRequest(brokerRequest);
+  }
+
+  public record ProcessInstanceStartRequest(
+      Long processDefinitionKey,
+      String bpmnProcessId,
+      Integer version,
+      Map<String, Object> variables,
+      String tenantId,
+      Boolean awaitCompletion,
+      Long requestTimeout,
+      Long operationReference,
+      List<String> startInstructions) {}
 }

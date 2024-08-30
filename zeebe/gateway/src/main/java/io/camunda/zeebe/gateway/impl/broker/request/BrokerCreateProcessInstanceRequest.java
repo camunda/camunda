@@ -62,6 +62,18 @@ public class BrokerCreateProcessInstanceRequest
     return this;
   }
 
+  public BrokerCreateProcessInstanceRequest setStartInstructionsFromStrings(
+      final List<String> instructions) {
+    instructions.stream()
+        .map(
+            instruction ->
+                new io.camunda.zeebe.protocol.impl.record.value.processinstance
+                        .ProcessInstanceCreationStartInstruction()
+                    .setElementId(instruction))
+        .forEach(requestDto::addStartInstruction);
+    return this;
+  }
+
   @Override
   public ProcessInstanceCreationRecord getRequestWriter() {
     return requestDto;
