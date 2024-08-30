@@ -12,13 +12,12 @@ import io.camunda.identity.migration.MigrationRunner;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.env.AbstractEnvironment;
 
 @SpringBootApplication(scanBasePackages = {"io.camunda.identity.migration"})
-@ImportAutoConfiguration(
-    value = {CommonsModuleConfiguration.class, GatewayModuleConfiguration.class})
+@Import(value = {CommonsModuleConfiguration.class, GatewayModuleConfiguration.class})
 public class IdentityMigrationApplication {
 
   @Autowired MigrationRunner migrationRunner;
