@@ -30,6 +30,8 @@ import {useEffect, act} from 'react';
 import {Paths} from 'modules/Routes';
 import {batchModificationStore} from 'modules/stores/batchModification';
 
+jest.mock('modules/feature-flags', () => ({IS_VERSION_TAG_ENABLED: true}));
+
 jest.mock('modules/utils/bpmn');
 
 function getWrapper(initialPath: string = Paths.dashboard()) {
@@ -90,6 +92,7 @@ describe('DiagramPanel', () => {
 
     expect(await screen.findByText('Big variable process')).toBeInTheDocument();
     expect(screen.getByText('bigVarProcess')).toBeInTheDocument();
+    expect(screen.getByText(/MyVersionTag/i)).toBeInTheDocument();
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     await user.click(
       screen.getByRole('button', {

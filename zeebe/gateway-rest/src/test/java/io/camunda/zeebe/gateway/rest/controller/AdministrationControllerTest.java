@@ -31,6 +31,7 @@ import org.springframework.http.ProblemDetail;
 public class AdministrationControllerTest extends RestControllerTest {
 
   private static final String PIN_CLOCK_URL = "/v2/administration/clock/pin";
+  private static final String RESET_CLOCK_URL = "/v2/administration/clock/reset";
 
   @MockBean private ClockServices clockServices;
 
@@ -85,5 +86,24 @@ public class AdministrationControllerTest extends RestControllerTest {
         .isBadRequest()
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
+  }
+
+  @Test
+  void restClockShouldReturnNoContent() {
+    // given
+    when(clockServices.resetClock())
+        .thenReturn(CompletableFuture.completedFuture(new ClockRecord()));
+
+    // when - then
+    webClient
+        .post()
+        .uri(RESET_CLOCK_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    verify(clockServices).resetClock();
   }
 }

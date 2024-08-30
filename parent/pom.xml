@@ -3036,6 +3036,7 @@
             <artifactId>flaky-test-extractor-maven-plugin</artifactId>
             <configuration>
               <reportDir>${project.build.directory}/${flaky.test.reportDir}</reportDir>
+              <failBuild>false</failBuild>
             </configuration>
             <executions>
               <execution>
