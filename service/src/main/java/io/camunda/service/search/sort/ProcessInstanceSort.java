@@ -27,7 +27,7 @@ public final record ProcessInstanceSort(List<FieldSorting> orderings) implements
       implements ObjectBuilder<ProcessInstanceSort> {
 
     public Builder processInstanceKey() {
-      currentOrdering = new FieldSorting("processInstanceKey", null);
+      currentOrdering = new FieldSorting("key", null);
       return this;
     }
 
