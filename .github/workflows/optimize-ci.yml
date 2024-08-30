@@ -59,6 +59,67 @@ jobs:
     with:
       branch: ${{ github.head_ref }}
 
+  schema-upgrade-test:
+    name: Schema Upgrade Test
+    runs-on: gcp-core-8-default
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+      - name: Login to Harbor registry
+        uses: ./.github/actions/login-registry
+        with:
+          secrets: ${{ toJSON(secrets) }}
+      - name: "Read Java / Version Info"
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
+      - name: Start Elastic - Old
+        uses: ./.github/actions/compose
+        with:
+          compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
+          project_name: elasticsearch-old
+        env:
+          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_previous_optimize_elasticsearch_version }}
+          ELASTIC_JVM_MEMORY: 1
+          ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_old_elasticsearch_port }}
+      - name: Start Elastic - New
+        uses: ./.github/actions/compose
+        with:
+          compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
+          project_name: elasticsearch-new
+        env:
+          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+          ELASTIC_JVM_MEMORY: 1
+          ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
+      - name: Install
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -pl optimize -am
+      - name: Verify optimize/qa/schema-tests
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: verify -Dskip.docker -Dskip.fe.build -f optimize/qa/schema-tests -Pupgrade-es-schema-tests
+        env:
+          CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4
+        with:
+          name: schema-upgrade-test-junit
+          path: |
+            **/failsafe-reports/**/*.xml
+            **/*.log
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        with:
+          archive_name: schema-upgrade-test-docker
+
   integration-tests:
     name: Integration Tests
     runs-on: gcp-core-32-default

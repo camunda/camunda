@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.upgrade.steps.schema;
 
+import static io.camunda.optimize.service.db.schema.OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion;
 import static io.camunda.optimize.upgrade.steps.UpgradeStepType.SCHEMA_DELETE_TEMPLATE;
 
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
@@ -32,14 +33,14 @@ public class DeleteIndexTemplateIfExistsStep extends UpgradeStep {
   }
 
   @Override
-  public UpgradeStepType getType() {
-    return SCHEMA_DELETE_TEMPLATE;
-  }
-
-  @Override
   public IndexMappingCreator getIndex() {
     throw new UpgradeRuntimeException(
         "Index class does not exist as its template is being deleted");
+  }
+
+  @Override
+  public UpgradeStepType getType() {
+    return SCHEMA_DELETE_TEMPLATE;
   }
 
   @Override

@@ -149,6 +149,6 @@ To run the schema migration tests locally, execute the following cmds:
 mvn clean install -Dskip.docker -DskipTests -Pproduction,it -pl optimize/backend,upgrade -am
 
 // then run the schema migration test
-mvn clean verify -f qa/upgrade-tests/pom.xml -Pupgrade-es-schema-tests
+mvn clean verify -f qa/schema-tests/pom.xml -Pupgrade-es-schema-tests
 ```
 
