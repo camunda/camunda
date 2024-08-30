@@ -810,7 +810,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserWithPasswordRequest"
+              $ref: "#/components/schemas/UserRequest"
         required: true
       responses:
         "204":
@@ -1543,7 +1543,7 @@ components:
           type: array
           items:
             type: string
-    UserWithPasswordRequest:
+    UserRequest:
       type: "object"
       properties:
         password:

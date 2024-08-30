@@ -22,14 +22,14 @@ import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.CreateUserResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.protocol.rest.UserWithPasswordRequest;
+import io.camunda.zeebe.client.protocol.rest.UserRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CreateUserCommandImpl implements CreateUserCommandStep1 {
 
-  private final UserWithPasswordRequest request;
+  private final UserRequest request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -38,7 +38,7 @@ public final class CreateUserCommandImpl implements CreateUserCommandStep1 {
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    request = new UserWithPasswordRequest();
+    request = new UserRequest();
   }
 
   @Override

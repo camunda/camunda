@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
-import io.camunda.zeebe.client.protocol.rest.UserWithPasswordRequest;
+import io.camunda.zeebe.client.protocol.rest.UserRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
@@ -45,8 +45,7 @@ public class CreateUserTest extends ClientRestTest {
         .join();
 
     // then
-    final UserWithPasswordRequest request =
-        gatewayService.getLastRequest(UserWithPasswordRequest.class);
+    final UserRequest request = gatewayService.getLastRequest(UserRequest.class);
     assertThat(request.getUsername()).isEqualTo(USERNAME);
     assertThat(request.getName()).isEqualTo(NAME);
     assertThat(request.getEmail()).isEqualTo(EMAIL);

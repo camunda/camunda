@@ -82,7 +82,7 @@ class CreateUserTest {
                     .send()
                     .join())
         .hasCauseInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 400: 'Bad Request'")
+        .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining("a user with this username already exists");
   }
 
