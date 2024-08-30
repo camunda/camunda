@@ -22,13 +22,14 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import org.assertj.core.api.Assertions;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 public class MigrateTimerEventSubprocessTest {
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -39,7 +40,7 @@ public class MigrateTimerEventSubprocessTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -68,9 +69,9 @@ public class MigrateTimerEventSubprocessTest {
                     .endEvent("end")
                     .done())
             .deploy();
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
-    engine.increaseTime(Duration.ofMinutes(6));
+    ENGINE.increaseTime(Duration.ofMinutes(6));
 
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -81,7 +82,7 @@ public class MigrateTimerEventSubprocessTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -122,7 +123,7 @@ public class MigrateTimerEventSubprocessTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -153,15 +154,15 @@ public class MigrateTimerEventSubprocessTest {
                     .endEvent("end")
                     .done())
             .deploy();
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
-    engine.increaseTime(Duration.ofMinutes(6));
+    ENGINE.increaseTime(Duration.ofMinutes(6));
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
         .withElementId("A")
         .await();
 
-    engine.increaseTime(Duration.ofMinutes(6));
+    ENGINE.increaseTime(Duration.ofMinutes(6));
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
         .withElementId("A")
@@ -172,7 +173,7 @@ public class MigrateTimerEventSubprocessTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -205,7 +206,7 @@ public class MigrateTimerEventSubprocessTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -234,7 +235,7 @@ public class MigrateTimerEventSubprocessTest {
                     .endEvent("end")
                     .done())
             .deploy();
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     final TimerRecordValue timerRecord =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
@@ -246,7 +247,7 @@ public class MigrateTimerEventSubprocessTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -268,7 +269,7 @@ public class MigrateTimerEventSubprocessTest {
         .describedAs("Expect that the due date is not changed")
         .hasDueDate(timerRecord.getDueDate());
 
-    engine.increaseTime(Duration.ofMinutes(6));
+    ENGINE.increaseTime(Duration.ofMinutes(6));
 
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
@@ -289,7 +290,7 @@ public class MigrateTimerEventSubprocessTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -311,7 +312,7 @@ public class MigrateTimerEventSubprocessTest {
                     .endEvent("end")
                     .done())
             .deploy();
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     final TimerRecordValue timerRecord =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
@@ -323,7 +324,7 @@ public class MigrateTimerEventSubprocessTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -361,7 +362,7 @@ public class MigrateTimerEventSubprocessTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -383,13 +384,13 @@ public class MigrateTimerEventSubprocessTest {
                     .endEvent("end")
                     .done())
             .deploy();
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -419,7 +420,7 @@ public class MigrateTimerEventSubprocessTest {
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .hasTargetElementId("start1");
 
-    engine.increaseTime(Duration.ofMinutes(6));
+    ENGINE.increaseTime(Duration.ofMinutes(6));
 
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
@@ -436,7 +437,7 @@ public class MigrateTimerEventSubprocessTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -465,7 +466,7 @@ public class MigrateTimerEventSubprocessTest {
                     .endEvent("end")
                     .done())
             .deploy();
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     final TimerRecordValue timerRecord =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
@@ -477,7 +478,7 @@ public class MigrateTimerEventSubprocessTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -517,7 +518,7 @@ public class MigrateTimerEventSubprocessTest {
                 .getValue())
         .isNotNull();
 
-    engine.increaseTime(Duration.ofMinutes(6));
+    ENGINE.increaseTime(Duration.ofMinutes(6));
 
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
