@@ -17,7 +17,6 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -71,12 +70,12 @@ public class AuthorizationStateTest {
       "should throw an exception when an authorization for owner and resource pair already exist")
   @Test
   void shouldThrowExceptionInCreateIfUsernameDoesNotExist() {
-    final var owner = "owner" + UUID.randomUUID();
+    final var ownerKey = 1L;
     // given
     final AuthorizationRecord authorizationRecord =
         new AuthorizationRecord()
             .setAuthorizationKey(1L)
-            .setOwnerKey(2L)
+            .setOwnerKey(ownerKey)
             .setOwnerType(AuthorizationOwnerType.GROUP)
             .setResourceKey("my-resource-key")
             .setResourceType("process-definition")
@@ -87,11 +86,9 @@ public class AuthorizationStateTest {
     assertThatThrownBy(() -> authorizationState.createAuthorization(authorizationRecord))
         .isInstanceOf(ZeebeDbInconsistentException.class)
         .hasMessageContaining(
-            "Key DbCompositeKey{first=DbCompositeKey{first="
-                + owner
-                + ", second="
-                + AuthorizationOwnerType.GROUP
-                + "}, second=DbCompositeKey{first=my-resource-key, second=process-definition}} in ColumnFamily AUTHORIZATIONS_BY_USERNAME_AND_PERMISSION already exists");
+            "Key DbCompositeKey{first=DbLong{"
+                + ownerKey
+                + "}, second=DbCompositeKey{first=process-definition, second=}} in ColumnFamily PERMISSIONS_BY_OWNER_KEY_RESOURCE_TYPE_AND_PERMISSION_TYPE already exists");
   }
 
   @DisplayName("should return the correct authorization")
@@ -101,7 +98,7 @@ public class AuthorizationStateTest {
     final AuthorizationRecord authorizationRecordOne =
         new AuthorizationRecord()
             .setAuthorizationKey(1L)
-            .setOwnerKey(2L)
+            .setOwnerKey(1L)
             .setOwnerType(AuthorizationOwnerType.GROUP)
             .setResourceKey("resource")
             .setResourceType("resourceType")
