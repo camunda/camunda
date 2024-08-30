@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
@@ -107,13 +108,21 @@ public class MigrateTimerEventSubprocessTest {
         .hasVersion(1);
 
     Assertions.assertThat(
-            RecordingExporter.timerRecords(TimerIntent.CREATED)
+            RecordingExporter.records()
+                .limit(
+                    r ->
+                        r.getKey() == processInstanceKey
+                            && r.getIntent() == ProcessInstanceMigrationIntent.MIGRATED)
+                .timerRecords()
+                .withIntent(TimerIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withHandlerNodeId("start2")
                 .withProcessDefinitionKey(targetProcessDefinitionKey)
+                .skip(1)
                 .exists())
         .describedAs(
-            "Expect that no timer subscription is created after migration because it is an interrupting subprocess")
+            "Expect that no timer is created after migration because "
+                + "there are no element instances subscribed to it")
         .isFalse();
   }
 
