@@ -135,6 +135,11 @@ public class ZeebeClientConfigurationImplSelfManagedTest {
   }
 
   @Test
+  void shouldNotHaveAsyncClientChainHandlers() {
+    assertThat(zeebeClientConfiguration.getChainHandlers()).isEmpty();
+  }
+
+  @Test
   void shouldHaveJsonMapper() {
     assertThat(zeebeClientConfiguration.getJsonMapper()).isEqualTo(jsonMapper);
   }

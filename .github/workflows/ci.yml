@@ -16,7 +16,7 @@ on:
 # Exception for deploy jobs that have to wait for each other to avoid overwriting
 concurrency:
   cancel-in-progress: true
-  group: ${{ github.ref == 'refs/heads/main' && github.sha || format('{0}-{1}', github.workflow, github.ref) }}
+  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 defaults:
   run:
@@ -35,6 +35,10 @@ jobs:
       camunda-docker-tests: ${{ steps.filter.outputs.camunda-docker-tests}}
       identity-frontend-tests: ${{ steps.filter.outputs.identity-frontend-tests }}
       frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
+      zeebe-changes: ${{ steps.filter.outputs.zeebe-changes }}
+      optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
+      optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
+      protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -73,17 +77,18 @@ jobs:
     needs: [detect-changes]
     name: Java checks
     timeout-minutes: 15
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted, linux, amd64, "16" ]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+          docker: false
           maven-cache-key-modifier: java-checks
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
+      - run: ./mvnw -T1C -B -D skipTests -D skipOptimize -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -119,6 +124,10 @@ jobs:
         id: build-identity-fe
         with:
           directory: ./identity/client
+      - uses: ./.github/actions/build-frontend
+        id: build-optimize-fe
+        with:
+          directory: ./optimize/client
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -134,8 +143,6 @@ jobs:
     needs: [detect-changes]
     runs-on: [ self-hosted, linux, amd64, "16" ]
     timeout-minutes: 30
-    outputs:
-      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
       - uses: actions/checkout@v4
       - name: Install and allow strace tests
@@ -151,7 +158,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -PskipFrontendBuild -D skipOptimize
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -161,6 +168,7 @@ jobs:
           ./mvnw -T2 -B --no-snapshot-updates
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
+          -D skipOptimize
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -192,8 +200,6 @@ jobs:
     name: "[IT] ${{ matrix.name }}"
     needs: [ detect-changes ]
     timeout-minutes: 20
-    outputs:
-      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     runs-on: [ self-hosted, linux, amd64, "16" ]
     strategy:
       fail-fast: false
@@ -238,7 +244,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -PskipFrontendBuild -D skipOptimize
       - uses: ./.github/actions/build-platform-docker
         with:
           repository: localhost:5000/camunda/zeebe
@@ -252,7 +258,7 @@ jobs:
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks
+          -D skipUTs -D skipChecks -D skipOptimize
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
@@ -318,22 +324,10 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           docker-secret-path: secret/data/products/camunda/ci/github-actions
-      - uses: ./.github/actions/build-frontend
-        id: build-operate-fe
-        with:
-          directory: ./operate/client
-      - uses: ./.github/actions/build-frontend
-        id: build-tasklist-fe
-        with:
-          directory: ./tasklist/client
-      - uses: ./.github/actions/build-frontend
-        id: build-identity-fe
-        with:
-          directory: ./identity/client
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild
+          maven-extra-args: -PskipFrontendBuild -D skipOptimize
           go: false
       - uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
@@ -345,6 +339,13 @@ jobs:
           dockerfile: camunda.Dockerfile
           # push is needed for multi-arch images as buildkit does not support loading them locally
           push: true
+
+      # We need to free up some space to let the step after this block succeed.
+      # With this cleanup, at the time of measuring, we go from a 100% disk usage (73/74 GB) to a
+      # 94% (68/73 GB), on the runner ubuntu-latest. This allows the workflow to go through.
+      - name: Cleanup docker images
+        run: docker system prune -af
+
       - name: Verify Docker image
         uses: ./.github/actions/verify-platform-docker
         with:
@@ -356,7 +357,7 @@ jobs:
           goldenfile: camunda-docker-labels.golden.json
       - name: Run Docker tests
         run: |
-          ./mvnw -f dist --no-snapshot-updates -DskipChecks -Dtest=CamundaDockerIT -Dsurefire.rerunFailingTestsCount=3 \
+          ./mvnw -f dist --no-snapshot-updates -DskipChecks -DskipOptimize -Dtest=CamundaDockerIT -Dsurefire.rerunFailingTestsCount=3 \
           -Dcamunda.docker.test.enabled=true \
           -Dcamunda.docker.test.image="${{ env.LOCAL_DOCKER_IMAGE }}:${{ steps.build-camunda-docker.outputs.version }}" \
           -Dcamunda.docker.test.elasticsearch.image="${{ env.TEST_ELASTICSEARCH_IMAGE }}" \
@@ -409,15 +410,144 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  zeebe-ci:
+    if: needs.detect-changes.outputs.zeebe-changes == 'true'
+    needs: [detect-changes]
+    uses: ./.github/workflows/zeebe-ci.yml
+    secrets: inherit
+
+  optimize-frontend-unit-tests:
+    if: needs.detect-changes.outputs.optimize-frontend-changes == 'true'
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: optimize/client
+    env:
+      LIMITS_CPU: 4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - name: "Parse pom.xml for versions"
+        id: "pom_info"
+        uses: YunaBraska/java-info-action@main
+      - name: Set Node.js
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4
+        with:
+          node-version: ${{ steps.pom_info.outputs.x_version_node }}
+          cache: yarn
+          cache-dependency-path: optimize/client/yarn.lock
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Unit tests
+        run: yarn test:ci
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4
+        with:
+          name: unit-tests-frontend-junit
+          path: |
+            **/jest-test-results.xml
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  optimize-backend-unit-tests:
+    if: needs.detect-changes.outputs.optimize-backend-changes == 'true'
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      LIMITS_CPU: 4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+      - name: Test
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -f optimize/pom.xml test -Dskip.fe.build -Dskip.docker
+          threads: 1C
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4
+        with:
+          name: unit-tests-backend-junit
+          path: |
+            **/surefire-reports/**/*.xml
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  protobuf-checks:
+    name: "Protobuf Backwards Compatibility"
+    timeout-minutes: 10
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    if: |
+      needs.detect-changes.outputs.protobuf-changes == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - id: pr-body
+        name: Fetch latest PR body
+        if: github.event_name == 'pull_request'
+        run: |
+          {
+            echo 'result<<EOF'
+            gh pr view ${{ github.event.pull_request.number }} --json body | jq '.body'
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # by the default the action will compare against the base branch, or if on push, against the
+        # previous commit
+      - uses: bufbuild/buf-action@v1
+        if: |
+          !(contains(steps.pr-body.outputs.result, 'BREAKING CHANGE:') ||
+            contains(github.event.merge_group.head_commit.message, 'BREAKING CHANGE:') ||
+            contains(github.event.push.commits.*.message, 'BREAKING CHANGE:'))
+        with:
+          format: false
+          lint: false
+          push: false
+          archive: false
+          breaking: true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
     # This name is hard-coded in the branch rules; remember to update that if this name changes
     if: always()
     runs-on: ubuntu-latest
-    outputs:
-      flakyUnitTests: ${{ needs.java-unit-tests.outputs.flakyTests }}
-      flakyITs: ${{ needs.integration-tests.outputs.flakyTests }}
     needs:
       - actionlint
       - java-unit-tests
@@ -426,6 +556,10 @@ jobs:
       - integration-tests
       - java-checks
       - build-platform-frontend
+      - zeebe-ci
+      - optimize-frontend-unit-tests
+      - optimize-backend-unit-tests
+      - protobuf-checks
     steps:
       - uses: actions/checkout@v4
       - name: Check for aborted jobs
@@ -436,60 +570,59 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
-
-  notify-if-failed:
-    name: Send slack notification on build failure
-    runs-on: ubuntu-latest
+  deploy-snapshots:
+    name: Deploy snapshot artifacts
     needs: [ check-results ]
-    if: failure() && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    concurrency:
+      group: deploy-maven-snapshot
+      cancel-in-progress: false
     steps:
-      - id: slack-notify
-        name: Send slack notification
-        uses: slackapi/slack-github-action@v1.26.0
+      - uses: actions/checkout@v4
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
         with:
-          # For posting a rich message using Block Kit
-          payload: |
-            {
-              "text": ":alarm: Build on `main` failed! :alarm:\n${{ github.event.head_commit.url }}",
-             	"blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":alarm: Build on `main` failed! :alarm:"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Please check the related commit: ${{ github.event.head_commit.url }}\n \\cc @zeebe-medic"
-                  }
-                },
-                {
-                  "type": "divider"
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Detected flaky unit tests:* \n ${{ env.FLAKY_UNIT_TESTS }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Detected flaky integration tests:* \n ${{ env.FLAKY_ITS }}"
-                  }
-                }
-              ]
-            }
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
+      - uses: actions/setup-java@v4.2.2
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+      - name: 'Create settings.xml'
+        uses: s4u/maven-settings-action@v3.0.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.ARTIFACTS_USR }}",
+              "password": "${{ steps.secrets.outputs.ARTIFACTS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "zeebe,zeebe-snapshots", "name": "camunda Nexus"}]'
+      # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
+      # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
+      # not resolve-able by the Javadoc generator
+      - run: ./mvnw -B -D skipTests -D skipChecks compile generate-sources source:jar javadoc:jar deploy
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          FLAKY_UNIT_TESTS: ${{needs.check-results.outputs.flakyUnitTests}}
-          FLAKY_ITS: ${{needs.check-results.outputs.flakyITs}}
+          MAVEN_USERNAME: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
+          MAVEN_PASSWORD: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image

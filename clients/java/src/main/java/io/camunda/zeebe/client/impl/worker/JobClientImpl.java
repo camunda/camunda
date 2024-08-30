@@ -58,7 +58,13 @@ public final class JobClientImpl implements JobClient {
   @Override
   public CompleteJobCommandStep1 newCompleteCommand(final long jobKey) {
     return new CompleteJobCommandImpl(
-        asyncStub, jsonMapper, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
+        asyncStub,
+        jsonMapper,
+        jobKey,
+        config.getDefaultRequestTimeout(),
+        retryPredicate,
+        httpClient,
+        config.preferRestOverGrpc());
   }
 
   @Override
@@ -69,7 +75,13 @@ public final class JobClientImpl implements JobClient {
   @Override
   public FailJobCommandStep1 newFailCommand(final long jobKey) {
     return new FailJobCommandImpl(
-        asyncStub, jsonMapper, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
+        asyncStub,
+        jsonMapper,
+        jobKey,
+        config.getDefaultRequestTimeout(),
+        retryPredicate,
+        httpClient,
+        config.preferRestOverGrpc());
   }
 
   @Override
@@ -80,7 +92,13 @@ public final class JobClientImpl implements JobClient {
   @Override
   public ThrowErrorCommandStep1 newThrowErrorCommand(final long jobKey) {
     return new ThrowErrorCommandImpl(
-        asyncStub, jsonMapper, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
+        asyncStub,
+        jsonMapper,
+        jobKey,
+        config.getDefaultRequestTimeout(),
+        retryPredicate,
+        httpClient,
+        config.preferRestOverGrpc());
   }
 
   @Override

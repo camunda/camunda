@@ -97,8 +97,9 @@ public final class JobServices<T> extends ApiServices<JobServices<T>> {
   }
 
   public CompletableFuture<JobRecord> updateJob(
-      final long jobKey, final Integer retries, final Long timeout) {
-    return sendBrokerRequest(new BrokerUpdateJobRequest(jobKey, retries, timeout));
+      final long jobKey, final UpdateJobChangeset changeset) {
+    return sendBrokerRequest(
+        new BrokerUpdateJobRequest(jobKey, changeset.retries(), changeset.timeout()));
   }
 
   public record ActivateJobsRequest(
@@ -109,4 +110,6 @@ public final class JobServices<T> extends ApiServices<JobServices<T>> {
       String worker,
       List<String> fetchVariable,
       long requestTimeout) {}
+
+  public record UpdateJobChangeset(Integer retries, Long timeout) {}
 }

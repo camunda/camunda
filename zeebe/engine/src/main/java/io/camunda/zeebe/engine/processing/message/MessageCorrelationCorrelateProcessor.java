@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.Messa
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -30,10 +32,14 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public final class MessageCorrelationCorrelateProcessor
     implements TypedRecordProcessor<MessageCorrelationRecord> {
 
+  private static final String SUBSCRIPTION_NOT_FOUND =
+      "Expected to find subscription for message with name '%s' and correlation key '%s', but none was found.";
+
   private final MessageCorrelateBehavior correlateBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
+  private final TypedRejectionWriter rejectionWriter;
 
   public MessageCorrelationCorrelateProcessor(
       final Writers writers,
@@ -47,6 +53,7 @@ public final class MessageCorrelationCorrelateProcessor
       final SubscriptionCommandSender commandSender) {
     stateWriter = writers.state();
     responseWriter = writers.response();
+    rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
     final var eventHandle =
         new EventHandle(
@@ -92,8 +99,11 @@ public final class MessageCorrelationCorrelateProcessor
     correlateToMessageEventSubscriptions(command.getValue(), messageKey, correlatingSubscriptions);
 
     if (correlatingSubscriptions.isEmpty()) {
-      stateWriter.appendFollowUpEvent(
-          messageKey, MessageCorrelationIntent.NOT_CORRELATED, command.getValue());
+      final var errorMessage =
+          SUBSCRIPTION_NOT_FOUND.formatted(
+              command.getValue().getName(), command.getValue().getCorrelationKey());
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
     }
 
     // Message Correlate command cannot have a TTL. As a result the message expires immediately.

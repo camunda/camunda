@@ -47,7 +47,8 @@ public class ZeebeCalledDecisionTest extends BpmnModelElementInstanceTest {
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "decisionId", false, true),
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "resultVariable", false, true),
         new AttributeAssumption(
-            BpmnModelConstants.ZEEBE_NS, "bindingType", false, false, ZeebeBindingType.latest));
+            BpmnModelConstants.ZEEBE_NS, "bindingType", false, false, ZeebeBindingType.latest),
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "versionTag", false, false));
   }
 
   @Test

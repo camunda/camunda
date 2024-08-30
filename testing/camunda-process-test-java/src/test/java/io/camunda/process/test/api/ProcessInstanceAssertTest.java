@@ -57,7 +57,7 @@ public class ProcessInstanceAssertTest {
   void configureAssertions() {
     CamundaAssert.initialize(camundaDataSource);
     CamundaAssert.setAssertionInterval(Duration.ZERO);
-    CamundaAssert.setAssertionTimeout(Duration.ofMillis(200));
+    CamundaAssert.setAssertionTimeout(Duration.ofSeconds(1));
   }
 
   @AfterEach

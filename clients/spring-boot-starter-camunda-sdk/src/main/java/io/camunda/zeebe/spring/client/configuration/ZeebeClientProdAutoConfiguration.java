@@ -28,6 +28,7 @@ import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -61,12 +62,14 @@ public class ZeebeClientProdAutoConfiguration {
       final CamundaClientProperties camundaClientProperties,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
+      final List<AsyncExecChainHandler> chainHandlers,
       final ZeebeClientExecutorService zeebeClientExecutorService) {
     return new ZeebeClientConfigurationImpl(
         properties,
         camundaClientProperties,
         jsonMapper,
         interceptors,
+        chainHandlers,
         zeebeClientExecutorService) {};
   }
 

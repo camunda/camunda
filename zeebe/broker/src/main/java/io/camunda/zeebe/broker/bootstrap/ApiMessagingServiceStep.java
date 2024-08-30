@@ -35,8 +35,11 @@ public class ApiMessagingServiceStep extends AbstractBrokerStartupStep {
     if (securityCfg.isEnabled()) {
       messagingConfig
           .setTlsEnabled(true)
-          .setCertificateChain(securityCfg.getCertificateChainPath())
-          .setPrivateKey(securityCfg.getPrivateKeyPath());
+          .configureTls(
+              securityCfg.getKeyStore().getFilePath(),
+              securityCfg.getKeyStore().getPassword(),
+              securityCfg.getPrivateKeyPath(),
+              securityCfg.getCertificateChainPath());
     }
 
     messagingConfig.setCompressionAlgorithm(brokerCfg.getCluster().getMessageCompression());

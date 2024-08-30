@@ -25,5 +25,6 @@ public final class DecisionCreatedV2Applier
   public void applyState(final long key, final DecisionRecord value) {
     decisionState.storeDecisionRecord(value);
     decisionState.storeDecisionKeyByDecisionIdAndDeploymentKey(value);
+    decisionState.storeDecisionKeyByDecisionIdAndVersionTag(value);
   }
 }

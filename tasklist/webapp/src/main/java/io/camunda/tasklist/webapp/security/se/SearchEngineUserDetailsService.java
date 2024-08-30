@@ -26,7 +26,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -50,7 +50,7 @@ public class SearchEngineUserDetailsService implements UserDetailsService {
   @Bean
   @Primary
   public PasswordEncoder getPasswordEncoder() {
-    return new BCryptPasswordEncoder();
+    return PasswordEncoderFactories.createDelegatingPasswordEncoder();
   }
 
   public void initializeUsers() {
@@ -86,10 +86,10 @@ public class SearchEngineUserDetailsService implements UserDetailsService {
     }
   }
 
-  private boolean userExists(String userId) {
+  private boolean userExists(final String userId) {
     try {
       return userStore.getByUserId(userId) != null;
-    } catch (Exception t) {
+    } catch (final Exception t) {
       return false;
     }
   }
@@ -113,7 +113,7 @@ public class SearchEngineUserDetailsService implements UserDetailsService {
   }
 
   @Override
-  public User loadUserByUsername(String username) throws UsernameNotFoundException {
+  public User loadUserByUsername(final String username) throws UsernameNotFoundException {
     try {
       final UserEntity userEntity = userStore.getByUserId(username);
       return new User(
@@ -122,7 +122,7 @@ public class SearchEngineUserDetailsService implements UserDetailsService {
               map(userEntity.getRoles(), Role::fromString))
           .setDisplayName(userEntity.getDisplayName())
           .setRoles(map(userEntity.getRoles(), Role::fromString));
-    } catch (NotFoundApiException e) {
+    } catch (final NotFoundApiException e) {
       throw new UsernameNotFoundException(
           String.format("User with user id '%s' not found.", username), e);
     }

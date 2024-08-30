@@ -38,6 +38,12 @@ public class NativeUserTaskFormTest {
   private static final String PROCESS_ID = "process";
   private static final String TEST_FORM_1 = "/form/test-form-1.form";
   private static final String TEST_FORM_1_V2 = "/form/test-form-1_v2.form";
+  private static final String TEST_FORM_1_WITH_VERSION_TAG_V1 =
+      "/form/test-form-1-with-version-tag-v1.form";
+  private static final String TEST_FORM_1_WITH_VERSION_TAG_V1_NEW =
+      "/form/test-form-1-with-version-tag-v1-new.form";
+  private static final String TEST_FORM_1_WITH_VERSION_TAG_V2 =
+      "/form/test-form-1-with-version-tag-v2.form";
   private static final String TEST_FORM_2 = "/form/test-form-2.form";
   private static final String FORM_ID_1 = "Form_0w7r08e";
   private static final String FORM_ID_2 = "Form_6s1b76p";
@@ -127,6 +133,35 @@ public class NativeUserTaskFormTest {
   }
 
   @Test
+  public void shouldActivateUserTaskWithLatestFormVersionWithVersionTagForBindingTypeVersionTag() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .userTask("task")
+            .zeebeFormId(FORM_ID_1)
+            .zeebeFormBindingType(ZeebeBindingType.versionTag)
+            .zeebeFormVersionTag("v1.0")
+            .zeebeUserTask()
+            .endEvent()
+            .done();
+    ENGINE
+        .deployment()
+        .withXmlResource(process)
+        .withXmlClasspathResource(TEST_FORM_1_WITH_VERSION_TAG_V1)
+        .deploy();
+    final var deployedFormV1New = deployForm(TEST_FORM_1_WITH_VERSION_TAG_V1_NEW);
+    deployForm(TEST_FORM_1_WITH_VERSION_TAG_V2);
+    deployForm(TEST_FORM_1);
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertUserTaskActivation(processInstanceKey, deployedFormV1New.getFormKey());
+  }
+
+  @Test
   public void shouldRaiseAnIncidentIfFormIsNotDeployed() {
     // given
     final var formId = "non-existent-form-id";
@@ -203,6 +238,34 @@ public class NativeUserTaskFormTest {
         that is deployed together with the intended form to use.\
         """
             .formatted(FORM_ID_1, deployment.getKey()));
+  }
+
+  @Test
+  public void shouldRaiseAnIncidentIfFormWithVersionTagIsNotDeployedForBindingTypeVersionTag() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .userTask("task")
+            .zeebeFormId(FORM_ID_1)
+            .zeebeFormBindingType(ZeebeBindingType.versionTag)
+            .zeebeFormVersionTag("v1.0")
+            .zeebeUserTask()
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertFormIncident(
+        processInstanceKey,
+        """
+        Expected to use a form with id '%s' and version tag '%s', but no such form found. \
+        To resolve the incident, deploy a form with the given id and version tag.
+        """
+            .formatted(FORM_ID_1, "v1.0"));
   }
 
   private void deployProcess(final String formId) {

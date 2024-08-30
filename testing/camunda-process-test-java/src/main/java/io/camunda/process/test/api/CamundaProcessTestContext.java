@@ -18,6 +18,8 @@ package io.camunda.process.test.api;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.function.Consumer;
 
 /** The injected context for a process test. */
@@ -48,4 +50,20 @@ public interface CamundaProcessTestContext {
    * @return the URI of Zeebe's REST API address
    */
   URI getZeebeRestAddress();
+
+  /**
+   * The current time may differ from the system time if the time was modified using {@link
+   * #increaseTime(Duration)}.
+   *
+   * @return the current time for the process tests
+   */
+  Instant getCurrentTime();
+
+  /**
+   * Modifies the current time for the process tests. It can be used to jump to the future to avoid
+   * waiting until a due date is reached, for example, of a BPMN timer event.
+   *
+   * @param timeToAdd the duration to add to the current time
+   */
+  void increaseTime(final Duration timeToAdd);
 }

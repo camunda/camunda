@@ -921,7 +921,7 @@ public class MultiTenancyOverIdentityIT {
           .withThrowableThat()
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
-              "Command 'UPDATE_TIMEOUT' rejected with code 'NOT_FOUND': Expected to update job deadline with key '%d', but no such job was found"
+              "Command 'UPDATE_TIMEOUT' rejected with code 'NOT_FOUND': Expected to update job with key '%d', but no such job was found"
                   .formatted(activatedJob.getKey()));
     }
   }

@@ -64,8 +64,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRe
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRequest;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
@@ -381,16 +379,6 @@ public final class EndpointManager {
         request,
         RequestMapper::toUpdateJobTimeoutRequest,
         ResponseMapper::toUpdateJobTimeoutResponse,
-        responseObserver);
-  }
-
-  public void updateJob(
-      final UpdateJobRequest request,
-      final ServerStreamObserver<UpdateJobResponse> responseObserver) {
-    sendRequest(
-        request,
-        RequestMapper::toUpdateJobRequest,
-        ResponseMapper::toUpdateJobResponse,
         responseObserver);
   }
 

@@ -18,7 +18,6 @@ package io.camunda.process.test.impl.client;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.util.Optional;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.cookie.BasicCookieStore;
@@ -26,7 +25,6 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 
 public class OperateApiClient {
@@ -37,6 +35,7 @@ public class OperateApiClient {
 
   private static final String PROCESS_INSTANCE_GET_ENDPOINT = "/v1/process-instances/%d";
   private static final String FLOW_NODE_INSTANCES_SEARCH_ENDPOINT = "/v1/flownode-instances/search";
+  private static final String VARIABLES_SEARCH_ENDPOINT = "/v1/variables/search";
 
   private final ObjectMapper objectMapper =
       new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -70,7 +69,7 @@ public class OperateApiClient {
             throw new IllegalStateException(
                 String.format(
                     "Failed to login. [code: %d, message: %s]",
-                    response.getCode(), getReponseAsString(response)));
+                    response.getCode(), HttpClientUtil.getReponseAsString(response)));
           }
           return null;
         });
@@ -81,13 +80,13 @@ public class OperateApiClient {
       throw new ZeebeClientNotFoundException(
           String.format(
               "Failed send request. Object not found. [code: %d, message: %s]",
-              response.getCode(), getReponseAsString(response)));
+              response.getCode(), HttpClientUtil.getReponseAsString(response)));
     }
     if (response.getCode() != 200) {
       throw new RuntimeException(
           String.format(
               "Failed send request. [code: %d, message: %s]",
-              response.getCode(), getReponseAsString(response)));
+              response.getCode(), HttpClientUtil.getReponseAsString(response)));
     }
   }
 
@@ -110,17 +109,16 @@ public class OperateApiClient {
     return objectMapper.readValue(responseBody, FlowNodeInstancesResponseDto.class);
   }
 
-  private static String getReponseAsString(final ClassicHttpResponse response) {
-    return Optional.ofNullable(response.getEntity())
-        .map(
-            entity -> {
-              try {
-                return EntityUtils.toString(entity);
-              } catch (final Exception e) {
-                throw new RuntimeException(e);
-              }
-            })
-        .orElse("?");
+  public VariableResponseDto findVariablesByProcessInstanceKey(final long processInstanceKey)
+      throws IOException {
+    ensureAuthenticated();
+
+    final String requestBody =
+        String.format(
+            "{\"filter\": {\"processInstanceKey\":%d, \"scopeKey\":%d}}",
+            processInstanceKey, processInstanceKey);
+    final String responseBody = sendPostRequest(VARIABLES_SEARCH_ENDPOINT, requestBody);
+    return objectMapper.readValue(responseBody, VariableResponseDto.class);
   }
 
   private String sendGetRequest(final String endpoint) throws IOException {
@@ -128,7 +126,7 @@ public class OperateApiClient {
         new HttpGet(operateRestApi + endpoint),
         response -> {
           verifyStatusCode(response);
-          return getReponseAsString(response);
+          return HttpClientUtil.getReponseAsString(response);
         });
   }
 
@@ -141,7 +139,7 @@ public class OperateApiClient {
         request,
         response -> {
           verifyStatusCode(response);
-          return getReponseAsString(response);
+          return HttpClientUtil.getReponseAsString(response);
         });
   }
 }

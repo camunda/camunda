@@ -22,10 +22,10 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.P
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -55,11 +55,14 @@ public final class DbMessageSubscriptionState
       messageNameAndCorrelationKeyColumnFamily;
 
   private final TransientPendingSubscriptionState transientState;
+  private final InstantSource clock;
 
   public DbMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final TransientPendingSubscriptionState transientState) {
+      final TransientPendingSubscriptionState transientState,
+      final InstantSource clock) {
+    this.clock = clock;
 
     elementInstanceKey = new DbLong();
     messageName = new DbString();
@@ -96,7 +99,7 @@ public final class DbMessageSubscriptionState
             transientState.add(
                 new PendingSubscription(
                     elementInstanceKey.getValue(), messageName.toString(), tenantIdKey.toString()),
-                ActorClock.currentTimeMillis());
+                clock.millis());
           }
         });
   }
@@ -176,7 +179,7 @@ public final class DbMessageSubscriptionState
             subscription.getRecord().getElementInstanceKey(),
             subscription.getRecord().getMessageName(),
             subscription.getRecord().getTenantId()),
-        ActorClock.currentTimeMillis());
+        clock.millis());
   }
 
   @Override

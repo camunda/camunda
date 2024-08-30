@@ -16,11 +16,16 @@ import io.camunda.operate.opensearch.ExtendedOpenSearchClient;
 import io.camunda.operate.property.OpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.SslProperties;
+import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
+import io.camunda.zeebe.util.ReflectUtil;
+import io.camunda.zeebe.util.jar.ExternalJarClassLoader;
+import io.camunda.zeebe.util.jar.ThreadContextUtil;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -60,6 +65,7 @@ import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -67,8 +73,8 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.http.SdkHttpClient;
-import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 
 @Configuration
@@ -78,10 +84,12 @@ public class OpensearchConnector {
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchConnector.class);
 
   private final OperateProperties operateProperties;
+
   private final ObjectMapper objectMapper;
 
   public OpensearchConnector(
-      final OperateProperties operateProperties, final ObjectMapper objectMapper) {
+      final OperateProperties operateProperties,
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
     this.operateProperties = operateProperties;
     this.objectMapper = objectMapper;
   }
@@ -93,7 +101,7 @@ public class OpensearchConnector {
     try {
       final HealthResponse response = openSearchClient.cluster().health();
       LOGGER.info("OpenSearch cluster health: {}", response.status());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOGGER.error("Error in getting health status from {}", "localhost:9205", e);
     }
     return openSearchClient;
@@ -114,7 +122,7 @@ public class OpensearchConnector {
               LOGGER.info("OpenSearch cluster health: {}", response.status());
             }
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
     return openSearchClient;
@@ -126,7 +134,7 @@ public class OpensearchConnector {
     return createOsClient(operateProperties.getZeebeOpensearch());
   }
 
-  public OpenSearchAsyncClient createAsyncOsClient(OpensearchProperties osConfig) {
+  public OpenSearchAsyncClient createAsyncOsClient(final OpensearchProperties osConfig) {
     LOGGER.debug("Creating Async OpenSearch connection...");
     LOGGER.debug("Creating OpenSearch connection...");
     if (isAws()) {
@@ -166,7 +174,7 @@ public class OpensearchConnector {
               LOGGER.info("OpenSearch cluster health: {}", response.status());
             }
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(e);
     }
 
@@ -184,13 +192,13 @@ public class OpensearchConnector {
       credentialsProvider.resolveCredentials();
       LOGGER.info("AWS Credentials can be resolved. Use AWS Opensearch");
       return true;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.warn("AWS not configured due to: {} ", e.getMessage());
       return false;
     }
   }
 
-  public OpenSearchClient createOsClient(OpensearchProperties osConfig) {
+  public OpenSearchClient createOsClient(final OpensearchProperties osConfig) {
     LOGGER.debug("Creating OpenSearch connection...");
     if (isAws()) {
       return getAwsClient(osConfig);
@@ -219,7 +227,7 @@ public class OpensearchConnector {
     try {
       final HealthResponse response = openSearchClient.cluster().health();
       LOGGER.info("OpenSearch cluster health: {}", response.status());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOGGER.error("Error in getting health status from {}", "localhost:9205", e);
     }
 
@@ -231,9 +239,9 @@ public class OpensearchConnector {
     return openSearchClient;
   }
 
-  private OpenSearchClient getAwsClient(OpensearchProperties osConfig) {
+  private OpenSearchClient getAwsClient(final OpensearchProperties osConfig) {
     final String region = new DefaultAwsRegionProviderChain().getRegion();
-    final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+    final SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder().build();
     final AwsSdk2Transport transport =
         new AwsSdk2Transport(
             httpClient,
@@ -245,9 +253,9 @@ public class OpensearchConnector {
     return new ExtendedOpenSearchClient(transport);
   }
 
-  private OpenSearchAsyncClient getAwsAsyncClient(OpensearchProperties osConfig) {
+  private OpenSearchAsyncClient getAwsAsyncClient(final OpensearchProperties osConfig) {
     final String region = new DefaultAwsRegionProviderChain().getRegion();
-    final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+    final SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder().build();
     final AwsSdk2Transport transport =
         new AwsSdk2Transport(
             httpClient,
@@ -259,17 +267,17 @@ public class OpensearchConnector {
     return new OpenSearchAsyncClient(transport);
   }
 
-  private HttpHost getHttpHost(OpensearchProperties osConfig) {
+  private HttpHost getHttpHost(final OpensearchProperties osConfig) {
     try {
       final URI uri = new URI(osConfig.getUrl());
       return new HttpHost(uri.getScheme(), uri.getHost(), uri.getPort());
-    } catch (URISyntaxException e) {
+    } catch (final URISyntaxException e) {
       throw new OperateRuntimeException("Error in url: " + osConfig.getUrl(), e);
     }
   }
 
   private HttpAsyncClientBuilder setupAuthentication(
-      final HttpAsyncClientBuilder builder, OpensearchProperties osConfig) {
+      final HttpAsyncClientBuilder builder, final OpensearchProperties osConfig) {
     if (!StringUtils.hasText(osConfig.getUsername())
         || !StringUtils.hasText(osConfig.getPassword())) {
       LOGGER.warn(
@@ -288,7 +296,7 @@ public class OpensearchConnector {
   }
 
   private void setupSSLContext(
-      HttpAsyncClientBuilder httpAsyncClientBuilder, SslProperties sslConfig) {
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final SslProperties sslConfig) {
     try {
       final ClientTlsStrategyBuilder tlsStrategyBuilder = ClientTlsStrategyBuilder.create();
       tlsStrategyBuilder.setSslContext(getSSLContext(sslConfig));
@@ -302,12 +310,12 @@ public class OpensearchConnector {
 
       httpAsyncClientBuilder.setConnectionManager(connectionManager);
 
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Error in setting up SSLContext", e);
     }
   }
 
-  private SSLContext getSSLContext(SslProperties sslConfig)
+  private SSLContext getSSLContext(final SslProperties sslConfig)
       throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
     final KeyStore truststore = loadCustomTrustStore(sslConfig);
     final TrustStrategy trustStrategy =
@@ -320,7 +328,7 @@ public class OpensearchConnector {
     }
   }
 
-  private KeyStore loadCustomTrustStore(SslProperties sslConfig) {
+  private KeyStore loadCustomTrustStore(final SslProperties sslConfig) {
     try {
       final KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustStore.load(null);
@@ -330,7 +338,7 @@ public class OpensearchConnector {
         setCertificateInTrustStore(trustStore, serverCertificate);
       }
       return trustStore;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message =
           "Could not create certificate trustStore for the secured OpenSearch Connection!";
       throw new OperateRuntimeException(message, e);
@@ -342,7 +350,7 @@ public class OpensearchConnector {
     try {
       final Certificate cert = loadCertificateFromPath(serverCertificate);
       trustStore.setCertificateEntry("opensearch-host", cert);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message =
           "Could not load configured server certificate for the secured OpenSearch Connection!";
       throw new OperateRuntimeException(message, e);
@@ -352,7 +360,8 @@ public class OpensearchConnector {
   private Certificate loadCertificateFromPath(final String certificatePath)
       throws IOException, CertificateException {
     final Certificate cert;
-    try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(certificatePath))) {
+    try (final BufferedInputStream bis =
+        new BufferedInputStream(new FileInputStream(certificatePath))) {
       final CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
       if (bis.available() > 0) {
@@ -367,12 +376,57 @@ public class OpensearchConnector {
   }
 
   protected HttpAsyncClientBuilder configureHttpClient(
-      HttpAsyncClientBuilder httpAsyncClientBuilder, OpensearchProperties osConfig) {
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final OpensearchProperties osConfig) {
     setupAuthentication(httpAsyncClientBuilder, osConfig);
+
+    LOGGER.trace("Attempt to load interceptor plugins");
+    if (osConfig.getInterceptorPlugins() != null) {
+      loadInterceptorPlugins(httpAsyncClientBuilder, osConfig);
+    }
+
     if (osConfig.getSsl() != null) {
       setupSSLContext(httpAsyncClientBuilder, osConfig.getSsl());
     }
     return httpAsyncClientBuilder;
+  }
+
+  private void loadInterceptorPlugins(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final OpensearchProperties osConfig) {
+    LOGGER.trace("Plugins detected to be not empty {}", osConfig.getInterceptorPlugins());
+
+    final var interceptors = osConfig.getInterceptorPlugins();
+    interceptors.forEach(
+        (id, interceptor) -> {
+          LOGGER.trace("Attempting to register {}", interceptor.getId());
+          try {
+            // WARNING! Due to the nature of interceptors, by the moment they (interceptors)
+            // are executed, the below class loader will close the JAR file hence
+            // to avoid NoClassDefFoundError we must not close this class loader.
+            final var classLoader =
+                ExternalJarClassLoader.ofPath(Paths.get(interceptor.getJarPath()));
+
+            final var pluginClass = classLoader.loadClass(interceptor.getClassName());
+            final var plugin = ReflectUtil.newInstance(pluginClass);
+
+            if (plugin instanceof final DatabaseCustomHeaderSupplier dchs) {
+              LOGGER.trace(
+                  "Plugin {} appears to be a DB Header Provider. Registering with interceptor",
+                  interceptor.getId());
+              httpAsyncClientBuilder.addRequestInterceptorLast(
+                  (httpRequest, entityDetails, httpContext) -> {
+                    final var customHeader =
+                        ThreadContextUtil.supplyWithClassLoader(
+                            dchs::getElasticsearchCustomHeader, classLoader);
+                    httpRequest.addHeader(customHeader.key(), customHeader.value());
+                  });
+            } else {
+              throw new RuntimeException(
+                  "Unknown type of interceptor plugin or wrong class specified");
+            }
+          } catch (final Exception e) {
+            throw new RuntimeException("Failed to load interceptor plugin due to exception", e);
+          }
+        });
   }
 
   private RequestConfig.Builder setTimeouts(
@@ -387,7 +441,7 @@ public class OpensearchConnector {
     return builder;
   }
 
-  public boolean checkHealth(OpenSearchClient osClient) {
+  public boolean checkHealth(final OpenSearchClient osClient) {
     final OpensearchProperties osConfig = operateProperties.getOpensearch();
     final RetryPolicy<Boolean> retryPolicy = getConnectionRetryPolicy(osConfig);
     return Failsafe.with(retryPolicy)
@@ -399,7 +453,7 @@ public class OpensearchConnector {
             });
   }
 
-  public boolean checkHealth(OpenSearchAsyncClient osAsyncClient) {
+  public boolean checkHealth(final OpenSearchAsyncClient osAsyncClient) {
     final OpensearchProperties osConfig = operateProperties.getOpensearch();
     final RetryPolicy<Boolean> retryPolicy = getConnectionRetryPolicy(osConfig);
     return Failsafe.with(retryPolicy)

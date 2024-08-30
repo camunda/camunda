@@ -151,6 +151,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         SkipPositionsFilter.of(context.getBrokerCfg().getProcessing().skipPositions());
 
     return StreamProcessor.builder()
+        .meterRegistry(context.getMeterRegistry())
         .logStream(context.getLogStream())
         .actorSchedulingService(context.getActorSchedulingService())
         .zeebeDb(context.getZeebeDb())
@@ -160,6 +161,8 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .maxCommandsInBatch(context.getBrokerCfg().getProcessing().getMaxCommandsInBatch())
         .setEnableAsyncScheduledTasks(
             context.getBrokerCfg().getProcessing().isEnableAsyncScheduledTasks())
+        .setScheduledTaskCheckInterval(
+            context.getBrokerCfg().getProcessing().getScheduledTaskCheckInterval())
         .processingFilter(processingFilter)
         .listener(
             processedCommand ->
@@ -184,6 +187,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .streamProcessorMode(streamProcessorMode)
         .partitionCommandSender(context.getPartitionCommandSender())
         .scheduledCommandCache(scheduledCommandCache)
+        .clock(context.getStreamClock())
         .build();
   }
 }

@@ -94,6 +94,10 @@ public class IntermediateThrowEventProcessor
       final ExecutableIntermediateThrowEvent element, final BpmnElementContext terminating) {
     eventBehaviorOf(element).onTerminate(element, terminating);
 
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(terminating);
+    }
+
     // common behavior for all intermediate throw events
     final var terminated =
         stateTransitionBehavior.transitionToTerminated(terminating, element.getEventType());

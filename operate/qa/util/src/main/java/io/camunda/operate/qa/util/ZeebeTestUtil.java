@@ -13,8 +13,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
-import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
+import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.worker.JobWorker;
@@ -34,13 +33,13 @@ public abstract class ZeebeTestUtil {
     if (classpathResources.length == 0) {
       return null;
     }
-    DeployResourceCommandStep1 deployProcessCommandStep1 = client.newDeployResourceCommand();
+    DeployProcessCommandStep1 deployProcessCommandStep1 = client.newDeployCommand();
     for (final String classpathResource : classpathResources) {
       deployProcessCommandStep1 =
           deployProcessCommandStep1.addResourceFromClasspath(classpathResource);
     }
     final DeploymentEvent deploymentEvent =
-        ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployProcessCommandStep1)
+        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
             .send()
             .join();
     LOGGER.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
@@ -55,13 +54,13 @@ public abstract class ZeebeTestUtil {
     if (classpathResources.length == 0) {
       return;
     }
-    DeployResourceCommandStep1 deployProcessCommandStep1 = client.newDeployResourceCommand();
+    DeployProcessCommandStep1 deployProcessCommandStep1 = client.newDeployCommand();
     for (final String classpathResource : classpathResources) {
       deployProcessCommandStep1 =
           deployProcessCommandStep1.addResourceFromClasspath(classpathResource);
     }
     final DeploymentEvent deploymentEvent =
-        ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployProcessCommandStep1)
+        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
             .send()
             .join();
     LOGGER.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
@@ -69,9 +68,12 @@ public abstract class ZeebeTestUtil {
 
   public static String deployProcess(
       final ZeebeClient client, final BpmnModelInstance processModel, final String resourceName) {
-    final DeployResourceCommandStep2 deployProcessCommandStep1 =
-        client.newDeployResourceCommand().addProcessModel(processModel, resourceName);
-    final DeploymentEvent deploymentEvent = deployProcessCommandStep1.send().join();
+    final DeployProcessCommandStep1 deployProcessCommandStep1 =
+        client.newDeployCommand().addProcessModel(processModel, resourceName);
+    final DeploymentEvent deploymentEvent =
+        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
+            .send()
+            .join();
     LOGGER.debug("Deployment of resource [{}] was performed", resourceName);
     return String.valueOf(deploymentEvent.getProcesses().get(0).getProcessDefinitionKey());
   }

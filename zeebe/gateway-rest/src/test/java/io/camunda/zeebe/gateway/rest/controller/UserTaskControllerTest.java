@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -52,12 +53,18 @@ public class UserTaskControllerTest extends RestControllerTest {
     return Stream.of("/v1/user-tasks", "/v2/user-tasks");
   }
 
-  static Stream<Pair<RejectionType, String>> rejectionsAndUrls() {
+  static Stream<Pair<RejectionType, String>> invalidArgumentAndUrls() {
     return urls()
         .flatMap(
             url ->
-                Stream.of(RejectionType.INVALID_ARGUMENT, RejectionType.ALREADY_EXISTS)
-                    .flatMap(r -> Stream.of(Pair.of(r, url))));
+                Stream.of(RejectionType.INVALID_ARGUMENT).flatMap(r -> Stream.of(Pair.of(r, url))));
+  }
+
+  static Stream<Pair<RejectionType, String>> alreadyExistsAndUrls() {
+    return urls()
+        .flatMap(
+            url ->
+                Stream.of(RejectionType.ALREADY_EXISTS).flatMap(r -> Stream.of(Pair.of(r, url))));
   }
 
   static Stream<Pair<RejectionType, String>> exceptionsAndUrls() {
@@ -239,7 +246,8 @@ public class UserTaskControllerTest extends RestControllerTest {
             "candidateGroups": ["foo"],
             "candidateUsers": ["bar"],
             "dueDate": "%s",
-            "followUpDate": "%s"
+            "followUpDate": "%s",
+            "priority": 33
           }
         }"""
             .formatted(TEST_TIME, TEST_TIME);
@@ -264,11 +272,13 @@ public class UserTaskControllerTest extends RestControllerTest {
             UserTaskRecord.CANDIDATE_USERS,
             UserTaskRecord.CANDIDATE_GROUPS,
             UserTaskRecord.DUE_DATE,
-            UserTaskRecord.FOLLOW_UP_DATE)
+            UserTaskRecord.FOLLOW_UP_DATE,
+            UserTaskRecord.PRIORITY)
         .hasDueDate(TEST_TIME)
         .hasFollowUpDate(TEST_TIME)
         .hasCandidateGroupsList("foo")
-        .hasCandidateUsersList("bar");
+        .hasCandidateUsersList("bar")
+        .hasPriority(33);
   }
 
   @ParameterizedTest
@@ -362,7 +372,8 @@ public class UserTaskControllerTest extends RestControllerTest {
             "candidateGroups": ["foo"],
             "candidateUsers": ["bar"],
             "dueDate": "%s",
-            "followUpDate": "%s"
+            "followUpDate": "%s",
+            "priority": 33
           }
         }"""
             .formatted(TEST_TIME, TEST_TIME);
@@ -388,11 +399,13 @@ public class UserTaskControllerTest extends RestControllerTest {
             UserTaskRecord.CANDIDATE_USERS,
             UserTaskRecord.CANDIDATE_GROUPS,
             UserTaskRecord.DUE_DATE,
-            UserTaskRecord.FOLLOW_UP_DATE)
+            UserTaskRecord.FOLLOW_UP_DATE,
+            UserTaskRecord.PRIORITY)
         .hasDueDate(TEST_TIME)
         .hasFollowUpDate(TEST_TIME)
         .hasCandidateGroupsList("foo")
-        .hasCandidateUsersList("bar");
+        .hasCandidateUsersList("bar")
+        .hasPriority(33);
   }
 
   @ParameterizedTest
@@ -634,6 +647,55 @@ RFC 3339, section 5.6.",
     Mockito.verifyNoInteractions(userTaskServices);
   }
 
+  static Stream<Arguments> urlsAndPriorityValue() {
+    return urls().flatMap(url -> Stream.of(Arguments.of(url, -1), Arguments.of(url, 101)));
+  }
+
+  @ParameterizedTest
+  @MethodSource("urlsAndPriorityValue")
+  void shouldYieldBadRequestWhenUpdateTaskWithPriorityOutOfBounds(
+      final String baseUrl, final int priority) {
+    // given
+    final var request =
+        """
+         {
+           "changeset": {
+             "priority": %d
+           }
+         }"""
+            .formatted(priority);
+
+    final var expectedBody =
+        """
+         {
+           "type": "about:blank",
+           "status": 400,
+           "title": "INVALID_ARGUMENT",
+           "detail": "The value for priority is '%s' but must be within the [0,100] range.",
+           "instance": "%s"
+         }"""
+            .formatted(priority, baseUrl + "/1");
+
+    // when / then
+    webClient
+        .patch()
+        .uri(baseUrl + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(expectedBody);
+
+    Mockito.verifyNoInteractions(userTaskServices);
+  }
+
   @ParameterizedTest
   @MethodSource("urls")
   void shouldYieldNotFoundWhenTaskNotFound(final String baseUrl) {
@@ -716,7 +778,7 @@ RFC 3339, section 5.6.",
   }
 
   @ParameterizedTest
-  @MethodSource("rejectionsAndUrls")
+  @MethodSource("invalidArgumentAndUrls")
   public void shouldYieldBadRequestWhenRejectionOfInput(
       final Pair<RejectionType, String> parameters) {
     // given
@@ -750,6 +812,49 @@ RFC 3339, section 5.6.",
         .exchange()
         .expectStatus()
         .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+
+    Mockito.verify(userTaskServices).completeUserTask(1L, Map.of(), "");
+  }
+
+  @ParameterizedTest
+  @MethodSource("alreadyExistsAndUrls")
+  public void shouldYieldConflictWhenRejectionOfInput(
+      final Pair<RejectionType, String> parameters) {
+    // given
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaServiceException(
+                    new BrokerRejection(
+                        UserTaskIntent.COMPLETE, 1L, parameters.getLeft(), "Just an error"))));
+
+    final var expectedBody =
+        """
+        {
+          "type": "about:blank",
+          "status": 409,
+          "title": "%s",
+          "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
+          "instance": "%s"
+        }"""
+            .formatted(
+                parameters.getLeft().name(),
+                parameters.getLeft(),
+                parameters.getRight() + "/1/completion");
+
+    // when / then
+    webClient
+        .post()
+        .uri(parameters.getRight() + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.CONFLICT)
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()

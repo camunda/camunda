@@ -85,7 +85,7 @@ class BusinessRuleTaskValidatorTest {
         process,
         ExpectedValidationResult.expect(
             ZeebeCalledDecision.class,
-            "Attribute 'bindingType' must be one of: deployment, latest"));
+            "Attribute 'bindingType' must be one of: deployment, latest, versionTag"));
   }
 
   @Test

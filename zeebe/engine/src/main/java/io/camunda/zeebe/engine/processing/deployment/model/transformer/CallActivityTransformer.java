@@ -59,6 +59,9 @@ public final class CallActivityTransformer implements ModelElementTransformer<Ca
 
     final var bindingType = calledElement.getBindingType();
     callActivity.setBindingType(bindingType);
+
+    final var versionTag = calledElement.getVersionTag();
+    callActivity.setVersionTag(versionTag);
   }
 
   private static void transformLexicographicIndex(

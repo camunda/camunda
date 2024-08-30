@@ -41,6 +41,7 @@ public class UserTaskImpl implements UserTask {
   private final String externalFormReference;
   private final Integer processDefinitionVersion;
   private final Map<String, String> customHeaders;
+  private final Integer priority;
 
   public UserTaskImpl(final UserTaskItem item) {
     key = item.getKey();
@@ -62,6 +63,7 @@ public class UserTaskImpl implements UserTask {
     externalFormReference = item.getExternalFormReference();
     processDefinitionVersion = item.getProcessDefinitionVersion();
     customHeaders = item.getCustomHeaders();
+    priority = item.getPriority();
   }
 
   @Override
@@ -120,6 +122,16 @@ public class UserTaskImpl implements UserTask {
   }
 
   @Override
+  public String getCreationDate() {
+    return creationDate;
+  }
+
+  @Override
+  public String getCompletionDate() {
+    return completionDate;
+  }
+
+  @Override
   public String getFollowUpDate() {
     return followUpDate;
   }
@@ -150,12 +162,7 @@ public class UserTaskImpl implements UserTask {
   }
 
   @Override
-  public String getCreationDate() {
-    return creationDate;
-  }
-
-  @Override
-  public String getCompletionDate() {
-    return completionDate;
+  public Integer getPriority() {
+    return priority;
   }
 }

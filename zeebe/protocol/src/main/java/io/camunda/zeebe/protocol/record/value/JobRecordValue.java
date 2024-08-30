@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import java.util.Map;
+import java.util.Set;
 import org.immutables.value.Value;
 
 /**
@@ -124,4 +125,6 @@ public interface JobRecordValue
    *     jobs of kind {@link JobKind#EXECUTION_LISTENER} or {@link JobKind#TASK_LISTENER}
    */
   JobListenerEventType getJobListenerEventType();
+
+  Set<String> getChangedAttributes();
 }

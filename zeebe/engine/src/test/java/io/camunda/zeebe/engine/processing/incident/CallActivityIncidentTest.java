@@ -124,6 +124,43 @@ public final class CallActivityIncidentTest {
   }
 
   @Test
+  public void shouldCreateIncidentIfProcessWithVersionTagIsNotDeployedForBindingTypeVersionTag() {
+    // given
+    final var childProcessId = Strings.newRandomValidBpmnId();
+    final var childProcess = Bpmn.createExecutableProcess(childProcessId).startEvent().done();
+    ENGINE.deployment().withXmlResource("wf-child.bpmn", childProcess).deploy();
+    final var parentProcess =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .callActivity(
+                "call",
+                c ->
+                    c.zeebeProcessId(childProcessId)
+                        .zeebeBindingType(ZeebeBindingType.versionTag)
+                        .zeebeVersionTag("v1.0"))
+            .done();
+    ENGINE.deployment().withXmlResource("wf-parent.bpmn", parentProcess).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        getCallActivityInstance(processInstanceKey);
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.CALLED_ELEMENT_ERROR)
+        .hasErrorMessage(
+            """
+            Expected to call process with BPMN process id '%s' and version tag '%s', but no such process found. \
+            To resolve this incident, deploy a process with the given process id and version tag.\
+            """
+                .formatted(childProcessId, "v1.0"));
+  }
+
+  @Test
   public void shouldCreateIncidentIfProcessHasNoNoneStartEvent() {
     // given
     ENGINE

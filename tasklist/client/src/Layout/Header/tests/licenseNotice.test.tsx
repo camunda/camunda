@@ -13,6 +13,7 @@ import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
+import * as licenseMocks from 'modules/mock-schema/mocks/license';
 
 describe('license note', () => {
   afterEach(() => {
@@ -34,37 +35,57 @@ describe('license note', () => {
   });
 
   it('should show and hide license information', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v2/license',
+        () => {
+          return HttpResponse.json(licenseMocks.invalidLicense);
+        },
+        {
+          once: true,
+        },
+      ),
+    );
+
     const {user} = render(<Header />, {
       wrapper: getWrapper(),
     });
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
-
     expect(
       screen.getByRole('button', {
-        name: 'Non-Production License',
+        name: 'Learn more',
         expanded: false,
       }),
     ).toBeInTheDocument();
 
-    await user.click(
-      screen.getByRole('button', {name: 'Non-Production License'}),
-    );
+    await user.click(screen.getByRole('button', {name: 'Learn more'}));
 
     expect(
       screen.getByRole('button', {
-        name: 'Non-Production License',
+        name: 'Learn more',
         expanded: true,
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /Non-Production License. If you would like information on production usage, please refer to our/,
+        /Non-production license. For production usage details, visit/,
       ),
     ).toBeInTheDocument();
   });
 
   it('should show license note in CCSM free/trial environment', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v2/license',
+        () => {
+          return HttpResponse.json(licenseMocks.invalidLicense);
+        },
+        {
+          once: true,
+        },
+      ),
+    );
     window.clientConfig = {
       isEnterprise: false,
       organizationId: null,
@@ -75,11 +96,22 @@ describe('license note', () => {
     });
 
     expect(
-      await screen.findByText('Non-Production License'),
+      await screen.findByText('Non-production license'),
     ).toBeInTheDocument();
   });
 
   it('should not show license note in SaaS environment', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v2/license',
+        () => {
+          return HttpResponse.json(licenseMocks.saasLicense);
+        },
+        {
+          once: true,
+        },
+      ),
+    );
     window.clientConfig = {
       isEnterprise: false,
       organizationId: '000000000-0000-0000-0000-000000000000',
@@ -91,11 +123,23 @@ describe('license note', () => {
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
     expect(
-      screen.queryByText('Non-Production License'),
+      screen.queryByText('Non-production license'),
     ).not.toBeInTheDocument();
   });
 
-  it('should not show license note in CCSM enterprise environment', async () => {
+  it('should show production license note in CCSM enterprise environment', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v2/license',
+        () => {
+          return HttpResponse.json(licenseMocks.validLicense);
+        },
+        {
+          once: true,
+        },
+      ),
+    );
+
     window.clientConfig = {
       isEnterprise: true,
       organizationId: null,
@@ -106,8 +150,6 @@ describe('license note', () => {
     });
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
-    expect(
-      screen.queryByText('Non-Production License'),
-    ).not.toBeInTheDocument();
+    expect(screen.getByText('Production license')).toBeInTheDocument();
   });
 });

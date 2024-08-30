@@ -1,0 +1,8 @@
+{
+  "properties": {
+    "email": {
+      "type": "keyword"
+    }
+  }
+
+}

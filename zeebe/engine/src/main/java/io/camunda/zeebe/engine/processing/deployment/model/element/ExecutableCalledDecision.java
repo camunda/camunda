@@ -24,4 +24,8 @@ public interface ExecutableCalledDecision {
   ZeebeBindingType getBindingType();
 
   void setBindingType(ZeebeBindingType bindingType);
+
+  String getVersionTag();
+
+  void setVersionTag(String versionTag);
 }

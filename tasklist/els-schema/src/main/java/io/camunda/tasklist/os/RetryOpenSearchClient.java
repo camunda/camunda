@@ -712,4 +712,64 @@ public class RetryOpenSearchClient {
           return true;
         });
   }
+
+  public JsonObject getExplainIndexResponse(final String indexName) {
+    final Request request = new Request("GET", "/_plugins/_ism/explain/" + indexName);
+    try {
+      final Response response = opensearchRestClient.performRequest(request);
+
+      // Parse the response entity into a JsonObject
+      final InputStream responseStream = response.getEntity().getContent();
+      final JsonReader jsonReader = Json.createReader(responseStream);
+      final JsonObject responseObject = jsonReader.readObject();
+      jsonReader.close();
+
+      return responseObject.getJsonObject(
+          indexName); // Ensure this extracts the correct JSON object
+    } catch (final ResponseException e) {
+      if (e.getResponse().getStatusLine().getStatusCode() == HttpStatus.NOT_FOUND.value()) {
+        return null; // No ISM policy found for the index
+      } else {
+        throw new TasklistRuntimeException("Communication error with OpenSearch", e);
+      }
+    } catch (final IOException e) {
+      // Handle other I/O errors
+      throw new TasklistRuntimeException("Communication error with OpenSearch", e);
+    }
+  }
+
+  public void addISMPolicyToIndex(final String indexName, final String policyId) {
+    executeWithRetries(
+        "AddISMPolicyToIndex " + indexName,
+        () -> {
+          try {
+            final Request request = new Request("POST", "/_plugins/_ism/add/" + indexName);
+
+            // Create the JSON object to assign the policy
+            final String policyAssignment = String.format("{\"policy_id\": \"%s\"}", policyId);
+
+            request.setJsonEntity(policyAssignment.toString());
+
+            opensearchRestClient.performRequest(request);
+            return true;
+          } catch (final IOException e) {
+            throw new RuntimeException("Failed to apply ISM policy to index: " + indexName, e);
+          }
+        });
+  }
+
+  public void removeISMPolicyFromIndex(final String indexName) {
+    executeWithRetries(
+        "RemoveISMPolicyToIndex " + indexName,
+        () -> {
+          try {
+            final Request request = new Request("POST", "/_plugins/_ism/remove/" + indexName);
+
+            opensearchRestClient.performRequest(request);
+            return true;
+          } catch (final IOException e) {
+            throw new RuntimeException("Failed to apply ISM policy to index: " + indexName, e);
+          }
+        });
+  }
 }

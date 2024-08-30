@@ -1,0 +1,37 @@
+name: Compose
+description: |
+  Compose Wrapper for elasticsearch container
+inputs:
+  compose_file:
+    description: "Full path to the compose file"
+    required: true
+  project_name:
+    description: "Project name to allow running the same file multiple times"
+    required: true
+  additional_flags:
+    description: "Additional flags to pass to the compose command"
+    required: false
+  timeout:
+    description: "Timeout for the healthcheck (in seconds)"
+    required: false
+    default: "300"
+runs:
+  using: composite
+  steps:
+    - name: Run ${{ inputs.project_name }} compose
+      uses: hoverkraft-tech/compose-action@e5813a5909aca4ae36058edae58f6e52b9c971f8 # v2.0.1
+      with:
+        compose-file: |
+          ${{ inputs.compose_file }}
+        compose-flags: "--project-name ${{ inputs.project_name }} ${{ inputs.additional_flags }}"
+    - name: Short sleep to let it startup
+      shell: bash
+      run: sleep 3
+    - name: Check if service is healthy
+      shell: bash
+      run: |
+        ${{ github.action_path }}/healthy.sh
+      env:
+        FILE: ${{ inputs.compose_file }}
+        TIMEOUT: ${{ inputs.timeout }}
+        COMPOSE_FLAGS: "--project-name ${{ inputs.project_name }}"

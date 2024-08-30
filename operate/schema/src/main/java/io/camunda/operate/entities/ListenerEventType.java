@@ -17,13 +17,16 @@ public enum ListenerEventType {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ListenerEventType.class);
 
-  public static ListenerEventType fromZeebeExecutionListenerEventType(
-      final String listenerEventType) {
+  public static ListenerEventType fromZeebeListenerEventType(final String listenerEventType) {
+    if (listenerEventType == null) {
+      LOGGER.warn("Listener event type is null. Setting it as {}.", UNSPECIFIED);
+      return UNSPECIFIED;
+    }
     try {
       return ListenerEventType.valueOf(listenerEventType);
     } catch (final IllegalArgumentException e) {
-      LOGGER.error(
-          "Unknown listener event type [{}]. Setting it as {}}.", listenerEventType, UNSPECIFIED);
+      LOGGER.warn(
+          "Unknown listener event type [{}]. Setting it as {}.", listenerEventType, UNSPECIFIED);
     }
     return UNSPECIFIED;
   }

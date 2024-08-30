@@ -35,6 +35,11 @@ public interface FormMetadataValue extends RecordValue, TenantOwned {
   int getVersion();
 
   /**
+   * @return the custom version tag of the form
+   */
+  String getVersionTag();
+
+  /**
    * @return the key of the deployed form
    */
   long getFormKey();

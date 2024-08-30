@@ -31,17 +31,22 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.TestScheduledCommandCache.TestCommandCache;
+import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.Either;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -62,7 +67,13 @@ class ProcessingScheduleServiceTest {
     lifecycleSupplier = new LifecycleSupplier();
     final var processingScheduleService =
         new ProcessingScheduleServiceImpl(
-            lifecycleSupplier, lifecycleSupplier, () -> testWriter, commandCache);
+            lifecycleSupplier,
+            lifecycleSupplier,
+            () -> testWriter,
+            commandCache,
+            actorScheduler.getClock(),
+            Duration.ofSeconds(1),
+            ScheduledTaskMetrics.noop());
 
     scheduleService = new TestScheduleServiceActorDecorator(processingScheduleService);
     actorScheduler.submitActor(scheduleService);
@@ -155,7 +166,10 @@ class ProcessingScheduleServiceTest {
             lifecycleSupplier,
             lifecycleSupplier,
             () -> testWriter,
-            new NoopScheduledCommandCache());
+            new NoopScheduledCommandCache(),
+            InstantSource.system(),
+            Duration.ofSeconds(1),
+            ScheduledTaskMetrics.noop());
     final var mockedTask = spy(new DummyTask());
 
     // when
@@ -177,7 +191,10 @@ class ProcessingScheduleServiceTest {
                 () -> {
                   throw new RuntimeException("expected");
                 },
-                new NoopScheduledCommandCache()));
+                new NoopScheduledCommandCache(),
+                InstantSource.system(),
+                Duration.ofSeconds(1),
+                ScheduledTaskMetrics.noop()));
 
     // when
     final var actorFuture = actorScheduler.submitActor(notOpenScheduleService);
@@ -375,6 +392,98 @@ class ProcessingScheduleServiceTest {
     verify(mockedTask, never()).execute(any());
   }
 
+  @Test
+  void shouldInitializeMetrics() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var scheduleService =
+        new TestScheduleServiceActorDecorator(
+            new ProcessingScheduleServiceImpl(
+                lifecycleSupplier,
+                lifecycleSupplier,
+                () -> testWriter,
+                commandCache,
+                actorScheduler.getClock(),
+                Duration.ofSeconds(1),
+                ScheduledTaskMetrics.of(registry, 1)));
+
+    // when
+    actorScheduler.submitActor(scheduleService);
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThat(registry.getMeters()).isNotEmpty();
+    assertThat(
+            registry
+                .get("zeebe.processing.scheduling.tasks")
+                .tags("partition", "1")
+                .gauge()
+                .value())
+        .isEqualTo(0);
+    assertThat(
+            registry
+                .get("zeebe.processing.scheduling.delay")
+                .tags("partition", "1")
+                .timer()
+                .count())
+        .isEqualTo(0);
+  }
+
+  @Test
+  void shouldUpdateMetricsOnScheduling() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var scheduleService =
+        new TestScheduleServiceActorDecorator(
+            new ProcessingScheduleServiceImpl(
+                lifecycleSupplier,
+                lifecycleSupplier,
+                () -> testWriter,
+                commandCache,
+                actorScheduler.getClock(),
+                Duration.ofSeconds(1),
+                ScheduledTaskMetrics.of(registry, 1)));
+    actorScheduler.submitActor(scheduleService);
+    actorScheduler.workUntilDone();
+
+    // when -- scheduling a task
+    scheduleService.runDelayed(Duration.ofMinutes(1), new DummyTask());
+    actorScheduler.workUntilDone();
+
+    // then -- count is increased
+    assertThat(registry.get("zeebe.processing.scheduling.tasks").gauge().value()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldUpdateMetricsOnExecution() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var scheduleService =
+        new TestScheduleServiceActorDecorator(
+            new ProcessingScheduleServiceImpl(
+                lifecycleSupplier,
+                lifecycleSupplier,
+                () -> testWriter,
+                commandCache,
+                actorScheduler.getClock(),
+                Duration.ofSeconds(1),
+                ScheduledTaskMetrics.of(registry, 1)));
+    actorScheduler.submitActor(scheduleService);
+    actorScheduler.workUntilDone();
+
+    // when -- scheduling and executing a task
+    scheduleService.runDelayed(Duration.ofMinutes(1), new DummyTask());
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofMinutes(2));
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThat(registry.get("zeebe.processing.scheduling.tasks").gauge().value()).isEqualTo(0);
+    assertThat(registry.get("zeebe.processing.scheduling.delay").timer().count()).isEqualTo(1);
+    assertThat(registry.get("zeebe.processing.scheduling.delay").timer().max(TimeUnit.MINUTES))
+        .isCloseTo(1, Percentage.withPercentage(20));
+  }
+
   /**
    * This decorator is an actor and implements {@link ProcessingScheduleService} and delegates to
    * {@link ProcessingScheduleServiceImpl}, on each call it will submit an extra job to the related
@@ -439,6 +548,22 @@ class ProcessingScheduleServiceTest {
 
     @Override
     public ScheduledTask runAt(final long timestamp, final Task task) {
+      final var futureScheduledTask =
+          actor.call(() -> processingScheduleService.runAt(timestamp, task));
+      return () ->
+          actor.run(
+              () ->
+                  actor.runOnCompletion(
+                      futureScheduledTask,
+                      (scheduledTask, throwable) -> {
+                        if (scheduledTask != null) {
+                          scheduledTask.cancel();
+                        }
+                      }));
+    }
+
+    @Override
+    public ScheduledTask runAt(final long timestamp, final Runnable task) {
       final var futureScheduledTask =
           actor.call(() -> processingScheduleService.runAt(timestamp, task));
       return () ->
@@ -552,8 +677,8 @@ class ProcessingScheduleServiceTest {
 
       // then
       final var inOrder = inOrder(mockedTask2, mockedTask);
-      inOrder.verify(mockedTask).execute(any());
       inOrder.verify(mockedTask2).execute(any());
+      inOrder.verify(mockedTask).execute(any());
       inOrder.verifyNoMoreInteractions();
     }
 
@@ -612,7 +737,10 @@ class ProcessingScheduleServiceTest {
               lifecycleSupplier,
               lifecycleSupplier,
               () -> testWriter,
-              new NoopScheduledCommandCache());
+              new NoopScheduledCommandCache(),
+              InstantSource.system(),
+              Duration.ofSeconds(1),
+              ScheduledTaskMetrics.noop());
       final var mockedTask = spy(new DummyTask());
 
       // when

@@ -16,16 +16,22 @@
 package io.camunda.zeebe.client.impl.search;
 
 import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
+import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
+import io.camunda.zeebe.client.api.search.response.Incident;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.api.search.response.SearchResponsePage;
 import io.camunda.zeebe.client.api.search.response.UserTask;
 import io.camunda.zeebe.client.impl.search.response.DecisionDefinitionImpl;
+import io.camunda.zeebe.client.impl.search.response.DecisionRequirementsImpl;
+import io.camunda.zeebe.client.impl.search.response.IncidentImpl;
 import io.camunda.zeebe.client.impl.search.response.ProcessInstanceImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchQueryResponseImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchResponsePageImpl;
 import io.camunda.zeebe.client.impl.search.response.UserTaskImpl;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQueryResponse;
+import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsSearchQueryResponse;
+import io.camunda.zeebe.client.protocol.rest.IncidentSearchQueryResponse;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.client.protocol.rest.SearchQueryPageResponse;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryResponse;
@@ -64,12 +70,28 @@ public final class SearchResponseMapper {
     return new SearchQueryResponseImpl<>(instances, page);
   }
 
+  public static SearchQueryResponse<Incident> toIncidentSearchResponse(
+      final IncidentSearchQueryResponse response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Incident> incidents =
+        toSearchResponseInstances(response.getItems(), IncidentImpl::new);
+    return new SearchQueryResponseImpl<>(incidents, page);
+  }
+
   private static SearchResponsePage toSearchResponsePage(
       final SearchQueryPageResponse pageResponse) {
     return new SearchResponsePageImpl(
         pageResponse.getTotalItems(),
         pageResponse.getFirstSortValues(),
         pageResponse.getLastSortValues());
+  }
+
+  public static SearchQueryResponse<DecisionRequirements> toDecisionRequirementsSearchResponse(
+      final DecisionRequirementsSearchQueryResponse response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<DecisionRequirements> instances =
+        toSearchResponseInstances(response.getItems(), DecisionRequirementsImpl::new);
+    return new SearchQueryResponseImpl<>(instances, page);
   }
 
   private static <T, R> List<R> toSearchResponseInstances(

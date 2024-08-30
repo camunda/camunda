@@ -24,10 +24,11 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import org.slf4j.Logger;
 
 public final class RaftPartitionFactory {
   public static final String GROUP_NAME = "raft-partition";
-
+  private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private final BrokerCfg brokerCfg;
 
   public RaftPartitionFactory(final BrokerCfg brokerCfg) {
@@ -41,6 +42,13 @@ public final class RaftPartitionFactory {
             .resolve("partitions")
             .resolve(partitionMetadata.id().id().toString());
     try {
+      if (FileUtil.isEmpty(partitionDirectory)) {
+        LOG.info(
+            "Root directory {} for partition {} is empty or does not exist. The partition {} is starting with no pre-existing data.",
+            partitionDirectory,
+            partitionMetadata.id(),
+            partitionMetadata.id());
+      }
       FileUtil.ensureDirectoryExists(partitionDirectory);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);

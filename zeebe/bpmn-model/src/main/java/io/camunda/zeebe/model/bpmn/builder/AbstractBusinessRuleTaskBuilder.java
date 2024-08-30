@@ -94,4 +94,17 @@ public abstract class AbstractBusinessRuleTaskBuilder<B extends AbstractBusiness
     calledDecision.setBindingType(bindingType);
     return myself;
   }
+
+  /**
+   * Sets the version tag for the decision that is called.
+   *
+   * @param versionTag the version tag for the decision
+   * @return the builder object
+   */
+  public B zeebeVersionTag(final String versionTag) {
+    final ZeebeCalledDecision calledDecision =
+        getCreateSingleExtensionElement(ZeebeCalledDecision.class);
+    calledDecision.setVersionTag(versionTag);
+    return myself;
+  }
 }

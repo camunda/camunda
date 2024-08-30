@@ -25,5 +25,6 @@ public class ProcessCreatedV2Applier implements TypedEventApplier<ProcessIntent,
   public void applyState(final long processDefinitionKey, final ProcessRecord value) {
     processState.putProcess(processDefinitionKey, value);
     processState.storeProcessDefinitionKeyByProcessIdAndDeploymentKey(value);
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(value);
   }
 }

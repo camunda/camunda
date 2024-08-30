@@ -228,7 +228,7 @@ public class MultiPartitionDeploymentLifecycleTest {
                 Bpmn.createExecutableProcess("PROCESS")
                     .startEvent()
                     .documentation(
-                        "x".repeat((int) (ByteValue.ofMegabytes(2) - ByteValue.ofKilobytes(2))))
+                        "x".repeat((int) (ByteValue.ofMegabytes(2) - ByteValue.ofKilobytes(3))))
                     .done())
             .deploy();
 

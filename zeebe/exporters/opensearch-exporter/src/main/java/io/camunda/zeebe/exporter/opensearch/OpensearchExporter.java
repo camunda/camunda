@@ -303,6 +303,13 @@ public class OpensearchExporter implements Exporter {
       if (index.messageCorrelation) {
         createValueIndexTemplate(ValueType.MESSAGE_CORRELATION);
       }
+      if (index.user) {
+        createValueIndexTemplate(ValueType.USER);
+      }
+
+      if (index.authorization) {
+        createValueIndexTemplate(ValueType.AUTHORIZATION);
+      }
     }
 
     indexTemplatesCreated = true;

@@ -1,0 +1,29 @@
+---
+security:
+  auth:
+    token:
+      lifeMin: 10
+
+container:
+  keystore:
+    location: override-test-config.yaml
+
+es:
+  security:
+    username: ''
+    password: ''
+    ssl:
+      certificate: ''
+      certificate_authorities: ''
+      enabled: true
+
+opensearch:
+  security:
+    username: ''
+    password: ''
+    ssl:
+      certificate: ''
+      certificate_authorities: ''
+      enabled: true
+
+isIt: true

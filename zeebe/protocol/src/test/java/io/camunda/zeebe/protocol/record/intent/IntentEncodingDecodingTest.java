@@ -76,6 +76,7 @@ final class IntentEncodingDecodingTest {
     result.addAll(buildParameterSets(SignalIntent.class, SignalIntent::from));
     result.addAll(
         buildParameterSets(SignalSubscriptionIntent.class, SignalSubscriptionIntent::from));
+    result.addAll(buildParameterSets(ClockIntent.class, ClockIntent::from));
 
     return result.stream();
   }

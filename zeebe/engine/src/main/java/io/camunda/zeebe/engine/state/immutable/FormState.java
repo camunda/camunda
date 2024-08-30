@@ -45,6 +45,18 @@ public interface FormState {
       DirectBuffer formId, long deploymentKey, final String tenantId);
 
   /**
+   * Query forms by the given form id and version tag and return the form.
+   *
+   * @param formId the id of the form
+   * @param versionTag the version tag of the form
+   * @param tenantId the id of the tenant
+   * @return the form, or {@link Optional#empty()} if no form with the given id and version tag is
+   *     deployed
+   */
+  Optional<PersistedForm> findFormByIdAndVersionTag(
+      DirectBuffer formId, String versionTag, final String tenantId);
+
+  /**
    * Gets the next version a form of a given id will receive. This is used, for example, when a new
    * deployment is done. Using this method we decide the version the newly deployed form receives.
    *

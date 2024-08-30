@@ -94,7 +94,8 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   @Override
   public void onTerminate(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
-
+    // cancel any active job associated with the task element being terminated
+    // (e.g. execution listener or BPMN element job)
     jobBehavior.cancelJob(context);
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);

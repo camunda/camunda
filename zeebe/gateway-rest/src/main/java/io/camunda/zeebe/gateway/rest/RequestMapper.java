@@ -7,36 +7,57 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationAssignRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
+import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
+import static io.camunda.zeebe.gateway.rest.validator.MessageCorrelateValidator.validateMessageCorrelationRequest;
+import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateAuthorization;
+import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
+import io.camunda.service.DocumentServices.DocumentCreateRequest;
+import io.camunda.service.DocumentServices.DocumentMetadataModel;
 import io.camunda.service.JobServices.ActivateJobsRequest;
+import io.camunda.service.JobServices.UpdateJobChangeset;
+import io.camunda.service.MessageServices.CorrelateMessageRequest;
+import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationAssignRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
+import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.util.Either;
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.ZonedDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 
 public class RequestMapper {
 
@@ -84,6 +105,10 @@ public class RequestMapper {
                 getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction)));
   }
 
+  public static Either<ProblemDetail, Long> getPinnedEpoch(final ClockPinRequest pinRequest) {
+    return getResult(validateClockPinRequest(pinRequest), pinRequest::getTimestamp);
+  }
+
   public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(
       final JobActivationRequest activationRequest) {
 
@@ -125,6 +150,30 @@ public class RequestMapper {
                 getMapOrEmpty(errorRequest, JobErrorRequest::getVariables)));
   }
 
+  public static Either<ProblemDetail, CorrelateMessageRequest> toMessageCorrelationRequest(
+      final MessageCorrelationRequest correlationRequest, final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(correlationRequest.getTenantId(), multiTenancyEnabled, "Correlate Message")
+            .flatMap(
+                tenantId ->
+                    validateAuthorization(tenantId, multiTenancyEnabled, "Correlate Message")
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)))
+            .flatMap(
+                tenantId ->
+                    validateMessageCorrelationRequest(correlationRequest)
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)));
+
+    return validationResponse.map(
+        tenantId ->
+            new CorrelateMessageRequest(
+                correlationRequest.getName(),
+                correlationRequest.getCorrelationKey(),
+                correlationRequest.getVariables(),
+                tenantId));
+  }
+
   public static CompleteJobRequest toJobCompletionRequest(
       final JobCompletionRequest completionRequest, final long jobKey) {
 
@@ -140,23 +189,61 @@ public class RequestMapper {
         () ->
             new UpdateJobRequest(
                 jobKey,
-                getIntOrZero(updateRequest, r -> updateRequest.getChangeset().getRetries()),
-                getLongOrZero(updateRequest, r -> updateRequest.getChangeset().getTimeout())));
+                new UpdateJobChangeset(
+                    updateRequest.getChangeset().getRetries(),
+                    updateRequest.getChangeset().getTimeout())));
   }
 
-  public static CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
-      final Supplier<CompletableFuture<?>> method, final Supplier<ResponseEntity<Object>> result) {
+  public static Either<ProblemDetail, AuthorizationAssignRequest> toAuthorizationAssignRequest(
+      final AuthorizationAssignRequest authorizationAssignRequest) {
+    return getResult(
+        validateAuthorizationAssignRequest(authorizationAssignRequest),
+        () -> authorizationAssignRequest);
+  }
+
+  public static Either<ProblemDetail, DocumentCreateRequest> toDocumentCreateRequest(
+      final String documentId,
+      final String storeId,
+      final MultipartFile file,
+      final DocumentMetadata metadata) {
+    final InputStream inputStream;
+    try {
+      inputStream = file.getInputStream();
+    } catch (final IOException e) {
+      return Either.left(createInternalErrorProblemDetail(e, "Failed to read document content"));
+    }
+    final var validationResponse = validateDocumentMetadata(metadata);
+    final var internalMetadata = toInternalDocumentMetadata(metadata, file);
+    return getResult(
+        validationResponse,
+        () -> new DocumentCreateRequest(documentId, storeId, inputStream, internalMetadata));
+  }
+
+  public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
+      final Supplier<CompletableFuture<BrokerResponseT>> method,
+      final Function<BrokerResponseT, ResponseEntity<Object>> result) {
     return method
         .get()
         .handleAsync(
             (response, error) ->
                 RestErrorMapper.getResponse(error, RestErrorMapper.DEFAULT_REJECTION_MAPPER)
-                    .orElseGet(result));
+                    .orElseGet(() -> result.apply(response)));
   }
 
-  public static CompletableFuture<ResponseEntity<Object>> executeServiceMethodWithNoContentResult(
-      final Supplier<CompletableFuture<?>> method) {
-    return RequestMapper.executeServiceMethod(method, () -> ResponseEntity.noContent().build());
+  public static <BrokerResponseT>
+      CompletableFuture<ResponseEntity<Object>> executeServiceMethodWithNoContentResult(
+          final Supplier<CompletableFuture<BrokerResponseT>> method) {
+    return RequestMapper.executeServiceMethod(
+        method, ignored -> ResponseEntity.noContent().build());
+  }
+
+  public static Either<ProblemDetail, DeployResourcesRequest> toDeployResourceRequest(
+      final List<MultipartFile> resources, final String tenantId) {
+    try {
+      return Either.right(createDeployResourceRequest(resources, tenantId));
+    } catch (final IOException e) {
+      return Either.left(createInternalErrorProblemDetail(e, "Failed to read resources content"));
+    }
   }
 
   public static Authentication getAuthentication() {
@@ -198,7 +285,47 @@ public class RequestMapper {
     if (changeset.getFollowUpDate() != null) {
       record.setFollowUpDate(changeset.getFollowUpDate()).setFollowUpDateChanged();
     }
+    if (changeset.getPriority() != null) {
+      record.setPriority(changeset.getPriority()).setPriorityChanged();
+    }
     return record;
+  }
+
+  private static DocumentMetadataModel toInternalDocumentMetadata(
+      final DocumentMetadata metadata, final MultipartFile file) {
+
+    if (metadata == null) {
+      return new DocumentMetadataModel(
+          file.getContentType(), file.getOriginalFilename(), null, Map.of());
+    }
+    final ZonedDateTime expiresAt;
+    if (metadata.getExpiresAt() == null || metadata.getExpiresAt().isBlank()) {
+      expiresAt = null;
+    } else {
+      expiresAt = ZonedDateTime.parse(metadata.getExpiresAt());
+    }
+    final var fileName =
+        Optional.ofNullable(metadata.getFileName()).orElse(file.getOriginalFilename());
+    final var contentType =
+        Optional.ofNullable(metadata.getContentType()).orElse(file.getContentType());
+
+    return new DocumentMetadataModel(
+        contentType, fileName, expiresAt, metadata.getAdditionalProperties());
+  }
+
+  private static DeployResourcesRequest createDeployResourceRequest(
+      final List<MultipartFile> resources, final String tenantId) throws IOException {
+    final Map<String, byte[]> resourceMap = new HashMap<>();
+    for (final MultipartFile resource : resources) {
+      resourceMap.put(resource.getOriginalFilename(), resource.getBytes());
+    }
+    return new DeployResourcesRequest(resourceMap, tenantId);
+  }
+
+  private static ProblemDetail createInternalErrorProblemDetail(
+      final IOException e, final String message) {
+    return RestErrorMapper.createProblemDetail(
+        HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), message);
   }
 
   private static <R> Map<String, Object> getMapOrEmpty(
@@ -248,5 +375,5 @@ public class RequestMapper {
 
   public record CompleteJobRequest(long jobKey, Map<String, Object> variables) {}
 
-  public record UpdateJobRequest(long jobKey, Integer retries, Long timeout) {}
+  public record UpdateJobRequest(long jobKey, UpdateJobChangeset changeset) {}
 }

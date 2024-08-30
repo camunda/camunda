@@ -28,6 +28,7 @@ public class RestGatewayPaths {
   private static final String URL_USER_TASK_UNASSIGNMENT =
       REST_API_PATH + "/user-tasks/%s/assignee";
   private static final String URL_USER_TASK_UPDATE = REST_API_PATH + "/user-tasks/%s";
+  private static final String URL_MESSAGE_CORRELATION = REST_API_PATH + "/message/correlation";
 
   /**
    * @return the topology request URL
@@ -73,5 +74,9 @@ public class RestGatewayPaths {
    */
   public static String getUserTaskUpdateUrl(final long userTaskKey) {
     return String.format(URL_USER_TASK_UPDATE, userTaskKey);
+  }
+
+  public static String getMessageCorrelationUrl() {
+    return URL_MESSAGE_CORRELATION;
   }
 }

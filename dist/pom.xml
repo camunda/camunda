@@ -74,6 +74,17 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-exporter</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-elasticsearch-exporter</artifactId>
       <exclusions>
         <exclusion>
@@ -157,6 +168,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-webjar</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-migration</artifactId>
     </dependency>
 
     <dependency>
@@ -282,6 +298,11 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-config</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-crypto</artifactId>
     </dependency>
 
     <dependency>
@@ -655,6 +676,7 @@
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
+            <dependency>io.camunda:camunda-exporter</dependency>
             <dependency>io.camunda:zeebe-elasticsearch-exporter</dependency>
             <dependency>io.camunda:zeebe-opensearch-exporter</dependency>
 
@@ -685,7 +707,7 @@
       <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
-        <version>7.7.0</version>
+        <version>7.8.0</version>
         <executions>
           <execution>
             <id>backups</id>

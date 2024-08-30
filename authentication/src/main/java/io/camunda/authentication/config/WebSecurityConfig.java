@@ -9,7 +9,10 @@ package io.camunda.authentication.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
+import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.service.UserServices;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -30,6 +33,12 @@ public class WebSecurityConfig {
   public static final String[] UNAUTHENTICATED_PATHS =
       new String[] {"/login**", "/logout**", "/error**", "/actuator**"};
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
+
+  @Bean
+  public CamundaUserDetailsService camundaUserDetailsService(
+      final UserServices<UserRecord> userServices) {
+    return new CamundaUserDetailsService(userServices);
+  }
 
   @Bean
   public SecurityFilterChain securityFilterChain(final HttpSecurity httpSecurity) {

@@ -36,15 +36,19 @@ function clearStateLocally(storageKey: StorageKey) {
 function getStateLocally<Key extends StorageKey>(
   storageKey: Key,
 ): null | z.infer<Validators[Key]> {
-  const value = localStorage.getItem(storageKey);
+  try {
+    const value = localStorage.getItem(storageKey);
 
-  if (value === null) {
+    if (value === null) {
+      return null;
+    }
+
+    const result = validators[storageKey].safeParse(JSON.parse(value));
+
+    return result.success ? result.data : null;
+  } catch {
     return null;
   }
-
-  const result = validators[storageKey].safeParse(JSON.parse(value));
-
-  return result.success ? result.data : null;
 }
 
 export {storeStateLocally, clearStateLocally, getStateLocally};

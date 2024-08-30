@@ -120,4 +120,14 @@ public interface UpdateUserTaskCommandStep1 extends FinalCommandStep<UpdateUserT
    *     to the broker.
    */
   UpdateUserTaskCommandStep1 clearCandidateUsers();
+
+  /**
+   * Set the priority of the User Task. The priority must be an integer between 0 and 100, default
+   * 50.
+   *
+   * @param priority the priority to set
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  UpdateUserTaskCommandStep1 priority(Integer priority);
 }

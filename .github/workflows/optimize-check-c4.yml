@@ -1,0 +1,48 @@
+name: Check if C4 builds
+on:
+  push:
+    branches:
+      - main
+      - stable/**
+      - release/**
+    paths:
+      - "optimize/c4/**"
+      - ".github/workflows/optimize-check-c4.yml"
+  pull_request:
+    paths:
+      - "optimize/c4/**"
+      - ".github/workflows/optimize-check-c4.yml"
+
+jobs:
+  build:
+    name: Build
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+
+      - name: "Parse pom.xml for versions"
+        id: "pom_info"
+        uses: YunaBraska/java-info-action@main
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4
+        with:
+          node-version: ${{ steps.pom_info.outputs.x_version_node }}
+
+      - uses: ./.github/actions/setup-yarn-cache
+        with:
+          directory: optimize/c4
+
+      - name: Install dependencies
+        working-directory: ./optimize/c4
+        run: yarn
+
+      - name: Build storybook
+        working-directory: ./optimize/c4
+        run: yarn build-storybook
+
+      - name: Build C4 package
+        working-directory: ./optimize/c4
+        run: yarn build
