@@ -7,22 +7,16 @@
  */
 package io.camunda.exporter;
 
-import io.camunda.exporter.schema.SchemaManager;
-import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 
 public class NoopExporter implements Exporter {
-  private NoopExporterConfiguration configuration;
-  private SearchEngineClient searchEngineClient;
-  private SchemaManager schemaManager;
 
   @Override
   public void configure(final Context context) throws Exception {
     Exporter.super.configure(context);
-    configuration = context.getConfiguration().instantiate(NoopExporterConfiguration.class);
   }
 
   @Override
