@@ -569,6 +569,57 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   UnassignUserTaskCommandStep1 newUserTaskUnassignCommand(long userTaskKey);
 
   /**
+   * Command to update the retries and/or the timeout of a job.
+   *
+   * <pre>
+   * JobChangeset changeset= ..;
+   *
+   * zeebeClient
+   *  .newUpdateCommand(jobKey)
+   *  .update(changeset)
+   *  .send();
+   * </pre>
+   *
+   * <p>If the given retries are greater than zero then this job will be picked up again by a job
+   * worker. This will not close a related incident, which still has to be marked as resolved with
+   * {@link #newResolveIncidentCommand newResolveIncidentCommand(long incidentKey)} .
+   *
+   * <p>Timeout value in millis is used to calculate a new job deadline. This will happen when the
+   * command to update the timeline is processed. The timeout value will be added to the current
+   * time then.
+   *
+   * @param jobKey the key of the job to update
+   * @return a builder for the command
+   */
+  UpdateJobCommandStep1 newUpdateJobCommand(long jobKey);
+
+  /**
+   * Command to update the retries and/or the timeout of a job.
+   *
+   * <pre>
+   * ActivatedJob job= ..;
+   * JobChangeset changeset= ..;
+   *
+   * zeebeClient
+   *  .newUpdateCommand(job)
+   *  .update(changeset)
+   *  .send();
+   * </pre>
+   *
+   * <p>If the given retries are greater than zero then this job will be picked up again by a job
+   * worker. This will not close a related incident, which still has to be marked as resolved with
+   * {@link #newResolveIncidentCommand newResolveIncidentCommand(long incidentKey)} .
+   *
+   * <p>Timeout value in millis is used to calculate a new job deadline. This will happen when the
+   * command to update the timeline is processed. The timeout value will be added to the current
+   * time then.
+   *
+   * @param job the activated job
+   * @return a builder for the command
+   */
+  UpdateJobCommandStep1 newUpdateJobCommand(ActivatedJob job);
+
+  /**
    * Executes a search request to query process instances.
    *
    * <pre>
@@ -705,7 +756,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * </pre>
    *
    * <p>This command is only sent via REST over HTTP, not via gRPC <br>
-   * <br>
    *
    * @return a builder for the command
    */
