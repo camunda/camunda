@@ -17,12 +17,12 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class PersistedPermissions extends UnpackedObject implements DbValue {
-  private final ArrayProperty<StringValue> permissionsProp =
-      new ArrayProperty<>("permissions", StringValue::new);
+  private final ArrayProperty<StringValue> resourceIds =
+      new ArrayProperty<>("resourceIds", StringValue::new);
 
   public PersistedPermissions() {
     super(1);
-    declareProperty(permissionsProp);
+    declareProperty(resourceIds);
   }
 
   public PersistedPermissions copy() {
@@ -32,15 +32,14 @@ public class PersistedPermissions extends UnpackedObject implements DbValue {
   }
 
   public List<String> getPermissions() {
-    return StreamSupport.stream(permissionsProp.spliterator(), false)
+    return StreamSupport.stream(resourceIds.spliterator(), false)
         .map(StringValue::getValue)
         .map(BufferUtil::bufferAsString)
         .collect(Collectors.toList());
   }
 
   public void setPermissions(final List<String> permissions) {
-    permissionsProp.reset();
-    permissions.forEach(
-        permission -> permissionsProp.add().wrap(BufferUtil.wrapString(permission)));
+    resourceIds.reset();
+    permissions.forEach(permission -> resourceIds.add().wrap(BufferUtil.wrapString(permission)));
   }
 }
