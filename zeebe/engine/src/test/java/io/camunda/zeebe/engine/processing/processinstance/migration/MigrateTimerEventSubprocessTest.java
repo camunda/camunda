@@ -210,7 +210,7 @@ public class MigrateTimerEventSubprocessTest {
   }
 
   @Test
-  public void shouldMigrateTimerEventSubprocess() {
+  public void shouldMigrateTimerForMappedStartEvent() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
