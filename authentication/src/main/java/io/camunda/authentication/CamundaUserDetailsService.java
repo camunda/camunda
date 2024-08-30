@@ -8,9 +8,7 @@
 package io.camunda.authentication;
 
 import io.camunda.service.UserServices;
-import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
-import java.util.Objects;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -25,12 +23,8 @@ public class CamundaUserDetailsService implements UserDetailsService {
 
   @Override
   public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
-    final var userQuery =
-        SearchQueryBuilders.userSearchQuery(
-            fn -> fn.filter(f -> f.username(username)).page(p -> p.size(1)));
-    return userServices.search(userQuery).items().stream()
-        .filter(Objects::nonNull)
-        .findFirst()
+    return userServices
+        .findByUsername(username)
         .map(
             candidate ->
                 User.builder()
