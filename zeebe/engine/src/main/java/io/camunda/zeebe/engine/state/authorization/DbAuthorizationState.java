@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
@@ -27,14 +28,13 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   private final DbString ownerType;
   private final DbString resourceKey;
   private final DbString resourceType;
-  private final DbCompositeKey<DbString, DbString> resourceCompositeKey;
-  private final DbCompositeKey<
-          DbCompositeKey<DbString, DbString>, DbCompositeKey<DbString, DbString>>
-      ownerAndResourceCompositeKey;
-  // owner key + owner type + resource key + resource type -> permission
+  private final DbString permissionType;
+  private final DbCompositeKey<DbString, DbString> resourceTypeAndPermissionTypeCompositeKey;
+  private final DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>>
+      ownerKeyAndResourceTypeAndPermissionTypeCompositeKey;
+  // owner key + resource type + permission type -> permissions
   private final ColumnFamily<
-          DbCompositeKey<DbCompositeKey<DbString, DbString>, DbCompositeKey<DbString, DbString>>,
-          PersistedPermissions>
+          DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>>, PersistedPermissions>
       ownerAuthorizationColumnFamily;
 
   public DbAuthorizationState(
@@ -43,15 +43,16 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     ownerType = new DbString();
     resourceKey = new DbString();
     resourceType = new DbString();
-    resourceCompositeKey = new DbCompositeKey<>(resourceKey, resourceType);
-    ownerAndResourceCompositeKey =
-        new DbCompositeKey<>(new DbCompositeKey<>(ownerKey, ownerType), resourceCompositeKey);
+    permissionType = new DbString();
+    resourceTypeAndPermissionTypeCompositeKey = new DbCompositeKey<>(resourceType, permissionType);
+    ownerKeyAndResourceTypeAndPermissionTypeCompositeKey =
+        new DbCompositeKey<>(ownerKey, resourceTypeAndPermissionTypeCompositeKey);
 
     ownerAuthorizationColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PERMISSIONS_BY_OWNER_KEY_RESOURCE_TYPE_AND_PERMISSION_TYPE,
             transactionContext,
-            ownerAndResourceCompositeKey,
+            ownerKeyAndResourceTypeAndPermissionTypeCompositeKey,
             persistedPermissions);
   }
 
@@ -64,7 +65,8 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     resourceKey.wrapString(authorizationRecord.getResourceKey());
     resourceType.wrapString(authorizationRecord.getResourceType());
     persistedPermissions.setPermissions(authorizationRecord.getPermissions());
-    ownerAuthorizationColumnFamily.insert(ownerAndResourceCompositeKey, persistedPermissions);
+    ownerAuthorizationColumnFamily.insert(
+        ownerKeyAndResourceTypeAndPermissionTypeCompositeKey, persistedPermissions);
   }
 
   @Override
@@ -79,7 +81,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     this.resourceType.wrapString(resourceType);
 
     final var persistedPermissions =
-        ownerAuthorizationColumnFamily.get(ownerAndResourceCompositeKey);
+        ownerAuthorizationColumnFamily.get(ownerKeyAndResourceTypeAndPermissionTypeCompositeKey);
 
     return persistedPermissions == null ? null : persistedPermissions.copy();
   }
