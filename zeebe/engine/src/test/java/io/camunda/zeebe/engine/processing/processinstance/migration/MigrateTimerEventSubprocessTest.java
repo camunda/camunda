@@ -34,7 +34,7 @@ public class MigrateTimerEventSubprocessTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
-  public void shouldWriteMigratedEventForInterruptingActiveTimerEventSubprocess() {
+  public void shouldWriteMigratedEventForActiveTimerEventSubprocess() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
@@ -117,7 +117,7 @@ public class MigrateTimerEventSubprocessTest {
   }
 
   @Test
-  public void shouldWriteMigratedEventForNonInterruptingActiveTimerEventSubprocess() {
+  public void shouldWriteMigratedEventForMultipleActiveTimerEventSubprocesses() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
