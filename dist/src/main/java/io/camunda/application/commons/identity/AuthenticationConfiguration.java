@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.identity;
 
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Profile;
@@ -14,4 +15,5 @@ import org.springframework.context.annotation.Profile;
 @ComponentScan(basePackages = {"io.camunda.authentication"})
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.authentication"})
 @Profile("auth-basic")
+@ConditionalOnRestGatewayEnabled
 public class AuthenticationConfiguration {}
