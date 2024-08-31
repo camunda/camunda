@@ -1491,27 +1491,50 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
           <version>${plugin.version.exec}</version>
-          <configuration>
-            <!-- Define system properties in one place, see https://github.com/camunda-zeebe/zeebe/issues/377 -->
-            <systemProperties>
-              <systemProperty>
-                <key>sbe.output.dir</key>
-                <value>${project.build.directory}/generated-sources/sbe</value>
-              </systemProperty>
-              <systemProperty>
-                <key>sbe.java.generate.interfaces</key>
-                <value>true</value>
-              </systemProperty>
-              <systemProperty>
-                <key>sbe.decode.unknown.enum.values</key>
-                <value>true</value>
-              </systemProperty>
-              <systemProperty>
-                <key>sbe.xinclude.aware</key>
-                <value>true</value>
-              </systemProperty>
-            </systemProperties>
-          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>uk.co.real-logic</groupId>
+              <artifactId>sbe-tool</artifactId>
+              <version>${version.sbe}</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <!--
+              Use exec:exec to generate SBE instead of exec:java, as exec:java does not fork the
+              process, and the SBE tool is not thread safe, i.e. could not be used with a parallel
+              multi-module maven build.
+              See: https://github.com/camunda/camunda/issues/16029
+            -->
+            <execution>
+              <id>generate-sbe</id>
+              <!-- not bound by default since it would execute in places where we don't want SBE generation -->
+              <phase>none</phase>
+              <goals>
+                <goal>exec</goal>
+              </goals>
+              <configuration combine.children="override">
+                <!--
+                  we have to use the goal exec with the java executable as otherwise the process
+                  will not fork, and this can cause thread safety issues in a parallel multi-module
+                  build
+                -->
+                <executable>java</executable>
+                <includePluginDependencies>true</includePluginDependencies>
+                <arguments combine.children="append">
+                  <argument>-Dsbe.output.dir=${project.build.directory}/generated-sources/sbe</argument>
+                  <argument>-Dsbe.java.generate.interfaces=true</argument>
+                  <argument>-Dsbe.decode.unknown.enum.values=true</argument>
+                  <argument>-Dsbe.xinclude.aware=true</argument>
+                  <argument>-classpath</argument>
+                  <!-- automatically creates the classpath using all project dependencies,
+                     also adding the project build directory -->
+                  <classpath/>
+                  <argument>uk.co.real_logic.sbe.SbeTool</argument>
+                </arguments>
+                <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
 
         <!-- Resources Plugin -->
