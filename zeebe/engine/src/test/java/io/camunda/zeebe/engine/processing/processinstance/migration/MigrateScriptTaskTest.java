@@ -13,10 +13,10 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
-import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -26,56 +26,46 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class MigrateBusinessRuleTaskTest {
+public class MigrateScriptTaskTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-  private static final String DMN_RESOURCE = "/dmn/decision-table.dmn";
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
-  public void shouldMigrateCalledDecisionBasedBusinessRuleTaskWithAnIncident() {
+  public void shouldMigrateFeelExpressionScriptTaskWithAnIncident() {
     // given
     final String sourceProcessId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
         ENGINE
             .deployment()
-            .withXmlClasspathResource(DMN_RESOURCE)
             .withXmlResource(
                 Bpmn.createExecutableProcess(sourceProcessId)
                     .startEvent()
-                    .businessRuleTask(
-                        "businessRuleTask1",
+                    .scriptTask(
+                        "scriptTask1",
                         t ->
-                            t.zeebeCalledDecisionId("nonExistingDecision")
-                                .zeebeResultVariable("result"))
+                            t.zeebeExpression("assert(x, x != null)").zeebeResultVariable("result"))
                     .endEvent()
                     .done())
             .withXmlResource(
                 Bpmn.createExecutableProcess(targetProcessId)
                     .startEvent()
-                    .businessRuleTask(
-                        "businessRuleTask2",
-                        t ->
-                            t.zeebeCalledDecisionId("jedi_or_sith")
-                                .zeebeResultVariable("jedi_or_sith"))
+                    .scriptTask(
+                        "scriptTask2", t -> t.zeebeExpression("true").zeebeResultVariable("result"))
                     .endEvent("target_process_end")
                     .done())
             .deploy();
     final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(sourceProcessId)
-            .withVariable("lightsaberColor", "green")
-            .create();
+        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
 
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     RecordingExporter.incidentRecords(IncidentIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
-        .withElementId("businessRuleTask1")
+        .withElementId("scriptTask1")
         .await();
 
     // when
@@ -84,13 +74,13 @@ public class MigrateBusinessRuleTaskTest {
         .withInstanceKey(processInstanceKey)
         .migration()
         .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("businessRuleTask1", "businessRuleTask2")
+        .addMappingInstruction("scriptTask1", "scriptTask2")
         .migrate();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+                .withElementType(BpmnElementType.SCRIPT_TASK)
                 .getFirst()
                 .getValue())
         .describedAs("Expect that process definition is updated")
@@ -98,17 +88,18 @@ public class MigrateBusinessRuleTaskTest {
         .hasBpmnProcessId(targetProcessId)
         .hasVersion(1)
         .describedAs("Expect that element id is left unchanged")
-        .hasElementId("businessRuleTask2");
+        .hasElementId("scriptTask2");
 
     ENGINE.incident().ofInstance(processInstanceKey).resolve();
 
     Assertions.assertThat(
-            RecordingExporter.decisionEvaluationRecords(DecisionEvaluationIntent.EVALUATED)
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementId("businessRuleTask2")
+                .withName("result")
                 .getFirst()
                 .getValue())
-        .hasDecisionOutput("\"Jedi\"");
+        .describedAs("Expected to successfully evaluate the feel expression")
+        .hasValue("true");
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -116,12 +107,12 @@ public class MigrateBusinessRuleTaskTest {
                 .withElementType(BpmnElementType.END_EVENT)
                 .getFirst()
                 .getValue())
-        .describedAs("Expected to successfully evaluate the called decision to reach the end event")
+        .describedAs("Expected to successfully evaluate the feel expression to reach the end event")
         .hasElementId("target_process_end");
   }
 
   @Test
-  public void shouldMigrateJobWorkerBasedBusinessRuleTask() {
+  public void shouldMigrateJobWorkerBasedScriptTask() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
@@ -132,13 +123,13 @@ public class MigrateBusinessRuleTaskTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
-                    .businessRuleTask("businessRuleTask1", a -> a.zeebeJobType("A"))
+                    .scriptTask("scriptTask1", a -> a.zeebeJobType("A"))
                     .endEvent()
                     .done())
             .withXmlResource(
                 Bpmn.createExecutableProcess(targetProcessId)
                     .startEvent()
-                    .businessRuleTask("businessRuleTask2", a -> a.zeebeJobType("B"))
+                    .scriptTask("scriptTask2", a -> a.zeebeJobType("B"))
                     .userTask()
                     .endEvent()
                     .done())
@@ -159,14 +150,14 @@ public class MigrateBusinessRuleTaskTest {
         .withInstanceKey(processInstanceKey)
         .migration()
         .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("businessRuleTask1", "businessRuleTask2")
+        .addMappingInstruction("scriptTask1", "scriptTask2")
         .migrate();
 
     // then
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+                .withElementType(BpmnElementType.SCRIPT_TASK)
                 .getFirst()
                 .getValue())
         .describedAs("Expect that process definition is updated")
@@ -174,7 +165,7 @@ public class MigrateBusinessRuleTaskTest {
         .hasBpmnProcessId(targetProcessId)
         .hasVersion(1)
         .describedAs("Expect that element id is left unchanged")
-        .hasElementId("businessRuleTask2");
+        .hasElementId("scriptTask2");
 
     assertThat(
             RecordingExporter.jobRecords(JobIntent.MIGRATED)
@@ -186,7 +177,7 @@ public class MigrateBusinessRuleTaskTest {
         .hasBpmnProcessId(targetProcessId)
         .hasProcessDefinitionVersion(1)
         .describedAs("Expect that element id changed due to mapping")
-        .hasElementId("businessRuleTask2")
+        .hasElementId("scriptTask2")
         .describedAs(
             "Expect that the type did not change even though it's different in the target process."
                 + " Re-evaluation of the job type expression is not enabled for this migration")
