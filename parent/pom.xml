@@ -1507,11 +1507,11 @@
             -->
             <execution>
               <id>generate-sbe</id>
-              <!-- not bound by default since it would execute in places where we don't want SBE generation -->
-              <phase>none</phase>
               <goals>
                 <goal>exec</goal>
               </goals>
+              <!-- not bound by default since it would execute in places where we don't want SBE generation -->
+              <phase>none</phase>
               <configuration combine.children="override">
                 <!--
                   we have to use the goal exec with the java executable as otherwise the process
@@ -1528,7 +1528,7 @@
                   <argument>-classpath</argument>
                   <!-- automatically creates the classpath using all project dependencies,
                      also adding the project build directory -->
-                  <classpath/>
+                  <classpath></classpath>
                   <argument>uk.co.real_logic.sbe.SbeTool</argument>
                 </arguments>
                 <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
