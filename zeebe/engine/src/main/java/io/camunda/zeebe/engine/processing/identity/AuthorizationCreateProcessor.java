@@ -55,9 +55,8 @@ public class AuthorizationCreateProcessor
 
     if (authorization != null) {
       final var rejectionMessage =
-          "Expected to create authorization with owner key: %s and resource key %s, but an authorization with these values already exists"
-              .formatted(
-                  authorizationToCreate.getOwnerKey(), authorizationToCreate.getResourceKey());
+          "Expected to create authorization with owner key: %s, but an authorization with these values already exists"
+              .formatted(authorizationToCreate.getOwnerKey());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionMessage);
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.ALREADY_EXISTS, rejectionMessage);
@@ -65,8 +64,6 @@ public class AuthorizationCreateProcessor
     }
 
     final var key = keyGenerator.nextKey();
-
-    authorizationToCreate.setAuthorizationKey(key);
 
     stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, authorizationToCreate);
     distributionBehavior.distributeCommand(key, command);

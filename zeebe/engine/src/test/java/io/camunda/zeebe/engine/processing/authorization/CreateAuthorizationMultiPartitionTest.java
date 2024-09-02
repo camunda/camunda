@@ -41,7 +41,6 @@ public class CreateAuthorizationMultiPartitionTest {
         .newAuthorization()
         .withOwnerKey(1L)
         .withOwnerType(AuthorizationOwnerType.USER)
-        .withResourceKey("resource")
         .withResourceType("bpmn-id")
         .withPermissions(List.of("write:*"))
         .create();

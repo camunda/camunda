@@ -51,7 +51,6 @@ public class AuthorizationStateTest {
         new AuthorizationRecord()
             .setOwnerKey(1L)
             .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceKey("resource")
             .setResourceType("resourceType")
             .setPermissions(List.of("write:*"));
     authorizationState.createAuthorization(authorizationRecord);
@@ -74,10 +73,8 @@ public class AuthorizationStateTest {
     // given
     final AuthorizationRecord authorizationRecord =
         new AuthorizationRecord()
-            .setAuthorizationKey(1L)
             .setOwnerKey(ownerKey)
             .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceKey("my-resource-key")
             .setResourceType("process-definition")
             .setPermissions(List.of("write:*"));
     authorizationState.createAuthorization(authorizationRecord);
@@ -97,20 +94,16 @@ public class AuthorizationStateTest {
     // given
     final AuthorizationRecord authorizationRecordOne =
         new AuthorizationRecord()
-            .setAuthorizationKey(1L)
             .setOwnerKey(1L)
             .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceKey("resource")
             .setResourceType("resourceType")
             .setPermissions(List.of("read:*"));
     authorizationState.createAuthorization(authorizationRecordOne);
 
     final AuthorizationRecord authorizationRecordTwo =
         new AuthorizationRecord()
-            .setAuthorizationKey(2L)
             .setOwnerKey(2L)
             .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceKey("resource")
             .setResourceType("resourceType")
             .setPermissions(List.of("write:*"));
     authorizationState.createAuthorization(authorizationRecordTwo);

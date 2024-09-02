@@ -47,7 +47,6 @@ public class AuthorizationServices<T> extends ApiServices<AuthorizationServices<
         new BrokerAuthorizationCreateRequest()
             .setOwnerKey(ownerKey)
             .setOwnerType(ownerType)
-            .setResourceKey(resourceKey)
             .setResourceType(resourceType)
             .setPermissions(permissions));
   }

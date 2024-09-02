@@ -41,7 +41,6 @@ public class CreateAuthorizationTest {
             .newAuthorization()
             .withOwnerKey(ownerKey)
             .withOwnerType(AuthorizationOwnerType.USER)
-            .withResourceKey("resource")
             .withResourceType("bpmn-id")
             .withPermissions(permissions)
             .create();
@@ -70,7 +69,6 @@ public class CreateAuthorizationTest {
             .newAuthorization()
             .withOwnerKey(1L)
             .withOwnerType(AuthorizationOwnerType.USER)
-            .withResourceKey("resource")
             .withResourceType("bpmn-id")
             .withPermissions(permissions)
             .create();
@@ -81,7 +79,6 @@ public class CreateAuthorizationTest {
             .newAuthorization()
             .withOwnerKey(ownerKey)
             .withOwnerType(AuthorizationOwnerType.USER)
-            .withResourceKey("resource")
             .withResourceType("bpmn-id")
             .withPermissions(permissions)
             .expectRejection()

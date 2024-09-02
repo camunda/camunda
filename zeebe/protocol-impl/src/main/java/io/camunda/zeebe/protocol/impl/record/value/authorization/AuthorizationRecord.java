@@ -26,30 +26,24 @@ import org.agrona.DirectBuffer;
 
 public final class AuthorizationRecord extends UnifiedRecordValue
     implements AuthorizationRecordValue {
-  private final LongProperty authorizationKeyProp = new LongProperty("authorizationKey", -1L);
+  private final LongProperty ownerKeyProp = new LongProperty("ownerKey");
   private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
       new EnumProperty<>("ownerType", AuthorizationOwnerType.class);
-  private final LongProperty ownerKeyProp = new LongProperty("ownerKey");
-  private final StringProperty resourceKeyProp = new StringProperty("resourceKey");
   private final StringProperty resourceTypeProp = new StringProperty("resourceType");
   private final ArrayProperty<StringValue> permissionsProp =
       new ArrayProperty<>("permissions", StringValue::new);
 
   public AuthorizationRecord() {
-    super(6);
-    declareProperty(authorizationKeyProp)
-        .declareProperty(ownerTypeProp)
+    super(4);
+    declareProperty(ownerTypeProp)
         .declareProperty(ownerKeyProp)
-        .declareProperty(resourceKeyProp)
         .declareProperty(resourceTypeProp)
         .declareProperty(permissionsProp);
   }
 
   public void wrap(final AuthorizationRecord record) {
-    authorizationKeyProp.setValue(record.getAuthorizationKey());
     ownerTypeProp.setValue(record.getOwnerType());
     ownerKeyProp.setValue(record.getOwnerKey());
-    resourceKeyProp.setValue(record.getResourceKeyBuffer());
     resourceTypeProp.setValue(record.getResourceTypeBuffer());
     setPermissions(record.getPermissions());
   }
@@ -58,31 +52,14 @@ public final class AuthorizationRecord extends UnifiedRecordValue
     final AuthorizationRecord copy = new AuthorizationRecord();
     copy.ownerKeyProp.setValue(getOwnerKey());
     copy.ownerTypeProp.setValue(getOwnerType());
-    copy.resourceKeyProp.setValue(BufferUtil.cloneBuffer(getResourceKeyBuffer()));
     copy.resourceTypeProp.setValue(BufferUtil.cloneBuffer(getResourceTypeBuffer()));
-    copy.authorizationKeyProp.setValue(getAuthorizationKey());
     copy.setPermissions(getPermissions());
     return copy;
   }
 
   @JsonIgnore
-  public DirectBuffer getResourceKeyBuffer() {
-    return resourceKeyProp.getValue();
-  }
-
-  @JsonIgnore
   public DirectBuffer getResourceTypeBuffer() {
     return resourceTypeProp.getValue();
-  }
-
-  @Override
-  public Long getAuthorizationKey() {
-    return authorizationKeyProp.getValue();
-  }
-
-  public AuthorizationRecord setAuthorizationKey(final long authorizationKey) {
-    authorizationKeyProp.setValue(authorizationKey);
-    return this;
   }
 
   @Override
@@ -102,21 +79,6 @@ public final class AuthorizationRecord extends UnifiedRecordValue
 
   public AuthorizationRecord setOwnerType(final AuthorizationOwnerType ownerType) {
     ownerTypeProp.setValue(ownerType);
-    return this;
-  }
-
-  @Override
-  public String getResourceKey() {
-    return bufferAsString(resourceKeyProp.getValue());
-  }
-
-  public AuthorizationRecord setResourceKey(final String resourceKey) {
-    resourceKeyProp.setValue(resourceKey);
-    return this;
-  }
-
-  public AuthorizationRecord setResourceKey(final DirectBuffer resourceKey) {
-    resourceKeyProp.setValue(resourceKey);
     return this;
   }
 

@@ -62,11 +62,6 @@ public final class AuthorizationClient {
       return this;
     }
 
-    public AuthorizationCreationClient withResourceKey(final String resourceKey) {
-      authorizationCreationRecord.setResourceKey(resourceKey);
-      return this;
-    }
-
     public AuthorizationCreationClient withResourceType(final String resourceType) {
       authorizationCreationRecord.setResourceType(resourceType);
       return this;

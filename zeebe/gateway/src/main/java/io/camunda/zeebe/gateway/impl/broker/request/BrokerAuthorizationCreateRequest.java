@@ -32,11 +32,6 @@ public class BrokerAuthorizationCreateRequest extends BrokerExecuteCommand<Autho
     return this;
   }
 
-  public BrokerAuthorizationCreateRequest setResourceKey(final String resourceKey) {
-    requestDto.setResourceKey(resourceKey);
-    return this;
-  }
-
   public BrokerAuthorizationCreateRequest setResourceType(final String resourceType) {
     requestDto.setResourceType(resourceType);
     return this;

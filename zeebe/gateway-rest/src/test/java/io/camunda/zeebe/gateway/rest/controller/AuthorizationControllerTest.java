@@ -64,7 +64,6 @@ public class AuthorizationControllerTest extends RestControllerTest {
         new AuthorizationRecord()
             .setOwnerKey(request.getOwnerKey())
             .setOwnerType(AuthorizationOwnerType.valueOf(request.getOwnerType().getValue()))
-            .setResourceKey(request.getResourceKey())
             .setResourceType(request.getResourceType())
             .setPermissions(request.getPermissions());
 
