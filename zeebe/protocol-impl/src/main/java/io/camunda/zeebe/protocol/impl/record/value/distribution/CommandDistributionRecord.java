@@ -9,7 +9,9 @@ package io.camunda.zeebe.protocol.impl.record.value.distribution;
 
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -23,6 +25,7 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -52,6 +55,8 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
    complete record.
   */
   private final IntegerProperty partitionIdProperty = new IntegerProperty("partitionId");
+  private final StringProperty queueIdProperty = new StringProperty("queueId", "");
+  private final LongProperty queueInsertionKeyProperty = new LongProperty("queueInsertionKey", -1);
   private final EnumProperty<ValueType> valueTypeProperty =
       new EnumProperty<>("valueType", ValueType.class, ValueType.NULL_VAL);
   private final IntegerProperty intentProperty = new IntegerProperty("intent", Intent.NULL_VAL);
@@ -61,8 +66,10 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private final MsgPackReader commandValueReader = new MsgPackReader();
 
   public CommandDistributionRecord() {
-    super(4);
+    super(6);
     declareProperty(partitionIdProperty)
+        .declareProperty(queueIdProperty)
+        .declareProperty(queueInsertionKeyProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
         .declareProperty(commandValueProperty);
@@ -70,6 +77,8 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
 
   public CommandDistributionRecord wrap(final CommandDistributionRecord other) {
     setPartitionId(other.getPartitionId())
+        .setQueueId(other.getQueueId())
+        .setQueueInsertionKey(other.getQueueInsertionKey())
         .setValueType(other.getValueType())
         .setIntent(other.getIntent())
         .setCommandValue(other.getCommandValue());
@@ -79,6 +88,17 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   @Override
   public int getPartitionId() {
     return partitionIdProperty.getValue();
+  }
+
+  @Override
+  public String getQueueId() {
+    final var value = BufferUtil.bufferAsString(queueIdProperty.getValue());
+    return value.isEmpty() ? null : value;
+  }
+
+  @Override
+  public long getQueueInsertionKey() {
+    return queueInsertionKeyProperty.getValue();
   }
 
   @Override
@@ -154,6 +174,20 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
 
   public CommandDistributionRecord setValueType(final ValueType valueType) {
     valueTypeProperty.setValue(valueType);
+    return this;
+  }
+
+  public CommandDistributionRecord setQueueInsertionKey(final long queueInsertionKey) {
+    queueInsertionKeyProperty.setValue(queueInsertionKey);
+    return this;
+  }
+
+  public CommandDistributionRecord setQueueId(final String queueId) {
+    if (queueId == null) {
+      queueIdProperty.reset();
+    } else {
+      queueIdProperty.setValue(queueId);
+    }
     return this;
   }
 

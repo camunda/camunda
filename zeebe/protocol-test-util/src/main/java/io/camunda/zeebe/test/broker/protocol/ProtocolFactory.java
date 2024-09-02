@@ -240,6 +240,8 @@ public final class ProtocolFactory {
           final var typeInfo = ValueTypeMapping.get(valueType);
           return ImmutableCommandDistributionRecordValue.builder()
               .withPartitionId(random.nextInt())
+              .withQueueId(random.nextObject(String.class))
+              .withQueueInsertionKey(random.nextLong())
               .withValueType(valueType)
               .withIntent(random.nextObject(typeInfo.getIntentClass()))
               .withCommandValue(generateObject(typeInfo.getValueClass()))
