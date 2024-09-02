@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
@@ -47,10 +48,14 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
   public Either<Exception, UnaryOperator<MemberState>> initMemberState(
       final ClusterConfiguration currentClusterConfiguration) {
 
-    final boolean localMemberIsActive =
-        currentClusterConfiguration.hasMember(memberId)
-            && currentClusterConfiguration.getMember(memberId).state() == State.ACTIVE;
-    if (!localMemberIsActive) {
+    if (partitionId > Protocol.MAXIMUM_PARTITIONS) {
+      return Either.left(
+          new IllegalArgumentException(
+              "Failed to bootstrap partition '{}'. Partition ID is greater than the maximum allowed partition ID '{}'"
+                  .formatted(partitionId, Protocol.MAXIMUM_PARTITIONS)));
+    }
+
+    if (!isLocalMemberIsActive(currentClusterConfiguration)) {
       return Either.left(
           new IllegalStateException(
               "Expected to bootstrap partition, but the member '{}' is not active"
@@ -108,6 +113,11 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
             });
 
     return result;
+  }
+
+  private boolean isLocalMemberIsActive(final ClusterConfiguration currentClusterConfiguration) {
+    return currentClusterConfiguration.hasMember(memberId)
+        && currentClusterConfiguration.getMember(memberId).state() == State.ACTIVE;
   }
 
   // For now, we only allow adding new partitions with continuous IDs. In theory, it should not
