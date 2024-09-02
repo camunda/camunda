@@ -1,0 +1,26 @@
+name: Tasklist-tests
+
+on:
+  workflow_dispatch
+
+jobs:
+  testing:
+    runs-on: ubuntu-latest
+    steps:
+    - name: "Import Secrets"
+      id: secrets  # important to refer to it in later steps
+      uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        # exportEnv: false  # we rely on step outputs, no need for environment variables
+        secrets: |
+          secret/data/products/web-modeler/ci/common CAMUNDA_CONTAINER_REGISTRY_USER;
+          secret/data/products/web-modeler/ci/common CAMUNDA_CONTAINER_REGISTRY_PASSWORD;
+    
+    - name: "Checkout repo"
+      uses: actions/checkout@v4
+
+    - 
