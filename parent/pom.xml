@@ -165,6 +165,7 @@
     <version.joda-time>2.12.7</version.joda-time>
     <version.commons-collections4>4.4</version.commons-collections4>
     <version.jetty>11.0.23</version.jetty>
+    <version.xmlunit-core>2.10.0</version.xmlunit-core>
 
     <!-- Auth0 Dependencies -->
     <!-- If any of the following version changes, -->
@@ -2121,6 +2122,13 @@
         <groupId>com.graphql-java</groupId>
         <artifactId>java-dataloader</artifactId>
         <version>${version.graphql-java.dataloader}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.xmlunit</groupId>
+        <artifactId>xmlunit-core</artifactId>
+        <version>${version.xmlunit-core}</version>
+        <scope>test</scope>
       </dependency>
 
     </dependencies>
