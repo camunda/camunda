@@ -16,20 +16,9 @@
 package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
-import java.util.List;
-import java.util.function.Consumer;
 
 public interface ProcessInstanceFilter extends SearchRequestFilter {
 
-  /** Filter by process instance keys. */
-  ProcessInstanceFilter processInstanceKeys(final Long... values);
-
-  /** Filter by process instance keys. */
-  ProcessInstanceFilter processInstanceKeys(final List<Long> values);
-
-  /** Filter by variable values. */
-  ProcessInstanceFilter variable(final VariableValueFilter filter);
-
-  /** Filter by variable values. */
-  ProcessInstanceFilter variable(final Consumer<VariableValueFilter> fn);
+  /** Filter by bpmnProcessId */
+  ProcessInstanceFilter bpmnProcessId(final String bpmnProcessId);
 }
