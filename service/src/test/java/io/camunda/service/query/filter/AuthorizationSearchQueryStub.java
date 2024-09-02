@@ -20,7 +20,7 @@ public class AuthorizationSearchQueryStub implements RequestStub<AuthorizationEn
 
   @Override
   public void registerWith(final StubbedCamundaSearchClient client) {
-    client.registerHandler(this);
+    client.registerHandler(this, AuthorizationEntity.class);
   }
 
   @Override
