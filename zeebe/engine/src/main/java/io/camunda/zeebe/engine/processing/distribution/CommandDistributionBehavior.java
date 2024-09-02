@@ -194,6 +194,21 @@ public final class CommandDistributionBehavior {
             .setQueueInsertionKey(newInsertion));
   }
 
+  /**
+   * If the given distribution was part of a queue, the next distribution from the queue is started.
+   */
+  void distributeNextInQueue(final long finishedDistributionKey, final int partition) {
+    distributionState
+        .queueForDistribution(finishedDistributionKey)
+        .flatMap(queue -> distributionState.nextQueuedDistributionKey(queue, partition))
+        .ifPresent(
+            nextDistributionKey ->
+                startDistributing(
+                    partition,
+                    distributionState.getCommandDistributionRecord(nextDistributionKey, partition),
+                    nextDistributionKey));
+  }
+
   private void startDistributing(
       final int partition,
       final CommandDistributionRecord distributionRecord,

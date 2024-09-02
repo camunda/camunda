@@ -23,6 +23,12 @@ public final class CommandDistributionAcknowledgedApplier
 
   @Override
   public void applyState(final long key, final CommandDistributionRecord value) {
-    distributionState.removePendingDistribution(key, value.getPartitionId());
+    final var partitionId = value.getPartitionId();
+
+    distributionState
+        .queueForDistribution(key)
+        .ifPresent(queue -> distributionState.popQueuedDistribution(queue, partitionId));
+
+    distributionState.removePendingDistribution(key, partitionId);
   }
 }
