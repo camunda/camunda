@@ -48,8 +48,8 @@ public interface PartitionChangeExecutor {
 
   /**
    * The implementation of this method must bootstrap the partition with a single replica. The
-   * implementation must be idempotent. * If the node restarts after this method was called, but
-   * before marking the operation as * completed, it will be retried after the restart.
+   * implementation must be idempotent. If the node restarts after this method was called, but
+   * before marking the operation as completed, it will be retried after the restart.
    *
    * @param partitionId id of the partition
    * @param priority priority of the member in the partition used for Raft's priority election
