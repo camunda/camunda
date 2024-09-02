@@ -548,6 +548,12 @@ jobs:
     name: "Protobuf Backwards Compatibility"
     timeout-minutes: 10
     runs-on: ubuntu-latest
+    env:
+      # set the comparison based on the type of workflow trigger:
+      #   - for PRs, we use the last commit of the base
+      #   - for merge queues, we use the last commit of the target merge queue
+      #   - for a push, we use the last commit before the push
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.push.before }}
     steps:
       - uses: actions/checkout@v4
       - id: pr-body
@@ -574,6 +580,7 @@ jobs:
           push: false
           archive: false
           breaking: true
+          breaking_against: '${{ github.event.repository.clone_url }}#format=git,commit=${{ env.BASE_SHA }}'
       - name: Observe build status
         if: always()
         continue-on-error: true
