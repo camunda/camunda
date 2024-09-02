@@ -8,7 +8,7 @@
         <version>8.6.0-SNAPSHOT</version>
     </parent>
 
-  <artifactId>qa</artifactId>
+  <artifactId>optimize-qa</artifactId>
   <packaging>pom</packaging>
 
   <dependencies>
@@ -27,7 +27,7 @@
   </dependencies>
 
   <modules>
-    <module>schema-tests</module>
+    <module>schema-integrity-tests</module>
   </modules>
 
 </project>

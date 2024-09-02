@@ -4,7 +4,7 @@ This test suite verifies that the Optimize upgrade completes successfully and th
 
 It starts a given previous version, waits until all data is imported, kills it and starts the upgrade to the target version.
 There is a single profile as follows:
-- A full schema and instance focused test with the profile `upgrade-es-schema-tests`
+- A full schema and instance focused test with the profile `es-schema-integrity-tests`
 
 It can be run either on a prepared environment or using an environment created by docker-compose (locally).
 
@@ -21,7 +21,7 @@ Prerequisites:
 * An Elasticsearch instance compatible with the new Optimize version running on port 9200
 
 ```
-mvn -Pupgrade-es-schema-tests clean verify
+mvn -Pes-schema-integrity-tests clean verify
 ```
 
 # Camunda Optimize Upgrade Test - docker-compose environment
@@ -30,6 +30,6 @@ Prerequisites:
 * docker-compose must be available
 
 ```
-mvn -Pupgrade-es-schema-tests,docker clean verify
+mvn -Pes-schema-integrity-tests,docker clean verify
 ```
 

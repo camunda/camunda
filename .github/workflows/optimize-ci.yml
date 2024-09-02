@@ -59,8 +59,8 @@ jobs:
     with:
       branch: ${{ github.head_ref }}
 
-  schema-upgrade-test:
-    name: Schema Upgrade Test
+  schema-integrity-test:
+    name: Schema Integrity Test
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
@@ -98,17 +98,17 @@ jobs:
         uses: ./.github/actions/run-maven
         with:
           parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -pl optimize -am
-      - name: Verify optimize/qa/schema-tests
+      - name: Verify optimize/qa/optimize-schema-integrity-tests
         uses: ./.github/actions/run-maven
         with:
-          parameters: verify -Dskip.docker -Dskip.fe.build -f optimize/qa/schema-tests -Pupgrade-es-schema-tests
+          parameters: verify -Dskip.docker -Dskip.fe.build -f optimize/qa/optimize-schema-integrity-tests -Pes-schema-integrity-tests
         env:
           CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4
         with:
-          name: schema-upgrade-test-junit
+          name: schema-integrity-test-junit
           path: |
             **/failsafe-reports/**/*.xml
             **/*.log
@@ -118,7 +118,7 @@ jobs:
         uses: ./.github/actions/docker-logs
         if: always()
         with:
-          archive_name: schema-upgrade-test-docker
+          archive_name: schema-integrity-test-docker
 
   integration-tests:
     name: Integration Tests
