@@ -7,41 +7,87 @@
  */
 package io.camunda.service.license;
 
-import org.apache.commons.lang3.StringUtils;
+import io.camunda.zeebe.util.VisibleForTesting;
+import org.camunda.bpm.licensecheck.InvalidLicenseException;
+import org.camunda.bpm.licensecheck.LicenseKey;
+import org.camunda.bpm.licensecheck.LicenseKeyImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CamundaLicense {
 
-  public static final String LICENSE_ENV_VAR_KEY = "CAMUNDA_LICENSE_KEY";
-  public static String licenseStr;
-  private final EnvironmentVariableReader environmentVariableReader;
+  public static final String CAMUNDA_LICENSE_ENV_VAR_KEY = "CAMUNDA_LICENSE_KEY";
+  private static final Logger LOGGER = LoggerFactory.getLogger(CamundaLicense.class);
+  private boolean isValid;
+  private LicenseType licenseType;
+  private boolean isInitialized;
 
-  public CamundaLicense() {
-    environmentVariableReader = new EnvironmentVariableReader();
+  @VisibleForTesting
+  protected CamundaLicense() {}
+
+  public CamundaLicense(final String license) {
+    initializeWithLicense(license);
   }
 
-  /**
-   * Used for testing. Test can mock EnvironmentVariableReader to test out different environment
-   * variable values
-   */
-  public CamundaLicense(final EnvironmentVariableReader environmentVariableReader) {
-    this.environmentVariableReader = environmentVariableReader;
+  public synchronized boolean isValid() {
+    return isValid;
   }
 
-  public boolean isValid() {
-    if (!isLicenseInitialized()) {
-      initializeLicenseCache();
+  public synchronized LicenseType getLicenseType() {
+    return licenseType;
+  }
+
+  public synchronized void initializeWithLicense(final String license) {
+    if (isInitialized) {
+      return;
     }
 
-    // TODO - return a real computed value, but always return true for now
-    return true;
+    if (license != null && !license.isBlank()) {
+      validateLicense(license);
+    } else {
+      isValid = false;
+      licenseType = LicenseType.UNKNOWN;
+      LOGGER.warn(
+          "No license detected when one is expected. Please provide a license through the "
+              + CAMUNDA_LICENSE_ENV_VAR_KEY
+              + " environment variable.");
+    }
+
+    isInitialized = true;
   }
 
-  private boolean isLicenseInitialized() {
-    return StringUtils.isNotBlank(licenseStr);
+  private void validateLicense(final String licenseStr) {
+    try {
+      final LicenseKey licenseKey = getLicenseKey(licenseStr);
+      licenseKey.validate(); // this method logs the license status
+
+      licenseType = LicenseType.get(licenseKey.getProperties().get("licenseType"));
+
+      if (LicenseType.UNKNOWN.equals(licenseType)) {
+        LOGGER.warn(
+            "Expected a valid licenseType property on the Camunda License, but none were found.");
+        isValid = false;
+      } else {
+        isValid = true;
+      }
+
+      return;
+    } catch (final InvalidLicenseException e) {
+      LOGGER.warn(
+          "Expected a valid license when determining license validity, but encountered an invalid one instead. ",
+          e);
+    } catch (final Exception e) {
+      LOGGER.warn(
+          "Expected to determine the validity of the license, but the following unexpected error was encountered: ",
+          e);
+    }
+
+    licenseType = LicenseType.UNKNOWN;
+    isValid = false;
   }
 
-  private void initializeLicenseCache() {
-    licenseStr = environmentVariableReader.getEnvironmentVariableValue(LICENSE_ENV_VAR_KEY);
-    // TODO - some license computation here
+  @VisibleForTesting
+  protected LicenseKey getLicenseKey(final String licenseStr) throws InvalidLicenseException {
+    return new LicenseKeyImpl(licenseStr);
   }
 }

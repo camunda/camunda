@@ -131,6 +131,11 @@
       <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+
     <!-- OAuth0 -->
     <dependency>
       <groupId>io.camunda</groupId>
@@ -456,6 +461,11 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-aop</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-expression</artifactId>
     </dependency>
 
     <dependency>

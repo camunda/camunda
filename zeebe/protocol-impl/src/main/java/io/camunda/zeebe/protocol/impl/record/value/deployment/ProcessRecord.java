@@ -33,9 +33,10 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
+  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
 
   public ProcessRecord() {
-    super(8);
+    super(9);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)
@@ -43,7 +44,8 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
         .declareProperty(checksumProp)
         .declareProperty(resourceProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(deploymentKeyProp);
+        .declareProperty(deploymentKeyProp)
+        .declareProperty(versionTagProp);
   }
 
   public ProcessRecord wrap(final ProcessMetadata metadata, final byte[] resource) {
@@ -55,6 +57,7 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
     resourceProp.setValue(BufferUtil.wrapArray(resource));
     tenantIdProp.setValue(metadata.getTenantId());
     deploymentKeyProp.setValue(metadata.getDeploymentKey());
+    versionTagProp.setValue(metadata.getVersionTag());
     return this;
   }
 
@@ -198,6 +201,16 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
 
   public ProcessRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public String getVersionTag() {
+    return BufferUtil.bufferAsString(versionTagProp.getValue());
+  }
+
+  public ProcessRecord setVersionTag(final String versionTag) {
+    versionTagProp.setValue(versionTag);
     return this;
   }
 }

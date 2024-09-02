@@ -59,7 +59,7 @@ public class UserTaskController {
       @RequestBody final UserTaskAssignmentRequest assignmentRequest) {
 
     return RequestMapper.toUserTaskAssignmentRequest(assignmentRequest, userTaskKey)
-        .fold(this::assignUserTask, RestErrorMapper::mapProblemToCompletedResponse);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignUserTask);
   }
 
   @DeleteMapping(path = "/{userTaskKey}/assignee")
@@ -78,7 +78,7 @@ public class UserTaskController {
       @RequestBody(required = false) final UserTaskUpdateRequest updateRequest) {
 
     return RequestMapper.toUserTaskUpdateRequest(updateRequest, userTaskKey)
-        .fold(this::updateUserTask, RestErrorMapper::mapProblemToCompletedResponse);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateUserTask);
   }
 
   private CompletableFuture<ResponseEntity<Object>> assignUserTask(

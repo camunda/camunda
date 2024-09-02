@@ -26,12 +26,14 @@ const SORTING_OPTIONS_ORDER: TaskFilters['sortBy'][] = [
   'creation',
   'due',
   'follow-up',
+  'priority',
 ];
 
 const COMPLETED_SORTING_OPTIONS_ORDER: TaskFilters['sortBy'][] = [
   'creation',
   'due',
   'follow-up',
+  'priority',
   'completion',
 ];
 
@@ -50,6 +52,7 @@ const getSortingOptions = () =>
     'follow-up': _t('taskFiltersSortFollowUpDate'),
     due: _t('taskFiltersSortDueDate'),
     completion: _t('taskFiltersSortCompletionDate'),
+    priority: _t('taskFiltersSortPriority'),
   }) as Record<string, string>;
 
 const Filters: React.FC<Props> = memo(({disabled}) => {
@@ -77,6 +80,7 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
         size="md"
         disabled={disabled}
         align="bottom"
+        menuOptionsClass={styles.overflowMenu}
       >
         {sortOptionsOrder.map((id) => (
           <OverflowMenuItem
@@ -91,9 +95,7 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
                     visibility: sortBy === id ? undefined : 'hidden',
                   }}
                 />
-                <span className={styles.menuItem}>
-                  {getSortingOptions()[id]}
-                </span>
+                {getSortingOptions()[id]}
               </div>
             }
             onClick={() => {

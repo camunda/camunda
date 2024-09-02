@@ -42,7 +42,8 @@ public class UserTaskSearchQueryStub implements RequestStub<UserTaskEntity> {
             List.of("user1"),
             "externalFormReference1",
             1,
-            Map.of());
+            Map.of(),
+            50);
 
     final SearchQueryHit<UserTaskEntity> hit =
         new SearchQueryHit.Builder<UserTaskEntity>().id("1234").source(userTask).build();
@@ -59,6 +60,6 @@ public class UserTaskSearchQueryStub implements RequestStub<UserTaskEntity> {
 
   @Override
   public void registerWith(final StubbedCamundaSearchClient client) {
-    client.registerHandler(this);
+    client.registerHandler(this, UserTaskEntity.class);
   }
 }

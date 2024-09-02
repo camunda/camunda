@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefinitionValidator.PRIORITY_LOWER_BOUND;
+import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefinitionValidator.PRIORITY_UPPER_BOUND;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.el.Expression;
@@ -27,9 +29,9 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.time.InstantSource;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -54,6 +56,7 @@ public final class BpmnUserTaskBehavior {
   private final BpmnStateBehavior stateBehavior;
   private final FormState formState;
   private final MutableUserTaskState userTaskState;
+  private final InstantSource clock;
 
   public BpmnUserTaskBehavior(
       final KeyGenerator keyGenerator,
@@ -61,13 +64,15 @@ public final class BpmnUserTaskBehavior {
       final ExpressionProcessor expressionBehavior,
       final BpmnStateBehavior stateBehavior,
       final FormState formState,
-      final MutableUserTaskState userTaskState) {
+      final MutableUserTaskState userTaskState,
+      final InstantSource clock) {
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     this.expressionBehavior = expressionBehavior;
     this.stateBehavior = stateBehavior;
     this.formState = formState;
     this.userTaskState = userTaskState;
+    this.clock = clock;
   }
 
   public Either<Failure, UserTaskProperties> evaluateUserTaskExpressions(
@@ -94,9 +99,10 @@ public final class BpmnUserTaskBehavior {
             p ->
                 evaluateFormIdExpressionToFormKey(
                         userTaskProps.getFormId(),
-                        scopeKey,
-                        userTaskProps.getBindingType(),
-                        context)
+                        userTaskProps.getFormBindingType(),
+                        userTaskProps.getFormVersionTag(),
+                        context,
+                        scopeKey)
                     .map(p::formKey))
         .flatMap(
             p ->
@@ -135,7 +141,7 @@ public final class BpmnUserTaskBehavior {
         .setElementInstanceKey(context.getElementInstanceKey())
         .setTenantId(context.getTenantId())
         .setPriority(userTaskProperties.getPriority())
-        .setCreationTimestamp(ActorClock.currentTimeMillis());
+        .setCreationTimestamp(clock.millis());
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
     return userTaskRecord;
@@ -177,9 +183,10 @@ public final class BpmnUserTaskBehavior {
 
   public Either<Failure, Long> evaluateFormIdExpressionToFormKey(
       final Expression formIdExpression,
-      final long scopeKey,
       final ZeebeBindingType bindingType,
-      final BpmnElementContext context) {
+      final String versionTag,
+      final BpmnElementContext context,
+      final long scopeKey) {
     if (formIdExpression == null) {
       return Either.right(null);
     }
@@ -187,19 +194,22 @@ public final class BpmnUserTaskBehavior {
         .evaluateStringExpression(formIdExpression, scopeKey)
         .flatMap(
             formId -> {
-              final var form = findFormByIdAndBindingType(formId, bindingType, context, scopeKey);
+              final var form = findLinkedForm(formId, bindingType, versionTag, context, scopeKey);
               return form.map(PersistedForm::getFormKey);
             });
   }
 
-  private Either<Failure, PersistedForm> findFormByIdAndBindingType(
+  private Either<Failure, PersistedForm> findLinkedForm(
       final String formId,
       final ZeebeBindingType bindingType,
+      final String versionTag,
       final BpmnElementContext context,
       final long scopeKey) {
     return switch (bindingType) {
       case deployment -> findFormByIdInSameDeployment(formId, context, scopeKey);
       case latest -> findLatestFormById(formId, context.getTenantId(), scopeKey);
+      case versionTag ->
+          findFormByIdAndVersionTag(formId, versionTag, context.getTenantId(), scopeKey);
     };
   }
 
@@ -248,6 +258,25 @@ public final class BpmnUserTaskBehavior {
                         scopeKey)));
   }
 
+  private Either<Failure, PersistedForm> findFormByIdAndVersionTag(
+      final String formId, final String versionTag, final String tenantId, final long scopeKey) {
+    return formState
+        .findFormByIdAndVersionTag(wrapString(formId), versionTag, tenantId)
+        .<Either<Failure, PersistedForm>>map(Either::right)
+        .orElseGet(
+            () ->
+                Either.left(
+                    new Failure(
+                        String.format(
+                            """
+                            Expected to use a form with id '%s' and version tag '%s', but no such form found. \
+                            To resolve the incident, deploy a form with the given id and version tag.
+                            """,
+                            formId, versionTag),
+                        ErrorType.FORM_NOT_FOUND,
+                        scopeKey)));
+  }
+
   public Either<Failure, String> evaluateExternalFormReferenceExpression(
       final Expression externalFormReference, final long scopeKey) {
     if (externalFormReference == null) {
@@ -261,7 +290,20 @@ public final class BpmnUserTaskBehavior {
     if (priorityExpression == null) {
       return Either.right(ZeebePriorityDefinition.DEFAULT_NUMBER_PRIORITY);
     }
-    return expressionBehavior.evaluateIntegerExpression(priorityExpression, scopeKey);
+    return expressionBehavior
+        .evaluateIntegerExpression(priorityExpression, scopeKey)
+        .flatMap(
+            priority -> {
+              if (priority < PRIORITY_LOWER_BOUND || priority > PRIORITY_UPPER_BOUND) {
+                return Either.left(
+                    new Failure(
+                        String.format(
+                            "Expected priority to be in the range [0,100] but was '%s'.", priority),
+                        ErrorType.EXTRACT_VALUE_ERROR,
+                        scopeKey));
+              }
+              return Either.right(priority);
+            });
   }
 
   public void cancelUserTask(final BpmnElementContext context) {

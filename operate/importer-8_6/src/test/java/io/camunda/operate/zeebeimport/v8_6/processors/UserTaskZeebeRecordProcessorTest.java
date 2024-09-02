@@ -54,6 +54,7 @@ class UserTaskZeebeRecordProcessorTest {
         ImmutableUserTaskRecordValue.builder()
             .withUserTaskKey(1L)
             .withTenantId(DEFAULT_TENANT_ID)
+            .withPriority(50)
             .build();
     when(userTaskTemplate.getFullQualifiedName()).thenReturn("user-task-index");
     when(userTaskRecord.getIntent()).thenReturn(UserTaskIntent.CREATED);
@@ -75,6 +76,7 @@ class UserTaskZeebeRecordProcessorTest {
             .setProcessDefinitionVersion(0)
             .setProcessInstanceKey(0L)
             .setTenantId(DEFAULT_TENANT_ID)
+            .setPriority(50)
             .setChangedAttributes(List.of());
     verify(batchRequest).addWithId("user-task-index", "1", expectedUserEntity);
   }

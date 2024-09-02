@@ -29,7 +29,11 @@ import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,6 +63,29 @@ final class StandaloneGatewaySecurityTest {
   void shouldStartWithTlsEnabled() throws Exception {
     // given
     final var cfg = createGatewayCfg();
+
+    // when
+    gateway = buildGateway(cfg);
+    gateway.gateway();
+
+    // then
+    final var clusterAddress =
+        new InetSocketAddress(cfg.getCluster().getHost(), cfg.getCluster().getPort());
+    SslAssert.assertThat(clusterAddress).isSecuredBy(certificate);
+  }
+
+  @Test
+  void shouldStartWithTlsEnabledWithPasswordProtectedKeyStoreFile() {
+    // given
+    final var cfg = createGatewayCfg();
+    final var pkcs12 = createPKCS12File();
+    cfg.getSecurity()
+        .setEnabled(true)
+        .setCertificateChainPath(null)
+        .setPrivateKeyPath(null)
+        .getKeyStore()
+        .setFilePath(pkcs12)
+        .setPassword("password");
 
     // when
     gateway = buildGateway(cfg);
@@ -120,6 +147,25 @@ final class StandaloneGatewaySecurityTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected a certificate chain in order to enable inter-cluster communication security, but none given");
+  }
+
+  private File createPKCS12File() {
+    try {
+      final var store = KeyStore.getInstance("PKCS12");
+      final var chain = new Certificate[] {certificate.cert()};
+      final var file = Files.createTempFile("id", ".p12").toFile();
+
+      store.load(null, null);
+      store.setKeyEntry("key", certificate.key(), "password".toCharArray(), chain);
+
+      try (final var fOut = new FileOutputStream(file)) {
+        store.store(fOut, "password".toCharArray());
+      }
+
+      return file;
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to create PKCS12 file", e);
+    }
   }
 
   private GatewayBasedProperties createGatewayCfg() {

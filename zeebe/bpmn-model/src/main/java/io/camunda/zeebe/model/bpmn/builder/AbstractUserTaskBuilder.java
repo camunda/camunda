@@ -187,6 +187,14 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
   }
 
   @Override
+  public B zeebeFormVersionTag(final String versionTag) {
+    final ZeebeFormDefinition formDefinition =
+        getCreateSingleExtensionElement(ZeebeFormDefinition.class);
+    formDefinition.setVersionTag(versionTag);
+    return myself;
+  }
+
+  @Override
   public B zeebeTaskPriority(final String priority) {
     final ZeebePriorityDefinition priorityDefinition =
         myself.getCreateSingleExtensionElement(ZeebePriorityDefinition.class);

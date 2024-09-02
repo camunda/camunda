@@ -106,6 +106,19 @@ public final class DbDecisionState implements MutableDecisionState {
           DbForeignKey<DbTenantAwareKey<DbLong>>>
       decisionKeyByDecisionIdAndDeploymentKey;
 
+  private final DbString dbVersionTag;
+  private final DbTenantAwareKey<DbCompositeKey<DbString, DbString>>
+      tenantAwareDecisionIdAndVersionTag;
+
+  /**
+   * <b>Note</b>: Will only be filled with decisions deployed from 8.6 onwards that have a version
+   * tag assigned (which is an optional property).
+   */
+  private final ColumnFamily<
+          DbTenantAwareKey<DbCompositeKey<DbString, DbString>>,
+          DbForeignKey<DbTenantAwareKey<DbLong>>>
+      decisionKeyByDecisionIdAndVersionTag;
+
   private final LoadingCache<TenantIdAndDrgKey, DeployedDrg> drgCache;
 
   public DbDecisionState(
@@ -202,6 +215,17 @@ public final class DbDecisionState implements MutableDecisionState {
             tenantAwareDecisionIdAndDeploymentKey,
             fkDecision);
 
+    dbVersionTag = new DbString();
+    tenantAwareDecisionIdAndVersionTag =
+        new DbTenantAwareKey<>(
+            tenantIdKey, new DbCompositeKey<>(dbDecisionId, dbVersionTag), PlacementType.PREFIX);
+    decisionKeyByDecisionIdAndVersionTag =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION_TAG,
+            transactionContext,
+            tenantAwareDecisionIdAndVersionTag,
+            fkDecision);
+
     drgCache =
         CacheBuilder.newBuilder()
             .maximumSize(config.getDrgCacheCapacity())
@@ -245,6 +269,19 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDeploymentKey.wrapLong(deploymentKey);
     return Optional.ofNullable(
             decisionKeyByDecisionIdAndDeploymentKey.get(tenantAwareDecisionIdAndDeploymentKey))
+        .flatMap(
+            decisionKey ->
+                findDecisionByTenantAndKey(tenantId, decisionKey.inner().wrappedKey().getValue()));
+  }
+
+  @Override
+  public Optional<PersistedDecision> findDecisionByIdAndVersionTag(
+      final String tenantId, final DirectBuffer decisionId, final String versionTag) {
+    tenantIdKey.wrapString(tenantId);
+    dbDecisionId.wrapBuffer(decisionId);
+    dbVersionTag.wrapString(versionTag);
+    return Optional.ofNullable(
+            decisionKeyByDecisionIdAndVersionTag.get(tenantAwareDecisionIdAndVersionTag))
         .flatMap(
             decisionKey ->
                 findDecisionByTenantAndKey(tenantId, decisionKey.inner().wrappedKey().getValue()));
@@ -423,6 +460,18 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   @Override
+  public void storeDecisionKeyByDecisionIdAndVersionTag(final DecisionRecord record) {
+    final var versionTag = record.getVersionTag();
+    if (!versionTag.isBlank()) {
+      tenantIdKey.wrapString(record.getTenantId());
+      dbDecisionKey.wrapLong(record.getDecisionKey());
+      dbDecisionId.wrapString(record.getDecisionId());
+      dbVersionTag.wrapString(versionTag);
+      decisionKeyByDecisionIdAndVersionTag.upsert(tenantAwareDecisionIdAndVersionTag, fkDecision);
+    }
+  }
+
+  @Override
   public void deleteDecision(final DecisionRecord record) {
     tenantIdKey.wrapString(record.getTenantId());
 
@@ -452,6 +501,7 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
     dbDecisionVersion.wrapInt(record.getVersion());
     dbDeploymentKey.wrapLong(record.getDeploymentKey());
+    dbVersionTag.wrapString(record.getVersionTag());
 
     decisionKeyByDecisionRequirementsKey.deleteExisting(dbDecisionRequirementsKeyAndDecisionKey);
     decisionsByKey.deleteExisting(tenantAwareDecisionKey);
@@ -459,6 +509,9 @@ public final class DbDecisionState implements MutableDecisionState {
 
     // use deleteIfExists as no entry exists for older records that do not have a deployment key yet
     decisionKeyByDecisionIdAndDeploymentKey.deleteIfExists(tenantAwareDecisionIdAndDeploymentKey);
+
+    // use deleteIfExists as no entry exists for decisions that do not have a version tag assigned
+    decisionKeyByDecisionIdAndVersionTag.deleteIfExists(tenantAwareDecisionIdAndVersionTag);
   }
 
   @Override

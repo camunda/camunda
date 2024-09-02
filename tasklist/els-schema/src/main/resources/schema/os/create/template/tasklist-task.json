@@ -81,7 +81,11 @@
       "type": "integer"
     },
     "customHeaders": {
-      "type": "object"
+      "type": "object",
+      "dynamic": true
+    },
+    "priority": {
+      "type": "integer"
     }
   }
 }

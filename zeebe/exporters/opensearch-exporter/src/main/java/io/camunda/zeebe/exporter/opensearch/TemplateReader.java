@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.Map;
@@ -89,7 +88,7 @@ final class TemplateReader {
   private Template getTemplateFromClasspath(final String filename) {
     try (final InputStream inputStream = OpensearchExporter.class.getResourceAsStream(filename)) {
       return MAPPER.readValue(inputStream, Template.class);
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       throw new OpensearchExporterException(
           "Failed to load index template from classpath " + filename, e);
     }

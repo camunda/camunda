@@ -1,0 +1,58 @@
+name: Optimize Opened Issues Automation
+on:
+  issues:
+    types: [opened]
+jobs:
+  optimize-opened-issues-automation:
+    name: Opened Issues Automation
+    runs-on: ubuntu-latest
+    if: contains(github.event.issue.labels.*.name, 'component/optimize')
+    steps:
+      - name: Create variables
+        id: vars
+        run: |
+          {
+            echo "project_id=101"
+            echo "qa_engineer=RobertDorlan"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Generate a GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_OPTIMIZE_APP_ID
+          github-app-id-vault-path: secret/data/products/optimize/ci/camunda-optimize
+          github-app-private-key-vault-key: GITHUB_OPTIMIZE_APP_KEY
+          github-app-private-key-vault-path: secret/data/products/optimize/ci/camunda-optimize
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - name: Assign issue to the project
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          issue_url=${{ github.event.issue.html_url }}
+          project_id=${{ steps.vars.outputs.project_id }}
+          gh project item-add $project_id --url $issue_url --owner ${{ github.event.repository.owner.login }}
+
+      - name: Assign QA
+        if: contains(github.event.issue.labels.*.name, 'kind/bug')
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          gh issue edit ${{ github.event.issue.html_url }} --remove-assignee ""
+          sleep 2  # avoiding race condition between two commands
+          gh issue edit ${{ github.event.issue.html_url }} --add-assignee ${{ steps.vars.outputs.qa_engineer }}
+
+      - name: Update Status field - On Hold
+        uses: github/update-project-action@main
+        if: contains(github.event.issue.labels.*.name, 'kind/bug')
+        with:
+          github_token: ${{ steps.github-token.outputs.token }}
+          organization: ${{ github.event.organization.login }}
+          project_number: ${{ steps.vars.outputs.project_id }}
+          content_id: ${{ github.event.issue.node_id }}
+          field: Status
+          value: "On Hold"

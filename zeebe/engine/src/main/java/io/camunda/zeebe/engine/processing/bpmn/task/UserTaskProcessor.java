@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
@@ -30,6 +31,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   private final BpmnUserTaskBehavior userTaskBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final BpmnJobBehavior jobBehavior;
 
   public UserTaskProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -42,6 +44,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
     userTaskBehavior = bpmnBehaviors.userTaskBehavior();
     stateBehavior = bpmnBehaviors.stateBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   @Override
@@ -108,6 +111,10 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   protected void onTerminateInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
+
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(context);
+    }
 
     userTaskBehavior.cancelUserTask(context);
     eventSubscriptionBehavior.unsubscribeFromEvents(context);

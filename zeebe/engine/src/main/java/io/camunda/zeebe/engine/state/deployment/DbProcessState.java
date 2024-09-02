@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -48,7 +49,7 @@ public final class DbProcessState implements MutableProcessState {
 
   private static final int DEFAULT_VERSION_VALUE = 0;
 
-  private final BpmnTransformer transformer = BpmnFactory.createTransformer();
+  private final BpmnTransformer transformer;
   private final ProcessRecord processRecordForDeployments = new ProcessRecord();
   private final Cache<TenantIdAndProcessIdAndVersion, DeployedProcess>
       processesByTenantAndProcessIdAndVersionCache;
@@ -93,12 +94,27 @@ public final class DbProcessState implements MutableProcessState {
           DbForeignKey<DbTenantAwareKey<DbLong>>>
       processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily;
 
+  private final DbString versionTag;
+  private final DbTenantAwareKey<DbCompositeKey<DbString, DbString>>
+      tenantAwareProcessIdAndVersionTagKey;
+
+  /**
+   * <b>Note</b>: Will only be filled with processes deployed from 8.6 onwards that have a version
+   * tag assigned (which is an optional property).
+   */
+  private final ColumnFamily<
+          DbTenantAwareKey<DbCompositeKey<DbString, DbString>>,
+          DbForeignKey<DbTenantAwareKey<DbLong>>>
+      processDefinitionKeyByProcessIdAndVersionTagColumnFamily;
+
   private final VersionManager versionManager;
 
   public DbProcessState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final InstantSource clock) {
+    transformer = BpmnFactory.createTransformer(clock);
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
     tenantIdKey = new DbString();
@@ -147,6 +163,17 @@ public final class DbProcessState implements MutableProcessState {
             ZbColumnFamilies.PROCESS_DEFINITION_KEY_BY_PROCESS_ID_AND_DEPLOYMENT_KEY,
             transactionContext,
             tenantAwareProcessIdAndDeploymentKey,
+            fkProcessDefinitionKey);
+
+    versionTag = new DbString();
+    tenantAwareProcessIdAndVersionTagKey =
+        new DbTenantAwareKey<>(
+            tenantIdKey, new DbCompositeKey<>(processId, versionTag), PlacementType.PREFIX);
+    processDefinitionKeyByProcessIdAndVersionTagColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PROCESS_DEFINITION_KEY_BY_PROCESS_ID_AND_VERSION_TAG,
+            transactionContext,
+            tenantAwareProcessIdAndVersionTagKey,
             fkProcessDefinitionKey);
 
     versionManager =
@@ -202,6 +229,19 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
+  public void storeProcessDefinitionKeyByProcessIdAndVersionTag(final ProcessRecord processRecord) {
+    final var versionTag = processRecord.getVersionTag();
+    if (!versionTag.isBlank()) {
+      tenantIdKey.wrapString(processRecord.getTenantId());
+      processDefinitionKey.wrapLong(processRecord.getProcessDefinitionKey());
+      processId.wrapBuffer(processRecord.getBpmnProcessIdBuffer());
+      this.versionTag.wrapString(versionTag);
+      processDefinitionKeyByProcessIdAndVersionTagColumnFamily.upsert(
+          tenantAwareProcessIdAndVersionTagKey, fkProcessDefinitionKey);
+    }
+  }
+
+  @Override
   public void updateProcessState(
       final ProcessRecord processRecord, final PersistedProcessState state) {
     tenantIdKey.wrapString(processRecord.getTenantId());
@@ -220,6 +260,7 @@ public final class DbProcessState implements MutableProcessState {
     processId.wrapString(processRecord.getBpmnProcessId());
     processVersion.wrapLong(processRecord.getVersion());
     deploymentKey.wrapLong(processRecord.getDeploymentKey());
+    versionTag.wrapString(processRecord.getVersionTag());
 
     processColumnFamily.deleteExisting(tenantAwareProcessDefinitionKey);
     processByIdAndVersionColumnFamily.deleteExisting(tenantAwareProcessIdAndVersionKey);
@@ -227,6 +268,10 @@ public final class DbProcessState implements MutableProcessState {
     // use deleteIfExists as no entry exists for older records that do not have a deployment key yet
     processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily.deleteIfExists(
         tenantAwareProcessIdAndDeploymentKey);
+
+    // use deleteIfExists as no entry exists for processes that do not have a version tag assigned
+    processDefinitionKeyByProcessIdAndVersionTagColumnFamily.deleteIfExists(
+        tenantAwareProcessIdAndVersionTagKey);
 
     final var tenantIdAndProcessIdAndVersion =
         new TenantIdAndProcessIdAndVersion(
@@ -367,6 +412,22 @@ public final class DbProcessState implements MutableProcessState {
       return lookupPersistenceState(processId, version, tenantId);
     }
     return cachedProcess;
+  }
+
+  @Override
+  public DeployedProcess getProcessByProcessIdAndVersionTag(
+      final DirectBuffer processId, final String versionTag, final String tenantId) {
+    tenantIdKey.wrapString(tenantId);
+    this.processId.wrapBuffer(processId);
+    this.versionTag.wrapString(versionTag);
+    final var foreignKey =
+        processDefinitionKeyByProcessIdAndVersionTagColumnFamily.get(
+            tenantAwareProcessIdAndVersionTagKey);
+    if (foreignKey != null) {
+      final var processDefinitionKey = foreignKey.inner().wrappedKey().getValue();
+      return getProcessByKeyAndTenant(processDefinitionKey, tenantId);
+    }
+    return null;
   }
 
   @Override

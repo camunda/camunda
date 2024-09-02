@@ -144,7 +144,7 @@ public class MessageMultiTenancyTest {
         .deploy();
 
     // when
-    messageSender.sendExpectNoCorrelation(messageName, "", otherTenant);
+    messageSender.sendExpectRejection(messageName, "", otherTenant);
 
     // then
     assertMessageStartEventSubscriptionCreatedForTenant(processId, messageName, tenantId);
@@ -183,7 +183,7 @@ public class MessageMultiTenancyTest {
             .create();
 
     // when
-    messageSender.sendExpectNoCorrelation(messageName, correlationKey, otherTenant);
+    messageSender.sendExpectRejection(messageName, correlationKey, otherTenant);
 
     // then
     assertProcessMessageSubscriptionCreatedForTenantId(tenantId, messageName, processInstanceKey);
@@ -466,6 +466,15 @@ public class MessageMultiTenancyTest {
       // correlation.
       sendExpectCorrelation(messageName, correlationKey, tenantId);
     }
+
+    @Override
+    void sendExpectRejection(
+        final String messageName, final String correlationKey, final String tenantId) {
+      // Send the exact same command as for a correlation expectation. The test message client
+      // considers it a success once the message is published. This happens regardless of
+      // correlation.
+      sendExpectCorrelation(messageName, correlationKey, tenantId);
+    }
   }
 
   static final class MessageCorrelateSender extends MessageSender {
@@ -491,6 +500,18 @@ public class MessageMultiTenancyTest {
           .expectNotCorrelated()
           .correlate();
     }
+
+    @Override
+    void sendExpectRejection(
+        final String messageName, final String correlationKey, final String tenantId) {
+      ENGINE
+          .messageCorrelation()
+          .withTenantId(tenantId)
+          .withName(messageName)
+          .withCorrelationKey(correlationKey)
+          .expectRejection()
+          .correlate();
+    }
   }
 
   abstract static class MessageSender {
@@ -499,6 +520,9 @@ public class MessageMultiTenancyTest {
 
     abstract void sendExpectNoCorrelation(
         String messageName, final String correlationKey, String tenantId);
+
+    abstract void sendExpectRejection(
+        final String messageName, final String correlationKey, final String tenantId);
 
     @Override
     public String toString() {

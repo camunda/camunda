@@ -12,7 +12,7 @@ const TASK_OPENED_REF = zod.object({
   by: zod.enum(['user', 'auto-select']),
   position: zod.number(),
   filter: zod.string(),
-  sorting: zod.enum(['creation', 'follow-up', 'due', 'completion']),
+  sorting: zod.enum(['creation', 'follow-up', 'due', 'completion', 'priority']),
 });
 
 const TASK_EMPTY_PAGE_OPENED_REF = zod.object({

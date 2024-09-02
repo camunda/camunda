@@ -111,6 +111,9 @@ public class TaskSearchResponse {
 
   private TaskImplementation implementation;
 
+  @Schema(description = "The assigned priority of the task. Only for Zeebe User Tasks.")
+  private int priority;
+
   public String getId() {
     return id;
   }
@@ -327,6 +330,15 @@ public class TaskSearchResponse {
     return this;
   }
 
+  public int getPriority() {
+    return priority;
+  }
+
+  public TaskSearchResponse setPriority(final int priority) {
+    this.priority = priority;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     int result =
@@ -350,7 +362,8 @@ public class TaskSearchResponse {
             dueDate,
             followUpDate,
             implementation,
-            context);
+            context,
+            priority);
     result = 31 * result + Arrays.hashCode(sortValues);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
@@ -388,6 +401,7 @@ public class TaskSearchResponse {
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(dueDate, that.dueDate)
         && Objects.equals(followUpDate, that.followUpDate)
+        && priority == that.priority
         && Arrays.equals(candidateGroups, that.candidateGroups)
         && Arrays.equals(candidateUsers, that.candidateUsers)
         && Arrays.equals(variables, that.variables);
@@ -420,6 +434,7 @@ public class TaskSearchResponse {
         .add("candidateUsers=" + Arrays.toString(candidateUsers))
         .add("variables=" + Arrays.toString(variables))
         .add("taskContext='" + context + "'")
+        .add("priority='" + priority + "'")
         .toString();
   }
 }

@@ -97,7 +97,9 @@ public class UserTaskZeebeRecordProcessor {
             "dueDate",
             new Tuple<>(UserTaskTemplate.DUE_DATE, userTaskEntity::getDueDate),
             "followUpDate",
-            new Tuple<>(UserTaskTemplate.FOLLOW_UP_DATE, userTaskEntity::getFollowUpDate));
+            new Tuple<>(UserTaskTemplate.FOLLOW_UP_DATE, userTaskEntity::getFollowUpDate),
+            "priority",
+            new Tuple<>(UserTaskTemplate.PRIORITY, userTaskEntity::getPriority));
 
     final var changedAttributes = userTaskEntity.getChangedAttributes();
     final var map = new HashMap<String, Object>();
@@ -198,7 +200,8 @@ public class UserTaskZeebeRecordProcessor {
         .setVariables(objectMapper.writeValueAsString(userTaskRecordValue.getVariables()))
         .setFormKey(userTaskRecordValue.getFormKey())
         .setChangedAttributes(userTaskRecordValue.getChangedAttributes())
-        .setAction(userTaskRecordValue.getAction());
+        .setAction(userTaskRecordValue.getAction())
+        .setPriority(userTaskRecordValue.getPriority());
   }
 
   private OffsetDateTime toDateOrNull(final String dateString) {

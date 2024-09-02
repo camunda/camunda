@@ -68,6 +68,10 @@ import java.util.TreeMap;
  *
  * <p>A volatile field {@link #lastProcessedPosition} is only modified in {@link #onProcessed(long)}
  * and used in {@link #onAppend(InFlightEntry, long)} to clean up old entries.
+ *
+ * <p>The RateMeasurement#observe method only returns true when a new observation value is
+ * available. This way we prevent updating the metrics too often with repeated values. We use the
+ * RateMeasurements to update the cluster load and the exporting rate metrics.
  */
 @SuppressWarnings("UnstableApiUsage")
 public final class FlowControl implements AppendListener {
@@ -78,6 +82,9 @@ public final class FlowControl implements AppendListener {
   private Limiter<Intent> processingLimiter;
   private RateLimiter writeRateLimiter;
   private final RateMeasurement exportingRate =
+      new RateMeasurement(
+          ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
+  private final RateMeasurement writeRate =
       new RateMeasurement(
           ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
   private RateLimitThrottle writeRateThrottle;
@@ -112,8 +119,9 @@ public final class FlowControl implements AppendListener {
     switch (result) {
       case Either.Left<Rejection, InFlightEntry>(final var reason) ->
           metrics.flowControlRejected(context, batchMetadata, reason);
-      case Either.Right<Rejection, InFlightEntry>(final var ignored) ->
-          metrics.flowControlAccepted(context, batchMetadata);
+      case Either.Right<Rejection, InFlightEntry>(final var ignored) -> {
+        metrics.flowControlAccepted(context, batchMetadata);
+      }
     }
     return result;
   }
@@ -162,6 +170,10 @@ public final class FlowControl implements AppendListener {
     final var inFlightEntry = inFlight.get(highestPosition);
     if (inFlightEntry != null) {
       inFlightEntry.onWrite();
+    }
+    if (writeRate.observe(highestPosition) && writeRateLimit != null && writeRateLimit.enabled()) {
+      metrics.setPartitionLoad(
+          Math.min((float) (writeRate.rate() / writeRateLimiter.getRate() * 100L), 100));
     }
   }
 
@@ -222,6 +234,10 @@ public final class FlowControl implements AppendListener {
     writeRateLimiter = writeRateLimit == null ? null : writeRateLimit.limiter();
     writeRateThrottle =
         new RateLimitThrottle(metrics, writeRateLimit, writeRateLimiter, exportingRate);
+    if (writeRateLimit == null || !writeRateLimit.enabled()) {
+      // if the write rate limit is disabled, we need to clear the previous values.
+      metrics.setPartitionLoad(-1);
+    }
   }
 
   public enum Rejection {

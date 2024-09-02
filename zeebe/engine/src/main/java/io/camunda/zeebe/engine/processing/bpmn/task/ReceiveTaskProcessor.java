@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
@@ -28,6 +29,7 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final BpmnJobBehavior jobBehavior;
 
   public ReceiveTaskProcessor(
       final BpmnBehaviors behaviors, final BpmnStateTransitionBehavior stateTransitionBehavior) {
@@ -37,6 +39,7 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
     variableMappingBehavior = behaviors.variableMappingBehavior();
     stateBehavior = behaviors.stateBehavior();
     compensationSubscriptionBehaviour = behaviors.compensationSubscriptionBehaviour();
+    jobBehavior = behaviors.jobBehavior();
   }
 
   @Override
@@ -83,6 +86,10 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   @Override
   public void onTerminate(final ExecutableReceiveTask element, final BpmnElementContext context) {
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
+
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(context);
+    }
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);

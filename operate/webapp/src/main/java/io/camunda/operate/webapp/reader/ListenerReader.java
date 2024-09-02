@@ -7,12 +7,11 @@
  */
 package io.camunda.operate.webapp.reader;
 
-import io.camunda.operate.webapp.rest.dto.ListenerDto;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
-import java.util.List;
+import io.camunda.operate.webapp.rest.dto.ListenerResponseDto;
 
 public interface ListenerReader {
 
-  public List<ListenerDto> getListenerExecutions(
+  public ListenerResponseDto getListenerExecutions(
       String processInstanceId, ListenerRequestDto request);
 }

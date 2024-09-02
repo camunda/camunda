@@ -10,8 +10,12 @@ package io.camunda.search.es.transformers;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.search.SourceConfig;
+import co.elastic.clients.elasticsearch.core.search.SourceFilter;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.sort.SearchSortOptions;
+import io.camunda.search.clients.source.SearchSourceConfig;
+import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.transformers.SearchTransfomer;
 
@@ -37,5 +41,13 @@ public abstract class ElasticsearchTransformer<T, R> implements SearchTransfomer
 
   protected SearchTransfomer<SearchSortOptions, SortOptions> getSortOptionsTransformer() {
     return getTransformer(SearchSortOptions.class);
+  }
+
+  protected SearchTransfomer<SearchSourceConfig, SourceConfig> getSourceConfigTransformer() {
+    return getTransformer(SearchSourceConfig.class);
+  }
+
+  protected SearchTransfomer<SearchSourceFilter, SourceFilter> getSourceFilterTransformer() {
+    return getTransformer(SearchSourceFilter.class);
   }
 }

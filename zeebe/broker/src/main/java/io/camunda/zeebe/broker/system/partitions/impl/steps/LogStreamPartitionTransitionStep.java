@@ -8,13 +8,15 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
-import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.stream.api.StreamClock;
+import java.time.InstantSource;
 import java.util.function.Supplier;
 
 public final class LogStreamPartitionTransitionStep implements PartitionTransitionStep {
@@ -37,6 +39,7 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
     if (logStream != null
         && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
             || targetRole == Role.INACTIVE)) {
+      context.setStreamClock(null);
       context.getComponentHealthMonitor().removeComponent(logStream.getLogName());
       logStream.close();
       context.setLogStream(null);
@@ -49,8 +52,10 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     if ((context.getLogStream() == null && targetRole != Role.INACTIVE)
         || shouldInstallOnTransition(targetRole, context.getCurrentRole())) {
-      final var logStorage = context.getLogStorage();
-      context.setLogStream(buildLogStream(context, logStorage));
+      final var clockSource =
+          ActorClock.current() != null ? ActorClock.current() : InstantSource.system();
+      context.setStreamClock(StreamClock.controllable(clockSource));
+      context.setLogStream(buildLogStream(context));
 
       return CompletableActorFuture.completed(null);
     } else {
@@ -63,16 +68,16 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
     return "LogStream";
   }
 
-  private LogStream buildLogStream(
-      final PartitionTransitionContext context, final AtomixLogStorage atomixLogStorage) {
+  private LogStream buildLogStream(final PartitionTransitionContext context) {
     final var flowControlCfg = context.getBrokerCfg().getFlowControl();
     return logStreamBuilderSupplier
         .get()
-        .withLogStorage(atomixLogStorage)
+        .withLogStorage(context.getLogStorage())
         .withLogName("logStream-" + context.getRaftPartition().name())
         .withPartitionId(context.getPartitionId())
         .withMaxFragmentSize(context.getMaxFragmentSize())
         .withActorSchedulingService(context.getActorSchedulingService())
+        .withClock(context.getStreamClock())
         .withRequestLimit(
             flowControlCfg.getRequest() != null
                 ? flowControlCfg.getRequest().buildLimit()

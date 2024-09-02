@@ -20,7 +20,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.Map;
 
-public interface FailJobCommandStep1 {
+public interface FailJobCommandStep1 extends CommandWithCommunicationApiStep<FailJobCommandStep1> {
 
   /**
    * Set the remaining retries of this job.

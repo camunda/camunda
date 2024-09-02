@@ -48,6 +48,18 @@ public interface DecisionState {
       final String tenantId, DirectBuffer decisionId, long deploymentKey);
 
   /**
+   * Query decisions by the given decision id and version tag and return the decision.
+   *
+   * @param tenantId the tenant the decision belongs to
+   * @param decisionId the id of the decision
+   * @param versionTag the version tag of the decision
+   * @return the decision, or {@link Optional#empty()} if no decision with the given id and version
+   *     tag is deployed
+   */
+  Optional<PersistedDecision> findDecisionByIdAndVersionTag(
+      final String tenantId, DirectBuffer decisionId, String versionTag);
+
+  /**
    * Query decision requirements (DRGs) by the given decision requirements id and return the latest
    * version of the DRG.
    *

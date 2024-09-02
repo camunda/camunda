@@ -27,6 +27,16 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   @Override
   public void writeRejectionOnCommand(
       final TypedRecord<?> command, final RejectionType type, final String reason) {
+    writeRejection(command, type, reason, command.getRequestId(), command.getRequestStreamId());
+  }
+
+  @Override
+  public void writeRejection(
+      final TypedRecord<?> command,
+      final RejectionType type,
+      final String reason,
+      final long requestId,
+      final int requestStreamId) {
     resultBuilder()
         .withResponse(
             RecordType.COMMAND_REJECTION,
@@ -36,8 +46,8 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
             command.getValueType(),
             type,
             reason,
-            command.getRequestId(),
-            command.getRequestStreamId());
+            requestId,
+            requestStreamId);
   }
 
   @Override

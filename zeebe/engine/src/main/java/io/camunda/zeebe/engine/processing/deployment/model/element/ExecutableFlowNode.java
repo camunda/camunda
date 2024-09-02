@@ -84,4 +84,8 @@ public class ExecutableFlowNode extends AbstractFlowElement {
         .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.end)
         .toList();
   }
+
+  public boolean hasExecutionListeners() {
+    return !executionListeners.isEmpty();
+  }
 }

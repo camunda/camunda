@@ -17,7 +17,7 @@ import {ArrowRight} from '@carbon/react/icons';
 import {observer} from 'mobx-react';
 import {currentTheme, ThemeType} from 'modules/stores/currentTheme';
 import capitalize from 'lodash/capitalize';
-import {InlineLink} from './styled';
+import {licenseTagStore} from 'modules/stores/licenseTag';
 
 const orderedApps = [
   'console',
@@ -37,6 +37,12 @@ const AppHeader: React.FC = observer(() => {
       tracking.identifyUser({userId, salesPlanType, roles});
     }
   }, [userId, salesPlanType, roles]);
+
+  useEffect(() => {
+    licenseTagStore.fetchLicense();
+
+    return licenseTagStore.reset;
+  }, []);
 
   return (
     <C3Navigation
@@ -105,41 +111,10 @@ const AppHeader: React.FC = observer(() => {
             },
           },
         ],
-        tags:
-          window.clientConfig?.isEnterprise === true ||
-          window.clientConfig?.organizationId
-            ? []
-            : [
-                {
-                  key: 'non-production-license',
-                  label: 'Non-Production License',
-                  color: 'cool-gray',
-                  tooltip: {
-                    content: (
-                      <div>
-                        Non-Production License. If you would like information on
-                        production usage, please refer to our{' '}
-                        <InlineLink
-                          href="https://legal.camunda.com/#self-managed-non-production-terms"
-                          target="_blank"
-                        >
-                          {' '}
-                          terms & conditions page
-                        </InlineLink>{' '}
-                        or{' '}
-                        <InlineLink
-                          href="https://camunda.com/contact/"
-                          target="_blank"
-                        >
-                          contact sales
-                        </InlineLink>
-                        .
-                      </div>
-                    ),
-                    buttonLabel: 'Non-Production License',
-                  },
-                },
-              ],
+        licenseTag: {
+          show: licenseTagStore.state.isTagVisible,
+          isProductionLicense: licenseTagStore.state.isProductionLicense,
+        },
       }}
       appBar={{
         ariaLabel: 'App Panel',

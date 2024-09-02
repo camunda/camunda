@@ -84,4 +84,13 @@ public class ProcessInstanceRestServiceIT {
         mockMvcManager.postRequestShouldFailWithException(url, ConstraintViolationException.class);
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Specified ID is not valid");
   }
+
+  @Test
+  public void testGetListenersWithInvalidId() throws Exception {
+    final String url =
+        ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/not-valid-id-123/listeners";
+    final MvcResult mvcResult =
+        mockMvcManager.postRequestShouldFailWithException(url, ConstraintViolationException.class);
+    assertThat(mvcResult.getResolvedException().getMessage()).contains("Specified ID is not valid");
+  }
 }

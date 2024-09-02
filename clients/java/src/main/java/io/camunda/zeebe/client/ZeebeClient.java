@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
@@ -32,14 +33,16 @@ import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.search.DecisionDefinitionQuery;
-import io.camunda.zeebe.client.api.search.DecisionRequirementsQuery;
-import io.camunda.zeebe.client.api.search.ProcessInstanceQuery;
-import io.camunda.zeebe.client.api.search.UserTaskQuery;
+import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
+import io.camunda.zeebe.client.api.search.query.DecisionRequirementsQuery;
+import io.camunda.zeebe.client.api.search.query.IncidentQuery;
+import io.camunda.zeebe.client.api.search.query.ProcessInstanceQuery;
+import io.camunda.zeebe.client.api.search.query.UserTaskQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
@@ -297,6 +300,23 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   PublishMessageCommandStep1 newPublishMessageCommand();
 
   /**
+   * Command to correlate a message and wait for it to be correlated against a process instance.
+   *
+   * <pre>
+   * zeebeClient
+   *  .newCorrelateMessageCommand()
+   *  .messageName("order canceled")
+   *  .correlationKey(orderId)
+   *  .variables(json)
+   *  .tenantId("tenant")
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  CorrelateMessageCommandStep1 newCorrelateMessageCommand();
+
+  /**
    * Command to broadcast a signal.
    *
    * <pre>
@@ -548,6 +568,57 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   UnassignUserTaskCommandStep1 newUserTaskUnassignCommand(long userTaskKey);
 
   /**
+   * Command to update the retries and/or the timeout of a job.
+   *
+   * <pre>
+   * JobChangeset changeset= ..;
+   *
+   * zeebeClient
+   *  .newUpdateCommand(jobKey)
+   *  .update(changeset)
+   *  .send();
+   * </pre>
+   *
+   * <p>If the given retries are greater than zero then this job will be picked up again by a job
+   * worker. This will not close a related incident, which still has to be marked as resolved with
+   * {@link #newResolveIncidentCommand newResolveIncidentCommand(long incidentKey)} .
+   *
+   * <p>Timeout value in millis is used to calculate a new job deadline. This will happen when the
+   * command to update the timeline is processed. The timeout value will be added to the current
+   * time then.
+   *
+   * @param jobKey the key of the job to update
+   * @return a builder for the command
+   */
+  UpdateJobCommandStep1 newUpdateJobCommand(long jobKey);
+
+  /**
+   * Command to update the retries and/or the timeout of a job.
+   *
+   * <pre>
+   * ActivatedJob job= ..;
+   * JobChangeset changeset= ..;
+   *
+   * zeebeClient
+   *  .newUpdateCommand(job)
+   *  .update(changeset)
+   *  .send();
+   * </pre>
+   *
+   * <p>If the given retries are greater than zero then this job will be picked up again by a job
+   * worker. This will not close a related incident, which still has to be marked as resolved with
+   * {@link #newResolveIncidentCommand newResolveIncidentCommand(long incidentKey)} .
+   *
+   * <p>Timeout value in millis is used to calculate a new job deadline. This will happen when the
+   * command to update the timeline is processed. The timeout value will be added to the current
+   * time then.
+   *
+   * @param job the activated job
+   * @return a builder for the command
+   */
+  UpdateJobCommandStep1 newUpdateJobCommand(ActivatedJob job);
+
+  /**
    * Executes a search request to query process instances.
    *
    * <pre>
@@ -579,7 +650,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * zeebeClient
    *  .newUserTaskQuery()
    *  .filter((f) -> f.userTaskKey(userTaskKey))
-   *  .sort((s) -> s.startDate().asc())
+   *  .sort((s) -> s.creationDate().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
@@ -642,4 +713,29 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   DecisionDefinitionQuery newDecisionDefinitionQuery();
+
+  /*
+   * Executes a search request to query decision definitions.
+   *
+   * <pre>
+   * long decisionDefinitionKey = ...;
+   *
+   * zeebeClient
+   *  .newIncidentQuery()
+   *  .filter((f) -> f.processInstanceKey(processInstanceKey))
+   *  .sort((s) -> s.processDefinitionKey().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @return a builder for the incident query
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  IncidentQuery newIncidentQuery();
 }

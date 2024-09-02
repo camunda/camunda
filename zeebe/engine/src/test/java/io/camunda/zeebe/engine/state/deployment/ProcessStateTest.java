@@ -287,6 +287,18 @@ public final class ProcessStateTest {
   }
 
   @Test
+  public void shouldReturnNullOnGetProcessByProcessIdAndVersionTag() {
+    // given
+
+    // when
+    final DeployedProcess deployedProcess =
+        processState.getProcessByProcessIdAndVersionTag(wrapString("foo"), "v1.0", TENANT_ID);
+
+    // then
+    Assertions.assertThat(deployedProcess).isNull();
+  }
+
+  @Test
   public void shouldPutDeploymentToState() {
     // given
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(processingState);
@@ -352,6 +364,48 @@ public final class ProcessStateTest {
     assertThat(deployedProcess.getResource()).isEqualTo(processRecord.getResourceBuffer());
     assertThat(deployedProcess.getResourceName()).isEqualTo(processRecord.getResourceNameBuffer());
     assertThat(deployedProcess.getDeploymentKey()).isEqualTo(processRecord.getDeploymentKey());
+  }
+
+  @Test
+  public void shouldStoreProcessDefinitionKeyByProcessIdAndVersionTag() {
+    // given
+    final var processId = "processId";
+    final var versionTag = "v1.0";
+    final var processRecord = creatingProcessRecord(processingState, processId, 1, versionTag);
+    processState.putProcess(processRecord.getKey(), processRecord);
+
+    // when
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(processRecord);
+
+    // then
+    final var deployedProcess =
+        processState.getProcessByProcessIdAndVersionTag(
+            wrapString(processId), versionTag, TENANT_ID);
+    assertThat(deployedProcess).isNotNull();
+    assertThat(deployedProcess.getBpmnProcessId()).isEqualTo(wrapString(processId));
+    assertThat(deployedProcess.getVersion()).isEqualTo(1);
+    assertThat(deployedProcess.getKey()).isEqualTo(processRecord.getKey());
+    assertThat(deployedProcess.getResource()).isEqualTo(processRecord.getResourceBuffer());
+    assertThat(deployedProcess.getResourceName()).isEqualTo(processRecord.getResourceNameBuffer());
+    assertThat(deployedProcess.getDeploymentKey()).isEqualTo(processRecord.getDeploymentKey());
+    assertThat(deployedProcess.getVersionTag()).isEqualTo(versionTag);
+  }
+
+  @Test
+  public void shouldNotStoreProcessDefinitionKeyByProcessIdAndVersionTagIfVersionTagIsEmpty() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    assertThat(processRecord.getVersionTag()).isEmpty();
+
+    // when
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(processRecord);
+
+    // then
+    assertThat(
+            processState.getProcessByProcessIdAndVersionTag(
+                wrapString("processId"), processRecord.getVersionTag(), TENANT_ID))
+        .isNull();
   }
 
   @Test
@@ -622,6 +676,56 @@ public final class ProcessStateTest {
   }
 
   @Test
+  public void shouldGetProcessByProcessIdAndVersionTag() {
+    // given
+    final var processId1 = "process-1";
+    final var processId2 = "process-2";
+    final var versionTagV1 = "v1.0";
+    final var versionTagV2 = "v2.0";
+    final var process1Version1 =
+        creatingProcessRecord(processingState, processId1, 1, versionTagV1);
+    final var process1Version2 =
+        creatingProcessRecord(processingState, processId1, 2, versionTagV2);
+    final var process2Version1 =
+        creatingProcessRecord(processingState, processId2, 1, versionTagV1);
+    processState.putProcess(process1Version1.getKey(), process1Version1);
+    processState.putProcess(process1Version2.getKey(), process1Version2);
+    processState.putProcess(process2Version1.getKey(), process2Version1);
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(process1Version1);
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(process1Version2);
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(process2Version1);
+
+    // when
+    final var deployedProcess1 =
+        processState.getProcessByProcessIdAndVersionTag(
+            wrapString(processId1), versionTagV1, TENANT_ID);
+    final var deployedProcess2 =
+        processState.getProcessByProcessIdAndVersionTag(
+            wrapString(processId1), versionTagV2, TENANT_ID);
+    final var deployedProcess3 =
+        processState.getProcessByProcessIdAndVersionTag(
+            wrapString(processId2), versionTagV1, TENANT_ID);
+    final var deployedProcess4 =
+        processState.getProcessByProcessIdAndVersionTag(
+            wrapString(processId2), versionTagV2, TENANT_ID);
+
+    // then
+    assertThat(deployedProcess1)
+        .isNotNull()
+        .extracting(DeployedProcess::getKey)
+        .isEqualTo(process1Version1.getKey());
+    assertThat(deployedProcess2)
+        .isNotNull()
+        .extracting(DeployedProcess::getKey)
+        .isEqualTo(process1Version2.getKey());
+    assertThat(deployedProcess3)
+        .isNotNull()
+        .extracting(DeployedProcess::getKey)
+        .isEqualTo(process2Version1.getKey());
+    assertThat(deployedProcess4).isNull();
+  }
+
+  @Test
   public void shouldReturnHighestVersionInsteadOfMostRecent() {
     // given
     final String processId = "process";
@@ -659,10 +763,11 @@ public final class ProcessStateTest {
   public void shouldDeleteLatestProcess() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
-    final var processRecord = creatingProcessRecord(processingState, processId, 1);
+    final var processRecord = creatingProcessRecord(processingState, processId, 1, "v1.0");
     final var processDefinitionKey = processRecord.getProcessDefinitionKey();
     processState.putProcess(processDefinitionKey, processRecord);
     processState.storeProcessDefinitionKeyByProcessIdAndDeploymentKey(processRecord);
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(processRecord);
 
     // when
     processState.deleteProcess(processRecord);
@@ -684,6 +789,10 @@ public final class ProcessStateTest {
             processState.getProcessByProcessIdAndDeploymentKey(
                 BufferUtil.wrapString(processId), processRecord.getDeploymentKey(), TENANT_ID))
         .isNull();
+    assertThat(
+            processState.getProcessByProcessIdAndVersionTag(
+                BufferUtil.wrapString(processId), processRecord.getVersionTag(), TENANT_ID))
+        .isNull();
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId), TENANT_ID))
         .isNull();
     assertThat(processState.getLatestProcessVersion(processId, TENANT_ID)).isEqualTo(0);
@@ -695,15 +804,19 @@ public final class ProcessStateTest {
     // given
     final String processId = Strings.newRandomValidBpmnId();
     final var oldProcess =
-        creatingProcessRecord(processingState, processId, 1).setChecksum(wrapString("oldChecksum"));
+        creatingProcessRecord(processingState, processId, 1, "v1.0")
+            .setChecksum(wrapString("oldChecksum"));
     final var newProcess =
-        creatingProcessRecord(processingState, processId, 2).setChecksum(wrapString("newChecksum"));
+        creatingProcessRecord(processingState, processId, 2, "v2.0")
+            .setChecksum(wrapString("newChecksum"));
     final var oldDefinitionKey = oldProcess.getProcessDefinitionKey();
     final var newDefinitionKey = newProcess.getProcessDefinitionKey();
     processState.putProcess(oldDefinitionKey, oldProcess);
     processState.putProcess(newDefinitionKey, newProcess);
     processState.storeProcessDefinitionKeyByProcessIdAndDeploymentKey(oldProcess);
     processState.storeProcessDefinitionKeyByProcessIdAndDeploymentKey(newProcess);
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(oldProcess);
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(newProcess);
 
     // when
     processState.deleteProcess(oldProcess);
@@ -732,6 +845,14 @@ public final class ProcessStateTest {
             processState.getProcessByProcessIdAndDeploymentKey(
                 BufferUtil.wrapString(processId), newProcess.getDeploymentKey(), TENANT_ID))
         .isNotNull();
+    assertThat(
+            processState.getProcessByProcessIdAndVersionTag(
+                BufferUtil.wrapString(processId), oldProcess.getVersionTag(), TENANT_ID))
+        .isNull();
+    assertThat(
+            processState.getProcessByProcessIdAndVersionTag(
+                BufferUtil.wrapString(processId), newProcess.getVersionTag(), TENANT_ID))
+        .isNotNull();
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId), TENANT_ID))
         .isEqualTo(wrapString("newChecksum"));
     assertThat(processState.getLatestProcessVersion(processId, TENANT_ID)).isEqualTo(2);
@@ -743,15 +864,19 @@ public final class ProcessStateTest {
     // given
     final String processId = "processId";
     final var oldProcess =
-        creatingProcessRecord(processingState, processId, 1).setChecksum(wrapString("oldChecksum"));
+        creatingProcessRecord(processingState, processId, 1, "v1.0")
+            .setChecksum(wrapString("oldChecksum"));
     final var newProcess =
-        creatingProcessRecord(processingState, processId, 2).setChecksum(wrapString("newChecksum"));
+        creatingProcessRecord(processingState, processId, 2, "v2.0")
+            .setChecksum(wrapString("newChecksum"));
     final var oldDefinitionKey = oldProcess.getProcessDefinitionKey();
     final var newDefinitionKey = newProcess.getProcessDefinitionKey();
     processState.putProcess(oldDefinitionKey, oldProcess);
     processState.putProcess(newDefinitionKey, newProcess);
     processState.storeProcessDefinitionKeyByProcessIdAndDeploymentKey(oldProcess);
     processState.storeProcessDefinitionKeyByProcessIdAndDeploymentKey(newProcess);
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(oldProcess);
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(newProcess);
 
     // when
     processState.deleteProcess(newProcess);
@@ -780,6 +905,14 @@ public final class ProcessStateTest {
             processState.getProcessByProcessIdAndDeploymentKey(
                 BufferUtil.wrapString(processId), newProcess.getDeploymentKey(), TENANT_ID))
         .isNull();
+    assertThat(
+            processState.getProcessByProcessIdAndVersionTag(
+                BufferUtil.wrapString(processId), oldProcess.getVersionTag(), TENANT_ID))
+        .isNotNull();
+    assertThat(
+            processState.getProcessByProcessIdAndVersionTag(
+                BufferUtil.wrapString(processId), newProcess.getVersionTag(), TENANT_ID))
+        .isNull();
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId), TENANT_ID))
         .isNull();
     assertThat(processState.getLatestProcessVersion(processId, TENANT_ID)).isEqualTo(1);
@@ -791,11 +924,14 @@ public final class ProcessStateTest {
     // given
     final String processId = "processId";
     final var oldProcess =
-        creatingProcessRecord(processingState, processId, 1).setChecksum(wrapString("oldChecksum"));
+        creatingProcessRecord(processingState, processId, 1, "v1.0")
+            .setChecksum(wrapString("oldChecksum"));
     final var midProcess =
-        creatingProcessRecord(processingState, processId, 2).setChecksum(wrapString("midChecksum"));
+        creatingProcessRecord(processingState, processId, 2, "v2.0")
+            .setChecksum(wrapString("midChecksum"));
     final var newProcess =
-        creatingProcessRecord(processingState, processId, 3).setChecksum(wrapString("newChecksum"));
+        creatingProcessRecord(processingState, processId, 3, "v3.0")
+            .setChecksum(wrapString("newChecksum"));
     final var oldDefinitionKey = oldProcess.getProcessDefinitionKey();
     final var midDefinitionKey = midProcess.getProcessDefinitionKey();
     final var newDefinitionKey = newProcess.getProcessDefinitionKey();
@@ -805,6 +941,9 @@ public final class ProcessStateTest {
     processState.storeProcessDefinitionKeyByProcessIdAndDeploymentKey(oldProcess);
     processState.storeProcessDefinitionKeyByProcessIdAndDeploymentKey(midProcess);
     processState.storeProcessDefinitionKeyByProcessIdAndDeploymentKey(newProcess);
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(oldProcess);
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(midProcess);
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(newProcess);
 
     // when
     processState.deleteProcess(midProcess);
@@ -843,6 +982,18 @@ public final class ProcessStateTest {
     assertThat(
             processState.getProcessByProcessIdAndDeploymentKey(
                 BufferUtil.wrapString(processId), newProcess.getDeploymentKey(), TENANT_ID))
+        .isNull();
+    assertThat(
+            processState.getProcessByProcessIdAndVersionTag(
+                BufferUtil.wrapString(processId), oldProcess.getVersionTag(), TENANT_ID))
+        .isNotNull();
+    assertThat(
+            processState.getProcessByProcessIdAndVersionTag(
+                BufferUtil.wrapString(processId), midProcess.getVersionTag(), TENANT_ID))
+        .isNull();
+    assertThat(
+            processState.getProcessByProcessIdAndVersionTag(
+                BufferUtil.wrapString(processId), newProcess.getVersionTag(), TENANT_ID))
         .isNull();
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId), TENANT_ID))
         .isNull();
@@ -950,18 +1101,29 @@ public final class ProcessStateTest {
       final MutableProcessingState processingState, final String processId) {
     final MutableProcessState processState = processingState.getProcessState();
     final int version = processState.getNextProcessVersion(processId, TENANT_ID);
-    return creatingProcessRecord(processingState, processId, version);
+    return creatingProcessRecord(processingState, processId, version, null);
   }
 
   public static ProcessRecord creatingProcessRecord(
       final MutableProcessingState processingState, final String processId, final int version) {
+    return creatingProcessRecord(processingState, processId, version, null);
+  }
+
+  public static ProcessRecord creatingProcessRecord(
+      final MutableProcessingState processingState,
+      final String processId,
+      final int version,
+      final String versionTag) {
+    final var processBuilder = Bpmn.createExecutableProcess(processId);
+    if (versionTag != null) {
+      processBuilder.versionTag(versionTag);
+    }
     final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess(processId)
+        processBuilder
             .startEvent("startEvent")
             .serviceTask("test", task -> task.zeebeJobType("type"))
             .endEvent("endEvent")
             .done();
-
     final ProcessRecord processRecord = new ProcessRecord();
     final String resourceName = "process.bpmn";
     final var resource = wrapString(Bpmn.convertToString(modelInstance));
@@ -980,6 +1142,9 @@ public final class ProcessStateTest {
         .setChecksum(checksum)
         .setTenantId(TENANT_ID)
         .setDeploymentKey(keyGenerator.nextKey());
+    if (versionTag != null) {
+      processRecord.setVersionTag(versionTag);
+    }
 
     return processRecord;
   }

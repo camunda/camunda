@@ -403,6 +403,7 @@
       <artifactId>jakarta.annotation-api</artifactId>
       <scope>test</scope>
     </dependency>
+
   </dependencies>
 
   <build>
@@ -417,7 +418,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>3.3.1</version>
+        <version>3.5.0</version>
         <configuration>
           <skipITs>false</skipITs>
           <includes>
@@ -493,9 +494,10 @@
                 <phase>pre-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>up</argument>
                     <argument>-d</argument>
                     <argument>elasticsearch</argument>
@@ -511,9 +513,10 @@
                 <phase>post-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>down</argument>
                   </arguments>
                 </configuration>
@@ -548,9 +551,10 @@
                 <phase>pre-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>up</argument>
                     <argument>-d</argument>
                     <argument>opensearch</argument>
@@ -566,9 +570,10 @@
                 <phase>post-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>down</argument>
                   </arguments>
                 </configuration>

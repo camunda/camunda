@@ -35,9 +35,10 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
+  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
 
   public DecisionRecord() {
-    super(9);
+    super(10);
     declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)
         .declareProperty(versionProp)
@@ -46,7 +47,8 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
         .declareProperty(decisionRequirementsKeyProp)
         .declareProperty(isDuplicateProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(deploymentKeyProp);
+        .declareProperty(deploymentKeyProp)
+        .declareProperty(versionTagProp);
   }
 
   @Override
@@ -62,6 +64,11 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
   @Override
   public int getVersion() {
     return versionProp.getValue();
+  }
+
+  @Override
+  public String getVersionTag() {
+    return bufferAsString(versionTagProp.getValue());
   }
 
   @Override
@@ -111,6 +118,11 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
 
   public DecisionRecord setDecisionKey(final long decisionKey) {
     decisionKeyProp.setValue(decisionKey);
+    return this;
+  }
+
+  public DecisionRecord setVersionTag(final String versionTag) {
+    versionTagProp.setValue(versionTag);
     return this;
   }
 

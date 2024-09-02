@@ -7,17 +7,15 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
-
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
+import java.time.InstantSource;
 import org.agrona.collections.MutableInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,19 +35,22 @@ final class JobTimeoutChecker implements Task {
   private ReadonlyStreamProcessorContext processingContext;
   private final Duration pollingInterval;
   private final int batchLimit;
+  private final InstantSource clock;
 
   public JobTimeoutChecker(
-      final JobState state, final Duration pollingInterval, final int batchLimit) {
+      final JobState state,
+      final Duration pollingInterval,
+      final int batchLimit,
+      final InstantSource clock) {
     this.state = state;
     this.pollingInterval = pollingInterval;
     this.batchLimit = batchLimit;
+    this.clock = clock;
   }
 
   public void schedule(final Duration idleInterval) {
     if (shouldReschedule) {
-      processingContext
-          .getScheduleService()
-          .runAt(ActorClock.currentTimeMillis() + idleInterval.toMillis(), this);
+      processingContext.getScheduleService().runAt(clock.millis() + idleInterval.toMillis(), this);
     }
   }
 
@@ -57,7 +58,7 @@ final class JobTimeoutChecker implements Task {
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     LOG.trace("Job timeout checker running...");
     if (executionTimestamp == -1) {
-      executionTimestamp = currentTimeMillis();
+      executionTimestamp = clock.millis();
     }
 
     final var counter = new MutableInteger(0);

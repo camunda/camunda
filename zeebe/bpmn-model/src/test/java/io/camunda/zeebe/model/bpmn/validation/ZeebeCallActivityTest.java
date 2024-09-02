@@ -57,7 +57,7 @@ public class ZeebeCallActivityTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(
                 ZeebeCalledElement.class,
-                "Attribute 'bindingType' must be one of: deployment, latest"))
+                "Attribute 'bindingType' must be one of: deployment, latest, versionTag"))
       },
       {
         Bpmn.createExecutableProcess("process")

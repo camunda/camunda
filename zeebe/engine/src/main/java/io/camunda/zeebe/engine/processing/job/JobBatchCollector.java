@@ -15,12 +15,15 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
@@ -65,9 +68,11 @@ final class JobBatchCollector {
    * key. On success, it will return the amount of jobs activated.
    *
    * @param record the batch activate command; jobs and their keys will be added directly into it
-   * @return the amount of activated jobs on success, or a job which was too large to activate
+   * @return the amount of activated jobs per jobKind on success, or a job which was too large to
+   *     activate on failure
    */
-  Either<TooLargeJob, Integer> collectJobs(final TypedRecord<JobBatchRecord> record) {
+  public Either<TooLargeJob, Map<JobKind, Integer>> collectJobs(
+      final TypedRecord<JobBatchRecord> record) {
     final JobBatchRecord value = record.getValue();
     final ValueArray<JobRecord> jobIterator = value.jobs();
     final ValueArray<LongValue> jobKeyIterator = value.jobKeys();
@@ -79,6 +84,7 @@ final class JobBatchCollector {
         value.getTenantIds().isEmpty()
             ? List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             : value.getTenantIds();
+    final Map<JobKind, Integer> jobCountPerJobKind = new EnumMap<>(JobKind.class);
 
     jobState.forEachActivatableJobs(
         value.getTypeBuffer(),
@@ -102,6 +108,10 @@ final class JobBatchCollector {
               && canWriteEventOfLength.test(expectedEventLength)) {
             appendJobToBatch(jobIterator, jobKeyIterator, key, jobRecord);
             activatedCount.increment();
+
+            // track the count of activated jobs by their JobKind
+            jobCountPerJobKind.merge(jobRecord.getJobKind(), 1, Integer::sum);
+
           } else {
             // if no jobs were activated, then the current job is simply too large, and we cannot
             // activate it
@@ -120,7 +130,7 @@ final class JobBatchCollector {
       return Either.left(unwritableJob.ref);
     }
 
-    return Either.right(activatedCount.value);
+    return Either.right(jobCountPerJobKind);
   }
 
   private void appendJobToBatch(

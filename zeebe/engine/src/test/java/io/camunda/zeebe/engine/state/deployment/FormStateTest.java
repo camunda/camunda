@@ -56,4 +56,14 @@ public class FormStateTest {
     // then
     assertThat(persistedForm).isEmpty();
   }
+
+  @Test
+  void shouldReturnEmptyIfNoFormIsDeployedForFormIdAndVersionTag() {
+    // when
+    final var persistedForm =
+        formState.findFormByIdAndVersionTag(wrapString("form-1"), "v1.0", tenantId);
+
+    // then
+    assertThat(persistedForm).isEmpty();
+  }
 }

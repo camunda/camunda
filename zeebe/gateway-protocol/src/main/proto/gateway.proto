@@ -569,20 +569,6 @@ message UpdateJobTimeoutRequest {
 message UpdateJobTimeoutResponse {
 }
 
-message UpdateJobRequest {
-  // the unique job identifier, as obtained through ActivateJobs
-  int64 jobKey = 1;
-  // the new amount of retries for the job; must be positive
-  int32 retries = 2;
-  // the duration of the new timeout in ms, starting from the current moment
-  int64 timeout = 3;
-  // a reference key chosen by the user and will be part of all records resulted from this operation
-  optional uint64 operationReference = 4;
-}
-
-message UpdateJobResponse {
-}
-
 message SetVariablesRequest {
   // the unique identifier of a particular element; can be the process instance key (as
   // obtained during instance creation), or a given element, such as a service task (see
@@ -972,6 +958,7 @@ service Gateway {
         - a mapping instruction refers to an unsupported element (i.e. some elements will be supported later on)
         - a mapping instruction refers to element in unsupported scenarios.
           (i.e. migration is not supported when process instance or target process elements contains event subscriptions)
+        - multiple mapping instructions target the same boundary event
 
       INVALID_ARGUMENT:
         - A `sourceElementId` does not refer to an element in the process instance's process definition
@@ -995,20 +982,6 @@ service Gateway {
       - no deadline exists for the given job key
  */
   rpc UpdateJobTimeout (UpdateJobTimeoutRequest) returns (UpdateJobTimeoutResponse) {
-  }
-
-  /*
-  Updates the number of retries a job has left and the deadline of a job using the timeout (in ms) provided.
-
-  Errors:
-    NOT_FOUND:
-      - no job exists with the given key
-
-    INVALID_ARGUMENT:
-      - retries is not greater than 0
-      - no deadline exists for the given job key
- */
-  rpc UpdateJob (UpdateJobRequest) returns (UpdateJobResponse) {
   }
 
   /*

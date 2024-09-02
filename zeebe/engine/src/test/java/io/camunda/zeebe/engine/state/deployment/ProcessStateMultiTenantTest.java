@@ -154,6 +154,35 @@ public class ProcessStateMultiTenantTest {
   }
 
   @Test
+  public void shouldStoreProcessDefinitionKeyByProcessIdAndVersionTagForMultipleTenants() {
+    // given
+    final var processKey = keyGenerator.nextKey();
+    final var processId = Strings.newRandomValidBpmnId();
+    final var version = 1;
+    final var versionTag = "v1.0";
+    final var tenant1Process =
+        createProcessRecord(TENANT_1, processKey, processId, version, versionTag);
+    final var tenant2Process =
+        createProcessRecord(TENANT_2, processKey, processId, version, versionTag);
+    processState.putProcess(processKey, tenant1Process);
+    processState.putProcess(processKey, tenant2Process);
+
+    // when
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(tenant1Process);
+    processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(tenant2Process);
+
+    // then
+    final var tenant1DeployedProcess =
+        processState.getProcessByProcessIdAndVersionTag(
+            wrapString(processId), versionTag, TENANT_1);
+    assertDeployedProcess(tenant1DeployedProcess, TENANT_1, processKey, processId, version);
+    final var tenant2DeployedProcess =
+        processState.getProcessByProcessIdAndVersionTag(
+            wrapString(processId), versionTag, TENANT_2);
+    assertDeployedProcess(tenant2DeployedProcess, TENANT_2, processKey, processId, version);
+  }
+
+  @Test
   public void shouldUpdateProcessStateForTenant() {
     // given
     final long processKey = keyGenerator.nextKey();
@@ -247,8 +276,21 @@ public class ProcessStateMultiTenantTest {
 
   public static ProcessRecord createProcessRecord(
       final String tenantId, final long processKey, final String processId, final int version) {
+    return createProcessRecord(tenantId, processKey, processId, version, null);
+  }
+
+  public static ProcessRecord createProcessRecord(
+      final String tenantId,
+      final long processKey,
+      final String processId,
+      final int version,
+      final String versionTag) {
+    final var processBuilder = Bpmn.createExecutableProcess(processId);
+    if (versionTag != null) {
+      processBuilder.versionTag(versionTag);
+    }
     final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess(processId)
+        processBuilder
             .startEvent()
             .serviceTask("test", task -> task.zeebeJobType("type"))
             .endEvent()
@@ -268,6 +310,9 @@ public class ProcessStateMultiTenantTest {
         .setResourceName(resourceName)
         .setChecksum(checksum)
         .setTenantId(tenantId);
+    if (versionTag != null) {
+      processRecord.setVersionTag(versionTag);
+    }
 
     return processRecord;
   }
@@ -279,6 +324,7 @@ public class ProcessStateMultiTenantTest {
       final String expectedProcessId,
       final int expectedVersion) {
     assertThat(deployedProcess)
+        .isNotNull()
         .extracting(
             DeployedProcess::getTenantId,
             DeployedProcess::getKey,

@@ -36,6 +36,7 @@ import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -91,6 +92,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   // When idle, exporter director is not exporting any records because no exporters are configured.
   // The actor is still running, but it is not actively doing any work.
   private boolean idle;
+  private final InstantSource clock;
 
   public ExporterDirector(
       final ExporterDirectorContext context, final ExporterPhase exporterPhase) {
@@ -99,6 +101,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     logStream = Objects.requireNonNull(context.getLogStream());
     partitionId = logStream.getPartitionId();
     meterRegistry = context.getMeterRegistry();
+    clock = context.getClock();
     containers =
         context.getDescriptors().entrySet().stream()
             .map(
@@ -107,11 +110,12 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                         descriptorEntry.getKey(),
                         partitionId,
                         descriptorEntry.getValue(),
-                        meterRegistry))
+                        meterRegistry,
+                        clock))
             .collect(Collectors.toCollection(ArrayList::new));
     metrics = new ExporterMetrics(partitionId);
     metrics.initializeExporterState(exporterPhase);
-    recordExporter = new RecordExporter(metrics, containers, partitionId);
+    recordExporter = new RecordExporter(metrics, containers, partitionId, clock);
     exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     recordWrapStrategy = new EndlessRetryStrategy(actor);
     zeebeDb = context.getZeebeDb();
@@ -259,28 +263,55 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return CompletableActorFuture.completed(null);
     }
 
-    return actor.call(
-        () -> {
-          containers.stream()
-              .map(ExporterContainer::getId)
-              .filter(exporterId::equals)
-              .findFirst()
-              .ifPresentOrElse(
-                  container -> {
-                    LOG.debug(
-                        "Exporter '{}' is already enabled. Skipping the enabling operation.",
-                        exporterId);
-                  },
-                  () -> addExporter(exporterId, initializationInfo, descriptor));
-        });
+    return actor.call(() -> addExporter(exporterId, initializationInfo, descriptor));
+  }
+
+  /**
+   * Enables an exporter with the given id and descriptor. The exporter will start exporting records
+   * after this operation completes. This operation will be retried until successful or the exporter
+   * director closes.
+   *
+   * <p>It is expected that the exporter to initialize from the metadata is of same type as the
+   * exporter to enable. The caller of this method must verify that.
+   *
+   * @param exporterId id of the exporter to enable
+   * @param initializationInfo the info required to initialize the exporter state
+   * @param descriptor the descriptor of the exporter to enable
+   * @return future which will be completed after the exporter is enabled.
+   */
+  public ActorFuture<Boolean> enableExporterWithRetry(
+      final String exporterId,
+      final ExporterInitializationInfo initializationInfo,
+      final ExporterDescriptor descriptor) {
+    return new BackOffRetryStrategy(actor, Duration.ofSeconds(10))
+        .runWithRetry(
+            () -> {
+              try {
+                addExporter(exporterId, initializationInfo, descriptor);
+                return true;
+              } catch (final Exception e) {
+                LOG.error("Failed to add exporter '{}'. Retrying...", exporterId, e);
+                return false;
+              }
+            },
+            this::isClosed);
   }
 
   private void addExporter(
       final String exporterId,
       final ExporterInitializationInfo initializationInfo,
       final ExporterDescriptor descriptor) {
+
+    final var exporterEnabled =
+        containers.stream().map(ExporterContainer::getId).anyMatch(exporterId::equals);
+
+    if (exporterEnabled) {
+      LOG.debug("Exporter '{}' is already enabled. Skipping the enabling operation.", exporterId);
+      return;
+    }
+
     final ExporterContainer container =
-        new ExporterContainer(descriptor, partitionId, initializationInfo, meterRegistry);
+        new ExporterContainer(descriptor, partitionId, initializationInfo, meterRegistry, clock);
     container.initContainer(actor, metrics, state, exporterPhase);
     try {
       container.configureExporter();
@@ -488,18 +519,38 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void startActiveExportingMode() {
+    final var containerOpenFutures = new ArrayList<ActorFuture<Boolean>>();
     for (final ExporterContainer container : containers) {
       container.initMetadata();
-      container.openExporter();
+      final var openFuture =
+          new BackOffRetryStrategy(actor, Duration.ofSeconds(10))
+              .runWithRetry(
+                  () -> {
+                    try {
+                      container.openExporter();
+                      return true;
+                    } catch (final Exception e) {
+                      LOG.error("Failed to open exporter '{}'. Retrying...", container.getId(), e);
+                      return false;
+                    }
+                  },
+                  this::isClosed);
+
+      containerOpenFutures.add(openFuture);
     }
 
-    if (state.hasExporters()) {
-      final long snapshotPosition = state.getLowestPosition();
-      // start reading and exporting
-      startActiveExportingFrom(snapshotPosition);
-    } else {
-      becomeIdle();
-    }
+    // Don't need to handle error as any are caught within the runWithRetry try catch
+    actor.runOnCompletion(
+        containerOpenFutures,
+        (error) -> {
+          if (state.hasExporters()) {
+            final long snapshotPosition = state.getLowestPosition();
+            // start reading and exporting
+            startActiveExportingFrom(snapshotPosition);
+          } else {
+            becomeIdle();
+          }
+        });
   }
 
   private void restartActiveExportingMode() {

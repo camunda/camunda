@@ -16,12 +16,10 @@
 package io.camunda.zeebe;
 
 import com.google.common.util.concurrent.UncheckedExecutionException;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigBeanFactory;
-import com.typesafe.config.ConfigFactory;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.config.AppCfg;
+import io.camunda.zeebe.config.AppConfigLoader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.grpc.ClientInterceptor;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingClientInterceptor;
@@ -50,9 +48,7 @@ abstract class App implements Runnable {
   private static HTTPServer monitoringServer;
 
   static void createApp(final Function<AppCfg, Runnable> appFactory) {
-    final Config config = ConfigFactory.load().getConfig("app");
-    LOG.info("Starting app with config: {}", config.root().render());
-    final AppCfg appCfg = ConfigBeanFactory.create(config, AppCfg.class);
+    final AppCfg appCfg = AppConfigLoader.load();
     startMonitoringServer(appCfg);
     Runtime.getRuntime().addShutdownHook(new Thread(App::stopMonitoringServer));
 

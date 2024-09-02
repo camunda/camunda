@@ -13,7 +13,6 @@ public class InvalidTenantRequestException extends ClientException {
 
   private static final String MESSAGE_FORMAT =
       "Expected to handle gRPC request %s with tenant identifier '%s', but %s";
-
   private static final String MESSAGE_FORMAT_TENANTS =
       "Expected to handle gRPC request %s with tenant identifiers '%s', but %s";
 

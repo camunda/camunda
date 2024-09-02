@@ -46,12 +46,12 @@ public class PublicProcessControllerTest {
     expectedProcessEntity.setBpmnProcessId("bpmnProcessId");
     when(processStore.getProcessByBpmnProcessId("test")).thenReturn(expectedProcessEntity);
     mockMvc
-        .perform(MockMvcRequestBuilders.get("/new/test"))
+        .perform(MockMvcRequestBuilders.get("/tasklist/new/test"))
         .andExpect(status().isOk())
         .andExpect(model().size(3))
         .andExpect(model().attribute("title", "processEntity"))
         .andExpect(model().attribute("ogImage", "http://localhost/public-start-form-og-image.jpg"))
-        .andExpect(model().attribute("ogUrl", "http://localhost/new/test"))
+        .andExpect(model().attribute("ogUrl", "http://localhost/tasklist/new/test"))
         .andExpect(forwardedUrl("/tasklist/index.html"));
   }
 }

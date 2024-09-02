@@ -12,12 +12,14 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
+import io.camunda.zeebe.broker.system.management.PartitionStatus.ClockStatus;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
+import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import java.util.List;
 import java.util.Map;
@@ -165,13 +167,15 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
             .flatMap(FileBasedSnapshotId::ofFileName)
             .map(FileBasedSnapshotId::getProcessedPosition)
             .orElse(null);
+    final var clockFuture = streamProcessor.getClock();
 
     actor.runOnCompletion(
         List.of(
             (ActorFuture) positionFuture,
             (ActorFuture) currentPhaseFuture,
             (ActorFuture) exporterPhaseFuture,
-            (ActorFuture) exporterPositionFuture),
+            (ActorFuture) exporterPositionFuture,
+            (ActorFuture) clockFuture),
         error -> {
           if (error != null) {
             partitionStatus.completeExceptionally(error);
@@ -181,6 +185,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
           final var processorPhase = currentPhaseFuture.join();
           final var exporterPhase = exporterPhaseFuture.join();
           final var exporterPosition = exporterPositionFuture.join();
+          final var clock = getClockStatus(clockFuture.join());
           final var status =
               new PartitionStatus(
                   role,
@@ -189,9 +194,15 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
                   processedPositionInSnapshot,
                   processorPhase,
                   exporterPhase,
-                  exporterPosition);
+                  exporterPosition,
+                  clock);
           partitionStatus.complete(status);
         });
+  }
+
+  private ClockStatus getClockStatus(final StreamClock clock) {
+    final var modification = clock.currentModification();
+    return new ClockStatus(clock.instant(), modification.getClass().getSimpleName(), modification);
   }
 
   private Optional<String> getSnapshotId(final ZeebePartition partition) {

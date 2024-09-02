@@ -45,11 +45,11 @@ import org.junit.Test;
 
 public class ResourceDeletionTest {
 
-  private static final String DRG_SINGLE_DECISION = "/dmn/decision-table.dmn";
+  private static final String DRG_SINGLE_DECISION = "/dmn/decision-table-with-version-tag-v1.dmn";
   private static final String DRG_SINGLE_DECISION_V2 = "/dmn/decision-table_v2.dmn";
   private static final String DRG_MULTIPLE_DECISIONS = "/dmn/drg-force-user.dmn";
   private static final String RESULT_VARIABLE = "result";
-  private static final String FORM = "/form/test-form-1.form";
+  private static final String FORM = "/form/test-form-1-with-version-tag-v1.form";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -701,7 +701,12 @@ public class ResourceDeletionTest {
   private long deployProcess(final String processId) {
     return engine
         .deployment()
-        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .versionTag("v1.0")
+                .startEvent()
+                .endEvent()
+                .done())
         .deploy()
         .getValue()
         .getProcessesMetadata()
@@ -836,6 +841,7 @@ public class ResourceDeletionTest {
             DecisionRecordValue::getDecisionId,
             DecisionRecordValue::getDecisionName,
             DecisionRecordValue::getVersion,
+            DecisionRecordValue::getVersionTag,
             DecisionRecordValue::getDecisionKey,
             DecisionRecordValue::getDecisionRequirementsId,
             DecisionRecordValue::getDecisionRequirementsKey,
@@ -845,6 +851,7 @@ public class ResourceDeletionTest {
             decisionCreatedRecord.getDecisionId(),
             decisionCreatedRecord.getDecisionName(),
             decisionCreatedRecord.getVersion(),
+            decisionCreatedRecord.getVersionTag(),
             decisionCreatedRecord.getDecisionKey(),
             decisionCreatedRecord.getDecisionRequirementsId(),
             decisionCreatedRecord.getDecisionRequirementsKey(),
@@ -874,6 +881,7 @@ public class ResourceDeletionTest {
             ProcessMetadataValue::getBpmnProcessId,
             ProcessMetadataValue::getResourceName,
             ProcessMetadataValue::getVersion,
+            ProcessMetadataValue::getVersionTag,
             ProcessMetadataValue::getProcessDefinitionKey,
             ProcessMetadataValue::getDeploymentKey)
         .containsOnly(
@@ -881,6 +889,7 @@ public class ResourceDeletionTest {
                 processCreatedRecord.getBpmnProcessId(),
                 processCreatedRecord.getResourceName(),
                 processCreatedRecord.getVersion(),
+                processCreatedRecord.getVersionTag(),
                 processCreatedRecord.getProcessDefinitionKey(),
                 processCreatedRecord.getDeploymentKey()));
   }
@@ -1059,6 +1068,7 @@ public class ResourceDeletionTest {
             Form::getFormId,
             Form::getFormKey,
             Form::getVersion,
+            Form::getVersionTag,
             Form::getResourceName,
             Form::getTenantId,
             Form::getDeploymentKey)
@@ -1066,6 +1076,7 @@ public class ResourceDeletionTest {
             formCreatedRecord.getFormId(),
             formCreatedRecord.getFormKey(),
             formCreatedRecord.getVersion(),
+            formCreatedRecord.getVersionTag(),
             formCreatedRecord.getResourceName(),
             formCreatedRecord.getTenantId(),
             formCreatedRecord.getDeploymentKey());
