@@ -9,6 +9,8 @@ package io.camunda.zeebe.util.jar;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
@@ -18,6 +20,13 @@ import org.slf4j.LoggerFactory;
 /**
  * Provides a class loader which isolates external exporters from other exporters, while exposing
  * our own code to ensure versions match at runtime.
+ *
+ * <p>NOTE: if you forget to close this class loader, the underlying file is cleaned up by the
+ * garbage collector (via {@link java.lang.ref.Cleaner} once this class loader has been garbage
+ * collected.
+ *
+ * <p>If possible, it's still a good idea to close explicitly to free resources sooner and to avoid
+ * depending on undocumented behavior of a standard library class.
  */
 public final class ExternalJarClassLoader extends URLClassLoader {
   private static final Logger LOGGER = LoggerFactory.getLogger(ExternalJarClassLoader.class);
@@ -29,10 +38,26 @@ public final class ExternalJarClassLoader extends URLClassLoader {
     super(urls);
   }
 
+  /**
+   * Close class loader with verbose log statement.
+   *
+   * <p>Be aware that premature closing may lead to ClassNotFoundException.
+   */
   @Override
   public void close() throws IOException {
-    LOGGER.warn(
-        "Closing the external JAR class loader may lead to ClassNotFoundException; only close if it's truly necessary");
+    close(true);
+  }
+
+  /**
+   * Allows to close the class loader without warning statement
+   *
+   * <p>Be aware that premature closing may lead to ClassNotFoundException.
+   */
+  public void close(final boolean verbose) throws IOException {
+    if (verbose) {
+      LOGGER.warn(
+          "Closing the class loader may cause future class loading calls to fail with ClassNotFoundException");
+    }
     super.close();
   }
 
@@ -41,8 +66,8 @@ public final class ExternalJarClassLoader extends URLClassLoader {
 
     try {
       final String expandedPath = jarPath.toUri().toURL().toString();
-      jarUrl = new URL(String.format(JAR_URL_FORMAT, expandedPath));
-    } catch (final MalformedURLException e) {
+      jarUrl = new URI(String.format(JAR_URL_FORMAT, expandedPath)).toURL();
+    } catch (final MalformedURLException | URISyntaxException e) {
       throw new ExternalJarLoadException(jarPath, "bad JAR url", e);
     }
 
