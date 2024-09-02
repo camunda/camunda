@@ -62,7 +62,7 @@ public class AuthorizationStateTest {
             authorizationRecord.getOwnerKey(),
             authorizationRecord.getOwnerType(),
             authorizationRecord.getResourceType());
-    assertThat(persistedAuthorization.getPermissions())
+    assertThat(persistedAuthorization.getResourceIdentifiers())
         .isEqualTo(authorizationRecord.getPermissions());
   }
 
@@ -88,7 +88,7 @@ public class AuthorizationStateTest {
         .hasMessageContaining(
             "Key DbCompositeKey{first=DbLong{"
                 + ownerKey
-                + "}, second=DbCompositeKey{first=process-definition, second=}} in ColumnFamily PERMISSIONS_BY_OWNER_KEY_RESOURCE_TYPE_AND_PERMISSION_TYPE already exists");
+                + "}, second=DbCompositeKey{first=process-definition, second=}} in ColumnFamily RESOURCE_IDS_BY_OWNER_KEY_RESOURCE_TYPE_AND_PERMISSION already exists");
   }
 
   @DisplayName("should return the correct authorization")
@@ -128,9 +128,9 @@ public class AuthorizationStateTest {
             authorizationRecordTwo.getResourceType());
 
     assertThat(authorizationOne).isNotEqualTo(authorizationTwo);
-    assertThat(authorizationOne.getPermissions())
+    assertThat(authorizationOne.getResourceIdentifiers())
         .isEqualTo(authorizationRecordOne.getPermissions());
-    assertThat(authorizationTwo.getPermissions())
+    assertThat(authorizationTwo.getResourceIdentifiers())
         .isEqualTo(authorizationRecordTwo.getPermissions());
   }
 }

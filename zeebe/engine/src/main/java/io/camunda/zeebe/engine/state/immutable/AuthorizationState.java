@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import io.camunda.zeebe.engine.state.authorization.PersistedPermissions;
+import io.camunda.zeebe.engine.state.authorization.ResourceIdentifiers;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 
 public interface AuthorizationState {
-  PersistedPermissions getPermissions(
+  ResourceIdentifiers getPermissions(
       Long ownerKey, AuthorizationOwnerType ownerType, String resourceType);
 }

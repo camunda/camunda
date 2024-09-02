@@ -16,29 +16,29 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class PersistedPermissions extends UnpackedObject implements DbValue {
+public class ResourceIdentifiers extends UnpackedObject implements DbValue {
   private final ArrayProperty<StringValue> resourceIds =
       new ArrayProperty<>("resourceIds", StringValue::new);
 
-  public PersistedPermissions() {
+  public ResourceIdentifiers() {
     super(1);
     declareProperty(resourceIds);
   }
 
-  public PersistedPermissions copy() {
-    final PersistedPermissions copy = new PersistedPermissions();
-    copy.setPermissions(getPermissions());
+  public ResourceIdentifiers copy() {
+    final ResourceIdentifiers copy = new ResourceIdentifiers();
+    copy.setResourceIdentifiers(getResourceIdentifiers());
     return copy;
   }
 
-  public List<String> getPermissions() {
+  public List<String> getResourceIdentifiers() {
     return StreamSupport.stream(resourceIds.spliterator(), false)
         .map(StringValue::getValue)
         .map(BufferUtil::bufferAsString)
         .collect(Collectors.toList());
   }
 
-  public void setPermissions(final List<String> permissions) {
+  public void setResourceIdentifiers(final List<String> permissions) {
     resourceIds.reset();
     permissions.forEach(permission -> resourceIds.add().wrap(BufferUtil.wrapString(permission)));
   }

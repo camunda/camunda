@@ -22,18 +22,18 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 public class DbAuthorizationState implements AuthorizationState, MutableAuthorizationState {
   private final PersistedAuthorization persistedAuthorization = new PersistedAuthorization();
 
-  private final PersistedPermissions persistedPermissions = new PersistedPermissions();
+  private final ResourceIdentifiers resourceIdentifiers = new ResourceIdentifiers();
 
   private final DbLong ownerKey;
   private final DbString resourceType;
-  private final DbString permissionType;
-  private final DbCompositeKey<DbString, DbString> resourceTypeAndPermissionTypeCompositeKey;
+  private final DbString permission;
+  private final DbCompositeKey<DbString, DbString> resourceTypeAndPermissionCompositeKey;
   private final DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>>
-      ownerKeyAndResourceTypeAndPermissionTypeCompositeKey;
-  // owner key + resource type + permission type -> permissions
+      ownerKeyAndResourceTypeAndPermissionCompositeKey;
+  // owner key + resource type + permission -> resourceIds
   private final ColumnFamily<
-          DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>>, PersistedPermissions>
-      permissionsByOwnerKeyResourceTypeAndPermissionTypeColumnFamily;
+          DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>>, ResourceIdentifiers>
+      resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily;
 
   private final DbString resourceId;
   private final DbCompositeKey<DbString, DbLong> resourceIdAndOwnerKeyCompositeKey;
@@ -51,17 +51,17 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     ownerKey = new DbLong();
     resourceType = new DbString();
-    permissionType = new DbString();
-    resourceTypeAndPermissionTypeCompositeKey = new DbCompositeKey<>(resourceType, permissionType);
-    ownerKeyAndResourceTypeAndPermissionTypeCompositeKey =
-        new DbCompositeKey<>(ownerKey, resourceTypeAndPermissionTypeCompositeKey);
+    permission = new DbString();
+    resourceTypeAndPermissionCompositeKey = new DbCompositeKey<>(resourceType, permission);
+    ownerKeyAndResourceTypeAndPermissionCompositeKey =
+        new DbCompositeKey<>(ownerKey, resourceTypeAndPermissionCompositeKey);
 
-    permissionsByOwnerKeyResourceTypeAndPermissionTypeColumnFamily =
+    resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PERMISSIONS_BY_OWNER_KEY_RESOURCE_TYPE_AND_PERMISSION_TYPE,
+            ZbColumnFamilies.RESOURCE_IDS_BY_OWNER_KEY_RESOURCE_TYPE_AND_PERMISSION,
             transactionContext,
-            ownerKeyAndResourceTypeAndPermissionTypeCompositeKey,
-            persistedPermissions);
+            ownerKeyAndResourceTypeAndPermissionCompositeKey,
+            resourceIdentifiers);
 
     resourceId = new DbString();
     resourceIdAndOwnerKeyCompositeKey = new DbCompositeKey<>(resourceId, ownerKey);
@@ -70,7 +70,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
             ZbColumnFamilies.AUTHORIZATION_KEY_BY_RESOURCE_ID_AND_OWNER_KEY,
             transactionContext,
             resourceIdAndOwnerKeyCompositeKey,
-            ownerKeyAndResourceTypeAndPermissionTypeCompositeKey);
+            ownerKeyAndResourceTypeAndPermissionCompositeKey);
 
     ownerType = new DbString();
     ownerTypeByOwnerKeyColumnFamily =
@@ -85,21 +85,21 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     ownerKey.wrapLong(authorizationRecord.getOwnerKey());
     ownerType.wrapString(authorizationRecord.getOwnerType().name());
     resourceType.wrapString(authorizationRecord.getResourceType());
-    persistedPermissions.setPermissions(authorizationRecord.getPermissions());
-    permissionsByOwnerKeyResourceTypeAndPermissionTypeColumnFamily.insert(
-        ownerKeyAndResourceTypeAndPermissionTypeCompositeKey, persistedPermissions);
+    resourceIdentifiers.setResourceIdentifiers(authorizationRecord.getPermissions());
+    resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.insert(
+        ownerKeyAndResourceTypeAndPermissionCompositeKey, resourceIdentifiers);
   }
 
   @Override
-  public PersistedPermissions getPermissions(
+  public ResourceIdentifiers getPermissions(
       final Long ownerKey, final AuthorizationOwnerType ownerType, final String resourceType) {
     this.ownerKey.wrapLong(ownerKey);
     this.ownerType.wrapString(ownerType.name());
     this.resourceType.wrapString(resourceType);
 
     final var persistedPermissions =
-        permissionsByOwnerKeyResourceTypeAndPermissionTypeColumnFamily.get(
-            ownerKeyAndResourceTypeAndPermissionTypeCompositeKey);
+        resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.get(
+            ownerKeyAndResourceTypeAndPermissionCompositeKey);
 
     return persistedPermissions == null ? null : persistedPermissions.copy();
   }
