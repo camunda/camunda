@@ -41,7 +41,6 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     indexDescriptors.forEach(elasticsearchClient::createIndex);
   }
 
-  //  @Override
   @Override
   public void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
     for (final var newFieldEntry : newFields.entrySet()) {
