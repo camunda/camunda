@@ -91,7 +91,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   }
 
   @Override
-  public ResourceIdentifiers getPermissions(
+  public ResourceIdentifiers getResourceIdentifiers(
       final Long ownerKey, final AuthorizationOwnerType ownerType, final String resourceType) {
     this.ownerKey.wrapLong(ownerKey);
     this.ownerType.wrapString(ownerType.name());

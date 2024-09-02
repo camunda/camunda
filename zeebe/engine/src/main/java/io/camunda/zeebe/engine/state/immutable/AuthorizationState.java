@@ -11,6 +11,6 @@ import io.camunda.zeebe.engine.state.authorization.ResourceIdentifiers;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 
 public interface AuthorizationState {
-  ResourceIdentifiers getPermissions(
+  ResourceIdentifiers getResourceIdentifiers(
       Long ownerKey, AuthorizationOwnerType ownerType, String resourceType);
 }

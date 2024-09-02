@@ -48,7 +48,7 @@ public class AuthorizationCreateProcessor
     final var authorizationToCreate = command.getValue();
 
     final var authorization =
-        authorizationState.getPermissions(
+        authorizationState.getResourceIdentifiers(
             authorizationToCreate.getOwnerKey(),
             authorizationToCreate.getOwnerType(),
             authorizationToCreate.getResourceType());
