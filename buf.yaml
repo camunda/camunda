@@ -1,6 +1,6 @@
 version: v2
 modules:
-  - path: zeebe/dynamic-config/src/main/resources/proto
+  - path: zeebe/topology/src/main/resources/proto
     breaking:
       # as we use this only internally, only break on wire incompatibility; ignore source breaking
       # changes
