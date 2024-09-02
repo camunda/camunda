@@ -1180,6 +1180,48 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+
+  /deployments:
+    post:
+      tags:
+        - Resources
+      summary: Deploy resources
+      description: |
+        Deploys one or more resources (e.g. processes, decision models, or forms). This is an atomic call, i.e. either all resources are deployed or none of them are.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                resources:
+                  type: array
+                  description: |
+                    The binary data to create the deployment resources. It is possible to have more than one form part with different form part names for the binary data to create a deployment.
+                  items:
+                    type: string
+                    format: binary
+                tenantId:
+                  type: string
+                  description: The tenant to deploy the resources to.
+              required:
+                - resource
+      responses:
+        "200":
+          description: The resources are deployed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceResponse"
+        "400":
+          description: >
+            The document upload failed. More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
 components:
   schemas:
     UserTaskSearchQueryRequest:
@@ -2247,6 +2289,134 @@ components:
           type: string
           format: date-time
           description: The date and time when the link expires.
+
+    ResourceResponse:
+      type: object
+      properties:
+        key:
+          type: integer
+          format: int64
+          description: The unique key identifying the deployment.
+        deployments:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeploymentMetadata"
+        tenantId:
+          type: string
+    DeploymentMetadata:
+      type: object
+      properties:
+        process:
+          $ref: "#/components/schemas/DeploymentProcess"
+        decision:
+          $ref: "#/components/schemas/DeploymentDecision"
+        decisionRequirements:
+          $ref: "#/components/schemas/DeploymentDecisionRequirements"
+        form:
+          $ref: "#/components/schemas/DeploymentForm"
+    DeploymentProcess:
+      type: object
+      properties:
+        bpmnProcessId:
+          type: string
+          description: |
+            The bpmn process ID, as parsed during deployment, together with the version forms a
+            unique identifier for a specific process definition.
+        version:
+          type: integer
+          format: int32
+          description: The assigned process version.
+        processDefinitionKey:
+          type: integer
+          format: int64
+          description: The assigned key, which acts as a unique identifier for this process.
+        resourceName:
+          type: string
+          description: The resource name from which this process was parsed.
+        tenantId:
+          type: string
+          description: The tenant id of the deployed process.
+    DeploymentDecision:
+      type: object
+      properties:
+        dmnDecisionId:
+          type: string
+          description: |
+            The dmn decision ID, as parsed during deployment, together with the version forms a
+            unique identifier for a specific decision.
+        version:
+          type: integer
+          format: int32
+          description: The assigned decision version.
+        decisionKey:
+          type: integer
+          format: int64
+          description: |
+            The assigned decision key, which acts as a unique identifier for this decision.
+        dmnDecisionName:
+          type: string
+          description: The DMN name of the decision, as parsed during deployment.
+        tenantId:
+          type: string
+          description: The tenant id of the deployed decision.
+        dmnDecisionRequirementsId:
+          type: string
+          description: |
+            The dmn ID of the decision requirements graph that this decision is part of, as parsed during deployment.
+        dmnDecisionRequirementsKey:
+          type: integer
+          format: int64
+          description: |
+            The assigned key of the decision requirements graph that this decision is part of.
+    DeploymentDecisionRequirements:
+      type: object
+      properties:
+        dmnDecisionRequirementsId:
+          type: string
+          description: |
+            The dmn decision requirements ID, as parsed during deployment; together with the versions forms a unique identifier for a specific decision.
+        version:
+          type: integer
+          format: int32
+          description: The assigned decision requirements version.
+        dmnDecisionRequirementsName:
+          type: string
+          description: The DMN name of the decision requirements, as parsed during deployment.
+        tenantId:
+          type: string
+          description: The tenant id of the deployed decision requirements.
+        dmnDecisionRequirementsKey:
+          type: integer
+          format: int64
+          description: |
+            The assigned decision requirements key, which acts as a unique identifier for this decision requirements.
+        resourceName:
+          type: string
+          description: The resource name from which this decision requirements was parsed.
+    DeploymentForm:
+      type: object
+      properties:
+        formId:
+          type: string
+          description: |
+            The form ID, as parsed during deployment, together with the version forms a
+            unique identifier for a specific form.
+        version:
+          type: integer
+          format: int32
+          description: The assigned form version.
+        formKey:
+          type: integer
+          format: int64
+          description: The assigned key, which acts as a unique identifier for this form.
+        resourceName:
+          type: string
+          description: The resource name from which this form was parsed.
+        tenantId:
+          type: string
+          description: The tenant id of the deployed form.
+
+
   securitySchemes:
     bearerAuth:
       type: http

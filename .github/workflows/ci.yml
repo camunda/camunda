@@ -38,6 +38,7 @@ jobs:
       zeebe-changes: ${{ steps.filter.outputs.zeebe-changes }}
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
+      protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -478,7 +479,7 @@ jobs:
         uses: ./.github/actions/run-maven
         with:
           parameters: -f optimize/pom.xml test -Dskip.fe.build -Dskip.docker
-          threads: 1C
+          threads: .5C
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4
@@ -488,6 +489,49 @@ jobs:
             **/surefire-reports/**/*.xml
           retention-days: 7
           if-no-files-found: ignore
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  protobuf-checks:
+    name: "Protobuf Backwards Compatibility"
+    timeout-minutes: 10
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    if: |
+      needs.detect-changes.outputs.protobuf-changes == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - id: pr-body
+        name: Fetch latest PR body
+        if: github.event_name == 'pull_request'
+        run: |
+          {
+            echo 'result<<EOF'
+            gh pr view ${{ github.event.pull_request.number }} --json body | jq '.body'
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # by the default the action will compare against the base branch, or if on push, against the
+        # previous commit
+      - uses: bufbuild/buf-action@v1
+        if: |
+          !(contains(steps.pr-body.outputs.result, 'BREAKING CHANGE:') ||
+            contains(github.event.merge_group.head_commit.message, 'BREAKING CHANGE:') ||
+            contains(github.event.push.commits.*.message, 'BREAKING CHANGE:'))
+        with:
+          format: false
+          lint: false
+          push: false
+          archive: false
+          breaking: true
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -515,6 +559,7 @@ jobs:
       - zeebe-ci
       - optimize-frontend-unit-tests
       - optimize-backend-unit-tests
+      - protobuf-checks
     steps:
       - uses: actions/checkout@v4
       - name: Check for aborted jobs

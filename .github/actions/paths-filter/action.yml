@@ -74,6 +74,13 @@ outputs:
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-zeebe.outputs.zeebe-change == 'true'
       }}
+  protobuf-changes:
+    description: Output whether any Protobuf files have changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.protobuf-change == 'true'
+      }}
 
 
 runs:
@@ -118,6 +125,10 @@ runs:
           - 'tasklist/client/**'
           - 'identity/client/**'
           - 'optimize/client/**'
+
+        protobuf-change:
+          - '**/*.proto'
+          - 'buf.yaml'
 
   - uses: dorny/paths-filter@v3
     id: filter-identity

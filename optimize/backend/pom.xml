@@ -470,7 +470,7 @@
     </plugins>
     <resources>
       <resource>
-        <directory>../client/build</directory>
+        <directory>../client/dist</directory>
         <targetPath>webapp</targetPath>
       </resource>
       <resource>

@@ -49,9 +49,7 @@ public class UserQueryController {
     } catch (final Throwable e) {
       final var problemDetail =
           RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST,
-              e.getMessage(),
-              "Failed to execute Decision Definition Search Query");
+              HttpStatus.BAD_REQUEST, e.getMessage(), "Failed to execute User Search Query");
       return RestErrorMapper.mapProblemToResponse(problemDetail);
     }
   }

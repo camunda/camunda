@@ -24,6 +24,7 @@ import io.camunda.service.DocumentServices.DocumentMetadataModel;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
+import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
@@ -46,6 +47,7 @@ import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -207,10 +209,8 @@ public class RequestMapper {
     final InputStream inputStream;
     try {
       inputStream = file.getInputStream();
-    } catch (IOException e) {
-      return Either.left(
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), "Failed to read document content"));
+    } catch (final IOException e) {
+      return Either.left(createInternalErrorProblemDetail(e, "Failed to read document content"));
     }
     final var validationResponse = validateDocumentMetadata(metadata);
     final var internalMetadata = toInternalDocumentMetadata(metadata, file);
@@ -235,6 +235,15 @@ public class RequestMapper {
           final Supplier<CompletableFuture<BrokerResponseT>> method) {
     return RequestMapper.executeServiceMethod(
         method, ignored -> ResponseEntity.noContent().build());
+  }
+
+  public static Either<ProblemDetail, DeployResourcesRequest> toDeployResourceRequest(
+      final List<MultipartFile> resources, final String tenantId) {
+    try {
+      return Either.right(createDeployResourceRequest(resources, tenantId));
+    } catch (final IOException e) {
+      return Either.left(createInternalErrorProblemDetail(e, "Failed to read resources content"));
+    }
   }
 
   public static Authentication getAuthentication() {
@@ -283,7 +292,7 @@ public class RequestMapper {
   }
 
   private static DocumentMetadataModel toInternalDocumentMetadata(
-      DocumentMetadata metadata, MultipartFile file) {
+      final DocumentMetadata metadata, final MultipartFile file) {
 
     if (metadata == null) {
       return new DocumentMetadataModel(
@@ -302,6 +311,21 @@ public class RequestMapper {
 
     return new DocumentMetadataModel(
         contentType, fileName, expiresAt, metadata.getAdditionalProperties());
+  }
+
+  private static DeployResourcesRequest createDeployResourceRequest(
+      final List<MultipartFile> resources, final String tenantId) throws IOException {
+    final Map<String, byte[]> resourceMap = new HashMap<>();
+    for (final MultipartFile resource : resources) {
+      resourceMap.put(resource.getOriginalFilename(), resource.getBytes());
+    }
+    return new DeployResourcesRequest(resourceMap, tenantId);
+  }
+
+  private static ProblemDetail createInternalErrorProblemDetail(
+      final IOException e, final String message) {
+    return RestErrorMapper.createProblemDetail(
+        HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), message);
   }
 
   private static <R> Map<String, Object> getMapOrEmpty(

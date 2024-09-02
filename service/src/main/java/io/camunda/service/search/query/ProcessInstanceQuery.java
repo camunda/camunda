@@ -10,14 +10,20 @@ package io.camunda.service.search.query;
 import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.filter.ProcessInstanceFilter;
 import io.camunda.service.search.page.SearchQueryPage;
+import io.camunda.service.search.result.ProcessInstanceQueryResultConfig;
+import io.camunda.service.search.result.QueryResultConfig;
+import io.camunda.service.search.result.QueryResultConfigBuilders;
 import io.camunda.service.search.sort.ProcessInstanceSort;
 import io.camunda.service.search.sort.SortOptionBuilders;
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
-public final record ProcessInstanceQuery(
-    ProcessInstanceFilter filter, ProcessInstanceSort sort, SearchQueryPage page)
+public record ProcessInstanceQuery(
+    ProcessInstanceFilter filter,
+    ProcessInstanceSort sort,
+    SearchQueryPage page,
+    QueryResultConfig resultConfig)
     implements TypedSearchQuery<ProcessInstanceFilter, ProcessInstanceSort> {
 
   public static ProcessInstanceQuery of(
@@ -36,6 +42,7 @@ public final record ProcessInstanceQuery(
 
     private ProcessInstanceFilter filter;
     private ProcessInstanceSort sort;
+    private ProcessInstanceQueryResultConfig resultConfig;
 
     public Builder filter(final ProcessInstanceFilter value) {
       filter = value;
@@ -57,6 +64,19 @@ public final record ProcessInstanceQuery(
       return sort(SortOptionBuilders.processInstance(fn));
     }
 
+    public Builder resultConfig(final ProcessInstanceQueryResultConfig value) {
+      resultConfig = value;
+      return this;
+    }
+
+    public Builder resultConfig(
+        final Function<
+                ProcessInstanceQueryResultConfig.Builder,
+                ObjectBuilder<ProcessInstanceQueryResultConfig>>
+            fn) {
+      return resultConfig(QueryResultConfigBuilders.processInstance(fn));
+    }
+
     @Override
     protected Builder self() {
       return this;
@@ -66,7 +86,7 @@ public final record ProcessInstanceQuery(
     public ProcessInstanceQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, EMPTY_SORT);
-      return new ProcessInstanceQuery(filter, sort, page());
+      return new ProcessInstanceQuery(filter, sort, page(), resultConfig);
     }
   }
 }

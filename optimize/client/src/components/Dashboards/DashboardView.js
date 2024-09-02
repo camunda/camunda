@@ -40,7 +40,7 @@ import {
 import {FiltersView} from './filters';
 import {AutoRefreshBehavior, AutoRefreshSelect} from './AutoRefresh';
 import useReportDefinitions from './useReportDefinitions';
-import {ReactComponent as DashboardCopyIcon} from './DashboardCopyIcon.svg';
+import DashboardCopyIcon from './DashboardCopyIcon.svg';
 
 import './DashboardView.scss';
 

@@ -18,6 +18,7 @@ import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.MessageServices;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.ResourceServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -104,5 +105,10 @@ public class CamundaServicesConfiguration {
   @Bean
   public ClockServices clockServices(final CamundaServices camundaServices) {
     return camundaServices.clockServices();
+  }
+
+  @Bean
+  public ResourceServices resourceServices(final CamundaServices camundaServices) {
+    return camundaServices.resourceService();
   }
 }

@@ -46,6 +46,6 @@ public class UserSearchQueryStub implements RequestStub<UserEntity> {
 
   @Override
   public void registerWith(final StubbedCamundaSearchClient client) {
-    client.registerHandler(this);
+    client.registerHandler(this, UserEntity.class);
   }
 }

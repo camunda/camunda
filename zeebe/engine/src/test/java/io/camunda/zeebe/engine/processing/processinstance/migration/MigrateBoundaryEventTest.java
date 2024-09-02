@@ -537,9 +537,9 @@ public class MigrateBoundaryEventTest {
         .contains("Expected to migrate process instance '" + processInstanceKey + "'")
         .contains("active element with id 'A' is mapped to an element with id 'A'")
         .contains(
-            "and has a boundary event with id 'boundary' that is mapped to an element with id 'boundary'")
-        .contains("These mappings detach the boundary event from the element in the target process")
-        .contains("Boundary events must stay attached to the same element instance");
+            "and has a catch event with id 'boundary' that is mapped to a catch event with id 'boundary'")
+        .contains("These mappings detach the catch event from the element in the target process")
+        .contains("Catch events must stay attached to the same element instance");
   }
 
   @Test
@@ -610,11 +610,11 @@ public class MigrateBoundaryEventTest {
         .extracting(Record::getRejectionReason)
         .asString()
         .contains("Expected to migrate process instance '" + processInstanceKey + "'")
-        .contains("active element with id 'A' has a boundary event attached")
-        .contains("boundary event attached that is mapped to a boundary event with id 'boundary3'")
+        .contains("active element with id 'A' has a catch event attached")
+        .contains("catch event attached that is mapped to a catch event with id 'boundary3'")
         .contains(
-            "There are multiple mapping instructions that target this boundary event: 'boundary1', 'boundary2'")
-        .contains("Boundary events cannot be merged by process instance migration")
-        .contains("Please ensure the mapping instructions target a boundary event only once");
+            "There are multiple mapping instructions that target this catch event: 'boundary1', 'boundary2'")
+        .contains("Catch events cannot be merged by process instance migration")
+        .contains("Please ensure the mapping instructions target a catch event only once");
   }
 }

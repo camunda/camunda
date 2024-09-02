@@ -2,5 +2,6 @@
   "printWidth": 100,
   "singleQuote": true,
   "bracketSpacing": false,
-  "trailingComma": "es5"
+  "trailingComma": "es5",
+  "ignore": ["node_modules", "dist", ".eslintrc"]
 }

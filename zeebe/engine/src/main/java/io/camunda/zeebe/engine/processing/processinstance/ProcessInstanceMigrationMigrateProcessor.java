@@ -223,12 +223,14 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
     requireNoEventSubprocessInSource(
-        sourceProcessDefinition, elementInstanceRecord, EnumSet.of(BpmnEventType.MESSAGE));
+        sourceProcessDefinition,
+        elementInstanceRecord,
+        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER));
     requireNoEventSubprocessInTarget(
         targetProcessDefinition,
         targetElementId,
         elementInstanceRecord,
-        EnumSet.of(BpmnEventType.MESSAGE));
+        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER));
     requireNoBoundaryEventInSource(
         sourceProcessDefinition,
         elementInstanceRecord,
@@ -238,14 +240,14 @@ public class ProcessInstanceMigrationMigrateProcessor
         targetElementId,
         elementInstanceRecord,
         EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER));
-    requireMappedBoundaryEventsToStayAttachedToSameElement(
+    requireMappedCatchEventsToStayAttachedToSameElement(
         processInstanceKey,
         sourceProcessDefinition,
         targetProcessDefinition,
         elementId,
         targetElementId,
         sourceElementIdToTargetElementId);
-    requireNoDuplicateTargetsInBoundaryEventMappings(
+    requireNoDuplicateTargetsInCatchEventMappings(
         processInstanceKey, sourceProcessDefinition, elementId, sourceElementIdToTargetElementId);
     requireNoConcurrentCommand(eventScopeInstanceState, elementInstance, processInstanceKey);
 
