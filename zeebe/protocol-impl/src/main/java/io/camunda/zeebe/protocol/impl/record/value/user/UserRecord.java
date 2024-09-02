@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.user;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -17,20 +18,23 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public final class UserRecord extends UnifiedRecordValue implements UserRecordValue {
+  private final LongProperty userKeyProp = new LongProperty("userKey", -1L);
   private final StringProperty usernameProp = new StringProperty("username");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty emailProp = new StringProperty("email", "");
   private final StringProperty passwordProp = new StringProperty("password", "");
 
   public UserRecord() {
-    super(4);
-    declareProperty(usernameProp)
+    super(5);
+    declareProperty(userKeyProp)
+        .declareProperty(usernameProp)
         .declareProperty(nameProp)
         .declareProperty(emailProp)
         .declareProperty(passwordProp);
   }
 
   public void wrap(final UserRecord record) {
+    userKeyProp.setValue(record.getUserKey());
     usernameProp.setValue(record.getUsernameBuffer());
     nameProp.setValue(record.getNameBuffer());
     emailProp.setValue(record.getEmailBuffer());
@@ -44,6 +48,16 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
     copy.emailProp.setValue(BufferUtil.cloneBuffer(getEmailBuffer()));
     copy.passwordProp.setValue(BufferUtil.cloneBuffer(getPasswordBuffer()));
     return copy;
+  }
+
+  @Override
+  public Long getUserKey() {
+    return userKeyProp.getValue();
+  }
+
+  public UserRecord setUserKey(final Long userKey) {
+    userKeyProp.setValue(userKey);
+    return this;
   }
 
   @Override
