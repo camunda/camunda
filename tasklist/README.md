@@ -48,16 +48,17 @@ And then start the spring-boot application under webapp folder in your preferred
 The [docker compose file](/config/docker-compose.yml) is built in an incremental way relying on the /env directory configuration files
 to provide the relevant environment variables for the services. Targeting a top level service will result in all it's dependencies being created.
 There are four configuration bundles:
-  - Base configurations, no suffix
-  - *_identity: Identity with plain authentication configuration
-  - *_oauth: Identity with OAuth configuration
-  - *_mt: Multitenancy configuration with OAuth and Identity
+- Base configurations, no suffix
+- *_identity: Identity with plain authentication configuration
+- *_oauth: Identity with OAuth configuration
+- *_mt: Multitenancy configuration with OAuth and Identity
 
 For example, to start Tasklist with multitenancy configuration:
 
 ```sh
 DATABASE=elasticsearch docker compose -f /config/docker-compose.yml up -d tasklist_mt
 ```
+
 This will result in the creation of all dependencies for the multitenancy configuration. (Zeebe, Elasticsearch, Identity, Postgres, Keycloak and finally Tasklist).
 
 Similar to run Zeebe alone for testing purposes, you can run:
@@ -65,6 +66,7 @@ Similar to run Zeebe alone for testing purposes, you can run:
 ```sh
 DATABASE=elasticsearch docker compose -f /config/docker-compose.yml up -d zeebe_mt
 ```
+
 This will result in all the above dependencies being created, except for Tasklist.
 
 ### Running E2E tests
