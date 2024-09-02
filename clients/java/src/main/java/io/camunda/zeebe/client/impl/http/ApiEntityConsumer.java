@@ -23,6 +23,7 @@ import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.List;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.nio.entity.AbstractBinAsyncEntityConsumer;
 
@@ -47,6 +48,8 @@ import org.apache.hc.core5.http.nio.entity.AbstractBinAsyncEntityConsumer;
  * @param <T> the type of the successful response body
  */
 final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntity<T>> {
+  private static final List<ContentType> SUPPORTED_TEXT_CONTENT_TYPES =
+      Arrays.asList(ContentType.TEXT_XML);
   private final ObjectMapper json;
   private final Class<T> type;
   private final int maxCapacity;
@@ -54,8 +57,7 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
   private NonBlockingByteBufferJsonParser parser;
   private TokenBuffer buffer;
   private int bufferedBytes;
-  private boolean isResponse;
-  private boolean isUnknownContentType;
+  private ResponseType responseType;
   private byte[] nonJsonBody;
 
   ApiEntityConsumer(final ObjectMapper json, final Class<T> type, final int maxCapacity) {
@@ -67,11 +69,14 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
   @Override
   protected void streamStart(final ContentType contentType) throws IOException {
     if (ContentType.APPLICATION_JSON.isSameMimeType(contentType)) {
-      isResponse = true;
+      responseType = ResponseType.JSON;
     } else if (ContentType.APPLICATION_PROBLEM_JSON.isSameMimeType(contentType)) {
-      isResponse = false;
+      responseType = ResponseType.JSON_PROBLEM;
     } else {
-      isUnknownContentType = true;
+      responseType =
+          SUPPORTED_TEXT_CONTENT_TYPES.stream().anyMatch(contentType::isSameMimeType)
+              ? ResponseType.TEXT
+              : ResponseType.UNKNOWN;
       nonJsonBody = new byte[1024];
       return;
     }
@@ -87,13 +92,16 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
       if (nonJsonBody == null || bufferedBytes == 0) {
         return null;
       }
+      if (responseType == ResponseType.TEXT) {
+        return (ApiEntity<T>) ApiEntity.of(new String(nonJsonBody, 0, bufferedBytes));
+      }
 
       return ApiEntity.of(ByteBuffer.wrap(nonJsonBody, 0, bufferedBytes));
     }
 
     buffer.asParserOnFirstToken();
 
-    if (isResponse) {
+    if (responseType == ResponseType.JSON) {
       return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
     }
 
@@ -110,7 +118,7 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
     final int offset = bufferedBytes;
     bufferedBytes += src.remaining();
 
-    if (isUnknownContentType) {
+    if (responseType == ResponseType.TEXT || responseType == ResponseType.UNKNOWN) {
       consumeNonJsonBody(src, offset);
     } else {
       consumeJsonBody(src, endOfStream);
@@ -157,5 +165,12 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
     if (endOfStream) {
       parser.endOfInput();
     }
+  }
+
+  enum ResponseType {
+    JSON,
+    JSON_PROBLEM,
+    TEXT,
+    UNKNOWN
   }
 }
