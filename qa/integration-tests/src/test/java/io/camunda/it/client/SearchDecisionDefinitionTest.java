@@ -61,7 +61,7 @@ public class SearchDecisionDefinitionTest {
   }
 
   @Test
-  void shouldRetrieveByDecisionRequirementsKey() {
+  void shouldRetrieveByDecisionKey() {
     // when
     final long decisionKey = DEPLOYED_DECISIONS.get(0).getDecisionKey();
     final var result =
@@ -74,6 +74,57 @@ public class SearchDecisionDefinitionTest {
     // then
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().get(0)).isEqualTo(toDecisionDefinition(DEPLOYED_DECISIONS.get(0)));
+  }
+
+  @Test
+  void shouldRetrieveDecisionDefinitionWithFullFilter() {
+    // when
+    final Decision decisionDef = DEPLOYED_DECISIONS.get(1);
+    final long decisionKey = decisionDef.getDecisionKey();
+    final String dmnDecisionId = decisionDef.getDmnDecisionId();
+    final String dmnDecisionRequirementsId = decisionDef.getDmnDecisionRequirementsId();
+    final long decisionRequirementsKey = decisionDef.getDecisionRequirementsKey();
+    final String dmnDecisionName = decisionDef.getDmnDecisionName();
+    final int version = decisionDef.getVersion();
+    final String tenantId = decisionDef.getTenantId();
+    final var result =
+        zeebeClient
+            .newDecisionDefinitionQuery()
+            .filter(
+                f ->
+                    f.decisionKey(decisionKey)
+                        .dmnDecisionId(dmnDecisionId)
+                        .decisionRequirementsKey(decisionRequirementsKey)
+                        .dmnDecisionName(dmnDecisionName)
+                        .dmnDecisionRequirementsId(dmnDecisionRequirementsId)
+                        .version(version)
+                        .tenantId(tenantId))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().get(0)).isEqualTo(toDecisionDefinition(decisionDef));
+  }
+
+  @Test
+  void shouldRetrieveDecisionDefinitionWithVersionReverseSorting() {
+    // when
+    final Decision decisionDefV1 = DEPLOYED_DECISIONS.get(1);
+    final Decision decisionDefV2 = DEPLOYED_DECISIONS.get(2);
+    final String dmnDecisionId = decisionDefV1.getDmnDecisionId();
+    final var result =
+        zeebeClient
+            .newDecisionDefinitionQuery()
+            .filter(f -> f.dmnDecisionId(dmnDecisionId))
+            .sort(s -> s.version().desc())
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items().get(0)).isEqualTo(toDecisionDefinition(decisionDefV2));
+    assertThat(result.items().get(1)).isEqualTo(toDecisionDefinition(decisionDefV1));
   }
 
   private static void waitForDecisionsBeingExported() {
