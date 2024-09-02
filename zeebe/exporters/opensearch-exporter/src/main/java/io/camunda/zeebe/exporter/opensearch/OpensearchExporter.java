@@ -17,6 +17,7 @@ import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.Inde
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import org.slf4j.Logger;
@@ -36,6 +37,7 @@ public class OpensearchExporter implements Exporter {
   private OpensearchExporterConfiguration configuration;
   private OpensearchClient client;
   private OpensearchRecordCounters recordCounters;
+  private MeterRegistry meterRegistry;
 
   private long lastPosition = -1;
   private boolean indexTemplatesCreated;
@@ -50,6 +52,7 @@ public class OpensearchExporter implements Exporter {
 
     context.setFilter(new OpensearchRecordFilter(configuration));
     indexTemplatesCreated = false;
+    meterRegistry = context.getMeterRegistry();
   }
 
   @Override
@@ -145,7 +148,7 @@ public class OpensearchExporter implements Exporter {
 
   // TODO: remove this and instead allow client to be inject-able for testing
   protected OpensearchClient createClient() {
-    return new OpensearchClient(configuration);
+    return new OpensearchClient(configuration, meterRegistry);
   }
 
   private void flushAndReschedule() {
