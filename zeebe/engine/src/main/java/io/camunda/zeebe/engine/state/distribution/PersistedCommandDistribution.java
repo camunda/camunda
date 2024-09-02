@@ -12,14 +12,17 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class PersistedCommandDistribution extends UnpackedObject implements DbValue {
 
+  private final StringProperty queueProperty = new StringProperty("queue", "");
   private final EnumProperty<ValueType> valueTypeProperty =
       new EnumProperty<>("valueType", ValueType.class);
   private final IntegerProperty intentProperty = new IntegerProperty("intent", Intent.NULL_VAL);
@@ -27,14 +30,20 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
       new ObjectProperty<>("commandValue", new UnifiedRecordValue(10));
 
   public PersistedCommandDistribution() {
-    super(3);
-    declareProperty(valueTypeProperty)
+    super(4);
+    declareProperty(queueProperty)
+        .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
         .declareProperty(commandValueProperty);
   }
 
   public PersistedCommandDistribution wrap(
       final CommandDistributionRecord commandDistributionRecord) {
+    if (commandDistributionRecord.getQueueId() != null) {
+      queueProperty.setValue(commandDistributionRecord.getQueueId());
+    } else {
+      queueProperty.reset();
+    }
     valueTypeProperty.setValue(commandDistributionRecord.getValueType());
     intentProperty.setValue(commandDistributionRecord.getIntent().value());
 
@@ -46,6 +55,11 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
     commandValueProperty.getValue().wrap(valueBuffer, 0, encodedLength);
 
     return this;
+  }
+
+  public String getQueue() {
+    final var value = BufferUtil.bufferAsString(queueProperty.getValue());
+    return value.isEmpty() ? null : value;
   }
 
   public ValueType getValueType() {
