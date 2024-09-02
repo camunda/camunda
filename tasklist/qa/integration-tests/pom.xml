@@ -619,6 +619,9 @@
                 </goals>
                 <phase>post-integration-test</phase>
                 <configuration>
+                  <environmentVariables>
+                    <DATABASE>opensearch</DATABASE>
+                  </environmentVariables>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
                   <workingDirectory>../../config</workingDirectory>
@@ -683,6 +686,9 @@
                 </goals>
                 <phase>post-integration-test</phase>
                 <configuration>
+                  <environmentVariables>
+                    <DATABASE>elasticsearch</DATABASE>
+                  </environmentVariables>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
                   <workingDirectory>../../config</workingDirectory>
