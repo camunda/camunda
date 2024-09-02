@@ -2497,12 +2497,36 @@ final class JsonSerializableToJsonTest {
         (Supplier<UserRecord>)
             () ->
                 new UserRecord()
+                    .setUserKey(1L)
                     .setUsername("foobar")
                     .setName("Foo Bar")
                     .setEmail("foo@bar")
                     .setPassword("f00b4r"),
         """
         {
+          "userKey": 1,
+          "username": "foobar",
+          "name": "Foo Bar",
+          "email": "foo@bar",
+          "password": "f00b4r"
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////// Empty UserRecord //////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "UserRecord",
+        (Supplier<UserRecord>)
+            () ->
+                new UserRecord()
+                    .setUsername("foobar")
+                    .setName("Foo Bar")
+                    .setEmail("foo@bar")
+                    .setPassword("f00b4r"),
+        """
+        {
+          "userKey": -1,
           "username": "foobar",
           "name": "Foo Bar",
           "email": "foo@bar",
