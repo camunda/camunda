@@ -98,10 +98,10 @@ jobs:
         uses: ./.github/actions/run-maven
         with:
           parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -pl optimize -am
-      - name: Verify optimize/qa/optimize-schema-integrity-tests
+      - name: Verify optimize/qa/schema-integrity-tests
         uses: ./.github/actions/run-maven
         with:
-          parameters: verify -Dskip.docker -Dskip.fe.build -f optimize/qa/optimize-schema-integrity-tests -Pes-schema-integrity-tests
+          parameters: verify -Dskip.docker -Dskip.fe.build -f optimize/qa/schema-integrity-tests -Pes-schema-integrity-tests
         env:
           CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
       - name: Upload Test Results
