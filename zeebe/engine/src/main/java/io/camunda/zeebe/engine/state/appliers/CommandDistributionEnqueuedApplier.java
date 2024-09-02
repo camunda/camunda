@@ -23,6 +23,7 @@ public class CommandDistributionEnqueuedApplier
 
   @Override
   public void applyState(final long key, final CommandDistributionRecord value) {
-    throw new UnsupportedOperationException("Not yet implemented");
+    distributionState.enqueueCommandDistribution(
+        value.getQueueId(), value.getQueueInsertionKey(), key, value.getPartitionId());
   }
 }

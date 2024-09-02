@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.distribution;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -19,6 +20,8 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -35,6 +38,8 @@ import java.util.Set;
  */
 public final class CommandDistributionBehavior {
 
+  private final KeyGenerator keyGenerator;
+  private final DistributionState distributionState;
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
   private final RoutingInfo routingInfo;
@@ -47,14 +52,20 @@ public final class CommandDistributionBehavior {
       new CommandDistributionRecord();
   private final CommandDistributionRecord commandDistributionDistributing =
       new CommandDistributionRecord();
+  private final CommandDistributionRecord commandDistributionEnqueued =
+      new CommandDistributionRecord();
   private final CommandDistributionRecord commandDistributionAcknowledge =
       new CommandDistributionRecord();
 
   public CommandDistributionBehavior(
+      final KeyGenerator keyGenerator,
+      final DistributionState distributionState,
       final Writers writers,
       final int currentPartition,
       final RoutingInfo routingInfo,
       final InterPartitionCommandSender partitionCommandSender) {
+    this.keyGenerator = keyGenerator;
+    this.distributionState = distributionState;
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
     this.routingInfo = routingInfo;
@@ -151,7 +162,39 @@ public final class CommandDistributionBehavior {
         });
   }
 
-  private <T extends UnifiedRecordValue> void distributeToPartition(
+  private void distributeToPartition(
+      final int partition,
+      final CommandDistributionRecord distributionRecord,
+      final long distributionKey) {
+    final var distributionQueue = Optional.ofNullable(distributionRecord.getQueueId());
+    distributionQueue.ifPresent(queue -> enqueueDistribution(queue, partition, distributionKey));
+
+    final var otherQueuedDistributions =
+        distributionQueue
+            .flatMap(queue -> distributionState.nextQueuedDistributionKey(queue, partition))
+            .filter(nextDistributionKey -> nextDistributionKey != distributionKey);
+
+    if (otherQueuedDistributions.isEmpty()) {
+      startDistributing(partition, distributionRecord, distributionKey);
+    }
+  }
+
+  private void enqueueDistribution(
+      final String queue, final int partition, final long distributionKey) {
+    // Generate a new key to insert at the end of the queue
+    final var newInsertion = keyGenerator.nextKey();
+
+    commandDistributionEnqueued.reset();
+    stateWriter.appendFollowUpEvent(
+        distributionKey,
+        CommandDistributionIntent.ENQUEUED,
+        commandDistributionEnqueued
+            .setQueueId(queue)
+            .setPartitionId(partition)
+            .setQueueInsertionKey(newInsertion));
+  }
+
+  private void startDistributing(
       final int partition,
       final CommandDistributionRecord distributionRecord,
       final long distributionKey) {

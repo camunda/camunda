@@ -114,6 +114,8 @@ public final class EngineProcessors {
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
+            processingState.getKeyGenerator(),
+            processingState.getDistributionState(),
             writers,
             typedRecordProcessorContext.getPartitionId(),
             routingInfo,
@@ -191,6 +193,7 @@ public final class EngineProcessors {
         processingState,
         commandDistributionBehavior);
     addCommandDistributionProcessors(
+        commandDistributionBehavior,
         typedRecordProcessors,
         writers,
         processingState,
@@ -399,6 +402,7 @@ public final class EngineProcessors {
   }
 
   private static void addCommandDistributionProcessors(
+      final CommandDistributionBehavior commandDistributionBehavior,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final ProcessingState processingState,
@@ -412,7 +416,7 @@ public final class EngineProcessors {
 
     final var commandDistributionAcknowledgeProcessor =
         new CommandDistributionAcknowledgeProcessor(
-            processingState.getDistributionState(), writers);
+            commandDistributionBehavior, processingState.getDistributionState(), writers);
     typedRecordProcessors.onCommand(
         ValueType.COMMAND_DISTRIBUTION,
         CommandDistributionIntent.ACKNOWLEDGE,
