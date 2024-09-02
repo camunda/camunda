@@ -9,6 +9,7 @@ package io.camunda.zeebe.db.impl;
 
 import io.camunda.zeebe.db.ContainsForeignKeys;
 import io.camunda.zeebe.db.DbKey;
+import io.camunda.zeebe.db.DbValue;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -16,7 +17,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 public final class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends DbKey>
-    implements DbKey, ContainsForeignKeys {
+    implements DbKey, DbValue, ContainsForeignKeys {
   final FirstKeyType first;
   final SecondKeyType second;
   final Collection<DbForeignKey<DbKey>> containedForeignKeys;
@@ -62,10 +63,10 @@ public final class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType exte
   private static Collection<DbForeignKey<DbKey>> collectContainedForeignKeys(
       final DbKey first, final DbKey second) {
     final var result = new ArrayList<DbForeignKey<DbKey>>();
-    if (first instanceof ContainsForeignKeys firstForeignKeyProvider) {
+    if (first instanceof final ContainsForeignKeys firstForeignKeyProvider) {
       result.addAll(firstForeignKeyProvider.containedForeignKeys());
     }
-    if (second instanceof ContainsForeignKeys secondForeignKeyProvider) {
+    if (second instanceof final ContainsForeignKeys secondForeignKeyProvider) {
       result.addAll(secondForeignKeyProvider.containedForeignKeys());
     }
     return Collections.unmodifiableList(result);

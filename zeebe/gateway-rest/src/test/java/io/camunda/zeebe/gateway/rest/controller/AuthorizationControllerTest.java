@@ -54,7 +54,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   void createAuthorizationShouldReturnNoContent() {
     final var request =
         new AuthorizationAssignRequest()
-            .ownerKey("1")
+            .ownerKey(1L)
             .ownerType(OwnerTypeEnum.USER)
             .resourceKey("2")
             .resourceType("resourceType")
@@ -99,7 +99,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   void createAuthorizationThrowsExceptionWhenServiceThrowsException() {
     final var request =
         new AuthorizationAssignRequest()
-            .ownerKey("1")
+            .ownerKey(1L)
             .ownerType(OwnerTypeEnum.USER)
             .resourceKey("2")
             .resourceType("resourceType")
@@ -170,15 +170,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             "No ownerKey provided."),
         Arguments.of(
             new AuthorizationAssignRequest()
-                .ownerKey("   ")
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceKey("2")
-                .resourceType("resourceType")
-                .permissions(null),
-            "No ownerKey provided."),
-        Arguments.of(
-            new AuthorizationAssignRequest()
-                .ownerKey("1")
+                .ownerKey(1L)
                 .ownerType(null)
                 .resourceKey("2")
                 .resourceType("resourceType")
@@ -186,7 +178,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             "No ownerType provided."),
         Arguments.of(
             new AuthorizationAssignRequest()
-                .ownerKey("1")
+                .ownerKey(1L)
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceKey(null)
                 .resourceType("resourceType")
@@ -194,7 +186,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             "No resourceKey provided."),
         Arguments.of(
             new AuthorizationAssignRequest()
-                .ownerKey("1")
+                .ownerKey(1L)
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceKey("    ")
                 .resourceType("resourceType")
@@ -202,7 +194,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             "No resourceKey provided."),
         Arguments.of(
             new AuthorizationAssignRequest()
-                .ownerKey("1")
+                .ownerKey(1L)
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceKey("2")
                 .resourceType(null)
@@ -210,7 +202,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             "No resourceType provided."),
         Arguments.of(
             new AuthorizationAssignRequest()
-                .ownerKey("1")
+                .ownerKey(1L)
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceKey("2")
                 .resourceType("    ")
