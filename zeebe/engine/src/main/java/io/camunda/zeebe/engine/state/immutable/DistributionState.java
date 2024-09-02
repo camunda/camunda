@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import java.util.Optional;
 
 public interface DistributionState {
 
@@ -50,6 +51,22 @@ public interface DistributionState {
    * @param visitor Each pending distribution is visited by this visitor
    */
   void foreachPendingDistribution(PendingDistributionVisitor visitor);
+
+  /**
+   * Returns the distribution key at the head of the queue for the given partition.
+   *
+   * @param queue the queue to look up
+   * @param partition the partition id within the queue
+   * @return the distribution key at the head of the queues or an empty optional if there is no
+   *     queued distribution for that queue and partition.
+   */
+  Optional<Long> nextQueuedDistributionKey(String queue, int partition);
+
+  /**
+   * Returns the queue for the given distribution or an empty optional if this distribution was not
+   * queued.
+   */
+  Optional<String> queueForDistribution(long distributionKey);
 
   /** This visitor can visit pending distributions of {@link CommandDistributionRecord}. */
   @FunctionalInterface

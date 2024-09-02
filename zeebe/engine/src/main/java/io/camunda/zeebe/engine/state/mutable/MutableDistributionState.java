@@ -43,4 +43,21 @@ public interface MutableDistributionState extends DistributionState {
    * @param partition the partition of the pending distribution that will be removed
    */
   void removePendingDistribution(final long distributionKey, final int partition);
+
+  /**
+   * Adds a distribution to the given queue for the given partition,
+   *
+   * @param queue the queue to which the distribution should be added
+   * @param insertionKey typically a newly generated key. Determines the queue position.
+   * @param distributionKey the key of the distribution
+   * @param partition the partition for which the distribution is queued
+   */
+  void enqueueCommandDistribution(
+      final String queue, final long insertionKey, final long distributionKey, final int partition);
+
+  /**
+   * Removes the first queued distribution from the given queue or does nothing if the queue is
+   * empty
+   */
+  void popQueuedDistribution(String queue, int partitionId);
 }
