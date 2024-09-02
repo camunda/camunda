@@ -87,7 +87,24 @@ public final class CommandDistributionBehavior {
    */
   public <T extends UnifiedRecordValue> void distributeCommand(
       final long distributionKey, final TypedRecord<T> command) {
-    distributeCommand(distributionKey, command, routingInfo.partitions());
+    distributeCommand(null, distributionKey, command);
+  }
+
+  /**
+   * Distributes a command to all other partitions.
+   *
+   * @param distributionKey the key to identify this unique command distribution. The key used for
+   *     three purposes: storing the pending distribution as the key of distributed command,
+   *     identifying for the distributed command's partition, and correlating the ACKNOWLEDGE
+   *     command to the pending distribution. This can be a newly generated key, or the key
+   *     identifying the entity that's being distributed. Please note that it must be unique for
+   *     command distribution. Don't reuse the key to distribute another command until the previous
+   *     command distribution has been completed.
+   * @param command the command to distribute
+   */
+  public <T extends UnifiedRecordValue> void distributeCommand(
+      final String queue, final long distributionKey, final TypedRecord<T> command) {
+    distributeCommand(queue, distributionKey, command, routingInfo.partitions());
   }
 
   /**
@@ -106,7 +123,30 @@ public final class CommandDistributionBehavior {
    */
   public <T extends UnifiedRecordValue> void distributeCommand(
       final long distributionKey, final TypedRecord<T> command, final Set<Integer> partitions) {
+    distributeCommand(null, distributionKey, command, partitions);
+  }
+
+  /**
+   * Distributes a command to the specified partitions.
+   *
+   * @param distributionKey the key to identify this unique command distribution. The key is used to
+   *     store the pending distribution, as the key of distributed command, to identify the
+   *     distributing partition when processing the distributed command, and as the key to correlate
+   *     the ACKNOWLEDGE command to the pending distribution. This can be a newly generated key, or
+   *     the key identifying the entity that's being distributed. Please note that it must be unique
+   *     for command distribution. Don't reuse the key to distribute another command. Don't reuse
+   *     the key to distribute another command until the previous command distribution has been
+   *     completed.
+   * @param command the command to distribute
+   * @param partitions the partitions to distribute the command to
+   */
+  public <T extends UnifiedRecordValue> void distributeCommand(
+      final String queue,
+      final long distributionKey,
+      final TypedRecord<T> command,
+      final Set<Integer> partitions) {
     distributeCommand(
+        queue,
         distributionKey,
         command.getValueType(),
         command.getIntent(),
@@ -136,6 +176,34 @@ public final class CommandDistributionBehavior {
       final Intent intent,
       final T value,
       final Set<Integer> partitions) {
+    distributeCommand(null, distributionKey, valueType, intent, value, partitions);
+  }
+
+  /**
+   * Distributes a command to the specified partitions.
+   *
+   * @param distributionKey the key to identify this unique command distribution. The key is used to
+   *     store the pending distribution, as the key of distributed command, to identify the
+   *     distributing partition when processing the distributed command, and as the key to correlate
+   *     the ACKNOWLEDGE command to the pending distribution. This can be a newly generated key, or
+   *     the key identifying the entity that's being distributed. Please note that it must be unique
+   *     for command distribution. Don't reuse the key to distribute another command. Don't reuse
+   *     the key to distribute another command until the previous command distribution has been
+   *     completed.
+   * @param queue the queue to distribute the command to or null if the distribution can be
+   *     unordered.
+   * @param valueType the type of the command to distribute
+   * @param intent the intent of the command to distribute
+   * @param value the value of the command to distribute
+   * @param partitions the partitions to distribute the command to
+   */
+  public <T extends UnifiedRecordValue> void distributeCommand(
+      final String queue,
+      final long distributionKey,
+      final ValueType valueType,
+      final Intent intent,
+      final T value,
+      final Set<Integer> partitions) {
     if (partitions.isEmpty()
         || (partitions.size() == 1 && partitions.contains(currentPartitionId))) {
       return;
@@ -145,6 +213,7 @@ public final class CommandDistributionBehavior {
 
     final var distributionRecord =
         commandDistributionStarted
+            .setQueueId(queue)
             .setPartitionId(currentPartitionId)
             .setValueType(valueType)
             .setIntent(intent)
