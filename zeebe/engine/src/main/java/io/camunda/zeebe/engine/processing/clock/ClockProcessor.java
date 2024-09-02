@@ -55,7 +55,7 @@ public final class ClockProcessor implements DistributedTypedRecordProcessor<Clo
       responseWriter.writeEventOnCommand(eventKey, resultIntent, clockRecord, command);
     }
 
-    commandDistributionBehavior.distributeCommand(eventKey, command);
+    commandDistributionBehavior.withKey(eventKey).distribute(command);
   }
 
   @Override

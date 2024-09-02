@@ -64,7 +64,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -541,12 +540,13 @@ public class ProcessInstanceMigrationMigrateProcessor
       commandWriter.appendFollowUpCommand(
           distributionKey, MessageSubscriptionIntent.MIGRATE, messageSubscription);
     } else {
-      commandDistributionBehavior.distributeCommand(
-          distributionKey,
-          ValueType.MESSAGE_SUBSCRIPTION,
-          MessageSubscriptionIntent.MIGRATE,
-          messageSubscription,
-          Set.of(processMessageSubscriptionRecord.getSubscriptionPartitionId()));
+      commandDistributionBehavior
+          .withKey(distributionKey)
+          .forPartition(processMessageSubscriptionRecord.getSubscriptionPartitionId())
+          .distribute(
+              ValueType.MESSAGE_SUBSCRIPTION,
+              MessageSubscriptionIntent.MIGRATE,
+              messageSubscription);
     }
   }
 

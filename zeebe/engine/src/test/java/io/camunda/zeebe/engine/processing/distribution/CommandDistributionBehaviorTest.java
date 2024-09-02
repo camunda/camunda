@@ -91,7 +91,7 @@ class CommandDistributionBehaviorTest {
             mockInterpartitionCommandSender);
 
     // when distributing to all partitions
-    behavior.distributeCommand(key, command);
+    behavior.withKey(key).distribute(command);
 
     // then no command distribution is started
     Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords()).isEmpty();
@@ -114,7 +114,7 @@ class CommandDistributionBehaviorTest {
             mockInterpartitionCommandSender);
 
     // when distributing to all partitions
-    behavior.distributeCommand(key, command);
+    behavior.withKey(key).distribute(command);
 
     // then command distribution is started on partition 1 and distributing to all other partitions
     Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
@@ -151,7 +151,7 @@ class CommandDistributionBehaviorTest {
             mockInterpartitionCommandSender);
 
     // when distributing to partitions 1 and 3
-    behavior.distributeCommand(key, command, Set.of(1, 3));
+    behavior.withKey(key).forPartitions(Set.of(1, 3)).distribute(command);
 
     // then command distribution is started on partition 2 and distributing to all other partitions
     Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
