@@ -255,6 +255,11 @@ public final class SearchQueryRequestMapper {
       if (filter.getPriority() != null) {
         builder.priority(mapPriorityFilter(filter.getPriority()));
       }
+
+      // variableFilters
+      if (filter.getVariables()!= null) {
+        builder.variable(toVariableValueFilter(filter.getVariables()));
+      }
     }
 
     return builder.build();

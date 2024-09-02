@@ -41,6 +41,8 @@ public final class SearchClientBasedQueryExecutor {
     final var transformer = getSearchQueryRequestTransformer(query);
     final var searchRequest = transformer.applyWithAuthentication(query, authCheck);
 
+    System.out.println(searchRequest.query().toString());
+
     final SearchQueryResultTransformer<R> responseTransformer = getSearchResultTransformer();
     return searchClient
         .search(searchRequest, documentClass)

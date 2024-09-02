@@ -14,6 +14,7 @@ import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchConstantScoreQuery;
 import io.camunda.search.clients.query.SearchExistsQuery;
 import io.camunda.search.clients.query.SearchHasChildQuery;
+import io.camunda.search.clients.query.SearchHasParentQuery;
 import io.camunda.search.clients.query.SearchIdsQuery;
 import io.camunda.search.clients.query.SearchMatchAllQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
@@ -31,6 +32,7 @@ import io.camunda.search.es.transformers.query.BoolQueryTransformer;
 import io.camunda.search.es.transformers.query.ConstantScoreQueryTransformer;
 import io.camunda.search.es.transformers.query.ExistsQueryTransformer;
 import io.camunda.search.es.transformers.query.HasChildQueryTransformer;
+import io.camunda.search.es.transformers.query.HasParentQueryTransformer;
 import io.camunda.search.es.transformers.query.IdsQueryTransformer;
 import io.camunda.search.es.transformers.query.MatchAllQueryTransformer;
 import io.camunda.search.es.transformers.query.MatchNoneQueryTransformer;
@@ -88,6 +90,7 @@ public final class ElasticsearchTransformers {
     mappers.put(SearchTermQuery.class, new TermQueryTransformer(mappers));
     mappers.put(SearchTermsQuery.class, new TermsQueryTransformer(mappers));
     mappers.put(SearchWildcardQuery.class, new WildcardQueryTransformer(mappers));
+    mappers.put(SearchHasParentQuery.class, new HasParentQueryTransformer(mappers));
 
     // sort
     mappers.put(SearchSortOptions.class, new SortOptionsTransformer(mappers));

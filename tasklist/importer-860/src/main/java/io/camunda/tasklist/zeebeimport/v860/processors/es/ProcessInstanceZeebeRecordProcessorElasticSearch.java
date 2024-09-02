@@ -22,6 +22,7 @@ import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.templates.TasklistTaskVariableSnapshotTemplate;
+import io.camunda.tasklist.store.TaskVariableSnapshotStore;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.ProcessInstanceRecordValueImpl;
@@ -50,10 +51,8 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ProcessInstanceZeebeRecordProcessorElasticSearch.class);
-
   private static final Set<String> FLOW_NODE_STATES = new HashSet<>();
   private static final Set<String> PROCESS_INSTANCE_STATES = new HashSet<>();
-
   private static final List<BpmnElementType> VARIABLE_SCOPE_TYPES =
       Arrays.asList(
           BpmnElementType.PROCESS,
@@ -69,6 +68,8 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
     PROCESS_INSTANCE_STATES.add(ELEMENT_TERMINATED.name());
   }
 
+  @Autowired
+  TaskVariableSnapshotStore taskVariableSnapshotStore;
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
@@ -88,10 +89,10 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
       final FlowNodeInstanceEntity flowNodeInstance = createFlowNodeInstance(record);
       bulkRequest.add(getFlowNodeInstanceQuery(flowNodeInstance));
 
-      final UpdateRequest processUserTaskAndProcessListView = persistSnapshot(flowNodeInstance);
+      final UpdateRequest processUserTaskAndProcessListView = persistFlowNodeData(flowNodeInstance);
 
       if (processUserTaskAndProcessListView != null) {
-        bulkRequest.add(persistSnapshot(flowNodeInstance));
+        bulkRequest.add(persistFlowNodeData(flowNodeInstance));
       }
     }
 
@@ -188,7 +189,7 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
     return bpmnElementType.equals(type);
   }
 
-  private UpdateRequest persistSnapshot(final FlowNodeInstanceEntity flowNodeInstance)
+  private UpdateRequest persistFlowNodeData(final FlowNodeInstanceEntity flowNodeInstance)
       throws PersistenceException {
     final TaskVariableSnapshotEntity entity = new TaskVariableSnapshotEntity();
 
@@ -199,14 +200,14 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
       entity.setJoin(joinField);
       entity.setDataType(String.valueOf(FlowNodeType.PROCESS));
       return getUpdateRequest(flowNodeInstance, entity, null);
-    } else if (flowNodeInstance.getType().equals(FlowNodeType.SUB_PROCESS)) {
-      entity.setId(flowNodeInstance.getId());
-      joinField.put("name", "task");
-      joinField.put("parent", flowNodeInstance.getProcessInstanceId());
-      entity.setDataType(String.valueOf(FlowNodeType.SUB_PROCESS));
-      entity.setJoin(joinField);
-      return getUpdateRequest(flowNodeInstance, entity, flowNodeInstance.getProcessInstanceId());
-    } else {
+    } else if(flowNodeInstance.getType().equals(FlowNodeType.USER_TASK)){
+        entity.setId(flowNodeInstance.getId());
+        joinField.put("name", "task");
+        joinField.put("parent", flowNodeInstance.getProcessInstanceId());
+        entity.setJoin(joinField);
+        return getUpdateRequest(flowNodeInstance, entity, flowNodeInstance.getProcessInstanceId());
+    }
+    else {
       return null;
     }
   }

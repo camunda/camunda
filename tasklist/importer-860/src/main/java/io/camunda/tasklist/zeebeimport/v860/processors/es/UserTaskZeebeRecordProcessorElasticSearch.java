@@ -101,6 +101,7 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     Optional.ofNullable(taskEntity.getProcessInstanceId())
         .ifPresent(snapshot::setProcessInstanceId);
     Optional.ofNullable(taskEntity.getFlowNodeBpmnId()).ifPresent(snapshot::setTaskId);
+    Optional.ofNullable(taskEntity.getFlowNodeBpmnId()).ifPresent(snapshot::setFlowNodeBpmnId);
     Optional.of(taskEntity.getKey()).ifPresent(snapshot::setKey);
     Optional.of(taskEntity.getPartitionId()).ifPresent(snapshot::setPartitionId);
     Optional.ofNullable(taskEntity.getCompletionTime())
@@ -125,11 +126,7 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     Optional.ofNullable(taskEntity.getFormKey()).ifPresent(snapshot::setFormKey);
     Optional.ofNullable(taskEntity.getState()).ifPresent(snapshot::setState);
 
-    final Map<String, Object> joinField = new HashMap<>();
-    joinField.put("name", "task");
-    joinField.put("parent", taskEntity.getProcessInstanceId());
     snapshot.setDataType(String.valueOf(FlowNodeType.USER_TASK));
-    snapshot.setJoin(joinField);
     return snapshot;
   }
 

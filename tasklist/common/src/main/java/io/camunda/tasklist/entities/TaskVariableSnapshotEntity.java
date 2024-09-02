@@ -114,6 +114,7 @@ public class TaskVariableSnapshotEntity {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String dataType;
 
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Map<String, Object> join; // Add this field
 
   public String getId() {

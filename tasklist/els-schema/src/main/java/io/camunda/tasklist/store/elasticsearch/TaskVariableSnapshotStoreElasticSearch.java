@@ -11,6 +11,7 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.templates.TasklistTaskVariableSnapshotTemplate;
 import io.camunda.tasklist.store.TaskVariableSnapshotStore;
