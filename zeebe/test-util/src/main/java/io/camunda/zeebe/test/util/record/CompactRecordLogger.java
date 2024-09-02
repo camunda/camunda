@@ -824,7 +824,7 @@ public class CompactRecordLogger {
     final var targetPartitionWord =
         switch (intent) {
           case STARTED, FINISHED -> "on";
-          case DISTRIBUTING -> "to";
+          case DISTRIBUTING, ENQUEUED -> "to";
           case ACKNOWLEDGE, ACKNOWLEDGED -> "for";
         };
 
