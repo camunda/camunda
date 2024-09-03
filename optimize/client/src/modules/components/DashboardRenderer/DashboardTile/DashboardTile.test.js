@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import DashboardTile from './DashboardTile';
 
@@ -40,17 +40,19 @@ const props = {
 it('should render optional addons', () => {
   const TextRenderer = ({children}) => <p>{children}</p>;
 
-  const node = mount(
+  const node = shallow(
     <DashboardTile {...props} addons={[<TextRenderer>I am an addon!</TextRenderer>]} />
   );
 
-  expect(node).toIncludeText('I am an addon!');
+  expect(node.find('OptimizeReportTile').dive().find('TextRenderer')).toExist();
 });
 
 it('should pass properties to tile addons', () => {
   const PropsRenderer = (props) => <p>{JSON.stringify(Object.keys(props))}</p>;
 
-  const node = mount(<DashboardTile {...props} addons={[<PropsRenderer key="propsRenderer" />]} />);
+  const node = shallow(
+    <DashboardTile {...props} addons={[<PropsRenderer key="propsRenderer" />]} />
+  );
 
-  expect(node).toIncludeText('tile');
+  expect(node.find('OptimizeReportTile').dive().find('PropsRenderer').dive()).toIncludeText('tile');
 });
