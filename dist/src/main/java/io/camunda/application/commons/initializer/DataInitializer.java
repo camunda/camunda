@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -22,11 +23,15 @@ import org.springframework.stereotype.Component;
 public class DataInitializer implements ApplicationListener<ApplicationReadyEvent> {
   private static final Logger LOGGER = LoggerFactory.getLogger("io.camunda.application");
   private final UserServices<UserRecord> userServices;
+  private final PasswordEncoder passwordEncoder;
   private final InitDataProperties initDataProperties;
 
   public DataInitializer(
-      final UserServices<UserRecord> userServices, final InitDataProperties initDataProperties) {
+      final UserServices<UserRecord> userServices,
+      final PasswordEncoder passwordEncoder,
+      final InitDataProperties initDataProperties) {
     this.userServices = userServices;
+    this.passwordEncoder = passwordEncoder;
     this.initDataProperties = initDataProperties;
   }
 
@@ -56,7 +61,7 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
                                 usersRequest.getEmail() != null
                                     ? usersRequest.getEmail()
                                     : usersRequest.getUsername(),
-                                usersRequest.getPassword()));
+                                passwordEncoder.encode(usersRequest.getPassword())));
               });
     } catch (final Exception e) {
       LOGGER.error("Default user creation has failed.", e);
