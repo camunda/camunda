@@ -944,6 +944,41 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+
+  /messages/pubblication:
+    post:
+      tags:
+        - Message
+      summary: Publish a message
+      description: |
+        Publishes a single message. Messages are published to specific partitions computed from
+        their correlation keys. The endpoint does not wait for a correlation result.
+        Use the message correlation endpoint for such use cases.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessagePublicationRequest"
+      responses:
+        "200":
+          description: The message was published.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessagePublicationResponse"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: Internal Server Error.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /messages/correlation:
     post:
       tags:
@@ -989,6 +1024,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+
   /documents:
     post:
       tags:
@@ -2423,6 +2459,7 @@ components:
           type: string
         tenantId:
           type: string
+
     MessageCorrelationRequest:
       type: object
       properties:
@@ -2460,6 +2497,51 @@ components:
           description: The key of the first process instance the message correlated with
           type: integer
           format: int64
+    MessagePublicationRequest:
+      type: object
+      properties:
+        name:
+          description: The name of the message.
+          type: string
+        correlationKey:
+          description: The correlation key of the message.
+          type: string
+          default: ""
+        timeToLive:
+          description: Timespan (in ms) to buffer the message on the broker.
+          type: integer
+          format: int64
+        messageId:
+          description: |
+            The unique ID of the message. Only useful to ensure only one message with the given ID
+            will ever be published (during its lifetime).
+          type: string
+          nullable: true
+        variables:
+          description: The message variables as JSON document.
+          additionalProperties: true
+          type: object
+          nullable: true
+        tenantId:
+          description: The tenant of the message sender.
+          type: string
+          nullable: true
+      required:
+        - name
+        - correlationKey
+        - timeToLive
+    MessagePublicationResponse:
+      description: The message key of the published message.
+      type: object
+      properties:
+        key:
+          description: The key of the message
+          type: integer
+          format: int64
+        tenantId:
+          description: The tenant ID of the message.
+          type: string
+
     PriorityValueFilter:
       type: object
       properties:
