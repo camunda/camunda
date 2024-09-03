@@ -52,7 +52,7 @@ public final class AuthorizationClient {
       authorizationCreationRecord = new AuthorizationRecord();
     }
 
-    public AuthorizationCreationClient withOwnerKey(final String ownerKey) {
+    public AuthorizationCreationClient withOwnerKey(final Long ownerKey) {
       authorizationCreationRecord.setOwnerKey(ownerKey);
       return this;
     }

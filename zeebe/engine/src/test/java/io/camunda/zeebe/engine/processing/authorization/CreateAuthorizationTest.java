@@ -15,16 +15,14 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
-import java.util.UUID;
 import org.assertj.core.api.Assertions;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.jupiter.api.DisplayName;
 
 public class CreateAuthorizationTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -35,13 +33,13 @@ public class CreateAuthorizationTest {
   @Test
   public void shouldCreateAuthorization() {
     // when
-    final var owner = "owner" + UUID.randomUUID();
+    final var ownerKey = 1L;
     final var permissions = List.of("write:*");
     final var createdAuthorizationRecord =
-        ENGINE
+        engine
             .authorization()
             .newAuthorization()
-            .withOwnerKey(owner)
+            .withOwnerKey(ownerKey)
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceKey("resource")
             .withResourceType("bpmn-id")
@@ -52,7 +50,7 @@ public class CreateAuthorizationTest {
     final var createdAuthorization = createdAuthorizationRecord.getValue();
     Assertions.assertThat(createdAuthorization)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("ownerKey", owner)
+        .hasFieldOrPropertyWithValue("ownerKey", ownerKey)
         .hasFieldOrPropertyWithValue("ownerType", AuthorizationOwnerType.USER)
         .hasFieldOrPropertyWithValue("resourceKey", "resource")
         .hasFieldOrPropertyWithValue("resourceType", "bpmn-id")
@@ -64,13 +62,13 @@ public class CreateAuthorizationTest {
   @Test
   public void shouldNotDuplicate() {
     // given
-    final var owner = "owner" + UUID.randomUUID();
+    final var ownerKey = 1L;
     final var permissions = List.of("write:*");
     final var createdAuthorizationRecord =
-        ENGINE
+        engine
             .authorization()
             .newAuthorization()
-            .withOwnerKey(owner)
+            .withOwnerKey(1L)
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceKey("resource")
             .withResourceType("bpmn-id")
@@ -78,10 +76,10 @@ public class CreateAuthorizationTest {
             .create();
     // when
     final var duplicatedAuthorizationRecord =
-        ENGINE
+        engine
             .authorization()
             .newAuthorization()
-            .withOwnerKey(owner)
+            .withOwnerKey(ownerKey)
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceKey("resource")
             .withResourceType("bpmn-id")
@@ -92,12 +90,12 @@ public class CreateAuthorizationTest {
     final var createdAuthorization = createdAuthorizationRecord.getValue();
     Assertions.assertThat(createdAuthorization)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("ownerKey", owner);
+        .hasFieldOrPropertyWithValue("ownerKey", ownerKey);
 
     assertThat(duplicatedAuthorizationRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
             "Expected to create authorization with owner key: %s and resource key %s, but an authorization with these values already exists"
-                .formatted(owner, "resource"));
+                .formatted(ownerKey, "resource"));
   }
 }

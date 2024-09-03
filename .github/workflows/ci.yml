@@ -444,7 +444,7 @@ jobs:
         run: yarn test:ci
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
         with:
           name: unit-tests-frontend-junit
           path: |
@@ -479,10 +479,10 @@ jobs:
         uses: ./.github/actions/run-maven
         with:
           parameters: -f optimize/pom.xml test -Dskip.fe.build -Dskip.docker
-          threads: 1C
+          threads: .5C
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
         with:
           name: unit-tests-backend-junit
           path: |
@@ -504,6 +504,12 @@ jobs:
     timeout-minutes: 10
     needs: [detect-changes]
     runs-on: ubuntu-latest
+    env:
+      # set the comparison based on the type of workflow trigger:
+      #   - for PRs, we use the last commit of the base
+      #   - for merge queues, we use the last commit of the target merge queue
+      #   - for a push, we use the last commit before the push
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.push.before }}
     if: |
       needs.detect-changes.outputs.protobuf-changes == 'true'
     steps:
@@ -532,6 +538,7 @@ jobs:
           push: false
           archive: false
           breaking: true
+          breaking_against: '${{ github.event.repository.clone_url }}#format=git,commit=${{ env.BASE_SHA }}'
       - name: Observe build status
         if: always()
         continue-on-error: true

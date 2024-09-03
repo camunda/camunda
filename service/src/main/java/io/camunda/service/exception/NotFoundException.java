@@ -5,13 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.plugin.search.header;
+package io.camunda.service.exception;
 
-/**
- * An object that represents HTTP header that is supposed to be added to a search database HTTP
- * call.
- *
- * @param key - HTTP header key
- * @param value - HTTP header value
- */
-public record CustomHeader(String key, String value) {}
+import io.camunda.service.CamundaServiceException;
+
+public class NotFoundException extends CamundaServiceException {
+
+  public NotFoundException(String message) {
+    super(message);
+  }
+}

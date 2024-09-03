@@ -19,7 +19,7 @@ public class IncidentSearchQueryStub implements RequestStub<IncidentEntity> {
 
   @Override
   public void registerWith(final StubbedCamundaSearchClient client) {
-    client.registerHandler(this);
+    client.registerHandler(this, IncidentEntity.class);
   }
 
   @Override

@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAct
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -50,7 +51,9 @@ public final class ProcessInstanceMigrationPreconditions {
           BpmnElementType.RECEIVE_TASK,
           BpmnElementType.EVENT_SUB_PROCESS,
           BpmnElementType.EXCLUSIVE_GATEWAY,
-          BpmnElementType.BUSINESS_RULE_TASK);
+          BpmnElementType.EVENT_BASED_GATEWAY,
+          BpmnElementType.BUSINESS_RULE_TASK,
+          BpmnElementType.SCRIPT_TASK);
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.complementOf(SUPPORTED_ELEMENT_TYPES);
   private static final Set<BpmnEventType> SUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPES =
@@ -137,13 +140,13 @@ public final class ProcessInstanceMigrationPreconditions {
       Expected to migrate process instance '%s' \
       but target element with id '%s' has one or more boundary events of types '%s'. \
       Migrating target elements with boundary events of these types is not possible yet.""";
-  private static final String ERROR_BOUNDARY_EVENT_DETACHED =
+  private static final String ERROR_CATCH_EVENT_DETACHED_FROM_ELEMENT =
       """
       Expected to migrate process instance '%s' \
       but active element with id '%s' is mapped to an element with id '%s' and \
-      has a boundary event with id '%s' that is mapped to an element with id '%s'. \
-      These mappings detach the boundary event from the element in the target process. \
-      Boundary events must stay attached to the same element instance.""";
+      has a catch event with id '%s' that is mapped to a catch event with id '%s'. \
+      These mappings detach the catch event from the element in the target process. \
+      Catch events must stay attached to the same element instance.""";
   private static final String ERROR_PENDING_DISTRIBUTION =
       """
       Expected to migrate process instance '%s' \
@@ -631,7 +634,23 @@ public final class ProcessInstanceMigrationPreconditions {
     }
   }
 
-  public static void requireMappedBoundaryEventsToStayAttachedToSameElement(
+  /**
+   * It should not be possible for a mapped element's catch events to be moved to another element.
+   * This would mean an element instance is subscribed to a catch event that does not belong to this
+   * element. Triggering the catch event could lead to unexpected behavior.
+   *
+   * <p>To avoid this, we check each catch event of the source element and ensure that they are
+   * mapped to a catch event on the target element. This check includes all catch events like
+   * boundary events, intermediate catch events, and start events (e.g. from event-subprocesses).
+   *
+   * @param processInstanceKey process instance key to be logged
+   * @param sourceProcessDefinition source process definition to check
+   * @param targetProcessDefinition target process definition to check
+   * @param sourceElementId source element id to check
+   * @param targetElementId target element id to check
+   * @param sourceElementIdToTargetElementId mapping instructions (source element id to target
+   */
+  public static void requireMappedCatchEventsToStayAttachedToSameElement(
       final long processInstanceKey,
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
@@ -639,34 +658,34 @@ public final class ProcessInstanceMigrationPreconditions {
       final String targetElementId,
       final Map<String, String> sourceElementIdToTargetElementId) {
     final var sourceElement = sourceProcessDefinition.getProcess().getElementById(sourceElementId);
-    if (!(sourceElement instanceof final ExecutableCatchEventSupplier sourceElementWithEvents)) {
+    if (!(sourceElement instanceof final ExecutableCatchEventSupplier sourceCatchEventSupplier)) {
       return;
     }
-
-    for (final var boundaryIdBuffer : sourceElementWithEvents.getBoundaryElementIds()) {
-      final String sourceBoundaryEventId = BufferUtil.bufferAsString(boundaryIdBuffer);
-      if (!sourceElementIdToTargetElementId.containsKey(sourceBoundaryEventId)) {
-        // only check mapped boundary events
+    for (final var eventIdBuffer :
+        sourceCatchEventSupplier.getEvents().stream().map(ExecutableFlowElement::getId).toList()) {
+      final String sourceCatchEventId = BufferUtil.bufferAsString(eventIdBuffer);
+      if (!sourceElementIdToTargetElementId.containsKey(sourceCatchEventId)) {
+        // only check mapped catch events
         continue;
       }
 
-      final var targetBoundaryEventId = sourceElementIdToTargetElementId.get(sourceBoundaryEventId);
+      final var targetCatchEventId = sourceElementIdToTargetElementId.get(sourceCatchEventId);
       final var targetElement =
           targetProcessDefinition
               .getProcess()
               .getElementById(targetElementId, ExecutableCatchEventSupplier.class);
-      if (targetElement.getBoundaryElementIds().stream()
-          .map(BufferUtil::bufferAsString)
-          .noneMatch(targetBoundaryEventId::equals)) {
-        // boundary event has become detached from element instance
+      if (targetElement.getEvents().stream()
+          .map(catchEvent -> BufferUtil.bufferAsString(catchEvent.getId()))
+          .noneMatch(targetCatchEventId::equals)) {
+        // catch event has become detached from element
         final var reason =
             String.format(
-                ERROR_BOUNDARY_EVENT_DETACHED,
+                ERROR_CATCH_EVENT_DETACHED_FROM_ELEMENT,
                 processInstanceKey,
                 sourceElementId,
                 targetElementId,
-                sourceBoundaryEventId,
-                targetBoundaryEventId);
+                sourceCatchEventId,
+                targetCatchEventId);
         throw new ProcessInstanceMigrationPreconditionFailedException(
             reason, RejectionType.INVALID_STATE);
       }
@@ -674,19 +693,19 @@ public final class ProcessInstanceMigrationPreconditions {
   }
 
   /**
-   * It should not be possible for a mapped element's boundary events to be merged into a single
-   * boundary event. This would mean an element instance is subscribed multiple times to the same
-   * boundary event.
+   * It should not be possible for a mapped element's catch events to be merged into a single catch
+   * event. This would mean an element instance is subscribed multiple times to the same catch
+   * event.
    *
-   * <p>To avoid this, we check each boundary event attached to the source element and ensure that
-   * they are the target of a mapping instruction only once.
+   * <p>To avoid this, we check each catch event attached to the source element and ensure that they
+   * are the target of a mapping instruction only once.
    *
    * @param processInstanceKey process instance key to be logged
    * @param sourceProcessDefinition source process definition to check
    * @param sourceElementId source element id to check
    * @param mappingInstructions mapping instructions (source element id to target element id)
    */
-  public static void requireNoDuplicateTargetsInBoundaryEventMappings(
+  public static void requireNoDuplicateTargetsInCatchEventMappings(
       final long processInstanceKey,
       final DeployedProcess sourceProcessDefinition,
       final String sourceElementId,
@@ -696,33 +715,33 @@ public final class ProcessInstanceMigrationPreconditions {
       return;
     }
 
-    final var sourceBoundaryEventIdsByTargetBoundaryEventId = new HashMap<String, List<String>>();
-    sourceElementWithEvents.getBoundaryElementIds().stream()
-        .map(BufferUtil::bufferAsString)
+    final var sourceCatchEventIdsByTargetCatchEventId = new HashMap<String, List<String>>();
+    sourceElementWithEvents.getEvents().stream()
+        .map(catchEvent -> BufferUtil.bufferAsString(catchEvent.getId()))
         .filter(mappingInstructions::containsKey)
         .forEach(
-            sourceBoundaryEventId -> {
-              final String targetBoundaryEventId = mappingInstructions.get(sourceBoundaryEventId);
-              sourceBoundaryEventIdsByTargetBoundaryEventId
-                  .computeIfAbsent(targetBoundaryEventId, k -> new ArrayList<>())
-                  .add(sourceBoundaryEventId);
+            sourceCatchEventId -> {
+              final String targetCatchEventId = mappingInstructions.get(sourceCatchEventId);
+              sourceCatchEventIdsByTargetCatchEventId
+                  .computeIfAbsent(targetCatchEventId, k -> new ArrayList<>())
+                  .add(sourceCatchEventId);
             });
 
-    sourceBoundaryEventIdsByTargetBoundaryEventId.forEach(
-        (targetBoundaryEventId, sourceBoundaryEventIds) -> {
-          if (sourceBoundaryEventIds.size() > 1) {
+    sourceCatchEventIdsByTargetCatchEventId.forEach(
+        (targetCatchEventId, sourceCatchEventIds) -> {
+          if (sourceCatchEventIds.size() > 1) {
             final var reason =
                 String.format(
                     """
                     Expected to migrate process instance '%s' but active element with id '%s' \
-                    has a boundary event attached that is mapped to a boundary event with id '%s'. \
-                    There are multiple mapping instructions that target this boundary event: '%s'. \
-                    Boundary events cannot be merged by process instance migration. \
-                    Please ensure the mapping instructions target a boundary event only once.""",
+                    has a catch event attached that is mapped to a catch event with id '%s'. \
+                    There are multiple mapping instructions that target this catch event: '%s'. \
+                    Catch events cannot be merged by process instance migration. \
+                    Please ensure the mapping instructions target a catch event only once.""",
                     processInstanceKey,
                     sourceElementId,
-                    targetBoundaryEventId,
-                    sourceBoundaryEventIds.stream().sorted().collect(Collectors.joining("', '")));
+                    targetCatchEventId,
+                    sourceCatchEventIds.stream().sorted().collect(Collectors.joining("', '")));
             throw new ProcessInstanceMigrationPreconditionFailedException(
                 reason, RejectionType.INVALID_STATE);
           }

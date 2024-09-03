@@ -38,7 +38,7 @@ public class AuthorizationServices<T> extends ApiServices<AuthorizationServices<
   }
 
   public CompletableFuture<AuthorizationRecord> createAuthorization(
-      final String ownerKey,
+      final Long ownerKey,
       final AuthorizationOwnerType ownerType,
       final String resourceKey,
       final String resourceType,

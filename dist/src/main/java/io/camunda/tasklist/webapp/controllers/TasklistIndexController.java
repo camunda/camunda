@@ -25,7 +25,7 @@ public class TasklistIndexController {
 
   @Autowired private WebappsRequestForwardManager webappsRequestForwardManager;
 
-  @GetMapping("/tasklist")
+  @GetMapping({"/tasklist", "/tasklist/index.html"})
   public String tasklist(final Model model) {
     model.addAttribute("contextPath", context.getContextPath() + "/tasklist/");
     return "tasklist/index";
@@ -40,7 +40,7 @@ public class TasklistIndexController {
    * Redirects the old frontend routes to the /tasklist sub-path. This can be removed after the
    * creation of the auto-discovery service.
    */
-  @GetMapping({"/{regex:[\\d]+}", "/processes/*/start"})
+  @GetMapping({"/{regex:[\\d]+}", "/processes/*/start", "/new/*"})
   public String redirectOldRoutes(final HttpServletRequest request) {
     return "redirect:/tasklist" + getRequestedUrl(request);
   }

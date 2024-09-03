@@ -15,7 +15,7 @@ To include SDK in your project, one can do the following:
 ```xml
 <dependency>
   <groupId>io.camunda</groupId>
-  <artifactId>camunda-search-plugins</artifactId>
+  <artifactId>camunda-search-client-plugin</artifactId>
   <version>${version.latest-camunda}</version>
 </dependency>
 ```
