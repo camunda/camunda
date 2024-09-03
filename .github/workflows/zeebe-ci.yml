@@ -527,7 +527,7 @@ jobs:
       #   - for PRs, we use the last commit of the base
       #   - for merge queues, we use the last commit of the target merge queue
       #   - for a push, we use the last commit before the push
-      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.push.before }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
     steps:
       - uses: actions/checkout@v4
       - id: pr-body
