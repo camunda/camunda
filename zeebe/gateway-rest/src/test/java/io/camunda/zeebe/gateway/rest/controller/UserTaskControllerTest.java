@@ -36,10 +36,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
 @WebMvcTest(UserTaskController.class)
+@Import(GatewayObjectMapper.class)
 public class UserTaskControllerTest extends RestControllerTest {
 
   static final CompletableFuture<UserTaskRecord> BROKER_RESPONSE =
@@ -675,6 +677,49 @@ RFC 3339, section 5.6.",
            "instance": "%s"
          }"""
             .formatted(priority, baseUrl + "/1");
+
+    // when / then
+    webClient
+        .patch()
+        .uri(baseUrl + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(expectedBody);
+
+    Mockito.verifyNoInteractions(userTaskServices);
+  }
+
+  @ParameterizedTest
+  @MethodSource("urls")
+  void shouldYieldErrorOnUpdateTaskWithDecimalPriority(final String baseUrl) {
+    // given
+    final var request =
+        """
+         {
+           "changeset": {
+             "priority": 33.3
+           }
+         }""";
+
+    final var expectedBody =
+        """
+         {
+           "type": "about:blank",
+           "status": 400,
+           "title": "INVALID_ARGUMENT",
+           "detail": "Invalid input: '%s' for field 'changeset.priority' registered as java.lang.Integer",
+           "instance": "%s"
+         }"""
+            .formatted(33.3, baseUrl + "/1");
 
     // when / then
     webClient

@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.Objects;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
@@ -22,6 +23,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 @ControllerAdvice(annotations = RestController.class)
+@Order
 public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHandler {
 
   private static final String REQUEST_BODY_MISSING_EXCEPTION_MESSAGE =
