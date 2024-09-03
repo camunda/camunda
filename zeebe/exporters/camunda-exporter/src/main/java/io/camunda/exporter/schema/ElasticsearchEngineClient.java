@@ -50,8 +50,11 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   @Override
   public void createIndexTemplate(
-      final IndexTemplateDescriptor templateDescriptor, final IndexSettings settings, final Boolean create) {
-    final PutIndexTemplateRequest request = putIndexTemplateRequest(templateDescriptor, settings, create);
+      final IndexTemplateDescriptor templateDescriptor,
+      final IndexSettings settings,
+      final Boolean create) {
+    final PutIndexTemplateRequest request =
+        putIndexTemplateRequest(templateDescriptor, settings, create);
 
     try {
       client.indices().putIndexTemplate(request);
@@ -107,7 +110,9 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   private PutIndexTemplateRequest putIndexTemplateRequest(
-      final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSettings settings, final Boolean create) {
+      final IndexTemplateDescriptor indexTemplateDescriptor,
+      final IndexSettings settings,
+      final Boolean create) {
 
     try (final var templateMappings =
         getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
