@@ -19,7 +19,7 @@ public final class TestUtil {
 
   private TestUtil() {}
 
-  public static IndexTemplateDescriptor createIndexTemplate(
+  public static IndexTemplateDescriptor mockIndexTemplate(
       final String indexName,
       final String indexPattern,
       final String alias,
@@ -38,7 +38,7 @@ public final class TestUtil {
     return descriptor;
   }
 
-  public static IndexDescriptor createIndex(
+  public static IndexDescriptor mockIndex(
       final String fullQualifiedName,
       final String alias,
       final String indexName,

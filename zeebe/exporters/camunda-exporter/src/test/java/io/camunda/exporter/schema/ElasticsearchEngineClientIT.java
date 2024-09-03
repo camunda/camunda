@@ -108,7 +108,7 @@ public class ElasticsearchEngineClientIT {
     createComponentTemplate("component_template", "componentTemplate.json");
 
     final IndexTemplateDescriptor template =
-        TestUtil.createIndexTemplate(
+        TestUtil.mockIndexTemplate(
             "index_name",
             "pattern*",
             "alias",
@@ -146,7 +146,7 @@ public class ElasticsearchEngineClientIT {
   void shouldCreateIndexTemplateCorrectly() throws IOException {
     // given, when
     final var indexTemplate =
-        TestUtil.createIndexTemplate(
+        TestUtil.mockIndexTemplate(
             "index_name",
             "test*",
             "alias",

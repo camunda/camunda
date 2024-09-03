@@ -64,7 +64,7 @@ public class ElasticsearchSchemaManagerIT {
     settings.defaultSettings.numberOfShards = "10";
 
     final var indexTemplate =
-        TestUtil.createIndexTemplate(
+        TestUtil.mockIndexTemplate(
             "indexName",
             "full_name*",
             "alias",
@@ -72,7 +72,7 @@ public class ElasticsearchSchemaManagerIT {
             "template_name",
             "mappings.json");
 
-    final var index = TestUtil.createIndex("full_name", "alias", "index_name", "mappings.json");
+    final var index = TestUtil.mockIndex("full_name", "alias", "index_name", "mappings.json");
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
@@ -96,7 +96,7 @@ public class ElasticsearchSchemaManagerIT {
     settings.shardsByIndexName.put("index_name", "5");
 
     final var indexTemplate =
-        TestUtil.createIndexTemplate(
+        TestUtil.mockIndexTemplate(
             "index_name",
             "full_name*",
             "alias",
@@ -104,7 +104,7 @@ public class ElasticsearchSchemaManagerIT {
             "template_name",
             "mappings.json");
 
-    final var index = TestUtil.createIndex("full_name", "alias", "index_name", "mappings.json");
+    final var index = TestUtil.mockIndex("full_name", "alias", "index_name", "mappings.json");
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
