@@ -579,11 +579,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
-  /administration/clock/pin:
-    post:
+  /administration/clock:
+    put:
       tags:
-        - Administration
-        - Clock control
+        - Clock
       summary: Pin the Zeebe engine’s internal clock to a specific time (experimental)
       description: |
         Set a precise, static time for the Zeebe engine’s internal clock. When the clock is pinned,
@@ -618,8 +617,7 @@ paths:
   /administration/clock/reset:
     post:
       tags:
-        - Administration
-        - Clock control
+        - Clock
       summary: Reset the Zeebe engine’s internal clock to the system time (experimental)
       description: |
         Resets the Zeebe engine’s internal clock to the current system time,

@@ -30,8 +30,8 @@ import org.springframework.http.ProblemDetail;
 @WebMvcTest(AdministrationController.class)
 public class AdministrationControllerTest extends RestControllerTest {
 
-  private static final String PIN_CLOCK_URL = "/v2/administration/clock/pin";
-  private static final String RESET_CLOCK_URL = "/v2/administration/clock/reset";
+  private static final String CLOCK_URL = "/v2/administration/clock";
+  private static final String RESET_CLOCK_URL = CLOCK_URL.concat("/reset");
 
   @MockBean private ClockServices clockServices;
 
@@ -52,8 +52,8 @@ public class AdministrationControllerTest extends RestControllerTest {
 
     // when - then
     webClient
-        .post()
-        .uri(PIN_CLOCK_URL)
+        .put()
+        .uri(CLOCK_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -71,13 +71,13 @@ public class AdministrationControllerTest extends RestControllerTest {
 
     final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle(INVALID_ARGUMENT.name());
-    expectedBody.setInstance(URI.create(PIN_CLOCK_URL));
+    expectedBody.setInstance(URI.create(CLOCK_URL));
     expectedBody.setDetail("No timestamp provided.");
 
     // when - then
     webClient
-        .post()
-        .uri(PIN_CLOCK_URL)
+        .put()
+        .uri(CLOCK_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
