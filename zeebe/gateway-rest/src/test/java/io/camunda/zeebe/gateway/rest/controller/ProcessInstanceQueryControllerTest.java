@@ -59,7 +59,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               ]
           }
       }""";
-  static final SearchQueryResult<ProcessInstanceEntity> SEARCH_QUERY_RESULT =
+  private static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
+  private static final SearchQueryResult<ProcessInstanceEntity> SEARCH_QUERY_RESULT =
       new Builder<ProcessInstanceEntity>()
           .total(1L)
           .items(
@@ -83,8 +84,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                       null)))
           .sortValues(new Object[] {"v"})
           .build();
-  private static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
-
   @MockBean ProcessInstanceServices processInstanceServices;
 
   @BeforeEach

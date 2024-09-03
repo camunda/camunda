@@ -132,6 +132,46 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldStartProcessInstancesWithBpmnProcessIdWithoutVersion() {
+    // given
+    final var mockResponse =
+        new ProcessInstanceCreationRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(123L)
+            .setTenantId("tenantId");
+
+    when(processInstanceServices.startProcessInstance(any(ProcessInstanceStartRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+        {
+            "bpmnProcessId": "bpmnProcessId"
+        }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_START_RESPONSE);
+
+    verify(processInstanceServices).startProcessInstance(requestCaptor.capture());
+    final var capturedRequest = requestCaptor.getValue();
+    assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
+    assertThat(capturedRequest.version()).isEqualTo(-1);
+  }
+
+  @Test
   void shouldStartProcessInstancesWithResultWithProcessDefinitionKey() {
     // given
     final var mockResponse =
@@ -214,6 +254,48 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
     assertThat(capturedRequest.version()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldStartProcessInstancesWithResultWithBpmnProcessIdWithoutVersion() {
+    // given
+    final var mockResponse =
+        new ProcessInstanceResultRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(123L)
+            .setTenantId("tenantId");
+
+    when(processInstanceServices.startProcessInstanceWithResult(
+            any(ProcessInstanceStartRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+        {
+            "bpmnProcessId": "bpmnProcessId",
+            "awaitCompletion": true
+        }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_START_RESPONSE);
+
+    verify(processInstanceServices).startProcessInstanceWithResult(requestCaptor.capture());
+    final var capturedRequest = requestCaptor.getValue();
+    assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
+    assertThat(capturedRequest.version()).isEqualTo(-1);
   }
 
   @Test

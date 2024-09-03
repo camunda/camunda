@@ -41,7 +41,6 @@ import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.StartProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
@@ -348,12 +347,11 @@ public class RequestMapper {
                 request.getRequestTimeout(),
                 request.getOperationReference(),
                 request.getStartInstructions().stream()
-                    .map(ProcessInstanceCreationStartInstruction::getElementId)
                     .map(
-                        elementId ->
+                        instruction ->
                             new io.camunda.zeebe.protocol.impl.record.value.processinstance
                                     .ProcessInstanceCreationStartInstruction()
-                                .setElementId(elementId))
+                                .setElementId(instruction.getElementId()))
                     .toList()));
   }
 
