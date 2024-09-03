@@ -8,7 +8,7 @@
 package io.camunda.exporter.schema;
 
 import io.camunda.exporter.NoopExporterConfiguration.ElasticsearchConfig;
-import io.camunda.exporter.NoopExporterConfiguration.IndexSpecificSettings;
+import io.camunda.exporter.NoopExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
 import java.util.List;
@@ -45,7 +45,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
         elasticsearchConfig.shardsByIndexName.getOrDefault(
             templateDescriptor.getIndexName(), elasticsearchConfig.defaultSettings.numberOfShards);
 
-    final var settings = new IndexSpecificSettings();
+    final var settings = new IndexSettings();
     settings.numberOfShards = templateShards;
     settings.numberOfReplicas = templateReplicas;
 

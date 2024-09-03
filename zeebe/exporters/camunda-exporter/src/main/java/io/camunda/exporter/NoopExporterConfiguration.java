@@ -15,15 +15,13 @@ public final class NoopExporterConfiguration {
 
   public static final class ElasticsearchConfig {
     public String url;
-    public IndexSpecificSettings defaultSettings = new IndexSpecificSettings();
-    public Map<String, String> replicasByIndexName = new HashMap<>();
-    public Map<String, String> shardsByIndexName = new HashMap<>();
     public IndexSettings defaultSettings = new IndexSettings();
+    public Map<String, Integer> replicasByIndexName = new HashMap<>();
+    public Map<String, Integer> shardsByIndexName = new HashMap<>();
   }
 
-  public static final class IndexSpecificSettings {
-    public String numberOfShards = "1";
-    public String numberOfReplicas = "0";
   public static final class IndexSettings {
+    public Integer numberOfShards = 1;
+    public Integer numberOfReplicas = 0;
   }
 }

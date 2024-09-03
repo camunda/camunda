@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.schema;
 
-import io.camunda.exporter.NoopExporterConfiguration.IndexSpecificSettings;
+import io.camunda.exporter.NoopExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.descriptors.ComponentTemplateDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
@@ -16,7 +16,7 @@ public interface SearchEngineClient {
   void createIndex(final IndexDescriptor indexDescriptor);
 
   void createIndexTemplate(
-      final IndexTemplateDescriptor indexDescriptor, final IndexSpecificSettings settings);
+      final IndexTemplateDescriptor indexDescriptor, final IndexSettings settings);
 
   void createComponentTemplate(final ComponentTemplateDescriptor templateDescriptor);
 

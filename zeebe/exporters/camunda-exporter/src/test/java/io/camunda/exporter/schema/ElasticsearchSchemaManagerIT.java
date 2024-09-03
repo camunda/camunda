@@ -60,8 +60,8 @@ public class ElasticsearchSchemaManagerIT {
   @Test
   void shouldInheritDefaultSettingsIfNoIndexSpecificSettings() throws IOException {
     final var settings = new ElasticsearchConfig();
-    settings.defaultSettings.numberOfReplicas = "10";
-    settings.defaultSettings.numberOfShards = "10";
+    settings.defaultSettings.numberOfReplicas = 10;
+    settings.defaultSettings.numberOfShards = 10;
 
     final var indexTemplate =
         TestUtil.mockIndexTemplate(
@@ -90,10 +90,10 @@ public class ElasticsearchSchemaManagerIT {
   @Test
   void shouldUseIndexSpecificSettingsIfSpecified() throws IOException {
     final var settings = new ElasticsearchConfig();
-    settings.defaultSettings.numberOfReplicas = "10";
-    settings.defaultSettings.numberOfShards = "10";
-    settings.replicasByIndexName.put("index_name", "5");
-    settings.shardsByIndexName.put("index_name", "5");
+    settings.defaultSettings.numberOfReplicas = 10;
+    settings.defaultSettings.numberOfShards = 10;
+    settings.replicasByIndexName.put("index_name", 5);
+    settings.shardsByIndexName.put("index_name", 5);
 
     final var indexTemplate =
         TestUtil.mockIndexTemplate(
