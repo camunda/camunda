@@ -72,6 +72,6 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     settings.numberOfShards = templateShards;
     settings.numberOfReplicas = templateReplicas;
 
-    elasticsearchClient.createIndexTemplate(templateDescriptor, settings, true);
+    elasticsearchClient.createIndexTemplate(templateDescriptor, settings, false);
   }
 }
