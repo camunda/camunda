@@ -69,6 +69,15 @@ public final class SearchQueryBuilders {
     return fn.apply(userSearchQuery()).build();
   }
 
+  public static AuthorizationQuery.Builder authorizationSearchQuery() {
+    return new AuthorizationQuery.Builder();
+  }
+
+  public static AuthorizationQuery authorizationSearchQuery(
+      final Function<AuthorizationQuery.Builder, ObjectBuilder<AuthorizationQuery>> fn) {
+    return fn.apply(authorizationSearchQuery()).build();
+  }
+
   public static IncidentQuery.Builder incidentSearchQuery() {
     return new IncidentQuery.Builder();
   }

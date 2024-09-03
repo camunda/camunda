@@ -8,6 +8,10 @@
 package io.camunda.service;
 
 import io.camunda.search.clients.CamundaSearchClient;
+import io.camunda.service.entities.AuthorizationEntity;
+import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.search.query.AuthorizationQuery;
+import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -17,7 +21,8 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class AuthorizationServices<T> extends ApiServices<AuthorizationServices<T>> {
+public class AuthorizationServices<T>
+    extends SearchQueryService<AuthorizationServices<T>, AuthorizationQuery, AuthorizationEntity> {
 
   public AuthorizationServices(
       final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
@@ -35,6 +40,11 @@ public class AuthorizationServices<T> extends ApiServices<AuthorizationServices<
   @Override
   public AuthorizationServices<T> withAuthentication(final Authentication authentication) {
     return new AuthorizationServices<>(brokerClient, searchClient, transformers, authentication);
+  }
+
+  @Override
+  public SearchQueryResult<AuthorizationEntity> search(final AuthorizationQuery query) {
+    return executor.search(query, AuthorizationEntity.class);
   }
 
   public CompletableFuture<AuthorizationRecord> createAuthorization(
