@@ -1,6 +1,6 @@
 {
   "mappings": {
-    "dynamic": true,
+    "dynamic": "strict",
     "properties": {
       "join": {
         "type": "join",
@@ -27,6 +27,9 @@
         "type": "keyword"
       },
       "id": {
+        "type": "keyword"
+      },
+      "taskId": {
         "type": "keyword"
       },
       "position": {
@@ -101,7 +104,7 @@
         "type": "keyword",
         "ignore_above": 8191
       },
-      "variable_scopeKey": {
+      "varScopeKey": {
         "type": "keyword"
       },
       "isPreview": {

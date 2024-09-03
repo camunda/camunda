@@ -129,7 +129,7 @@ public class VariableZeebeRecordProcessorElasticSearch {
     if (isTaskOrSubProcessScope(entity)) {
       LOGGER.info("Processing Task Variable");
       snapshot = associateVariableWithTask(snapshot);
-      return prepareUpdateRequest(snapshot, snapshot.getVariableScopeKey());
+      return prepareUpdateRequest(snapshot, snapshot.getVarScopeKey());
     } else if (isProcessScope(entity)) {
       LOGGER.info("Processing Process Variable");
       snapshot = associateProcessVariablesWithTasks(entity, snapshot);
@@ -144,8 +144,8 @@ public class VariableZeebeRecordProcessorElasticSearch {
     Optional.ofNullable(entity.getValue()).ifPresent(snapshot::setVarValue);
     Optional.ofNullable(entity.getFullValue()).ifPresent(snapshot::setVarFullValue);
     Optional.ofNullable(entity.getName()).ifPresent(snapshot::setVarName);
-    Optional.of(entity.getIsPreview()).ifPresent(snapshot::setPreview);
-    Optional.ofNullable(entity.getScopeFlowNodeId()).ifPresent(snapshot::setVariableScopeKey);
+    Optional.of(entity.getIsPreview()).ifPresent(snapshot::setIsPreview);
+    Optional.ofNullable(entity.getScopeFlowNodeId()).ifPresent(snapshot::setVarScopeKey);
     Optional.ofNullable(entity.getId()).ifPresent(snapshot::setId);
 
     return snapshot;
@@ -192,7 +192,7 @@ public class VariableZeebeRecordProcessorElasticSearch {
 
   private TaskVariableSnapshotEntity associateVariableWithTask(
       final TaskVariableSnapshotEntity snapshot) {
-    return associateVariableWithParent(snapshot, "taskVariable", snapshot.getVariableScopeKey());
+    return associateVariableWithParent(snapshot, "taskVariable", snapshot.getVarScopeKey());
   }
 
   private TaskVariableSnapshotEntity associateVariableWithParent(

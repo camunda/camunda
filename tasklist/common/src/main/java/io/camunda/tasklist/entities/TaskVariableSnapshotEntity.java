@@ -69,9 +69,6 @@ public class TaskVariableSnapshotEntity {
   private Long formVersion;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  private Boolean isFormEmbedded = null;
-
-  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String followUpDate;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -109,7 +106,7 @@ public class TaskVariableSnapshotEntity {
 
   // add variableScopeKey
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  private String variableScopeKey;
+  private String varScopeKey;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String dataType;
@@ -288,15 +285,6 @@ public class TaskVariableSnapshotEntity {
     return this;
   }
 
-  public Boolean getFormEmbedded() {
-    return isFormEmbedded;
-  }
-
-  public TaskVariableSnapshotEntity setFormEmbedded(final Boolean formEmbedded) {
-    isFormEmbedded = formEmbedded;
-    return this;
-  }
-
   public String getFollowUpDate() {
     return followUpDate;
   }
@@ -397,22 +385,22 @@ public class TaskVariableSnapshotEntity {
     return this;
   }
 
-  public Boolean getPreview() {
+  public Boolean getIsPreview() {
     return isPreview;
   }
 
-  public TaskVariableSnapshotEntity setPreview(final Boolean preview) {
-    isPreview = preview;
+  public TaskVariableSnapshotEntity setIsPreview(final Boolean isPreview) {
+    this.isPreview = isPreview;
     return this;
   }
 
   // Getters and setters for variableScopeKey
-  public String getVariableScopeKey() {
-    return variableScopeKey;
+  public String getVarScopeKey() {
+    return varScopeKey;
   }
 
-  public TaskVariableSnapshotEntity setVariableScopeKey(final String variableScopeKey) {
-    this.variableScopeKey = variableScopeKey;
+  public TaskVariableSnapshotEntity setVarScopeKey(final String varScopeKey) {
+    this.varScopeKey = varScopeKey;
     return this;
   }
 
