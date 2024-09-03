@@ -35,6 +35,6 @@ public class DeleteEventIndicesAndTemplates86IT extends AbstractUpgrade86IT {
             .filter(indexName -> indexName.contains("event"))
             .toList();
     assertThat(eventIndexListPostUpgrade).isEmpty();
-    assertThat(prefixAwareClient.templateExists("optimize-event_v")).isFalse();
+    assertThat(prefixAwareClient.templateExists("optimize-event_v4")).isFalse();
   }
 }

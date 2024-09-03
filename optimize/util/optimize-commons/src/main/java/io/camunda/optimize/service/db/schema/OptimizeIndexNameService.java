@@ -111,6 +111,14 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
     return indexAlias + versionSuffix;
   }
 
+  public String getOptimizeIndexOrTemplateNameForAliasAndVersionWithPrefix(
+      final String indexOrTemplateNameWithoutPrefix, final String version) {
+    return indexPrefix
+        + "-"
+        + getOptimizeIndexOrTemplateNameForAliasAndVersion(
+            indexOrTemplateNameWithoutPrefix, version);
+  }
+
   public static String getOptimizeIndexAliasForIndexNameAndPrefix(
       final String indexName, final String indexPrefix) {
     String original = indexName;

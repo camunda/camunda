@@ -7,10 +7,10 @@
  */
 package io.camunda.optimize.upgrade.steps.schema;
 
+import static io.camunda.optimize.service.db.schema.OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion;
 import static io.camunda.optimize.upgrade.steps.UpgradeStepType.SCHEMA_DELETE_TEMPLATE;
 
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
-import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
@@ -44,17 +44,18 @@ public class DeleteIndexTemplateIfExistsStep extends UpgradeStep {
 
   @Override
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
-    final String indexAlias =
-        schemaUpgradeClient.getIndexNameService().getOptimizeIndexAliasForIndex(templateName);
-    schemaUpgradeClient.getAliasMap(indexAlias).keySet().stream()
-        .filter(templateName -> templateName.contains(this.templateName))
-        .forEach(schemaUpgradeClient::deleteTemplateIfExists);
+    final String fullTemplateName =
+        schemaUpgradeClient
+            .getIndexNameService()
+            .getOptimizeIndexOrTemplateNameForAliasAndVersionWithPrefix(
+                templateName, String.valueOf(templateVersion));
+    schemaUpgradeClient.deleteTemplateIfExists(fullTemplateName);
   }
 
   public String getVersionedTemplateNameWithTemplateSuffix() {
     return String.format(
         "%s[Template]",
-        OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion(
+        getOptimizeIndexOrTemplateNameForAliasAndVersion(
             templateName, String.valueOf(templateVersion)));
   }
 }

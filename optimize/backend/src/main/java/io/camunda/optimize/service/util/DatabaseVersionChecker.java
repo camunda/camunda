@@ -21,7 +21,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 @Slf4j
 public class DatabaseVersionChecker {
 
-  public static final String MIN_ES_SUPPORTED_VERSION = "8.13.0";
+  public static final String MIN_ES_SUPPORTED_VERSION = "8.9.0"; // TODO revert after testing
   public static final String MIN_OS_SUPPORTED_VERSION = "2.9.0";
 
   public static void checkESVersionSupport(
