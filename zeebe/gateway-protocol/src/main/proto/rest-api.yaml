@@ -658,13 +658,13 @@ paths:
             schema:
               $ref: "#/components/schemas/StartProcessInstanceRequest"
       responses:
-        '200':
+        "200":
           description: The process instance was created.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/StartProcessInstanceResponse"
-        '400':
+        "400":
           description: The provided data is not valid.
         "500":
           description: An internal error occurred while processing the request.
@@ -2637,6 +2637,10 @@ components:
         tenantId:
           description: The tenant ID of the created process instance.
           type: string
+        variables:
+          additionalProperties: true
+          description: All the variables visible in the root scope.
+          type: object
 
   securitySchemes:
     bearerAuth:
