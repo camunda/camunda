@@ -13,26 +13,28 @@ import java.util.List;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
-public class DeleteProcessInstanceArchiveIndex86IT extends AbstractUpgrade86IT {
+public class DeleteEventIndicesAndTemplates86IT extends AbstractUpgrade86IT {
 
-  @Test
   @SneakyThrows
-  public void deleteProcessInstanceArchiveIndex() {
+  @Test
+  public void allEventIndicesAndTemplatesAreRemoved() {
     // given
-    List<String> processInstanceArchiveIndexList =
+    final List<String> eventIndexListPreUpgrade =
         prefixAwareClient.getAllIndexNames().stream()
-            .filter(indexName -> indexName.contains("process-instance-archive-"))
+            .filter(indexName -> indexName.contains("event"))
             .toList();
-    assertThat(processInstanceArchiveIndexList).hasSize(2);
+    assertThat(eventIndexListPreUpgrade).hasSize(6);
+    assertThat(prefixAwareClient.templateExists("optimize-event_v4")).isTrue();
 
     // when
     performUpgrade();
 
     // then
-    List<String> processInstanceArchiveIndexListPostUpgrade =
+    final List<String> eventIndexListPostUpgrade =
         prefixAwareClient.getAllIndexNames().stream()
-            .filter(indexName -> indexName.contains("process-instance-archive-"))
+            .filter(indexName -> indexName.contains("event"))
             .toList();
-    assertThat(processInstanceArchiveIndexListPostUpgrade).isEmpty();
+    assertThat(eventIndexListPostUpgrade).isEmpty();
+    assertThat(prefixAwareClient.templateExists("optimize-event_v")).isFalse();
   }
 }

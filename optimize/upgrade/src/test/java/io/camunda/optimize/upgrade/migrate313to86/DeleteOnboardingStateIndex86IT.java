@@ -13,26 +13,26 @@ import java.util.List;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
-public class DeleteProcessInstanceArchiveIndex86IT extends AbstractUpgrade86IT {
+public class DeleteOnboardingStateIndex86IT extends AbstractUpgrade86IT {
 
   @Test
   @SneakyThrows
-  public void deleteProcessInstanceArchiveIndex() {
-    // given
-    List<String> processInstanceArchiveIndexList =
+  public void deleteOnboardingStateIndex() {
+    // given pre-upgrade
+    List<String> onboardingStateIndexList =
         prefixAwareClient.getAllIndexNames().stream()
-            .filter(indexName -> indexName.contains("process-instance-archive-"))
+            .filter(indexName -> indexName.contains("onboarding-state"))
             .toList();
-    assertThat(processInstanceArchiveIndexList).hasSize(2);
+    assertThat(onboardingStateIndexList).hasSize(1);
 
     // when
     performUpgrade();
 
     // then
-    List<String> processInstanceArchiveIndexListPostUpgrade =
+    List<String> onboardingStateIndexListPostUpgrade =
         prefixAwareClient.getAllIndexNames().stream()
-            .filter(indexName -> indexName.contains("process-instance-archive-"))
+            .filter(indexName -> indexName.contains("onboarding-state"))
             .toList();
-    assertThat(processInstanceArchiveIndexListPostUpgrade).isEmpty();
+    assertThat(onboardingStateIndexListPostUpgrade).isEmpty();
   }
 }
