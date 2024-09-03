@@ -54,8 +54,6 @@ jobs:
     - name: Determine Argocd Arguments for c8sm
       shell: bash
       run: |
-        echo "commit_hash: ${docker_tag}"
-
         echo "argocd_arguments=--dest-namespace ${app_name} \
           --file .ci/preview-environments/argo/c8sm.yml \
           --helm-set global.ingress.host=${app_url} \
