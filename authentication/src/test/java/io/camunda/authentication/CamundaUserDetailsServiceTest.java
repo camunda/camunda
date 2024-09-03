@@ -15,9 +15,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.service.UserServices;
 import io.camunda.service.entities.UserEntity;
 import io.camunda.service.entities.UserEntity.User;
-import io.camunda.service.search.query.SearchQueryResult;
-import java.util.Collections;
-import java.util.List;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -41,10 +39,8 @@ public class CamundaUserDetailsServiceTest {
   @Test
   public void testUserDetailsIsLoaded() {
     // given
-    when(userService.search(any()))
-        .thenReturn(
-            new SearchQueryResult<>(
-                1, List.of(new UserEntity(new User(TEST_USER_ID, "", "", "password1"))), null));
+    when(userService.findByUsername(any()))
+        .thenReturn(Optional.of(new UserEntity(new User(TEST_USER_ID, "", "", "password1"))));
     // when
     final UserDetails user = userDetailsService.loadUserByUsername(TEST_USER_ID);
 
@@ -56,8 +52,7 @@ public class CamundaUserDetailsServiceTest {
   @Test
   public void testUserDetailsNotFound() {
     // given
-    when(userService.search(any()))
-        .thenReturn(new SearchQueryResult<>(0, Collections.emptyList(), null));
+    when(userService.findByUsername(any())).thenReturn(Optional.empty());
     // when/then
     assertThatThrownBy(() -> userDetailsService.loadUserByUsername(TEST_USER_ID))
         .isInstanceOf(UsernameNotFoundException.class);

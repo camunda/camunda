@@ -20,12 +20,11 @@ import io.camunda.application.sources.DefaultObjectMapperConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.service.entities.UserEntity;
 import io.camunda.service.entities.UserEntity.User;
-import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.gateway.protocol.rest.UserWithPasswordRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
-import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.apache.logging.log4j.util.Base64Util;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,13 +65,10 @@ public class BasicAuthIT {
     when(userService.withAuthentication(any(Authentication.class))).thenReturn(userService);
     when(userService.createUser(any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new UserRecord()));
-    when(userService.search(any()))
+    when(userService.findByUsername(any()))
         .thenReturn(
-            new SearchQueryResult<>(
-                1,
-                List.of(
-                    new UserEntity(new User(USERNAME, "", "", passwordEncoder.encode(PASSWORD)))),
-                null));
+            Optional.of(
+                new UserEntity(new User(USERNAME, "", "", passwordEncoder.encode(PASSWORD)))));
 
     content =
         objectMapper.writeValueAsString(
