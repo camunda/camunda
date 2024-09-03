@@ -16,12 +16,11 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.NoopExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
-import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
@@ -81,8 +80,19 @@ public class ElasticsearchEngineClientIT {
   @Test
   void shouldCreateIndexTemplateCorrectly() throws IOException {
     // given, when
-    createIndexTemplate(
-        "index_name", "test*", "alias", Collections.emptyList(), "template_name", "mappings.json");
+    final var indexTemplate =
+        TestUtil.mockIndexTemplate(
+            "index_name",
+            "test*",
+            "alias",
+            Collections.emptyList(),
+            "template_name",
+            "mappings.json");
+
+    final var settings = new IndexSettings();
+    settings.numberOfShards = 1;
+    settings.numberOfReplicas = 0;
+    elsEngineClient.createIndexTemplate(indexTemplate, settings);
 
     // then
     final var indexTemplates =
@@ -121,22 +131,5 @@ public class ElasticsearchEngineClientIT {
         elsClient.indices().get(req -> req.index(qualifiedIndexName)).get(qualifiedIndexName);
 
     assertThat(index.mappings().toString()).isEqualTo(template.mappings().toString());
-  }
-
-  private void createIndexTemplate(
-      final String indexName,
-      final String indexPattern,
-      final String alias,
-      final List<String> composedOf,
-      final String templateName,
-      final String mappingsFileName) {
-    final var descriptor = mock(IndexTemplateDescriptor.class);
-    doReturn(indexName).when(descriptor).getIndexName();
-    doReturn(indexPattern).when(descriptor).getIndexPattern();
-    doReturn(alias).when(descriptor).getAlias();
-    doReturn(composedOf).when(descriptor).getComposedOf();
-
-    doReturn(templateName).when(descriptor).getTemplateName();
-    doReturn(mappingsFileName).when(descriptor).getMappingsClasspathFilename();
   }
 }
