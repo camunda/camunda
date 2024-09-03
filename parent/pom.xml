@@ -148,7 +148,6 @@
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.12</plugin.version.jacoco>
     <plugin.version.maven-jar>3.4.2</plugin.version.maven-jar>
-    <plugin.version.proto-backwards-compatibility>1.0.7</plugin.version.proto-backwards-compatibility>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.3.1</plugin.version.resources>
@@ -1630,23 +1629,6 @@
               <goals>
                 <goal>compile</goal>
                 <goal>compile-custom</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-
-        <!-- protobuf backwards compatibility check; not skippable unfortunately -->
-        <plugin>
-          <groupId>com.salesforce.servicelibs</groupId>
-          <artifactId>proto-backwards-compatibility</artifactId>
-          <version>${plugin.version.proto-backwards-compatibility}</version>
-          <configuration>
-            <protoSourceRoot>${project.basedir}/src/main/proto</protoSourceRoot>
-          </configuration>
-          <executions>
-            <execution>
-              <goals>
-                <goal>backwards-compatibility-check</goal>
               </goals>
             </execution>
           </executions>
