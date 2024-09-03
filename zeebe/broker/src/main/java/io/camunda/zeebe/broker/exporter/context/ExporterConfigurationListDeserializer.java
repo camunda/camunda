@@ -81,7 +81,7 @@ final class ExporterConfigurationListDeserializer<E> extends StdDelegatingDeseri
       return super.getOutputType(typeFactory).withContentType(contentType);
     }
 
-    private <E> void setListValue(
+    private void setListValue(
         final Map<String, E> value, final String key, final ArrayList<E> list) {
       final int index;
       try {
