@@ -8,9 +8,11 @@ set BASEDIR=%~dp0
 echo BASEDIR=%BASEDIR%
 
 REM Delete testing data before tar
-del elasticsearch-%ELASTICSEARCH_VERSION%
-del camunda-zeebe-%CAMUNDA_VERSION%
-del logs\*.log
+rmdir /S /Q elasticsearch-%ELASTICSEARCH_VERSION%
+rmdir /S /Q camunda-zeebe-%CAMUNDA_VERSION%
+del log\camunda.log
+del log\connectors.log
+del log\elasticsearch.log
 
 REM Retrieve elasticsearch
 if not exist "elasticsearch-%ELASTICSEARCH_VERSION%.zip" (
