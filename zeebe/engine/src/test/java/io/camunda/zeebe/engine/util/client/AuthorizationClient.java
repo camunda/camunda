@@ -8,12 +8,13 @@
 package io.camunda.zeebe.engine.util.client;
 
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import java.util.List;
 import java.util.function.Function;
 
 public final class AuthorizationClient {
@@ -67,8 +68,10 @@ public final class AuthorizationClient {
       return this;
     }
 
-    public AuthorizationCreationClient withPermissions(final List<String> permissions) {
-      authorizationCreationRecord.setPermissions(permissions);
+    public AuthorizationCreationClient withPermission(
+        final PermissionType permissionType, final String resourceId) {
+      authorizationCreationRecord.addPermission(
+          new Permission().setPermissionType(permissionType).addResourceId(resourceId));
       return this;
     }
 

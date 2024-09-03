@@ -85,9 +85,15 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     ownerKey.wrapLong(authorizationRecord.getOwnerKey());
     ownerType.wrapString(authorizationRecord.getOwnerType().name());
     resourceType.wrapString(authorizationRecord.getResourceType());
-    resourceIdentifiers.setResourceIdentifiers(authorizationRecord.getPermissions());
-    resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.insert(
-        ownerKeyAndResourceTypeAndPermissionCompositeKey, resourceIdentifiers);
+
+    final var permissions = authorizationRecord.getPermissions();
+    permissions.forEach(
+        permission -> {
+          this.permission.wrapString(permission.getPermissionType().name());
+          resourceIdentifiers.setResourceIdentifiers(permission.getResourceIds());
+          resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.insert(
+              ownerKeyAndResourceTypeAndPermissionCompositeKey, resourceIdentifiers);
+        });
   }
 
   @Override

@@ -14,15 +14,12 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 
 public final class AuthorizationRecord extends UnifiedRecordValue
@@ -33,8 +30,8 @@ public final class AuthorizationRecord extends UnifiedRecordValue
   private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
       new EnumProperty<>("ownerType", AuthorizationOwnerType.class);
   private final StringProperty resourceTypeProp = new StringProperty("resourceType");
-  private final ArrayProperty<StringValue> permissionsProp =
-      new ArrayProperty<>("permissions", StringValue::new);
+  private final ArrayProperty<Permission> permissionsProp =
+      new ArrayProperty<>("permissions", Permission::new);
 
   public AuthorizationRecord() {
     super(5);
@@ -50,7 +47,7 @@ public final class AuthorizationRecord extends UnifiedRecordValue
     ownerTypeProp.setValue(record.getOwnerType());
     ownerKeyProp.setValue(record.getOwnerKey());
     resourceTypeProp.setValue(record.getResourceTypeBuffer());
-    setPermissions(record.getPermissions());
+    record.getPermissions().forEach(this::addPermission);
   }
 
   public AuthorizationRecord copy() {
@@ -59,7 +56,7 @@ public final class AuthorizationRecord extends UnifiedRecordValue
     copy.ownerKeyProp.setValue(getOwnerKey());
     copy.ownerTypeProp.setValue(getOwnerType());
     copy.resourceTypeProp.setValue(BufferUtil.cloneBuffer(getResourceTypeBuffer()));
-    copy.setPermissions(getPermissions());
+    getPermissions().forEach(copy::addPermission);
     return copy;
   }
 
@@ -103,6 +100,17 @@ public final class AuthorizationRecord extends UnifiedRecordValue
     return bufferAsString(resourceTypeProp.getValue());
   }
 
+  @Override
+  public List<PermissionValue> getPermissions() {
+    return permissionsProp.stream()
+        .map(
+            permission -> {
+              final var copy = new Permission().copy(permission);
+              return (PermissionValue) copy;
+            })
+        .toList();
+  }
+
   public AuthorizationRecord setResourceType(final String resourceType) {
     resourceTypeProp.setValue(resourceType);
     return this;
@@ -113,18 +121,8 @@ public final class AuthorizationRecord extends UnifiedRecordValue
     return this;
   }
 
-  @Override
-  public List<String> getPermissions() {
-    return StreamSupport.stream(permissionsProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .collect(Collectors.toList());
-  }
-
-  public AuthorizationRecord setPermissions(final List<String> permissions) {
-    permissionsProp.reset();
-    permissions.forEach(
-        permission -> permissionsProp.add().wrap(BufferUtil.wrapString(permission)));
+  public AuthorizationRecord addPermission(final PermissionValue permission) {
+    permissionsProp.add().copy(permission);
     return this;
   }
 }

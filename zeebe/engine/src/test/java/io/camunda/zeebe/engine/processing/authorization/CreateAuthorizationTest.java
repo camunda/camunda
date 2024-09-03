@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import org.assertj.core.api.Assertions;
@@ -42,7 +43,7 @@ public class CreateAuthorizationTest {
             .withOwnerKey(ownerKey)
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType("bpmn-id")
-            .withPermissions(permissions)
+            .withPermission(PermissionType.CREATE, "*")
             .create();
 
     // then
@@ -70,7 +71,7 @@ public class CreateAuthorizationTest {
             .withOwnerKey(1L)
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType("bpmn-id")
-            .withPermissions(permissions)
+            .withPermission(PermissionType.CREATE, "*")
             .create();
     // when
     final var duplicatedAuthorizationRecord =
@@ -80,7 +81,7 @@ public class CreateAuthorizationTest {
             .withOwnerKey(ownerKey)
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceType("bpmn-id")
-            .withPermissions(permissions)
+            .withPermission(PermissionType.CREATE, "*")
             .expectRejection()
             .create();
 

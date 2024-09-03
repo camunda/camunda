@@ -15,8 +15,9 @@ import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import java.util.List;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -52,7 +53,8 @@ public class AuthorizationStateTest {
             .setOwnerKey(1L)
             .setOwnerType(AuthorizationOwnerType.GROUP)
             .setResourceType("resourceType")
-            .setPermissions(List.of("write:*"));
+            .addPermission(
+                new Permission().setPermissionType(PermissionType.CREATE).addResourceId("*"));
     authorizationState.createAuthorization(authorizationRecord);
 
     // then
@@ -76,7 +78,8 @@ public class AuthorizationStateTest {
             .setOwnerKey(ownerKey)
             .setOwnerType(AuthorizationOwnerType.GROUP)
             .setResourceType("process-definition")
-            .setPermissions(List.of("write:*"));
+            .addPermission(
+                new Permission().setPermissionType(PermissionType.CREATE).addResourceId("*"));
     authorizationState.createAuthorization(authorizationRecord);
 
     // when/then
@@ -97,7 +100,8 @@ public class AuthorizationStateTest {
             .setOwnerKey(1L)
             .setOwnerType(AuthorizationOwnerType.GROUP)
             .setResourceType("resourceType")
-            .setPermissions(List.of("read:*"));
+            .addPermission(
+                new Permission().setPermissionType(PermissionType.READ).addResourceId("*"));
     authorizationState.createAuthorization(authorizationRecordOne);
 
     final AuthorizationRecord authorizationRecordTwo =
@@ -105,7 +109,8 @@ public class AuthorizationStateTest {
             .setOwnerKey(2L)
             .setOwnerType(AuthorizationOwnerType.GROUP)
             .setResourceType("resourceType")
-            .setPermissions(List.of("write:*"));
+            .addPermission(
+                new Permission().setPermissionType(PermissionType.CREATE).addResourceId("*"));
     authorizationState.createAuthorization(authorizationRecordTwo);
 
     final var authorizationOne =

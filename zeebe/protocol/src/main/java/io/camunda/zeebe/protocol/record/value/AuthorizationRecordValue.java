@@ -32,5 +32,16 @@ public interface AuthorizationRecordValue extends RecordValue {
 
   String getResourceType();
 
-  List<String> getPermissions();
+  List<PermissionValue> getPermissions();
+
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutablePermissionValue.Builder.class)
+  interface PermissionValue {
+
+    /** Returns the type of permission for the resourceIds in this object */
+    PermissionType getPermissionType();
+
+    /** Returns the resourceIds of this permission */
+    List<String> getResourceIds();
+  }
 }

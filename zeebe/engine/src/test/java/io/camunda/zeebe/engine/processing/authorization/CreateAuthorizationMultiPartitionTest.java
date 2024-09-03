@@ -17,9 +17,9 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -42,7 +42,7 @@ public class CreateAuthorizationMultiPartitionTest {
         .withOwnerKey(1L)
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType("bpmn-id")
-        .withPermissions(List.of("write:*"))
+        .withPermission(PermissionType.CREATE, "*")
         .create();
 
     assertThat(
