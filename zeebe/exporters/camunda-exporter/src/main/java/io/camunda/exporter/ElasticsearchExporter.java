@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.USER;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import io.camunda.exporter.clients.elasticsearch.ElasticsearchClientFactory;
 import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -90,9 +91,8 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
-  private static ElasticsearchClient createClient() {
-    // FIXME call a client factory to instantiate `client` here
-    return new ElasticsearchClient(null);
+  private ElasticsearchClient createClient() {
+    return ElasticsearchClientFactory.INSTANCE.create(configuration.elasticsearch);
   }
 
   private boolean shouldFlush() {

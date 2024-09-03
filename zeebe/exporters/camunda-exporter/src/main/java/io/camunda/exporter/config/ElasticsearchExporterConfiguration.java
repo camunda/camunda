@@ -9,6 +9,17 @@ package io.camunda.exporter.config;
 
 public class ElasticsearchExporterConfiguration {
   public final BulkConfiguration bulk = new BulkConfiguration();
+  public final ElasticsearchProperties elasticsearch = new ElasticsearchProperties();
+
+  @Override
+  public String toString() {
+    return "ElasticsearchExporterConfiguration{"
+        + "bulk="
+        + bulk
+        + ", elasticsearch="
+        + elasticsearch
+        + '}';
+  }
 
   public static class BulkConfiguration {
     // delay before forced flush
