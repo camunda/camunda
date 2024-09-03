@@ -44,8 +44,7 @@ public class MessageController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> publishMessage(
       @RequestBody final MessagePublicationRequest publicationRequest) {
-    return RequestMapper.toMessagePublicationRequest(
-            publicationRequest)
+    return RequestMapper.toMessagePublicationRequest(publicationRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::publishMessage);
   }
 

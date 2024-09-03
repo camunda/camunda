@@ -129,9 +129,7 @@ public final class ResponseMapper {
   public static ResponseEntity<Object> toMessagePublicationResponse(
       final MessageRecord brokerResponse) {
     final var response =
-        new MessagePublicationResponse()
-            .key(1L)
-            .tenantId(brokerResponse.getTenantId());
+        new MessagePublicationResponse().key(1L).tenantId(brokerResponse.getTenantId());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 

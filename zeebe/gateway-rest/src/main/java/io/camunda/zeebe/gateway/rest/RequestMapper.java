@@ -296,10 +296,11 @@ public class RequestMapper {
                 messagePublicationRequest.getName(),
                 messagePublicationRequest.getCorrelationKey(),
                 messagePublicationRequest.getTimeToLive(),
-                getStringOrEmpty(messagePublicationRequest, MessagePublicationRequest::getMessageId),
+                getStringOrEmpty(
+                    messagePublicationRequest, MessagePublicationRequest::getMessageId),
                 getMapOrEmpty(messagePublicationRequest, MessagePublicationRequest::getVariables),
-                getStringOrEmpty(messagePublicationRequest, MessagePublicationRequest::getTenantId))
-                );
+                getStringOrEmpty(
+                    messagePublicationRequest, MessagePublicationRequest::getTenantId)));
   }
 
   public static Authentication getAuthentication() {

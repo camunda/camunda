@@ -8,13 +8,10 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
