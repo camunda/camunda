@@ -29,7 +29,7 @@ public class RestGatewayPaths {
       REST_API_PATH + "/user-tasks/%s/assignee";
   private static final String URL_USER_TASK_UPDATE = REST_API_PATH + "/user-tasks/%s";
   private static final String URL_MESSAGE_CORRELATION = REST_API_PATH + "/message/correlation";
-  private static final String URL_CLOCK_PIN = REST_API_PATH + "/administration/clock/pin";
+  private static final String URL_CLOCK_PIN = REST_API_PATH + "/administration/clock";
   private static final String URL_CLOCK_RESET = REST_API_PATH + "/administration/clock/reset";
   private static final String URL_INCIDENT_RESOLUTION = REST_API_PATH + "/incidents/%s/resolution";
 

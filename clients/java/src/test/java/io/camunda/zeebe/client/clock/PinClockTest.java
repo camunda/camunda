@@ -39,7 +39,7 @@ public final class PinClockTest extends ClientRestTest {
 
     // then
     assertThat(RestGatewayService.getLastRequest())
-        .hasMethod(RequestMethod.POST)
+        .hasMethod(RequestMethod.PUT)
         .hasUrl(RestGatewayPaths.getClockPinUrl())
         .extractingBody(ClockPinRequest.class)
         .isEqualTo(new ClockPinRequest().timestamp(timestamp));
@@ -55,7 +55,7 @@ public final class PinClockTest extends ClientRestTest {
 
     // then
     assertThat(RestGatewayService.getLastRequest())
-        .hasMethod(RequestMethod.POST)
+        .hasMethod(RequestMethod.PUT)
         .hasUrl(RestGatewayPaths.getClockPinUrl())
         .extractingBody(ClockPinRequest.class)
         .isEqualTo(new ClockPinRequest().timestamp(instant.toEpochMilli()));
