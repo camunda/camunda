@@ -8,26 +8,26 @@
 package io.camunda.exporter.schema;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.json.JsonpDeserializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.NoopExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import org.apache.commons.io.IOUtils;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchEngineClient implements SearchEngineClient {
   private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchEngineClient.class);
+  private static final ObjectMapper MAPPER = new ObjectMapper();
   private final ElasticsearchClient client;
 
   public ElasticsearchEngineClient(final ElasticsearchClient client) {
@@ -68,35 +68,28 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   @Override
-  public void putMapping(final IndexDescriptor indexDescriptor, final String properties) {
-    final PutMappingRequest request = putMappingRequest(indexDescriptor, properties);
+  public void putMapping(
+      final IndexDescriptor indexDescriptor, final Set<IndexMappingProperty> newProperties) {
+    final PutMappingRequest request = putMappingRequest(indexDescriptor, newProperties);
 
     try {
       client.indices().putMapping(request);
       LOG.debug("Mapping in [{}] was successfully updated", indexDescriptor.getIndexName());
     } catch (final IOException e) {
       final var errMsg =
-          String.format("Mapping in [{}] was NOT updated", indexDescriptor.getIndexName());
+          String.format("Mapping in [%s] was NOT updated", indexDescriptor.getIndexName());
       LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
     }
   }
 
   private PutMappingRequest putMappingRequest(
-      final IndexDescriptor indexDescriptor, final String properties) {
+      final IndexDescriptor indexDescriptor, final Set<IndexMappingProperty> newProperties) {
 
-    try (final var propertiesStream = IOUtils.toInputStream(properties, StandardCharsets.UTF_8)) {
-      return new PutMappingRequest.Builder()
-          .index(indexDescriptor.getIndexName())
-          .properties(deserializeJson(TypeMapping._DESERIALIZER, propertiesStream).properties())
-          .build();
-    } catch (final IOException e) {
-      throw new ElasticsearchExporterException(
-          "Failed to load properties json into stream for put mapping into indexes matching the descriptor: ["
-              + indexDescriptor
-              + "]",
-          e);
-    }
+    return new PutMappingRequest.Builder()
+        .index(indexDescriptor.getIndexName())
+        .withJson(IndexMappingProperty.toPropertiesJson(newProperties, MAPPER))
+        .build();
   }
 
   public <T> T deserializeJson(final JsonpDeserializer<T> deserializer, final InputStream json) {

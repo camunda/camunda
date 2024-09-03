@@ -10,6 +10,7 @@ package io.camunda.exporter.schema;
 import io.camunda.exporter.NoopExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
+import java.util.Set;
 
 public interface SearchEngineClient {
   void createIndex(final IndexDescriptor indexDescriptor);
@@ -20,20 +21,9 @@ public interface SearchEngineClient {
       final Boolean create);
 
   /**
-   * The {@code propertiesJson} should have a root properties field, for example:
-   *
-   * <pre>{@code
-   * {
-   *   "properties" : {
-   *     "field" : {
-   *       "type" : "keyword"
-   *     }
-   *   }
-   * }
-   * }</pre>
-   *
    * @param indexDescriptor Representing index of which to update the mappings
-   * @param propertiesJson New properties to be appended to the index
+   * @param newProperties New properties to be appended to the index
    */
-  void putMapping(final IndexDescriptor indexDescriptor, final String propertiesJson);
+  void putMapping(
+      final IndexDescriptor indexDescriptor, final Set<IndexMappingProperty> newProperties);
 }
