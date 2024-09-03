@@ -138,6 +138,7 @@ func main() {
 	// deploymentDir := filepath.Join(parentDir, "configuration", "resources")
 	elasticsearchVersion := "8.13.4"
 	camundaVersion := "8.6.0-alpha3"
+	expectedJavaVersion := 21
 
 	elasticsearchPidPath := filepath.Join(baseDir, "elasticsearch.pid")
 	connectorsPidPath := filepath.Join(baseDir, "connectors.pid")
@@ -174,15 +175,24 @@ func main() {
 			var out strings.Builder
 			javaVersionCmd.Stdout = &out
 			javaVersionCmd.Run()
+			javaVersionOutputSplit := strings.Split(out.String(), " ")
+			if len(javaVersionOutputSplit) == 0 {
+				fmt.Println("Java needs to be installed. Please install JDK " + strconv.Itoa(expectedJavaVersion) + " or newer.")
+				os.Exit(1)
+			}
 			output := strings.Split(out.String(), " ")[1]
 			os.Setenv("JAVA_VERSION", output)
 			javaVersion = output
 		}
 		fmt.Print("Java version is " + javaVersion + "\n")
 
-		javaMajorVersion := strings.Split(javaVersion, ".")[0]
+		versionSplit := strings.Split(javaVersion, ".")
+		if len(versionSplit) == 0 {
+			fmt.Println("Java needs to be installed. Please install JDK " + strconv.Itoa(expectedJavaVersion) + " or newer.")
+			os.Exit(1)
+		}
+		javaMajorVersion := versionSplit[0]
 		javaMajorVersionInt, _ := strconv.Atoi(javaMajorVersion)
-		expectedJavaVersion := 21
 		if javaMajorVersionInt <= expectedJavaVersion {
 			fmt.Print("You must use at least JDK " + strconv.Itoa(expectedJavaVersion) + " to start Camunda Platform Run.\n")
 			os.Exit(1)
@@ -283,8 +293,11 @@ func main() {
 
 	if baseCommand == "stop" {
 		stopProcess(elasticsearchPidPath)
+		fmt.Println("Elasticsearch is stopped.")
 		stopProcess(connectorsPidPath)
+		fmt.Println("Connectors is stopped.")
 		stopProcess(camundaPidPath)
+		fmt.Println("Camunda is stopped.")
 	}
 
 }

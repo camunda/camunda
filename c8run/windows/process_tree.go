@@ -8,15 +8,15 @@ import (
 )
 
 func process_tree(pid int) []*os.Process {
-	fmt.Println("The pid is ", pid)
+	// fmt.Println("The pid is ", pid)
 	rootPid := uint32(pid)
-	fmt.Println("The unsigned pid is ", rootPid)
+	// fmt.Println("The unsigned pid is ", rootPid)
 
 	tree, err := getTreePids(rootPid)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println("tree [", len(tree), "]:\t", tree)
+	// fmt.Println("tree [", len(tree), "]:\t", tree)
 
 	processList := make([]*os.Process, len(tree))
 	for i, pid := range tree {
