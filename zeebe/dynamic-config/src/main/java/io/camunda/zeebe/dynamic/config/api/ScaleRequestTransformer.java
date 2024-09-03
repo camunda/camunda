@@ -47,7 +47,8 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
         // then reassign partitions
         .flatMap(
             ignore ->
-                new PartitionReassignRequestTransformer(members, newReplicationFactor)
+                new PartitionReassignRequestTransformer(
+                        members, newReplicationFactor, Optional.empty())
                     .operations(clusterConfiguration))
         .map(this::addToOperations)
         // then remove members that are not part of the new configuration
