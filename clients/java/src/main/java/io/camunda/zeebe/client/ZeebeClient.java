@@ -19,6 +19,8 @@ import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.ClockPinCommandStep1;
+import io.camunda.zeebe.client.api.command.ClockResetCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
@@ -617,6 +619,60 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   UpdateJobCommandStep1 newUpdateJobCommand(ActivatedJob job);
+
+  /**
+   * Command to pin the Zeebe engine's internal clock to a specific time.
+   *
+   * <p>This method initiates a command to pin the clock to a specified time. You can specify the
+   * time using either an epoch timestamp in milliseconds or an {@link java.time.Instant} object.
+   *
+   * <p>Once pinned, the clock will remain at the specified time and will not advance until another
+   * <code>pin</code> or <code>reset</code> command is issued. This is useful for scenarios where
+   * you need to simulate process execution at a specific point in time.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * final long pinnedTime = 1742461285000L; // Thu, Mar 20, 2025 09:01:25 GMT+0000
+   * zeebeClient
+   *  .newClockPinCommand()
+   *  .time(pinnedTime)
+   *  .send();
+   *
+   * final Instant futureInstant = Instant.now().plus(Duration.ofDays(7));
+   * zeebeClient
+   *  .newClockPinCommand()
+   *  .time(futureInstant)
+   *  .send();
+   * }</pre>
+   *
+   * <p>The command is marked as <strong>experimental</strong> and may undergo changes or
+   * improvements in future releases.
+   *
+   * @return a builder for the command that allows setting either a timestamp or an instant
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/21647")
+  ClockPinCommandStep1 newClockPinCommand();
+
+  /**
+   * Command to reset the Zeebe engine's internal clock to the system time.
+   *
+   * <p>This command allows you to reset the clock to the current system time, effectively undoing
+   * any previous <code>pin</code> command that may have set the clock to a specific, static time.
+   *
+   * <pre>{@code
+   * zeebeClient
+   *  .newClockResetCommand()
+   *  .send();
+   * }</pre>
+   *
+   * <p>The command is marked as <strong>experimental</strong> and may undergo changes or
+   * improvements in future releases.
+   *
+   * @return a builder for the command
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/21647")
+  ClockResetCommandStep1 newClockResetCommand();
 
   /**
    * Executes a search request to query process instances.
