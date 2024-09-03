@@ -23,8 +23,4 @@ public class AuthorizationRecordStream
       final Stream<Record<AuthorizationRecordValue>> wrappedStream) {
     return new AuthorizationRecordStream(wrappedStream);
   }
-
-  public AuthorizationRecordStream withAuthorizationKey(final long authorizationKey) {
-    return valueFilter(v -> v.getAuthorizationKey() == authorizationKey);
-  }
 }

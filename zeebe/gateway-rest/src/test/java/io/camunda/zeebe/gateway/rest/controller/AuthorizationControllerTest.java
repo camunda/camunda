@@ -22,9 +22,11 @@ import io.camunda.zeebe.gateway.protocol.rest.AuthorizationAssignRequest.OwnerTy
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.AuthorizationController;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -52,26 +54,28 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
   @Test
   void createAuthorizationShouldReturnNoContent() {
+    final var resourceIds = List.of("permission1", "permission2");
     final var request =
         new AuthorizationAssignRequest()
             .ownerKey(1L)
             .ownerType(OwnerTypeEnum.USER)
             .resourceKey("2")
             .resourceType("resourceType")
-            .permissions(List.of("permission1", "permission2"));
+            .permissions(resourceIds);
 
     final var authorizationRecord =
         new AuthorizationRecord()
             .setOwnerKey(request.getOwnerKey())
             .setOwnerType(AuthorizationOwnerType.valueOf(request.getOwnerType().getValue()))
-            .setResourceKey(request.getResourceKey())
             .setResourceType(request.getResourceType())
-            .setPermissions(request.getPermissions());
+            .addPermission(
+                new Permission()
+                    .setPermissionType(PermissionType.CREATE)
+                    .addResourceIds(resourceIds));
 
     when(authorizationServices.createAuthorization(
             request.getOwnerKey(),
             AuthorizationOwnerType.valueOf(request.getOwnerType().getValue()),
-            request.getResourceKey(),
             request.getResourceType(),
             request.getPermissions()))
         .thenReturn(CompletableFuture.completedFuture(authorizationRecord));
@@ -90,7 +94,6 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .createAuthorization(
             request.getOwnerKey(),
             AuthorizationOwnerType.valueOf(request.getOwnerType().getValue()),
-            request.getResourceKey(),
             request.getResourceType(),
             request.getPermissions());
   }
@@ -108,7 +111,6 @@ public class AuthorizationControllerTest extends RestControllerTest {
     when(authorizationServices.createAuthorization(
             request.getOwnerKey(),
             AuthorizationOwnerType.valueOf(request.getOwnerType().getValue()),
-            request.getResourceKey(),
             request.getResourceType(),
             request.getPermissions()))
         .thenThrow(

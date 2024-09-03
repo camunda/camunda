@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -68,6 +69,8 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.JsonUtil;
@@ -2578,20 +2581,33 @@ final class JsonSerializableToJsonTest {
         (Supplier<AuthorizationRecord>)
             () ->
                 new AuthorizationRecord()
-                    .setAuthorizationKey(1L)
-                    .setOwnerKey(2L)
+                    .setAction(PermissionAction.ADD)
+                    .setOwnerKey(1L)
                     .setOwnerType(AuthorizationOwnerType.USER)
-                    .setResourceKey("resource")
                     .setResourceType("type")
-                    .setPermissions(List.of("permission")),
+                    .addPermission(
+                        new Permission()
+                            .setPermissionType(PermissionType.CREATE)
+                            .addResourceId("*")
+                            .addResourceId("bpmnProcessId:foo"))
+                    .addPermission(
+                        new Permission().setPermissionType(PermissionType.READ).addResourceId("*")),
         """
         {
-          "authorizationKey": 1,
-          "ownerKey": 2,
+          "action": "ADD",
+          "ownerKey": 1,
           "ownerType": "USER",
-          "resourceKey": "resource",
           "resourceType": "type",
-          "permissions": ["permission"]
+          "permissions": [
+            {
+              "permissionType": "CREATE",
+              "resourceIds": ["*", "bpmnProcessId:foo"]
+            },
+            {
+              "permissionType": "READ",
+              "resourceIds": ["*"]
+            }
+          ]
         }
         """
       },
@@ -2603,16 +2619,15 @@ final class JsonSerializableToJsonTest {
         (Supplier<AuthorizationRecord>)
             () ->
                 new AuthorizationRecord()
+                    .setAction(PermissionAction.ADD)
                     .setOwnerKey(1L)
                     .setOwnerType(AuthorizationOwnerType.USER)
-                    .setResourceKey("resource")
                     .setResourceType("type"),
         """
         {
-          "authorizationKey": -1,
+          "action": "ADD",
           "ownerKey": 1,
           "ownerType": "USER",
-          "resourceKey": "resource",
           "resourceType": "type",
           "permissions": []
         }
