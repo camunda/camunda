@@ -71,7 +71,7 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
     if (ContentType.APPLICATION_JSON.isSameMimeType(contentType)) {
       responseType = ResponseType.JSON;
     } else if (ContentType.APPLICATION_PROBLEM_JSON.isSameMimeType(contentType)) {
-      responseType = ResponseType.JSON_PROBLEM;
+      responseType = ResponseType.PROBLEM_JSON;
     } else {
       responseType =
           SUPPORTED_TEXT_CONTENT_TYPES.stream().anyMatch(t -> t.isSameMimeType(contentType))
@@ -118,7 +118,7 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
     final int offset = bufferedBytes;
     bufferedBytes += src.remaining();
 
-    if (responseType == ResponseType.TEXT || responseType == ResponseType.UNKNOWN) {
+    if (!responseType.isJson()) {
       consumeNonJsonBody(src, offset);
     } else {
       consumeJsonBody(src, endOfStream);
@@ -167,10 +167,20 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
     }
   }
 
-  enum ResponseType {
-    JSON,
-    JSON_PROBLEM,
-    TEXT,
-    UNKNOWN
+  private enum ResponseType {
+    JSON(true),
+    PROBLEM_JSON(true),
+    TEXT(false),
+    UNKNOWN(false);
+
+    private final boolean isJson;
+
+    ResponseType(final boolean isJson) {
+      this.isJson = isJson;
+    }
+
+    public boolean isJson() {
+      return isJson;
+    }
   }
 }
