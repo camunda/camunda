@@ -8,12 +8,14 @@
 package io.camunda.zeebe.it.client.command;
 
 import static io.camunda.zeebe.it.util.ZeebeAssertHelper.assertClockPinned;
+import static io.camunda.zeebe.it.util.ZeebeAssertHelper.assertClockResetted;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -26,7 +28,7 @@ import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
 @AutoCloseResources
-class PinClockTest {
+class ClockTest {
 
   private static final long FIXED_TIME = 1742461285000L;
 
@@ -59,7 +61,7 @@ class PinClockTest {
   }
 
   @Test
-  void shouldRejectIfPinTimeIsNotProvided() {
+  void shouldRejectPinOperationIfNoTimestampProvided() {
     // when / then
     assertThatThrownBy(() -> client.newClockPinCommand().send().join())
         .hasCauseInstanceOf(ProblemException.class)
@@ -73,10 +75,19 @@ class PinClockTest {
   }
 
   @Test
-  void shouldRaiseIllegalArgumentExceptionWhenNullInstantProvided() {
+  void shouldRaiseIllegalArgumentExceptionWhenPinningClockWithNullInstant() {
     // when / then
     assertThatThrownBy(() -> client.newClockPinCommand().time(null).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("instant must not be null");
+  }
+
+  @Test
+  void shouldResetClock() {
+    // when
+    client.newClockResetCommand().send().join();
+
+    // then
+    assertClockResetted(c -> Assertions.assertThat(c).hasTime(0L));
   }
 }
