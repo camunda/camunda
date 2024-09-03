@@ -14,6 +14,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Optional;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -172,6 +174,86 @@ class CommandDistributionBehaviorTest {
         .sendCommand(eq(1), eq(valueType), eq(intent), eq(key), any());
     verify(mockInterpartitionCommandSender)
         .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any());
+    verifyNoMoreInteractions(mockInterpartitionCommandSender);
+  }
+
+  @Test
+  void shouldStartQueueImmediately() {
+    // given 3 partitions and behavior on partition 1
+    final var behavior =
+        new CommandDistributionBehavior(
+            mockKeyGenerator,
+            mockDistributionState,
+            writers,
+            1,
+            RoutingInfo.forStaticPartitions(3),
+            mockInterpartitionCommandSender);
+
+    // when distributing first command in queue to all partitions
+    behavior.withKey(key).inQueue("test-queue").distribute(command);
+
+    // then command distribution is started on partition 1, distribution is enqueued and triggered
+    // immediately for partitions 2 and 3
+    Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
+        .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
+        .containsExactly(
+            tuple(key, CommandDistributionIntent.STARTED, 1),
+            tuple(key, CommandDistributionIntent.ENQUEUED, 2),
+            tuple(key, CommandDistributionIntent.DISTRIBUTING, 2),
+            tuple(key, CommandDistributionIntent.ENQUEUED, 3),
+            tuple(key, CommandDistributionIntent.DISTRIBUTING, 3));
+
+    // then command is sent immediately to partitions 2 and 3
+    fakeProcessingResultBuilder.flushPostCommitTasks();
+    verify(mockInterpartitionCommandSender)
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any());
+    verify(mockInterpartitionCommandSender)
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any());
+    verifyNoMoreInteractions(mockInterpartitionCommandSender);
+  }
+
+  @Test
+  void shouldWaitInQueue() {
+    // given 3 partitions and behavior on partition 1
+    final var behavior =
+        new CommandDistributionBehavior(
+            mockKeyGenerator,
+            mockDistributionState,
+            writers,
+            1,
+            RoutingInfo.forStaticPartitions(3),
+            mockInterpartitionCommandSender);
+
+    final var firstKey = Protocol.encodePartitionId(1, 100);
+    final var secondKey = Protocol.encodePartitionId(1, 101);
+
+    // when adding two distributions to the same queue
+    behavior.withKey(firstKey).inQueue("test-queue").distribute(command);
+    when(mockDistributionState.nextQueuedDistributionKey("test-queue", 2))
+        .thenReturn(Optional.of(firstKey));
+    when(mockDistributionState.nextQueuedDistributionKey("test-queue", 3))
+        .thenReturn(Optional.of(firstKey));
+    behavior.withKey(secondKey).inQueue("test-queue").distribute(command);
+
+    // then first distribution is triggered immediately and second distribution is enqueued
+    Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
+        .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
+        .containsExactly(
+            tuple(firstKey, CommandDistributionIntent.STARTED, 1),
+            tuple(firstKey, CommandDistributionIntent.ENQUEUED, 2),
+            tuple(firstKey, CommandDistributionIntent.DISTRIBUTING, 2),
+            tuple(firstKey, CommandDistributionIntent.ENQUEUED, 3),
+            tuple(firstKey, CommandDistributionIntent.DISTRIBUTING, 3),
+            tuple(secondKey, CommandDistributionIntent.STARTED, 1),
+            tuple(secondKey, CommandDistributionIntent.ENQUEUED, 2),
+            tuple(secondKey, CommandDistributionIntent.ENQUEUED, 3));
+
+    // then first distribution is sent out immediately, second distribution isn't
+    fakeProcessingResultBuilder.flushPostCommitTasks();
+    verify(mockInterpartitionCommandSender)
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(firstKey), any());
+    verify(mockInterpartitionCommandSender)
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(firstKey), any());
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
   }
 }
