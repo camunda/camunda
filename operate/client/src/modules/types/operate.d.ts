@@ -108,5 +108,5 @@ interface ListenerEntity {
   jobType: string;
   event: 'UNSPECIFIED' | 'START' | 'END';
   time: string;
-  sortValues: ReadonlyArray<string>; // @TODO: Check if it is needed
+  sortValues: ReadonlyArray<string>;
 }

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const mockListeners: ListenerEntity[] = [
+const mockListenerInstances: ListenerEntity[] = [
   {
     listenerType: 'EXECUTION_LISTENER',
     listenerKey: '2344567895437401',
@@ -171,4 +171,4 @@ const mockListeners: ListenerEntity[] = [
   },
 ];
 
-export {mockListeners};
+export {mockListenerInstances};
