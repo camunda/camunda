@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.process.rest;
+package io.camunda.zeebe.client.clock;
 
 import static io.camunda.zeebe.client.util.assertions.LoggedRequestAssert.assertThat;
 
@@ -23,20 +23,17 @@ import io.camunda.zeebe.client.util.RestGatewayPaths;
 import io.camunda.zeebe.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
 
-public class ResolveIncidentRestTest extends ClientRestTest {
+public final class ResetClockTest extends ClientRestTest {
 
   @Test
-  public void shouldSendCommand() {
-    // given
-    final int incidentKey = 123;
-
+  void shouldResetClock() {
     // when
-    client.newResolveIncidentCommand(incidentKey).send().join();
+    client.newClockResetCommand().send().join();
 
     // then
     assertThat(RestGatewayService.getLastRequest())
         .hasMethod(RequestMethod.POST)
-        .hasUrl(RestGatewayPaths.getIncidentResolutionUrl(incidentKey))
+        .hasUrl(RestGatewayPaths.getClockResetUrl())
         .hasEmptyBody();
   }
 }

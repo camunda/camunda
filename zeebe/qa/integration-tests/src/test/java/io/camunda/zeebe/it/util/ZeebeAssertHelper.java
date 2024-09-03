@@ -14,12 +14,14 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
@@ -193,6 +195,23 @@ public final class ZeebeAssertHelper {
 
     assertThat(userTask).isNotNull();
     consumer.accept(userTask);
+  }
+
+  public static void assertClockPinned(final Consumer<ClockRecordValue> consumer) {
+    assertClockRecordValue(ClockIntent.PINNED, consumer);
+  }
+
+  public static void assertClockResetted(final Consumer<ClockRecordValue> consumer) {
+    assertClockRecordValue(ClockIntent.RESETTED, consumer);
+  }
+
+  private static void assertClockRecordValue(
+      final ClockIntent intent, final Consumer<ClockRecordValue> consumer) {
+    final ClockRecordValue clockRecord =
+        RecordingExporter.clockRecords(intent).findFirst().map(Record::getValue).orElse(null);
+
+    assertThat(clockRecord).isNotNull();
+    consumer.accept(clockRecord);
   }
 
   public static void assertElementCompleted(final String bpmnId, final String activity) {
