@@ -50,8 +50,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   @Override
   public void createIndexTemplate(
-      final IndexTemplateDescriptor templateDescriptor, final IndexSettings settings) {
-    final PutIndexTemplateRequest request = putIndexTemplateRequest(templateDescriptor, settings);
+      final IndexTemplateDescriptor templateDescriptor, final IndexSettings settings, final Boolean create) {
+    final PutIndexTemplateRequest request = putIndexTemplateRequest(templateDescriptor, settings, create);
 
     try {
       client.indices().putIndexTemplate(request);
@@ -107,7 +107,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   private PutIndexTemplateRequest putIndexTemplateRequest(
-      final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSettings settings) {
+      final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSettings settings, final Boolean create) {
 
     try (final var templateMappings =
         getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
@@ -129,7 +129,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                                           .numberOfReplicas(
                                               String.valueOf(settings.numberOfReplicas)))))
           .composedOf(indexTemplateDescriptor.getComposedOf())
-          .create(true)
+          .create(create)
           .build();
     } catch (final IOException e) {
       throw new ElasticsearchExporterException(

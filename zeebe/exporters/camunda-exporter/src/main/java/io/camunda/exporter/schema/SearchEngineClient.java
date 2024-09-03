@@ -15,7 +15,9 @@ public interface SearchEngineClient {
   void createIndex(final IndexDescriptor indexDescriptor);
 
   void createIndexTemplate(
-      final IndexTemplateDescriptor indexDescriptor, final IndexSettings settings);
+      final IndexTemplateDescriptor indexDescriptor,
+      final IndexSettings settings,
+      final Boolean create);
 
   /**
    * The {@code propertiesJson} should have a root properties field, for example:

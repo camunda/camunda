@@ -16,14 +16,4 @@ public interface IndexTemplateDescriptor extends IndexDescriptor {
   String getTemplateName();
 
   List<String> getComposedOf();
-
-  /**
-   * Maps to the create query parameter, if true the corresponding request cannot replace or update
-   * an existing component template, defaults to false
-   *
-   * @return The component template request is create only
-   */
-  default Boolean create() {
-    return false;
-  }
 }

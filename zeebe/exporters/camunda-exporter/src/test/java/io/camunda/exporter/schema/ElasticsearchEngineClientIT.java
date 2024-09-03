@@ -92,7 +92,7 @@ public class ElasticsearchEngineClientIT {
     final var settings = new IndexSettings();
     settings.numberOfShards = 1;
     settings.numberOfReplicas = 0;
-    elsEngineClient.createIndexTemplate(indexTemplate, settings);
+    elsEngineClient.createIndexTemplate(indexTemplate, settings, true);
 
     // then
     final var indexTemplates =
