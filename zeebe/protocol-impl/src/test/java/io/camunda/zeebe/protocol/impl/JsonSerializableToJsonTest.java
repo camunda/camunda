@@ -2119,6 +2119,8 @@ final class JsonSerializableToJsonTest {
         """
         {
           "partitionId": 1,
+          "queueId": null,
+          "queueInsertionKey": -1,
           "valueType": "DEPLOYMENT",
           "intent": "CREATE",
           "commandValue": {
@@ -2156,6 +2158,8 @@ final class JsonSerializableToJsonTest {
         """
         {
           "partitionId": 1,
+          "queueId": null,
+          "queueInsertionKey": -1,
           "valueType": "NULL_VAL",
           "intent": "UNKNOWN",
           "commandValue": null
