@@ -5,27 +5,24 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state.migration.to_8_5;
+package io.camunda.zeebe.engine.state.migration;
 
-import io.camunda.zeebe.engine.state.migration.MigrationTask;
-import io.camunda.zeebe.engine.state.migration.MigrationTaskContext;
-import io.camunda.zeebe.engine.state.migration.MutableMigrationTaskContext;
-
-public class ColumnFamilyPrefixCorrectionMigration implements MigrationTask {
+public class RoutingInfoMigration implements MigrationTask {
 
   @Override
   public String getIdentifier() {
-    return getClass().getSimpleName();
+    return "RoutingInfoMigration";
   }
 
   @Override
   public boolean needsToRun(final MigrationTaskContext context) {
-    return true;
+    return !context.processingState().getRoutingState().isInitialized();
   }
 
   @Override
   public void runMigration(final MutableMigrationTaskContext context) {
-    final var migrationState = context.processingState().getMigrationState();
-    migrationState.correctColumnFamilyPrefix();
+    final var routingState = context.processingState().getRoutingState();
+    final var partitionCount = context.clusterContext().partitionCount();
+    routingState.initializeRoutingInfo(partitionCount);
   }
 }

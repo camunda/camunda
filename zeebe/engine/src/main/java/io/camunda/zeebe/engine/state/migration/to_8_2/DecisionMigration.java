@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.migration.to_8_2;
 
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.migration.MigrationTask;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.migration.MigrationTaskContext;
+import io.camunda.zeebe.engine.state.migration.MutableMigrationTaskContext;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
 /**
@@ -25,15 +25,17 @@ public class DecisionMigration implements MigrationTask {
   }
 
   @Override
-  public boolean needsToRun(final ProcessingState processingState) {
-    return processingState.isEmpty(
-            ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION)
-        && !processingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISIONS);
+  public boolean needsToRun(final MigrationTaskContext context) {
+    return context
+            .processingState()
+            .isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION)
+        && !context.processingState().isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISIONS);
   }
 
   @Override
-  public void runMigration(final MutableProcessingState processingState) {
-    processingState
+  public void runMigration(final MutableMigrationTaskContext context) {
+    context
+        .processingState()
         .getMigrationState()
         .migrateDecisionsPopulateDecisionVersionByDecisionIdAndDecisionKey();
   }

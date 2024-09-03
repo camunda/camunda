@@ -190,7 +190,9 @@ public enum ZbColumnFamilies implements EnumValue {
   FORM_KEY_BY_FORM_ID_AND_VERSION_TAG(93),
 
   AUTHORIZATION_KEY_BY_RESOURCE_ID_AND_OWNER_KEY(94),
-  OWNER_TYPE_BY_OWNER_KEY(95);
+  OWNER_TYPE_BY_OWNER_KEY(95),
+
+  ROUTING(96);
 
   private final int value;
 
