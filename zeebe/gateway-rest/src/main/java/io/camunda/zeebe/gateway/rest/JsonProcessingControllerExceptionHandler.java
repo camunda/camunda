@@ -28,6 +28,9 @@ import org.springframework.web.bind.annotation.RestController;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class JsonProcessingControllerExceptionHandler {
 
+  private static final String ERROR_MESSAGE = "Invalid input: '%s' for field '%s' registered as %s";
+  private static final Pattern PATH_PATTERN = Pattern.compile("\\[\"(.*?)\"]");
+
   /**
    * Applied only for {@link UserTaskUpdateRequest} and {@link UserTaskSearchQueryRequest} for
    * strict parsing of Integers, using the {@link GatewayObjectMapper#strictIntegerObjectMapper()}
@@ -36,12 +39,11 @@ public class JsonProcessingControllerExceptionHandler {
   @ExceptionHandler(JsonProcessingException.class)
   public ResponseEntity<ProblemDetail> handleJsonProcessingException(
       final JsonProcessingException ex) {
-    final String errorMessage = "Invalid input: '%s' for field '%s' registered as %s";
     if (ex instanceof final InvalidFormatException ife) {
       final var problemDetail =
           RestErrorMapper.createProblemDetail(
               HttpStatus.BAD_REQUEST,
-              errorMessage.formatted(
+              ERROR_MESSAGE.formatted(
                   ife.getValue(), extractPathReference(ife), ife.getTargetType().getName()),
               INVALID_ARGUMENT.name());
       return RestErrorMapper.mapProblemToResponse(problemDetail);
@@ -52,8 +54,7 @@ public class JsonProcessingControllerExceptionHandler {
   }
 
   private String extractPathReference(final InvalidFormatException ex) {
-    final Pattern pathPattern = Pattern.compile("\\[\"(.*?)\"]");
-    final var matcher = pathPattern.matcher(ex.getPathReference());
+    final var matcher = PATH_PATTERN.matcher(ex.getPathReference());
     final StringBuilder path = new StringBuilder();
     while (matcher.find()) {
       path.append(matcher.group(1)).append(".");
