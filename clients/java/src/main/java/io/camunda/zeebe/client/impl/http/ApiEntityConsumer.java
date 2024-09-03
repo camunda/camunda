@@ -74,7 +74,7 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
       responseType = ResponseType.JSON_PROBLEM;
     } else {
       responseType =
-          SUPPORTED_TEXT_CONTENT_TYPES.stream().anyMatch(contentType::isSameMimeType)
+          SUPPORTED_TEXT_CONTENT_TYPES.stream().anyMatch(t -> t.isSameMimeType(contentType))
               ? ResponseType.TEXT
               : ResponseType.UNKNOWN;
       nonJsonBody = new byte[1024];
