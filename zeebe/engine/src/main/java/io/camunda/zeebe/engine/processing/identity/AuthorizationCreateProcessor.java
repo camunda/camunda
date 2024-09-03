@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -51,7 +52,7 @@ public class AuthorizationCreateProcessor
         authorizationState.getResourceIdentifiers(
             authorizationToCreate.getOwnerKey(),
             authorizationToCreate.getOwnerType(),
-            authorizationToCreate.getResourceType());
+            authorizationToCreate.getResourceType(), PermissionType.CREATE);
 
     if (authorization != null) {
       final var rejectionMessage =

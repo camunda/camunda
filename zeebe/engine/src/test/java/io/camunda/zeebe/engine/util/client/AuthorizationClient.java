@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.function.Function;
@@ -58,6 +59,11 @@ public final class AuthorizationClient {
       return this;
     }
 
+    public AuthorizationCreationClient withAction(final PermissionAction action) {
+      authorizationCreationRecord.setAction(action);
+      return this;
+    }
+
     public AuthorizationCreationClient withOwnerType(final AuthorizationOwnerType ownerType) {
       authorizationCreationRecord.setOwnerType(ownerType);
       return this;
@@ -72,6 +78,11 @@ public final class AuthorizationClient {
         final PermissionType permissionType, final String resourceId) {
       authorizationCreationRecord.addPermission(
           new Permission().setPermissionType(permissionType).addResourceId(resourceId));
+      return this;
+    }
+
+    public AuthorizationCreationClient withPermission(final Permission permission) {
+      authorizationCreationRecord.addPermission(permission);
       return this;
     }
 

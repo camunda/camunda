@@ -9,8 +9,12 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.authorization.ResourceIdentifiers;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 
 public interface AuthorizationState {
   ResourceIdentifiers getResourceIdentifiers(
-      Long ownerKey, AuthorizationOwnerType ownerType, String resourceType);
+      Long ownerKey,
+      AuthorizationOwnerType ownerType,
+      String resourceType,
+      final PermissionType permissionType);
 }

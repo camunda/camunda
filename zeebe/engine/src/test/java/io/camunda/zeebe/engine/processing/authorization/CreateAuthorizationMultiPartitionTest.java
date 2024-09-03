@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -39,6 +40,7 @@ public class CreateAuthorizationMultiPartitionTest {
     ENGINE
         .authorization()
         .newAuthorization()
+        .withAction(PermissionAction.ADD)
         .withOwnerKey(1L)
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType("bpmn-id")
