@@ -31,7 +31,7 @@ if not exist "%connectorsFileName%" (
 )
 
 
-go build -C windows -o ..\c8run.exe
+go build -C windows -trimpath -o ..\c8run.exe
 
 tar -czvf camunda8-run-%CAMUNDA_VERSION%-windows-x86_64.tar.gz ^
   -C ..\ ^
