@@ -33,7 +33,7 @@ public final class DbRoutingState implements MutableRoutingState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     columnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.CLOCK, transactionContext, key, currentRoutingInfo);
+            ZbColumnFamilies.ROUTING, transactionContext, key, currentRoutingInfo);
   }
 
   @Override
