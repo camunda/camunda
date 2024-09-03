@@ -77,5 +77,9 @@ public interface PartitionContext {
 
   void setStreamClock(ControllableStreamClock clock);
 
+  /**
+   * Returns the number of partitions in the cluster at the time of partition creation. This number
+   * does not update during scale up.
+   */
   int getPartitionCount();
 }
