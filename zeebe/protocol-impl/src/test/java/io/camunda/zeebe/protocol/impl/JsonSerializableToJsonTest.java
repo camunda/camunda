@@ -69,6 +69,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
@@ -2556,22 +2557,33 @@ final class JsonSerializableToJsonTest {
         (Supplier<AuthorizationRecord>)
             () ->
                 new AuthorizationRecord()
+                    .setAction(PermissionAction.ADD)
                     .setOwnerKey(1L)
                     .setOwnerType(AuthorizationOwnerType.USER)
                     .setResourceType("type")
                     .addPermission(
                         new Permission()
                             .setPermissionType(PermissionType.CREATE)
-                            .addResourceId("*")),
+                            .addResourceId("*")
+                            .addResourceId("bpmnProcessId:foo"))
+                    .addPermission(
+                        new Permission().setPermissionType(PermissionType.READ).addResourceId("*")),
         """
         {
+          "action": "ADD",
           "ownerKey": 1,
           "ownerType": "USER",
           "resourceType": "type",
-          "permissions": {
-            "permissionType": "CREATE",
-            "resourceIds": ["*"]
-          }
+          "permissions": [
+            {
+              "permissionType": "CREATE",
+              "resourceIds": ["*", "bpmnProcessId:foo"]
+            },
+            {
+              "permissionType": "READ",
+              "resourceIds": ["*"]
+            }
+          ]
         }
         """
       },
@@ -2583,11 +2595,13 @@ final class JsonSerializableToJsonTest {
         (Supplier<AuthorizationRecord>)
             () ->
                 new AuthorizationRecord()
+                    .setAction(PermissionAction.ADD)
                     .setOwnerKey(1L)
                     .setOwnerType(AuthorizationOwnerType.USER)
                     .setResourceType("type"),
         """
         {
+          "action": "ADD",
           "ownerKey": 1,
           "ownerType": "USER",
           "resourceType": "type",
