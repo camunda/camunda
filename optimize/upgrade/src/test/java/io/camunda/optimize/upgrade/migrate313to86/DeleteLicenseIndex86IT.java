@@ -13,26 +13,26 @@ import java.util.List;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
-public class DeleteProcessInstanceArchiveIndex86IT extends AbstractUpgrade86IT {
+public class DeleteLicenseIndex86IT extends AbstractUpgrade86IT {
 
   @Test
   @SneakyThrows
-  public void deleteProcessInstanceArchiveIndex() {
-    // given
-    List<String> processInstanceArchiveIndexList =
+  public void deleteLicenseIndex() {
+    // given pre-upgrade
+    List<String> licenseIndexPreUpgrade =
         prefixAwareClient.getAllIndexNames().stream()
-            .filter(indexName -> indexName.contains("process-instance-archive-"))
+            .filter(indexName -> indexName.contains("license"))
             .toList();
-    assertThat(processInstanceArchiveIndexList).hasSize(2);
+    assertThat(licenseIndexPreUpgrade).hasSize(1);
 
     // when
     performUpgrade();
 
     // then
-    List<String> processInstanceArchiveIndexListPostUpgrade =
+    List<String> licenseIndexPostUpgrade =
         prefixAwareClient.getAllIndexNames().stream()
-            .filter(indexName -> indexName.contains("process-instance-archive-"))
+            .filter(indexName -> indexName.contains("license"))
             .toList();
-    assertThat(processInstanceArchiveIndexListPostUpgrade).isEmpty();
+    assertThat(licenseIndexPostUpgrade).isEmpty();
   }
 }
