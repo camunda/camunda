@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,7 +70,8 @@ public class JobTimeoutCleanupMigrationTest {
     deadlinesColumnFamily.upsert(deadlineJobKey, DbNil.INSTANCE);
 
     // when
-    jobTimeoutCleanupMigration.runMigration(processingState);
+    jobTimeoutCleanupMigration.runMigration(
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
     // then
     assertThat(deadlinesColumnFamily.exists(deadlineJobKey)).isTrue();
@@ -84,7 +86,8 @@ public class JobTimeoutCleanupMigrationTest {
     jobsColumnFamily.deleteExisting(jobKey);
 
     // when
-    jobTimeoutCleanupMigration.runMigration(processingState);
+    jobTimeoutCleanupMigration.runMigration(
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
     // then
     assertThat(deadlinesColumnFamily.exists(deadlineJobKey)).isFalse();
@@ -102,7 +105,8 @@ public class JobTimeoutCleanupMigrationTest {
     deadlinesColumnFamily.upsert(deadlineJobKey, DbNil.INSTANCE);
 
     // when
-    jobTimeoutCleanupMigration.runMigration(processingState);
+    jobTimeoutCleanupMigration.runMigration(
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
     // then
     deadlineKey.wrapLong(firstDeadline);
