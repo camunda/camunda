@@ -52,7 +52,8 @@ public class AuthorizationCreateProcessor
         authorizationState.getResourceIdentifiers(
             authorizationToCreate.getOwnerKey(),
             authorizationToCreate.getOwnerType(),
-            authorizationToCreate.getResourceType(), PermissionType.CREATE);
+            authorizationToCreate.getResourceType(),
+            PermissionType.CREATE);
 
     if (authorization != null) {
       final var rejectionMessage =
