@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
+import io.camunda.zeebe.client.api.access.DecisionDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
@@ -765,10 +766,32 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * warning is removed, anything described below may not yet have taken effect, and the interface
    * and its description are subject to change.</strong>
    *
-   * @return a builder for the decision requirements query
+   * @return a builder for the decision definition query
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   DecisionDefinitionQuery newDecisionDefinitionQuery();
+
+  /*
+   * Retrieves the XML representation of a decision definition.
+   *
+   * <pre>
+   * long decisionKey = ...;
+   *
+   * zeebeClient
+   *  .newDecisionDefinitionGetXmlRequest(decisionKey)
+   *  .send();
+   * </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @return a builder for the request to get the XML of a decision definition
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  DecisionDefinitionGetXmlRequest newDecisionDefinitionGetXmlRequest(long decisionKey);
 
   /*
    * Executes a search request to query decision definitions.

@@ -134,7 +134,7 @@ public class SearchDecisionDefinitionTest {
         .untilAsserted(
             () -> {
               final var result = zeebeClient.newDecisionDefinitionQuery().send().join();
-              assertThat(result.items().size()).isEqualTo(3);
+              assertThat(result.items().size()).isEqualTo(DEPLOYED_DECISIONS.size());
             });
   }
 

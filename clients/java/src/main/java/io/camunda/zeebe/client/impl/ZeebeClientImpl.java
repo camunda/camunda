@@ -22,6 +22,7 @@ import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.access.DecisionDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
@@ -59,6 +60,7 @@ import io.camunda.zeebe.client.api.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.UserTaskQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.zeebe.client.impl.access.DecisionDefinitionGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
@@ -538,6 +540,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public DecisionDefinitionQuery newDecisionDefinitionQuery() {
     return new DecisionDefinitionQueryImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public DecisionDefinitionGetXmlRequest newDecisionDefinitionGetXmlRequest(
+      final long decisionKey) {
+    return new DecisionDefinitionGetXmlRequestImpl(httpClient, jsonMapper, decisionKey);
   }
 
   @Override
