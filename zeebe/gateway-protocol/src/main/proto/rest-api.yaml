@@ -1505,16 +1505,7 @@ components:
         callHierarchy:
           type: array
           items:
-            $ref: "#/components/schemas/CallHierarchyItem"
-    CallHierarchyItem:
-      type: object
-      properties:
-        instanceId:
-          type: string
-        processDefinitionId:
-          type: string
-        processDefinitionName:
-          type: string
+            $ref: "#/components/schemas/ProcessInstanceReferenceItem"
     DecisionDefinitionSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"

@@ -30,8 +30,8 @@ public class OperationImpl implements Operation {
   public OperationImpl(final OperationItem item) {
     id = item.getId();
     batchOperationId = item.getBatchOperationId();
-    type = item.getType().toString();
-    state = item.getState().toString();
+    type = (item.getType() == null) ? null : item.getType().toString();
+    state = (item.getState() == null) ? null : item.getState().toString();
     errorMessage = item.getErrorMessage();
     completedDate = item.getCompletedDate();
   }

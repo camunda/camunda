@@ -17,30 +17,68 @@ package io.camunda.zeebe.client.impl.search.response;
 
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceItem;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ProcessInstanceImpl implements ProcessInstance {
 
-  private final String tenantId;
   private final Long key;
-  private final Long processDefinitionKey;
+  private final String processName;
   private final Integer processVersion;
   private final String bpmnProcessId;
+  private final Long parentProcessInstanceKey;
+  private final Long parentFlowNodeInstanceKey;
   private final String startDate;
   private final String endDate;
+  private final String state;
+  private final Boolean incident;
+  private final Boolean hasActiveOperation;
+  private final Long processDefinitionKey;
+  private final String tenantId;
+  private final String rootInstanceId;
+  private final List<OperationImpl> operations;
+  private final List<ProcessInstanceReferenceImpl> callHierarchy;
 
   public ProcessInstanceImpl(final ProcessInstanceItem item) {
-    tenantId = item.getTenantId();
-    key = item.getKey();
-    processDefinitionKey = item.getProcessDefinitionKey();
-    processVersion = item.getProcessVersion();
-    bpmnProcessId = item.getBpmnProcessId();
-    startDate = item.getStartDate();
-    endDate = item.getEndDate();
+    this.key = item.getKey();
+    this.processName = item.getProcessName();
+    this.processVersion = item.getProcessVersion();
+    this.bpmnProcessId = item.getBpmnProcessId();
+    this.parentProcessInstanceKey = item.getParentKey();
+    this.parentFlowNodeInstanceKey = item.getParentFlowNodeInstanceKey();
+    this.startDate = item.getStartDate();
+    this.endDate = item.getEndDate();
+    this.state = (item.getState() == null) ? null : item.getState().toString();
+    this.incident = item.getIncident();
+    this.hasActiveOperation = item.getHasActiveOperation();
+    this.processDefinitionKey = item.getProcessDefinitionKey();
+    this.tenantId = item.getTenantId();
+    this.rootInstanceId = item.getRootInstanceId();
+    this.operations =
+        (item.getOperations() == null)
+            ? null
+            : item.getOperations().stream().map(OperationImpl::new).collect(Collectors.toList());
+    this.callHierarchy =
+        (item.getCallHierarchy() == null)
+            ? null
+            : item.getCallHierarchy().stream()
+                .map(ProcessInstanceReferenceImpl::new)
+                .collect(Collectors.toList());
   }
 
   @Override
-  public long getProcessDefinitionKey() {
-    return processDefinitionKey;
+  public Long getKey() {
+    return key;
+  }
+
+  @Override
+  public String getProcessName() {
+    return processName;
+  }
+
+  @Override
+  public Integer getProcessVersion() {
+    return processVersion;
   }
 
   @Override
@@ -49,18 +87,13 @@ public class ProcessInstanceImpl implements ProcessInstance {
   }
 
   @Override
-  public int getVersion() {
-    return processVersion;
+  public Long getParentProcessInstanceKey() {
+    return parentProcessInstanceKey;
   }
 
   @Override
-  public long getProcessInstanceKey() {
-    return key;
-  }
-
-  @Override
-  public String getTenantId() {
-    return tenantId;
+  public Long getParentFlowNodeInstanceKey() {
+    return parentFlowNodeInstanceKey;
   }
 
   @Override
@@ -71,5 +104,45 @@ public class ProcessInstanceImpl implements ProcessInstance {
   @Override
   public String getEndDate() {
     return endDate;
+  }
+
+  @Override
+  public String getState() {
+    return state;
+  }
+
+  @Override
+  public Boolean getIncident() {
+    return incident;
+  }
+
+  @Override
+  public Boolean getHasActiveOperation() {
+    return hasActiveOperation;
+  }
+
+  @Override
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  @Override
+  public String getRootInstanceId() {
+    return rootInstanceId;
+  }
+
+  @Override
+  public List<OperationImpl> getOperations() {
+    return operations;
+  }
+
+  @Override
+  public List<ProcessInstanceReferenceImpl> getCallHierarchy() {
+    return callHierarchy;
   }
 }

@@ -60,6 +60,25 @@ public class ProcessInstanceQueryImpl
   }
 
   @Override
+  public FinalSearchQueryStep<ProcessInstance> requestTimeout(final Duration requestTimeout) {
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    return this;
+  }
+
+  @Override
+  public ZeebeFuture<SearchQueryResponse<ProcessInstance>> send() {
+    final HttpZeebeFuture<SearchQueryResponse<ProcessInstance>> result = new HttpZeebeFuture<>();
+    httpClient.post(
+        "/process-instances/search",
+        jsonMapper.toJson(request),
+        httpRequestConfig.build(),
+        ProcessInstanceSearchQueryResponse.class,
+        SearchResponseMapper::toProcessInstanceSearchResponse,
+        result);
+    return result;
+  }
+
+  @Override
   public ProcessInstanceQuery filter(final ProcessInstanceFilter value) {
     final ProcessInstanceFilterRequest filter = provideSearchRequestProperty(value);
     request.setFilter(filter);
@@ -98,24 +117,5 @@ public class ProcessInstanceQueryImpl
   @Override
   protected ProcessInstanceSearchQueryRequest getSearchRequestProperty() {
     return request;
-  }
-
-  @Override
-  public FinalSearchQueryStep<ProcessInstance> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
-  public ZeebeFuture<SearchQueryResponse<ProcessInstance>> send() {
-    final HttpZeebeFuture<SearchQueryResponse<ProcessInstance>> result = new HttpZeebeFuture<>();
-    httpClient.post(
-        "/process-instances/search",
-        jsonMapper.toJson(request),
-        httpRequestConfig.build(),
-        ProcessInstanceSearchQueryResponse.class,
-        SearchResponseMapper::toProcessInstanceSearchResponse,
-        result);
-    return result;
   }
 }
