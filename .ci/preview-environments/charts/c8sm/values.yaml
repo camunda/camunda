@@ -204,13 +204,6 @@ camunda-platform:
       contextPath: "/operate"
 
     optimize:
-      image:
-        registry: registry.camunda.cloud
-        repository: team-camunda/optimize
-        # will be replaced by the preview-env-deploy workflow
-        tag: latest
-        pullSecrets:
-          - name: registry-camunda-cloud
       contextPath: "/optimize"
 
     tasklist:
