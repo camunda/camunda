@@ -336,6 +336,7 @@ public final class EventAppliers implements EventApplier {
     register(
         SignalSubscriptionIntent.DELETED,
         new SignalSubscriptionDeletedApplier(state.getSignalSubscriptionState()));
+    register(SignalSubscriptionIntent.MIGRATED, NOOP_EVENT_APPLIER);
     register(SignalIntent.BROADCASTED, NOOP_EVENT_APPLIER);
   }
 
