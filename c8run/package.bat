@@ -7,21 +7,27 @@ set ELASTICSEARCH_VERSION=8.13.4
 set BASEDIR=%~dp0
 echo BASEDIR=%BASEDIR%
 
-REM Retrieve elasticsearch
-if not exist "elasticsearch-%ELASTICSEARCH_VERSION%" (
-    curl -L -o elasticsearch-%ELASTICSEARCH_VERSION%.zip "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-%ELASTICSEARCH_VERSION%-windows-x86_64.zip"
-    tar -xf elasticsearch-%ELASTICSEARCH_VERSION%.zip -C %BASEDIR%
-)
+REM Delete testing data before tar
+del elasticsearch-%ELASTICSEARCH_VERSION%
+del camunda-zeebe-%CAMUNDA_VERSION%
+del logs\*.log
 
-if not exist "camunda-zeebe-%CAMUNDA_VERSION%" (
-    curl -L -o camunda-zeebe-%CAMUNDA_VERSION%.zip "https://github.com/camunda/camunda/releases/download/%CAMUNDA_VERSION%/camunda-zeebe-%CAMUNDA_VERSION%.zip"
-    tar -xf camunda-zeebe-%CAMUNDA_VERSION%.zip -C %BASEDIR%
+REM Retrieve elasticsearch
+if not exist "elasticsearch-%ELASTICSEARCH_VERSION%.zip" (
+    curl -L -o elasticsearch-%ELASTICSEARCH_VERSION%.zip "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-%ELASTICSEARCH_VERSION%-windows-x86_64.zip"
 )
+tar -xf elasticsearch-%ELASTICSEARCH_VERSION%.zip -C %BASEDIR%
+
+if not exist "camunda-zeebe-%CAMUNDA_VERSION%.zip" (
+    curl -L -o camunda-zeebe-%CAMUNDA_VERSION%.zip "https://github.com/camunda/camunda/releases/download/%CAMUNDA_VERSION%/camunda-zeebe-%CAMUNDA_VERSION%.zip"
+)
+tar -xf camunda-zeebe-%CAMUNDA_VERSION%.zip -C %BASEDIR%
 
 set connectorsFileName=connector-runtime-bundle-%CAMUNDA_CONNECTORS_VERSION%-with-dependencies.jar
 if not exist "%connectorsFileName%" (
     curl -L -o "%connectorsFileName%" "https://repo1.maven.org/maven2/io/camunda/connector/connector-runtime-bundle/%CAMUNDA_CONNECTORS_VERSION%/%connectorsFileName%"
 )
+
 
 go build -C windows -o ..\c8run.exe
 
