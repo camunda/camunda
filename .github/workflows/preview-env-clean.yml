@@ -24,7 +24,7 @@ on:
 jobs:
   preview-env-clean:
     concurrency:
-      group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+      group: clean-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
