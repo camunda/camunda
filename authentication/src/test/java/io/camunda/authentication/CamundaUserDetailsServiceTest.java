@@ -9,7 +9,6 @@ package io.camunda.authentication;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.service.UserServices;
@@ -39,7 +38,7 @@ public class CamundaUserDetailsServiceTest {
   @Test
   public void testUserDetailsIsLoaded() {
     // given
-    when(userService.findByUsername(any()))
+    when(userService.findByUsername(TEST_USER_ID))
         .thenReturn(Optional.of(new UserEntity(new User(TEST_USER_ID, "", "", "password1"))));
     // when
     final UserDetails user = userDetailsService.loadUserByUsername(TEST_USER_ID);
@@ -52,7 +51,7 @@ public class CamundaUserDetailsServiceTest {
   @Test
   public void testUserDetailsNotFound() {
     // given
-    when(userService.findByUsername(any())).thenReturn(Optional.empty());
+    when(userService.findByUsername(TEST_USER_ID)).thenReturn(Optional.empty());
     // when/then
     assertThatThrownBy(() -> userDetailsService.loadUserByUsername(TEST_USER_ID))
         .isInstanceOf(UsernameNotFoundException.class);
