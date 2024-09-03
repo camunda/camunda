@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -196,7 +197,8 @@ public final class ResponseMapper {
         brokerResponse.getBpmnProcessId(),
         brokerResponse.getVersion(),
         brokerResponse.getProcessInstanceKey(),
-        brokerResponse.getTenantId());
+        brokerResponse.getTenantId(),
+        null);
   }
 
   public static ResponseEntity<Object> toStartProcessInstanceWithResultResponse(
@@ -206,7 +208,8 @@ public final class ResponseMapper {
         brokerResponse.getBpmnProcessId(),
         brokerResponse.getVersion(),
         brokerResponse.getProcessInstanceKey(),
-        brokerResponse.getTenantId());
+        brokerResponse.getTenantId(),
+        brokerResponse.getVariables());
   }
 
   private static ResponseEntity<Object> buildStartProcessInstanceResponse(
@@ -214,7 +217,8 @@ public final class ResponseMapper {
       final String bpmnProcessId,
       final Integer version,
       final Long processInstanceKey,
-      final String tenantId) {
+      final String tenantId,
+      final Map<String, Object> variables) {
     final var response =
         new StartProcessInstanceResponse()
             .processKey(processDefinitionKey)
@@ -222,6 +226,10 @@ public final class ResponseMapper {
             .version(version)
             .processInstanceKey(processInstanceKey)
             .tenantId(tenantId);
+    if (variables != null) {
+      response.variables(variables);
+    }
+
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
