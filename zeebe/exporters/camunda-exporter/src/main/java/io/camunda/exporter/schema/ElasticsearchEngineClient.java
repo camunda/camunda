@@ -9,15 +9,14 @@ package io.camunda.exporter.schema;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
-import co.elastic.clients.elasticsearch.cluster.PutComponentTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.json.JsonpDeserializer;
+import io.camunda.exporter.NoopExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
-import io.camunda.exporter.schema.descriptors.ComponentTemplateDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
@@ -50,8 +49,12 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   @Override
-  public void createIndexTemplate(final IndexTemplateDescriptor templateDescriptor) {
-    final PutIndexTemplateRequest request = putIndexTemplateRequest(templateDescriptor);
+  public void createIndexTemplate(
+      final IndexTemplateDescriptor templateDescriptor,
+      final IndexSettings settings,
+      final Boolean create) {
+    final PutIndexTemplateRequest request =
+        putIndexTemplateRequest(templateDescriptor, settings, create);
 
     try {
       client.indices().putIndexTemplate(request);
@@ -59,23 +62,6 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     } catch (final IOException e) {
       final var errMsg =
           String.format("Template [%s] was NOT created", templateDescriptor.getTemplateName());
-      LOG.error(errMsg, e);
-      throw new ElasticsearchExporterException(errMsg, e);
-    }
-  }
-
-  @Override
-  public void createComponentTemplate(final ComponentTemplateDescriptor templateDescriptor) {
-    final PutComponentTemplateRequest request = putComponentTemplateRequest(templateDescriptor);
-
-    try {
-      client.cluster().putComponentTemplate(request);
-      LOG.debug(
-          "Component template [{}] was successfully created", templateDescriptor.getTemplateName());
-    } catch (final IOException e) {
-      final var errMsg =
-          String.format(
-              "Component template [%s] was NOT created", templateDescriptor.getTemplateName());
       LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
     }
@@ -113,24 +99,6 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private PutComponentTemplateRequest putComponentTemplateRequest(
-      final ComponentTemplateDescriptor templateDescriptor) {
-    try (final var template =
-        getResourceAsStream(templateDescriptor.getTemplateClasspathFileName())) {
-      return new PutComponentTemplateRequest.Builder()
-          .name(templateDescriptor.getTemplateName())
-          .withJson(template)
-          .create(templateDescriptor.create())
-          .build();
-    } catch (final IOException e) {
-      throw new ElasticsearchExporterException(
-          "Failed to load json into stream for component template: ["
-              + templateDescriptor.getTemplateName()
-              + "]",
-          e);
-    }
-  }
-
   public <T> T deserializeJson(final JsonpDeserializer<T> deserializer, final InputStream json) {
     try (final var parser = client._jsonpMapper().jsonProvider().createParser(json)) {
       return deserializer.deserialize(parser, client._jsonpMapper());
@@ -142,7 +110,9 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   private PutIndexTemplateRequest putIndexTemplateRequest(
-      final IndexTemplateDescriptor indexTemplateDescriptor) {
+      final IndexTemplateDescriptor indexTemplateDescriptor,
+      final IndexSettings settings,
+      final Boolean create) {
 
     try (final var templateMappings =
         getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
@@ -155,9 +125,16 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                   t.aliases(indexTemplateDescriptor.getAlias(), Alias.of(a -> a))
                       .mappings(
                           deserializeJson(IndexTemplateSummary._DESERIALIZER, templateMappings)
-                              .mappings()))
+                              .mappings())
+                      .settings(
+                          s ->
+                              s.index(
+                                  i ->
+                                      i.numberOfShards(String.valueOf(settings.numberOfShards))
+                                          .numberOfReplicas(
+                                              String.valueOf(settings.numberOfReplicas)))))
           .composedOf(indexTemplateDescriptor.getComposedOf())
-          .create(true)
+          .create(create)
           .build();
     } catch (final IOException e) {
       throw new ElasticsearchExporterException(
