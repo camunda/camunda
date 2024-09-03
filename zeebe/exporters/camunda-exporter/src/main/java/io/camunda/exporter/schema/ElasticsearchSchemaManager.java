@@ -12,8 +12,13 @@ import io.camunda.exporter.NoopExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ElasticsearchSchemaManager implements SchemaManager {
+  private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);
   private final SearchEngineClient elasticsearchClient;
   private final List<IndexDescriptor> indexDescriptors;
   private final List<IndexTemplateDescriptor> indexTemplateDescriptors;
@@ -34,6 +39,24 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   public void initialiseResources() {
     indexTemplateDescriptors.forEach(this::createIndexTemplate);
     indexDescriptors.forEach(elasticsearchClient::createIndex);
+  }
+
+  @Override
+  public void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
+    for (final var newFieldEntry : newFields.entrySet()) {
+      final var descriptor = newFieldEntry.getKey();
+      final var newProperties = newFieldEntry.getValue();
+
+      if (descriptor instanceof IndexTemplateDescriptor) {
+        LOG.info("Updating template: {}", ((IndexTemplateDescriptor) descriptor).getTemplateName());
+        createIndexTemplate((IndexTemplateDescriptor) descriptor);
+      } else {
+        LOG.info(
+            "Index alias: {}. New fields will be added {}", descriptor.getAlias(), newProperties);
+
+        elasticsearchClient.putMapping(descriptor, newProperties);
+      }
+    }
   }
 
   private void createIndexTemplate(final IndexTemplateDescriptor templateDescriptor) {
