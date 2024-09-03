@@ -16,7 +16,7 @@ import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.json.JsonpDeserializer;
-import io.camunda.exporter.NoopExporterConfiguration.IndexSpecificSettings;
+import io.camunda.exporter.NoopExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.schema.descriptors.ComponentTemplateDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
@@ -52,7 +52,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   @Override
   public void createIndexTemplate(
-      final IndexTemplateDescriptor templateDescriptor, final IndexSpecificSettings settings) {
+      final IndexTemplateDescriptor templateDescriptor, final IndexSettings settings) {
     final PutIndexTemplateRequest request = putIndexTemplateRequest(templateDescriptor, settings);
 
     try {
@@ -144,7 +144,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   private PutIndexTemplateRequest putIndexTemplateRequest(
-      final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSpecificSettings settings) {
+      final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSettings settings) {
 
     try (final var templateMappings =
         getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
@@ -162,8 +162,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                           s ->
                               s.index(
                                   i ->
-                                      i.numberOfShards(settings.numberOfShards)
-                                          .numberOfReplicas(settings.numberOfReplicas))))
+                                      i.numberOfShards(String.valueOf(settings.numberOfShards))
+                                          .numberOfReplicas(String.valueOf(settings.numberOfReplicas)))))
           .composedOf(indexTemplateDescriptor.getComposedOf())
           .create(true)
           .build();

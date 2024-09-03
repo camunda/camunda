@@ -18,10 +18,12 @@ public final class NoopExporterConfiguration {
     public IndexSpecificSettings defaultSettings = new IndexSpecificSettings();
     public Map<String, String> replicasByIndexName = new HashMap<>();
     public Map<String, String> shardsByIndexName = new HashMap<>();
+    public IndexSettings defaultSettings = new IndexSettings();
   }
 
   public static final class IndexSpecificSettings {
     public String numberOfShards = "1";
     public String numberOfReplicas = "0";
+  public static final class IndexSettings {
   }
 }
