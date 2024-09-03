@@ -13,11 +13,15 @@ import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnRestGatewayEnabled
-public class DataInitializer {
+@Profile("broker")
+public class DataInitializer implements ApplicationListener<ApplicationReadyEvent> {
   private final UserServices<UserRecord> userServices;
   private final SpringBrokerBridge brokerBridge;
   private final InitDataProperties initDataProperties;
@@ -31,7 +35,12 @@ public class DataInitializer {
     this.initDataProperties = initDataProperties;
   }
 
-  public void initialize() {
+  @Override
+  public void onApplicationEvent(final ApplicationReadyEvent event) {
+    initialize();
+  }
+
+  private void initialize() {
     final var isBrokerReady =
         brokerBridge
             .getBrokerHealthCheckService()

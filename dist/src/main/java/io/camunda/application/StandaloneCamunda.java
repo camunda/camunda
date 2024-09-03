@@ -14,7 +14,6 @@ import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
-import io.camunda.application.listeners.ApplicationReadyListener;
 import io.camunda.application.sources.DefaultObjectMapperConfiguration;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
@@ -55,7 +54,7 @@ public class StandaloneCamunda {
                 new DefaultAuthenticationInitializer(),
                 new HealthConfigurationInitializer(),
                 new WebappsConfigurationInitializer())
-            .listeners(new ApplicationErrorListener(), new ApplicationReadyListener())
+            .listeners(new ApplicationErrorListener())
             .build(args);
 
     standaloneCamundaApplication.run();
