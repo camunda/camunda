@@ -19,11 +19,13 @@ import io.camunda.application.commons.configuration.DataInitializationConfigurat
 import io.camunda.service.UserServices;
 import io.camunda.service.entities.UserEntity;
 import io.camunda.service.entities.UserEntity.User;
+import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.client.protocol.rest.UserWithPasswordRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.Arrays;
 import java.util.Optional;
-import org.junit.jupiter.api.AfterEach;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -41,16 +43,23 @@ class DataInitializerTest {
 
   @Mock private PasswordEncoder passwordEncoder;
 
+  @Mock private SpringBrokerBridge brokerBridge;
+
+  @Mock private BrokerHealthCheckService brokerHealthCheckService;
+
   private DataInitializer dataInitializer;
 
   @BeforeEach
   void setUp() throws Exception {
     MockitoAnnotations.openMocks(this).close();
-    dataInitializer = new DataInitializer(userServices, passwordEncoder, initDataProperties);
+    when(userServices.createUser(any(), any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new UserRecord()));
+    when(brokerBridge.getBrokerHealthCheckService())
+        .thenReturn(Optional.of(brokerHealthCheckService));
+    when(brokerHealthCheckService.isBrokerReady()).thenReturn(true);
+    dataInitializer =
+        new DataInitializer(userServices, passwordEncoder, brokerBridge, initDataProperties);
   }
-
-  @AfterEach
-  void tearDown() {}
 
   @Test
   void whenUsersNotExistsUserCreated() {
@@ -86,18 +95,23 @@ class DataInitializerTest {
     verify(initDataProperties).getUsers();
     verify(userServices, times(2)).findByUsername(any());
     verify(userServices, never()).createUser(eq("username1"), any(), any(), any());
+    verify(userServices).createUser(eq("username2"), any(), any(), any());
   }
 
   @Test
   void whenBrokerNotAvailableSkipAndNoExceptionThrown() {
-    when(initDataProperties.getUsers())
-        .thenReturn(
-            Arrays.asList(
-                new UserWithPasswordRequest().username("username1").password("password"),
-                new UserWithPasswordRequest().username("username2").password("password")));
-    when(userServices.findByUsername("username1")).thenThrow(new RuntimeException(""));
+    dataInitializer = new DataInitializer(userServices, passwordEncoder, null, initDataProperties);
     dataInitializer.onApplicationEvent(applicationReadyEvent);
-    verify(initDataProperties).getUsers();
-    verify(userServices, times(1)).findByUsername(any());
+    verify(initDataProperties, never()).getUsers();
+  }
+
+  @Test
+  void whenBrokerNotReadyThenRetry() {
+    when(brokerHealthCheckService.isBrokerReady())
+        .thenReturn(false)
+        .thenReturn(false)
+        .thenReturn(true);
+    dataInitializer.onApplicationEvent(applicationReadyEvent);
+    verify(brokerHealthCheckService, times(3)).isBrokerReady();
   }
 }

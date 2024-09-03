@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(InitDataProperties.class)
 public class DataInitializationConfiguration {
 
-  @ConfigurationProperties("camunda.data.init")
+  @ConfigurationProperties("camunda.init")
   public static final class InitDataProperties {
     private List<UserWithPasswordRequest> users;
 
