@@ -97,7 +97,7 @@ final class ExporterConfigurationListDeserializer<E> extends StdDelegatingDeseri
         list.add(index, value.get(key));
       } catch (final IndexOutOfBoundsException e) {
         throw new IndexOutOfBoundsException(
-            """
+                """
             Failed to convert map of integers to list; tried to insert at [%d], but highest \
             index is [%d]. Check your configuration for errors when setting the index."""
                 .formatted(index, list.size() - 1));
