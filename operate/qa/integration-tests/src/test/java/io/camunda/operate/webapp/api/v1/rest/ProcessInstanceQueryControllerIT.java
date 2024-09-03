@@ -48,7 +48,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {TestApplicationWithNoBeans.class, ProcessInstanceController.class})
-public class ProcessInstanceControllerIT {
+public class ProcessInstanceQueryControllerIT {
 
   @Autowired private WebApplicationContext context;
 

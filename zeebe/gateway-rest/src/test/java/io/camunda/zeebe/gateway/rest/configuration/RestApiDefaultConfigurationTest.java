@@ -10,12 +10,12 @@ package io.camunda.zeebe.gateway.rest.configuration;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import io.camunda.zeebe.gateway.rest.controller.ProcessInstanceController;
+import io.camunda.zeebe.gateway.rest.controller.ProcessInstanceQueryController;
 import io.camunda.zeebe.gateway.rest.controller.TopologyController;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 
-@WebMvcTest(value = {ProcessInstanceController.class, TopologyController.class})
+@WebMvcTest(value = {ProcessInstanceQueryController.class, TopologyController.class})
 public class RestApiDefaultConfigurationTest extends RestApiConfigurationTest {
 
   @Test
