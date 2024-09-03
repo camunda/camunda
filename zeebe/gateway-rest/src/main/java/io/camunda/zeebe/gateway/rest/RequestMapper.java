@@ -349,6 +349,11 @@ public class RequestMapper {
                 request.getOperationReference(),
                 request.getStartInstructions().stream()
                     .map(ProcessInstanceCreationStartInstruction::getElementId)
+                    .map(
+                        elementId ->
+                            new io.camunda.zeebe.protocol.impl.record.value.processinstance
+                                    .ProcessInstanceCreationStartInstruction()
+                                .setElementId(elementId))
                     .toList()));
   }
 

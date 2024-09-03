@@ -19,14 +19,13 @@ import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ProcessInstanceServices
     extends SearchQueryService<
@@ -68,8 +67,8 @@ public final class ProcessInstanceServices
             .setKey(request.processDefinitionKey())
             .setVersion(request.version())
             .setTenantId(request.tenantId())
-            .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(request.variables())))
-            .setStartInstructionsFromStrings(request.startInstructions());
+            .setVariables(getDocumentOrEmpty(request.variables()))
+            .setInstructions(request.startInstructions());
 
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
@@ -85,8 +84,8 @@ public final class ProcessInstanceServices
             .setKey(request.processDefinitionKey())
             .setVersion(request.version())
             .setTenantId(request.tenantId())
-            .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(request.variables())))
-            .setStartInstructionsFromStrings(request.startInstructions());
+            .setVariables(getDocumentOrEmpty(request.variables()))
+            .setInstructions(request.startInstructions());
 
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
@@ -103,5 +102,5 @@ public final class ProcessInstanceServices
       Boolean awaitCompletion,
       Long requestTimeout,
       Long operationReference,
-      List<String> startInstructions) {}
+      List<ProcessInstanceCreationStartInstruction> startInstructions) {}
 }
