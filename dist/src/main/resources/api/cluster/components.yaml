@@ -52,6 +52,47 @@ schemas:
     items:
       $ref: "components.yaml#/schemas/BrokerId"
 
+  ClusterConfigPatchRequest:
+    title: ClusterConfigPatchRequest
+    description: Request body for reconfiguring the cluster
+    type: object
+    properties:
+      brokers:
+        type: object
+        description: Specify the required changes to the brokers. You can either provide the set of
+          brokers to add and remove or the new count of brokers.
+        properties:
+          add:
+            type: array
+            description: List of brokers to add. Can be omitted if no brokers are added.
+            items:
+              $ref: "components.yaml#/schemas/BrokerId"
+          remove:
+            type: array
+            description: List of brokers to remove. Can be omitted if no brokers are removed.
+            items:
+              $ref: "components.yaml#/schemas/BrokerId"
+          count:
+            type: integer
+            format: int32
+            description: The new number of brokers. Can be omitted if the broker count is not changed
+              or if the brokers to add or remove is provided.
+            example: 12
+      partitions:
+        type: object
+        properties:
+          count:
+            type: integer
+            format: int32
+            description: The new number of partitions. Can be omitted if the partition count is not
+              changed. This is an experimental feature.
+            example: 12
+          replicationFactor:
+            type: integer
+            format: int32
+            description: The new replication factor. Can be omitted if the replication factor is not changed.
+            example: 3
+
   PlannedOperationsResponse:
     title: PlannedOperationsResponse
     description: Returns the current topology, planned changes and the expected final topology
@@ -112,7 +153,7 @@ schemas:
       activePartitions:
         type: array
         description: The list of active partitions that accept round-robin requests
-        example: [1, 2, 3]
+        example: [ 1, 2, 3 ]
         items:
           type: integer
           format: int32
