@@ -19,9 +19,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.NoopExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import org.apache.commons.io.IOUtils;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,14 +63,12 @@ public class ElasticsearchEngineClientIT {
 
     final var descriptor = mock(IndexDescriptor.class);
     doReturn(indexName).when(descriptor).getIndexName();
-    doReturn("newProperties.json").when(descriptor).getMappingsClasspathFilename();
+
+    final Set<IndexMappingProperty> newProperties = new HashSet<>();
+    newProperties.add(new IndexMappingProperty("email", Map.of("type", "keyword")));
 
     // when
-
-    elsEngineClient.putMapping(
-        descriptor,
-        IOUtils.resourceToString(
-            "newProperties.json", StandardCharsets.UTF_8, getClass().getClassLoader()));
+    elsEngineClient.putMapping(descriptor, newProperties);
 
     // then
     final var index = elsClient.indices().get(req -> req.index(indexName)).get(indexName);
