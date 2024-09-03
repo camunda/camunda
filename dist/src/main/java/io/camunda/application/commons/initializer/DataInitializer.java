@@ -9,29 +9,24 @@ package io.camunda.application.commons.initializer;
 
 import io.camunda.application.commons.configuration.DataInitializationConfiguration.InitDataProperties;
 import io.camunda.service.UserServices;
-import io.camunda.zeebe.broker.SpringBrokerBridge;
-import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnRestGatewayEnabled
-@Profile("broker")
 public class DataInitializer implements ApplicationListener<ApplicationReadyEvent> {
+  private static final Logger LOGGER = LoggerFactory.getLogger("io.camunda.application");
   private final UserServices<UserRecord> userServices;
-  private final SpringBrokerBridge brokerBridge;
   private final InitDataProperties initDataProperties;
 
   public DataInitializer(
-      final UserServices<UserRecord> userServices,
-      final SpringBrokerBridge brokerBridge,
-      final InitDataProperties initDataProperties) {
+      final UserServices<UserRecord> userServices, final InitDataProperties initDataProperties) {
     this.userServices = userServices;
-    this.brokerBridge = brokerBridge;
     this.initDataProperties = initDataProperties;
   }
 
@@ -41,12 +36,7 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
   }
 
   private void initialize() {
-    final var isBrokerReady =
-        brokerBridge
-            .getBrokerHealthCheckService()
-            .map(BrokerHealthCheckService::isBrokerReady)
-            .orElse(false);
-    if (isBrokerReady) {
+    try {
       initDataProperties
           .getUsers()
           .forEach(
@@ -54,14 +44,22 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
                 userServices
                     .findByUsername(usersRequest.getUsername())
                     .ifPresentOrElse(
-                        userEntity -> {},
+                        userEntity -> {
+                          LOGGER.info("Default user {} already exists", usersRequest.getUsername());
+                        },
                         () ->
                             userServices.createUser(
                                 usersRequest.getUsername(),
-                                usersRequest.getName(),
-                                usersRequest.getEmail(),
+                                usersRequest.getName() != null
+                                    ? usersRequest.getName()
+                                    : usersRequest.getUsername(),
+                                usersRequest.getEmail() != null
+                                    ? usersRequest.getEmail()
+                                    : usersRequest.getUsername(),
                                 usersRequest.getPassword()));
               });
+    } catch (final Exception e) {
+      LOGGER.error("Default user creation has failed.", e);
     }
   }
 }
