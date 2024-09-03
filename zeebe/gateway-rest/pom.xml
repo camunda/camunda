@@ -315,6 +315,12 @@
       <artifactId>archunit-junit5-engine</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.xmlunit</groupId>
+      <artifactId>xmlunit-core</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -361,6 +367,7 @@
           <usedDependencies>
             <!-- Needed to run tests -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
+            <dependency>org.xmlunit:xmlunit-core</dependency>
             <!-- Used for OpenAPI generation -->
             <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
           </usedDependencies>
