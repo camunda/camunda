@@ -239,7 +239,7 @@ public class OpensearchConnector {
     if (!checkHealth(openSearchClient)) {
       LOGGER.warn("OpenSearch cluster is not accessible");
     } else {
-      LOGGER.debug("Elasticsearch connection was successfully created.");
+      LOGGER.debug("OpenSearch connection was successfully created.");
     }
     return openSearchClient;
   }
