@@ -13,11 +13,14 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.service.MessageServices;
+import io.camunda.service.MessageServices.CorrelateMessageRequest;
+import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
 import java.util.Map;
@@ -40,10 +43,17 @@ public class MessageControllerTest extends RestControllerTest {
 
   private static final String MESSAGE_BASE_URL = "/v2/messages";
   private static final String CORRELATION_ENDPOINT = MESSAGE_BASE_URL + "/correlation";
-
+  private static final String PUBLICATION_ENDPOINT = MESSAGE_BASE_URL + "/publication";
+  private static final String EXPECTED_PUBLICATION_RESPONSE =
+      """
+            {
+              "key": 1,
+              "tenantId": "<default>"
+            }""";
   @MockBean MessageServices messageServices;
   @MockBean MultiTenancyCfg multiTenancyCfg;
-  @Captor ArgumentCaptor<MessageServices.CorrelateMessageRequest> requestCaptor;
+  @Captor ArgumentCaptor<CorrelateMessageRequest> correlationRequestCaptor;
+  @Captor ArgumentCaptor<PublicationMessageRequest> publicationRequestCaptor;
 
   @BeforeEach
   void setup() {
@@ -85,8 +95,8 @@ public class MessageControllerTest extends RestControllerTest {
             .expectStatus()
             .isOk();
 
-    Mockito.verify(messageServices).correlateMessage(requestCaptor.capture());
-    final var capturedRequest = requestCaptor.getValue();
+    Mockito.verify(messageServices).correlateMessage(correlationRequestCaptor.capture());
+    final var capturedRequest = correlationRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("messageName");
     assertThat(capturedRequest.correlationKey()).isEqualTo("correlationKey");
     assertThat(capturedRequest.variables()).containsExactly(Map.entry("key", "value"));
@@ -141,8 +151,8 @@ public class MessageControllerTest extends RestControllerTest {
                     .expectStatus()
                     .isOk());
 
-    Mockito.verify(messageServices).correlateMessage(requestCaptor.capture());
-    final var capturedRequest = requestCaptor.getValue();
+    Mockito.verify(messageServices).correlateMessage(correlationRequestCaptor.capture());
+    final var capturedRequest = correlationRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("messageName");
     assertThat(capturedRequest.correlationKey()).isEqualTo("correlationKey");
     assertThat(capturedRequest.variables()).containsExactly(Map.entry("key", "value"));
@@ -414,6 +424,176 @@ public class MessageControllerTest extends RestControllerTest {
             }"""
                 .formatted(CORRELATION_ENDPOINT));
     verifyNoInteractions(messageServices);
+  }
+
+  @Test
+  void shouldPublishMessage() {
+    // given
+    when(messageServices.publishMessage(any())).thenReturn(buildPublishResponse());
+
+    final var request =
+        """
+        {
+          "name": "messageName",
+          "correlationKey": "correlationKey",
+          "timeToLive": 123,
+          "messageId": "messageId",
+          "variables": {
+            "key": "value"
+          },
+          "tenantId": "<default>"
+        }""";
+
+    // when then
+    webClient
+        .post()
+        .uri(PUBLICATION_ENDPOINT)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(EXPECTED_PUBLICATION_RESPONSE);
+
+    Mockito.verify(messageServices).publishMessage(publicationRequestCaptor.capture());
+    final var capturedRequest = publicationRequestCaptor.getValue();
+    assertThat(capturedRequest.name()).isEqualTo("messageName");
+    assertThat(capturedRequest.correlationKey()).isEqualTo("correlationKey");
+    assertThat(capturedRequest.timeToLive()).isEqualTo(123L);
+    assertThat(capturedRequest.messageId()).isEqualTo("messageId");
+    assertThat(capturedRequest.variables()).containsExactly(Map.entry("key", "value"));
+    assertThat(capturedRequest.tenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  void shouldPublishMessageWithoutCorrelationKey() {
+    // given
+    when(messageServices.publishMessage(any())).thenReturn(buildPublishResponse());
+
+    final var request =
+        """
+        {
+          "name": "messageName",
+          "timeToLive": 123,
+          "messageId": "messageId",
+          "variables": {
+            "key": "value"
+          },
+          "tenantId": "<default>"
+        }""";
+
+    // when then
+    webClient
+        .post()
+        .uri(PUBLICATION_ENDPOINT)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(EXPECTED_PUBLICATION_RESPONSE);
+
+    Mockito.verify(messageServices).publishMessage(publicationRequestCaptor.capture());
+    final var capturedRequest = publicationRequestCaptor.getValue();
+    assertThat(capturedRequest.name()).isEqualTo("messageName");
+    assertThat(capturedRequest.correlationKey()).isEqualTo("");
+    assertThat(capturedRequest.timeToLive()).isEqualTo(123L);
+    assertThat(capturedRequest.messageId()).isEqualTo("messageId");
+    assertThat(capturedRequest.variables()).containsExactly(Map.entry("key", "value"));
+    assertThat(capturedRequest.tenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  void shouldRejectPublishMessageWithoutName() {
+    // given
+    when(messageServices.publishMessage(any())).thenReturn(buildPublishResponse());
+
+    final var request =
+        """
+        {
+          "correlationKey": "correlationKey",
+          "timeToLive": 123,
+          "messageId": "messageId",
+          "variables": {
+            "key": "value"
+          },
+          "tenantId": "<default>"
+        }""";
+    final var expectedBody =
+        """
+        {
+            "type":"about:blank",
+            "title":"INVALID_ARGUMENT",
+            "status":400,
+            "detail":"No name provided.",
+            "instance":"/v2/messages/publication"
+         }""";
+
+    // when then
+    webClient
+        .post()
+        .uri(PUBLICATION_ENDPOINT)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldRejectPublishMessageWithoutTimeToLive() {
+    // given
+    when(messageServices.publishMessage(any())).thenReturn(buildPublishResponse());
+
+    final var request =
+        """
+        {
+          "name": "messageName",
+          "correlationKey": "correlationKey",
+          "messageId": "messageId",
+          "variables": {
+            "key": "value"
+          },
+          "tenantId": "<default>"
+        }""";
+    final var expectedBody =
+        """
+        {
+            "type":"about:blank",
+            "title":"INVALID_ARGUMENT",
+            "status":400,
+            "detail":"No timeToLive provided.",
+            "instance":"/v2/messages/publication"
+         }""";
+
+    // when then
+    webClient
+        .post()
+        .uri(PUBLICATION_ENDPOINT)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  private CompletableFuture<MessageRecord> buildPublishResponse() {
+    return CompletableFuture.completedFuture(
+        new MessageRecord()
+            .setName("messageName")
+            .setCorrelationKey("correlationKey")
+            .setTimeToLive(123L)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
   private ResponseSpec withMultiTenancy(

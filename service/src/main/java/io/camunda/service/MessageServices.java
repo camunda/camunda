@@ -47,11 +47,9 @@ public final class MessageServices extends ApiServices<MessageServices> {
     return sendBrokerRequest(brokerRequest);
   }
 
-  public CompletableFuture<MessageRecord> publishMessage(
-      final PublicationMessageRequest request) {
+  public CompletableFuture<MessageRecord> publishMessage(final PublicationMessageRequest request) {
     final var brokerRequest =
-        new BrokerPublishMessageRequest(
-            request.name, request.correlationKey)
+        new BrokerPublishMessageRequest(request.name, request.correlationKey)
             .setTimeToLive(request.timeToLive)
             .setMessageId(request.messageId)
             .setVariables(getDocumentOrEmpty(request.variables))
@@ -63,5 +61,10 @@ public final class MessageServices extends ApiServices<MessageServices> {
       String name, String correlationKey, Map<String, Object> variables, String tenantId) {}
 
   public record PublicationMessageRequest(
-      String name, String correlationKey, Long timeToLive, String messageId, Map<String, Object> variables, String tenantId) {}
+      String name,
+      String correlationKey,
+      Long timeToLive,
+      String messageId,
+      Map<String, Object> variables,
+      String tenantId) {}
 }
