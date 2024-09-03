@@ -112,7 +112,12 @@ public final class LogStreamImpl implements LogStream, CommitListener {
 
   @Override
   public void onCommit() {
-    ensureOpen();
+    if (closed) {
+      // This can be called by the raft thread after we've already closed the log stream.
+      // We can just ignore it in that case. Using `ensureOpen` would throw an exception that would
+      // break the raft thread.
+      return;
+    }
     recordAwaiters.forEach(LogRecordAwaiter::onRecordAvailable);
   }
 
