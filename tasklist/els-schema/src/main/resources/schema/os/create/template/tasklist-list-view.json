@@ -1,5 +1,4 @@
 {
-  "mappings": {
     "dynamic": "strict",
     "properties": {
       "join": {
@@ -111,5 +110,4 @@
         "type": "keyword"
       }
     }
-  }
 }

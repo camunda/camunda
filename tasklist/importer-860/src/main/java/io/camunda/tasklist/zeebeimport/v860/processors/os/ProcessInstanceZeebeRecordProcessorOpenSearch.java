@@ -86,7 +86,11 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     if (isVariableScopeType(recordValue) && FLOW_NODE_STATES.contains(record.getIntent().name())) {
       final FlowNodeInstanceEntity flowNodeInstance = createFlowNodeInstance(record);
       operations.add(getFlowNodeInstanceQuery(flowNodeInstance));
-      operations.add(persistFlowNodeDataToListView(flowNodeInstance));
+      final BulkOperation persistFlowNodeDataToListView =
+          persistFlowNodeDataToListView(flowNodeInstance);
+      if (persistFlowNodeDataToListView != null) {
+        operations.add(persistFlowNodeDataToListView(flowNodeInstance));
+      }
     }
 
     if (isProcessEvent(recordValue)
@@ -187,7 +191,7 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
       entity.setId(flowNodeInstance.getId());
       joinField.put("name", "process");
       entity.setJoin(joinField);
-      entity.setDataType(DocumentNodeType.valueOf(String.valueOf(FlowNodeType.PROCESS)));
+      entity.setDataType(DocumentNodeType.valueOf(String.valueOf(DocumentNodeType.PROCESS)));
       return getUpdateRequest(entity);
     } else {
       return null;

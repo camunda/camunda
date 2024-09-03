@@ -87,7 +87,10 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
     if (isVariableScopeType(recordValue) && FLOW_NODE_STATES.contains(record.getIntent().name())) {
       final FlowNodeInstanceEntity flowNodeInstance = createFlowNodeInstance(record);
       bulkRequest.add(getFlowNodeInstanceQuery(flowNodeInstance));
-      bulkRequest.add(persistFlowNodeDataToListView(flowNodeInstance));
+      final UpdateRequest processRequest = persistFlowNodeDataToListView(flowNodeInstance);
+      if (processRequest != null) {
+        bulkRequest.add(processRequest);
+      }
     }
 
     if (isProcessEvent(recordValue)
@@ -194,7 +197,7 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
       joinField.put("name", "process");
       tasklistListViewEntity.setJoin(joinField);
       tasklistListViewEntity.setDataType(
-          DocumentNodeType.valueOf(String.valueOf(FlowNodeType.PROCESS)));
+          DocumentNodeType.valueOf(String.valueOf(DocumentNodeType.PROCESS)));
       return getUpdateRequest(tasklistListViewEntity);
     } else {
       return null;

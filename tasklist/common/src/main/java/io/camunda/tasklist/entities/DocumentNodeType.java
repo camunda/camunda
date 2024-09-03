@@ -10,5 +10,5 @@ package io.camunda.tasklist.entities;
 public enum DocumentNodeType {
   USER_TASK,
   VARIABLE,
-  PROCESS_INSTANCE,
+  PROCESS
 }

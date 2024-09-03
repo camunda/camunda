@@ -99,20 +99,20 @@ public class VariableZeebeRecordProcessorOpenSearch {
 
   private BulkOperation persistVariableToListView(
       final Record record, final VariableRecordValueImpl recordValue) throws PersistenceException {
-    final VariableEntity entity = getVariableEntity(record, recordValue);
-    TasklistListViewEntity tasklistListViewEntity = createVariableInputToListView(entity);
+    final VariableEntity variableEntity = getVariableEntity(record, recordValue);
+    TasklistListViewEntity tasklistListViewEntity = createVariableInputToListView(variableEntity);
 
-    if (isTaskOrSubProcessVariable(entity)) {
+    if (isTaskOrSubProcessVariable(variableEntity)) {
       tasklistListViewEntity = associateVariableWithTask(tasklistListViewEntity);
       return prepareUpdateRequest(tasklistListViewEntity, tasklistListViewEntity.getVarScopeKey());
-    } else if (isProcessScope(entity)) {
-      tasklistListViewEntity = associateVariableWithProcess(tasklistListViewEntity);
-      return prepareUpdateRequest(tasklistListViewEntity, entity.getProcessInstanceId());
+    } else if (isProcessScope(variableEntity)) {
+      tasklistListViewEntity = associateVariableWithProcess(variableEntity, tasklistListViewEntity);
+      return prepareUpdateRequest(tasklistListViewEntity, variableEntity.getProcessInstanceId());
     } else {
       throw new PersistenceException(
           String.format(
               "Error preparing the query to upsert variable instance [%s]  for list view",
-              entity.getId()));
+              variableEntity.getId()));
     }
   }
 
@@ -129,22 +129,25 @@ public class VariableZeebeRecordProcessorOpenSearch {
     return tasklistListView;
   }
 
-  private TasklistListViewEntity associateVariableWithTask(
-      final TasklistListViewEntity tasklistListViewEntity) {
-    final Map<String, Object> joinField = new HashMap<>();
-    joinField.put("name", "taskVariable");
-    joinField.put("parent", tasklistListViewEntity.getFlowNodeInstanceId());
-    tasklistListViewEntity.setJoin(joinField);
-    return tasklistListViewEntity;
+  private TasklistListViewEntity associateVariableWithProcess(
+      final VariableEntity entity, final TasklistListViewEntity tasklistListViewEntity) {
+    return associateVariableWithParent(
+        tasklistListViewEntity, "processVariable", entity.getProcessInstanceId());
   }
 
-  private TasklistListViewEntity associateVariableWithProcess(
+  private TasklistListViewEntity associateVariableWithTask(
       final TasklistListViewEntity tasklistListViewEntity) {
+    return associateVariableWithParent(
+        tasklistListViewEntity, "taskVariable", tasklistListViewEntity.getVarScopeKey());
+  }
+
+  private TasklistListViewEntity associateVariableWithParent(
+      final TasklistListViewEntity snapshot, final String name, final String parentId) {
     final Map<String, Object> joinField = new HashMap<>();
-    joinField.put("name", "processVariable");
-    joinField.put("parent", tasklistListViewEntity.getProcessInstanceId());
-    tasklistListViewEntity.setJoin(joinField);
-    return tasklistListViewEntity;
+    joinField.put("name", name);
+    joinField.put("parent", parentId);
+    snapshot.setJoin(joinField);
+    return snapshot;
   }
 
   private boolean isProcessScope(final VariableEntity entity) {
