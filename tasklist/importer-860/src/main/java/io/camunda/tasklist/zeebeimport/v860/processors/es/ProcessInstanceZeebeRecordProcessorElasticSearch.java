@@ -7,18 +7,22 @@
  */
 package io.camunda.tasklist.zeebeimport.v860.processors.es;
 
+import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.entities.DocumentNodeType;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.entities.FlowNodeType;
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.entities.ProcessInstanceState;
+import io.camunda.tasklist.entities.TasklistListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
+import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.ProcessInstanceRecordValueImpl;
@@ -27,11 +31,14 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +77,7 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
   @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
 
   @Autowired private ProcessInstanceIndex processInstanceIndex;
+  @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
 
   public void processProcessInstanceRecord(final Record record, final BulkRequest bulkRequest)
       throws PersistenceException {
@@ -79,6 +87,7 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
     if (isVariableScopeType(recordValue) && FLOW_NODE_STATES.contains(record.getIntent().name())) {
       final FlowNodeInstanceEntity flowNodeInstance = createFlowNodeInstance(record);
       bulkRequest.add(getFlowNodeInstanceQuery(flowNodeInstance));
+      bulkRequest.add(persistFlowNodeDataToListView(flowNodeInstance));
     }
 
     if (isProcessEvent(recordValue)
@@ -172,5 +181,42 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
       return false;
     }
     return bpmnElementType.equals(type);
+  }
+
+  private UpdateRequest persistFlowNodeDataToListView(final FlowNodeInstanceEntity flowNodeInstance)
+      throws PersistenceException {
+    final TasklistListViewEntity tasklistListViewEntity = new TasklistListViewEntity();
+
+    final Map<String, Object> joinField = new HashMap<>();
+    // Only the Parent Process will be persisted over here
+    if (flowNodeInstance.getType().equals(FlowNodeType.PROCESS)) {
+      tasklistListViewEntity.setId(flowNodeInstance.getId());
+      joinField.put("name", "process");
+      tasklistListViewEntity.setJoin(joinField);
+      tasklistListViewEntity.setDataType(
+          DocumentNodeType.valueOf(String.valueOf(FlowNodeType.PROCESS)));
+      return getUpdateRequest(tasklistListViewEntity);
+    } else {
+      return null;
+    }
+  }
+
+  private UpdateRequest getUpdateRequest(final TasklistListViewEntity tasklistListViewEntity)
+      throws PersistenceException {
+    try {
+      final Map<String, Object> jsonMap =
+          objectMapper.readValue(
+              objectMapper.writeValueAsString(tasklistListViewEntity), HashMap.class);
+      final UpdateRequest updateRequest =
+          new UpdateRequest()
+              .index(tasklistListViewTemplate.getFullQualifiedName())
+              .id(tasklistListViewEntity.getId())
+              .upsert(objectMapper.writeValueAsString(tasklistListViewEntity), XContentType.JSON)
+              .doc(jsonMap)
+              .retryOnConflict(UPDATE_RETRY_COUNT);
+      return updateRequest;
+    } catch (final IOException e) {
+      throw new PersistenceException("Error preparing the query to upsert snapshot entity", e);
+    }
   }
 }

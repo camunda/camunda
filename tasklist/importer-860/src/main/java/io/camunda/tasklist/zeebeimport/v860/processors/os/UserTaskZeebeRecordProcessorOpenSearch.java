@@ -12,11 +12,14 @@ import static io.camunda.tasklist.util.OpenSearchUtil.UPDATE_RETRY_COUNT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
+import io.camunda.tasklist.entities.DocumentNodeType;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskVariableEntity;
+import io.camunda.tasklist.entities.TasklistListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
+import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToTaskEntityMapper;
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToVariableEntityMapper;
@@ -55,6 +58,7 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
   @Autowired private UserTaskRecordToTaskEntityMapper userTaskRecordToTaskEntityMapper;
 
   @Autowired private UserTaskRecordToVariableEntityMapper userTaskRecordToVariableEntityMapper;
+  @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
 
   public void processUserTaskRecord(
       final Record<UserTaskRecordValue> record, final List<BulkOperation> operations)
@@ -62,6 +66,7 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
     final Optional<TaskEntity> taskEntity = userTaskRecordToTaskEntityMapper.map(record);
     if (taskEntity.isPresent()) {
       operations.add(getTaskQuery(taskEntity.get(), record));
+      operations.add(persistUserTaskToListView(createTaskListViewInput(taskEntity.get())));
     }
 
     if (!record.getValue().getVariables().isEmpty()) {
@@ -123,5 +128,70 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
               variable.getId()),
           e);
     }
+  }
+
+  private TasklistListViewEntity createTaskListViewInput(final TaskEntity taskEntity) {
+    final TasklistListViewEntity tasklistListViewEntity = new TasklistListViewEntity();
+    Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
+        .ifPresent(tasklistListViewEntity::setId); // The ID is necessary for the join
+    Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
+        .ifPresent(tasklistListViewEntity::setFlowNodeInstanceId);
+    Optional.ofNullable(taskEntity.getProcessInstanceId())
+        .ifPresent(tasklistListViewEntity::setProcessInstanceId);
+    Optional.ofNullable(taskEntity.getFlowNodeBpmnId())
+        .ifPresent(tasklistListViewEntity::setTaskId);
+    Optional.ofNullable(taskEntity.getFlowNodeBpmnId())
+        .ifPresent(tasklistListViewEntity::setFlowNodeBpmnId);
+    Optional.of(taskEntity.getKey()).ifPresent(tasklistListViewEntity::setKey);
+    Optional.of(taskEntity.getPartitionId()).ifPresent(tasklistListViewEntity::setPartitionId);
+    Optional.ofNullable(taskEntity.getCompletionTime())
+        .map(Object::toString)
+        .ifPresent(tasklistListViewEntity::setCompletionTime);
+    Optional.ofNullable(taskEntity.getAssignee()).ifPresent(tasklistListViewEntity::setAssignee);
+    Optional.ofNullable(taskEntity.getCreationTime())
+        .map(Object::toString)
+        .ifPresent(tasklistListViewEntity::setCreationTime);
+    Optional.ofNullable(taskEntity.getProcessDefinitionVersion())
+        .ifPresent(tasklistListViewEntity::setProcessDefinitionVersion);
+    Optional.ofNullable(taskEntity.getPriority()).ifPresent(tasklistListViewEntity::setPriority);
+    Optional.ofNullable(taskEntity.getCandidateGroups())
+        .ifPresent(tasklistListViewEntity::setCandidateGroups);
+    Optional.ofNullable(taskEntity.getCandidateUsers())
+        .ifPresent(tasklistListViewEntity::setCandidateUsers);
+    Optional.ofNullable(taskEntity.getBpmnProcessId())
+        .ifPresent(tasklistListViewEntity::setBpmnProcessId);
+    Optional.ofNullable(taskEntity.getProcessDefinitionId())
+        .ifPresent(tasklistListViewEntity::setProcessDefinitionId);
+    Optional.ofNullable(taskEntity.getTenantId()).ifPresent(tasklistListViewEntity::setTenantId);
+    Optional.ofNullable(taskEntity.getExternalFormReference())
+        .ifPresent(tasklistListViewEntity::setExternalFormReference);
+    Optional.ofNullable(taskEntity.getCustomHeaders())
+        .ifPresent(tasklistListViewEntity::setCustomHeaders);
+    Optional.ofNullable(taskEntity.getFormKey()).ifPresent(tasklistListViewEntity::setFormKey);
+    Optional.ofNullable(taskEntity.getState()).ifPresent(tasklistListViewEntity::setState);
+
+    // Set Join Field for the parent
+    final Map<String, Object> joinField = new HashMap<>();
+    joinField.put("name", "task");
+    joinField.put("parent", taskEntity.getProcessInstanceId());
+    tasklistListViewEntity.setJoin(joinField);
+
+    tasklistListViewEntity.setDataType(
+        DocumentNodeType.valueOf(String.valueOf(DocumentNodeType.USER_TASK)));
+    return tasklistListViewEntity;
+  }
+
+  private BulkOperation persistUserTaskToListView(
+      final TasklistListViewEntity tasklistListViewEntity) {
+    return new BulkOperation.Builder()
+        .update(
+            up ->
+                up.index(tasklistListViewTemplate.getFullQualifiedName())
+                    .id(tasklistListViewEntity.getId())
+                    .document(CommonUtils.getJsonObjectFromEntity(tasklistListViewEntity))
+                    .routing(tasklistListViewEntity.getProcessInstanceId())
+                    .docAsUpsert(true)
+                    .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))
+        .build();
   }
 }

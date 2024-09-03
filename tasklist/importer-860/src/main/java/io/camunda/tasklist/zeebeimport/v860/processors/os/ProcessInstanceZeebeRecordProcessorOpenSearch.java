@@ -12,22 +12,28 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
+import io.camunda.tasklist.entities.DocumentNodeType;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.entities.FlowNodeType;
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.entities.ProcessInstanceState;
+import io.camunda.tasklist.entities.TasklistListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
+import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.util.DateUtil;
+import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.ProcessInstanceRecordValueImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
@@ -70,6 +76,7 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
   @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
 
   @Autowired private ProcessInstanceIndex processInstanceIndex;
+  @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
 
   public void processProcessInstanceRecord(
       final Record record, final List<BulkOperation> operations) throws PersistenceException {
@@ -79,6 +86,7 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     if (isVariableScopeType(recordValue) && FLOW_NODE_STATES.contains(record.getIntent().name())) {
       final FlowNodeInstanceEntity flowNodeInstance = createFlowNodeInstance(record);
       operations.add(getFlowNodeInstanceQuery(flowNodeInstance));
+      operations.add(persistFlowNodeDataToListView(flowNodeInstance));
     }
 
     if (isProcessEvent(recordValue)
@@ -167,5 +175,35 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
       return false;
     }
     return bpmnElementType.equals(type);
+  }
+
+  private BulkOperation persistFlowNodeDataToListView(
+      final FlowNodeInstanceEntity flowNodeInstance) {
+    final TasklistListViewEntity entity = new TasklistListViewEntity();
+
+    final Map<String, Object> joinField = new HashMap<>();
+    // Only the Parent Process will be persisted over here
+    if (flowNodeInstance.getType().equals(FlowNodeType.PROCESS)) {
+      entity.setId(flowNodeInstance.getId());
+      joinField.put("name", "process");
+      entity.setJoin(joinField);
+      entity.setDataType(DocumentNodeType.valueOf(String.valueOf(FlowNodeType.PROCESS)));
+      return getUpdateRequest(entity);
+    } else {
+      return null;
+    }
+  }
+
+  private BulkOperation getUpdateRequest(final TasklistListViewEntity tasklistListViewEntity) {
+
+    return new BulkOperation.Builder()
+        .update(
+            up ->
+                up.index(tasklistListViewTemplate.getFullQualifiedName())
+                    .id(tasklistListViewEntity.getId())
+                    .document(CommonUtils.getJsonObjectFromEntity(tasklistListViewEntity))
+                    .docAsUpsert(true)
+                    .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))
+        .build();
   }
 }
