@@ -77,7 +77,7 @@ jobs:
         docker_tag: "pr-${{ github.event.pull_request.head.sha }}"
         revision: ${{ env.BRANCH_NAME }}
         app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
-        app_url: ${{ steps.sanitize.outputs.branch_name }}.camunda.camunda.cloud
+        app_url: demo-zeebe.camunda.camunda.cloud
 
     #########################################################################
     # Create a preview environment

@@ -155,31 +155,31 @@ global:
   identity:
     auth:
       # will be replaced by the preview-env-deploy workflow
-      publicIssuerUrl: "https://test.camunda.camunda.cloud/auth/realms/camunda-platform"
+      publicIssuerUrl: "https://demo-zeebe.camunda.camunda.cloud/auth/realms/camunda-platform"
       operate:
         # will be replaced by the preview-env-deploy workflow
-        redirectUrl: "https://test.camunda.camunda.cloud/operate"
+        redirectUrl: "https://demo-zeebe.camunda.camunda.cloud/operate"
         existingSecret:
           name: identity-secret-for-components
       tasklist:
         # will be replaced by the preview-env-deploy workflow
-        redirectUrl: "https://test.camunda.camunda.cloud/tasklist"
+        redirectUrl: "https://demo-zeebe.camunda.camunda.cloud/tasklist"
         existingSecret:
           name: identity-secret-for-components
       optimize:
         # will be replaced by the preview-env-deploy workflow
-        redirectUrl: "https://test.camunda.camunda.cloud/optimize"
+        redirectUrl: "https://demo-zeebe.camunda.camunda.cloud/optimize"
       webModeler:
         # will be replaced by the preview-env-deploy workflow
-        redirectUrl: "https:/test.camunda.camunda.cloud/modeler"
+        redirectUrl: "https:/demo-zeebe.camunda.camunda.cloud/modeler"
       console:
         # will be replaced by the preview-env-deploy workflow
-        redirectUrl: "https://test.camunda.camunda.cloud/console"
+        redirectUrl: "https://demo-zeebe.camunda.camunda.cloud/console"
         existingSecret:
           name: identity-secret-for-components
       connectors:
         # will be replaced by the preview-env-deploy workflow
-        redirectUrl: "https://test.camunda.camunda.cloud/connectors"
+        redirectUrl: "https://demo-zeebe.camunda.camunda.cloud/connectors"
         existingSecret:
           name: identity-secret-for-components
       zeebe:
@@ -191,46 +191,16 @@ camunda-platform:
     identity:
       contextPath: "/identity"
       # will be replaced by the preview-env-deploy workflow
-      fullURL: "https://test.camunda.camunda.cloud/identity"
+      fullURL: "https://demo-zeebe.camunda.camunda.cloud/identity"
 
     operate:
-      image:
-        registry: registry.camunda.cloud
-        repository: team-camunda/operate
-        # will be replaced by the preview-env-deploy workflow
-        tag: latest
-        pullSecrets:
-        - name: registry-camunda-cloud
       contextPath: "/operate"
 
     optimize:
-      image:
-        registry: registry.camunda.cloud
-        repository: team-camunda/optimize
-        # will be replaced by the preview-env-deploy workflow
-        tag: latest
-        pullSecrets:
-          - name: registry-camunda-cloud
       contextPath: "/optimize"
 
     tasklist:
-      image:
-        registry: registry.camunda.cloud
-        repository: team-camunda/tasklist
-        # will be replaced by the preview-env-deploy workflow
-        tag: latest
-        pullSecrets:
-          - name: registry-camunda-cloud
       contextPath: "/tasklist"
-
-    zeebe:
-      image:
-        registry: registry.camunda.cloud
-        repository: team-camunda/zeebe
-        # will be replaced by the preview-env-deploy workflow
-        tag: latest
-        pullSecrets:
-          - name: registry-camunda-cloud
 
     webModeler:
       contextPath: "/modeler"
@@ -247,7 +217,7 @@ camunda-platform:
         grpc:
           enabled: true
           className: nginx
-          host: "test.camunda.camunda.cloud"
+          host: "zeebe.demo-zeebe.camunda.camunda.cloud"
           annotations:
             ingress.kubernetes.io/rewrite-target: "/"
             nginx.ingress.kubernetes.io/ssl-redirect: "true"
