@@ -121,7 +121,7 @@ void distributeInOrder() {
 
 Command distributions submitted with the same queue will be distributed in the order they were submitted.
 The queue is maintained per receiving partition.
-This way we can ensure that all partitions process distributed commands in the correct order, while preventing that partial unavailbility, for example just one partition not processing, does not block progress for other partitions.
+This way we can ensure that all partitions process distributed commands in the correct order, while preventing that partial unavailability, for example just one partition not processing, does not block progress for other partitions.
 
 It is the caller's responsibility to ensure that the queue id is unique.
 Using different queue ids per partition or conversely maintaining order across partitions is not supported.
