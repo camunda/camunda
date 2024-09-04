@@ -31,8 +31,8 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ElasticsearchExporter implements Exporter {
-  private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchExporter.class);
+public class CamundaExporter implements Exporter {
+  private static final Logger LOG = LoggerFactory.getLogger(CamundaExporter.class);
 
   private Controller controller;
   private ElasticsearchExporterConfiguration configuration;
