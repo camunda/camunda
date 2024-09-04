@@ -480,7 +480,7 @@ public class MigrateProcessInstanceRejectionTest {
 
   @Test
   public void
-      shouldRejectCommandWhenTheMigratedProcessInstanceContainsATaskSubscribedToABoundaryEvent() {
+      shouldRejectCommandWhenTheMigratedProcessInstanceHasATaskSubscribedToAnErrorBoundaryEvent() {
     // given
     final var deployment =
         ENGINE
@@ -744,7 +744,7 @@ public class MigrateProcessInstanceRejectionTest {
 
   @Test
   public void
-      shouldRejectCommandWhenTheTargetProcessDefinitionContainsATaskSubscribedToABoundaryEvent() {
+      shouldRejectCommandWhenTheTargetProcessDefinitionHasATaskSubscribedToAnErrorBoundaryEvent() {
     // given
     final var deployment =
         ENGINE
