@@ -540,4 +540,98 @@ public class MigrateSignalSubscriptionTest {
         .describedAs("Expect that the process instance is continued in the target process")
         .isNotNull();
   }
+
+  @Test
+  public void shouldResubscribeToSignalEventWithTheSameSignalName() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+    final String signalName = helper.getSignalName();
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("A")
+                    .boundaryEvent("boundary1")
+                    .signal(signalName)
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("B")
+                    .boundaryEvent("boundary2")
+                    .signal(signalName)
+                    .endEvent("target_process_signal_end")
+                    .moveToActivity("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+        .withSignalName(signalName)
+        .withCatchEventId("boundary1")
+        .await();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.DELETED)
+                .withBpmnProcessId(processId)
+                .withCatchEventId("boundary1")
+                .withSignalName(signalName)
+                .getFirst())
+        .describedAs("Expect that the signal boundary event in the source is deleted")
+        .isNotNull();
+
+    Assertions.assertThat(
+            RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+                .withSignalName(signalName)
+                .withCatchEventId("boundary2")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the signal boundary event in the target is created")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId);
+
+    engine.signal().withSignalName(signalName).broadcast();
+
+    Assertions.assertThat(
+            RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.DELETED)
+                .withSignalName(signalName)
+                .withCatchEventId("boundary2")
+                .getFirst()
+                .getValue())
+        .describedAs(
+            "Expect that the signal boundary event in the target is deleted after signal broadcast")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId);
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.END_EVENT)
+                .withElementId("target_process_signal_end")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process instance is continued in the target process")
+        .isNotNull();
+  }
 }
