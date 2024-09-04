@@ -12,12 +12,12 @@ import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 
-public class SignalSubscriptionMigrationApplier
+public class SignalSubscriptionMigratedApplier
     implements TypedEventApplier<SignalSubscriptionIntent, SignalSubscriptionRecord> {
 
   private final MutableSignalSubscriptionState signalSubscriptionState;
 
-  public SignalSubscriptionMigrationApplier(
+  public SignalSubscriptionMigratedApplier(
       final MutableSignalSubscriptionState signalSubscriptionState) {
     this.signalSubscriptionState = signalSubscriptionState;
   }

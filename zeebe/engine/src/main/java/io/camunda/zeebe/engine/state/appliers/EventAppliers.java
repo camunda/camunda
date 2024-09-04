@@ -125,7 +125,7 @@ public final class EventAppliers implements EventApplier {
     register(TimerIntent.CREATED, new TimerCreatedApplier(state.getTimerState()));
     register(TimerIntent.CANCELED, new TimerCancelledApplier(state.getTimerState()));
     register(TimerIntent.TRIGGERED, new TimerTriggeredApplier(state.getTimerState()));
-    register(TimerIntent.MIGRATED, new TimerMigrationApplier(state.getTimerState()));
+    register(TimerIntent.MIGRATED, new TimerInstanceMigratedApplier(state.getTimerState()));
   }
 
   private void registerDeploymentAppliers(final MutableProcessingState state) {
@@ -338,7 +338,7 @@ public final class EventAppliers implements EventApplier {
         new SignalSubscriptionDeletedApplier(state.getSignalSubscriptionState()));
     register(
         SignalSubscriptionIntent.MIGRATED,
-        new SignalSubscriptionMigrationApplier(state.getSignalSubscriptionState()));
+        new SignalSubscriptionMigratedApplier(state.getSignalSubscriptionState()));
     register(SignalIntent.BROADCASTED, NOOP_EVENT_APPLIER);
   }
 
