@@ -44,6 +44,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.Either;
@@ -215,7 +216,7 @@ public class RequestMapper {
           return new PatchAuthorizationRequest(
               ownerKey,
               PermissionAction.valueOf(authorizationPatchRequest.getAction().name()),
-              authorizationPatchRequest.getResourceType().name(),
+              AuthorizationResourceType.valueOf(authorizationPatchRequest.getResourceType().name()),
               permissions);
         });
   }

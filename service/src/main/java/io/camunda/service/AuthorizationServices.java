@@ -17,6 +17,7 @@ import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationCreateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
@@ -63,6 +64,6 @@ public class AuthorizationServices<T>
   public record PatchAuthorizationRequest(
       long ownerKey,
       PermissionAction action,
-      String resourceType,
+      AuthorizationResourceType resourceType,
       Map<PermissionType, List<String>> permissions) {}
 }

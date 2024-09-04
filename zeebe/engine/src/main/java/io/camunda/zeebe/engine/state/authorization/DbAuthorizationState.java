@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 
 public class DbAuthorizationState implements AuthorizationState, MutableAuthorizationState {
@@ -85,7 +86,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
 
     ownerKey.wrapLong(authorizationRecord.getOwnerKey());
     ownerType.wrapString(authorizationRecord.getOwnerType().name());
-    resourceType.wrapString(authorizationRecord.getResourceType());
+    resourceType.wrapString(authorizationRecord.getResourceType().name());
 
     final var permissions = authorizationRecord.getPermissions();
     permissions.forEach(
@@ -101,11 +102,11 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   public ResourceIdentifiers getResourceIdentifiers(
       final Long ownerKey,
       final AuthorizationOwnerType ownerType,
-      final String resourceType,
+      final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
     this.ownerKey.wrapLong(ownerKey);
     this.ownerType.wrapString(ownerType.name());
-    this.resourceType.wrapString(resourceType);
+    this.resourceType.wrapString(resourceType.name());
     this.permissionType.wrapString(permissionType.name());
 
     final var persistedPermissions =

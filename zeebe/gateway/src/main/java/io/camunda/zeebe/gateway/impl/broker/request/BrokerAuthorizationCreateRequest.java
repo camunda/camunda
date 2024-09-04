@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
@@ -34,7 +35,8 @@ public class BrokerAuthorizationCreateRequest extends BrokerExecuteCommand<Autho
     return this;
   }
 
-  public BrokerAuthorizationCreateRequest setResourceType(final String resourceType) {
+  public BrokerAuthorizationCreateRequest setResourceType(
+      final AuthorizationResourceType resourceType) {
     requestDto.setResourceType(resourceType);
     return this;
   }
