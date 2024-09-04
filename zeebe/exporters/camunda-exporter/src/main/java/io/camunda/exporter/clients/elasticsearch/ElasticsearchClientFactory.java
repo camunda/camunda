@@ -33,10 +33,10 @@ public final class ElasticsearchClientFactory {
 
   public ElasticsearchClient create(final ElasticsearchProperties elsConfig) {
     final RestClientBuilder restClientBuilder = RestClient.builder(getHttpHost(elsConfig));
-    if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
-      restClientBuilder.setRequestConfigCallback(
-          configCallback -> setTimeouts(configCallback, elsConfig));
-    }
+
+    restClientBuilder.setRequestConfigCallback(
+        configCallback -> setTimeouts(configCallback, elsConfig));
+
     final RestClient restClient =
         restClientBuilder
             .setHttpClientConfigCallback(
