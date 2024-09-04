@@ -372,6 +372,30 @@ public class ProcessInstanceMigrationMigrateProcessor
     final List<DirectBuffer> subscribedMessageNames = new ArrayList<>();
     final Map<String, Boolean> targetCatchEventIdToInterrupting = new HashMap<>();
 
+    final ArrayList<SignalSubscription> signalSubscriptionsToMigrate = new ArrayList<>();
+    catchEventBehavior.unsubscribeFromSignalEventsBySubscriptionFilter(
+        elementInstance.getKey(),
+        signalSubscription -> {
+          if (signalSubscription.getRecord().getProcessDefinitionKey()
+              == targetProcessDefinition.getKey()) {
+            // we recently subscribed to this signal for this migration, we don't want to undo that
+            return false;
+          }
+          if (sourceElementIdToTargetElementId.containsKey(
+              signalSubscription.getRecord().getCatchEventId())) {
+            // We will migrate this mapped catch event, so we don't want to unsubscribe from it.
+            // Avoid reusing the subscription directly as any access to the state (e.g. #get) will
+            // overwrite it
+            final var copy = new SignalSubscription();
+            copy.copyFrom(signalSubscription);
+            signalSubscriptionsToMigrate.add(copy);
+
+            return false;
+          }
+
+          return true;
+        });
+
     catchEventBehavior
         .subscribeToEvents(
             context,
@@ -500,30 +524,6 @@ public class ProcessInstanceMigrationMigrateProcessor
 
           stateWriter.appendFollowUpEvent(
               timerInstance.getKey(), TimerIntent.MIGRATED, timerRecord);
-        });
-
-    final ArrayList<SignalSubscription> signalSubscriptionsToMigrate = new ArrayList<>();
-    catchEventBehavior.unsubscribeFromSignalEventsBySubscriptionFilter(
-        elementInstance.getKey(),
-        signalSubscription -> {
-          if (signalSubscription.getRecord().getProcessDefinitionKey()
-              == targetProcessDefinition.getKey()) {
-            // we recently subscribed to this signal for this migration, we don't want to undo that
-            return false;
-          }
-          if (sourceElementIdToTargetElementId.containsKey(
-              signalSubscription.getRecord().getCatchEventId())) {
-            // We will migrate this mapped catch event, so we don't want to unsubscribe from it.
-            // Avoid reusing the subscription directly as any access to the state (e.g. #get) will
-            // overwrite it
-            final var copy = new SignalSubscription();
-            copy.copyFrom(signalSubscription);
-            signalSubscriptionsToMigrate.add(copy);
-
-            return false;
-          }
-
-          return true;
         });
 
     signalSubscriptionsToMigrate.forEach(
