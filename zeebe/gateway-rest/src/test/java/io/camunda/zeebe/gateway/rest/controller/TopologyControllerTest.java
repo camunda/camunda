@@ -143,6 +143,11 @@ public class TopologyControllerTest extends RestControllerTest {
   private record TestBrokerClusterState(String version) implements BrokerClusterState {
 
     @Override
+    public boolean isInitialized() {
+      return true;
+    }
+
+    @Override
     public int getClusterSize() {
       return 3;
     }

@@ -28,6 +28,7 @@ final class TestTopologyManager implements BrokerTopologyManager {
     if (leaderId != BrokerClusterState.NODE_ID_NULL) {
       topology.addBrokerIfAbsent(leaderId);
       topology.setPartitionLeader(id, leaderId, 1);
+      topology.setClusterSize(topology.getBrokers().size());
     }
 
     topology.addPartitionIfAbsent(id);
