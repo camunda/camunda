@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.stream.FakeProcessingResultBuilder;
 import io.camunda.zeebe.protocol.Protocol;
@@ -28,7 +29,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
-import java.util.List;
+import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,7 +76,8 @@ class CommandDistributionBehaviorTest {
   void shouldNotDistributeCommandToThisPartition() {
     // given 1 partition
     final var behavior =
-        new CommandDistributionBehavior(writers, 1, 1, mockInterpartitionCommandSender);
+        new CommandDistributionBehavior(
+            writers, 1, RoutingInfo.forStaticPartitions(1), mockInterpartitionCommandSender);
 
     // when distributing to all partitions
     behavior.distributeCommand(key, command);
@@ -92,7 +94,8 @@ class CommandDistributionBehaviorTest {
   void shouldDistributeCommandToAllOtherPartitions() {
     // given 3 partitions and behavior on partition 1
     final var behavior =
-        new CommandDistributionBehavior(writers, 1, 3, mockInterpartitionCommandSender);
+        new CommandDistributionBehavior(
+            writers, 1, RoutingInfo.forStaticPartitions(3), mockInterpartitionCommandSender);
 
     // when distributing to all partitions
     behavior.distributeCommand(key, command);
@@ -122,10 +125,11 @@ class CommandDistributionBehaviorTest {
   void shouldDistributeCommandToSpecificPartitions() {
     // given 4 partitions and behavior on partition 2
     final var behavior =
-        new CommandDistributionBehavior(writers, 2, 4, mockInterpartitionCommandSender);
+        new CommandDistributionBehavior(
+            writers, 2, RoutingInfo.forStaticPartitions(4), mockInterpartitionCommandSender);
 
     // when distributing to partitions 1 and 3
-    behavior.distributeCommand(key, command, List.of(1, 3));
+    behavior.distributeCommand(key, command, Set.of(1, 3));
 
     // then command distribution is started on partition 2 and distributing to all other partitions
     Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())

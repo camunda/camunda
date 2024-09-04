@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.distribution;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
@@ -18,8 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.List;
-import java.util.stream.IntStream;
+import java.util.Set;
 
 /**
  * The network communication between the partitions is unreliable. To allow communication between
@@ -37,10 +37,10 @@ public final class CommandDistributionBehavior {
 
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
+  private final RoutingInfo routingInfo;
   private final InterPartitionCommandSender interPartitionCommandSender;
 
   private final int currentPartitionId;
-  private final List<Integer> otherPartitions;
 
   // Records are expensive to construct, so we create them once and reuse them
   private final CommandDistributionRecord commandDistributionStarted =
@@ -53,16 +53,12 @@ public final class CommandDistributionBehavior {
   public CommandDistributionBehavior(
       final Writers writers,
       final int currentPartition,
-      final int partitionsCount,
+      final RoutingInfo routingInfo,
       final InterPartitionCommandSender partitionCommandSender) {
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
+    this.routingInfo = routingInfo;
     interPartitionCommandSender = partitionCommandSender;
-    otherPartitions =
-        IntStream.range(Protocol.START_PARTITION_ID, Protocol.START_PARTITION_ID + partitionsCount)
-            .filter(partition -> partition != currentPartition)
-            .boxed()
-            .toList();
     currentPartitionId = currentPartition;
   }
 
@@ -80,7 +76,7 @@ public final class CommandDistributionBehavior {
    */
   public <T extends UnifiedRecordValue> void distributeCommand(
       final long distributionKey, final TypedRecord<T> command) {
-    distributeCommand(distributionKey, command, otherPartitions);
+    distributeCommand(distributionKey, command, routingInfo.partitions());
   }
 
   /**
@@ -98,7 +94,7 @@ public final class CommandDistributionBehavior {
    * @param partitions the partitions to distribute the command to
    */
   public <T extends UnifiedRecordValue> void distributeCommand(
-      final long distributionKey, final TypedRecord<T> command, final List<Integer> partitions) {
+      final long distributionKey, final TypedRecord<T> command, final Set<Integer> partitions) {
     distributeCommand(
         distributionKey,
         command.getValueType(),
@@ -128,8 +124,9 @@ public final class CommandDistributionBehavior {
       final ValueType valueType,
       final Intent intent,
       final T value,
-      final List<Integer> partitions) {
-    if (partitions.isEmpty()) {
+      final Set<Integer> partitions) {
+    if (partitions.isEmpty()
+        || (partitions.size() == 1 && partitions.contains(currentPartitionId))) {
       return;
     }
 
@@ -146,7 +143,12 @@ public final class CommandDistributionBehavior {
         distributionKey, CommandDistributionIntent.STARTED, distributionRecord);
 
     partitions.forEach(
-        (partition) -> distributeToPartition(partition, distributionRecord, distributionKey));
+        (partition) -> {
+          if (partition == currentPartitionId) {
+            return;
+          }
+          distributeToPartition(partition, distributionRecord, distributionKey);
+        });
   }
 
   private <T extends UnifiedRecordValue> void distributeToPartition(

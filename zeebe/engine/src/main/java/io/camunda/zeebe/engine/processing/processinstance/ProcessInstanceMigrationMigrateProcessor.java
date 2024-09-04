@@ -36,8 +36,8 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
-import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -64,6 +64,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -92,7 +93,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final DistributionState distributionState;
   private final int currentPartitionId;
-  private final int partitionsCount;
+  private final RoutingInfo routingInfo;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
@@ -100,7 +101,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       final BpmnBehaviors bpmnBehaviors,
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
-      final int partitionsCount) {
+      final RoutingInfo routingInfo) {
     stateWriter = writers.state();
     commandWriter = writers.command();
     responseWriter = writers.response();
@@ -117,7 +118,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     this.commandDistributionBehavior = commandDistributionBehavior;
     currentPartitionId = partitionId;
-    this.partitionsCount = partitionsCount;
+    this.routingInfo = routingInfo;
   }
 
   @Override
@@ -532,8 +533,8 @@ public class ProcessInstanceMigrationMigrateProcessor
             .setElementId(BufferUtil.wrapString(targetCatchEventId)));
 
     final var subscriptionPartitionId =
-        SubscriptionUtil.getSubscriptionPartitionId(
-            BufferUtil.wrapString(messageSubscription.getCorrelationKey()), partitionsCount);
+        routingInfo.partitionForCorrelationKey(
+            BufferUtil.wrapString(messageSubscription.getCorrelationKey()));
 
     final long distributionKey = processMessageSubscription.getKey();
     if (currentPartitionId == subscriptionPartitionId) {
@@ -545,7 +546,7 @@ public class ProcessInstanceMigrationMigrateProcessor
           ValueType.MESSAGE_SUBSCRIPTION,
           MessageSubscriptionIntent.MIGRATE,
           messageSubscription,
-          List.of(processMessageSubscriptionRecord.getSubscriptionPartitionId()));
+          Set.of(processMessageSubscriptionRecord.getSubscriptionPartitionId()));
     }
   }
 
