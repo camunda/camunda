@@ -19,9 +19,11 @@ import io.camunda.application.commons.configuration.DataInitializationConfigurat
 import io.camunda.service.UserServices;
 import io.camunda.service.entities.UserEntity;
 import io.camunda.service.entities.UserEntity.User;
+import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.client.protocol.rest.UserWithPasswordRequest;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.Arrays;
 import java.util.Optional;
@@ -52,11 +54,12 @@ class DataInitializerTest {
   @BeforeEach
   void setUp() throws Exception {
     MockitoAnnotations.openMocks(this).close();
+    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
     when(userServices.createUser(any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new UserRecord()));
     when(brokerBridge.getBrokerHealthCheckService())
         .thenReturn(Optional.of(brokerHealthCheckService));
-    when(brokerHealthCheckService.isBrokerReady()).thenReturn(true);
+    when(brokerHealthCheckService.isBrokerHealthy()).thenReturn(true);
     dataInitializer =
         new DataInitializer(userServices, passwordEncoder, brokerBridge, initDataProperties);
   }
@@ -68,7 +71,7 @@ class DataInitializerTest {
             Arrays.asList(
                 new UserWithPasswordRequest().username("username1").password("password"),
                 new UserWithPasswordRequest().username("username2").password("password")));
-    dataInitializer.onApplicationEvent(applicationReadyEvent);
+    dataInitializer.initialize(RequestMapper.getAuthenticationNoTenant());
     verify(initDataProperties).getUsers();
     verify(userServices, times(2)).findByUsername(any());
     verify(userServices).createUser(eq("username1"), eq("username1"), eq("username1"), any());
@@ -77,7 +80,7 @@ class DataInitializerTest {
 
   @Test
   void whenNoInitUsersNothingCreated() {
-    dataInitializer.onApplicationEvent(applicationReadyEvent);
+    dataInitializer.initialize(RequestMapper.getAuthenticationNoTenant());
     verify(initDataProperties).getUsers();
     verifyNoInteractions(userServices);
   }
@@ -91,7 +94,7 @@ class DataInitializerTest {
                 new UserWithPasswordRequest().username("username2").password("password")));
     when(userServices.findByUsername("username1"))
         .thenReturn(Optional.of(new UserEntity(new User("username1", "", "", ""))));
-    dataInitializer.onApplicationEvent(applicationReadyEvent);
+    dataInitializer.initialize(RequestMapper.getAuthenticationNoTenant());
     verify(initDataProperties).getUsers();
     verify(userServices, times(2)).findByUsername(any());
     verify(userServices, never()).createUser(eq("username1"), any(), any(), any());
@@ -101,17 +104,17 @@ class DataInitializerTest {
   @Test
   void whenBrokerNotAvailableSkipAndNoExceptionThrown() {
     dataInitializer = new DataInitializer(userServices, passwordEncoder, null, initDataProperties);
-    dataInitializer.onApplicationEvent(applicationReadyEvent);
+    dataInitializer.initialize(RequestMapper.getAuthenticationNoTenant());
     verify(initDataProperties, never()).getUsers();
   }
 
   @Test
-  void whenBrokerNotReadyThenRetry() {
-    when(brokerHealthCheckService.isBrokerReady())
+  void whenBrokerNotHealthyThenRetry() {
+    when(brokerHealthCheckService.isBrokerHealthy())
         .thenReturn(false)
         .thenReturn(false)
         .thenReturn(true);
-    dataInitializer.onApplicationEvent(applicationReadyEvent);
-    verify(brokerHealthCheckService, times(3)).isBrokerReady();
+    dataInitializer.initialize(RequestMapper.getAuthenticationNoTenant());
+    verify(brokerHealthCheckService, times(3)).isBrokerHealthy();
   }
 }

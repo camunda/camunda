@@ -9,6 +9,7 @@ package io.camunda.application.commons.initializer;
 
 import io.camunda.application.commons.configuration.DataInitializationConfiguration.InitDataProperties;
 import io.camunda.service.UserServices;
+import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.client.protocol.rest.UserWithPasswordRequest;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -45,10 +47,11 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
 
   @Override
   public void onApplicationEvent(final ApplicationReadyEvent event) {
-    initialize();
+    final Authentication authentication = RequestMapper.getAuthenticationNoTenant();
+    new SimpleAsyncTaskExecutor().execute(() -> initialize(authentication));
   }
 
-  private void initialize() {
+  public void initialize(final Authentication authentication) {
     try {
       if (isPrerequisitesAvailable()) {
         initDataProperties
@@ -56,12 +59,13 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
             .forEach(
                 usersRequest -> {
                   userServices
+                      .withAuthentication(authentication)
                       .findByUsername(usersRequest.getUsername())
                       .ifPresentOrElse(
                           userEntity -> {
                             LOGGER.info("User {} already exists", usersRequest.getUsername());
                           },
-                          () -> createUser(usersRequest));
+                          () -> createUser(usersRequest, authentication));
                 });
       }
     } catch (final Exception e) {
@@ -81,15 +85,16 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
               .getBrokerHealthCheckService()
               .map(BrokerHealthCheckService::isBrokerHealthy)
               .orElse(false);
-      Thread.sleep(100);
+      Thread.sleep(10);
     }
     return true;
   }
 
-  private void createUser(final UserWithPasswordRequest usersRequest) {
+  private void createUser(
+      final UserWithPasswordRequest usersRequest, final Authentication authentication) {
     try {
       userServices
-          .withAuthentication(RequestMapper.getAuthentication())
+          .withAuthentication(authentication)
           .createUser(
               usersRequest.getUsername(),
               usersRequest.getName() != null ? usersRequest.getName() : usersRequest.getUsername(),

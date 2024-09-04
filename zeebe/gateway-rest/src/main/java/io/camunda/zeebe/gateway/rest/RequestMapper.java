@@ -47,6 +47,7 @@ import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -257,6 +258,17 @@ public class RequestMapper {
             .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
             .encode();
     return new Builder().token(token).tenants(authorizedTenants).build();
+  }
+
+  public static Authentication getAuthenticationNoTenant() {
+    final String token =
+        Authorization.jwtEncoder()
+            .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
+            .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
+            .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
+            .withClaim(Authorization.AUTHORIZED_TENANTS, new ArrayList<>())
+            .encode();
+    return new Builder().token(token).build();
   }
 
   public static <T> Either<ProblemDetail, T> getResult(
