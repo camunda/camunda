@@ -17,6 +17,7 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.NoopExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
+import io.camunda.exporter.utils.TestSupport;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
