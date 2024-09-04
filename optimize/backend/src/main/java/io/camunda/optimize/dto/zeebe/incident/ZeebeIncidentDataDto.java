@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.zeebe.incident;
 
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import java.util.List;
@@ -41,16 +42,19 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
     return StringUtils.isEmpty(tenantId) ? ZEEBE_DEFAULT_TENANT_ID : tenantId;
   }
 
+  @JsonIgnore
   @Override
   public List<List<Long>> getElementInstancePath() {
     throw new UnsupportedOperationException("Operation not supported");
   }
 
+  @JsonIgnore
   @Override
   public List<Long> getProcessDefinitionPath() {
     throw new UnsupportedOperationException("Operation not supported");
   }
 
+  @JsonIgnore
   @Override
   public List<Integer> getCallingElementPath() {
     throw new UnsupportedOperationException("Operation not supported");
