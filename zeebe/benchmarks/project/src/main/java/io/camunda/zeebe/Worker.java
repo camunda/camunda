@@ -32,8 +32,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Worker extends App {
-  private static final Logger THROTTLED_LOGGER =
-      new ThrottledLogger(LoggerFactory.getLogger(Worker.class), Duration.ofSeconds(5));
+
+  public static final Logger LOGGER = LoggerFactory.getLogger(Worker.class);
+  private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
   private final AppCfg appCfg;
   private final WorkerCfg workerCfg;
 
@@ -86,11 +87,13 @@ public class Worker extends App {
       final BlockingQueue<Future<?>> requestFutures) {
     return (jobClient, job) -> {
       if (workerCfg.isSendMessage()) {
+        final String messageName = workerCfg.getMessageName();
         final Object correlationKey = job.getVariable(workerCfg.getCorrelationKeyVariableName());
 
+        LOGGER.debug("Publish message '{}' with correlation key '{}'", messageName, correlationKey);
         client
             .newPublishMessageCommand()
-            .messageName(workerCfg.getMessageName())
+            .messageName(messageName)
             .correlationKey(correlationKey.toString())
             .send();
       }
