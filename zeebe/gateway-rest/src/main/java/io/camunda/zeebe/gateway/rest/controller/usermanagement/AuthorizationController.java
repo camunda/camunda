@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -40,12 +41,12 @@ public class AuthorizationController {
       @PathVariable final long ownerKey,
       @RequestBody final AuthorizationPatchRequest authorizationPatchRequest) {
 
-    return RequestMapper.toAuthorizationAssignRequest(authorizationPatchRequest)
+    return RequestMapper.toAuthorizationAssignRequest(ownerKey, authorizationPatchRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignAuthorization);
   }
 
   private CompletableFuture<ResponseEntity<Object>> assignAuthorization(
-      final AuthorizationPatchRequest authorizationPatchRequest) {
+      final PatchAuthorizationRequest patchAuthorizationRequest) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             authorizationServices
@@ -53,8 +54,8 @@ public class AuthorizationController {
                 .createAuthorization(
                     1L, // TODO set proper owner key as Long. This requires changes in the REST API
                     AuthorizationOwnerType.valueOf(
-                        authorizationPatchRequest.getOwnerType().getValue()),
-                    authorizationPatchRequest.getResourceType(),
-                    authorizationPatchRequest.getPermissions()));
+                        patchAuthorizationRequest.getOwnerType().getValue()),
+                    patchAuthorizationRequest.getResourceType(),
+                    patchAuthorizationRequest.getPermissions()));
   }
 }

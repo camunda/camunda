@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public class AuthorizationServices<T>
@@ -61,4 +62,10 @@ public class AuthorizationServices<T>
             .addPermissions(PermissionType.CREATE, resourceIds));
     // TODO set proper PermissionType. This requires changes in the REST API
   }
+
+  public record PatchAuthorizationRequest(
+      long ownerKey,
+      PermissionAction action,
+      String resourceType,
+      Map<PermissionType, List<String>> permissions) {}
 }
