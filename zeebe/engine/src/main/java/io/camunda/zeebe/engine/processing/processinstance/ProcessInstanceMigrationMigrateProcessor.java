@@ -37,10 +37,12 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
+import io.camunda.zeebe.engine.state.signal.SignalSubscription;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -51,6 +53,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -234,12 +237,12 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNoBoundaryEventInSource(
         sourceProcessDefinition,
         elementInstanceRecord,
-        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER));
+        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL));
     requireNoBoundaryEventInTarget(
         targetProcessDefinition,
         targetElementId,
         elementInstanceRecord,
-        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER));
+        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL));
     requireMappedCatchEventsToStayAttachedToSameElement(
         processInstanceKey,
         sourceProcessDefinition,
@@ -497,6 +500,48 @@ public class ProcessInstanceMigrationMigrateProcessor
 
           stateWriter.appendFollowUpEvent(
               timerInstance.getKey(), TimerIntent.MIGRATED, timerRecord);
+        });
+
+    final ArrayList<SignalSubscription> signalSubscriptionsToMigrate = new ArrayList<>();
+    catchEventBehavior.unsubscribeFromSignalEventsBySubscriptionFilter(
+        elementInstance.getKey(),
+        signalSubscription -> {
+          if (signalSubscription.getRecord().getProcessDefinitionKey()
+              == targetProcessDefinition.getKey()) {
+            // we recently subscribed to this signal for this migration, we don't want to undo that
+            return false;
+          }
+          if (sourceElementIdToTargetElementId.containsKey(
+              signalSubscription.getRecord().getCatchEventId())) {
+            // We will migrate this mapped catch event, so we don't want to unsubscribe from it.
+            // Avoid reusing the subscription directly as any access to the state (e.g. #get) will
+            // overwrite it
+            final var copy = new SignalSubscription();
+            copy.copyFrom(signalSubscription);
+            signalSubscriptionsToMigrate.add(copy);
+
+            return false;
+          }
+
+          return true;
+        });
+
+    signalSubscriptionsToMigrate.forEach(
+        signalSubscription -> {
+          final var sourceCatchEventId = signalSubscription.getRecord().getCatchEventId();
+          final var targetCatchEventId = sourceElementIdToTargetElementId.get(sourceCatchEventId);
+
+          final var signalSubscriptionRecord = signalSubscription.getRecord();
+          final var signalSubscriptionRecordCopy = new SignalSubscriptionRecord();
+          signalSubscriptionRecordCopy.wrap(signalSubscriptionRecord);
+          signalSubscriptionRecordCopy.setProcessDefinitionKey(targetProcessDefinition.getKey());
+          signalSubscriptionRecordCopy.setCatchEventId(BufferUtil.wrapString(targetCatchEventId));
+          signalSubscriptionRecordCopy.setBpmnProcessId(targetProcessDefinition.getBpmnProcessId());
+
+          stateWriter.appendFollowUpEvent(
+              signalSubscription.getKey(),
+              SignalSubscriptionIntent.MIGRATED,
+              signalSubscriptionRecordCopy);
         });
   }
 
