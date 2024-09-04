@@ -18,6 +18,7 @@ package io.camunda.zeebe.client.impl.search.response;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceItem;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class ProcessInstanceImpl implements ProcessInstance {
@@ -48,7 +49,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
     this.parentFlowNodeInstanceKey = item.getParentFlowNodeInstanceKey();
     this.startDate = item.getStartDate();
     this.endDate = item.getEndDate();
-    this.state = (item.getState() == null) ? null : item.getState().toString();
+    this.state = Optional.ofNullable(item.getState()).map(Enum::toString).orElse(null);
     this.incident = item.getIncident();
     this.hasActiveOperation = item.getHasActiveOperation();
     this.processDefinitionKey = item.getProcessDefinitionKey();
