@@ -489,8 +489,8 @@ public class MigrateProcessInstanceRejectionTest {
                 Bpmn.createExecutableProcess("process")
                     .startEvent("start")
                     .serviceTask("A", t -> t.zeebeJobType("A"))
-                    .boundaryEvent("boundary")
-                    .signal("signal")
+                    .boundaryEvent("boundaryEvent")
+                    .error("ERROR")
                     .endEvent()
                     .moveToActivity("A")
                     .endEvent("end")
@@ -505,8 +505,8 @@ public class MigrateProcessInstanceRejectionTest {
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
-    RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
-        .withSignalName("signal")
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withElementId("A")
         .await();
 
     final long targetProcessDefinitionKey =
@@ -532,7 +532,7 @@ public class MigrateProcessInstanceRejectionTest {
         .hasRejectionReason(
             """
                 Expected to migrate process instance '%s' \
-                but active element with id 'A' has one or more boundary events of types 'SIGNAL'. \
+                but active element with id 'A' has one or more boundary events of types 'ERROR'. \
                 Migrating active elements with boundary events of these types is not possible yet."""
                 .formatted(processInstanceKey))
         .hasKey(processInstanceKey);
@@ -760,7 +760,7 @@ public class MigrateProcessInstanceRejectionTest {
                     .startEvent()
                     .serviceTask("A", t -> t.zeebeJobType("A"))
                     .boundaryEvent("boundary")
-                    .signal("signal")
+                    .error("ERROR")
                     .endEvent()
                     .moveToActivity("A")
                     .endEvent("end")
@@ -796,7 +796,7 @@ public class MigrateProcessInstanceRejectionTest {
         .hasRejectionReason(
             """
             Expected to migrate process instance '%s' \
-            but target element with id 'A' has one or more boundary events of types 'SIGNAL'. \
+            but target element with id 'A' has one or more boundary events of types 'ERROR'. \
             Migrating target elements with boundary events of these types is not possible yet."""
                 .formatted(processInstanceKey))
         .hasKey(processInstanceKey);
