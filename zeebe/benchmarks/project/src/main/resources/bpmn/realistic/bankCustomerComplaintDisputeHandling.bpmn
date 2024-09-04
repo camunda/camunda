@@ -62,7 +62,7 @@
       <bpmn:startEvent id="Event_1g0dyzc" name="documents required">
         <bpmn:extensionElements>
           <zeebe:ioMapping>
-            <zeebe:output source="=disputeDetails.disputeId + customerId" target="correlationKey" />
+            <zeebe:output source="=string(disputeDetails.disputeId) + &#34;-&#34; + string(customerId)" target="correlationKey" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:outgoing>Flow_0x32zsz</bpmn:outgoing>
@@ -142,7 +142,7 @@
         <bpmn:startEvent id="Event_0vl38e2" name="vendor fraud claim validation required">
           <bpmn:extensionElements>
             <zeebe:ioMapping>
-              <zeebe:output source="=customerId + disputePosition.name" target="correlationKey" />
+              <zeebe:output source="=string(customerId) + &#34;-&#34; + disputePosition.name" target="correlationKey" />
             </zeebe:ioMapping>
           </bpmn:extensionElements>
           <bpmn:outgoing>Flow_1gq2wqo</bpmn:outgoing>
