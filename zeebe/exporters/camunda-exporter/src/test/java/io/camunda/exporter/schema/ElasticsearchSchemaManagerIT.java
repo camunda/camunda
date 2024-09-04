@@ -7,17 +7,23 @@
  */
 package io.camunda.exporter.schema;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.NoopExporterConfiguration.ElasticsearchConfig;
+import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.http.HttpHost;
-import org.assertj.core.api.Assertions;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +44,7 @@ public class ElasticsearchSchemaManagerIT {
   @BeforeAll
   public static void init() {
     // Create the low-level client
+
     final RestClient restClient =
         RestClient.builder(HttpHost.create(CONTAINER.getHttpHostAddress())).build();
 
@@ -83,8 +90,8 @@ public class ElasticsearchSchemaManagerIT {
     final var retrievedIndex =
         elsClient.indices().get(req -> req.index("full_name")).get("full_name");
 
-    Assertions.assertThat(retrievedIndex.settings().index().numberOfReplicas()).isEqualTo("10");
-    Assertions.assertThat(retrievedIndex.settings().index().numberOfShards()).isEqualTo("10");
+    assertThat(retrievedIndex.settings().index().numberOfReplicas()).isEqualTo("10");
+    assertThat(retrievedIndex.settings().index().numberOfShards()).isEqualTo("10");
   }
 
   @Test
@@ -115,7 +122,72 @@ public class ElasticsearchSchemaManagerIT {
     final var retrievedIndex =
         elsClient.indices().get(req -> req.index("full_name")).get("full_name");
 
-    Assertions.assertThat(retrievedIndex.settings().index().numberOfReplicas()).isEqualTo("5");
-    Assertions.assertThat(retrievedIndex.settings().index().numberOfShards()).isEqualTo("5");
+    assertThat(retrievedIndex.settings().index().numberOfReplicas()).isEqualTo("5");
+    assertThat(retrievedIndex.settings().index().numberOfShards()).isEqualTo("5");
+  }
+
+  @Test
+  void shouldOverwriteIndexTemplateIfMappingsFileChanged() throws IOException {
+    // given
+    final var indexTemplate =
+        TestUtil.mockIndexTemplate(
+            "index_name",
+            "full_name*",
+            "alias",
+            Collections.emptyList(),
+            "template_name",
+            "mappings.json");
+    final var schemaManager =
+        new ElasticsearchSchemaManager(
+            searchEngineClient, List.of(), List.of(indexTemplate), new ElasticsearchConfig());
+
+    schemaManager.initialiseResources();
+
+    // when
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
+
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> schemasToChange =
+        Map.of(indexTemplate, Set.of());
+    schemaManager.updateSchema(schemasToChange);
+
+    // then
+    final var template =
+        elsClient
+            .indices()
+            .getIndexTemplate(req -> req.name("template_name"))
+            .indexTemplates()
+            .getFirst();
+
+    assertThat(template.indexTemplate().template().mappings().properties().get("foo").isText())
+        .isTrue();
+  }
+
+  @Test
+  void shouldAppendToIndexMappingsWithNewProperties() throws IOException {
+    // given
+    final var index = TestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");
+
+    final var schemaManager =
+        new ElasticsearchSchemaManager(
+            searchEngineClient, List.of(index), List.of(), new ElasticsearchConfig());
+
+    schemaManager.initialiseResources();
+
+    // when
+    final var newProperties = new HashSet<IndexMappingProperty>();
+    newProperties.add(new IndexMappingProperty("foo", Map.of("type", "text")));
+    newProperties.add(new IndexMappingProperty("bar", Map.of("type", "keyword")));
+
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> schemasToChange =
+        Map.of(index, newProperties);
+
+    schemaManager.updateSchema(schemasToChange);
+
+    // then
+    final var updatedIndex =
+        elsClient.indices().get(req -> req.index("index_name")).get("index_name");
+
+    assertThat(updatedIndex.mappings().properties().get("foo").isText()).isTrue();
+    assertThat(updatedIndex.mappings().properties().get("bar").isKeyword()).isTrue();
   }
 }

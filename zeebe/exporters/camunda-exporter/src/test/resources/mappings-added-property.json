@@ -7,6 +7,9 @@
       },
       "world": {
         "type": "keyword"
+      },
+      "foo": {
+        "type": "text"
       }
     },
     "_meta": {
