@@ -46,7 +46,7 @@ final class PluginRepositoryInterceptor implements CompatHttpRequestInterceptor 
 
   private void setHeader(
       final DatabaseCustomHeaderSupplier plugin, final HeaderConsumer headerConsumer) {
-    final var header = plugin.getElasticsearchCustomHeader();
+    final var header = plugin.getSearchDatabaseCustomHeader();
     headerConsumer.accept(header.key(), header.value());
   }
 

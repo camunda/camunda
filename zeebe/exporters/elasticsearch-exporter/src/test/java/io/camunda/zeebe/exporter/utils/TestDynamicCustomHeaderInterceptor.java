@@ -18,7 +18,7 @@ public class TestDynamicCustomHeaderInterceptor implements DatabaseCustomHeaderS
   private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
   @Override
-  public CustomHeader getElasticsearchCustomHeader() {
+  public CustomHeader getSearchDatabaseCustomHeader() {
     return new CustomHeader(X_CUSTOM_HEADER, X_CUSTOM_HEADER_VALUE + COUNTER.incrementAndGet());
   }
 }

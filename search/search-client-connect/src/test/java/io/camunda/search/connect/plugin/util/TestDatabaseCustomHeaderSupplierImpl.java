@@ -16,7 +16,7 @@ public class TestDatabaseCustomHeaderSupplierImpl implements DatabaseCustomHeade
   public static final String VALUE_CUSTOM_HEADER = "VALUE";
 
   @Override
-  public CustomHeader getElasticsearchCustomHeader() {
+  public CustomHeader getSearchDatabaseCustomHeader() {
     return new CustomHeader(KEY_CUSTOM_HEADER, VALUE_CUSTOM_HEADER);
   }
 }
