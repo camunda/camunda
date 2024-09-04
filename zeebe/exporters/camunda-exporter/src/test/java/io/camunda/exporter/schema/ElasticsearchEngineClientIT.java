@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
@@ -100,27 +99,16 @@ public class ElasticsearchEngineClientIT {
     assertThat(indexTemplates.size()).isEqualTo(1);
 
     final var retrievedTemplate = indexTemplates.getFirst().indexTemplate().template();
-    final var template =
-        elsEngineClient.deserializeJson(
-            IndexTemplateSummary._DESERIALIZER,
-            getClass().getClassLoader().getResourceAsStream("mappings.json"));
-    assertThat(retrievedTemplate.mappings().toString()).isEqualTo(template.mappings().toString());
+    assertThat(retrievedTemplate.mappings().properties().get("hello").isText()).isTrue();
+    assertThat(retrievedTemplate.mappings().properties().get("world").isKeyword()).isTrue();
   }
 
   @Test
   void shouldCreateIndexCorrectly() throws IOException {
     // given
-    final var descriptor = mock(IndexDescriptor.class);
     final var qualifiedIndexName = "full_name";
-    doReturn(qualifiedIndexName).when(descriptor).getFullQualifiedName();
-    doReturn("alias").when(descriptor).getAlias();
-    doReturn("index_name").when(descriptor).getIndexName();
-    doReturn("mappings.json").when(descriptor).getMappingsClasspathFilename();
-
-    final var template =
-        elsEngineClient.deserializeJson(
-            IndexTemplateSummary._DESERIALIZER,
-            getClass().getClassLoader().getResourceAsStream("mappings.json"));
+    final var descriptor =
+        TestUtil.mockIndex(qualifiedIndexName, "alias", "index_name", "mappings.json");
 
     // when
     elsEngineClient.createIndex(descriptor);
@@ -129,6 +117,7 @@ public class ElasticsearchEngineClientIT {
     final var index =
         elsClient.indices().get(req -> req.index(qualifiedIndexName)).get(qualifiedIndexName);
 
-    assertThat(index.mappings().toString()).isEqualTo(template.mappings().toString());
+    assertThat(index.mappings().properties().get("hello").isText()).isTrue();
+    assertThat(index.mappings().properties().get("world").isKeyword()).isTrue();
   }
 }

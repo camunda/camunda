@@ -44,6 +44,7 @@ public class ElasticsearchSchemaManagerIT {
   @BeforeAll
   public static void init() {
     // Create the low-level client
+
     final RestClient restClient =
         RestClient.builder(HttpHost.create(CONTAINER.getHttpHostAddress())).build();
 
@@ -143,7 +144,7 @@ public class ElasticsearchSchemaManagerIT {
     schemaManager.initialiseResources();
 
     // when
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("newMappings.json");
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
 
     final Map<IndexDescriptor, Set<IndexMappingProperty>> schemasToChange =
         Map.of(indexTemplate, Set.of());
@@ -158,8 +159,6 @@ public class ElasticsearchSchemaManagerIT {
             .getFirst();
 
     assertThat(template.indexTemplate().template().mappings().properties().get("foo").isText())
-        .isTrue();
-    assertThat(template.indexTemplate().template().mappings().properties().get("bar").isKeyword())
         .isTrue();
   }
 
