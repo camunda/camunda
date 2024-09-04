@@ -8,17 +8,22 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.CamundaServiceException;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationAssignRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationAssignRequest.OwnerTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest.ActionEnum;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest.ResourceTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequestPermissionsInner;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequestPermissionsInner.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.AuthorizationController;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -26,6 +31,8 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.net.URI;
 import java.util.List;
@@ -36,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
@@ -54,35 +62,35 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
   @Test
   void createAuthorizationShouldReturnNoContent() {
+    final var ownerKey = 1L;
+    final var action = ActionEnum.ADD;
     final var resourceIds = List.of("permission1", "permission2");
+    final var permissions =
+        new AuthorizationPatchRequestPermissionsInner()
+            .permissionType(PermissionTypeEnum.CREATE)
+            .resourceIds(resourceIds);
     final var request =
-        new AuthorizationAssignRequest()
-            .ownerKey(1L)
-            .ownerType(OwnerTypeEnum.USER)
-            .resourceKey("2")
-            .resourceType("resourceType")
-            .permissions(resourceIds);
+        new AuthorizationPatchRequest()
+            .action(action)
+            .resourceType(ResourceTypeEnum.DEPLOYMENT)
+            .permissions(List.of(permissions));
 
+    final var permission =
+        new Permission().setPermissionType(PermissionType.CREATE).addResourceIds(resourceIds);
     final var authorizationRecord =
         new AuthorizationRecord()
-            .setOwnerKey(request.getOwnerKey())
-            .setOwnerType(AuthorizationOwnerType.valueOf(request.getOwnerType().getValue()))
-            .setResourceType(request.getResourceType())
-            .addPermission(
-                new Permission()
-                    .setPermissionType(PermissionType.CREATE)
-                    .addResourceIds(resourceIds));
+            .setOwnerKey(ownerKey)
+            .setOwnerType(AuthorizationOwnerType.USER)
+            .setAction(PermissionAction.valueOf(request.getAction().name()))
+            .setResourceType(AuthorizationResourceType.valueOf(request.getResourceType().name()))
+            .addPermission(permission);
 
-    when(authorizationServices.createAuthorization(
-            request.getOwnerKey(),
-            AuthorizationOwnerType.valueOf(request.getOwnerType().getValue()),
-            request.getResourceType(),
-            request.getPermissions()))
+    when(authorizationServices.createAuthorization(any(PatchAuthorizationRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(authorizationRecord));
 
     webClient
         .post()
-        .uri("/v2/authorizations")
+        .uri("/v2/authorizations/%d".formatted(ownerKey))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -90,29 +98,34 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    verify(authorizationServices, times(1))
-        .createAuthorization(
-            request.getOwnerKey(),
-            AuthorizationOwnerType.valueOf(request.getOwnerType().getValue()),
-            request.getResourceType(),
-            request.getPermissions());
+    final var captor = ArgumentCaptor.forClass(PatchAuthorizationRequest.class);
+    verify(authorizationServices, times(1)).createAuthorization(captor.capture());
+    final var capturedRequest = captor.getValue();
+    assertEquals(capturedRequest.ownerKey(), authorizationRecord.getOwnerKey());
+    assertEquals(capturedRequest.action(), authorizationRecord.getAction());
+    assertEquals(capturedRequest.resourceType(), authorizationRecord.getResourceType());
+    assertEquals(capturedRequest.permissions().size(), 1);
+    assertEquals(
+        capturedRequest.permissions().get(permission.getPermissionType()),
+        permission.getResourceIds());
   }
 
   @Test
   void createAuthorizationThrowsExceptionWhenServiceThrowsException() {
+    final var ownerKey = 1L;
+    final var action = ActionEnum.ADD;
+    final var resourceIds = List.of("permission1", "permission2");
+    final var permissions =
+        new AuthorizationPatchRequestPermissionsInner()
+            .permissionType(PermissionTypeEnum.CREATE)
+            .resourceIds(resourceIds);
     final var request =
-        new AuthorizationAssignRequest()
-            .ownerKey(1L)
-            .ownerType(OwnerTypeEnum.USER)
-            .resourceKey("2")
-            .resourceType("resourceType")
-            .permissions(List.of("permission1", "permission2"));
+        new AuthorizationPatchRequest()
+            .action(action)
+            .resourceType(ResourceTypeEnum.DEPLOYMENT)
+            .permissions(List.of(permissions));
 
-    when(authorizationServices.createAuthorization(
-            request.getOwnerKey(),
-            AuthorizationOwnerType.valueOf(request.getOwnerType().getValue()),
-            request.getResourceType(),
-            request.getPermissions()))
+    when(authorizationServices.createAuthorization(any(PatchAuthorizationRequest.class)))
         .thenThrow(
             new CamundaServiceException(
                 new BrokerRejection(
@@ -123,11 +136,11 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
     final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle("Bad Request");
-    expectedBody.setInstance(URI.create("/v2/authorizations"));
+    expectedBody.setInstance(URI.create("/v2/authorizations/%d".formatted(ownerKey)));
 
     webClient
         .post()
-        .uri("/v2/authorizations")
+        .uri("/v2/authorizations/%d".formatted(ownerKey))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -141,15 +154,16 @@ public class AuthorizationControllerTest extends RestControllerTest {
   @ParameterizedTest
   @MethodSource("provideInvalidRequests")
   public void createAuthorizationShouldReturnBadRequest(
-      final AuthorizationAssignRequest request, final String errorMessage) {
+      final AuthorizationPatchRequest request, final String errorMessage) {
+    final var ownerKey = 1L;
     final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle(INVALID_ARGUMENT.name());
-    expectedBody.setInstance(URI.create("/v2/authorizations"));
+    expectedBody.setInstance(URI.create("/v2/authorizations/%d".formatted(ownerKey)));
     expectedBody.setDetail(errorMessage);
 
     webClient
         .post()
-        .uri("/v2/authorizations")
+        .uri("/v2/authorizations/%d".formatted(ownerKey))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -161,54 +175,60 @@ public class AuthorizationControllerTest extends RestControllerTest {
   }
 
   private static Stream<Arguments> provideInvalidRequests() {
+    final var resourceIds = List.of("permission1", "permission2");
+    final var validPermissions =
+        List.of(
+            new AuthorizationPatchRequestPermissionsInner()
+                .permissionType(PermissionTypeEnum.CREATE)
+                .resourceIds(resourceIds));
+
     return Stream.of(
         Arguments.of(
-            new AuthorizationAssignRequest()
-                .ownerKey(null)
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceKey("2")
-                .resourceType("resourceType")
-                .permissions(null),
-            "No ownerKey provided."),
+            new AuthorizationPatchRequest()
+                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .permissions(validPermissions),
+            "No action provided."),
         Arguments.of(
-            new AuthorizationAssignRequest()
-                .ownerKey(1L)
-                .ownerType(null)
-                .resourceKey("2")
-                .resourceType("resourceType")
-                .permissions(null),
-            "No ownerType provided."),
-        Arguments.of(
-            new AuthorizationAssignRequest()
-                .ownerKey(1L)
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceKey(null)
-                .resourceType("resourceType")
-                .permissions(null),
-            "No resourceKey provided."),
-        Arguments.of(
-            new AuthorizationAssignRequest()
-                .ownerKey(1L)
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceKey("    ")
-                .resourceType("resourceType")
-                .permissions(null),
-            "No resourceKey provided."),
-        Arguments.of(
-            new AuthorizationAssignRequest()
-                .ownerKey(1L)
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceKey("2")
-                .resourceType(null)
-                .permissions(null),
+            new AuthorizationPatchRequest().action(ActionEnum.ADD).permissions(validPermissions),
             "No resourceType provided."),
         Arguments.of(
-            new AuthorizationAssignRequest()
-                .ownerKey(1L)
-                .ownerType(OwnerTypeEnum.USER)
-                .resourceKey("2")
-                .resourceType("    ")
-                .permissions(null),
-            "No resourceType provided."));
+            new AuthorizationPatchRequest()
+                .action(ActionEnum.ADD)
+                .resourceType(ResourceTypeEnum.DEPLOYMENT),
+            "No permissions provided."),
+        Arguments.of(
+            new AuthorizationPatchRequest()
+                .action(ActionEnum.ADD)
+                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .permissions(List.of()),
+            "No permissions provided."),
+        Arguments.of(
+            new AuthorizationPatchRequest()
+                .action(ActionEnum.ADD)
+                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .permissions(
+                    List.of(
+                        new AuthorizationPatchRequestPermissionsInner()
+                            .resourceIds(List.of("resourceId")))),
+            "No permissionType provided."),
+        Arguments.of(
+            new AuthorizationPatchRequest()
+                .action(ActionEnum.ADD)
+                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .permissions(
+                    List.of(
+                        new AuthorizationPatchRequestPermissionsInner()
+                            .permissionType(PermissionTypeEnum.CREATE))),
+            "No resourceIds provided in 'CREATE'."),
+        Arguments.of(
+            new AuthorizationPatchRequest()
+                .action(ActionEnum.ADD)
+                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .permissions(
+                    List.of(
+                        new AuthorizationPatchRequestPermissionsInner()
+                            .permissionType(PermissionTypeEnum.CREATE)
+                            .resourceIds(List.of()))),
+            "No resourceIds provided in 'CREATE'."));
   }
 }
