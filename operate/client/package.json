@@ -121,7 +121,7 @@
     "workerDirectory": "public"
   },
   "resolutions": {
-    "react-scripts/postcss-preset-env/postcss-custom-properties": "^13.0.0",
+    "react-scripts/postcss-preset-env/postcss-custom-properties": "^14.0.0",
     "@testing-library/dom": "10.4.0"
   }
 }
