@@ -42,7 +42,7 @@
     "event-source-polyfill": "1.0.31",
     "license-checker": "25.0.1",
     "prettier": "3.3.3",
-    "sass": "1.77.8",
+    "sass": "1.78.0",
     "typescript": "5.5.4",
     "vite": "5.4.3"
   },
