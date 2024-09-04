@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.client.protocol.rest.UserWithPasswordRequest;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,12 +74,12 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
       LOGGER.error("Broker is not available! data initialization has been skipped!");
       return false;
     }
-    var isBrokerReady = false;
-    while (!isBrokerReady) {
-      isBrokerReady =
+    var isBrokerHealthy = false;
+    while (!isBrokerHealthy) {
+      isBrokerHealthy =
           brokerBridge
               .getBrokerHealthCheckService()
-              .map(BrokerHealthCheckService::isBrokerReady)
+              .map(BrokerHealthCheckService::isBrokerHealthy)
               .orElse(false);
       Thread.sleep(100);
     }
@@ -88,6 +89,7 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
   private void createUser(final UserWithPasswordRequest usersRequest) {
     try {
       userServices
+          .withAuthentication(RequestMapper.getAuthentication())
           .createUser(
               usersRequest.getUsername(),
               usersRequest.getName() != null ? usersRequest.getName() : usersRequest.getUsername(),
