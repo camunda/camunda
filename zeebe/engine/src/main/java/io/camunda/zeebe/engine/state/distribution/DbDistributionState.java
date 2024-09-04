@@ -217,7 +217,7 @@ public class DbDistributionState implements MutableDistributionState {
   }
 
   @Override
-  public Optional<Long> nextQueuedDistributionKey(final String queue, final int partition) {
+  public Optional<Long> getNextQueuedDistributionKey(final String queue, final int partition) {
     queueId.wrapString(queue);
     partitionKey.wrapInt(partition);
     final var nextDistributionKey = new MutableReference<Long>(null);
@@ -231,7 +231,7 @@ public class DbDistributionState implements MutableDistributionState {
   }
 
   @Override
-  public Optional<String> queueForDistribution(final long distributionKey) {
+  public Optional<String> getQueueIdForDistribution(final long distributionKey) {
     this.distributionKey.wrapLong(distributionKey);
 
     return Optional.ofNullable(commandDistributionRecordColumnFamily.get(this.distributionKey))

@@ -60,13 +60,13 @@ public interface DistributionState {
    * @return the distribution key at the head of the queues or an empty optional if there is no
    *     queued distribution for that queue and partition.
    */
-  Optional<Long> nextQueuedDistributionKey(String queue, int partition);
+  Optional<Long> getNextQueuedDistributionKey(String queue, int partition);
 
   /**
    * Returns the queue for the given distribution or an empty optional if this distribution was not
    * queued.
    */
-  Optional<String> queueForDistribution(long distributionKey);
+  Optional<String> getQueueIdForDistribution(long distributionKey);
 
   /** This visitor can visit pending distributions of {@link CommandDistributionRecord}. */
   @FunctionalInterface

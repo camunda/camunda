@@ -229,9 +229,9 @@ class CommandDistributionBehaviorTest {
 
     // when adding two distributions to the same queue
     behavior.withKey(firstKey).inQueue("test-queue").distribute(command);
-    when(mockDistributionState.nextQueuedDistributionKey("test-queue", 2))
+    when(mockDistributionState.getNextQueuedDistributionKey("test-queue", 2))
         .thenReturn(Optional.of(firstKey));
-    when(mockDistributionState.nextQueuedDistributionKey("test-queue", 3))
+    when(mockDistributionState.getNextQueuedDistributionKey("test-queue", 3))
         .thenReturn(Optional.of(firstKey));
     behavior.withKey(secondKey).inQueue("test-queue").distribute(command);
 

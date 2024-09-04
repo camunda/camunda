@@ -151,7 +151,7 @@ public final class CommandDistributionBehavior {
 
     final var otherQueuedDistributions =
         distributionQueue
-            .flatMap(queue -> distributionState.nextQueuedDistributionKey(queue, partition))
+            .flatMap(queue -> distributionState.getNextQueuedDistributionKey(queue, partition))
             .filter(nextDistributionKey -> nextDistributionKey != distributionKey);
 
     if (otherQueuedDistributions.isEmpty()) {
@@ -179,8 +179,8 @@ public final class CommandDistributionBehavior {
    */
   void distributeNextInQueue(final long finishedDistributionKey, final int partition) {
     distributionState
-        .queueForDistribution(finishedDistributionKey)
-        .flatMap(queue -> distributionState.nextQueuedDistributionKey(queue, partition))
+        .getQueueIdForDistribution(finishedDistributionKey)
+        .flatMap(queue -> distributionState.getNextQueuedDistributionKey(queue, partition))
         .ifPresent(
             nextDistributionKey ->
                 startDistributing(
