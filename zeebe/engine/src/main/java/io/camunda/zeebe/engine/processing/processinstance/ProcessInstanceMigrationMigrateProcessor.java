@@ -402,11 +402,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     catchEventBehavior.unsubscribeFromSignalEventsBySubscriptionFilter(
         elementInstance.getKey(),
         signalSubscription -> {
-          if (signalSubscription.getRecord().getProcessDefinitionKey()
-              == targetProcessDefinition.getKey()) {
-            // we recently subscribed to this signal for this migration, we don't want to undo that
-            return false;
-          }
           if (sourceElementIdToTargetElementId.containsKey(
               signalSubscription.getRecord().getCatchEventId())) {
             // We will migrate this mapped catch event, so we don't want to unsubscribe from it.
@@ -426,10 +421,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     catchEventBehavior.unsubscribeFromTimerEventsByInstanceFilter(
         elementInstance.getKey(),
         timerInstance -> {
-          if (timerInstance.getProcessDefinitionKey() == targetProcessDefinition.getKey()) {
-            // we recently subscribed to this timer for this migration, we don't want to undo that
-            return false;
-          }
           if (sourceElementIdToTargetElementId.containsKey(
               BufferUtil.bufferAsString(timerInstance.getHandlerNodeId()))) {
             // We will migrate this mapped catch event, so we don't want to unsubscribe from it.
