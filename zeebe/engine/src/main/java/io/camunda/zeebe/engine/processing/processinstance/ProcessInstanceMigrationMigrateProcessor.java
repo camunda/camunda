@@ -369,8 +369,34 @@ public class ProcessInstanceMigrationMigrateProcessor
         targetProcessDefinition
             .getProcess()
             .getElementById(targetElementId, ExecutableCatchEventSupplier.class);
-    final List<DirectBuffer> subscribedMessageNames = new ArrayList<>();
-    final Map<String, Boolean> targetCatchEventIdToInterrupting = new HashMap<>();
+
+    // UNSUBSCRIBE FROM CATCH EVENTS
+
+    final List<ProcessMessageSubscription> processMessageSubscriptionsToMigrate = new ArrayList<>();
+    catchEventBehavior.unsubscribeFromMessageEvents(
+        elementInstance.getKey(),
+        subscription -> {
+          final long distributionKey = subscription.getKey();
+          requireNoPendingMsgSubMigrationDistribution(
+              distributionState,
+              distributionKey,
+              elementId,
+              processInstanceKey,
+              subscription.getRecord().getElementId());
+
+          final var catchEventId = subscription.getRecord().getElementId();
+          if (sourceElementIdToTargetElementId.containsKey(catchEventId)) {
+            // We will migrate this mapped catch event, so we don't want to unsubscribe from it
+            // avoid reusing the subscription directly as any access to the state (e.g. #get) will
+            // overwrite it
+            final var copySubscription = new ProcessMessageSubscription();
+            copySubscription.copyFrom(subscription);
+            processMessageSubscriptionsToMigrate.add(copySubscription);
+            return false;
+          }
+
+          return true;
+        });
 
     final ArrayList<SignalSubscription> signalSubscriptionsToMigrate = new ArrayList<>();
     catchEventBehavior.unsubscribeFromSignalEventsBySubscriptionFilter(
@@ -396,6 +422,32 @@ public class ProcessInstanceMigrationMigrateProcessor
           return true;
         });
 
+    final ArrayList<TimerInstance> timerInstancesToMigrate = new ArrayList<>();
+    catchEventBehavior.unsubscribeFromTimerEventsByInstanceFilter(
+        elementInstance.getKey(),
+        timerInstance -> {
+          if (timerInstance.getProcessDefinitionKey() == targetProcessDefinition.getKey()) {
+            // we recently subscribed to this timer for this migration, we don't want to undo that
+            return false;
+          }
+          if (sourceElementIdToTargetElementId.containsKey(
+              BufferUtil.bufferAsString(timerInstance.getHandlerNodeId()))) {
+            // We will migrate this mapped catch event, so we don't want to unsubscribe from it.
+            // Avoid reusing the subscription directly as any access to the state (e.g. #get) will
+            // overwrite it
+            final var copy = new TimerInstance();
+            copy.copyFrom(timerInstance);
+            timerInstancesToMigrate.add(copy);
+
+            return false;
+          }
+
+          return true;
+        });
+
+    // SUBSCRIBE TO CATCH EVENTS
+
+    final Map<String, Boolean> targetCatchEventIdToInterrupting = new HashMap<>();
     catchEventBehavior
         .subscribeToEvents(
             context,
@@ -429,7 +481,6 @@ public class ProcessInstanceMigrationMigrateProcessor
                     catchEvent.messageName(),
                     elementInstanceRecord.getTenantId(),
                     targetCatchEventId);
-                subscribedMessageNames.add(catchEvent.messageName());
               }
               return true;
             })
@@ -445,36 +496,7 @@ public class ProcessInstanceMigrationMigrateProcessor
                   RejectionType.INVALID_STATE);
             });
 
-    final List<ProcessMessageSubscription> processMessageSubscriptionsToMigrate = new ArrayList<>();
-    catchEventBehavior.unsubscribeFromMessageEvents(
-        elementInstance.getKey(),
-        subscription -> {
-          final long distributionKey = subscription.getKey();
-          requireNoPendingMsgSubMigrationDistribution(
-              distributionState,
-              distributionKey,
-              elementId,
-              processInstanceKey,
-              subscription.getRecord().getElementId());
-
-          if (subscribedMessageNames.contains(subscription.getRecord().getMessageNameBuffer())) {
-            // We just subscribed to this message for this migration, we don't want to undo that
-            return false;
-          }
-
-          final var catchEventId = subscription.getRecord().getElementId();
-          if (sourceElementIdToTargetElementId.containsKey(catchEventId)) {
-            // We will migrate this mapped catch event, so we don't want to unsubscribe from it
-            // avoid reusing the subscription directly as any access to the state (e.g. #get) will
-            // overwrite it
-            final var copySubscription = new ProcessMessageSubscription();
-            copySubscription.copyFrom(subscription);
-            processMessageSubscriptionsToMigrate.add(copySubscription);
-            return false;
-          }
-
-          return true;
-        });
+    // MIGRATE CATCH EVENT SUBSCRIPTIONS
 
     processMessageSubscriptionsToMigrate.forEach(
         processMessageSubscription ->
@@ -483,29 +505,6 @@ public class ProcessInstanceMigrationMigrateProcessor
                 sourceElementIdToTargetElementId,
                 processMessageSubscription,
                 targetCatchEventIdToInterrupting));
-
-    final ArrayList<TimerInstance> timerInstancesToMigrate = new ArrayList<>();
-    catchEventBehavior.unsubscribeFromTimerEventsByInstanceFilter(
-        elementInstance.getKey(),
-        timerInstance -> {
-          if (timerInstance.getProcessDefinitionKey() == targetProcessDefinition.getKey()) {
-            // we recently subscribed to this timer for this migration, we don't want to undo that
-            return false;
-          }
-          if (sourceElementIdToTargetElementId.containsKey(
-              BufferUtil.bufferAsString(timerInstance.getHandlerNodeId()))) {
-            // We will migrate this mapped catch event, so we don't want to unsubscribe from it.
-            // Avoid reusing the subscription directly as any access to the state (e.g. #get) will
-            // overwrite it
-            final var copy = new TimerInstance();
-            copy.copyFrom(timerInstance);
-            timerInstancesToMigrate.add(copy);
-
-            return false;
-          }
-
-          return true;
-        });
 
     timerInstancesToMigrate.forEach(
         timerInstance -> {
