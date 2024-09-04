@@ -2112,6 +2112,8 @@ final class JsonSerializableToJsonTest {
 
               return new CommandDistributionRecord()
                   .setPartitionId(1)
+                  .setQueueId("totally-random-queue-id")
+                  .setQueueInsertionKey(11)
                   .setValueType(ValueType.DEPLOYMENT)
                   .setIntent(DeploymentIntent.CREATE)
                   .setCommandValue(deploymentRecord);
@@ -2119,8 +2121,8 @@ final class JsonSerializableToJsonTest {
         """
         {
           "partitionId": 1,
-          "queueId": null,
-          "queueInsertionKey": -1,
+          "queueId": "totally-random-queue-id",
+          "queueInsertionKey": 11,
           "valueType": "DEPLOYMENT",
           "intent": "CREATE",
           "commandValue": {
