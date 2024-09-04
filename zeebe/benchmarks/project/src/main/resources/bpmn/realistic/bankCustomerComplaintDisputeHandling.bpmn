@@ -128,17 +128,23 @@
     <bpmn:subProcess id="Activity_02tn153" name="Fraud Claim Investigation">
       <bpmn:incoming>Flow_06bdzt7</bpmn:incoming>
       <bpmn:outgoing>Flow_1jy0gq5</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=disputeDetails.disputePositions" inputElement="disputePosition" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
       <bpmn:startEvent id="Event_1tf9brs" name="fraud claim investigation started">
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:output source="=1" target="vendor_claim_frequency" />
+            <zeebe:output source="=1" target="customer_claim_frequency" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
         <bpmn:outgoing>Flow_16in312</bpmn:outgoing>
       </bpmn:startEvent>
       <bpmn:subProcess id="Activity_03cktkd" name="Vendor fraud claim validation">
         <bpmn:incoming>Flow_16in312</bpmn:incoming>
         <bpmn:outgoing>Flow_1y2i3of</bpmn:outgoing>
-        <bpmn:multiInstanceLoopCharacteristics>
-          <bpmn:extensionElements>
-            <zeebe:loopCharacteristics inputCollection="=disputeDetails.disputePositions" inputElement="disputePosition" />
-          </bpmn:extensionElements>
-        </bpmn:multiInstanceLoopCharacteristics>
         <bpmn:startEvent id="Event_0vl38e2" name="vendor fraud claim validation required">
           <bpmn:extensionElements>
             <zeebe:ioMapping>
