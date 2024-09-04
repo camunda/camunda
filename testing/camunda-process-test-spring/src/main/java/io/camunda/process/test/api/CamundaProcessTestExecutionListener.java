@@ -133,6 +133,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .getZeebeExposedPorts()
         .forEach(containerRuntimeBuilder::withZeebeExposedPort);
 
+    containerRuntimeBuilder
+        .withConnectorsEnabled(runtimeConfiguration.isConnectorsEnabled())
+        .withConnectorsDockerImageName(runtimeConfiguration.getConnectorsDockerImageName())
+        .withConnectorsDockerImageVersion(runtimeConfiguration.getConnectorsDockerImageVersion())
+        .withConnectorsEnv(runtimeConfiguration.getConnectorsEnvVars())
+        .withConnectorsSecrets(runtimeConfiguration.getConnectorsSecrets());
+
     return containerRuntimeBuilder.build();
   }
 

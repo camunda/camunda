@@ -180,7 +180,8 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
     containerRuntimeBuilder
         .withZeebeDockerImageVersion(camundaVersion)
         .withOperateDockerImageVersion(camundaVersion)
-        .withTasklistDockerImageVersion(camundaVersion);
+        .withTasklistDockerImageVersion(camundaVersion)
+        .withConnectorsDockerImageVersion(camundaVersion);
     return this;
   }
 
@@ -226,6 +227,75 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
    */
   public CamundaProcessTestExtension withZeebeExposedPort(final int port) {
     containerRuntimeBuilder.withZeebeExposedPort(port);
+    return this;
+  }
+
+  /**
+   * Enable or disable the Connectors. By default, the Connectors are disabled.
+   *
+   * @param enabled set {@code true} to enable the Connectors
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsEnabled(final boolean enabled) {
+    containerRuntimeBuilder.withConnectorsEnabled(enabled);
+    return this;
+  }
+
+  /**
+   * Configure the Connectors Docker image name of the runtime.
+   *
+   * @param dockerImageName the Docker image name to use
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsDockerImageName(final String dockerImageName) {
+    containerRuntimeBuilder.withConnectorsDockerImageName(dockerImageName);
+    return this;
+  }
+
+  /**
+   * Configure the Connectors Docker image version of the runtime.
+   *
+   * @param dockerImageVersion the version to use
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsDockerImageVersion(
+      final String dockerImageVersion) {
+    containerRuntimeBuilder.withConnectorsDockerImageVersion(dockerImageVersion);
+    return this;
+  }
+
+  /**
+   * Add environment variables to the Connectors runtime.
+   *
+   * @param envVars environment variables to add
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsEnv(final Map<String, String> envVars) {
+    containerRuntimeBuilder.withConnectorsEnv(envVars);
+    return this;
+  }
+
+  /**
+   * Add an environment variable to the Connectors runtime.
+   *
+   * @param name the variable name
+   * @param value the variable value
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsEnv(final String name, final String value) {
+    containerRuntimeBuilder.withConnectorsEnv(name, value);
+    return this;
+  }
+
+  /**
+   * Add a secret to the Connectors runtime.
+   *
+   * @param name the name of the secret
+   * @param value the value of the secret
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsSecret(final String name, final String value) {
+    containerRuntimeBuilder.withConnectorsSecret(name, value);
     return this;
   }
 }
