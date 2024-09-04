@@ -13,12 +13,6 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ElasticsearchProperties;
-import io.camunda.exporter.exceptions.ElasticsearchExporterException;
-import io.camunda.exporter.utils.RetryOperation;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -38,7 +32,6 @@ public final class ElasticsearchClientFactory {
   private ElasticsearchClientFactory() {}
 
   public ElasticsearchClient create(final ElasticsearchProperties elsConfig) {
-    LOGGER.debug("Creating ElasticsearchClient ...");
     final RestClientBuilder restClientBuilder = RestClient.builder(getHttpHost(elsConfig));
     if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
       restClientBuilder.setRequestConfigCallback(
@@ -56,9 +49,7 @@ public final class ElasticsearchClientFactory {
 
     // And create the API client
     final ElasticsearchClient elasticsearchClient = new ElasticsearchClient(transport);
-    if (!checkHealth(elasticsearchClient, elsConfig)) {
-      LOGGER.warn("Elasticsearch cluster is not accessible");
-    } else {
+    if (checkHealth(elasticsearchClient, elsConfig)) {
       LOGGER.debug("Elasticsearch connection was successfully created.");
     }
     return elasticsearchClient;
@@ -67,26 +58,12 @@ public final class ElasticsearchClientFactory {
   public boolean checkHealth(
       final ElasticsearchClient elasticsearchClient, final ElasticsearchProperties elsConfig) {
     try {
-      return RetryOperation.<Boolean>newBuilder()
-          .noOfRetry(50)
-          .retryOn(
-              IOException.class,
-              co.elastic.clients.elasticsearch._types.ElasticsearchException.class)
-          .delayInterval(3, TimeUnit.SECONDS)
-          .message(
-              String.format(
-                  "Connect to Elasticsearch cluster [%s] at %s",
-                  elsConfig.getClusterName(), elsConfig.getUrl()))
-          .retryConsumer(
-              () -> {
-                final HealthResponse healthResponse = elasticsearchClient.cluster().health();
-                LOGGER.info("Elasticsearch cluster health: {}", healthResponse.status());
-                return healthResponse.clusterName().equals(elsConfig.getClusterName());
-              })
-          .build()
-          .retry();
+      final HealthResponse healthResponse = elasticsearchClient.cluster().health();
+      LOGGER.info("Elasticsearch cluster health: {}", healthResponse.status());
+      return healthResponse.clusterName().equals(elsConfig.getClusterName());
     } catch (final Exception e) {
-      throw new ElasticsearchExporterException("Couldn't connect to Elasticsearch. Abort.", e);
+      LOGGER.warn("Elasticsearch cluster is not accessible", e);
+      return false;
     }
   }
 
@@ -115,12 +92,7 @@ public final class ElasticsearchClientFactory {
   }
 
   private HttpHost getHttpHost(final ElasticsearchProperties elsConfig) {
-    try {
-      final URI uri = new URI(elsConfig.getUrl());
-      return new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
-    } catch (final URISyntaxException e) {
-      throw new ElasticsearchExporterException("Error in url: " + elsConfig.getUrl(), e);
-    }
+    return HttpHost.create(elsConfig.getUrl());
   }
 
   private RequestConfig.Builder setTimeouts(
