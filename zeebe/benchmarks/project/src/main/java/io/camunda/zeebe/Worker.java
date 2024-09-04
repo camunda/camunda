@@ -17,6 +17,7 @@ package io.camunda.zeebe;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
 import io.camunda.zeebe.config.AppCfg;
@@ -34,14 +35,15 @@ public class Worker extends App {
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(Worker.class), Duration.ofSeconds(5));
   private final AppCfg appCfg;
+  private final WorkerCfg workerCfg;
 
   Worker(final AppCfg appCfg) {
     this.appCfg = appCfg;
+    workerCfg = appCfg.getWorker();
   }
 
   @Override
   public void run() {
-    final WorkerCfg workerCfg = appCfg.getWorker();
     final String jobType = workerCfg.getJobType();
     final long completionDelay = workerCfg.getCompletionDelay().toMillis();
     final boolean isStreamEnabled = workerCfg.isStreamEnabled();
@@ -59,17 +61,7 @@ public class Worker extends App {
         client
             .newWorker()
             .jobType(jobType)
-            .handler(
-                (jobClient, job) -> {
-                  final var command =
-                      jobClient.newCompleteCommand(job.getKey()).variables(variables);
-                  try {
-                    Thread.sleep(completionDelay);
-                  } catch (final Exception e) {
-                    THROTTLED_LOGGER.error("Exception on sleep", e);
-                  }
-                  requestFutures.add(command.send());
-                })
+            .handler(handleJob(client, variables, completionDelay, requestFutures))
             .streamEnabled(isStreamEnabled)
             .metrics(metrics)
             .open();
@@ -85,6 +77,33 @@ public class Worker extends App {
                   client.close();
                   responseChecker.close();
                 }));
+  }
+
+  private JobHandler handleJob(
+      final ZeebeClient client,
+      final String variables,
+      final long completionDelay,
+      final BlockingQueue<Future<?>> requestFutures) {
+    return (jobClient, job) -> {
+      if (workerCfg.isSendMessage()) {
+        final Object correlationKey = job.getVariable(workerCfg.getCorrelationKeyVariableName());
+
+        client
+            .newPublishMessageCommand()
+            .messageName(workerCfg.getMessageName())
+            .correlationKey(correlationKey.toString())
+            .send();
+      }
+
+      final var command = jobClient.newCompleteCommand(job.getKey()).variables(variables);
+      try {
+        Thread.sleep(completionDelay);
+      } catch (final Exception e) {
+        THROTTLED_LOGGER.error("Exception on sleep", e);
+      }
+
+      requestFutures.add(command.send());
+    };
   }
 
   private ZeebeClient createZeebeClient() {

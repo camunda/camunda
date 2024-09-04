@@ -28,6 +28,9 @@ public class WorkerCfg {
   private String payloadPath;
   private boolean isStreamEnabled;
   private Duration timeout;
+  private boolean sendMessage = false;
+  private String messageName = "defaultMessage";
+  private String correlationKeyVariableName = "correlationKey-var";
 
   public String getJobType() {
     return jobType;
@@ -99,5 +102,29 @@ public class WorkerCfg {
 
   public void setTimeout(final Duration timeout) {
     this.timeout = timeout;
+  }
+
+  public boolean isSendMessage() {
+    return sendMessage;
+  }
+
+  public void setSendMessage(final boolean sendMessage) {
+    this.sendMessage = sendMessage;
+  }
+
+  public String getMessageName() {
+    return messageName;
+  }
+
+  public void setMessageName(final String messageName) {
+    this.messageName = messageName;
+  }
+
+  public String getCorrelationKeyVariableName() {
+    return correlationKeyVariableName;
+  }
+
+  public void setCorrelationKeyVariableName(final String correlationKeyVariableName) {
+    this.correlationKeyVariableName = correlationKeyVariableName;
   }
 }
