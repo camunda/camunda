@@ -41,7 +41,7 @@ public class ElasticsearchExporter implements Exporter {
   private long lastPosition = -1;
 
   @Override
-  public void configure(final Context context) throws Exception {
+  public void configure(final Context context) {
     configuration =
         context.getConfiguration().instantiate(ElasticsearchExporterConfiguration.class);
     // TODO validate configuration
@@ -136,7 +136,7 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void updateLastExportedPosition() {
-    controller.updateLastExportedRecordPosition(lastPosition, null);
+    controller.updateLastExportedRecordPosition(lastPosition);
   }
 
   private record ElasticsearchRecordFilter() implements RecordFilter {
