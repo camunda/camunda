@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState, useMemo} from 'react';
+import {useEffect, useState} from 'react';
 import {observer} from 'mobx-react';
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -29,10 +29,6 @@ const VariablePanel = observer(function VariablePanel() {
   const {fetchListeners, state, getListenersFailureCount} =
     processInstanceListenersStore;
   const {listeners} = state;
-  const listenersFailureCount = useMemo(
-    () => getListenersFailureCount(),
-    [listeners, getListenersFailureCount],
-  );
 
   useEffect(() => {
     variablesStore.init(processInstanceId);
@@ -90,7 +86,7 @@ const VariablePanel = observer(function VariablePanel() {
                 ? [
                     {
                       id: 'listeners',
-                      ...(listenersFailureCount && {
+                      ...(getListenersFailureCount() && {
                         labelIcon: <WarningFilled />,
                       }),
                       label: 'Listeners',
