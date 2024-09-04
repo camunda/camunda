@@ -30,7 +30,6 @@ public class DbDistributionState implements MutableDistributionState {
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   private final DbLong distributionKey;
-  private final DbForeignKey<DbLong> fkDistribution;
   private final DbInt partitionKey;
   private final DbCompositeKey<DbForeignKey<DbLong>, DbInt> distributionPartitionKey;
 
@@ -38,34 +37,31 @@ public class DbDistributionState implements MutableDistributionState {
   private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbInt>, DbNil>
       pendingDistributionColumnFamily;
 
-  private final PersistedCommandDistribution persistedCommandDistribution;
-
   /** [distribution key] => [persisted command distribution] */
   private final ColumnFamily<DbLong, PersistedCommandDistribution>
       commandDistributionRecordColumnFamily;
 
-  /** [queue | partition id | insertion key ] => [distributionKey] */
+  /** [queue id | partition id | distribution key ] => [] */
   private final ColumnFamily<
-          DbCompositeKey<DbString, DbCompositeKey<DbInt, DbLong>>, DbForeignKey<DbLong>>
+          DbCompositeKey<DbString, DbCompositeKey<DbInt, DbForeignKey<DbLong>>>, DbNil>
       queuedCommandDistributionColumnFamily;
 
   private final DbString queueId;
-  private final DbLong insertionKey;
   private final DbCompositeKey<DbString, DbInt> queuePerPartitionKey;
-  private final DbCompositeKey<DbString, DbCompositeKey<DbInt, DbLong>> queuedDistributionKey;
+  private final DbCompositeKey<DbString, DbCompositeKey<DbInt, DbForeignKey<DbLong>>>
+      queuedDistributionKey;
 
   public DbDistributionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     distributionKey = new DbLong();
-    fkDistribution =
+    final DbForeignKey<DbLong> fkDistribution =
         new DbForeignKey<>(distributionKey, ZbColumnFamilies.COMMAND_DISTRIBUTION_RECORD);
-    persistedCommandDistribution = new PersistedCommandDistribution();
     commandDistributionRecordColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.COMMAND_DISTRIBUTION_RECORD,
             transactionContext,
             distributionKey,
-            persistedCommandDistribution);
+            new PersistedCommandDistribution());
 
     partitionKey = new DbInt();
     distributionPartitionKey = new DbCompositeKey<>(fkDistribution, partitionKey);
@@ -77,16 +73,15 @@ public class DbDistributionState implements MutableDistributionState {
             DbNil.INSTANCE);
 
     queueId = new DbString();
-    insertionKey = new DbLong();
     queuePerPartitionKey = new DbCompositeKey<>(queueId, partitionKey);
     queuedDistributionKey =
-        new DbCompositeKey<>(queueId, new DbCompositeKey<>(partitionKey, insertionKey));
+        new DbCompositeKey<>(queueId, new DbCompositeKey<>(partitionKey, fkDistribution));
     queuedCommandDistributionColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.QUEUED_DISTRIBUTION,
             transactionContext,
             queuedDistributionKey,
-            fkDistribution);
+            DbNil.INSTANCE);
   }
 
   @Override
@@ -119,28 +114,20 @@ public class DbDistributionState implements MutableDistributionState {
 
   @Override
   public void enqueueCommandDistribution(
-      final String queue,
-      final long insertionKey,
-      final long distributionKey,
-      final int partition) {
-    this.insertionKey.wrapLong(insertionKey);
+      final String queue, final long distributionKey, final int partition) {
     queueId.wrapString(queue);
     this.distributionKey.wrapLong(distributionKey);
     partitionKey.wrapInt(partition);
-    queuedCommandDistributionColumnFamily.insert(queuedDistributionKey, fkDistribution);
+    queuedCommandDistributionColumnFamily.insert(queuedDistributionKey, DbNil.INSTANCE);
   }
 
   @Override
-  public void popQueuedDistribution(final String queue, final int partition) {
+  public void removeQueuedDistribution(
+      final String queue, final int partition, final long distributionKey) {
     queueId.wrapString(queue);
     partitionKey.wrapInt(partition);
-
-    queuedCommandDistributionColumnFamily.whileEqualPrefix(
-        queuedDistributionKey,
-        (key, value) -> {
-          queuedCommandDistributionColumnFamily.deleteExisting(key);
-          return false;
-        });
+    this.distributionKey.wrapLong(distributionKey);
+    queuedCommandDistributionColumnFamily.deleteExisting(queuedDistributionKey);
   }
 
   @Override
@@ -224,7 +211,7 @@ public class DbDistributionState implements MutableDistributionState {
     queuedCommandDistributionColumnFamily.whileEqualPrefix(
         queuePerPartitionKey,
         (key, value) -> {
-          nextDistributionKey.set(value.inner().getValue());
+          nextDistributionKey.set(key.second().second().inner().getValue());
           return false;
         });
     return Optional.ofNullable(nextDistributionKey.get());

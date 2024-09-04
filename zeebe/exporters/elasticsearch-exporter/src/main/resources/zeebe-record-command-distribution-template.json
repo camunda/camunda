@@ -25,9 +25,6 @@
             "queueId": {
               "type": "keyword"
             },
-            "queueInsertionKey": {
-              "type": "long"
-            },
             "valueType": {
               "type": "keyword"
             },

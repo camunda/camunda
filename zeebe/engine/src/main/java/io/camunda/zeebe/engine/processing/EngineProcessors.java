@@ -114,7 +114,6 @@ public final class EngineProcessors {
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
-            processingState.getKeyGenerator(),
             processingState.getDistributionState(),
             writers,
             typedRecordProcessorContext.getPartitionId(),

@@ -82,11 +82,6 @@ The value of the partition id depends on the `CommandDistributionIntent`:
 This property is optional (empty string indicates no queue id). It is set on the `ENQUEUED` and `STARTED` intents.
 If it is set, the next property `queueInsertionKey` must be set as well.
 
-#### Queue insertion key
-
-This property is optional (-1 indicates no queue insertion key) unless the `queueId` is set. It is set on the `ENQUEUED` and `STARTED` intents.
-This indicates the position in the queue where this command is inserted.
-
 #### Value type
 
 The value is part of the record so we know what type of record we are distributing. We need this in
@@ -119,7 +114,7 @@ void distributeInOrder() {
 }
 ```
 
-Command distributions submitted with the same queue will be distributed in the order they were submitted.
+Command distributions submitted with the same queue will be distributed in the natural sort order of their distribution key.
 The queue is maintained per receiving partition.
 This way we can ensure that all partitions process distributed commands in the correct order, while preventing that partial unavailability, for example just one partition not processing, does not block progress for other partitions.
 

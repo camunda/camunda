@@ -31,7 +31,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Optional;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
@@ -53,7 +52,6 @@ import org.junit.jupiter.api.Test;
  */
 class CommandDistributionBehaviorTest {
 
-  private KeyGenerator mockKeyGenerator;
   private DistributionState mockDistributionState;
   private FakeProcessingResultBuilder<CommandDistributionRecord> fakeProcessingResultBuilder;
   private InterPartitionCommandSender mockInterpartitionCommandSender;
@@ -66,7 +64,6 @@ class CommandDistributionBehaviorTest {
 
   @BeforeEach
   void setUp() {
-    mockKeyGenerator = mock(KeyGenerator.class);
     mockDistributionState = mock(DistributionState.class);
     fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
     mockInterpartitionCommandSender = mock(InterPartitionCommandSender.class);
@@ -85,7 +82,6 @@ class CommandDistributionBehaviorTest {
     // given 1 partition
     final var behavior =
         new CommandDistributionBehavior(
-            mockKeyGenerator,
             mockDistributionState,
             writers,
             1,
@@ -108,7 +104,6 @@ class CommandDistributionBehaviorTest {
     // given 3 partitions and behavior on partition 1
     final var behavior =
         new CommandDistributionBehavior(
-            mockKeyGenerator,
             mockDistributionState,
             writers,
             1,
@@ -145,7 +140,6 @@ class CommandDistributionBehaviorTest {
     // given 4 partitions and behavior on partition 2
     final var behavior =
         new CommandDistributionBehavior(
-            mockKeyGenerator,
             mockDistributionState,
             writers,
             2,
@@ -182,7 +176,6 @@ class CommandDistributionBehaviorTest {
     // given 3 partitions and behavior on partition 1
     final var behavior =
         new CommandDistributionBehavior(
-            mockKeyGenerator,
             mockDistributionState,
             writers,
             1,
@@ -217,7 +210,6 @@ class CommandDistributionBehaviorTest {
     // given 3 partitions and behavior on partition 1
     final var behavior =
         new CommandDistributionBehavior(
-            mockKeyGenerator,
             mockDistributionState,
             writers,
             1,

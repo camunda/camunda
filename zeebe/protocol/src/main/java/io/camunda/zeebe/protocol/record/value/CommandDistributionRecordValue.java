@@ -36,11 +36,6 @@ public interface CommandDistributionRecordValue extends RecordValue {
   String getQueueId();
 
   /**
-   * @return the key used for ordering within the queue.
-   */
-  long getQueueInsertionKey();
-
-  /**
    * @return the wrapped record value type
    */
   ValueType getValueType();

@@ -27,7 +27,7 @@ public final class CommandDistributionAcknowledgedApplier
 
     distributionState
         .getQueueIdForDistribution(key)
-        .ifPresent(queue -> distributionState.popQueuedDistribution(queue, partitionId));
+        .ifPresent(queue -> distributionState.removeQueuedDistribution(queue, partitionId, key));
 
     distributionState.removePendingDistribution(key, partitionId);
   }

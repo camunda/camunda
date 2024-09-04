@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -39,7 +38,6 @@ import java.util.Set;
  */
 public final class CommandDistributionBehavior {
 
-  private final KeyGenerator keyGenerator;
   private final DistributionState distributionState;
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
@@ -59,13 +57,11 @@ public final class CommandDistributionBehavior {
       new CommandDistributionRecord();
 
   public CommandDistributionBehavior(
-      final KeyGenerator keyGenerator,
       final DistributionState distributionState,
       final Writers writers,
       final int currentPartition,
       final RoutingInfo routingInfo,
       final InterPartitionCommandSender partitionCommandSender) {
-    this.keyGenerator = keyGenerator;
     this.distributionState = distributionState;
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
@@ -84,7 +80,8 @@ public final class CommandDistributionBehavior {
    *     the key identifying the entity that's being distributed. Please note that it must be unique
    *     for command distribution. Don't reuse the key to distribute another command. Don't reuse
    *     the key to distribute another command until the previous command distribution has been
-   *     completed.
+   *     completed. Additionally, the key determines the order in which the commands are distributed
+   *     if they are distributed ordered, i.e. a queue is specified.
    */
   public CommandDistributionRequestBuilder withKey(final long distributionKey) {
     return new DistributionRequest(distributionKey);
@@ -165,17 +162,11 @@ public final class CommandDistributionBehavior {
 
   private void enqueueDistribution(
       final String queue, final int partition, final long distributionKey) {
-    // Generate a new key to insert at the end of the queue
-    final var newInsertion = keyGenerator.nextKey();
-
     commandDistributionEnqueued.reset();
     stateWriter.appendFollowUpEvent(
         distributionKey,
         CommandDistributionIntent.ENQUEUED,
-        commandDistributionEnqueued
-            .setQueueId(queue)
-            .setPartitionId(partition)
-            .setQueueInsertionKey(newInsertion));
+        commandDistributionEnqueued.setQueueId(queue).setPartitionId(partition));
   }
 
   /**
@@ -267,8 +258,9 @@ public final class CommandDistributionBehavior {
     CommandDistributionRequestBuilder unordered();
 
     /**
-     * Appends this command to the specified queue to be distributed in insertion order. Ordering is
-     * maintained separately for each partition the command is distributed to.
+     * Appends this command to the specified queue to be distributed in the natural sort order of
+     * the distribution key. Ordering is maintained separately for each partition the command is
+     * distributed to.
      *
      * @param queue the queue to append the command to.
      */

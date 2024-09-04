@@ -74,7 +74,6 @@ public final class MessageStreamProcessorTest {
     spyCommandDistributionBehavior =
         spy(
             new CommandDistributionBehavior(
-                mockKeyGenerator,
                 mockDistributionState,
                 writers,
                 1,
