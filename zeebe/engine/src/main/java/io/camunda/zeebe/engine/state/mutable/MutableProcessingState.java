@@ -79,10 +79,13 @@ public interface MutableProcessingState extends ProcessingState {
   MutableUserState getUserState();
 
   @Override
-  MutableClockState getClockState();
+  MutableAuthorizationState getAuthorizationState();
 
   @Override
-  MutableAuthorizationState getAuthorizationState();
+  MutableRoutingState getRoutingState();
+
+  @Override
+  MutableClockState getClockState();
 
   KeyGenerator getKeyGenerator();
 }

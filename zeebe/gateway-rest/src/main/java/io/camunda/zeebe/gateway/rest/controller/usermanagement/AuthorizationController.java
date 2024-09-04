@@ -48,10 +48,9 @@ public class AuthorizationController {
             authorizationServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .createAuthorization(
-                    authorizationAssignRequest.getOwnerKey(),
+                    1L, // TODO set proper owner key as Long. This requires changes in the REST API
                     AuthorizationOwnerType.valueOf(
                         authorizationAssignRequest.getOwnerType().getValue()),
-                    authorizationAssignRequest.getResourceKey(),
                     authorizationAssignRequest.getResourceType(),
                     authorizationAssignRequest.getPermissions()));
   }

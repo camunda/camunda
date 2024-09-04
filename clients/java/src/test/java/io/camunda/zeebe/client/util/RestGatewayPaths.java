@@ -29,6 +29,9 @@ public class RestGatewayPaths {
       REST_API_PATH + "/user-tasks/%s/assignee";
   private static final String URL_USER_TASK_UPDATE = REST_API_PATH + "/user-tasks/%s";
   private static final String URL_MESSAGE_CORRELATION = REST_API_PATH + "/message/correlation";
+  private static final String URL_CLOCK_PIN = REST_API_PATH + "/administration/clock";
+  private static final String URL_CLOCK_RESET = REST_API_PATH + "/administration/clock/reset";
+  private static final String URL_INCIDENT_RESOLUTION = REST_API_PATH + "/incidents/%s/resolution";
 
   /**
    * @return the topology request URL
@@ -78,5 +81,27 @@ public class RestGatewayPaths {
 
   public static String getMessageCorrelationUrl() {
     return URL_MESSAGE_CORRELATION;
+  }
+
+  /**
+   * @return pin clock request URL
+   */
+  public static String getClockPinUrl() {
+    return URL_CLOCK_PIN;
+  }
+
+  /**
+   * @return reset clock request URL
+   */
+  public static String getClockResetUrl() {
+    return URL_CLOCK_RESET;
+  }
+
+  /**
+   * @param incidentKey the key of the corresponding incident to get the URL for
+   * @return resolve incident request URL
+   */
+  public static String getIncidentResolutionUrl(final long incidentKey) {
+    return String.format(URL_INCIDENT_RESOLUTION, incidentKey);
   }
 }

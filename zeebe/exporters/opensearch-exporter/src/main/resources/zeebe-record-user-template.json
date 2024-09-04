@@ -21,6 +21,9 @@
         "value": {
           "dynamic": "strict",
           "properties": {
+            "userKey": {
+              "type": "long"
+            },
             "username": {
               "type": "keyword"
             },

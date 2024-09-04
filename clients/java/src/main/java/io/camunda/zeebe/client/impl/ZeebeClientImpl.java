@@ -27,6 +27,8 @@ import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.ClockPinCommandStep1;
+import io.camunda.zeebe.client.api.command.ClockResetCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
@@ -60,6 +62,8 @@ import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
+import io.camunda.zeebe.client.impl.command.ClockPinCommandImpl;
+import io.camunda.zeebe.client.impl.command.ClockResetCommandImpl;
 import io.camunda.zeebe.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.CorrelateMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
@@ -504,6 +508,16 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public UpdateJobCommandStep1 newUpdateJobCommand(final ActivatedJob job) {
     return newUpdateJobCommand(job.getKey());
+  }
+
+  @Override
+  public ClockPinCommandStep1 newClockPinCommand() {
+    return new ClockPinCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public ClockResetCommandStep1 newClockResetCommand() {
+    return new ClockResetCommandImpl(httpClient);
   }
 
   @Override

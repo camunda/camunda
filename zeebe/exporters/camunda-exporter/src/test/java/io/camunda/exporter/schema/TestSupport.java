@@ -41,6 +41,7 @@ final class TestSupport {
         .withEnv("action.auto_create_index", "true")
         .withEnv("xpack.security.enabled", "false")
         .withEnv("xpack.watcher.enabled", "false")
-        .withEnv("xpack.ml.enabled", "false");
+        .withEnv("xpack.ml.enabled", "false")
+        .withEnv("action.destructive_requires_name", "false");
   }
 }

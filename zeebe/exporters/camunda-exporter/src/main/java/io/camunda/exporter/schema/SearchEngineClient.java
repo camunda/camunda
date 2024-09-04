@@ -7,16 +7,17 @@
  */
 package io.camunda.exporter.schema;
 
-import io.camunda.exporter.schema.descriptors.ComponentTemplateDescriptor;
+import io.camunda.exporter.NoopExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
 
 public interface SearchEngineClient {
   void createIndex(final IndexDescriptor indexDescriptor);
 
-  void createIndexTemplate(final IndexTemplateDescriptor indexDescriptor);
-
-  void createComponentTemplate(final ComponentTemplateDescriptor templateDescriptor);
+  void createIndexTemplate(
+      final IndexTemplateDescriptor indexDescriptor,
+      final IndexSettings settings,
+      final Boolean create);
 
   /**
    * The {@code propertiesJson} should have a root properties field, for example:
