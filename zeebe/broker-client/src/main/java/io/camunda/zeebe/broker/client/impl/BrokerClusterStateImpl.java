@@ -182,6 +182,11 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
   }
 
   @Override
+  public boolean isInitialized() {
+    return clusterSize != UNINITIALIZED_CLUSTER_SIZE;
+  }
+
+  @Override
   public int getClusterSize() {
     return clusterSize;
   }

@@ -72,6 +72,11 @@ final class PublishMessageDispatchStrategyTest {
   private record TestBrokerClusterState(int partitionCount) implements BrokerClusterState {
 
     @Override
+    public boolean isInitialized() {
+      return true;
+    }
+
+    @Override
     public int getClusterSize() {
       throw new UnsupportedOperationException();
     }

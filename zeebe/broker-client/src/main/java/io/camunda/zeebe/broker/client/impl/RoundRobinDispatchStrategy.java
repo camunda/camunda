@@ -31,8 +31,7 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
   public int determinePartition(final BrokerTopologyManager topologyManager) {
     final BrokerClusterState topology = topologyManager.getTopology();
 
-    if (topology == null
-        || topology.getClusterSize() == BrokerClusterStateImpl.UNINITIALIZED_CLUSTER_SIZE) {
+    if (topology == null || !topology.isInitialized()) {
       return BrokerClusterState.PARTITION_ID_NULL;
     }
 
