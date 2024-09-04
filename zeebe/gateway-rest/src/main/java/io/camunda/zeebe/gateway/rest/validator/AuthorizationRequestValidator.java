@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_NESTED_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
 
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
@@ -20,22 +21,32 @@ public final class AuthorizationRequestValidator {
   public static Optional<ProblemDetail> validateAuthorizationAssignRequest(
       final AuthorizationPatchRequest authorizationPatchRequest) {
     final List<String> violations = new ArrayList<>();
-    if (authorizationPatchRequest.getOwnerKey() == null) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("ownerKey"));
+    if (authorizationPatchRequest.getAction() == null) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("action"));
     }
 
-    if (authorizationPatchRequest.getOwnerType() == null) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("ownerType"));
-    }
-
-    if (authorizationPatchRequest.getResourceKey() == null
-        || authorizationPatchRequest.getResourceKey().isBlank()) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceKey"));
-    }
-
-    if (authorizationPatchRequest.getResourceType() == null
-        || authorizationPatchRequest.getResourceType().isBlank()) {
+    if (authorizationPatchRequest.getResourceType() == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceType"));
+    }
+
+    if (authorizationPatchRequest.getPermissions() == null
+        || authorizationPatchRequest.getPermissions().isEmpty()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("permissions"));
+    } else {
+
+      authorizationPatchRequest
+          .getPermissions()
+          .forEach(
+              permission -> {
+                if (permission.getPermissionType() == null) {
+                  violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("permissionType"));
+                } else if (permission.getResourceIds() == null
+                    || permission.getResourceIds().isEmpty()) {
+                  violations.add(
+                      ERROR_MESSAGE_EMPTY_NESTED_ATTRIBUTE.formatted(
+                          "resourceIds", permission.getPermissionType()));
+                }
+              });
     }
 
     return createProblemDetail(violations);
