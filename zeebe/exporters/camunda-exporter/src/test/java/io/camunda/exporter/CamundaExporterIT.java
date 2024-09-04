@@ -56,7 +56,7 @@ final class CamundaExporterIT {
   @BeforeAll
   public void beforeAll() {
     config.elasticsearch.setUrl(CONTAINER.getHttpHostAddress());
-    config.bulk.size = 1; // force flushing on the first record
+    config.bulk.setSize(1); // force flushing on the first record
 
     exporterTestContext =
         new ExporterTestContext()

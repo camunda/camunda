@@ -97,7 +97,7 @@ public class CamundaExporter implements Exporter {
 
   private boolean shouldFlush() {
     // FIXME should compare against both batch size and memory limit
-    return writer.getBatchSize() >= configuration.bulk.size;
+    return writer.getBatchSize() >= configuration.bulk.getSize();
   }
 
   private ExporterBatchWriter createBatchWriter() {
@@ -109,7 +109,7 @@ public class CamundaExporter implements Exporter {
 
   private void scheduleDelayedFlush() {
     controller.scheduleCancellableTask(
-        Duration.ofSeconds(configuration.bulk.delay), this::flushAndReschedule);
+        Duration.ofSeconds(configuration.bulk.getDelay()), this::flushAndReschedule);
   }
 
   private void flushAndReschedule() {

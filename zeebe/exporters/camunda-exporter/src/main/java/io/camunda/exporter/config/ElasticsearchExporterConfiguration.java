@@ -23,11 +23,35 @@ public class ElasticsearchExporterConfiguration {
 
   public static class BulkConfiguration {
     // delay before forced flush
-    public int delay = 5;
+    private int delay = 5;
     // bulk size before flush
-    public int size = 1_000;
+    private int size = 1_000;
     // memory limit of the bulk in bytes before flush
-    public int memoryLimit = 10 * 1024 * 1024;
+    private int memoryLimit = 10 * 1024 * 1024;
+
+    public int getDelay() {
+      return delay;
+    }
+
+    public void setDelay(final int delay) {
+      this.delay = delay;
+    }
+
+    public int getSize() {
+      return size;
+    }
+
+    public void setSize(final int size) {
+      this.size = size;
+    }
+
+    public int getMemoryLimit() {
+      return memoryLimit;
+    }
+
+    public void setMemoryLimit(final int memoryLimit) {
+      this.memoryLimit = memoryLimit;
+    }
 
     @Override
     public String toString() {
