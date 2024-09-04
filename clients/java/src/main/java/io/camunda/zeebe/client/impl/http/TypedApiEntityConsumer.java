@@ -164,7 +164,7 @@ public interface TypedApiEntityConsumer<T> {
     }
 
     @Override
-    public void consumeData(final ByteBuffer src, final boolean endOfStream) throws IOException {
+    public void consumeData(final ByteBuffer src, final boolean endOfStream) {
       final int offset = bufferedBytes;
       bufferedBytes += src.remaining();
       if (body.length < bufferedBytes) {

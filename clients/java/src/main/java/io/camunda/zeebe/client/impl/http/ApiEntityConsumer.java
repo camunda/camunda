@@ -70,8 +70,9 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
       entityConsumer = new JsonApiEntityConsumer<>(json, type, false);
     } else {
       final boolean isResponse =
-          SUPPORTED_TEXT_CONTENT_TYPES.stream().anyMatch(t -> t.isSameMimeType(contentType));
-      entityConsumer = new RawApiEntityConsumer(isResponse);
+          String.class.equals(type)
+              && SUPPORTED_TEXT_CONTENT_TYPES.stream().anyMatch(t -> t.isSameMimeType(contentType));
+      entityConsumer = new RawApiEntityConsumer<>(isResponse);
     }
   }
 

@@ -180,8 +180,8 @@ class ApiEntityConsumerTest {
     // given
     final String unsupportedData = "<html>";
     final ByteBuffer byteBuffer = ByteBuffer.wrap(unsupportedData.getBytes());
-    final ApiEntityConsumer<ByteBuffer> consumer =
-        new ApiEntityConsumer<>(new ObjectMapper(), ByteBuffer.class, 2048);
+    final ApiEntityConsumer<String> consumer =
+        new ApiEntityConsumer<>(new ObjectMapper(), String.class, 2048);
 
     // when
     // Start the stream with an unsupported content type
@@ -189,7 +189,29 @@ class ApiEntityConsumerTest {
     // Feed the data
     consumer.data(byteBuffer, true);
     // Generate the content (should return raw data as ByteBuffer)
-    final ApiEntity<ByteBuffer> entity = consumer.generateContent();
+    final ApiEntity<String> entity = consumer.generateContent();
+
+    // then
+    assertThat(entity).isInstanceOf(Unknown.class);
+    assertThat(StandardCharsets.UTF_8.decode(entity.unknown()).toString())
+        .isEqualTo(unsupportedData);
+  }
+
+  @Test
+  void testUnknownContentTypeWhenExpectedResponseIsNotAString() throws IOException {
+    // given
+    final String unsupportedData = "<unexpected/>";
+    final ByteBuffer byteBuffer = ByteBuffer.wrap(unsupportedData.getBytes());
+    final ApiEntityConsumer<TestEntity> consumer =
+        new ApiEntityConsumer<>(new ObjectMapper(), TestEntity.class, 2048);
+
+    // when
+    // Start the stream with a supported content type
+    consumer.streamStart(ContentType.TEXT_XML);
+    // Feed the data
+    consumer.data(byteBuffer, true);
+    // Generate the content (should return raw data as ByteBuffer)
+    final ApiEntity<TestEntity> entity = consumer.generateContent();
 
     // then
     assertThat(entity).isInstanceOf(Unknown.class);
