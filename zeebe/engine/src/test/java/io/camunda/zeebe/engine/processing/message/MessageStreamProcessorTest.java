@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -67,7 +68,9 @@ public final class MessageStreamProcessorTest {
         spy(new SubscriptionCommandSender(1, mockInterpartitionCommandSender));
     spySubscriptionCommandSender.setWriters(writers);
     spyCommandDistributionBehavior =
-        spy(new CommandDistributionBehavior(writers, 1, 1, mockInterpartitionCommandSender));
+        spy(
+            new CommandDistributionBehavior(
+                writers, 1, RoutingInfo.forStaticPartitions(1), mockInterpartitionCommandSender));
 
     rule.startTypedStreamProcessor(
         (typedRecordProcessors, processingContext) -> {
