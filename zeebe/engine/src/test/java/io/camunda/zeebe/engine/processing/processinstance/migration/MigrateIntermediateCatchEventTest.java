@@ -13,8 +13,11 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -265,5 +268,85 @@ public class MigrateIntermediateCatchEventTest {
         .hasTargetElementId("catch2")
         .describedAs("Expect that the due date is not changed")
         .hasDueDate(timerRecord.getDueDate());
+  }
+
+  @Test
+  public void shouldWriteSignalSubscriptionMigratedEvent() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+    final String signalName = helper.getSignalName();
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .intermediateCatchEvent("catch1", c -> c.signal(signalName))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .intermediateCatchEvent("catch2", c -> c.signal(signalName))
+                    .endEvent("target_process_signal_end")
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+        .withSignalName(signalName)
+        .withCatchEventId("catch1")
+        .await();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("catch1", "catch2")
+        .migrate();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.MIGRATED)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
+        .describedAs("Expect that the catch event id is updated")
+        .hasCatchEventId("catch2")
+        .describedAs("Expect that the signal name is not changed")
+        .hasSignalName(signalName);
+
+    engine.signal().withSignalName(signalName).broadcast();
+
+    Assertions.assertThat(
+            RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.DELETED)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
+        .describedAs("Expect that the catch event id is updated")
+        .hasCatchEventId("catch2")
+        .describedAs("Expect that the signal name is not changed")
+        .hasSignalName(signalName);
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.END_EVENT)
+                .withElementId("target_process_signal_end")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process instance is continued in the target process")
+        .isNotNull();
   }
 }
