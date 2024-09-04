@@ -52,7 +52,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   public void createIndexTemplate(
       final IndexTemplateDescriptor templateDescriptor,
       final IndexSettings settings,
-      final Boolean create) {
+      final boolean create) {
     final PutIndexTemplateRequest request =
         putIndexTemplateRequest(templateDescriptor, settings, create);
 

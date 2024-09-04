@@ -18,7 +18,7 @@ public interface SearchEngineClient {
   void createIndexTemplate(
       final IndexTemplateDescriptor indexDescriptor,
       final IndexSettings settings,
-      final Boolean create);
+      final boolean create);
 
   /**
    * @param indexDescriptor Representing index of which to update the mappings
