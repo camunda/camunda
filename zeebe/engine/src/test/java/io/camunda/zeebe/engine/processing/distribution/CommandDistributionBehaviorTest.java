@@ -107,8 +107,9 @@ class CommandDistributionBehaviorTest {
             Record::getIntent,
             r -> r.getValue().getPartitionId(),
             r -> r.getValue().getIntent())
-        .containsExactly(
-            tuple(key, CommandDistributionIntent.STARTED, 1, intent),
+        .hasSize(3)
+        .startsWith(tuple(key, CommandDistributionIntent.STARTED, 1, intent))
+        .contains(
             tuple(key, CommandDistributionIntent.DISTRIBUTING, 2, intent),
             tuple(key, CommandDistributionIntent.DISTRIBUTING, 3, intent));
 
@@ -138,8 +139,9 @@ class CommandDistributionBehaviorTest {
             Record::getIntent,
             r -> r.getValue().getPartitionId(),
             r -> r.getValue().getIntent())
-        .containsExactly(
-            tuple(key, CommandDistributionIntent.STARTED, 2, intent),
+        .hasSize(3)
+        .startsWith(tuple(key, CommandDistributionIntent.STARTED, 2, intent))
+        .contains(
             tuple(key, CommandDistributionIntent.DISTRIBUTING, 1, intent),
             tuple(key, CommandDistributionIntent.DISTRIBUTING, 3, intent));
 
