@@ -29,7 +29,7 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationAssignRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
@@ -194,11 +194,11 @@ public class RequestMapper {
                     updateRequest.getChangeset().getTimeout())));
   }
 
-  public static Either<ProblemDetail, AuthorizationAssignRequest> toAuthorizationAssignRequest(
-      final AuthorizationAssignRequest authorizationAssignRequest) {
+  public static Either<ProblemDetail, AuthorizationPatchRequest> toAuthorizationAssignRequest(
+      final AuthorizationPatchRequest authorizationPatchRequest) {
     return getResult(
-        validateAuthorizationAssignRequest(authorizationAssignRequest),
-        () -> authorizationAssignRequest);
+        validateAuthorizationAssignRequest(authorizationPatchRequest),
+        () -> authorizationPatchRequest);
   }
 
   public static Either<ProblemDetail, DocumentCreateRequest> toDocumentCreateRequest(

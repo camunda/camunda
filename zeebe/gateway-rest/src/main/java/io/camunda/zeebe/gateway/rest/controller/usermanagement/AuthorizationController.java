@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.service.AuthorizationServices;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationAssignRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
@@ -35,14 +35,14 @@ public class AuthorizationController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> createAuthorization(
-      @RequestBody final AuthorizationAssignRequest authorizationAssignRequest) {
+      @RequestBody final AuthorizationPatchRequest authorizationPatchRequest) {
 
-    return RequestMapper.toAuthorizationAssignRequest(authorizationAssignRequest)
+    return RequestMapper.toAuthorizationAssignRequest(authorizationPatchRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignAuthorization);
   }
 
   private CompletableFuture<ResponseEntity<Object>> assignAuthorization(
-      final AuthorizationAssignRequest authorizationAssignRequest) {
+      final AuthorizationPatchRequest authorizationPatchRequest) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             authorizationServices
@@ -50,8 +50,8 @@ public class AuthorizationController {
                 .createAuthorization(
                     1L, // TODO set proper owner key as Long. This requires changes in the REST API
                     AuthorizationOwnerType.valueOf(
-                        authorizationAssignRequest.getOwnerType().getValue()),
-                    authorizationAssignRequest.getResourceType(),
-                    authorizationAssignRequest.getPermissions()));
+                        authorizationPatchRequest.getOwnerType().getValue()),
+                    authorizationPatchRequest.getResourceType(),
+                    authorizationPatchRequest.getPermissions()));
   }
 }

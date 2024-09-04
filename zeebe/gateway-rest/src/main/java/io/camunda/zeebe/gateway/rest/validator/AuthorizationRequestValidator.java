@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.rest.validator;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
 
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationAssignRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -18,23 +18,23 @@ import org.springframework.http.ProblemDetail;
 
 public final class AuthorizationRequestValidator {
   public static Optional<ProblemDetail> validateAuthorizationAssignRequest(
-      final AuthorizationAssignRequest authorizationAssignRequest) {
+      final AuthorizationPatchRequest authorizationPatchRequest) {
     final List<String> violations = new ArrayList<>();
-    if (authorizationAssignRequest.getOwnerKey() == null) {
+    if (authorizationPatchRequest.getOwnerKey() == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("ownerKey"));
     }
 
-    if (authorizationAssignRequest.getOwnerType() == null) {
+    if (authorizationPatchRequest.getOwnerType() == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("ownerType"));
     }
 
-    if (authorizationAssignRequest.getResourceKey() == null
-        || authorizationAssignRequest.getResourceKey().isBlank()) {
+    if (authorizationPatchRequest.getResourceKey() == null
+        || authorizationPatchRequest.getResourceKey().isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceKey"));
     }
 
-    if (authorizationAssignRequest.getResourceType() == null
-        || authorizationAssignRequest.getResourceType().isBlank()) {
+    if (authorizationPatchRequest.getResourceType() == null
+        || authorizationPatchRequest.getResourceType().isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceType"));
     }
 
