@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.impl.search.response;
 
 import io.camunda.zeebe.client.api.search.response.Operation;
 import io.camunda.zeebe.client.protocol.rest.OperationItem;
+import java.util.Optional;
 
 public class OperationImpl implements Operation {
 
@@ -28,12 +29,12 @@ public class OperationImpl implements Operation {
   private final String completedDate;
 
   public OperationImpl(final OperationItem item) {
-    id = item.getId();
-    batchOperationId = item.getBatchOperationId();
-    type = item.getType().toString();
-    state = item.getState().toString();
-    errorMessage = item.getErrorMessage();
-    completedDate = item.getCompletedDate();
+    this.id = item.getId();
+    this.batchOperationId = item.getBatchOperationId();
+    this.type = Optional.ofNullable(item.getType()).map(Enum::toString).orElse(null);
+    this.state = Optional.ofNullable(item.getState()).map(Enum::toString).orElse(null);
+    this.errorMessage = item.getErrorMessage();
+    this.completedDate = item.getCompletedDate();
   }
 
   @Override
