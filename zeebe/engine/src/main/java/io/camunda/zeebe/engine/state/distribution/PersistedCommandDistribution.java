@@ -18,11 +18,12 @@ import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistribut
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Optional;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class PersistedCommandDistribution extends UnpackedObject implements DbValue {
 
-  private final StringProperty queueProperty = new StringProperty("queue", "");
+  private final StringProperty queueIdProperty = new StringProperty("queueId", "");
   private final EnumProperty<ValueType> valueTypeProperty =
       new EnumProperty<>("valueType", ValueType.class);
   private final IntegerProperty intentProperty = new IntegerProperty("intent", Intent.NULL_VAL);
@@ -31,7 +32,7 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
 
   public PersistedCommandDistribution() {
     super(4);
-    declareProperty(queueProperty)
+    declareProperty(queueIdProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
         .declareProperty(commandValueProperty);
@@ -40,9 +41,9 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
   public PersistedCommandDistribution wrap(
       final CommandDistributionRecord commandDistributionRecord) {
     if (commandDistributionRecord.getQueueId() != null) {
-      queueProperty.setValue(commandDistributionRecord.getQueueId());
+      queueIdProperty.setValue(commandDistributionRecord.getQueueId());
     } else {
-      queueProperty.reset();
+      queueIdProperty.reset();
     }
     valueTypeProperty.setValue(commandDistributionRecord.getValueType());
     intentProperty.setValue(commandDistributionRecord.getIntent().value());
@@ -57,9 +58,9 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
     return this;
   }
 
-  public String getQueue() {
-    final var value = BufferUtil.bufferAsString(queueProperty.getValue());
-    return value.isEmpty() ? null : value;
+  public Optional<String> getQueueId() {
+    final var value = BufferUtil.bufferAsString(queueIdProperty.getValue());
+    return value.isEmpty() ? Optional.empty() : Optional.of(value);
   }
 
   public ValueType getValueType() {
