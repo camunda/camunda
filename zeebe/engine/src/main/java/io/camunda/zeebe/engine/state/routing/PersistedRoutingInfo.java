@@ -18,7 +18,7 @@ import io.camunda.zeebe.msgpack.value.IntegerValue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class RoutingInfo extends UnpackedObject implements DbValue {
+final class PersistedRoutingInfo extends UnpackedObject implements DbValue {
   private final ArrayProperty<IntegerValue> partitions =
       new ArrayProperty<>("partitions", IntegerValue::new);
   private final EnumProperty<MessageCorrelationStrategy> messageCorrelationStrategy =
@@ -29,7 +29,7 @@ public class RoutingInfo extends UnpackedObject implements DbValue {
   private final IntegerProperty hashModPartitionCount =
       new IntegerProperty("hashModPartitionCount", -1);
 
-  public RoutingInfo() {
+  public PersistedRoutingInfo() {
     super(3);
     declareProperty(partitions)
         .declareProperty(messageCorrelationStrategy)
