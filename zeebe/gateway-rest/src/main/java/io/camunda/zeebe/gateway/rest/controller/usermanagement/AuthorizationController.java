@@ -14,7 +14,6 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -51,11 +50,6 @@ public class AuthorizationController {
         () ->
             authorizationServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .createAuthorization(
-                    1L, // TODO set proper owner key as Long. This requires changes in the REST API
-                    AuthorizationOwnerType.valueOf(
-                        patchAuthorizationRequest.getOwnerType().getValue()),
-                    patchAuthorizationRequest.getResourceType(),
-                    patchAuthorizationRequest.getPermissions()));
+                .createAuthorization(patchAuthorizationRequest));
   }
 }

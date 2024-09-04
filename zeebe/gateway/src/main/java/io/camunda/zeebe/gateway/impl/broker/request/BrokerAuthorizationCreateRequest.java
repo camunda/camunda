@@ -12,7 +12,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -29,8 +29,8 @@ public class BrokerAuthorizationCreateRequest extends BrokerExecuteCommand<Autho
     return this;
   }
 
-  public BrokerAuthorizationCreateRequest setOwnerType(final AuthorizationOwnerType ownerType) {
-    requestDto.setOwnerType(ownerType);
+  public BrokerAuthorizationCreateRequest setAction(final PermissionAction action) {
+    requestDto.setAction(action);
     return this;
   }
 
