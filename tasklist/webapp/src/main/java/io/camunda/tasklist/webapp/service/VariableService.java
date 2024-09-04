@@ -184,6 +184,10 @@ public class VariableService {
     listViewStore.persistProcessVariablesToTaskVariables(
         task.getProcessInstanceId(), task.getFlowNodeInstanceId());
     variableStore.persistTaskVariables(finalVariablesMap.values());
+
+    // Remove Task Variable created for Job Workers (This won't be persisted)
+    // This method will be here meanwhile we still support Job Workers
+    listViewStore.removeVariableByFlowNodeInstanceId(task.getFlowNodeInstanceId());
   }
 
   /** Deletes all draft variables associated with the task by {@code taskId}. */

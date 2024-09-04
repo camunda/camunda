@@ -9,4 +9,6 @@ package io.camunda.tasklist.store;
 
 public interface ListViewStore {
   void persistProcessVariablesToTaskVariables(final String scopeKey, final String variable);
+
+  void removeVariableByFlowNodeInstanceId(final String flowNodeInstanceId);
 }

@@ -61,7 +61,9 @@ public class ListViewStoreElasticSearch implements ListViewStore {
           ElasticsearchUtil.createSearchRequest(tasklistListViewTemplate)
               .source(
                   SearchSourceBuilder.searchSource()
-                      .query(termQuery("varScopeKey.keyword", processInstanceId)));
+                      .query(
+                          termQuery(
+                              TasklistListViewTemplate.VARIABLE_SCOPE_KEY, processInstanceId)));
 
       final var searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
       final SearchHit[] hits = searchResponse.getHits().getHits();
@@ -105,6 +107,48 @@ public class ListViewStoreElasticSearch implements ListViewStore {
           String.format(
               "Error copying process variables to task variables for task [%s]",
               taskFlowNodeInstanceId),
+          e);
+    }
+  }
+
+  /**
+   * Remove the task variable data for the given task's flow node instance ID. This ill be used
+   * meanwhile we still support Job Workers, and to clean up the task variable data once the task is
+   * completed from a Job Worker side.
+   *
+   * @param flowNodeInstanceId the flow node ID of the task
+   */
+  @Override
+  public void removeVariableByFlowNodeInstanceId(final String flowNodeInstanceId) {
+    try {
+      final SearchRequest searchRequest =
+          ElasticsearchUtil.createSearchRequest(tasklistListViewTemplate)
+              .source(
+                  SearchSourceBuilder.searchSource()
+                      .query(
+                          termQuery(
+                              TasklistListViewTemplate.VARIABLE_SCOPE_KEY, flowNodeInstanceId)));
+
+      final var searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchHit[] hits = searchResponse.getHits().getHits();
+
+      for (final SearchHit hit : hits) {
+        final TasklistListViewEntity tasklistViewEntity =
+            fromSearchHit(hit.toString(), objectMapper, TasklistListViewEntity.class);
+
+        final var deleteRequest =
+            new org.elasticsearch.action.delete.DeleteRequest()
+                .index(tasklistListViewTemplate.getFullQualifiedName())
+                .id(tasklistViewEntity.getId())
+                .routing(flowNodeInstanceId);
+
+        esClient.delete(deleteRequest, RequestOptions.DEFAULT);
+      }
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(
+          String.format(
+              "Error removing job worker variable data for flowNodeInstanceId [%s]",
+              flowNodeInstanceId),
           e);
     }
   }

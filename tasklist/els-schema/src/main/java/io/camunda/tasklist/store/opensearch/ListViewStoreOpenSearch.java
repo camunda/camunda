@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -34,6 +35,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(OpenSearchCondition.class)
 public class ListViewStoreOpenSearch implements ListViewStore {
+
+  private static final Logger LOGGER = Logger.getLogger(ListViewStoreOpenSearch.class.getName());
 
   @Autowired
   @Qualifier("tasklistOsClient")
@@ -112,6 +115,60 @@ public class ListViewStoreOpenSearch implements ListViewStore {
           String.format(
               "Error copying process variables to task variables for task [%s]",
               taskFlowNodeInstanceId),
+          e);
+    }
+  }
+
+  /**
+   * Remove the task variable data for the given task's flow node instance ID. This ill be used
+   * meanwhile we still support Job Workers, and to clean up the task variable data once the task is
+   * completed from a Job Worker side.
+   *
+   * @param flowNodeInstanceId the flow node ID of the task
+   */
+  @Override
+  public void removeVariableByFlowNodeInstanceId(final String flowNodeInstanceId) {
+    try {
+      final SearchRequest.Builder searchRequest =
+          new SearchRequest.Builder()
+              .index(tasklistListViewTemplate.getAlias())
+              .query(
+                  q ->
+                      q.term(
+                          t ->
+                              t.field(TasklistListViewTemplate.VARIABLE_SCOPE_KEY)
+                                  .value(FieldValue.of(flowNodeInstanceId))));
+
+      final SearchResponse<TasklistListViewEntity> searchResponse =
+          osClient.search(searchRequest.build(), TasklistListViewEntity.class);
+
+      final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
+      final List<BulkOperation> bulkOperations = new ArrayList<>();
+
+      for (final Hit<TasklistListViewEntity> hit : searchResponse.hits().hits()) {
+        final TasklistListViewEntity entity = hit.source();
+        LOGGER.info(
+            "Removing task variables present on tasklist-listview for flowNodeInstanceId : "
+                + entity.getVarName());
+        final BulkOperation bulkOperation =
+            new BulkOperation.Builder()
+                .delete(
+                    d ->
+                        d.index(tasklistListViewTemplate.getFullQualifiedName())
+                            .id(entity.getId())
+                            .routing(flowNodeInstanceId))
+                .build();
+
+        bulkOperations.add(bulkOperation);
+      }
+
+      bulkRequest.operations(bulkOperations);
+      osClient.bulk(bulkRequest.build());
+
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(
+          String.format(
+              "Error deleting task variables for flowNodeInstanceId [%s]", flowNodeInstanceId),
           e);
     }
   }
