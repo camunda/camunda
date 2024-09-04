@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.access;
+package io.camunda.zeebe.client.api.fetch;
 
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 

@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.impl.access;
+package io.camunda.zeebe.client.impl.fetch;
 
-import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.access.DecisionDefinitionGetXmlRequest;
+import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import java.time.Duration;
@@ -26,14 +25,11 @@ import org.apache.hc.client5.http.config.RequestConfig;
 
 public class DecisionDefinitionGetXmlRequestImpl implements DecisionDefinitionGetXmlRequest {
 
-  private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private final long decisionKey;
 
-  public DecisionDefinitionGetXmlRequestImpl(
-      final HttpClient httpClient, final JsonMapper jsonMapper, final long decisionKey) {
-    this.jsonMapper = jsonMapper;
+  public DecisionDefinitionGetXmlRequestImpl(final HttpClient httpClient, final long decisionKey) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     this.decisionKey = decisionKey;
