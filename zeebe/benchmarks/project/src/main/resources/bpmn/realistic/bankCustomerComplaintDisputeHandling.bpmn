@@ -60,6 +60,11 @@
       <bpmn:incoming>Flow_15wpx65</bpmn:incoming>
       <bpmn:outgoing>Flow_06bdzt7</bpmn:outgoing>
       <bpmn:startEvent id="Event_1g0dyzc" name="documents required">
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:output source="=disputeDetails.disputeId + customerId" target="correlationKey" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
         <bpmn:outgoing>Flow_0x32zsz</bpmn:outgoing>
       </bpmn:startEvent>
       <bpmn:sendTask id="Activity_0f196ti" name="Request documents from customer">
@@ -135,6 +140,11 @@
           </bpmn:extensionElements>
         </bpmn:multiInstanceLoopCharacteristics>
         <bpmn:startEvent id="Event_0vl38e2" name="vendor fraud claim validation required">
+          <bpmn:extensionElements>
+            <zeebe:ioMapping>
+              <zeebe:output source="=customerId + disputePosition.name" target="correlationKey" />
+            </zeebe:ioMapping>
+          </bpmn:extensionElements>
           <bpmn:outgoing>Flow_1gq2wqo</bpmn:outgoing>
         </bpmn:startEvent>
         <bpmn:eventBasedGateway id="Gateway_1p7bkh1">
@@ -287,18 +297,18 @@
   </bpmn:process>
   <bpmn:message id="Message_2hpi0qp" name="dispute_process_receive_documents">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=disputeDetails.disputeId + customerId" />
+      <zeebe:subscription correlationKey="=correlationKey" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:escalation id="Escalation_37d5bgh" name="Fraud claim investigation failed" escalationCode="fraud_claim_investigation_failed" />
   <bpmn:message id="Message_3mips66" name="dispute_process_refund_approved">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=customerId + disputePosition.name" />
+      <zeebe:subscription correlationKey="=correlationKey" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_2mocgcd" name="dispute_process_refund_declined">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=customerId + disputeDetails.name" />
+      <zeebe:subscription correlationKey="=correlationKey" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
