@@ -15,4 +15,6 @@ public interface SchemaManager {
   void initialiseResources();
 
   void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields);
+
+  IndexMapping readIndex(final IndexDescriptor indexDescriptor);
 }
