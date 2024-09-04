@@ -149,12 +149,16 @@ public final class CommandDistributionBehavior {
     final var distributionQueue = Optional.ofNullable(distributionRecord.getQueueId());
     distributionQueue.ifPresent(queue -> enqueueDistribution(queue, partition, distributionKey));
 
-    final var otherQueuedDistributions =
+    final var canDistributeImmediately =
         distributionQueue
             .flatMap(queue -> distributionState.getNextQueuedDistributionKey(queue, partition))
-            .filter(nextDistributionKey -> nextDistributionKey != distributionKey);
+            .filter(nextDistributionKey -> nextDistributionKey != distributionKey)
+            .isEmpty();
 
-    if (otherQueuedDistributions.isEmpty()) {
+    // Only distribute immediately if there are no other distributions in the queue.
+    // If there are, we skip distributing immediately and wait the preceding distribution to be
+    // acknowledged which then triggers this distribution.
+    if (canDistributeImmediately) {
       startDistributing(partition, distributionRecord, distributionKey);
     }
   }
