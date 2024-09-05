@@ -68,7 +68,7 @@ public class AuthorizationCreateProcessor
     final var key = keyGenerator.nextKey();
 
     stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, authorizationToCreate);
-    distributionBehavior.distributeCommand(key, command);
+    distributionBehavior.withKey(key).distribute(command);
     responseWriter.writeEventOnCommand(
         key, AuthorizationIntent.CREATED, authorizationToCreate, command);
   }

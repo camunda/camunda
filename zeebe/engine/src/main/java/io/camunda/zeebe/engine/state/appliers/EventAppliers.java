@@ -413,6 +413,9 @@ public final class EventAppliers implements EventApplier {
     register(
         CommandDistributionIntent.FINISHED,
         new CommandDistributionFinishedApplier(distributionState));
+    register(
+        CommandDistributionIntent.ENQUEUED,
+        new CommandDistributionEnqueuedApplier(distributionState));
   }
 
   private void registerAuthorizationAppliers(final MutableProcessingState state) {

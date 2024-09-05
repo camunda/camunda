@@ -12,23 +12,17 @@ import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 
-public final class CommandDistributionAcknowledgedApplier
+public class CommandDistributionEnqueuedApplier
     implements TypedEventApplier<CommandDistributionIntent, CommandDistributionRecord> {
 
   private final MutableDistributionState distributionState;
 
-  public CommandDistributionAcknowledgedApplier(final MutableDistributionState distributionState) {
+  public CommandDistributionEnqueuedApplier(final MutableDistributionState distributionState) {
     this.distributionState = distributionState;
   }
 
   @Override
   public void applyState(final long key, final CommandDistributionRecord value) {
-    final var partitionId = value.getPartitionId();
-
-    distributionState
-        .getQueueIdForDistribution(key)
-        .ifPresent(queue -> distributionState.removeQueuedDistribution(queue, partitionId, key));
-
-    distributionState.removePendingDistribution(key, partitionId);
+    distributionState.enqueueCommandDistribution(value.getQueueId(), key, value.getPartitionId());
   }
 }

@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
+import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -38,6 +39,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
 import java.time.InstantSource;
@@ -61,6 +63,8 @@ public final class MessageStreamProcessorTest {
   @Before
   public void setup() {
     mockInterpartitionCommandSender = mock(InterPartitionCommandSender.class);
+    final var mockKeyGenerator = mock(KeyGenerator.class);
+    final var mockDistributionState = mock(DistributionState.class);
     final var mockProcessingResultBuilder = mock(ProcessingResultBuilder.class);
     final var mockEventAppliers = mock(EventAppliers.class);
     final var writers = new Writers(() -> mockProcessingResultBuilder, mockEventAppliers);
@@ -70,7 +74,11 @@ public final class MessageStreamProcessorTest {
     spyCommandDistributionBehavior =
         spy(
             new CommandDistributionBehavior(
-                writers, 1, RoutingInfo.forStaticPartitions(1), mockInterpartitionCommandSender));
+                mockDistributionState,
+                writers,
+                1,
+                RoutingInfo.forStaticPartitions(1),
+                mockInterpartitionCommandSender));
 
     rule.startTypedStreamProcessor(
         (typedRecordProcessors, processingContext) -> {
