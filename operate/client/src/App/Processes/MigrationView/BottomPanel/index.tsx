@@ -27,6 +27,8 @@ import {
   ArrowRight,
   ToggleContainer,
 } from './styled';
+import {hasType} from 'modules/bpmn-js/utils/hasType';
+import {getEventType} from 'modules/bpmn-js/utils/getEventType';
 
 const TOGGLE_LABEL = 'Show only not mapped';
 
@@ -125,6 +127,23 @@ const BottomPanel: React.FC = observer(() => {
               const selectableTargetFlowNodes =
                 processXmlMigrationTargetStore.selectableFlowNodes.filter(
                   (flowNode) => {
+                    /**
+                     * For boundary events allow only target flow nodes with the same event type
+                     */
+                    if (
+                      hasType({
+                        businessObject: sourceFlowNode,
+                        types: ['bpmn:BoundaryEvent'],
+                      })
+                    ) {
+                      return (
+                        getEventType(sourceFlowNode) === getEventType(flowNode)
+                      );
+                    }
+
+                    /**
+                     * For all other flow nodes allow target flow nodes with the same element type
+                     */
                     return sourceFlowNode.$type === flowNode.$type;
                   },
                 );
