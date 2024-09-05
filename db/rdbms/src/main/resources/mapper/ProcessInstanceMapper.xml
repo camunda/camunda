@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.ProcessInstanceMapper">
+  <select id="findOne" parameterType="java.lang.Long"
+    resultType="io.camunda.db.rdbms.domain.ProcessInstanceModel">
+    SELECT PROCESS_INSTANCE_KEY,
+           BPMN_PROCESS_ID,
+           PROCESS_DEFINITION_KEY,
+           TENANT_ID,
+           PARENT_PROCESS_INSTANCE_KEY,
+           VERSION
+    FROM PROCESS_INSTANCE
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </select>
+
+  <insert
+    id="insert"
+    parameterType="io.camunda.db.rdbms.domain.ProcessInstanceModel"
+    flushCache="true">
+      INSERT INTO PROCESS_INSTANCE(PROCESS_INSTANCE_KEY, BPMN_PROCESS_ID, PROCESS_DEFINITION_KEY, TENANT_ID, PARENT_PROCESS_INSTANCE_KEY, VERSION)
+      VALUES (#{processInstanceKey}, #{bpmnProcessId}, #{processDefinitionKey}, #{tenantId}, #{parentProcessInstanceKey}, #{version})
+  </insert>
+
+  <update
+    id="update"
+    statementType="PREPARED"
+    parameterType="io.camunda.db.rdbms.domain.ProcessInstanceModel"
+    flushCache="true"
+    timeout="20">
+    UPDATE PROCESS_INSTANCE
+      SET
+        BPMN_PROCESS_ID = #{bpmnProcessId},
+        PROCESS_DEFINITION_KEY = #{processDefinitionKey},
+        TENANT_ID = #{tenantId},
+        PARENT_PROCESS_INSTANCE_KEY = #{parentProcessInstanceKey},
+        VERSION = #{version}
+      WHERE
+        PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+</mapper>

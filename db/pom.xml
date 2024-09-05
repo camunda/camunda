@@ -9,20 +9,13 @@
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>camunda-search</artifactId>
+  <artifactId>camunda-db</artifactId>
   <packaging>pom</packaging>
 
-  <name>Camunda Search Parent</name>
+  <name>Camunda DB Parent</name>
 
   <modules>
-    <module>search-client</module>
-    <module>search-client-elasticsearch</module>
-    <module>search-client-opensearch</module>
-    <module>search-client-rdbms</module>
-    <module>search-client-connect</module>
-    <module>search-client-query-transformer</module>
-    <module>search-client-plugin</module>
-    <module>search-domain</module>
+    <module>rdbms</module>
   </modules>
 
 </project>
