@@ -8,10 +8,13 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
+import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.rdbms.RdbmsSearchClient;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
@@ -19,6 +22,15 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(SearchClientProperties.class)
 public class SearchClientDatabaseConfiguration {
 
+  @Bean
+  public RdbmsSearchClient rdbmsSearchClient(
+      final RdbmsService rdbmsService) {
+    return new RdbmsSearchClient(rdbmsService);
+  }
+
   @ConfigurationProperties("camunda.database")
-  public static final class SearchClientProperties extends ConnectConfiguration {}
+  public static final class SearchClientProperties extends ConnectConfiguration {
+
+  }
+
 }

@@ -193,6 +193,8 @@
 
     <version.javassist>3.30.2-GA</version.javassist>
 
+    <version.mybatis>3.0.4</version.mybatis>
+
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
     <!--    <mockito.version>5.5.0</mockito.version>-->
 
@@ -432,6 +434,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-opensearch-exporter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>rdbms-exporter</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -825,6 +833,19 @@
         <version>${project.version}</version>
       </dependency>
 
+      <!-- camunda secondary db -->
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-db</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-db-rdbms</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- camunda search client -->
 
       <dependency>
@@ -860,6 +881,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-search-client-opensearch</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-search-client-rdbms</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -1111,6 +1138,12 @@
         <version>${project.version}</version>
         <classifier>tests</classifier>
         <type>test-jar</type>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mybatis</groupId>
+        <artifactId>mybatis-spring</artifactId>
+        <version>${version.mybatis}</version>
       </dependency>
 
       <dependency>
