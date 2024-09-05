@@ -90,27 +90,3 @@ jobs:
         app_url: https://${{ steps.sanitize.outputs.branch_name }}.camunda.camunda.cloud
         argocd_arguments: ${{ env.argocd_arguments }}
         argocd_server: dev.argocd.int.camunda.com
-  conflicts:
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Check PR for merge conflicts
-        uses: camunda/infra-global-github-actions/preview-env/conflicts@main
-        with:
-          pull-request-id: ${{ github.event.pull_request.number }}
-  clean:
-    if: always() && needs.deploy-preview.result != 'skipped'
-    uses: camunda/camunda/.github/workflows/preview-env-clean.yml@main
-    needs:
-      - deploy-preview
-    secrets: inherit
-    with:
-      pull-request: ${{ github.event.pull_request.number }}
-  comment:
-    if: always() && needs.deploy-preview.result != 'skipped'
-    name: create-deployment-result-summary
-    runs-on: ubuntu-22.04
-    needs:
-      - deploy-preview
-    steps:
-      - uses: camunda/infra-global-github-actions/preview-env/comment@main
