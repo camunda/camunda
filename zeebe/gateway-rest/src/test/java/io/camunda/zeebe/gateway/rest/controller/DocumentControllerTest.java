@@ -12,9 +12,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
-import io.camunda.service.DocumentServices.DocumentMetadataModel;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
@@ -62,7 +62,7 @@ public class DocumentControllerTest extends RestControllerTest {
                     "documentId",
                     "default",
                     new DocumentMetadataModel(
-                        contentType.toString(), filename, timestamp, Map.of()))));
+                        contentType.toString(), filename, timestamp, 0, Map.of()))));
 
     final var multipartBodyBuilder = new MultipartBodyBuilder();
     multipartBodyBuilder.part("file", content).contentType(contentType).filename(filename);
@@ -103,7 +103,7 @@ public class DocumentControllerTest extends RestControllerTest {
 
     try (final var stream = request.contentInputStream()) {
       assertThat(stream.readAllBytes()).isEqualTo(content);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
 
@@ -130,7 +130,7 @@ public class DocumentControllerTest extends RestControllerTest {
                     "documentId",
                     "default",
                     new DocumentMetadataModel(
-                        contentType.toString(), filename, timestamp, Map.of()))));
+                        contentType.toString(), filename, timestamp, 0, Map.of()))));
 
     final var metadataToSend = new DocumentMetadata();
     metadataToSend.setContentType(contentType.toString());
@@ -177,7 +177,7 @@ public class DocumentControllerTest extends RestControllerTest {
 
     try (final var stream = request.contentInputStream()) {
       assertThat(stream.readAllBytes()).isEqualTo(content);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
 

@@ -806,6 +806,18 @@
         <scope>test</scope>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>document-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>document-store</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- camunda search client -->
 
       <dependency>

@@ -95,6 +95,11 @@
       <artifactId>zeebe-cluster-config</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>document-api</artifactId>
+    </dependency>
+
     <!-- rest api dependencies -->
     <dependency>
       <groupId>org.springframework</groupId>

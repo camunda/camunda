@@ -7,37 +7,26 @@
  */
 package io.camunda.service;
 
+import io.camunda.document.api.DocumentCreationRequest;
+import io.camunda.document.api.DocumentMetadataModel;
+import io.camunda.document.api.DocumentOperationResponse;
+import io.camunda.document.api.DocumentOperationResponse.DocumentErrorCode;
+import io.camunda.document.api.DocumentReference;
+import io.camunda.document.api.DocumentStoreClient;
+import io.camunda.document.store.DocumentStoreClientImpl;
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class DocumentServices extends ApiServices<DocumentServices> {
 
-  // TODO: This is an in-memory implementation, replace it with a real document store
-  private static final String STORE_ID = "default";
-  private final Map<String, byte[]> documents;
+  private final DocumentStoreClient documentStoreClient = new DocumentStoreClientImpl();
 
   public DocumentServices(final BrokerClient brokerClient, final CamundaSearchClient searchClient) {
-    this(brokerClient, searchClient, null, null, new HashMap<>());
-  }
-
-  public DocumentServices(
-      final BrokerClient brokerClient,
-      final CamundaSearchClient searchClient,
-      final ServiceTransformers transformers,
-      final Authentication authentication,
-      final Map<String, byte[]> documents) {
-    super(brokerClient, searchClient, transformers, authentication);
-    this.documents = documents;
+    this(brokerClient, searchClient, null, null);
   }
 
   public DocumentServices(
@@ -45,59 +34,61 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       final CamundaSearchClient searchClient,
       final ServiceTransformers transformers,
       final Authentication authentication) {
-    this(brokerClient, searchClient, transformers, authentication, new HashMap<>());
+    super(brokerClient, searchClient, transformers, authentication);
   }
 
   @Override
   public DocumentServices withAuthentication(final Authentication authentication) {
-    return new DocumentServices(
-        brokerClient, searchClient, transformers, authentication, documents);
+    return new DocumentServices(brokerClient, searchClient, transformers, authentication);
   }
 
   public CompletableFuture<DocumentReferenceResponse> createDocument(
-      DocumentCreateRequest request) {
-    validateStoreId(request.storeId);
-    final String id =
-        request.documentId != null ? request.documentId : UUID.randomUUID().toString();
-    if (documents.containsKey(id)) {
-      throw new CamundaServiceException("Document already exists: " + id);
-    }
-    final var contentInputStream = request.contentInputStream;
-    final byte[] content;
-    try {
-      content = contentInputStream.readAllBytes();
-      contentInputStream.close();
-    } catch (IOException e) {
-      throw new CamundaServiceException("Failed to read document content", e);
-    }
-    documents.put(id, content);
-    return CompletableFuture.completedFuture(
-        new DocumentReferenceResponse(id, STORE_ID, request.metadata));
+      final DocumentCreateRequest request) {
+
+    final DocumentCreationRequest storeRequest =
+        new DocumentCreationRequest(
+            request.documentId, request.contentInputStream, request.metadata);
+
+    return documentStoreClient
+        .withStore(request.storeId)
+        .executeAsync(store -> store.createDocument(storeRequest))
+        .thenApply(
+            result -> {
+              if (result
+                  instanceof final DocumentOperationResponse.Failure<DocumentReference> failure) {
+                throw new DocumentException(
+                    "Failed to create document", failure.errorCode(), failure.cause());
+              }
+              final var success = (DocumentOperationResponse.Success<DocumentReference>) result;
+              return new DocumentReferenceResponse(
+                  success.result().documentId(),
+                  documentStoreClient.resolveStoreId(request.storeId),
+                  success.result().metadata());
+            });
   }
 
-  public InputStream getDocumentContent(String documentId, String storeId) {
-    validateStoreId(storeId);
-    final var content = documents.get(documentId);
-    if (content == null) {
-      throw new CamundaServiceException("Document not found: " + documentId);
+  public InputStream getDocumentContent(final String documentId, final String storeId) {
+
+    final var result =
+        documentStoreClient.withStore(storeId).execute(store -> store.getDocument(documentId));
+
+    if (result instanceof final DocumentOperationResponse.Failure<InputStream> failure) {
+      throw new DocumentException("Failed to get document", failure.errorCode(), failure.cause());
     }
-    return new ByteArrayInputStream(content);
+    return ((DocumentOperationResponse.Success<InputStream>) result).result();
   }
 
-  public CompletableFuture<Void> deleteDocument(String documentId, String storeId) {
-    validateStoreId(storeId);
-    final var content = documents.remove(documentId);
-    if (content == null) {
-      throw new CamundaServiceException("Document not found: " + documentId);
-    }
-    return CompletableFuture.completedFuture(null);
-  }
-
-  private void validateStoreId(String storeId) {
-    if (storeId != null && !storeId.equals(STORE_ID)) {
-      throw new CamundaServiceException(
-          "Unsupported store id: " + storeId + ", expected: " + STORE_ID);
-    }
+  public CompletableFuture<Void> deleteDocument(final String documentId, final String storeId) {
+    return documentStoreClient
+        .withStore(storeId)
+        .executeAsync(store -> store.deleteDocument(documentId))
+        .thenAccept(
+            result -> {
+              if (result instanceof final DocumentOperationResponse.Failure<Void> failure) {
+                throw new DocumentException(
+                    "Failed to delete document", failure.errorCode(), failure.cause());
+              }
+            });
   }
 
   public record DocumentCreateRequest(
@@ -106,12 +97,22 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       InputStream contentInputStream,
       DocumentMetadataModel metadata) {}
 
-  public record DocumentMetadataModel(
-      String contentType,
-      String fileName,
-      ZonedDateTime expiresAt,
-      Map<String, Object> additionalProperties) {}
-
   public record DocumentReferenceResponse(
       String documentId, String storeId, DocumentMetadataModel metadata) {}
+
+  public static class DocumentException extends CamundaServiceException {
+
+    private final DocumentErrorCode errorCode;
+
+    public DocumentException(final String message, final DocumentErrorCode errorCode) {
+      super(message);
+      this.errorCode = errorCode;
+    }
+
+    public DocumentException(
+        final String message, final DocumentErrorCode errorCode, final Throwable cause) {
+      super(message, cause);
+      this.errorCode = errorCode;
+    }
+  }
 }

@@ -27,6 +27,7 @@ import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.v
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserCreateRequest;
 
+import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentMetadataModel;
@@ -398,7 +399,7 @@ public class RequestMapper {
 
     if (metadata == null) {
       return new DocumentMetadataModel(
-          file.getContentType(), file.getOriginalFilename(), null, Map.of());
+          file.getContentType(), file.getOriginalFilename(), null, file.getSize(), Map.of());
     }
     final ZonedDateTime expiresAt;
     if (metadata.getExpiresAt() == null || metadata.getExpiresAt().isBlank()) {
@@ -412,7 +413,7 @@ public class RequestMapper {
         Optional.ofNullable(metadata.getContentType()).orElse(file.getContentType());
 
     return new DocumentMetadataModel(
-        contentType, fileName, expiresAt, metadata.getAdditionalProperties());
+        contentType, fileName, expiresAt, file.getSize(), metadata.getAdditionalProperties());
   }
 
   private static DeployResourcesRequest createDeployResourceRequest(
