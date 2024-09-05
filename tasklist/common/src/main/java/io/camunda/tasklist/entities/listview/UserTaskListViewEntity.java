@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.tasklist.entities.TaskState;
 import java.util.Map;
 
-public class UserTaskEntity {
+public class UserTaskListViewEntity {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String id;
 
@@ -88,7 +88,7 @@ public class UserTaskEntity {
     return id;
   }
 
-  public UserTaskEntity setId(final String id) {
+  public UserTaskListViewEntity setId(final String id) {
     this.id = id;
     return this;
   }
@@ -97,7 +97,7 @@ public class UserTaskEntity {
     return taskId;
   }
 
-  public UserTaskEntity setTaskId(final String taskId) {
+  public UserTaskListViewEntity setTaskId(final String taskId) {
     this.taskId = taskId;
     return this;
   }
@@ -106,7 +106,7 @@ public class UserTaskEntity {
     return flowNodeBpmnId;
   }
 
-  public UserTaskEntity setFlowNodeBpmnId(final String flowNodeBpmnId) {
+  public UserTaskListViewEntity setFlowNodeBpmnId(final String flowNodeBpmnId) {
     this.flowNodeBpmnId = flowNodeBpmnId;
     return this;
   }
@@ -115,7 +115,7 @@ public class UserTaskEntity {
     return flowNodeInstanceId;
   }
 
-  public UserTaskEntity setFlowNodeInstanceId(final String flowNodeInstanceId) {
+  public UserTaskListViewEntity setFlowNodeInstanceId(final String flowNodeInstanceId) {
     this.flowNodeInstanceId = flowNodeInstanceId;
     return this;
   }
@@ -124,7 +124,7 @@ public class UserTaskEntity {
     return partitionId;
   }
 
-  public UserTaskEntity setPartitionId(final Integer partitionId) {
+  public UserTaskListViewEntity setPartitionId(final Integer partitionId) {
     this.partitionId = partitionId;
     return this;
   }
@@ -133,7 +133,7 @@ public class UserTaskEntity {
     return completionTime;
   }
 
-  public UserTaskEntity setCompletionTime(final String completionTime) {
+  public UserTaskListViewEntity setCompletionTime(final String completionTime) {
     this.completionTime = completionTime;
     return this;
   }
@@ -142,7 +142,7 @@ public class UserTaskEntity {
     return processInstanceId;
   }
 
-  public UserTaskEntity setProcessInstanceId(final String processInstanceId) {
+  public UserTaskListViewEntity setProcessInstanceId(final String processInstanceId) {
     this.processInstanceId = processInstanceId;
     return this;
   }
@@ -151,7 +151,7 @@ public class UserTaskEntity {
     return position;
   }
 
-  public UserTaskEntity setPosition(final Long position) {
+  public UserTaskListViewEntity setPosition(final Long position) {
     this.position = position;
     return this;
   }
@@ -160,7 +160,7 @@ public class UserTaskEntity {
     return state;
   }
 
-  public UserTaskEntity setState(final TaskState state) {
+  public UserTaskListViewEntity setState(final TaskState state) {
     this.state = state;
     return this;
   }
@@ -169,7 +169,7 @@ public class UserTaskEntity {
     return key;
   }
 
-  public UserTaskEntity setKey(final Long key) {
+  public UserTaskListViewEntity setKey(final Long key) {
     this.key = key;
     return this;
   }
@@ -178,7 +178,7 @@ public class UserTaskEntity {
     return creationTime;
   }
 
-  public UserTaskEntity setCreationTime(final String creationTime) {
+  public UserTaskListViewEntity setCreationTime(final String creationTime) {
     this.creationTime = creationTime;
     return this;
   }
@@ -187,7 +187,7 @@ public class UserTaskEntity {
     return bpmnProcessId;
   }
 
-  public UserTaskEntity setBpmnProcessId(final String bpmnProcessId) {
+  public UserTaskListViewEntity setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -196,7 +196,7 @@ public class UserTaskEntity {
     return processDefinitionId;
   }
 
-  public UserTaskEntity setProcessDefinitionId(final String processDefinitionId) {
+  public UserTaskListViewEntity setProcessDefinitionId(final String processDefinitionId) {
     this.processDefinitionId = processDefinitionId;
     return this;
   }
@@ -205,7 +205,7 @@ public class UserTaskEntity {
     return assignee;
   }
 
-  public UserTaskEntity setAssignee(final String assignee) {
+  public UserTaskListViewEntity setAssignee(final String assignee) {
     this.assignee = assignee;
     return this;
   }
@@ -214,7 +214,7 @@ public class UserTaskEntity {
     return candidateGroups;
   }
 
-  public UserTaskEntity setCandidateGroups(final String[] candidateGroups) {
+  public UserTaskListViewEntity setCandidateGroups(final String[] candidateGroups) {
     this.candidateGroups = candidateGroups;
     return this;
   }
@@ -223,7 +223,7 @@ public class UserTaskEntity {
     return candidateUsers;
   }
 
-  public UserTaskEntity setCandidateUsers(final String[] candidateUsers) {
+  public UserTaskListViewEntity setCandidateUsers(final String[] candidateUsers) {
     this.candidateUsers = candidateUsers;
     return this;
   }
@@ -232,7 +232,7 @@ public class UserTaskEntity {
     return formKey;
   }
 
-  public UserTaskEntity setFormKey(final String formKey) {
+  public UserTaskListViewEntity setFormKey(final String formKey) {
     this.formKey = formKey;
     return this;
   }
@@ -241,7 +241,7 @@ public class UserTaskEntity {
     return followUpDate;
   }
 
-  public UserTaskEntity setFollowUpDate(final String followUpDate) {
+  public UserTaskListViewEntity setFollowUpDate(final String followUpDate) {
     this.followUpDate = followUpDate;
     return this;
   }
@@ -250,7 +250,7 @@ public class UserTaskEntity {
     return dueDate;
   }
 
-  public UserTaskEntity setDueDate(final String dueDate) {
+  public UserTaskListViewEntity setDueDate(final String dueDate) {
     this.dueDate = dueDate;
     return this;
   }
@@ -259,7 +259,7 @@ public class UserTaskEntity {
     return tenantId;
   }
 
-  public UserTaskEntity setTenantId(final String tenantId) {
+  public UserTaskListViewEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -268,7 +268,7 @@ public class UserTaskEntity {
     return externalFormReference;
   }
 
-  public UserTaskEntity setExternalFormReference(final String externalFormReference) {
+  public UserTaskListViewEntity setExternalFormReference(final String externalFormReference) {
     this.externalFormReference = externalFormReference;
     return this;
   }
@@ -277,7 +277,7 @@ public class UserTaskEntity {
     return processDefinitionVersion;
   }
 
-  public UserTaskEntity setProcessDefinitionVersion(final Integer processDefinitionVersion) {
+  public UserTaskListViewEntity setProcessDefinitionVersion(final Integer processDefinitionVersion) {
     this.processDefinitionVersion = processDefinitionVersion;
     return this;
   }
@@ -286,7 +286,7 @@ public class UserTaskEntity {
     return customHeaders;
   }
 
-  public UserTaskEntity setCustomHeaders(final Map<String, String> customHeaders) {
+  public UserTaskListViewEntity setCustomHeaders(final Map<String, String> customHeaders) {
     this.customHeaders = customHeaders;
     return this;
   }
@@ -295,7 +295,7 @@ public class UserTaskEntity {
     return priority;
   }
 
-  public UserTaskEntity setPriority(final Integer priority) {
+  public UserTaskListViewEntity setPriority(final Integer priority) {
     this.priority = priority;
     return this;
   }
