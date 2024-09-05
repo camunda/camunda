@@ -28,9 +28,9 @@ public class ZeebeRichOpenSearchClient {
   private final OpenSearchTemplateOperations openSearchTemplateOperations;
 
   public ZeebeRichOpenSearchClient(
-      BeanFactory beanFactory,
-      @Qualifier("zeebeOpensearchClient") OpenSearchClient openSearchClient,
-      ObjectMapper objectMapper) {
+      final BeanFactory beanFactory,
+      @Qualifier("zeebeOpensearchClient") final OpenSearchClient openSearchClient,
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
     this.beanFactory = beanFactory;
     this.openSearchClient = openSearchClient;
     openSearchDocumentOperations = new OpenSearchDocumentOperations(LOGGER, openSearchClient);

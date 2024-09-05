@@ -14,7 +14,7 @@ import {getOptimizeProfile} from 'config';
 import AggregationType from './AggregationType';
 
 jest.mock('config', () => ({
-  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+  getOptimizeProfile: jest.fn().mockReturnValue('ccsm'),
 }));
 
 it('should render nothing if the current result is no duration and the view is not variable', () => {

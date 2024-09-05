@@ -9,7 +9,6 @@ package io.camunda.optimize.service;
 
 import static io.camunda.optimize.service.util.configuration.OptimizeProfile.CCSM;
 import static io.camunda.optimize.service.util.configuration.OptimizeProfile.CLOUD;
-import static io.camunda.optimize.service.util.configuration.OptimizeProfile.PLATFORM;
 
 import com.google.common.collect.Lists;
 import io.camunda.identity.sdk.Identity;
@@ -17,6 +16,7 @@ import io.camunda.optimize.dto.optimize.query.ui_configuration.MixpanelConfigRes
 import io.camunda.optimize.dto.optimize.query.ui_configuration.OnboardingResponseDto;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
+import io.camunda.optimize.license.LicenseType;
 import io.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.metadata.OptimizeVersionService;
@@ -24,7 +24,6 @@ import io.camunda.optimize.service.tenant.TenantService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import io.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +42,7 @@ public class UIConfigurationService {
   private final OptimizeVersionService versionService;
   private final TenantService tenantService;
   private final SettingsService settingService;
+  private final CamundaLicenseService camundaLicenseService;
   private final Environment environment;
   // optional as it is only available conditionally, see implementations of the interface
   private final Optional<CloudSaasMetaInfoService> cloudSaasMetaInfoService;
@@ -70,6 +70,8 @@ public class UIConfigurationService {
     uiConfigurationDto.setMaxNumDataSourcesForReport(
         configurationService.getUiConfiguration().getMaxNumDataSourcesForReport());
     uiConfigurationDto.setOptimizeDatabase(ConfigurationService.getDatabaseType(environment));
+    uiConfigurationDto.setValidLicense(isCamundaLicenseValid());
+    uiConfigurationDto.setLicenseType(getLicenseType().getName());
 
     final MixpanelConfigResponseDto mixpanel = uiConfigurationDto.getMixpanel();
     mixpanel.setEnabled(configurationService.getAnalytics().isEnabled());
@@ -102,8 +104,16 @@ public class UIConfigurationService {
     return uiConfigurationDto;
   }
 
+  private boolean isCamundaLicenseValid() {
+    return camundaLicenseService.isCamundaLicenseValid();
+  }
+
+  private LicenseType getLicenseType() {
+    return camundaLicenseService.getCamundaLicenseType();
+  }
+
   private boolean isEnterpriseMode(final OptimizeProfile optimizeProfile) {
-    if (Arrays.asList(CLOUD, PLATFORM).contains(optimizeProfile)) {
+    if (optimizeProfile.equals(CLOUD)) {
       return true;
     } else if (optimizeProfile.equals(CCSM)) {
       return configurationService.getSecurityConfiguration().getLicense().isEnterprise();

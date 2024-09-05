@@ -177,5 +177,5 @@ it('should not show the undo warning if the reversableAction prop is set to true
   setupRef(node);
   node.setProps({entity});
 
-  expect(node.find(Modal.Content).html()).not.toMatch('This action cannot be undone.');
+  expect(node.find(Modal.Content).text()).not.toMatch('This action cannot be undone.');
 });

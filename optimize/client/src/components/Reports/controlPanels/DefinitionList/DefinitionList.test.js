@@ -16,7 +16,7 @@ import {DefinitionList} from './DefinitionList';
 import {loadTenants} from './service';
 
 jest.mock('config', () => ({
-  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+  getOptimizeProfile: jest.fn().mockReturnValue('ccsm'),
   areTenantsAvailable: jest.fn().mockReturnValue(true),
   getMaxNumDataSourcesForReport: jest.fn().mockReturnValue(10),
 }));
@@ -84,7 +84,6 @@ it('should show the only tenant in self managed mode', async () => {
       tenants: [{id: '<defaut>', name: 'Default'}],
     },
   ]);
-  getOptimizeProfile.mockReturnValueOnce('ccsm');
   const node = shallow(
     <DefinitionList
       {...props}

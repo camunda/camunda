@@ -36,6 +36,9 @@ jobs:
       identity-frontend-tests: ${{ steps.filter.outputs.identity-frontend-tests }}
       frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
       zeebe-changes: ${{ steps.filter.outputs.zeebe-changes }}
+      optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
+      optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
+      protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -80,6 +83,7 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+          docker: false
           maven-cache-key-modifier: java-checks
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -120,6 +124,10 @@ jobs:
         id: build-identity-fe
         with:
           directory: ./identity/client
+      - uses: ./.github/actions/build-frontend
+        id: build-optimize-fe
+        with:
+          directory: ./optimize/client
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -135,8 +143,6 @@ jobs:
     needs: [detect-changes]
     runs-on: [ self-hosted, linux, amd64, "16" ]
     timeout-minutes: 30
-    outputs:
-      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
       - uses: actions/checkout@v4
       - name: Install and allow strace tests
@@ -194,8 +200,6 @@ jobs:
     name: "[IT] ${{ matrix.name }}"
     needs: [ detect-changes ]
     timeout-minutes: 20
-    outputs:
-      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     runs-on: [ self-hosted, linux, amd64, "16" ]
     strategy:
       fail-fast: false
@@ -412,15 +416,145 @@ jobs:
     uses: ./.github/workflows/zeebe-ci.yml
     secrets: inherit
 
+  optimize-frontend-unit-tests:
+    if: needs.detect-changes.outputs.optimize-frontend-changes == 'true'
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: optimize/client
+    env:
+      LIMITS_CPU: 4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - name: "Parse pom.xml for versions"
+        id: "pom_info"
+        uses: YunaBraska/java-info-action@main
+      - name: Set Node.js
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4
+        with:
+          node-version: ${{ steps.pom_info.outputs.x_version_node }}
+          cache: yarn
+          cache-dependency-path: optimize/client/yarn.lock
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Unit tests
+        run: yarn test:ci
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
+        with:
+          name: unit-tests-frontend-junit
+          path: |
+            **/jest-test-results.xml
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  optimize-backend-unit-tests:
+    if: needs.detect-changes.outputs.optimize-backend-changes == 'true'
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      LIMITS_CPU: 4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+      - name: Test
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -f optimize/pom.xml test -Dskip.fe.build -Dskip.docker
+          threads: .5C
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
+        with:
+          name: unit-tests-backend-junit
+          path: |
+            **/surefire-reports/**/*.xml
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  protobuf-checks:
+    name: "Protobuf Backwards Compatibility"
+    timeout-minutes: 10
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    env:
+      # set the comparison based on the type of workflow trigger:
+      #   - for PRs, we use the last commit of the base
+      #   - for merge queues, we use the last commit of the target merge queue
+      #   - for a push, we use the last commit before the push
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+    if: |
+      needs.detect-changes.outputs.protobuf-changes == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - id: pr-body
+        name: Fetch latest PR body
+        if: github.event_name == 'pull_request'
+        run: |
+          {
+            echo 'result<<EOF'
+            gh pr view ${{ github.event.pull_request.number }} --json body | jq '.body'
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # by the default the action will compare against the base branch, or if on push, against the
+        # previous commit
+      - uses: bufbuild/buf-action@v1
+        if: |
+          !(contains(steps.pr-body.outputs.result, 'BREAKING CHANGE:') ||
+            contains(github.event.merge_group.head_commit.message, 'BREAKING CHANGE:') ||
+            contains(github.event.push.commits.*.message, 'BREAKING CHANGE:'))
+        with:
+          format: false
+          lint: false
+          push: false
+          archive: false
+          breaking: true
+          breaking_against: '${{ github.event.repository.clone_url }}#format=git,commit=${{ env.BASE_SHA }}'
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
     # This name is hard-coded in the branch rules; remember to update that if this name changes
     if: always()
     runs-on: ubuntu-latest
-    outputs:
-      flakyUnitTests: ${{ needs.java-unit-tests.outputs.flakyTests }}
-      flakyITs: ${{ needs.integration-tests.outputs.flakyTests }}
     needs:
       - actionlint
       - java-unit-tests
@@ -430,6 +564,9 @@ jobs:
       - java-checks
       - build-platform-frontend
       - zeebe-ci
+      - optimize-frontend-unit-tests
+      - optimize-backend-unit-tests
+      - protobuf-checks
     steps:
       - uses: actions/checkout@v4
       - name: Check for aborted jobs
@@ -440,61 +577,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
-
-  notify-if-failed:
-    name: Send slack notification on build failure
-    runs-on: ubuntu-latest
-    needs: [ check-results ]
-    if: failure() && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
-    steps:
-      - id: slack-notify
-        name: Send slack notification
-        uses: slackapi/slack-github-action@v1.26.0
-        with:
-          # For posting a rich message using Block Kit
-          payload: |
-            {
-              "text": ":alarm: Build on `main` failed! :alarm:\n${{ github.event.head_commit.url }}",
-             	"blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":alarm: Build on `main` failed! :alarm:"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Please check the related commit: ${{ github.event.head_commit.url }}\n \\cc @zeebe-medic"
-                  }
-                },
-                {
-                  "type": "divider"
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Detected flaky unit tests:* \n ${{ env.FLAKY_UNIT_TESTS }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Detected flaky integration tests:* \n ${{ env.FLAKY_ITS }}"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          FLAKY_UNIT_TESTS: ${{needs.check-results.outputs.flakyUnitTests}}
-          FLAKY_ITS: ${{needs.check-results.outputs.flakyITs}}
-
   deploy-snapshots:
     name: Deploy snapshot artifacts
     needs: [ check-results ]

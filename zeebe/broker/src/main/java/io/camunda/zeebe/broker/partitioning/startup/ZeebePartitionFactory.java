@@ -147,6 +147,7 @@ public final class ZeebePartitionFactory {
     final var context =
         new PartitionStartupAndTransitionContextImpl(
             localBroker.getNodeId(),
+            localBroker.getPartitionsCount(),
             communicationService,
             raftPartition,
             partitionListeners,

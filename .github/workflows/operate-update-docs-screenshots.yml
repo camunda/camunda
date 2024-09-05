@@ -10,12 +10,13 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-      - name: Setup yarn cache
+      - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "yarn"
-          cache-dependency-path: operate/client/yarn.lock
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: operate/client
       - name: Install node dependencies
         working-directory: ./operate/client
         run: yarn

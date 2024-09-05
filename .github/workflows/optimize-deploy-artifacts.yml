@@ -6,7 +6,7 @@ on:
 jobs:
   deploy-artifacts:
     name: Deploy Artifacts
-    runs-on: gcp-core-2-default
+    runs-on: gcp-core-4-default
     timeout-minutes: 30
     env:
       DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
@@ -67,6 +67,7 @@ jobs:
       uses: ./.github/actions/run-maven
       with:
         parameters: install -f optimize -DskipTests -Dskip.docker -PrunAssembly
+        threads: 4C
     - name: Build Docker Image
       run: ./.github/optimize/scripts/build-docker-image.sh
     # The SmokeTest is running as part of the "deploy-artifact" job to ensure we only push the artifact on success
@@ -78,7 +79,7 @@ jobs:
         project_name: smoketest
       env:
         OPTIMIZE_IMAGE_TAG: ${{ env.DOCKER_TAG }}
-        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}
+        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
         ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
         IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
 
@@ -96,6 +97,7 @@ jobs:
       uses: ./.github/actions/run-maven
       with:
         parameters: deploy -f optimize -Dskip.fe.build -DskipTests -Dskip.docker -PrunAssembly
+        threads: 4C
     - name: Docker log dump
       uses: ./.github/actions/docker-logs
       if: always()

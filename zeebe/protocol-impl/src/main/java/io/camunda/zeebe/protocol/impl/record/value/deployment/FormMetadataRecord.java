@@ -32,9 +32,10 @@ public class FormMetadataRecord extends UnifiedRecordValue implements FormMetada
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
+  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
 
   public FormMetadataRecord() {
-    super(8);
+    super(9);
     declareProperty(formIdProp)
         .declareProperty(versionProp)
         .declareProperty(formKeyProp)
@@ -42,7 +43,8 @@ public class FormMetadataRecord extends UnifiedRecordValue implements FormMetada
         .declareProperty(checksumProp)
         .declareProperty(isDuplicateProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(deploymentKeyProp);
+        .declareProperty(deploymentKeyProp)
+        .declareProperty(versionTagProp);
   }
 
   @Override
@@ -62,6 +64,16 @@ public class FormMetadataRecord extends UnifiedRecordValue implements FormMetada
 
   public FormMetadataRecord setVersion(final int formVersion) {
     versionProp.setValue(formVersion);
+    return this;
+  }
+
+  @Override
+  public String getVersionTag() {
+    return bufferAsString(versionTagProp.getValue());
+  }
+
+  public FormMetadataRecord setVersionTag(final String versionTag) {
+    versionTagProp.setValue(versionTag);
     return this;
   }
 

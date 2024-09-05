@@ -16,24 +16,28 @@ import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {Link} from 'modules/components/Link';
 import {useFilters} from 'modules/hooks/useFilters';
+
+/** Stores */
 import {
   MAX_PROCESS_INSTANCES_STORED,
   processInstancesStore,
 } from 'modules/stores/processInstances';
-import {getProcessName} from 'modules/utils/instance';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {authenticationStore} from 'modules/stores/authentication';
+import {processesStore} from 'modules/stores/processes/processes.list';
+import {notificationsStore} from 'modules/stores/notifications';
+import {batchModificationStore} from 'modules/stores/batchModification';
+import {processStatisticsBatchModificationStore} from 'modules/stores/processStatistics/processStatistics.batchModification';
+
+import {getProcessName} from 'modules/utils/instance';
 import {Toolbar} from './Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {useLocation} from 'react-router-dom';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {Operations} from 'modules/components/Operations';
-import {notificationsStore} from 'modules/stores/notifications';
-import {batchModificationStore} from 'modules/stores/batchModification';
 import {BatchModificationFooter} from './BatchModificationFooter';
 import {useEffect} from 'react';
-import {processStatisticsBatchModificationStore} from 'modules/stores/processStatistics/processStatistics.batchModification';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
+import {IS_VERSION_TAG_ENABLED} from 'modules/feature-flags';
 
 const ROW_HEIGHT = 34;
 
@@ -42,6 +46,13 @@ const InstancesTable: React.FC = observer(() => {
     areProcessInstancesEmpty,
     state: {status, filteredProcessInstancesCount, processInstances},
   } = processInstancesStore;
+
+  /**
+   * Is true if at least one process instances from the store has a version tag.
+   */
+  const hasVersionTags = processInstances.some(({processId}) => {
+    return processesStore.getVersionTag(processId);
+  });
 
   const filters = useFilters();
   const location = useLocation();
@@ -196,6 +207,8 @@ const InstancesTable: React.FC = observer(() => {
           processInstancesStore.fetchNextInstances();
         }}
         rows={processInstances.map((instance) => {
+          const versionTag = processesStore.getVersionTag(instance.processId);
+
           return {
             id: instance.id,
             processName: (
@@ -231,6 +244,7 @@ const InstancesTable: React.FC = observer(() => {
               </Link>
             ),
             processVersion: instance.processVersion,
+            versionTag: versionTag ?? '--',
             tenant: isTenantColumnVisible ? instance.tenantId : undefined,
             startDate: formatDate(instance.startDate),
             endDate: formatDate(instance.endDate),
@@ -320,6 +334,15 @@ const InstancesTable: React.FC = observer(() => {
             header: 'Version',
             key: 'processVersion',
           },
+          ...(IS_VERSION_TAG_ENABLED && hasVersionTags
+            ? [
+                {
+                  header: 'Version Tag',
+                  key: 'versionTag',
+                  isDisabled: true,
+                },
+              ]
+            : []),
           ...(isTenantColumnVisible
             ? [
                 {

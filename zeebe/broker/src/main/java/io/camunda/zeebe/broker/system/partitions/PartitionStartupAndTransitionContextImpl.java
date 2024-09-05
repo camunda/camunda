@@ -63,6 +63,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final int nodeId;
   private final List<PartitionListener> partitionListeners;
   private final List<PartitionRaftListener> partitionRaftListeners;
+  private final int partitionCount;
   private final ClusterCommunicationService clusterCommunicationService;
   private final PartitionMessagingService messagingService;
   private final ActorSchedulingService actorSchedulingService;
@@ -106,6 +107,7 @@ public class PartitionStartupAndTransitionContextImpl
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
+      final int partitionCount,
       final ClusterCommunicationService clusterCommunicationService,
       final RaftPartition raftPartition,
       final List<PartitionListener> partitionListeners,
@@ -124,6 +126,7 @@ public class PartitionStartupAndTransitionContextImpl
       final TopologyManager topologyManager,
       final MeterRegistry meterRegistry) {
     this.nodeId = nodeId;
+    this.partitionCount = partitionCount;
     this.clusterCommunicationService = clusterCommunicationService;
     this.raftPartition = raftPartition;
     messagingService = partitionCommunicationService;
@@ -411,6 +414,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setStreamClock(final ControllableStreamClock clock) {
     this.clock = clock;
+  }
+
+  @Override
+  public int getPartitionCount() {
+    return partitionCount;
   }
 
   @Override

@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionSt
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
@@ -108,6 +109,7 @@ public final class EventAppliers implements EventApplier {
     registerResourceDeletionAppliers();
 
     registerUserAppliers(state);
+    registerAuthorizationAppliers(state);
     registerClockAppliers(state);
     return this;
   }
@@ -411,6 +413,13 @@ public final class EventAppliers implements EventApplier {
     register(
         CommandDistributionIntent.FINISHED,
         new CommandDistributionFinishedApplier(distributionState));
+    register(
+        CommandDistributionIntent.ENQUEUED,
+        new CommandDistributionEnqueuedApplier(distributionState));
+  }
+
+  private void registerAuthorizationAppliers(final MutableProcessingState state) {
+    register(AuthorizationIntent.CREATED, new AuthorizationCreatedApplier(state));
   }
 
   private void registerEscalationAppliers() {

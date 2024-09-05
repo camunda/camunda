@@ -71,6 +71,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     transformTaskFormId(element, userTaskProperties);
     transformModelTaskHeaders(element, userTaskProperties);
     transformBindingType(element, userTaskProperties);
+    transformVersionTag(element, userTaskProperties);
     transformTaskListeners(element, userTask);
 
     if (isZeebeUserTask) {
@@ -265,7 +266,17 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
         element.getSingleExtensionElement(ZeebeFormDefinition.class);
 
     if (formDefinition != null) {
-      userTaskProperties.setBindingType(formDefinition.getBindingType());
+      userTaskProperties.setFormBindingType(formDefinition.getBindingType());
+    }
+  }
+
+  private void transformVersionTag(
+      final UserTask element, final UserTaskProperties userTaskProperties) {
+    final ZeebeFormDefinition formDefinition =
+        element.getSingleExtensionElement(ZeebeFormDefinition.class);
+
+    if (formDefinition != null) {
+      userTaskProperties.setFormVersionTag(formDefinition.getVersionTag());
     }
   }
 

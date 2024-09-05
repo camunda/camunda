@@ -6,11 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const path = require('path');
-const fs = require('fs');
+import {dirname, resolve} from 'path';
+import {existsSync, symlinkSync} from 'fs';
+import {fileURLToPath} from 'url';
 
-const srcDirectory = path.resolve(__dirname, '..', 'src');
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
-if (!fs.existsSync(srcDirectory + '/node_modules')) {
-  fs.symlinkSync(srcDirectory + '/modules', srcDirectory + '/node_modules', 'dir');
+const srcDirectory = resolve(__dirname, '..', 'src');
+
+if (!existsSync(srcDirectory + '/node_modules')) {
+  symlinkSync(srcDirectory + '/modules', srcDirectory + '/node_modules', 'dir');
 }

@@ -12,6 +12,7 @@ import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ElasticsearchMetrics {
@@ -24,6 +25,7 @@ public class ElasticsearchMetrics {
   private final Timer flushDuration;
   private final DistributionSummary bulkSize;
   private final Counter failedFlush;
+  private final Timer flushLatency;
 
   public ElasticsearchMetrics(final int partitionId, final MeterRegistry registry) {
     partitionIdLabel = String.valueOf(partitionId);
@@ -39,6 +41,7 @@ public class ElasticsearchMetrics {
             .description("Flush duration of bulk exporters in seconds")
             .tags(PARTITION_LABEL, partitionIdLabel)
             .publishPercentileHistogram()
+            .minimumExpectedValue(Duration.ofMillis(10))
             .register(meterRegistry);
 
     bulkSize =
@@ -52,6 +55,14 @@ public class ElasticsearchMetrics {
         Counter.builder(meterName("failed.flush"))
             .description("Number of failed flush operations")
             .tags(PARTITION_LABEL, partitionIdLabel)
+            .register(meterRegistry);
+
+    flushLatency =
+        Timer.builder(meterName("flush.latency"))
+            .description(
+                "Time of how long a export buffer is open and collects new records before flushing, meaning latency until the next flush is done.")
+            .tags(PARTITION_LABEL, partitionIdLabel)
+            .publishPercentileHistogram()
             .register(meterRegistry);
   }
 
@@ -73,5 +84,15 @@ public class ElasticsearchMetrics {
 
   private String meterName(final String name) {
     return NAMESPACE + "." + name;
+  }
+
+  public Timer.Sample startFlushLatencyMeasurement() {
+    return Timer.start(meterRegistry);
+  }
+
+  public void stopFlushLatencyMeasurement(final Timer.Sample flushLatencySample) {
+    if (flushLatencySample != null) {
+      flushLatencySample.stop(flushLatency);
+    }
   }
 }

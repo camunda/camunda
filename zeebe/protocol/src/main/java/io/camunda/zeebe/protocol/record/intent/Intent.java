@@ -61,7 +61,8 @@ public interface Intent {
           CompensationSubscriptionIntent.class,
           MessageCorrelationIntent.class,
           UserIntent.class,
-          ClockIntent.class);
+          ClockIntent.class,
+          AuthorizationIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -151,6 +152,8 @@ public interface Intent {
         return UserIntent.from(intent);
       case CLOCK:
         return ClockIntent.from(intent);
+      case AUTHORIZATION:
+        return AuthorizationIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -232,6 +235,8 @@ public interface Intent {
         return UserIntent.valueOf(intent);
       case CLOCK:
         return ClockIntent.valueOf(intent);
+      case AUTHORIZATION:
+        return AuthorizationIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

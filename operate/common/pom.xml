@@ -36,6 +36,11 @@
       <artifactId>webapps-common</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-plugin</artifactId>
+    </dependency>
+
     <!-- SPRING -->
 
     <dependency>
@@ -276,9 +281,16 @@
       <artifactId>log4j-core-test</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
       <scope>test</scope>
     </dependency>
 

@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service;
 
-import static io.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 import static io.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAllOrLatest;
 import static io.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static java.util.Comparator.naturalOrder;
@@ -62,6 +61,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class DefinitionService implements ConfigurationReloadable {
+
+  public static final TenantDto TENANT_NOT_DEFINED = new TenantDto(null, "Not defined", null);
 
   private final DefinitionReader definitionReader;
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;

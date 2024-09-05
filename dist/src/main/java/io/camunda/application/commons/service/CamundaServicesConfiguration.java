@@ -8,7 +8,9 @@
 package io.camunda.application.commons.service;
 
 import io.camunda.search.clients.CamundaSearchClient;
+import io.camunda.service.AuthorizationServices;
 import io.camunda.service.CamundaServices;
+import io.camunda.service.ClockServices;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
@@ -16,6 +18,7 @@ import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.MessageServices;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.ResourceServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -92,5 +95,20 @@ public class CamundaServicesConfiguration {
   @Bean
   public DocumentServices documentServices(final CamundaServices camundaServices) {
     return camundaServices.documentServices();
+  }
+
+  @Bean
+  public AuthorizationServices authorizationServices(final CamundaServices camundaServices) {
+    return camundaServices.authorizationServices();
+  }
+
+  @Bean
+  public ClockServices clockServices(final CamundaServices camundaServices) {
+    return camundaServices.clockServices();
+  }
+
+  @Bean
+  public ResourceServices resourceServices(final CamundaServices camundaServices) {
+    return camundaServices.resourceService();
   }
 }

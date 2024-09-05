@@ -14,6 +14,23 @@ message ClusterTopology {
   map<string, MemberState> members = 2;
   CompletedChange lastChange = 3;
   ClusterChangePlan currentChange = 4;
+  RoutingState routingState = 5;
+}
+
+message RoutingState {
+  int64  version = 1;
+  repeated sint32 activePartitions = 2;
+  MessageCorrelation messageCorrelation = 3;
+}
+
+message MessageCorrelation {
+  oneof correlation {
+    HashMod hashMod = 1;
+  }
+
+  message HashMod {
+    sint32 partitionCount = 1;
+  }
 }
 
 message MemberState {
@@ -71,6 +88,7 @@ message TopologyChangeOperation {
     MemberRemoveOperation memberRemove = 8;
     PartitionDisableExporterOperation partitionDisableExporter = 9;
     PartitionEnableExporterOperation partitionEnableExporter = 10;
+    PartitionBootstrapOperation partitionBootstrap = 11;
   }
 }
 
@@ -109,6 +127,11 @@ message PartitionEnableExporterOperation {
   optional string initializeFrom = 3;
 }
 
+message PartitionBootstrapOperation {
+  int32 partitionId = 1;
+  int32 priority = 2;
+}
+
 message MemberJoinOperation {}
 
 message MemberLeaveOperation {}
@@ -123,6 +146,7 @@ enum State {
   ACTIVE = 2;
   LEAVING = 3;
   LEFT = 4;
+  BOOTSTRAPPING = 5;
 }
 
 enum ChangeStatus {

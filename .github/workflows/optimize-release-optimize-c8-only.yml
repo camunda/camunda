@@ -35,9 +35,9 @@ defaults:
 jobs:
   build:
     name: Execute Release
-    runs-on: gcp-core-2-release
+    runs-on: gcp-core-4-release
     env:
-      DOCKER_IMAGE_TEAM: registry.camunda.cloud/optimize-ee/optimize
+      DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
       DOCKER_LATEST_TAG: latest
     strategy:
@@ -161,7 +161,7 @@ jobs:
           mvn -f optimize \
             -DpushChanges=false \
             -DskipTests=true \
-            -Prelease,engine-latest,runAssembly \
+            -Prelease,runAssembly \
             release:prepare \
             -Dtag=${TAG} \
             -DreleaseVersion="${RELEASE_VERSION}" \
@@ -184,16 +184,29 @@ jobs:
             -DskipTests=true \
             -B \
             --fail-at-end \
-            -Prelease,engine-latest,runAssembly \
+            -Prelease,runAssembly \
             -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
             release:perform \
             -Darguments="-Dmaven.deploy.skip=${IS_DRY_RUN} -DskipTests -DskipNexusStagingDeployMojo=${IS_DRY_RUN} -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -f pom.xml"
 
       - name: Remove tag for RC release
-        if: env.IS_RC == 'true'
+        if: env.IS_RC == 'true' || failure()
         run: |
           git tag -d ${TAG}
           git push origin :refs/tags/${TAG}
+
+      - name: Create a GitHub release
+        if: ${{ env.IS_RC == 'false' && env.DRY_RUN == 'false' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: octokit/request-action@v2.3.1
+        with:
+          route: POST /repos/camunda/camunda/releases
+          draft: true
+          name: ${{ env.TAG }}
+          tag_name: ${{ env.TAG }}
+          generate_release_notes: true
+          make_latest: \"false\"
 
       - name: Auto-update previous version
         run: |
@@ -273,12 +286,11 @@ jobs:
       - name: Start Smoketest
         uses: ./.github/actions/compose
         with:
-          compose_file: .github/actions/compose/docker-compose.smoketest.release.yml
+          compose_file: .github/actions/compose/docker-compose.smoketest.yml
           project_name: smoketest
-          timeout: 600
         env:
           OPTIMIZE_IMAGE_TAG: ${{ env.RELEASE_VERSION }}
-          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}
+          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
           ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
           IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
 

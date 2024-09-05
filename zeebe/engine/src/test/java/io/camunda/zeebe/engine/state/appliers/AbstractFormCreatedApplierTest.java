@@ -123,6 +123,7 @@ abstract class AbstractFormCreatedApplierTest {
       assertThat(bufferAsArray(persistedForm.getChecksum())).isEqualTo(record.getChecksum());
       assertThat(bufferAsArray(persistedForm.getResource())).isEqualTo(record.getResource());
       assertThat(persistedForm.getDeploymentKey()).isEqualTo(record.getDeploymentKey());
+      assertThat(persistedForm.getVersionTag()).isEqualTo(record.getVersionTag());
     };
   }
 

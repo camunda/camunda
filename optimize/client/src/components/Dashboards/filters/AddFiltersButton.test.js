@@ -18,9 +18,7 @@ import {getVariableNames} from './service';
 import {AddFiltersButton} from './AddFiltersButton';
 
 jest.mock('hooks', () => ({
-  useUiConfig: jest
-    .fn()
-    .mockReturnValue({optimizeProfile: 'platform', userTaskAssigneeAnalyticsEnabled: true}),
+  useUiConfig: jest.fn().mockReturnValue({userTaskAssigneeAnalyticsEnabled: true}),
   useErrorHandling: () => ({
     mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   }),
@@ -219,18 +217,4 @@ it('should not show assignee options when assignee analytics are disabled', asyn
   await runAllEffects();
 
   expect(node.find(MenuItem).findWhere((n) => n.prop('label') === 'Assignee').length).toBe(0);
-});
-
-it('should not show candidate group options in C8 environment', async () => {
-  useUiConfig.mockReturnValueOnce({optimizeProfile: 'cloud'});
-  const node = shallow(<AddFiltersButton {...props} />);
-
-  await runAllEffects();
-
-  expect(
-    node
-      .find(MenuItem)
-      .findWhere((n) => n.prop('label') === 'Assignee' || n.prop('label') === 'Candidate group')
-      .length
-  ).toBe(0);
 });

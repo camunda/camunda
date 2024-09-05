@@ -43,8 +43,8 @@ fi
 
 # getLatestTag
 if $is_stable_branch; then
-    latest_tag="${stable_version}-latest"
+    latest_tag="${stable_version}-8-latest"
 else
-    latest_tag="latest"
+    latest_tag="8-latest"
 fi
 echo "latest_tag=${latest_tag}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"

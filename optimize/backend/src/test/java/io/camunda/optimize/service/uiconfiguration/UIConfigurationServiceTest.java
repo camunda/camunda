@@ -11,7 +11,6 @@ import static io.camunda.optimize.service.util.configuration.ConfigurationServic
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_DATABASE_PROPERTY;
-import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
@@ -19,7 +18,9 @@ import static org.mockito.Mockito.when;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.users.Users;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
+import io.camunda.optimize.license.LicenseType;
 import io.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
+import io.camunda.optimize.service.CamundaLicenseService;
 import io.camunda.optimize.service.SettingsService;
 import io.camunda.optimize.service.UIConfigurationService;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
@@ -55,6 +56,7 @@ public class UIConfigurationServiceTest {
 
   @Mock private OptimizeVersionService versionService;
   @Mock private TenantService tenantService;
+  @Mock private CamundaLicenseService camundaLicenseService;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private SettingsService settingService;
@@ -65,15 +67,13 @@ public class UIConfigurationServiceTest {
   @Mock private Users identityUsers;
 
   private static Stream<Arguments> optimizeProfiles() {
-    return Stream.of(
-        Arguments.of(CLOUD_PROFILE), Arguments.of(CCSM_PROFILE), Arguments.of(PLATFORM_PROFILE));
+    return Stream.of(Arguments.of(CLOUD_PROFILE), Arguments.of(CCSM_PROFILE));
   }
 
   private static Stream<Arguments> optimizeProfilesAndExpectedIsEnterpriseModeResult() {
     return Stream.of(
         Arguments.of(CLOUD_PROFILE, true),
-        Arguments.of(CCSM_PROFILE, false), // false by default because it's not mocked
-        Arguments.of(PLATFORM_PROFILE, true));
+        Arguments.of(CCSM_PROFILE, false)); // false by default because it's not mocked
   }
 
   @ParameterizedTest
@@ -101,7 +101,7 @@ public class UIConfigurationServiceTest {
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
 
     // then
-    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(OptimizeProfile.PLATFORM);
+    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(OptimizeProfile.CCSM);
   }
 
   @Test
@@ -126,7 +126,7 @@ public class UIConfigurationServiceTest {
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
 
     // then
-    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(OptimizeProfile.PLATFORM);
+    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(OptimizeProfile.CCSM);
   }
 
   @ParameterizedTest
@@ -158,11 +158,27 @@ public class UIConfigurationServiceTest {
     assertThat(configurationResponse.getMaxNumDataSourcesForReport()).isEqualTo(50);
   }
 
+  @Test
+  public void testCamundaLicenseInformationIsReturned() {
+    // given
+    initializeMocks();
+    when(environment.getActiveProfiles()).thenReturn(new String[] {CLOUD_PROFILE});
+
+    // when
+    final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
+
+    // then
+    assertThat(configurationResponse.getLicenseType()).isEqualTo("saas");
+    assertThat(configurationResponse.isValidLicense()).isEqualTo(true);
+  }
+
   private void initializeMocks() {
     when(configurationService.getConfiguredWebhooks()).thenReturn(Collections.emptyMap());
     when(identity.users()).thenReturn(identityUsers);
     when(identityUsers.isAvailable()).thenReturn(true);
     when(environment.getProperty(CAMUNDA_OPTIMIZE_DATABASE, ELASTICSEARCH_DATABASE_PROPERTY))
         .thenReturn(DatabaseType.ELASTICSEARCH.toString());
+    when(camundaLicenseService.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
+    when(camundaLicenseService.isCamundaLicenseValid()).thenReturn(true);
   }
 }

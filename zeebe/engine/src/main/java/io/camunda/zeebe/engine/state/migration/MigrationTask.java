@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-
 /**
  * Interface for migration tasks.
  *
@@ -51,18 +48,9 @@ public interface MigrationTask {
    */
   String getIdentifier();
 
-  /**
-   * Returns whether the migration needs to run.
-   *
-   * @param processingState the immutable Zeebe state
-   * @return whether the migration needs to run
-   */
-  boolean needsToRun(final ProcessingState processingState);
+  /** Returns whether the migration needs to run. */
+  boolean needsToRun(final MigrationTaskContext context);
 
-  /**
-   * Implementations of this method perform the actual migration
-   *
-   * @param processingState the mutable Zeebe state
-   */
-  void runMigration(final MutableProcessingState processingState);
+  /** Implementations of this method perform the actual migration */
+  void runMigration(final MutableMigrationTaskContext context);
 }

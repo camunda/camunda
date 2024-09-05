@@ -38,6 +38,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
@@ -49,9 +50,12 @@ import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.util.Either;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -133,8 +137,13 @@ public class ProtoBufSerializer
             ? Optional.of(decodeChangePlan(encodedClusterTopology.getCurrentChange()))
             : Optional.empty();
 
+    final Optional<RoutingState> routingState =
+        encodedClusterTopology.hasRoutingState()
+            ? Optional.of(decodeRoutingState(encodedClusterTopology.getRoutingState()))
+            : Optional.empty();
+
     return new ClusterConfiguration(
-        encodedClusterTopology.getVersion(), members, completedChange, currentChange);
+        encodedClusterTopology.getVersion(), members, completedChange, currentChange, routingState);
   }
 
   private Map<MemberId, io.camunda.zeebe.dynamic.config.state.MemberState> decodeMemberStateMap(
@@ -159,6 +168,9 @@ public class ProtoBufSerializer
     clusterConfiguration
         .pendingChanges()
         .ifPresent(changePlan -> builder.setCurrentChange(encodeChangePlan(changePlan)));
+    clusterConfiguration
+        .routingState()
+        .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
 
     return builder.build();
   }
@@ -294,6 +306,8 @@ public class ProtoBufSerializer
       case JOINING -> MemberState.State.JOINING;
       case LEAVING -> MemberState.State.LEAVING;
       case LEFT -> MemberState.State.LEFT;
+      case BOOTSTRAPPING ->
+          throw new IllegalStateException("Member cannot be in BOOTSTRAPPING state");
     };
   }
 
@@ -303,6 +317,7 @@ public class ProtoBufSerializer
       case ACTIVE -> PartitionState.State.ACTIVE;
       case JOINING -> PartitionState.State.JOINING;
       case LEAVING -> PartitionState.State.LEAVING;
+      case BOOTSTRAPPING -> PartitionState.State.BOOTSTRAPPING;
     };
   }
 
@@ -312,6 +327,7 @@ public class ProtoBufSerializer
       case ACTIVE -> Topology.State.ACTIVE;
       case JOINING -> Topology.State.JOINING;
       case LEAVING -> Topology.State.LEAVING;
+      case BOOTSTRAPPING -> Topology.State.BOOTSTRAPPING;
     };
   }
 
@@ -401,6 +417,12 @@ public class ProtoBufSerializer
       case final PartitionEnableExporterOperation enableExporterOperation ->
           builder.setPartitionEnableExporter(
               encodeEnabledExporterOperation(enableExporterOperation));
+      case final PartitionBootstrapOperation bootstrapOperation ->
+          builder.setPartitionBootstrap(
+              Topology.PartitionBootstrapOperation.newBuilder()
+                  .setPartitionId(bootstrapOperation.partitionId())
+                  .setPriority(bootstrapOperation.priority())
+                  .build());
       default ->
           throw new IllegalArgumentException(
               "Unknown operation type: " + operation.getClass().getSimpleName());
@@ -449,6 +471,43 @@ public class ProtoBufSerializer
             clusterChangePlan.getStartedAt().getNanos()),
         completedOperations,
         pendingOperations);
+  }
+
+  private RoutingState decodeRoutingState(final Topology.RoutingState routingState) {
+    return new RoutingState(
+        routingState.getVersion(),
+        new HashSet<>(routingState.getActivePartitionsList()),
+        decodeMessageCorrelation(routingState.getMessageCorrelation()));
+  }
+
+  private MessageCorrelation decodeMessageCorrelation(
+      final Topology.MessageCorrelation messageCorrelation) {
+    return switch (messageCorrelation.getCorrelationCase()) {
+      case HASHMOD ->
+          new MessageCorrelation.HashMod(messageCorrelation.getHashMod().getPartitionCount());
+      case CORRELATION_NOT_SET ->
+          throw new IllegalArgumentException("Unknown message correlation type");
+    };
+  }
+
+  private Topology.RoutingState encodeRoutingState(final RoutingState routingState) {
+    return Topology.RoutingState.newBuilder()
+        .setVersion(routingState.version())
+        .addAllActivePartitions(routingState.activePartitions())
+        .setMessageCorrelation(encodeMessageCorrelation(routingState.messageCorrelation()))
+        .build();
+  }
+
+  private Topology.MessageCorrelation encodeMessageCorrelation(
+      final MessageCorrelation correlation) {
+    return switch (correlation) {
+      case MessageCorrelation.HashMod(final var partitionCount) ->
+          Topology.MessageCorrelation.newBuilder()
+              .setHashMod(
+                  Topology.MessageCorrelation.HashMod.newBuilder()
+                      .setPartitionCount(partitionCount))
+              .build();
+    };
   }
 
   private io.camunda.zeebe.dynamic.config.state.CompletedChange decodeCompletedChange(
@@ -510,6 +569,11 @@ public class ProtoBufSerializer
           enableExporterOperation.getPartitionId(),
           enableExporterOperation.getExporterId(),
           initializeFrom);
+    } else if (topologyChangeOperation.hasPartitionBootstrap()) {
+      return new PartitionBootstrapOperation(
+          MemberId.from(topologyChangeOperation.getMemberId()),
+          topologyChangeOperation.getPartitionBootstrap().getPartitionId(),
+          topologyChangeOperation.getPartitionBootstrap().getPriority());
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any

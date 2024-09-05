@@ -76,7 +76,8 @@ public final class CallActivityProcessor
     return evaluateProcessId(context, element)
         .flatMap(
             processId ->
-                getProcessForProcessIdAndBindingType(processId, element.getBindingType(), context))
+                getCalledProcess(
+                    processId, element.getBindingType(), element.getVersionTag(), context))
         .flatMap(this::checkProcessHasNoneStartEvent)
         .flatMap(p -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> p))
         .thenDo(
@@ -206,15 +207,16 @@ public final class CallActivityProcessor
         processIdExpression, scopeKey);
   }
 
-  private Either<Failure, DeployedProcess> getProcessForProcessIdAndBindingType(
+  private Either<Failure, DeployedProcess> getCalledProcess(
       final DirectBuffer processId,
       final ZeebeBindingType bindingType,
+      final String versionTag,
       final BpmnElementContext context) {
     return switch (bindingType) {
       case deployment -> getProcessVersionInSameDeployment(processId, context);
       case latest -> getLatestProcessVersion(processId, context.getTenantId());
-      // will be implemented with https://github.com/camunda/camunda/issues/21038
-      case versionTag -> Either.left(new Failure("Binding type 'versionTag' not supported"));
+      case versionTag ->
+          getLatestProcessVersionWithVersionTag(processId, versionTag, context.getTenantId());
     };
   }
 
@@ -255,6 +257,25 @@ public final class CallActivityProcessor
                         String.format(
                             "Expected process with BPMN process id '%s' to be deployed, but not found.",
                             BufferUtil.bufferAsString(processId)),
+                        ErrorType.CALLED_ELEMENT_ERROR)));
+  }
+
+  private Either<Failure, DeployedProcess> getLatestProcessVersionWithVersionTag(
+      final DirectBuffer processId, final String versionTag, final String tenantId) {
+    final var process =
+        stateBehavior.getProcessByProcessIdAndVersionTag(processId, versionTag, tenantId);
+    return process
+        .<Either<Failure, DeployedProcess>>map(Either::right)
+        .orElseGet(
+            () ->
+                Either.left(
+                    new Failure(
+                        String.format(
+                            """
+                            Expected to call process with BPMN process id '%s' and version tag '%s', but no such process found. \
+                            To resolve this incident, deploy a process with the given process id and version tag.\
+                            """,
+                            BufferUtil.bufferAsString(processId), versionTag),
                         ErrorType.CALLED_ELEMENT_ERROR)));
   }
 

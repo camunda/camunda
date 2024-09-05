@@ -12,6 +12,7 @@ import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
+import * as licenseMocks from 'modules/mock-schema/mocks/license';
 
 describe('<Header />', () => {
   it('should render a header', async () => {
@@ -27,6 +28,18 @@ describe('<Header />', () => {
       ),
     );
 
+    nodeMockServer.use(
+      http.get(
+        '/v2/license',
+        () => {
+          return HttpResponse.json(licenseMocks.invalidLicense);
+        },
+        {
+          once: true,
+        },
+      ),
+    );
+
     render(<Header />, {
       wrapper: getWrapper(),
     });
@@ -34,7 +47,9 @@ describe('<Header />', () => {
     expect(
       screen.getByRole('banner', {name: 'Camunda Tasklist'}),
     ).toBeInTheDocument();
-    expect(screen.getByText('Non-Production License')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Non-production license'),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Open Info'})).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: 'Open Settings'}),

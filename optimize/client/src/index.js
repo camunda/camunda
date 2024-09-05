@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
 import ReactDOM from 'react-dom';
 
 import './style.scss';

@@ -93,6 +93,55 @@ schemas:
         $ref: "components.yaml#/schemas/CompletedChange"
       pendingChange:
         $ref: "components.yaml#/schemas/TopologyChange"
+      routing:
+        $ref: "components.yaml#/schemas/RoutingState"
+
+  RoutingState:
+    description: The routing state, i.e. where requests are sent to and how messages are correlated
+    type: object
+    required:
+      - version
+      - activePartitions
+      - messageCorrelation
+    properties:
+      version:
+        type: integer
+        format: int64
+        description: The version of the routing state
+        example: 1
+      activePartitions:
+        type: array
+        description: The list of active partitions that accept round-robin requests
+        example: [1, 2, 3]
+        items:
+          type: integer
+          format: int32
+      messageCorrelation:
+        $ref: "components.yaml#/schemas/MessageCorrelation"
+
+
+  MessageCorrelation:
+    description: The message correlation strategy
+    oneOf:
+      - $ref: "components.yaml#/schemas/MessageCorrelationHashMod"
+    discriminator:
+      propertyName: strategy
+      mapping:
+        HashMod: "components.yaml#/schemas/MessageCorrelationHashMod"
+
+  MessageCorrelationHashMod:
+    type: object
+    required:
+      - strategy
+      - partitionCount
+    properties:
+      strategy:
+        type: string
+      partitionCount:
+        type: integer
+        format: int32
+        description: The number of partitions
+        example: 3
 
   CompletedChange:
     type: object

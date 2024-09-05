@@ -21,7 +21,7 @@ import java.util.List;
  * @param <T> the type of the entity that the handler creates or updates
  * @param <R> the type of the records that the handler can process
  */
-public interface ExportHandler<T extends ExporterEntity, R extends RecordValue> {
+public interface ExportHandler<T extends ExporterEntity<T>, R extends RecordValue> {
 
   /**
    * @return the value type of the record that the handler can process
@@ -72,7 +72,7 @@ public interface ExportHandler<T extends ExporterEntity, R extends RecordValue> 
    *
    * @param entity the entity to write to ElasticSearch or OpenSearch
    * @param batchRequest the batch request to add the entity to
-   * @throws PersistenceException
+   * @throws PersistenceException if the handler fails to flush the entity to the batch request
    */
   void flush(T entity, BatchRequest batchRequest) throws PersistenceException;
 }

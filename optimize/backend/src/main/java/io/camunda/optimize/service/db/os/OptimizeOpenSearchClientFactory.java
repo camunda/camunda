@@ -11,7 +11,6 @@ import static io.camunda.optimize.service.util.DatabaseVersionChecker.checkOSVer
 import static io.camunda.optimize.upgrade.os.OpenSearchClientBuilder.buildOpenSearchAsyncClientFromConfig;
 import static io.camunda.optimize.upgrade.os.OpenSearchClientBuilder.buildOpenSearchClientFromConfig;
 
-import io.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
 import io.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -21,7 +20,6 @@ import java.io.IOException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.client.RequestOptions;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.context.annotation.Conditional;
@@ -39,22 +37,16 @@ public class OptimizeOpenSearchClientFactory {
       throws IOException {
 
     log.info("Creating OpenSearch connection...");
-    final RequestOptionsProvider requestOptionsProvider =
-        new RequestOptionsProvider(configurationService);
     final ExtendedOpenSearchClient openSearchClient =
         buildOpenSearchClientFromConfig(configurationService);
     final OpenSearchAsyncClient openSearchAsyncClient =
         buildOpenSearchAsyncClientFromConfig(configurationService);
-    waitForOpenSearch(
-        openSearchClient, backoffCalculator, requestOptionsProvider.getRequestOptions());
+    waitForOpenSearch(openSearchClient, backoffCalculator);
     log.info("OpenSearch cluster successfully started");
 
     final OptimizeOpenSearchClient osClient =
         new OptimizeOpenSearchClient(
-            openSearchClient,
-            openSearchAsyncClient,
-            optimizeIndexNameService,
-            requestOptionsProvider);
+            openSearchClient, openSearchAsyncClient, optimizeIndexNameService);
     openSearchSchemaManager.validateDatabaseMetadata(osClient);
     openSearchSchemaManager.initializeSchema(osClient);
 
@@ -62,9 +54,7 @@ public class OptimizeOpenSearchClientFactory {
   }
 
   private static void waitForOpenSearch(
-      final OpenSearchClient osClient,
-      final BackoffCalculator backoffCalculator,
-      final RequestOptions requestOptions)
+      final OpenSearchClient osClient, final BackoffCalculator backoffCalculator)
       throws IOException {
     boolean isConnected = false;
     while (!isConnected) {
@@ -88,7 +78,7 @@ public class OptimizeOpenSearchClientFactory {
         }
       }
     }
-    checkOSVersionSupport(osClient, requestOptions);
+    checkOSVersionSupport(osClient);
   }
 
   private static int getNumberOfClusterNodes(final OpenSearchClient openSearchClient)

@@ -10,6 +10,9 @@ package io.camunda.zeebe.exporter.opensearch;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 public class OpensearchExporterConfiguration {
 
@@ -25,6 +28,7 @@ public class OpensearchExporterConfiguration {
   public final BulkConfiguration bulk = new BulkConfiguration();
   public final AwsConfiguration aws = new AwsConfiguration();
   public final RetentionConfiguration retention = new RetentionConfiguration();
+  public final Map<String, InterceptorPlugin> interceptorPlugins = new HashMap<>();
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
 
   public boolean hasAuthenticationPresent() {
@@ -33,6 +37,10 @@ public class OpensearchExporterConfiguration {
 
   public AuthenticationConfiguration getAuthentication() {
     return authentication;
+  }
+
+  public Map<String, InterceptorPlugin> getInterceptorPlugins() {
+    return interceptorPlugins;
   }
 
   @Override
@@ -49,6 +57,8 @@ public class OpensearchExporterConfiguration {
         + aws
         + ", retention="
         + retention
+        + ", interceptorPlugins="
+        + interceptorPlugins
         + '}';
   }
 
@@ -129,6 +139,8 @@ public class OpensearchExporterConfiguration {
         return index.messageCorrelation;
       case USER:
         return index.user;
+      case AUTHORIZATION:
+        return index.authorization;
       default:
         return false;
     }
@@ -196,6 +208,8 @@ public class OpensearchExporterConfiguration {
     public boolean compensationSubscription = true;
     public boolean messageCorrelation = true;
     public boolean user = true;
+
+    public boolean authorization = true;
 
     // index settings
     private Integer numberOfShards = null;
@@ -299,6 +313,8 @@ public class OpensearchExporterConfiguration {
           + messageCorrelation
           + ", user="
           + user
+          + ", authorization="
+          + authorization
           + '}';
     }
   }
@@ -427,6 +443,70 @@ public class OpensearchExporterConfiguration {
           + policyName
           + ", policyDescription='"
           + policyDescription
+          + '\''
+          + '}';
+    }
+  }
+
+  public static final class InterceptorPlugin {
+    private String id;
+    private String className;
+    private String jarPath;
+
+    public String getId() {
+      return id;
+    }
+
+    public void setId(final String id) {
+      this.id = id;
+    }
+
+    public String getClassName() {
+      return className;
+    }
+
+    public void setClassName(final String className) {
+      this.className = className;
+    }
+
+    public String getJarPath() {
+      return jarPath;
+    }
+
+    public void setJarPath(final String jarPath) {
+      this.jarPath = jarPath;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(id, className, jarPath);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final InterceptorPlugin that = (InterceptorPlugin) o;
+      return Objects.equals(id, that.id)
+          && Objects.equals(className, that.className)
+          && Objects.equals(jarPath, that.jarPath);
+    }
+
+    @Override
+    public String toString() {
+      return "Interceptor{"
+          + "id='"
+          + id
+          + '\''
+          + ", className='"
+          + className
+          + '\''
+          + ", jarPath='"
+          + jarPath
           + '\''
           + '}';
     }

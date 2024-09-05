@@ -13,7 +13,7 @@ import {getOptimizeProfile} from 'config';
 
 import AddUserModal from './AddUserModal';
 
-const optimizeProfile: Awaited<ReturnType<typeof getOptimizeProfile>> = 'platform';
+const optimizeProfile: Awaited<ReturnType<typeof getOptimizeProfile>> = 'ccsm';
 
 const props = {
   optimizeProfile,
@@ -28,7 +28,7 @@ it('should render the modal properly', () => {
 
   const radioButtons = node.find('RadioButton');
 
-  expect(node.find('UserTypeahead').prop('titleText')).toEqual('Users and user groups');
+  expect(node.find('UserTypeahead').prop('titleText')).toEqual('Users');
 
   expect(radioButtons.at(0).dive().find('span').at(1).text()).toBe('Viewer');
   expect(radioButtons.at(1).dive().find('span').at(1).text()).toBe('Editor');
@@ -39,7 +39,7 @@ it('should call the onConfirm prop', () => {
   const node = shallow(<AddUserModal {...props} />);
 
   node.find(UserTypeahead).prop('onChange')([
-    {id: 'USER:testUser', identity: {id: 'testUser', type: 'user', name: ''}},
+    {id: 'USER:testUser', identity: {id: 'testUser', name: ''}},
   ]);
 
   node.find('RadioButton').at(1).simulate('click');
@@ -47,7 +47,7 @@ it('should call the onConfirm prop', () => {
   node.find('.confirm').simulate('click');
 
   expect(props.onConfirm).toHaveBeenCalledWith([
-    {identity: {id: 'testUser', type: 'user', name: ''}, role: 'editor'},
+    {identity: {id: 'testUser', name: ''}, role: 'editor'},
   ]);
 });
 

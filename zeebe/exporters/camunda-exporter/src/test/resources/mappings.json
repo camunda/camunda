@@ -1,0 +1,16 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "hello": {
+        "type": "text"
+      },
+      "world": {
+        "type": "keyword"
+      }
+    },
+    "_meta": {
+      "version": "1.0.0"
+    }
+  }
+}

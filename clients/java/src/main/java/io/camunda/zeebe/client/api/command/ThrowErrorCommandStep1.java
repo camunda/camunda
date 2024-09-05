@@ -18,7 +18,8 @@ package io.camunda.zeebe.client.api.command;
 import java.io.InputStream;
 import java.util.Map;
 
-public interface ThrowErrorCommandStep1 {
+public interface ThrowErrorCommandStep1
+    extends CommandWithCommunicationApiStep<ThrowErrorCommandStep1> {
   /**
    * Set the errorCode for the error.
    *

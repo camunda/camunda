@@ -19,7 +19,7 @@ import GroupBy from './GroupBy';
 jest.mock('hooks', () => ({
   useUiConfig: jest
     .fn()
-    .mockReturnValue({optimizeProfile: 'platform', userTaskAssigneeAnalyticsEnabled: true}),
+    .mockReturnValue({optimizeProfile: 'ccsm', userTaskAssigneeAnalyticsEnabled: true}),
 }));
 
 jest.mock('services', () => {
@@ -201,15 +201,6 @@ it('should not fail if variables are null', () => {
 
 it('should hide assignee option in cloud environment', async () => {
   useUiConfig.mockImplementation(() => ({userTaskAssigneeAnalyticsEnabled: false}));
-  const node = shallow(<GroupBy {...config} />);
-
-  await runAllEffects();
-
-  expect(node.find({value: 'assignee'})).not.toExist();
-});
-
-it('should hide candidate group option in C8 environment', async () => {
-  useUiConfig.mockImplementation(() => ({optimizeProfile: 'cloud'}));
   const node = shallow(<GroupBy {...config} />);
 
   await runAllEffects();

@@ -44,6 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -326,6 +327,31 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
               });
         });
     return result;
+  }
+
+  @Override
+  public ActorFuture<Void> bootstrap(
+      final int partitionId, final int priority, final DynamicPartitionConfig partitionConfig) {
+    final int targetPriority = priority;
+
+    final MemberId localMember = managementService.getMembershipService().getLocalMember().id();
+    final var members = Set.of(localMember);
+
+    final MemberId primary = localMember;
+
+    final var partitionMetadata =
+        new PartitionMetadata(
+            PartitionId.from(GROUP_NAME, partitionId),
+            members,
+            Map.of(localMember, targetPriority),
+            targetPriority,
+            primary);
+
+    final ActorFuture<Void> future = concurrencyControl.createFuture();
+
+    concurrencyControl.run(
+        () -> bootstrapPartition(partitionMetadata, partitionConfig).onComplete(future));
+    return future;
   }
 
   @Override

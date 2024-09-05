@@ -24,7 +24,6 @@ import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVa
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static io.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
-import static io.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithoutPercentileInterpolation;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -535,18 +534,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public Map<AggregationDto, Double> calculateExpectedValueGivenDurations(
       final Number... setDuration) {
-    // For percentiles, the result we get from ES depends on the version being used
-    if (isDatabaseVersionGreaterThanOrEqualTo("8.9.0")) {
-      // Versions newer than 8.9.0 used interpolation to determine percentiles, so we use a library
-      // that does the same to
-      // calculate the expected results
-      return calculateExpectedValueGivenDurationsWithPercentileInterpolation(setDuration);
-    } else {
-      // Versions before 8.9.0 used the TDigest algorithm internally without interpolation, so we
-      // must use the same
-      // here when calculating the expected results
-      return calculateExpectedValueGivenDurationsWithoutPercentileInterpolation(setDuration);
-    }
+    return calculateExpectedValueGivenDurationsWithPercentileInterpolation(setDuration);
   }
 
   @Override

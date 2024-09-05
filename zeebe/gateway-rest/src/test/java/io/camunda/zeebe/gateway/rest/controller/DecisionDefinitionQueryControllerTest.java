@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.entities.DecisionDefinitionEntity;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.filter.DecisionDefinitionFilter;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
 import io.camunda.service.search.query.SearchQueryResult;
@@ -21,6 +22,7 @@ import io.camunda.service.search.query.SearchQueryResult.Builder;
 import io.camunda.service.search.sort.DecisionDefinitionSort;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,6 +66,8 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
           .build();
 
   static final String DECISION_DEFINITIONS_SEARCH_URL = "/v2/decision-definitions/search";
+
+  static final String DECISION_DEFINITIONS_GET_XML_URL = "/v2/decision-definitions/%d/xml";
 
   @MockBean DecisionDefinitionServices decisionDefinitionServices;
 
@@ -256,16 +260,15 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
             ]
         }""";
     final var expectedResponse =
-        String.format(
-            """
+        """
         {
           "type": "about:blank",
           "title": "INVALID_ARGUMENT",
           "status": 400,
           "detail": "Unknown sortBy: unknownField.",
           "instance": "%s"
-        }""",
-            DECISION_DEFINITIONS_SEARCH_URL);
+        }"""
+            .formatted(DECISION_DEFINITIONS_SEARCH_URL);
     // when / then
     webClient
         .post()
@@ -282,5 +285,113 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(decisionDefinitionServices, never()).search(any(DecisionDefinitionQuery.class));
+  }
+
+  @Test
+  public void shouldGetDecisionDefinitionXml() {
+    // given
+    final Long decisionDefinitionKey = 1L;
+    final String xml = "<xml/>";
+    when(decisionDefinitionServices.getDecisionDefinitionXml(decisionDefinitionKey))
+        .thenReturn(xml);
+
+    // when/then
+    webClient
+        .get()
+        .uri(DECISION_DEFINITIONS_GET_XML_URL.formatted(decisionDefinitionKey))
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(new MediaType("text", "xml", StandardCharsets.UTF_8))
+        .expectBody()
+        .xml(xml);
+  }
+
+  @Test
+  public void shouldReturn404ForNotFoundDecisionDefinition() {
+    // given
+    final Long decisionDefinitionKey = 1L;
+    when(decisionDefinitionServices.getDecisionDefinitionXml(decisionDefinitionKey))
+        .thenThrow(new NotFoundException("Decision with key 1 was not found."));
+
+    // when/then
+    final var expectedResponse =
+        """
+        {
+          "type": "about:blank",
+          "title": "NOT_FOUND",
+          "status": 404,
+          "detail": "Decision with key 1 was not found.",
+          "instance": "%s"
+        }"""
+            .formatted(DECISION_DEFINITIONS_GET_XML_URL.formatted(decisionDefinitionKey));
+    webClient
+        .get()
+        .uri(DECISION_DEFINITIONS_GET_XML_URL.formatted(decisionDefinitionKey))
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+  }
+
+  @Test
+  public void shouldReturn500ForInternalError() {
+    // given
+    final Long decisionDefinitionKey = 1L;
+    when(decisionDefinitionServices.getDecisionDefinitionXml(decisionDefinitionKey))
+        .thenThrow(new RuntimeException("Failed to get decision definition xml."));
+
+    // when/then
+    final var expectedResponse =
+        """
+        {
+          "type": "about:blank",
+          "title": "Failed to execute Get Decision Definition XML Query.",
+          "status": 500,
+          "detail": "Failed to get decision definition xml.",
+          "instance": "%s"
+        }"""
+            .formatted(DECISION_DEFINITIONS_GET_XML_URL.formatted(decisionDefinitionKey));
+    webClient
+        .get()
+        .uri(DECISION_DEFINITIONS_GET_XML_URL.formatted(decisionDefinitionKey))
+        .exchange()
+        .expectStatus()
+        .is5xxServerError()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+  }
+
+  @Test
+  public void shouldReturn400ForInvalidKey() {
+    // given
+    final String decisionDefinitionKey = "invalidKey";
+
+    // when/then
+    final var expectedResponse =
+        """
+        {
+          "type": "about:blank",
+          "title": "Bad Request",
+          "status": 400,
+          "detail": "Failed to convert 'decisionKey' with value: 'invalidKey'",
+          "instance": "/v2/decision-definitions/invalidKey/xml"
+        }""";
+    webClient
+        .get()
+        .uri("/v2/decision-definitions/%s/xml".formatted(decisionDefinitionKey))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
   }
 }

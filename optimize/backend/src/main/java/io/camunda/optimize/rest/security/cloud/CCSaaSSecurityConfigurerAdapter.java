@@ -19,7 +19,6 @@ import static io.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATI
 import static io.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.AUTH_0_CLIENT_REGISTRATION_ID;
 import static io.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.OAUTH_AUTH_ENDPOINT;
 import static io.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.OAUTH_REDIRECT_ENDPOINT;
-import static io.camunda.optimize.rest.security.platform.PlatformSecurityConfigurerAdapter.DEEP_SUB_PATH_ANY;
 
 import io.camunda.optimize.rest.security.AbstractSecurityConfigurerAdapter;
 import io.camunda.optimize.rest.security.AuthenticationCookieFilter;
@@ -98,7 +97,8 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
   }
 
   @Bean
-  public AuthenticationCookieFilter authenticationCookieFilter(HttpSecurity http) throws Exception {
+  public AuthenticationCookieFilter authenticationCookieFilter(final HttpSecurity http)
+      throws Exception {
     return new AuthenticationCookieFilter(
         sessionService,
         http.getSharedObject(AuthenticationManagerBuilder.class)
@@ -109,7 +109,7 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
   @SneakyThrows
   @Bean
   @Order(1)
-  protected SecurityFilterChain configurePublicApi(HttpSecurity http) {
+  protected SecurityFilterChain configurePublicApi(final HttpSecurity http) {
     final HttpSecurity httpSecurityBuilder =
         http.securityMatchers(
             securityMatchers ->
@@ -122,7 +122,7 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
   @SneakyThrows
   @Bean
   @Order(2)
-  protected SecurityFilterChain configureWebSecurity(HttpSecurity http) {
+  protected SecurityFilterChain configureWebSecurity(final HttpSecurity http) {
     return super.configureGenericSecurityOptions(http)
         // Then we configure the specific web security for CCSaaS
         .authorizeHttpRequests(
@@ -195,19 +195,19 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
   }
 
   private JwtDecoder jwtDecoder() {
-    NimbusJwtDecoder jwtDecoder =
+    final NimbusJwtDecoder jwtDecoder =
         NimbusJwtDecoder.withJwkSetUri(
                 configurationService.getOptimizeApiConfiguration().getJwtSetUri())
             .build();
-    OAuth2TokenValidator<Jwt> audienceValidator =
+    final OAuth2TokenValidator<Jwt> audienceValidator =
         new AudienceValidator(
             configurationService
                 .getAuthConfiguration()
                 .getCloudAuthConfiguration()
                 .getUserAccessTokenAudience()
                 .orElse(""));
-    OAuth2TokenValidator<Jwt> clusterIdValidator = new ScopeValidator("profile");
-    OAuth2TokenValidator<Jwt> audienceAndClusterIdValidation =
+    final OAuth2TokenValidator<Jwt> clusterIdValidator = new ScopeValidator("profile");
+    final OAuth2TokenValidator<Jwt> audienceAndClusterIdValidation =
         new DelegatingOAuth2TokenValidator<>(audienceValidator, clusterIdValidator);
     jwtDecoder.setJwtValidator(audienceAndClusterIdValidation);
     return jwtDecoder;
@@ -215,16 +215,16 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
 
   @Override
   protected JwtDecoder publicApiJwtDecoder() {
-    NimbusJwtDecoder jwtDecoder =
+    final NimbusJwtDecoder jwtDecoder =
         NimbusJwtDecoder.withJwkSetUri(
                 configurationService.getOptimizeApiConfiguration().getJwtSetUri())
             .build();
-    OAuth2TokenValidator<Jwt> audienceValidator =
+    final OAuth2TokenValidator<Jwt> audienceValidator =
         new AudienceValidator(getAuth0Configuration().getAudience());
-    OAuth2TokenValidator<Jwt> clusterIdValidator =
+    final OAuth2TokenValidator<Jwt> clusterIdValidator =
         new CustomClaimValidator(
             CAMUNDA_CLUSTER_ID_CLAIM_NAME, getAuth0Configuration().getClusterId());
-    OAuth2TokenValidator<Jwt> audienceAndClusterIdValidation =
+    final OAuth2TokenValidator<Jwt> audienceAndClusterIdValidation =
         new DelegatingOAuth2TokenValidator<>(audienceValidator, clusterIdValidator);
     jwtDecoder.setJwtValidator(audienceAndClusterIdValidation);
     return jwtDecoder;
@@ -350,7 +350,7 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
   public class AddClusterIdSubPathToRedirectAuthenticationEntryPoint
       extends LoginUrlAuthenticationEntryPoint {
 
-    public AddClusterIdSubPathToRedirectAuthenticationEntryPoint(String loginFormUrl) {
+    public AddClusterIdSubPathToRedirectAuthenticationEntryPoint(final String loginFormUrl) {
       super(loginFormUrl);
     }
 
@@ -359,7 +359,7 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
         final HttpServletRequest request,
         final HttpServletResponse response,
         final AuthenticationException exception) {
-      String redirect = super.determineUrlToUseForThisRequest(request, response, exception);
+      final String redirect = super.determineUrlToUseForThisRequest(request, response, exception);
       return UriComponentsBuilder.fromPath(getClusterIdPath() + redirect).toUriString();
     }
   }

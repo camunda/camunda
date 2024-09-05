@@ -216,8 +216,8 @@ test.describe('task details page', () => {
     await expect(tasksPage.unassignButton).toBeVisible();
     await page.getByLabel('Client Name*').fill('Jon');
     await page.getByLabel('Client Address*').fill('Earth');
-    await taskFormView.fillDateField('Invoice Date*', '1/1/3000');
-    await taskFormView.fillDateField('Due Date*', '1/2/3000');
+    await taskFormView.fillDatetimeField('Invoice Date', '1/1/3000');
+    await taskFormView.fillDatetimeField('Due Date', '1/2/3000');
     await page.getByLabel('Invoice Number*').fill('123');
 
     await taskFormView.selectDropdownOption(
@@ -394,6 +394,8 @@ test.describe('task details page', () => {
     await expect(taskFormView.numberInput).toHaveValue('2');
     await taskFormView.decrementButton.click();
     await expect(taskFormView.numberInput).toHaveValue('1');
+    await taskFormView.numberInput.focus();
+    await page.keyboard.press('Tab');
     await tasksPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
@@ -411,8 +413,8 @@ test.describe('task details page', () => {
     await tasksPage.openTask('Date and Time Task');
     await tasksPage.assignToMeButton.click();
 
-    await taskFormView.fillDate('1/1/3000');
-    await taskFormView.enterTime('12:00 PM');
+    await taskFormView.fillDatetimeField('Date', '1/1/3000');
+    await taskFormView.fillDatetimeField('Time', '12:00 PM');
     await tasksPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 

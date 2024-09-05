@@ -75,13 +75,13 @@
     {
       "description": "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
       "matchManagers": ["maven"],
-      "matchPackagePrefixes": [".*"],
+      "matchPackagePatterns": [".*"],
       "allowedVersions": "!/-SNAPSHOT$/"
     },
     {
       "description": "Exclude internal Maven modules and Maven dependencies lacking metadata.",
       "matchManagers": ["maven"],
-      "matchPackagePrefixes": [
+      "matchPackagePatterns": [
         "io.camunda:operate-parent",
         "io.camunda:operate-qa",
         "io.camunda:operate-qa-migration-tests-parent",
@@ -95,7 +95,7 @@
       "description": "Exclude frontend deps until migration is done in Operate (see issues #17736, #17844, #18851)",
       "matchManagers": ["npm", "nvm"],
       "matchFileNames": ["operate/**"],
-      "matchPackagePrefixes": [
+      "matchPackagePatterns": [
         "react-router-dom",
         "msw",
         "@carbon/react"
@@ -111,7 +111,7 @@
       "description": "Exclude frontend deps until Optimize migrates to react-router v6 and react v18",
       "matchManagers": ["npm", "nvm"],
       "matchFileNames": ["optimize/**"],
-      "matchPackagePrefixes": [
+      "matchPackagePatterns": [
         "@carbon/react",
         "old-bpmn-js",
         "react",
@@ -125,20 +125,10 @@
       "enabled": false
     },
     {
-      "description": "Do not update node-fetch to v3 in optimize related projects",
-      "matchManagers": ["npm", "nvm"],
-      "matchFileNames": [
-        "optimize/**",
-        ".github/optimize/scripts/healthStatusReport/**"
-      ],
-      "matchPackagePrefixes": ["node-fetch"],
-      "enabled": false
-    },
-    {
       "description": "Exclude Optimize backend dependencies",
       "matchManagers": ["maven"],
       "matchFileNames": ["optimize/**"],
-      "matchPackagePrefixes": [
+      "matchPackagePatterns": [
         "io.camunda.optimize:optimize-data-generator",
         "io.camunda.optimize:camunda-optimize",
         "io.camunda.optimize:util",
@@ -151,7 +141,7 @@
       "enabled": false
     },
     {
-      "matchPackagePrefixes": ["mcr.microsoft.com/playwright"],
+      "matchPackageNames": ["mcr.microsoft.com/playwright"],
       "additionalBranchPrefix": "fe-"
     },
     {
@@ -168,7 +158,7 @@
     },
     {
       "matchManagers": ["npm", "nvm"],
-      "matchPackagePrefixes": ["*"],
+      "matchPackagePatterns": ["*"],
       "matchUpdateTypes": ["patch"],
       "groupName": "all non-major dependencies",
       "groupSlug": "all-minor-patch"
@@ -178,19 +168,19 @@
       "matchFileNames": [
         ".github/workflows/*.yml"
       ],
-      "matchPackagePrefixes": [
+      "matchPackageNames": [
         "rhysd/actionlint"
       ],
       "extractVersion": "^v(?<version>.*)$"
     },
     {
       "description": "Both dependencies need to be updated at once for green CI.",
-      "matchPackagePrefixes": ["@playwright/test", "mcr.microsoft.com/playwright"],
+      "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
       "groupName": "playwright"
     },
     {
       "description": "Automerge all updates with green CI.",
-      "matchPackagePrefixes": ["*"],
+      "matchPackagePatterns": ["*"],
       "automerge": true,
       "addLabels": ["automerge"]
     }

@@ -1,0 +1,20 @@
+{
+  "components": [
+    {
+      "label": "Number",
+      "type": "number",
+      "id": "Field_1ojq0w2",
+      "key": "field_16vwphu"
+    }
+  ],
+  "type": "default",
+  "id": "Form_0w7r08e",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.1.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.9.0"
+  },
+  "schemaVersion": 7,
+  "versionTag": "v2.0"
+}

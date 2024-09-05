@@ -8,6 +8,7 @@
 package io.camunda.service;
 
 import io.camunda.service.license.CamundaLicense;
+import io.camunda.service.license.LicenseType;
 
 public final class ManagementServices {
 
@@ -21,7 +22,7 @@ public final class ManagementServices {
     return license.isValid();
   }
 
-  public String getCamundaLicenseType() {
+  public LicenseType getCamundaLicenseType() {
     return license.getLicenseType();
   }
 }

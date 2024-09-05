@@ -43,12 +43,6 @@
     "rightsReserved": "All Rights Reserved",
     "timezone": "Date and time displayed in local timezone:"
   },
-  "license": {
-    "nonProduction": "Non-Production License",
-    "referTo": "If you would like information on production usage, please refer to our",
-    "terms": "terms & conditions",
-    "contactSales": "contact sales"
-  },
   "saveGuard": {
     "header": "Unsaved changes",
     "text": "The {label} has unsaved changes. Save before continuing?",
@@ -89,7 +83,6 @@
     },
     "title": "Collections, dashboards, and reports",
     "contents": "Contents",
-    "members": "Members",
     "search": {
       "generic": "Type to search....",
       "name": "Search for name..."
@@ -97,7 +90,6 @@
     "collectionTitle": "Dashboards and reports",
     "collectionTitleWithAmpersand": "Dashboards & reports",
     "userTitle": "Users",
-    "userGroupsTitle": "Users and user groups",
     "copy": {
       "subEntity": "This {entityType} contains 1 report. It will be copied, too.",
       "subEntities": "This {entityType} contains {number} reports. They will be copied, too.",
@@ -114,7 +106,6 @@
     },
     "roles": {
       "addUserTitle": "Add user",
-      "addUserGroupTitle": "Add user or user group",
       "userRole": "User role",
       "role": "Role",
       "viewer": "Viewer",
@@ -123,7 +114,7 @@
       "editor-description": "Create, edit, and delete dashboards, reports, and alerts",
       "manager": "Manager",
       "manager-description": "Full rights editing collections and users",
-      "existing-identity": "A user or a group with this id already exists",
+      "existing-identity": "A user with this id already exists",
       "inCollection": "in this collection",
       "deleteWarning": "The '{name}' {type} will be removed from the collection."
     },
@@ -307,7 +298,6 @@
       "endDate": "End date",
       "variable": "Variable",
       "userAssignee": "Assignee",
-      "userGroup": "Candidate group",
       "evaluationDate": "Evaluation date",
       "rules": "Rules",
       "inputVariable": "Input variable",
@@ -735,7 +725,7 @@
       "label": "Add a filter",
       "viewLabel": "Filter report data",
       "disabledVariable": "Variable filters are only available for dashboards that contain at least one report.",
-      "disabledAssignee": "Assignee and candidate group filters are only available for dashboards that contain at least one report.",
+      "disabledAssignee": "Assignee filters are only available for dashboards that contain at least one report.",
       "resetAll": "Reset all",
       "operatorLink": "Values linked by {operator} logic",
       "multiple": "multiple",
@@ -1028,11 +1018,6 @@
       "label-plural": "Users",
       "id": "User ID"
     },
-    "user-group": {
-      "label": "User group",
-      "label-plural": "User groups",
-      "id": "User group ID"
-    },
     "collection": {
       "label": "Collection",
       "label-plural": "Collections",
@@ -1121,7 +1106,6 @@
         "instanceState": "Instance state",
         "date": "Instance date",
         "assignee": "Assignee",
-        "candidateGroup": "Candidate group",
         "instanceStartDate": "Start date",
         "instanceEndDate": "End date",
         "instance": "Process instance",
@@ -1282,8 +1266,7 @@
         "includeOnly": "Include only",
         "excludeOnly": "Exclude only",
         "type": {
-          "assignee": "Assignees",
-          "candidateGroup": "Candidate groups"
+          "assignee": "Assignees"
         },
         "unassigned": "unassigned",
         "selectValue": "Filter for ID"
@@ -1334,7 +1317,6 @@
         "dashboard": "Dashboard",
         "alert": "Alert",
         "user": "User",
-        "group": "Group",
         "source": "Data source",
         "collection": "Collection",
         "process": "Process",

@@ -498,7 +498,7 @@ public class VariableZeebeImportIT extends OperateZeebeAbstractIT {
             .andReturn();
 
     assertThat(mvcResult.getResolvedException().getMessage())
-        .isEqualTo("ScopeId must be specifies in the request.");
+        .isEqualTo("ScopeId must be specified in the request.");
   }
 
   private void assertVariable(

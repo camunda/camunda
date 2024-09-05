@@ -19,6 +19,8 @@ import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.ClockPinCommandStep1;
+import io.camunda.zeebe.client.api.command.ClockResetCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
@@ -33,12 +35,15 @@ import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionRequirementsQuery;
+import io.camunda.zeebe.client.api.search.query.IncidentQuery;
 import io.camunda.zeebe.client.api.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.UserTaskQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
@@ -566,6 +571,111 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   UnassignUserTaskCommandStep1 newUserTaskUnassignCommand(long userTaskKey);
 
   /**
+   * Command to update the retries and/or the timeout of a job.
+   *
+   * <pre>
+   * JobChangeset changeset= ..;
+   *
+   * zeebeClient
+   *  .newUpdateCommand(jobKey)
+   *  .update(changeset)
+   *  .send();
+   * </pre>
+   *
+   * <p>If the given retries are greater than zero then this job will be picked up again by a job
+   * worker. This will not close a related incident, which still has to be marked as resolved with
+   * {@link #newResolveIncidentCommand newResolveIncidentCommand(long incidentKey)} .
+   *
+   * <p>Timeout value in millis is used to calculate a new job deadline. This will happen when the
+   * command to update the timeline is processed. The timeout value will be added to the current
+   * time then.
+   *
+   * @param jobKey the key of the job to update
+   * @return a builder for the command
+   */
+  UpdateJobCommandStep1 newUpdateJobCommand(long jobKey);
+
+  /**
+   * Command to update the retries and/or the timeout of a job.
+   *
+   * <pre>
+   * ActivatedJob job= ..;
+   * JobChangeset changeset= ..;
+   *
+   * zeebeClient
+   *  .newUpdateCommand(job)
+   *  .update(changeset)
+   *  .send();
+   * </pre>
+   *
+   * <p>If the given retries are greater than zero then this job will be picked up again by a job
+   * worker. This will not close a related incident, which still has to be marked as resolved with
+   * {@link #newResolveIncidentCommand newResolveIncidentCommand(long incidentKey)} .
+   *
+   * <p>Timeout value in millis is used to calculate a new job deadline. This will happen when the
+   * command to update the timeline is processed. The timeout value will be added to the current
+   * time then.
+   *
+   * @param job the activated job
+   * @return a builder for the command
+   */
+  UpdateJobCommandStep1 newUpdateJobCommand(ActivatedJob job);
+
+  /**
+   * Command to pin the Zeebe engine's internal clock to a specific time.
+   *
+   * <p>This method initiates a command to pin the clock to a specified time. You can specify the
+   * time using either an epoch timestamp in milliseconds or an {@link java.time.Instant} object.
+   *
+   * <p>Once pinned, the clock will remain at the specified time and will not advance until another
+   * <code>pin</code> or <code>reset</code> command is issued. This is useful for scenarios where
+   * you need to simulate process execution at a specific point in time.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * final long pinnedTime = 1742461285000L; // Thu, Mar 20, 2025 09:01:25 GMT+0000
+   * zeebeClient
+   *  .newClockPinCommand()
+   *  .time(pinnedTime)
+   *  .send();
+   *
+   * final Instant futureInstant = Instant.now().plus(Duration.ofDays(7));
+   * zeebeClient
+   *  .newClockPinCommand()
+   *  .time(futureInstant)
+   *  .send();
+   * }</pre>
+   *
+   * <p>The command is marked as <strong>experimental</strong> and may undergo changes or
+   * improvements in future releases.
+   *
+   * @return a builder for the command that allows setting either a timestamp or an instant
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/21647")
+  ClockPinCommandStep1 newClockPinCommand();
+
+  /**
+   * Command to reset the Zeebe engine's internal clock to the system time.
+   *
+   * <p>This command allows you to reset the clock to the current system time, effectively undoing
+   * any previous <code>pin</code> command that may have set the clock to a specific, static time.
+   *
+   * <pre>{@code
+   * zeebeClient
+   *  .newClockResetCommand()
+   *  .send();
+   * }</pre>
+   *
+   * <p>The command is marked as <strong>experimental</strong> and may undergo changes or
+   * improvements in future releases.
+   *
+   * @return a builder for the command
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/21647")
+  ClockResetCommandStep1 newClockResetCommand();
+
+  /**
    * Executes a search request to query process instances.
    *
    * <pre>
@@ -656,8 +766,55 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * warning is removed, anything described below may not yet have taken effect, and the interface
    * and its description are subject to change.</strong>
    *
-   * @return a builder for the decision requirements query
+   * @return a builder for the decision definition query
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   DecisionDefinitionQuery newDecisionDefinitionQuery();
+
+  /*
+   * Retrieves the XML representation of a decision definition.
+   *
+   * <pre>
+   * long decisionKey = ...;
+   *
+   * zeebeClient
+   *  .newDecisionDefinitionGetXmlRequest(decisionKey)
+   *  .send();
+   * </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @return a builder for the request to get the XML of a decision definition
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  DecisionDefinitionGetXmlRequest newDecisionDefinitionGetXmlRequest(long decisionKey);
+
+  /*
+   * Executes a search request to query decision definitions.
+   *
+   * <pre>
+   * long decisionDefinitionKey = ...;
+   *
+   * zeebeClient
+   *  .newIncidentQuery()
+   *  .filter((f) -> f.processInstanceKey(processInstanceKey))
+   *  .sort((s) -> s.processDefinitionKey().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @return a builder for the incident query
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  IncidentQuery newIncidentQuery();
 }

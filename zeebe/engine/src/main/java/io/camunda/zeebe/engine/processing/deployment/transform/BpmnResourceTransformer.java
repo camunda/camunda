@@ -23,6 +23,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeVersionTag;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.io.DirectBufferInputStream;
@@ -202,6 +204,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
           .setResourceName(deploymentResource.getResourceNameBuffer())
           .setTenantId(tenantId)
           .setDeploymentKey(deploymentEvent.getDeploymentKey());
+      getOptionalVersionTag(process).ifPresent(processMetadata::setVersionTag);
 
       final var isDuplicate =
           isDuplicateOfLatest(deploymentResource, resourceDigest, lastProcess, lastDigest);
@@ -222,6 +225,11 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     return modelInstance.getDefinitions().getChildElementsByType(Process.class).stream()
         .filter(Process::isExecutable)
         .toList();
+  }
+
+  private Optional<String> getOptionalVersionTag(final Process process) {
+    return Optional.ofNullable(process.getSingleExtensionElement(ZeebeVersionTag.class))
+        .map(ZeebeVersionTag::getValue);
   }
 
   private boolean isDuplicateOfLatest(

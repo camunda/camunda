@@ -13,6 +13,7 @@ type ProcessVersionDto = {
   id: string;
   name: string;
   version: number;
+  versionTag: string | null;
 };
 
 type ProcessDto = {

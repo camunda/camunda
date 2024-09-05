@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
 import io.camunda.zeebe.engine.state.clock.DbClockState;
 import io.camunda.zeebe.engine.state.compensation.DbCompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
+import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableClockState;
 import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionState;
@@ -53,12 +55,14 @@ import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
+import io.camunda.zeebe.engine.state.routing.DbRoutingState;
 import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.user.DbUserState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
@@ -98,6 +102,9 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableCompensationSubscriptionState compensationSubscriptionState;
   private final MutableUserState userState;
   private final MutableClockState clockState;
+  private final MutableAuthorizationState authorizationState;
+  private final MutableRoutingState routingState;
+
   private final int partitionId;
 
   public ProcessingDbState(
@@ -143,6 +150,8 @@ public class ProcessingDbState implements MutableProcessingState {
         new DbCompensationSubscriptionState(zeebeDb, transactionContext);
     userState = new DbUserState(zeebeDb, transactionContext);
     clockState = new DbClockState(zeebeDb, transactionContext);
+    authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
+    routingState = new DbRoutingState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -261,6 +270,16 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableUserState getUserState() {
     return userState;
+  }
+
+  @Override
+  public MutableAuthorizationState getAuthorizationState() {
+    return authorizationState;
+  }
+
+  @Override
+  public MutableRoutingState getRoutingState() {
+    return routingState;
   }
 
   @Override

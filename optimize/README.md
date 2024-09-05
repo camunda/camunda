@@ -9,8 +9,8 @@ business processes.
 
 ## Building Optimize
 
-Apache Maven 3 and Java JDK 17 are prerequisites for building Camunda
-Optimize. Once you have setup Java and Maven, run
+Apache Maven 3 and Java JDK 21 are prerequisites for building Camunda
+Optimize. Once you have set up Java and Maven, run
 
 ```
 mvn clean install
@@ -42,30 +42,7 @@ Learn how to build, debug, test and more in the back-end in the [Back-End README
 
 ### Docker
 
-You can start the platform (with C7 engine) with H2 by issuing:
-
-```
-docker-compose up -d
-```
-
-If you need a postgres backend for the engine, you can use a different docker-compose
-file. In this case the command is: ``` docker-compose -f
-docker-compose.postgresql.yml up -d ```
-
-This will start Elasticsearch and a PostgreSQL-backed Camunda Platform 7 instance.
-The services are exposed to localhost on the following ports:
-
-- Elasticsearch: 9200, 9300
-- PostgreSQL: 5432
-- CamBPM: 8080
-
-Services can be shutdown again using
-
-```
-docker-compose down
-```
-
-You can also run Optimize in C8SM mode (Self-managed C8 Engine) by running the following command
+You can run Optimize in C8SM mode (Self-managed C8 Engine) by running the following command
 
 ```
 docker-compose -f docker-compose.ccsm-with-optimize.yml up -d
@@ -104,24 +81,14 @@ docker login registry.camunda.cloud
 
 You can use your LDAP credentials to continue the authentication.
 
-# Supporting multiple versions of Camunda Platform
-
-Optimize supports multiple versions of Camunda Platform 7. It is possible to use these
-versions by specifying different maven profiles. In particular, you can
-have a look at the root pom.xml files. It contains a profile for every
-version that Optimize supports (e.s. engine-latest, engine-7.11).
-
 ## Running integration tests locally
 
 You can run locally integration tests using maven. The command to run the
 tests is the following:
 
 ```
-mvn -Pit,engine-latest -pl backend -am clean install
+mvn -Pit -pl backend -am clean install
 ```
-
-You can replace the profile `engine-latest` with the version of Camunda Platform 7 you
-want to test against.
 
 ## Debugging integration tests locally with IntelliJ
 
@@ -139,17 +106,8 @@ $ docker compose up -d
 Once the containers are running, you need to prepare the test environment:
 
 ```bash
-$ mvn pre-integration-test -Pit,engine-latest -pl backend -am -Dskip.fe.build
+$ mvn pre-integration-test -Pit -pl backend -am -Dskip.fe.build
 ```
 
 After this, you are free to set breakpoints in the code and debug any integration test using
 IntelliJ.
-
-## Modifying Camunda Platform 7 version being tested
-
-Whenever there is a new release of the platform, we need to update the
-`pom.xml` file, in order to test against the latest codebase.
-
-The version that each profile is pulling is stored in the
-`camunda.engine.version` property of the corresponding profile. Just
-update this version with the updated version.

@@ -26,5 +26,9 @@ public class UserEventProcessors {
         ValueType.USER,
         UserIntent.CREATE,
         new UserCreateProcessor(keyGenerator, processingState, writers, distributionBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.USER,
+        UserIntent.UPDATE,
+        new UserUpdateProcessor(keyGenerator, processingState, writers, distributionBehavior));
   }
 }
