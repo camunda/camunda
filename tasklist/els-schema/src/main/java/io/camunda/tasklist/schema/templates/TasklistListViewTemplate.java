@@ -12,8 +12,6 @@ import static java.util.Optional.of;
 
 import io.camunda.tasklist.schema.backup.Prio3Backup;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -122,13 +120,6 @@ public class TasklistListViewTemplate extends AbstractTemplateDescriptor impleme
       default:
         return empty();
     }
-  }
-
-  public static Set<String> getElsFieldsByGraphqlFields(final Set<String> fieldNames) {
-    return fieldNames.stream()
-        .map((fn) -> getElsFieldByGraphqlField(fn))
-        .flatMap(Optional::stream)
-        .collect(Collectors.toSet());
   }
 
   @Override

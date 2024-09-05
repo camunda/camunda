@@ -84,6 +84,9 @@ public class UserTaskListViewEntity {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Integer priority;
 
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private ListViewJoinRelation join;
+
   public String getId() {
     return id;
   }
@@ -277,7 +280,8 @@ public class UserTaskListViewEntity {
     return processDefinitionVersion;
   }
 
-  public UserTaskListViewEntity setProcessDefinitionVersion(final Integer processDefinitionVersion) {
+  public UserTaskListViewEntity setProcessDefinitionVersion(
+      final Integer processDefinitionVersion) {
     this.processDefinitionVersion = processDefinitionVersion;
     return this;
   }
@@ -297,6 +301,15 @@ public class UserTaskListViewEntity {
 
   public UserTaskListViewEntity setPriority(final Integer priority) {
     this.priority = priority;
+    return this;
+  }
+
+  public ListViewJoinRelation getJoin() {
+    return join;
+  }
+
+  public UserTaskListViewEntity setJoin(final ListViewJoinRelation join) {
+    this.join = join;
     return this;
   }
 }

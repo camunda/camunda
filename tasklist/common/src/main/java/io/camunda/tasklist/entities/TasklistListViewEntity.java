@@ -53,7 +53,8 @@ public class TasklistListViewEntity {
     return userTaskListViewEntity;
   }
 
-  public TasklistListViewEntity setUserTaskEntity(final UserTaskListViewEntity userTaskListViewEntity) {
+  public TasklistListViewEntity setUserTaskEntity(
+      final UserTaskListViewEntity userTaskListViewEntity) {
     this.userTaskListViewEntity = userTaskListViewEntity;
     return this;
   }
@@ -62,7 +63,8 @@ public class TasklistListViewEntity {
     return variableListViewEntity;
   }
 
-  public TasklistListViewEntity setVariableEntity(final VariableListViewEntity variableListViewEntity) {
+  public TasklistListViewEntity setVariableEntity(
+      final VariableListViewEntity variableListViewEntity) {
     this.variableListViewEntity = variableListViewEntity;
     return this;
   }
@@ -71,7 +73,8 @@ public class TasklistListViewEntity {
     return listViewJoinRelation;
   }
 
-  public TasklistListViewEntity setListViewJoinRelation(final ListViewJoinRelation listViewJoinRelation) {
+  public TasklistListViewEntity setListViewJoinRelation(
+      final ListViewJoinRelation listViewJoinRelation) {
     this.listViewJoinRelation = listViewJoinRelation;
     return this;
   }
