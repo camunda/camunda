@@ -480,7 +480,7 @@ public class MigrateProcessInstanceRejectionTest {
 
   @Test
   public void
-      shouldRejectCommandWhenTheMigratedProcessInstanceContainsATaskSubscribedToABoundaryEvent() {
+      shouldRejectCommandWhenTheMigratedProcessInstanceHasATaskSubscribedToAnErrorBoundaryEvent() {
     // given
     final var deployment =
         ENGINE
@@ -489,8 +489,8 @@ public class MigrateProcessInstanceRejectionTest {
                 Bpmn.createExecutableProcess("process")
                     .startEvent("start")
                     .serviceTask("A", t -> t.zeebeJobType("A"))
-                    .boundaryEvent("boundary")
-                    .signal("signal")
+                    .boundaryEvent("boundaryEvent")
+                    .error("ERROR")
                     .endEvent()
                     .moveToActivity("A")
                     .endEvent("end")
@@ -505,8 +505,8 @@ public class MigrateProcessInstanceRejectionTest {
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
-    RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
-        .withSignalName("signal")
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withElementId("A")
         .await();
 
     final long targetProcessDefinitionKey =
@@ -532,7 +532,7 @@ public class MigrateProcessInstanceRejectionTest {
         .hasRejectionReason(
             """
                 Expected to migrate process instance '%s' \
-                but active element with id 'A' has one or more boundary events of types 'SIGNAL'. \
+                but active element with id 'A' has one or more boundary events of types 'ERROR'. \
                 Migrating active elements with boundary events of these types is not possible yet."""
                 .formatted(processInstanceKey))
         .hasKey(processInstanceKey);
@@ -744,7 +744,7 @@ public class MigrateProcessInstanceRejectionTest {
 
   @Test
   public void
-      shouldRejectCommandWhenTheTargetProcessDefinitionContainsATaskSubscribedToABoundaryEvent() {
+      shouldRejectCommandWhenTheTargetProcessDefinitionHasATaskSubscribedToAnErrorBoundaryEvent() {
     // given
     final var deployment =
         ENGINE
@@ -760,7 +760,7 @@ public class MigrateProcessInstanceRejectionTest {
                     .startEvent()
                     .serviceTask("A", t -> t.zeebeJobType("A"))
                     .boundaryEvent("boundary")
-                    .signal("signal")
+                    .error("ERROR")
                     .endEvent()
                     .moveToActivity("A")
                     .endEvent("end")
@@ -796,7 +796,7 @@ public class MigrateProcessInstanceRejectionTest {
         .hasRejectionReason(
             """
             Expected to migrate process instance '%s' \
-            but target element with id 'A' has one or more boundary events of types 'SIGNAL'. \
+            but target element with id 'A' has one or more boundary events of types 'ERROR'. \
             Migrating target elements with boundary events of these types is not possible yet."""
                 .formatted(processInstanceKey))
         .hasKey(processInstanceKey);
@@ -1162,6 +1162,68 @@ public class MigrateProcessInstanceRejectionTest {
             '[DURATION, PERIOD, STRING]', but was 'NULL'. \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'invalid_timer_expression'"""
+                .formatted(processInstanceKey));
+  }
+
+  @Test
+  public void shouldRejectWhenUnableToSubscribeToSignalBoundaryEvent() {
+    // given
+    final String processId = "process";
+    final String targetProcessId = "process2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("B")
+                    .boundaryEvent("boundary")
+                    .signal(signal -> signal.nameExpression("invalid_signal_expression"))
+                    .endEvent()
+                    .moveToActivity("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractTargetProcessDefinitionKey(deployment, targetProcessId);
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("A", "B")
+            .expectRejection()
+            .migrate();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("Expect that the message boundary event could not be subscribed")
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            """
+            Expected to migrate process instance '%s' but active element with id 'A' \
+            is mapped to element with id 'B' that must be subscribed to a catch event. \
+            Expected result of the expression 'invalid_signal_expression' to be \
+            'STRING', but was 'NULL'. \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'invalid_signal_expression'"""
                 .formatted(processInstanceKey));
   }
 

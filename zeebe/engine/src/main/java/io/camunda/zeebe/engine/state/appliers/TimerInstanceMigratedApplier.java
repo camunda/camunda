@@ -13,11 +13,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 
-public class TimerMigrationApplier implements TypedEventApplier<TimerIntent, TimerRecord> {
+public class TimerInstanceMigratedApplier implements TypedEventApplier<TimerIntent, TimerRecord> {
 
   private final MutableTimerInstanceState timerInstanceState;
 
-  public TimerMigrationApplier(final MutableTimerInstanceState timerInstanceState) {
+  public TimerInstanceMigratedApplier(final MutableTimerInstanceState timerInstanceState) {
     this.timerInstanceState = timerInstanceState;
   }
 
