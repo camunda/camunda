@@ -420,7 +420,7 @@ public class OpensearchConnector {
                   (httpRequest, entityDetails, httpContext) -> {
                     final var customHeader =
                         ThreadContextUtil.supplyWithClassLoader(
-                            dchs::getElasticsearchCustomHeader, classLoader);
+                            dchs::getSearchDatabaseCustomHeader, classLoader);
                     httpRequest.addHeader(customHeader.key(), customHeader.value());
                   });
             } else {

@@ -16,7 +16,7 @@ public class TestStaticCustomHeaderInterceptor implements DatabaseCustomHeaderSu
   public static final String X_CUSTOM_HEADER_VALUE = "MyValue";
 
   @Override
-  public CustomHeader getElasticsearchCustomHeader() {
+  public CustomHeader getSearchDatabaseCustomHeader() {
     return new CustomHeader(X_CUSTOM_HEADER, X_CUSTOM_HEADER_VALUE);
   }
 }

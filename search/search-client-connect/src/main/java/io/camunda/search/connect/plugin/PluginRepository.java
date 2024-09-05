@@ -139,6 +139,6 @@ public final class PluginRepository implements AutoCloseable {
   private DatabaseCustomHeaderSupplier instrumented(final DatabaseCustomHeaderSupplier supplier) {
     return () ->
         ThreadContextUtil.supplyWithClassLoader(
-            supplier::getElasticsearchCustomHeader, supplier.getClass().getClassLoader());
+            supplier::getSearchDatabaseCustomHeader, supplier.getClass().getClassLoader());
   }
 }

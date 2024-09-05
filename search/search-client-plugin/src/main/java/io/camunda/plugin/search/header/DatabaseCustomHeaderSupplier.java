@@ -18,5 +18,5 @@ package io.camunda.plugin.search.header;
 public interface DatabaseCustomHeaderSupplier {
 
   /** Fetches any additional headers to be used in requests to ElasticSearch or OpenSearch */
-  CustomHeader getElasticsearchCustomHeader();
+  CustomHeader getSearchDatabaseCustomHeader();
 }
