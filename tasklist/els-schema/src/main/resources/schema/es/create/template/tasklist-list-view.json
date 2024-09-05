@@ -6,8 +6,13 @@
         "type": "join",
         "eager_global_ordinals": true,
         "relations": {
-          "task": ["taskVariable"],
-          "process": ["processVariable","task"]
+          "task": [
+            "taskVariable"
+          ],
+          "process": [
+            "processVariable",
+            "task"
+          ]
         }
       },
       "flowNodeBpmnId": {
@@ -90,18 +95,18 @@
       "priority": {
         "type": "integer"
       },
-      "varName": {
+      "name": {
         "type": "keyword"
       },
-      "varValue": {
+      "value": {
         "type": "keyword",
         "ignore_above": 8191
       },
-      "varFullValue": {
+      "fullValue": {
         "type": "keyword",
         "ignore_above": 8191
       },
-      "varScopeKey": {
+      "scopeKey": {
         "type": "keyword"
       },
       "isPreview": {
