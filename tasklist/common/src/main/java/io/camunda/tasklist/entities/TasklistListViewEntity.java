@@ -14,7 +14,7 @@ import io.camunda.tasklist.entities.listview.UserTaskListViewEntity;
 import io.camunda.tasklist.entities.listview.VariableListViewEntity;
 
 public class TasklistListViewEntity {
-  private String dataType;
+  private DocumentNodeType dataType;
 
   // This is only used to persist the Parent/Child relation
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -30,11 +30,11 @@ public class TasklistListViewEntity {
   private ListViewJoinRelation listViewJoinRelation;
 
   // Get and Set methods
-  public String getDataType() {
+  public DocumentNodeType getDataType() {
     return dataType;
   }
 
-  public TasklistListViewEntity setDataType(final String dataType) {
+  public TasklistListViewEntity setDataType(final DocumentNodeType dataType) {
     this.dataType = dataType;
     return this;
   }
@@ -53,7 +53,8 @@ public class TasklistListViewEntity {
     return userTaskListViewEntity;
   }
 
-  public TasklistListViewEntity setUserTaskEntity(final UserTaskListViewEntity userTaskListViewEntity) {
+  public TasklistListViewEntity setUserTaskEntity(
+      final UserTaskListViewEntity userTaskListViewEntity) {
     this.userTaskListViewEntity = userTaskListViewEntity;
     return this;
   }
@@ -62,7 +63,8 @@ public class TasklistListViewEntity {
     return variableListViewEntity;
   }
 
-  public TasklistListViewEntity setVariableEntity(final VariableListViewEntity variableListViewEntity) {
+  public TasklistListViewEntity setVariableEntity(
+      final VariableListViewEntity variableListViewEntity) {
     this.variableListViewEntity = variableListViewEntity;
     return this;
   }
@@ -71,7 +73,8 @@ public class TasklistListViewEntity {
     return listViewJoinRelation;
   }
 
-  public TasklistListViewEntity setListViewJoinRelation(final ListViewJoinRelation listViewJoinRelation) {
+  public TasklistListViewEntity setListViewJoinRelation(
+      final ListViewJoinRelation listViewJoinRelation) {
     this.listViewJoinRelation = listViewJoinRelation;
     return this;
   }

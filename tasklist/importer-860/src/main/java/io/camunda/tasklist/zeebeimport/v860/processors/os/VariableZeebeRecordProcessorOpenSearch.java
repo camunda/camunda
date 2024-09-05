@@ -105,7 +105,8 @@ public class VariableZeebeRecordProcessorOpenSearch {
 
     if (isTaskOrSubProcessVariable(variableEntity)) {
       tasklistListViewEntity = associateVariableWithTask(tasklistListViewEntity);
-      return prepareUpdateRequest(tasklistListViewEntity, tasklistListViewEntity.getVarScopeKey());
+      return prepareUpdateRequest(
+          tasklistListViewEntity, tasklistListViewEntity.getVariableEntity().getScopeKey());
     } else if (isProcessScope(variableEntity)) {
       tasklistListViewEntity = associateVariableWithProcess(variableEntity, tasklistListViewEntity);
       return prepareUpdateRequest(tasklistListViewEntity, variableEntity.getProcessInstanceId());
@@ -140,16 +141,18 @@ public class VariableZeebeRecordProcessorOpenSearch {
   private TasklistListViewEntity associateVariableWithTask(
       final TasklistListViewEntity tasklistListViewEntity) {
     return associateVariableWithParent(
-        tasklistListViewEntity, "taskVariable", tasklistListViewEntity.getVariableEntity().getScopeKey());
+        tasklistListViewEntity,
+        "taskVariable",
+        tasklistListViewEntity.getVariableEntity().getScopeKey());
   }
 
   private TasklistListViewEntity associateVariableWithParent(
-      final TasklistListViewEntity tasklistListViewEntity, final String name, final String parentId) {
-    final Map<String, Object> joinField = new HashMap<>();
-    joinField.put("name", name);
-    joinField.put("parent", parentId);
-    tasklistListViewEntity.;
-    return snapshot;
+      final TasklistListViewEntity tasklistListViewEntity,
+      final String name,
+      final String parentId) {
+    tasklistListViewEntity.getListViewJoinRelation().setName(name);
+    tasklistListViewEntity.getListViewJoinRelation().setParent(Long.valueOf(parentId));
+    return tasklistListViewEntity;
   }
 
   private boolean isProcessScope(final VariableEntity entity) {
@@ -188,7 +191,7 @@ public class VariableZeebeRecordProcessorOpenSearch {
 
   private BulkOperation prepareUpdateRequest(
       final TasklistListViewEntity tasklistListViewEntity, final String routingKey) {
-    tasklistListViewEntity.setDataType(String.valueOf(DocumentNodeType.VARIABLE));
+    tasklistListViewEntity.setDataType(DocumentNodeType.VARIABLE);
 
     return new BulkOperation.Builder()
         .update(

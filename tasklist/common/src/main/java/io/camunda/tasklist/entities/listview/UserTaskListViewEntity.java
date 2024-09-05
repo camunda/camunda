@@ -277,7 +277,8 @@ public class UserTaskListViewEntity {
     return processDefinitionVersion;
   }
 
-  public UserTaskListViewEntity setProcessDefinitionVersion(final Integer processDefinitionVersion) {
+  public UserTaskListViewEntity setProcessDefinitionVersion(
+      final Integer processDefinitionVersion) {
     this.processDefinitionVersion = processDefinitionVersion;
     return this;
   }

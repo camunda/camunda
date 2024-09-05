@@ -183,16 +183,16 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
 
   private BulkOperation persistFlowNodeDataToListView(
       final FlowNodeInstanceEntity flowNodeInstance) {
-    final TasklistListViewEntity entity = new TasklistListViewEntity();
+    final TasklistListViewEntity tasklistListViewEntity = new TasklistListViewEntity();
 
     final Map<String, Object> joinField = new HashMap<>();
     // Only the Parent Process will be persisted over here
     if (flowNodeInstance.getType().equals(FlowNodeType.PROCESS)) {
-      entity.setId(flowNodeInstance.getId());
-      joinField.put("name", "process");
-      entity.setJoin(joinField);
-      entity.setDataType(DocumentNodeType.valueOf(String.valueOf(DocumentNodeType.PROCESS)));
-      return getUpdateRequest(entity);
+      tasklistListViewEntity.getProcessInstanceEntity().setId(flowNodeInstance.getId());
+      tasklistListViewEntity.getListViewJoinRelation().setName("process");
+      tasklistListViewEntity.setDataType(
+          DocumentNodeType.valueOf(String.valueOf(DocumentNodeType.PROCESS)));
+      return getUpdateRequest(tasklistListViewEntity);
     } else {
       return null;
     }
@@ -204,7 +204,7 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
         .update(
             up ->
                 up.index(tasklistListViewTemplate.getFullQualifiedName())
-                    .id(tasklistListViewEntity.getId())
+                    .id(tasklistListViewEntity.getProcessInstanceEntity().getId())
                     .document(CommonUtils.getJsonObjectFromEntity(tasklistListViewEntity))
                     .docAsUpsert(true)
                     .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))

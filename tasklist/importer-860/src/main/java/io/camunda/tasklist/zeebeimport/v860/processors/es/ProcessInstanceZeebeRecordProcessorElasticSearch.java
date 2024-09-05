@@ -193,9 +193,8 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
     final Map<String, Object> joinField = new HashMap<>();
     // Only the Parent Process will be persisted over here
     if (flowNodeInstance.getType().equals(FlowNodeType.PROCESS)) {
-      tasklistListViewEntity.setId(flowNodeInstance.getId());
-      joinField.put("name", "process");
-      tasklistListViewEntity.setJoin(joinField);
+      tasklistListViewEntity.getProcessInstanceEntity().setId(flowNodeInstance.getId());
+      tasklistListViewEntity.getListViewJoinRelation().setName("process");
       tasklistListViewEntity.setDataType(
           DocumentNodeType.valueOf(String.valueOf(DocumentNodeType.PROCESS)));
       return getUpdateRequest(tasklistListViewEntity);
@@ -213,7 +212,7 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
       final UpdateRequest updateRequest =
           new UpdateRequest()
               .index(tasklistListViewTemplate.getFullQualifiedName())
-              .id(tasklistListViewEntity.getId())
+              .id(tasklistListViewEntity.getProcessInstanceEntity().getId())
               .upsert(objectMapper.writeValueAsString(tasklistListViewEntity), XContentType.JSON)
               .doc(jsonMap)
               .retryOnConflict(UPDATE_RETRY_COUNT);

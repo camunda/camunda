@@ -15,6 +15,7 @@ import io.camunda.tasklist.entities.DocumentNodeType;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.TasklistListViewEntity;
+import io.camunda.tasklist.entities.listview.UserTaskListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
@@ -138,49 +139,51 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
 
   private TasklistListViewEntity createTaskListViewInput(final TaskEntity taskEntity) {
     final TasklistListViewEntity tasklistListViewEntity = new TasklistListViewEntity();
+    final UserTaskListViewEntity userTaskListViewEntity =
+        tasklistListViewEntity.getUserTaskEntity();
     Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
-        .ifPresent(tasklistListViewEntity::setId); // The ID is necessary for the join
+        .ifPresent(userTaskListViewEntity::setId); // The ID is necessary for the join
     Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
-        .ifPresent(tasklistListViewEntity::setFlowNodeInstanceId);
+        .ifPresent(userTaskListViewEntity::setFlowNodeInstanceId);
     Optional.ofNullable(taskEntity.getProcessInstanceId())
-        .ifPresent(tasklistListViewEntity::setProcessInstanceId);
+        .ifPresent(userTaskListViewEntity::setProcessInstanceId);
     Optional.ofNullable(taskEntity.getFlowNodeBpmnId())
-        .ifPresent(tasklistListViewEntity::setTaskId);
+        .ifPresent(userTaskListViewEntity::setTaskId);
     Optional.ofNullable(taskEntity.getFlowNodeBpmnId())
-        .ifPresent(tasklistListViewEntity::setFlowNodeBpmnId);
-    Optional.of(taskEntity.getKey()).ifPresent(tasklistListViewEntity::setKey);
-    Optional.of(taskEntity.getPartitionId()).ifPresent(tasklistListViewEntity::setPartitionId);
+        .ifPresent(userTaskListViewEntity::setFlowNodeBpmnId);
+    Optional.of(taskEntity.getKey()).ifPresent(userTaskListViewEntity::setKey);
+    Optional.of(taskEntity.getPartitionId()).ifPresent(userTaskListViewEntity::setPartitionId);
     Optional.ofNullable(taskEntity.getCompletionTime())
         .map(Object::toString)
-        .ifPresent(tasklistListViewEntity::setCompletionTime);
-    Optional.ofNullable(taskEntity.getAssignee()).ifPresent(tasklistListViewEntity::setAssignee);
+        .ifPresent(userTaskListViewEntity::setCompletionTime);
+    Optional.ofNullable(taskEntity.getAssignee()).ifPresent(userTaskListViewEntity::setAssignee);
     Optional.ofNullable(taskEntity.getCreationTime())
         .map(Object::toString)
-        .ifPresent(tasklistListViewEntity::setCreationTime);
+        .ifPresent(userTaskListViewEntity::setCreationTime);
     Optional.ofNullable(taskEntity.getProcessDefinitionVersion())
-        .ifPresent(tasklistListViewEntity::setProcessDefinitionVersion);
-    Optional.ofNullable(taskEntity.getPriority()).ifPresent(tasklistListViewEntity::setPriority);
+        .ifPresent(userTaskListViewEntity::setProcessDefinitionVersion);
+    Optional.ofNullable(taskEntity.getPriority()).ifPresent(userTaskListViewEntity::setPriority);
     Optional.ofNullable(taskEntity.getCandidateGroups())
-        .ifPresent(tasklistListViewEntity::setCandidateGroups);
+        .ifPresent(userTaskListViewEntity::setCandidateGroups);
     Optional.ofNullable(taskEntity.getCandidateUsers())
-        .ifPresent(tasklistListViewEntity::setCandidateUsers);
+        .ifPresent(userTaskListViewEntity::setCandidateUsers);
     Optional.ofNullable(taskEntity.getBpmnProcessId())
-        .ifPresent(tasklistListViewEntity::setBpmnProcessId);
+        .ifPresent(userTaskListViewEntity::setBpmnProcessId);
     Optional.ofNullable(taskEntity.getProcessDefinitionId())
-        .ifPresent(tasklistListViewEntity::setProcessDefinitionId);
-    Optional.ofNullable(taskEntity.getTenantId()).ifPresent(tasklistListViewEntity::setTenantId);
+        .ifPresent(userTaskListViewEntity::setProcessDefinitionId);
+    Optional.ofNullable(taskEntity.getTenantId()).ifPresent(userTaskListViewEntity::setTenantId);
     Optional.ofNullable(taskEntity.getExternalFormReference())
-        .ifPresent(tasklistListViewEntity::setExternalFormReference);
+        .ifPresent(userTaskListViewEntity::setExternalFormReference);
     Optional.ofNullable(taskEntity.getCustomHeaders())
-        .ifPresent(tasklistListViewEntity::setCustomHeaders);
-    Optional.ofNullable(taskEntity.getFormKey()).ifPresent(tasklistListViewEntity::setFormKey);
-    Optional.ofNullable(taskEntity.getState()).ifPresent(tasklistListViewEntity::setState);
+        .ifPresent(userTaskListViewEntity::setCustomHeaders);
+    Optional.ofNullable(taskEntity.getFormKey()).ifPresent(userTaskListViewEntity::setFormKey);
+    Optional.ofNullable(taskEntity.getState()).ifPresent(userTaskListViewEntity::setState);
 
     // Set Join Field for the parent
-    final Map<String, Object> joinField = new HashMap<>();
-    joinField.put("name", "task");
-    joinField.put("parent", taskEntity.getProcessInstanceId());
-    tasklistListViewEntity.setJoin(joinField);
+    tasklistListViewEntity.getListViewJoinRelation().setName("task");
+    tasklistListViewEntity
+        .getListViewJoinRelation()
+        .setParent(Long.valueOf(String.valueOf(taskEntity.getProcessInstanceId())));
 
     tasklistListViewEntity.setDataType(
         DocumentNodeType.valueOf(String.valueOf(DocumentNodeType.USER_TASK)));
@@ -194,9 +197,9 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
           objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class);
       return new UpdateRequest()
           .index(tasklistListViewTemplate.getFullQualifiedName())
-          .id(entity.getId())
+          .id(entity.getUserTaskEntity().getId())
           .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-          .routing(entity.getProcessInstanceId())
+          .routing(entity.getUserTaskEntity().getProcessInstanceId())
           .doc(jsonMap)
           .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT);
     } catch (final IOException e) {
