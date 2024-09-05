@@ -26,7 +26,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-class SearchUserTaskTest {
+class UserTaskQueryTest {
   private static Long userTaskKeyTaskAssigned;
 
   @TestZeebe
