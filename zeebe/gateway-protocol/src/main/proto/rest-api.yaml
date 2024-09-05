@@ -810,7 +810,7 @@ paths:
       tags:
         - Authorization
       summary: Patch an authorization
-      description: Add or remove permissions to an authorization
+      description: Manage the permissions assigned to the authorization
       operationId: patchAuthorization
       parameters:
         - name: ownerKey
