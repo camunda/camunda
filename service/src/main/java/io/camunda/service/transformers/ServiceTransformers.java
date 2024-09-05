@@ -32,15 +32,7 @@ import io.camunda.service.search.query.UserQuery;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.query.VariableQuery;
 import io.camunda.service.search.result.QueryResultConfig;
-import io.camunda.service.search.sort.AuthorizationSort;
-import io.camunda.service.search.sort.DecisionDefinitionSort;
-import io.camunda.service.search.sort.DecisionRequirementsSort;
-import io.camunda.service.search.sort.IncidentSort;
-import io.camunda.service.search.sort.ProcessInstanceSort;
 import io.camunda.service.search.sort.SortOption;
-import io.camunda.service.search.sort.UserSort;
-import io.camunda.service.search.sort.UserTaskSort;
-import io.camunda.service.search.sort.VariableSort;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.filter.AuthenticationTransformer;
 import io.camunda.service.transformers.filter.AuthorizationFilterTransformer;
@@ -64,11 +56,14 @@ import java.util.Map;
 
 public final class ServiceTransformers {
 
-  private final Map<Class<?>, ServiceTransformer<?, ?>> transformers;
+  private final Map<Class<?>, ServiceTransformer<?, ?>> transformers = new HashMap<>();
 
-  public ServiceTransformers() {
-    transformers = new HashMap<>();
-    initializeTransformers(this);
+  private ServiceTransformers() {}
+
+  public static ServiceTransformers newInstance() {
+    final var serviceTransformers = new ServiceTransformers();
+    initializeTransformers(serviceTransformers);
+    return serviceTransformers;
   }
 
   public <F extends FilterBase, S extends SortOption>
@@ -93,29 +88,14 @@ public final class ServiceTransformers {
 
   public static void initializeTransformers(final ServiceTransformers mappers) {
     // query -> request
-    mappers.put(
-        ProcessInstanceQuery.class,
-        new TypedSearchQueryTransformer<ProcessInstanceFilter, ProcessInstanceSort>(mappers));
-    mappers.put(
-        UserTaskQuery.class,
-        new TypedSearchQueryTransformer<UserTaskFilter, UserTaskSort>(mappers));
-    mappers.put(
-        VariableQuery.class,
-        new TypedSearchQueryTransformer<VariableFilter, VariableSort>(mappers));
-    mappers.put(
-        DecisionDefinitionQuery.class,
-        new TypedSearchQueryTransformer<DecisionDefinitionFilter, DecisionDefinitionSort>(mappers));
-    mappers.put(
-        DecisionRequirementsQuery.class,
-        new TypedSearchQueryTransformer<DecisionRequirementsFilter, DecisionRequirementsSort>(
-            mappers));
-    mappers.put(UserQuery.class, new TypedSearchQueryTransformer<UserFilter, UserSort>(mappers));
-    mappers.put(
-        AuthorizationQuery.class,
-        new TypedSearchQueryTransformer<AuthorizationFilter, AuthorizationSort>(mappers));
-    mappers.put(
-        IncidentQuery.class,
-        new TypedSearchQueryTransformer<IncidentFilter, IncidentSort>(mappers));
+    mappers.put(ProcessInstanceQuery.class, new TypedSearchQueryTransformer<>(mappers));
+    mappers.put(UserTaskQuery.class, new TypedSearchQueryTransformer<>(mappers));
+    mappers.put(VariableQuery.class, new TypedSearchQueryTransformer<>(mappers));
+    mappers.put(DecisionDefinitionQuery.class, new TypedSearchQueryTransformer<>(mappers));
+    mappers.put(DecisionRequirementsQuery.class, new TypedSearchQueryTransformer<>(mappers));
+    mappers.put(UserQuery.class, new TypedSearchQueryTransformer<>(mappers));
+    mappers.put(AuthorizationQuery.class, new TypedSearchQueryTransformer<>(mappers));
+    mappers.put(IncidentQuery.class, new TypedSearchQueryTransformer<>(mappers));
 
     // search query response -> search query result
     mappers.put(SearchQueryResult.class, new SearchQueryResultTransformer());
