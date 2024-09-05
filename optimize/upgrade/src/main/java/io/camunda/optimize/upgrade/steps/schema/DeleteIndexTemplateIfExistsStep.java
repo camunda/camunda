@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.upgrade.steps.schema;
 
-import static io.camunda.optimize.service.db.schema.OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion;
 import static io.camunda.optimize.upgrade.steps.UpgradeStepType.SCHEMA_DELETE_TEMPLATE;
 
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
