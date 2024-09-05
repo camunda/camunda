@@ -23,7 +23,6 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.client.protocol.rest.UserWithPasswordRequest;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.Arrays;
 import java.util.Optional;
@@ -33,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 class DataInitializerTest {
@@ -61,7 +61,12 @@ class DataInitializerTest {
         .thenReturn(Optional.of(brokerHealthCheckService));
     when(brokerHealthCheckService.isBrokerHealthy()).thenReturn(true);
     dataInitializer =
-        new DataInitializer(userServices, passwordEncoder, brokerBridge, initDataProperties);
+        new DataInitializer(
+            userServices,
+            passwordEncoder,
+            brokerBridge,
+            initDataProperties,
+            new SimpleAsyncTaskExecutor());
   }
 
   @Test
@@ -71,16 +76,16 @@ class DataInitializerTest {
             Arrays.asList(
                 new UserWithPasswordRequest().username("username1").password("password"),
                 new UserWithPasswordRequest().username("username2").password("password")));
-    dataInitializer.initialize(RequestMapper.getAuthenticationNoTenant());
-    verify(initDataProperties).getUsers();
-    verify(userServices, times(2)).findByUsername(any());
+    dataInitializer.initialize();
+    verify(initDataProperties, times(2)).getUsers();
+    verify(userServices, times(3)).findByUsername(any());
     verify(userServices).createUser(eq("username1"), eq("username1"), eq("username1"), any());
     verify(userServices).createUser(eq("username2"), eq("username2"), eq("username2"), any());
   }
 
   @Test
   void whenNoInitUsersNothingCreated() {
-    dataInitializer.initialize(RequestMapper.getAuthenticationNoTenant());
+    dataInitializer.initialize();
     verify(initDataProperties).getUsers();
     verifyNoInteractions(userServices);
   }
@@ -94,27 +99,39 @@ class DataInitializerTest {
                 new UserWithPasswordRequest().username("username2").password("password")));
     when(userServices.findByUsername("username1"))
         .thenReturn(Optional.of(new UserEntity(new User("username1", "", "", ""))));
-    dataInitializer.initialize(RequestMapper.getAuthenticationNoTenant());
-    verify(initDataProperties).getUsers();
-    verify(userServices, times(2)).findByUsername(any());
+    dataInitializer.initialize();
+    verify(initDataProperties, times(2)).getUsers();
+    verify(userServices, times(3)).findByUsername(any());
     verify(userServices, never()).createUser(eq("username1"), any(), any(), any());
     verify(userServices).createUser(eq("username2"), any(), any(), any());
   }
 
   @Test
   void whenBrokerNotAvailableSkipAndNoExceptionThrown() {
-    dataInitializer = new DataInitializer(userServices, passwordEncoder, null, initDataProperties);
-    dataInitializer.initialize(RequestMapper.getAuthenticationNoTenant());
-    verify(initDataProperties, never()).getUsers();
+    when(initDataProperties.getUsers())
+        .thenReturn(
+            Arrays.asList(
+                new UserWithPasswordRequest().username("username1").password("password"),
+                new UserWithPasswordRequest().username("username2").password("password")));
+    dataInitializer =
+        new DataInitializer(
+            userServices, passwordEncoder, null, initDataProperties, new SimpleAsyncTaskExecutor());
+    dataInitializer.initialize();
+    verify(initDataProperties, times(1)).getUsers();
   }
 
   @Test
   void whenBrokerNotHealthyThenRetry() {
+    when(initDataProperties.getUsers())
+        .thenReturn(
+            Arrays.asList(
+                new UserWithPasswordRequest().username("username1").password("password"),
+                new UserWithPasswordRequest().username("username2").password("password")));
     when(brokerHealthCheckService.isBrokerHealthy())
         .thenReturn(false)
         .thenReturn(false)
         .thenReturn(true);
-    dataInitializer.initialize(RequestMapper.getAuthenticationNoTenant());
+    dataInitializer.initialize();
     verify(brokerHealthCheckService, times(3)).isBrokerHealthy();
   }
 }
