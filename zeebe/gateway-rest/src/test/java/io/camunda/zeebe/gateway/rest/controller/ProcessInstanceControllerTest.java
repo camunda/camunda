@@ -370,4 +370,40 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody);
   }
+
+  @Test
+  void shouldRejectCreateProcessInstancesIfOperationReferenceIsNotValid() {
+    // given
+    final var request =
+        """
+        {
+            "bpmnProcessId": "bpmnProcessId",
+            "operationReference": -1
+        }""";
+
+    final var expectedBody =
+        """
+        {
+            "type":"about:blank",
+            "title":"INVALID_ARGUMENT",
+            "status":400,
+            "detail":"The value for operationReference is '-1' but must be > 0.",
+            "instance":"/v2/process-instances"
+         }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
 }

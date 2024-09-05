@@ -2578,7 +2578,7 @@ components:
             from this operation. Must be >0 if provided.
           type: integer
           format: int64
-          minimum: 0
+          minimum: 1
         startInstructions:
           description: |
             List of start instructions. By default, the process instance will start at

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
@@ -31,6 +32,11 @@ public class ProcessInstanceRequestValidator {
             violations.add(
                 ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
                     List.of("bpmnProcessId", "processDefinitionKey")));
+          }
+          if (request.getOperationReference() != null && request.getOperationReference() < 1) {
+            violations.add(
+                ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+                    "operationReference", request.getOperationReference(), "> 0"));
           }
         });
   }
