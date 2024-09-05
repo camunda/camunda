@@ -28,6 +28,9 @@ public class VariableListViewEntity {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String scopeKey;
 
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Integer partitionId;
+
   // Add getter and setters
   public String getId() {
     return id;
@@ -80,6 +83,15 @@ public class VariableListViewEntity {
 
   public VariableListViewEntity setScopeKey(final String scopeKey) {
     this.scopeKey = scopeKey;
+    return this;
+  }
+
+  public Integer getPartitionId() {
+    return partitionId;
+  }
+
+  public VariableListViewEntity setPartitionId(final Integer partitionId) {
+    this.partitionId = partitionId;
     return this;
   }
 }
