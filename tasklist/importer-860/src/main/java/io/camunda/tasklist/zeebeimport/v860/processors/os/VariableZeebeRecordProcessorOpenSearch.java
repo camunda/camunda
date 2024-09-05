@@ -100,14 +100,14 @@ public class VariableZeebeRecordProcessorOpenSearch {
   private BulkOperation persistVariableToListView(
       final Record record, final VariableRecordValueImpl recordValue) throws PersistenceException {
     final VariableEntity variableEntity = getVariableEntity(record, recordValue);
-    VariableListViewEntity VariableListViewEntity = createVariableInputToListView(variableEntity);
+    VariableListViewEntity variableListViewEntity = createVariableInputToListView(variableEntity);
 
     if (isTaskOrSubProcessVariable(variableEntity)) {
-      VariableListViewEntity = associateVariableWithTask(VariableListViewEntity);
-      return prepareUpdateRequest(VariableListViewEntity, VariableListViewEntity.getScopeKey());
+      variableListViewEntity = associateVariableWithTask(variableListViewEntity);
+      return prepareUpdateRequest(variableListViewEntity, variableListViewEntity.getScopeKey());
     } else if (isProcessScope(variableEntity)) {
-      VariableListViewEntity = associateVariableWithProcess(variableEntity, VariableListViewEntity);
-      return prepareUpdateRequest(VariableListViewEntity, variableEntity.getProcessInstanceId());
+      variableListViewEntity = associateVariableWithProcess(variableEntity, variableListViewEntity);
+      return prepareUpdateRequest(variableListViewEntity, variableEntity.getProcessInstanceId());
     } else {
       throw new PersistenceException(
           String.format(
