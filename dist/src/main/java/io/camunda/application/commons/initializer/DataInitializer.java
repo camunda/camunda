@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.task.TaskExecutor;
@@ -44,7 +45,7 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
       final PasswordEncoder passwordEncoder,
       @Autowired(required = false) final SpringBrokerBridge brokerBridge,
       final InitDataProperties initDataProperties,
-      final TaskExecutor taskExecutor) {
+      @Qualifier("dataTaskScheduler") final TaskExecutor taskExecutor) {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.brokerBridge = brokerBridge;

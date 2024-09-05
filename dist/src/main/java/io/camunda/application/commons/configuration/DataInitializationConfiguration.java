@@ -12,11 +12,19 @@ import io.camunda.zeebe.client.protocol.rest.UserWithPasswordRequest;
 import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.task.SimpleAsyncTaskSchedulerBuilder;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.SimpleAsyncTaskScheduler;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(InitDataProperties.class)
 public class DataInitializationConfiguration {
+
+  @Bean("dataTaskScheduler")
+  public SimpleAsyncTaskScheduler taskSchedulerVirtualThreads() {
+    return new SimpleAsyncTaskSchedulerBuilder().concurrencyLimit(1).build();
+  }
 
   @ConfigurationProperties("camunda.init")
   public static final class InitDataProperties {
