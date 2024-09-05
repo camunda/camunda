@@ -39,6 +39,15 @@ public class CamundaExporter implements Exporter {
   private ElasticsearchClient client;
   private ExporterBatchWriter writer;
   private long lastPosition = -1;
+  private final ExporterComponentsProvider provider;
+
+  public CamundaExporter() {
+    this(new DefaultExporterComponentsProvider());
+  }
+
+  public CamundaExporter(final ExporterComponentsProvider provider) {
+    this.provider = provider;
+  }
 
   @Override
   public void configure(final Context context) {
