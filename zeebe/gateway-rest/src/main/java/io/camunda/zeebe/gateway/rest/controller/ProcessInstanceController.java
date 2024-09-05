@@ -8,8 +8,8 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.service.ProcessInstanceServices;
-import io.camunda.service.ProcessInstanceServices.ProcessInstanceStartRequest;
-import io.camunda.zeebe.gateway.protocol.rest.StartProcessInstanceRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -30,27 +30,27 @@ public class ProcessInstanceController {
   @PostMapping(
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public CompletableFuture<ResponseEntity<Object>> startProcessInstance(
-      @RequestBody final StartProcessInstanceRequest request) {
-    return RequestMapper.toStartProcessInstance(request)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::startProcessInstance);
+  public CompletableFuture<ResponseEntity<Object>> createProcessInstance(
+      @RequestBody final CreateProcessInstanceRequest request) {
+    return RequestMapper.toCreateProcessInstance(request)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createProcessInstance);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> startProcessInstance(
-      final ProcessInstanceStartRequest request) {
+  private CompletableFuture<ResponseEntity<Object>> createProcessInstance(
+      final ProcessInstanceCreateRequest request) {
     if (request.awaitCompletion()) {
       return RequestMapper.executeServiceMethod(
           () ->
               processInstanceServices
                   .withAuthentication(RequestMapper.getAuthentication())
-                  .startProcessInstanceWithResult(request),
-          ResponseMapper::toStartProcessInstanceWithResultResponse);
+                  .createProcessInstanceWithResult(request),
+          ResponseMapper::toCreateProcessInstanceWithResultResponse);
     }
     return RequestMapper.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .startProcessInstance(request),
-        ResponseMapper::toStartProcessInstanceResponse);
+                .createProcessInstance(request),
+        ResponseMapper::toCreateProcessInstanceResponse);
   }
 }

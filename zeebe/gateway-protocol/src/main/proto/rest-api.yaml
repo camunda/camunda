@@ -656,14 +656,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/StartProcessInstanceRequest"
+              $ref: "#/components/schemas/CreateProcessInstanceRequest"
       responses:
         "200":
           description: The process instance was created.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/StartProcessInstanceResponse"
+                $ref: "#/components/schemas/CreateProcessInstanceResponse"
         "400":
           description: The provided data is not valid.
         "500":
@@ -2542,7 +2542,7 @@ components:
           type: string
           description: The tenant id of the deployed form.
 
-    StartProcessInstanceRequest:
+    CreateProcessInstanceRequest:
       type: object
       properties:
         processDefinitionKey:
@@ -2610,7 +2610,7 @@ components:
 
             For now, however, the start instruction is implicitly a "startBeforeElement" instruction
           type: string
-    StartProcessInstanceResponse:
+    CreateProcessInstanceResponse:
       type: object
       properties:
         processKey:

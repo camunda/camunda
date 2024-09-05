@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecision;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirements;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentForm;
@@ -22,7 +23,6 @@ import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceResponse;
-import io.camunda.zeebe.gateway.protocol.rest.StartProcessInstanceResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
@@ -190,9 +190,9 @@ public final class ResponseMapper {
         .forEach(response::addDeploymentsItem);
   }
 
-  public static ResponseEntity<Object> toStartProcessInstanceResponse(
+  public static ResponseEntity<Object> toCreateProcessInstanceResponse(
       final ProcessInstanceCreationRecord brokerResponse) {
-    return buildStartProcessInstanceResponse(
+    return buildCreateProcessInstanceResponse(
         brokerResponse.getProcessDefinitionKey(),
         brokerResponse.getBpmnProcessId(),
         brokerResponse.getVersion(),
@@ -201,9 +201,9 @@ public final class ResponseMapper {
         null);
   }
 
-  public static ResponseEntity<Object> toStartProcessInstanceWithResultResponse(
+  public static ResponseEntity<Object> toCreateProcessInstanceWithResultResponse(
       final ProcessInstanceResultRecord brokerResponse) {
-    return buildStartProcessInstanceResponse(
+    return buildCreateProcessInstanceResponse(
         brokerResponse.getProcessDefinitionKey(),
         brokerResponse.getBpmnProcessId(),
         brokerResponse.getVersion(),
@@ -212,7 +212,7 @@ public final class ResponseMapper {
         brokerResponse.getVariables());
   }
 
-  private static ResponseEntity<Object> buildStartProcessInstanceResponse(
+  private static ResponseEntity<Object> buildCreateProcessInstanceResponse(
       final Long processDefinitionKey,
       final String bpmnProcessId,
       final Integer version,
@@ -220,7 +220,7 @@ public final class ResponseMapper {
       final String tenantId,
       final Map<String, Object> variables) {
     final var response =
-        new StartProcessInstanceResponse()
+        new CreateProcessInstanceResponse()
             .processKey(processDefinitionKey)
             .bpmnProcessId(bpmnProcessId)
             .version(version)

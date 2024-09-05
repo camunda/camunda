@@ -16,7 +16,7 @@ import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.valida
 import static io.camunda.zeebe.gateway.rest.validator.MessageCorrelateValidator.validateMessageCorrelationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateAuthorization;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
-import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateStartProcessInstanceRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
@@ -25,7 +25,7 @@ import io.camunda.service.DocumentServices.DocumentMetadataModel;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
-import io.camunda.service.ProcessInstanceServices.ProcessInstanceStartRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
@@ -34,6 +34,7 @@ import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationAssignRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
+import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
@@ -41,7 +42,6 @@ import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.StartProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
@@ -331,17 +331,17 @@ public class RequestMapper {
         HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), message);
   }
 
-  public static Either<ProblemDetail, ProcessInstanceStartRequest> toStartProcessInstance(
-      final StartProcessInstanceRequest request) {
+  public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
+      final CreateProcessInstanceRequest request) {
     return getResult(
-        validateStartProcessInstanceRequest(request),
+        validateCreateProcessInstanceRequest(request),
         () ->
-            new ProcessInstanceStartRequest(
+            new ProcessInstanceCreateRequest(
                 getLongOrDefault(
-                    request, StartProcessInstanceRequest::getProcessDefinitionKey, -1L),
-                getStringOrEmpty(request, StartProcessInstanceRequest::getBpmnProcessId),
-                getIntOrDefault(request, StartProcessInstanceRequest::getVersion, -1),
-                getMapOrEmpty(request, StartProcessInstanceRequest::getVariables),
+                    request, CreateProcessInstanceRequest::getProcessDefinitionKey, -1L),
+                getStringOrEmpty(request, CreateProcessInstanceRequest::getBpmnProcessId),
+                getIntOrDefault(request, CreateProcessInstanceRequest::getVersion, -1),
+                getMapOrEmpty(request, CreateProcessInstanceRequest::getVariables),
                 request.getTenantId(),
                 request.getAwaitCompletion(),
                 request.getRequestTimeout(),

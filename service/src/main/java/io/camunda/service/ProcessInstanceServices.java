@@ -59,8 +59,8 @@ public final class ProcessInstanceServices
     return search(SearchQueryBuilders.processInstanceSearchQuery(fn));
   }
 
-  public CompletableFuture<ProcessInstanceCreationRecord> startProcessInstance(
-      final ProcessInstanceStartRequest request) {
+  public CompletableFuture<ProcessInstanceCreationRecord> createProcessInstance(
+      final ProcessInstanceCreateRequest request) {
     final var brokerRequest =
         new BrokerCreateProcessInstanceRequest()
             .setBpmnProcessId(request.bpmnProcessId())
@@ -76,8 +76,8 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest);
   }
 
-  public CompletableFuture<ProcessInstanceResultRecord> startProcessInstanceWithResult(
-      final ProcessInstanceStartRequest request) {
+  public CompletableFuture<ProcessInstanceResultRecord> createProcessInstanceWithResult(
+      final ProcessInstanceCreateRequest request) {
     final var brokerRequest =
         new BrokerCreateProcessInstanceWithResultRequest()
             .setBpmnProcessId(request.bpmnProcessId())
@@ -93,7 +93,7 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest);
   }
 
-  public record ProcessInstanceStartRequest(
+  public record ProcessInstanceCreateRequest(
       Long processDefinitionKey,
       String bpmnProcessId,
       Integer version,

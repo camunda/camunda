@@ -11,15 +11,15 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
-import io.camunda.zeebe.gateway.protocol.rest.StartProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public class ProcessInstanceRequestValidator {
 
-  public static Optional<ProblemDetail> validateStartProcessInstanceRequest(
-      final StartProcessInstanceRequest request) {
+  public static Optional<ProblemDetail> validateCreateProcessInstanceRequest(
+      final CreateProcessInstanceRequest request) {
     return validate(
         violations -> {
           if (request.getBpmnProcessId() == null && request.getProcessDefinitionKey() == null) {

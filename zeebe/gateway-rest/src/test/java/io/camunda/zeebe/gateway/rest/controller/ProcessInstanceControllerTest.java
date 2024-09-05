@@ -13,7 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.service.ProcessInstanceServices;
-import io.camunda.service.ProcessInstanceServices.ProcessInstanceStartRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -41,7 +41,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
       }""";
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";
 
-  @Captor ArgumentCaptor<ProcessInstanceStartRequest> requestCaptor;
+  @Captor ArgumentCaptor<ProcessInstanceCreateRequest> requestCaptor;
 
   @MockBean ProcessInstanceServices processInstanceServices;
 
@@ -52,7 +52,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldStartProcessInstancesWithProcessDefinitionKey() {
+  void shouldCreateProcessInstancesWithProcessDefinitionKey() {
     // given
     final var mockResponse =
         new ProcessInstanceCreationRecord()
@@ -61,7 +61,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setProcessInstanceKey(123L)
             .setTenantId("tenantId");
 
-    when(processInstanceServices.startProcessInstance(any(ProcessInstanceStartRequest.class)))
+    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -85,13 +85,13 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE);
 
-    verify(processInstanceServices).startProcessInstance(requestCaptor.capture());
+    verify(processInstanceServices).createProcessInstance(requestCaptor.capture());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
   }
 
   @Test
-  void shouldStartProcessInstancesWithBpmnProcessIdAndVersion() {
+  void shouldCreateProcessInstancesWithBpmnProcessIdAndVersion() {
     // given
     final var mockResponse =
         new ProcessInstanceCreationRecord()
@@ -100,7 +100,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setProcessInstanceKey(123L)
             .setTenantId("tenantId");
 
-    when(processInstanceServices.startProcessInstance(any(ProcessInstanceStartRequest.class)))
+    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -125,14 +125,14 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE);
 
-    verify(processInstanceServices).startProcessInstance(requestCaptor.capture());
+    verify(processInstanceServices).createProcessInstance(requestCaptor.capture());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
     assertThat(capturedRequest.version()).isEqualTo(1);
   }
 
   @Test
-  void shouldStartProcessInstancesWithBpmnProcessIdWithoutVersion() {
+  void shouldCreateProcessInstancesWithBpmnProcessIdWithoutVersion() {
     // given
     final var mockResponse =
         new ProcessInstanceCreationRecord()
@@ -141,7 +141,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setProcessInstanceKey(123L)
             .setTenantId("tenantId");
 
-    when(processInstanceServices.startProcessInstance(any(ProcessInstanceStartRequest.class)))
+    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -165,14 +165,14 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE);
 
-    verify(processInstanceServices).startProcessInstance(requestCaptor.capture());
+    verify(processInstanceServices).createProcessInstance(requestCaptor.capture());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
     assertThat(capturedRequest.version()).isEqualTo(-1);
   }
 
   @Test
-  void shouldStartProcessInstancesWithResultWithProcessDefinitionKey() {
+  void shouldCreateProcessInstancesWithResultWithProcessDefinitionKey() {
     // given
     final var mockResponse =
         new ProcessInstanceResultRecord()
@@ -181,8 +181,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setProcessInstanceKey(123L)
             .setTenantId("tenantId");
 
-    when(processInstanceServices.startProcessInstanceWithResult(
-            any(ProcessInstanceStartRequest.class)))
+    when(processInstanceServices.createProcessInstanceWithResult(
+            any(ProcessInstanceCreateRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -207,14 +207,14 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE);
 
-    verify(processInstanceServices).startProcessInstanceWithResult(requestCaptor.capture());
+    verify(processInstanceServices).createProcessInstanceWithResult(requestCaptor.capture());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.awaitCompletion()).isTrue();
   }
 
   @Test
-  void shouldStartProcessInstancesWithResultWithBpmnProcessIdAndVersion() {
+  void shouldCreateProcessInstancesWithResultWithBpmnProcessIdAndVersion() {
     // given
     final var mockResponse =
         new ProcessInstanceResultRecord()
@@ -223,8 +223,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setProcessInstanceKey(123L)
             .setTenantId("tenantId");
 
-    when(processInstanceServices.startProcessInstanceWithResult(
-            any(ProcessInstanceStartRequest.class)))
+    when(processInstanceServices.createProcessInstanceWithResult(
+            any(ProcessInstanceCreateRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -250,14 +250,14 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE);
 
-    verify(processInstanceServices).startProcessInstanceWithResult(requestCaptor.capture());
+    verify(processInstanceServices).createProcessInstanceWithResult(requestCaptor.capture());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
     assertThat(capturedRequest.version()).isEqualTo(1);
   }
 
   @Test
-  void shouldStartProcessInstancesWithResultWithBpmnProcessIdWithoutVersion() {
+  void shouldCreateProcessInstancesWithResultWithBpmnProcessIdWithoutVersion() {
     // given
     final var mockResponse =
         new ProcessInstanceResultRecord()
@@ -266,8 +266,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setProcessInstanceKey(123L)
             .setTenantId("tenantId");
 
-    when(processInstanceServices.startProcessInstanceWithResult(
-            any(ProcessInstanceStartRequest.class)))
+    when(processInstanceServices.createProcessInstanceWithResult(
+            any(ProcessInstanceCreateRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -292,14 +292,14 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE);
 
-    verify(processInstanceServices).startProcessInstanceWithResult(requestCaptor.capture());
+    verify(processInstanceServices).createProcessInstanceWithResult(requestCaptor.capture());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
     assertThat(capturedRequest.version()).isEqualTo(-1);
   }
 
   @Test
-  void shouldRejectStartProcessInstancesIfNoBpmnProcessIdOrProcessDefinitionKeyAreProvided() {
+  void shouldRejectCreateProcessInstancesIfNoBpmnProcessIdOrProcessDefinitionKeyAreProvided() {
     // given
     final var request =
         """
@@ -335,7 +335,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectStartProcessInstancesIfBothBpmnProcessIdOrProcessDefinitionKeyAreProvided() {
+  void shouldRejectCreateProcessInstancesIfBothBpmnProcessIdOrProcessDefinitionKeyAreProvided() {
     // given
     final var request =
         """
