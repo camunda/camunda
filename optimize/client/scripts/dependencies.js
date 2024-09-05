@@ -5,16 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+import fs from 'fs';
+import {resolve as _resolve, dirname} from 'path';
+import {execFileSync} from 'child_process';
+import {fileURLToPath} from 'url';
 
-const fs = require('fs');
-const path = require('path');
-const {execFileSync} = require('child_process');
-const url = require('url');
-const toPairs = require('lodash/toPairs');
-
-const licenseChecker = path.resolve(__dirname, '..', 'node_modules', '.bin', 'license-checker');
-const depJsonFile = path.resolve(__dirname, '..', 'dependencies.json');
-const depMdFile = path.resolve(__dirname, '..', 'frontend-dependencies.md');
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const licenseChecker = _resolve(__dirname, '..', 'node_modules', '.bin', 'license-checker');
+const depJsonFile = _resolve(__dirname, '..', 'dependencies.json');
+const depMdFile = _resolve(__dirname, '..', 'frontend-dependencies.md');
 
 const npmLinkPrefix = 'https://www.npmjs.com/package/';
 
@@ -34,7 +33,7 @@ const lines = toPairs(dependencies)
   }, []);
 
 function getLibraryLink(name, rawUrl, repository) {
-  const parsedUrl = rawUrl ? url.parse(rawUrl) : {};
+  const parsedUrl = rawUrl ? new URL(rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`) : {};
   const libLink = parsedUrl.protocol ? rawUrl : repository;
 
   if (libLink) {
@@ -63,3 +62,15 @@ menu:
 `;
 
 fs.writeFileSync(depMdFile, fileHeader + lines.join('\n'));
+
+function toPairs(obj) {
+  const pairs = [];
+
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      pairs.push([key, obj[key]]);
+    }
+  }
+
+  return pairs;
+}
