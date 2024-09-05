@@ -148,7 +148,7 @@ public final class SearchQueryResponseMapper {
         .completedDate(o.completedDate());
   }
 
-  private static List<CallHierarchyItem> toCallHierarchy(
+  private static List<ProcessInstanceReferenceItem> toCallHierarchy(
       final List<ProcessInstanceReference> instances) {
     if (instances == null) {
       return null;
@@ -156,8 +156,8 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toCallHierarchy).toList();
   }
 
-  private static CallHierarchyItem toCallHierarchy(final ProcessInstanceReference p) {
-    return new CallHierarchyItem()
+  private static ProcessInstanceReferenceItem toCallHierarchy(final ProcessInstanceReference p) {
+    return new ProcessInstanceReferenceItem()
         .instanceId(p.instanceId())
         .processDefinitionId(p.processDefinitionId())
         .processDefinitionName(p.processDefinitionName());

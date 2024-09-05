@@ -15,11 +15,41 @@
  */
 package io.camunda.zeebe.client.api.search.response;
 
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.impl.search.response.OperationImpl;
+import io.camunda.zeebe.client.impl.search.response.ProcessInstanceReferenceImpl;
+import java.util.List;
 
-public interface ProcessInstance extends ProcessInstanceEvent {
+public interface ProcessInstance {
+
+  Long getKey();
+
+  String getProcessName();
+
+  Integer getProcessVersion();
+
+  String getBpmnProcessId();
+
+  Long getParentProcessInstanceKey();
+
+  Long getParentFlowNodeInstanceKey();
 
   String getStartDate();
 
   String getEndDate();
+
+  String getState();
+
+  Boolean getIncident();
+
+  Boolean getHasActiveOperation();
+
+  Long getProcessDefinitionKey();
+
+  String getTenantId();
+
+  String getRootInstanceId();
+
+  List<OperationImpl> getOperations();
+
+  List<ProcessInstanceReferenceImpl> getCallHierarchy();
 }

@@ -17,9 +17,11 @@ import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationCreateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public class AuthorizationServices<T>
@@ -49,16 +51,19 @@ public class AuthorizationServices<T>
   }
 
   public CompletableFuture<AuthorizationRecord> createAuthorization(
-      final Long ownerKey,
-      final AuthorizationOwnerType ownerType,
-      final String resourceType,
-      final List<String> resourceIds) {
-    return sendBrokerRequest(
+      final PatchAuthorizationRequest request) {
+    final var brokerRequest =
         new BrokerAuthorizationCreateRequest()
-            .setOwnerKey(ownerKey)
-            .setOwnerType(ownerType)
-            .setResourceType(resourceType)
-            .addPermissions(PermissionType.CREATE, resourceIds));
-    // TODO set proper PermissionType. This requires changes in the REST API
+            .setOwnerKey(request.ownerKey())
+            .setAction(request.action())
+            .setResourceType(request.resourceType());
+    request.permissions().forEach(brokerRequest::addPermissions);
+    return sendBrokerRequest(brokerRequest);
   }
+
+  public record PatchAuthorizationRequest(
+      long ownerKey,
+      PermissionAction action,
+      AuthorizationResourceType resourceType,
+      Map<PermissionType, List<String>> permissions) {}
 }

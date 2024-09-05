@@ -86,7 +86,7 @@ const Modal: FC<ModalProps> = ({
       !modalRef.current.contains(document.activeElement)
     ) {
       const focusableInput = findFocusableCandidate(modalRef.current);
-      focusableInput && focusableInput.focus();
+      focusableInput?.focus();
     }
   }, []);
   const modal =

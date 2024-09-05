@@ -66,6 +66,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -2112,6 +2113,7 @@ final class JsonSerializableToJsonTest {
 
               return new CommandDistributionRecord()
                   .setPartitionId(1)
+                  .setQueueId("totally-random-queue-id")
                   .setValueType(ValueType.DEPLOYMENT)
                   .setIntent(DeploymentIntent.CREATE)
                   .setCommandValue(deploymentRecord);
@@ -2119,6 +2121,7 @@ final class JsonSerializableToJsonTest {
         """
         {
           "partitionId": 1,
+          "queueId": "totally-random-queue-id",
           "valueType": "DEPLOYMENT",
           "intent": "CREATE",
           "commandValue": {
@@ -2156,6 +2159,7 @@ final class JsonSerializableToJsonTest {
         """
         {
           "partitionId": 1,
+          "queueId": null,
           "valueType": "NULL_VAL",
           "intent": "UNKNOWN",
           "commandValue": null
@@ -2584,7 +2588,7 @@ final class JsonSerializableToJsonTest {
                     .setAction(PermissionAction.ADD)
                     .setOwnerKey(1L)
                     .setOwnerType(AuthorizationOwnerType.USER)
-                    .setResourceType("type")
+                    .setResourceType(AuthorizationResourceType.DEPLOYMENT)
                     .addPermission(
                         new Permission()
                             .setPermissionType(PermissionType.CREATE)
@@ -2597,7 +2601,7 @@ final class JsonSerializableToJsonTest {
           "action": "ADD",
           "ownerKey": 1,
           "ownerType": "USER",
-          "resourceType": "type",
+          "resourceType": "DEPLOYMENT",
           "permissions": [
             {
               "permissionType": "CREATE",
@@ -2622,13 +2626,13 @@ final class JsonSerializableToJsonTest {
                     .setAction(PermissionAction.ADD)
                     .setOwnerKey(1L)
                     .setOwnerType(AuthorizationOwnerType.USER)
-                    .setResourceType("type"),
+                    .setResourceType(AuthorizationResourceType.DEPLOYMENT),
         """
         {
           "action": "ADD",
           "ownerKey": 1,
           "ownerType": "USER",
-          "resourceType": "type",
+          "resourceType": "DEPLOYMENT",
           "permissions": []
         }
         """

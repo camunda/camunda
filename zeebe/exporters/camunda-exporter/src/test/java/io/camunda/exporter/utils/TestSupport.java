@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.schema;
+package io.camunda.exporter.utils;
 
 import java.time.Duration;
 import org.elasticsearch.client.RestClient;
@@ -13,7 +13,7 @@ import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
 
-final class TestSupport {
+public final class TestSupport {
   private static final DockerImageName ELASTIC_IMAGE =
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
           .withTag(RestClient.class.getPackage().getImplementationVersion());
@@ -29,7 +29,7 @@ final class TestSupport {
    * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
    */
   @SuppressWarnings("resource")
-  static ElasticsearchContainer createDefaultContainer() {
+  public static ElasticsearchContainer createDefaultContainer() {
     return new ElasticsearchContainer(ELASTIC_IMAGE)
         // use JVM option files to avoid overwriting default options set by the ES container class
         .withClasspathResourceMapping(

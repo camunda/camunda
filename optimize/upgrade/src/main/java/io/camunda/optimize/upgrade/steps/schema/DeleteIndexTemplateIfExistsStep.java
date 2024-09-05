@@ -44,11 +44,12 @@ public class DeleteIndexTemplateIfExistsStep extends UpgradeStep {
 
   @Override
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
-    final String indexAlias =
-        schemaUpgradeClient.getIndexNameService().getOptimizeIndexAliasForIndex(templateName);
-    schemaUpgradeClient.getAliasMap(indexAlias).keySet().stream()
-        .filter(templateName -> templateName.contains(this.templateName))
-        .forEach(schemaUpgradeClient::deleteTemplateIfExists);
+    final String fullTemplateName =
+        schemaUpgradeClient
+            .getIndexNameService()
+            .getOptimizeIndexOrTemplateNameForAliasAndVersionWithPrefix(
+                templateName, String.valueOf(templateVersion));
+    schemaUpgradeClient.deleteTemplateIfExists(fullTemplateName);
   }
 
   public String getVersionedTemplateNameWithTemplateSuffix() {

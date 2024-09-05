@@ -33,6 +33,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
 import io.camunda.zeebe.management.cluster.Error;
@@ -41,6 +42,7 @@ import io.camunda.zeebe.management.cluster.ExporterStateCode;
 import io.camunda.zeebe.management.cluster.ExporterStatus;
 import io.camunda.zeebe.management.cluster.ExportingConfig;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
+import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PartitionConfig;
@@ -282,8 +284,27 @@ final class ClusterApiUtils {
     response.version(topology.version()).brokers(brokers);
     topology.lastChange().ifPresent(change -> response.lastChange(mapCompletedChange(change)));
     topology.pendingChanges().ifPresent(change -> response.pendingChange(mapOngoingChange(change)));
-
+    topology
+        .routingState()
+        .ifPresent(routingState -> response.routing(mapRoutingState(routingState)));
     return response;
+  }
+
+  private static io.camunda.zeebe.management.cluster.RoutingState mapRoutingState(
+      final io.camunda.zeebe.dynamic.config.state.RoutingState routingState) {
+    return new io.camunda.zeebe.management.cluster.RoutingState()
+        .version(routingState.version())
+        .activePartitions(routingState.activePartitions().stream().toList())
+        .messageCorrelation(mapMessageCorrelation(routingState.messageCorrelation()));
+  }
+
+  private static io.camunda.zeebe.management.cluster.MessageCorrelation mapMessageCorrelation(
+      final io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation
+          messageCorrelation) {
+    return switch (messageCorrelation) {
+      case HashMod(final var partitionCount) ->
+          new MessageCorrelationHashMod().partitionCount(partitionCount);
+    };
   }
 
   private static io.camunda.zeebe.management.cluster.CompletedChange mapCompletedChange(

@@ -804,25 +804,35 @@ paths:
           description: >
             The decision requirements search query failed.
             More details are provided in the response body.
-  /authorizations:
-    post:
+
+  /authorizations/{ownerKey}:
+    patch:
       tags:
         - Authorization
-      summary: Create an authorization
-      operationId: createAuthorization
+      summary: Patch an authorization
+      description: Manage the permissions assigned to the authorization
+      operationId: patchAuthorization
+      parameters:
+        - name: ownerKey
+          in: path
+          required: true
+          description: The key of the owner of the authorization.
+          schema:
+            type: integer
+            format: int64
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AuthorizationAssignRequest"
+              $ref: "#/components/schemas/AuthorizationPatchRequest"
         required: true
       responses:
-        "204":
+        "202":
           description: |
-            The Authorization was created successfully.
+            The Authorization was patched successfully.
         "400":
           description: |
-            The Authorization could not be created.
+            The Authorization could not be patched.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -830,7 +840,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
           description: |
-            The request to create an authorization was unauthorized.
+            The request to patch the authorization was unauthorized.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -838,18 +848,23 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
           description: |
-            The request to create an authorization was denied.
+            The request to patch an authorization was denied.
             More details are provided in the response body.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: |
+            The request to add or remove permissions to an authorization was in conflict.
+            More details are provided in the response body.
         "500":
           description: An internal error occurred while processing the request.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+
   /users:
     post:
       tags:
@@ -1505,16 +1520,7 @@ components:
         callHierarchy:
           type: array
           items:
-            $ref: "#/components/schemas/CallHierarchyItem"
-    CallHierarchyItem:
-      type: object
-      properties:
-        instanceId:
-          type: string
-        processDefinitionId:
-          type: string
-        processDefinitionName:
-          type: string
+            $ref: "#/components/schemas/ProcessInstanceReferenceItem"
     DecisionDefinitionSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -1706,26 +1712,45 @@ components:
           format: int64
         tenantId:
           type: string
-    AuthorizationAssignRequest:
+    AuthorizationPatchRequest:
       type: object
       properties:
-        ownerKey:
-          type: integer
-          format: int64
-        ownerType:
+        action:
+          description: Indicates if permissions should be added or removed.
           type: string
           enum:
+            - ADD
+            - REMOVE
+        resourceType:
+          description: The type of resource to add/remove perissions to/from.
+          enum:
+            - AUTHORIZATION
+            - MESSAGE
+            - JOB
+            - APPLICATION
+            - TENANT
+            - DEPLOYMENT
+            - PROCESS_DEFINITION
+            - USER_TASK
+            - DECISION_REQUIREMENTS_DEFINITION
+            - DECISION_DEFINITION
+            - USER_GROUP
             - USER
             - ROLE
-            - GROUP
-        resourceKey:
-          type: string
-        resourceType:
-          type: string
         permissions:
           type: array
           items:
-            type: string
+            properties:
+              permissionType:
+                enum:
+                  - CREATE
+                  - READ
+                  - UPDATE
+                  - DELETE
+              resourceIds:
+                type: array
+                items:
+                  type: string
     UserWithPasswordRequest:
       type: "object"
       properties:

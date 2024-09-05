@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import java.time.InstantSource;
 
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
@@ -56,7 +57,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final JobMetrics jobMetrics,
       final DecisionBehavior decisionBehavior,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final int partitionsCount,
+      final RoutingInfo routingInfo,
       final DueDateTimerChecker timerChecker,
       final JobStreamer jobStreamer,
       final InstantSource clock) {
@@ -78,7 +79,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             writers.state(),
             writers.sideEffect(),
             timerChecker,
-            partitionsCount,
+            routingInfo,
             clock);
 
     eventTriggerBehavior =

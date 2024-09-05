@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +41,10 @@ public class AuthorizationStateTest {
     // when
     final var persistedAuth =
         authorizationState.getResourceIdentifiers(
-            1L, AuthorizationOwnerType.USER, "resource", PermissionType.CREATE);
+            1L,
+            AuthorizationOwnerType.USER,
+            AuthorizationResourceType.DEPLOYMENT,
+            PermissionType.CREATE);
     // then
     assertThat(persistedAuth).isNull();
   }
@@ -55,7 +59,7 @@ public class AuthorizationStateTest {
             .setOwnerKey(1L)
             .setAction(PermissionAction.ADD)
             .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceType("resourceType")
+            .setResourceType(AuthorizationResourceType.DEPLOYMENT)
             .addPermission(
                 new Permission().setPermissionType(PermissionType.CREATE).addResourceId("*"));
     authorizationState.createAuthorization(authorizationRecord);
@@ -82,7 +86,7 @@ public class AuthorizationStateTest {
             .setOwnerKey(ownerKey)
             .setAction(PermissionAction.ADD)
             .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceType("process-definition")
+            .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .addPermission(
                 new Permission().setPermissionType(PermissionType.CREATE).addResourceId("*"));
     authorizationState.createAuthorization(authorizationRecord);
@@ -93,7 +97,7 @@ public class AuthorizationStateTest {
         .hasMessageContaining(
             "Key DbCompositeKey{first=DbLong{"
                 + ownerKey
-                + "}, second=DbCompositeKey{first=process-definition, second=CREATE}} in ColumnFamily RESOURCE_IDS_BY_OWNER_KEY_RESOURCE_TYPE_AND_PERMISSION already exists");
+                + "}, second=DbCompositeKey{first=PROCESS_DEFINITION, second=CREATE}} in ColumnFamily RESOURCE_IDS_BY_OWNER_KEY_RESOURCE_TYPE_AND_PERMISSION already exists");
   }
 
   @DisplayName("should return the correct authorization")
@@ -105,7 +109,7 @@ public class AuthorizationStateTest {
             .setOwnerKey(1L)
             .setAction(PermissionAction.ADD)
             .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceType("resourceType")
+            .setResourceType(AuthorizationResourceType.DEPLOYMENT)
             .addPermission(
                 new Permission()
                     .setPermissionType(PermissionType.READ)
@@ -117,7 +121,7 @@ public class AuthorizationStateTest {
             .setOwnerKey(2L)
             .setAction(PermissionAction.ADD)
             .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceType("resourceType")
+            .setResourceType(AuthorizationResourceType.DEPLOYMENT)
             .addPermission(
                 new Permission()
                     .setPermissionType(PermissionType.CREATE)
