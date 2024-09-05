@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
 
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequestPermissionsInner;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -36,19 +37,20 @@ public final class AuthorizationRequestValidator {
 
       authorizationPatchRequest
           .getPermissions()
-          .forEach(
-              permission -> {
-                if (permission.getPermissionType() == null) {
-                  violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("permissionType"));
-                } else if (permission.getResourceIds() == null
-                    || permission.getResourceIds().isEmpty()) {
-                  violations.add(
-                      ERROR_MESSAGE_EMPTY_NESTED_ATTRIBUTE.formatted(
-                          "resourceIds", permission.getPermissionType()));
-                }
-              });
+          .forEach(permission -> validatePermission(permission, violations));
     }
 
     return createProblemDetail(violations);
+  }
+
+  private static void validatePermission(
+      final AuthorizationPatchRequestPermissionsInner permission, final List<String> violations) {
+    if (permission.getPermissionType() == null) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("permissionType"));
+    } else if (permission.getResourceIds() == null || permission.getResourceIds().isEmpty()) {
+      violations.add(
+          ERROR_MESSAGE_EMPTY_NESTED_ATTRIBUTE.formatted(
+              "resourceIds", permission.getPermissionType()));
+    }
   }
 }
