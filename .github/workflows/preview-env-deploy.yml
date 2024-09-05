@@ -100,7 +100,7 @@ jobs:
           pull-request-id: ${{ github.event.pull_request.number }}
   clean:
     if: always() && needs.deploy-preview.result != 'skipped'
-    uses: camunda/camunda/.github/workflows/preview-env-clean.yml@main
+    uses: camunda/camunda/.github/workflows/preview-env-clean.yml@preview-env-build-helmchart
     needs:
       - deploy-preview
     secrets: inherit
