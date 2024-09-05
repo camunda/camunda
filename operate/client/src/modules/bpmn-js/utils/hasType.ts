@@ -6,14 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
-import {hasType} from './hasType';
+import {BusinessObject, ElementType} from 'bpmn-js/lib/NavigatedViewer';
 
-function isSubProcess(businessObject?: BusinessObject) {
-  return (
-    businessObject !== undefined &&
-    hasType({businessObject, types: ['bpmn:SubProcess']})
-  );
-}
+const hasType = ({
+  businessObject,
+  types,
+}: {
+  businessObject: BusinessObject;
+  types: ElementType[];
+}) => {
+  if (types.includes(businessObject.$type)) {
+    return true;
+  }
+};
 
-export {isSubProcess};
+export {hasType};

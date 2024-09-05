@@ -7,6 +7,7 @@
  */
 
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {hasType} from './hasType';
 
 const getFlowElementIds = (flowNode?: BusinessObject): string[] => {
   if (flowNode?.flowElements === undefined) {
@@ -14,7 +15,7 @@ const getFlowElementIds = (flowNode?: BusinessObject): string[] => {
   }
 
   return flowNode.flowElements.reduce<string[]>((elementIds, element) => {
-    if (element.$type === 'bpmn:SequenceFlow') {
+    if (hasType({businessObject: element, types: ['bpmn:SequenceFlow']})) {
       return elementIds;
     }
 

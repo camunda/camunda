@@ -7,11 +7,13 @@
  */
 
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {hasType} from './hasType';
 
 const isProcessEndEvent = (businessObject: BusinessObject) => {
   return (
-    businessObject.$type === 'bpmn:EndEvent' &&
-    businessObject?.$parent?.$type === 'bpmn:Process'
+    hasType({businessObject, types: ['bpmn:EndEvent']}) &&
+    businessObject?.$parent !== undefined &&
+    hasType({businessObject: businessObject?.$parent, types: ['bpmn:Process']})
   );
 };
 

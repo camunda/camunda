@@ -7,10 +7,11 @@
  */
 
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {hasType} from './hasType';
 
 const isEventSubProcess = (businessObject: BusinessObject) => {
   return (
-    businessObject.$type === 'bpmn:SubProcess' &&
+    hasType({businessObject, types: ['bpmn:SubProcess']}) &&
     businessObject.triggeredByEvent === true
   );
 };
