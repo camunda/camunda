@@ -106,3 +106,12 @@ jobs:
     secrets: inherit
     with:
       pull-request: ${{ github.event.pull_request.number }}
+  comment:
+    if: always() && needs.deploy-preview.result != 'skipped'
+    name: create-deployment-result-summary
+    runs-on: ubuntu-22.04
+    needs:
+      - deploy-preview
+    steps:
+      - uses: camunda/infra-global-github-actions/preview-env/comment@main
+
