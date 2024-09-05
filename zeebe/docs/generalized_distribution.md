@@ -66,8 +66,7 @@ metadata and raw record value are removed from the state.
 The diagram shows the flow of commands and events. What it doesn't highlight is the record that
 belongs to these.
 
-The `CommandDistributionRecord` is relatively simple. It contains 6 properties which are required to
-distribute a command successfully.
+The `CommandDistributionRecord` is relatively simple. It contains the following properties:
 
 #### Partition id
 
