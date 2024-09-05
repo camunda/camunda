@@ -645,8 +645,8 @@ paths:
         - Process Instance
       summary: Start process instance
       description: |
-        Creates and starts an instance of the specified process. The process definition to use to
-        create the instance can be specified either using its unique key
+        Creates and starts an instance of the specified process.
+        The process definition to use to create the instance can be specified either using its unique key
         (as returned by Deploy resources), or using the BPMN process ID and a version.
 
         Waits for the completion of the process instance before returning a result
@@ -2548,7 +2548,7 @@ components:
         processDefinitionKey:
           description: |
             The unique key identifying the process definition, e.g. returned for a process in the
-            Deploy resources endpoint. Cannot be used together with bpmnProcessId.
+            deploy resources endpoint. Cannot be used together with bpmnProcessId.
           type: integer
           format: int64
         bpmnProcessId:
