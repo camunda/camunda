@@ -129,7 +129,7 @@ public class DataInitializerElasticSearchIT {
           return;
         }
       } catch (final Exception ignored) {
-
+        // ignore exception
       }
       Thread.sleep(100);
     }
