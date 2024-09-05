@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationAssignRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
+import static io.camunda.zeebe.gateway.rest.validator.ElementRequestValidator.validateVariableRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
@@ -23,6 +24,7 @@ import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.v
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentMetadataModel;
+import io.camunda.service.ElementServices.SetVariablesRequest;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
@@ -46,6 +48,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.VariableRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
@@ -267,6 +270,18 @@ public class RequestMapper {
     } catch (final IOException e) {
       return Either.left(createInternalErrorProblemDetail(e, "Failed to read resources content"));
     }
+  }
+
+  public static Either<ProblemDetail, SetVariablesRequest> toVariableRequest(
+      final VariableRequest variableRequest, final long elementKey) {
+    return getResult(
+        validateVariableRequest(variableRequest),
+        () ->
+            new SetVariablesRequest(
+                elementKey,
+                variableRequest.getVariables(),
+                variableRequest.getLocal(),
+                variableRequest.getOperationReference()));
   }
 
   public static Authentication getAuthentication() {
