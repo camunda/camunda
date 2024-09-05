@@ -98,3 +98,11 @@ jobs:
         uses: camunda/infra-global-github-actions/preview-env/conflicts@main
         with:
           pull-request-id: ${{ github.event.pull_request.number }}
+  clean:
+    if: always() && needs.deploy-preview.result != 'skipped'
+    uses: camunda/camunda/.github/workflows/preview-env-clean.yml@main
+    needs:
+      - deploy-preview
+    secrets: inherit
+    with:
+      pull-request: ${{ github.event.pull_request.number }}
