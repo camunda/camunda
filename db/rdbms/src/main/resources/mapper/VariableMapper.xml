@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.VariableMapper">
+
+  <select id="findOne"
+    statementType="PREPARED"
+    parameterType="java.lang.Long"
+    resultType="io.camunda.db.rdbms.domain.VariableModel">
+      SELECT
+        VAR_KEY,
+        PROCESS_INSTANCE_KEY,
+        SCOPE_KEY,
+        VAR_NAME,
+        VAR_VALUE,
+        TRUNCATED,
+        TENANT_ID
+      FROM
+        VARIABLE
+      WHERE VAR_KEY = #{key}
+  </select>
+
+  <insert
+    id="insert"
+    statementType="PREPARED"
+    parameterType="io.camunda.db.rdbms.domain.VariableModel"
+    flushCache="true"
+    timeout="20">
+      INSERT INTO VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, SCOPE_KEY, VAR_NAME, VAR_VALUE, TRUNCATED, TENANT_ID)
+      VALUES (#{key}, #{processInstanceKey}, #{scopeKey}, #{name}, #{value}, #{truncated}, #{tenantId})
+  </insert>
+
+  <update
+    id="update"
+    statementType="PREPARED"
+    parameterType="io.camunda.db.rdbms.domain.VariableModel"
+    flushCache="true"
+    timeout="20">
+      UPDATE VARIABLE
+      SET VAR_VALUE = #{value}, TRUNCATED = #{truncated}
+      WHERE VAR_KEY = #{key}
+  </update>
+</mapper>
