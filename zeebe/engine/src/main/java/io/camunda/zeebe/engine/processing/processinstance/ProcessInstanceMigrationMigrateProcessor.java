@@ -205,12 +205,12 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNoEventSubprocessInSource(
         sourceProcessDefinition,
         elementInstanceRecord,
-        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER));
+        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL));
     requireNoEventSubprocessInTarget(
         targetProcessDefinition,
         targetElementId,
         elementInstanceRecord,
-        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER));
+        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL));
     requireNoBoundaryEventInSource(
         sourceProcessDefinition,
         elementInstanceRecord,
