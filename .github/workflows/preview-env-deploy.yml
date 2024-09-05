@@ -37,7 +37,7 @@ jobs:
         roleId: ${{ secrets.VAULT_ROLE_ID }}
         secretId: ${{ secrets.VAULT_SECRET_ID }}
         secrets: |
-          secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
+          secret/data/products/camunda/ci/camunda ARGOCD_DEV_TOKEN;
 
     #########################################################################
     # Setup: checkout code. This is required because we are using
@@ -85,8 +85,32 @@ jobs:
       uses: camunda/infra-global-github-actions/preview-env/create@andreasbranch
       with:
         revision: ${{ env.BRANCH_NAME }}
-        argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+        argocd_token: ${{ steps.secrets.outputs.ARGOCD_DEV_TOKEN }}
         app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
         app_url: https://${{ steps.sanitize.outputs.branch_name }}.camunda.camunda.cloud
         argocd_arguments: ${{ env.argocd_arguments }}
-        argocd_server: argocd.int.camunda.com
+        argocd_server: dev.argocd.int.camunda.com
+  conflicts:
+    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check PR for merge conflicts
+        uses: camunda/infra-global-github-actions/preview-env/conflicts@main
+        with:
+          pull-request-id: ${{ github.event.pull_request.number }}
+  clean:
+    if: always() && needs.deploy-preview.result != 'skipped'
+    uses: camunda/camunda/.github/workflows/preview-env-clean.yml@main
+    needs:
+      - deploy-preview
+    secrets: inherit
+    with:
+      pull-request: ${{ github.event.pull_request.number }}
+  comment:
+    if: always() && needs.deploy-preview.result != 'skipped'
+    name: create-deployment-result-summary
+    runs-on: ubuntu-22.04
+    needs:
+      - deploy-preview
+    steps:
+      - uses: camunda/infra-global-github-actions/preview-env/comment@main
