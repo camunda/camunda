@@ -141,12 +141,16 @@ public class ElasticsearchEngineClientIT {
     assertThat(mappings.size()).isEqualTo(1);
     assertThat(mappings.get("index_qualified_name").dynamic()).isEqualTo("strict");
 
-    final var properties = mappings.get("index_qualified_name").properties().stream().toList();
-
-    assertThat(properties.get(0).name()).isEqualTo("world");
-    assertThat(properties.get(0).typeDefinition()).isEqualTo(Map.of("type", "keyword"));
-    assertThat(properties.get(1).name()).isEqualTo("hello");
-    assertThat(properties.get(1).typeDefinition()).isEqualTo(Map.of("type", "text"));
+    assertThat(mappings.get("index_qualified_name").properties())
+        .containsExactlyInAnyOrder(
+            new IndexMappingProperty.Builder()
+                .name("hello")
+                .typeDefinition(Map.of("type", "text"))
+                .build(),
+            new IndexMappingProperty.Builder()
+                .name("world")
+                .typeDefinition(Map.of("type", "keyword"))
+                .build());
   }
 
   @Test

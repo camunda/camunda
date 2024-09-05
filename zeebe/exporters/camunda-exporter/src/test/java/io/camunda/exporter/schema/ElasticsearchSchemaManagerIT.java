@@ -207,10 +207,15 @@ public class ElasticsearchSchemaManagerIT {
     // then
     assertThat(indexMapping.dynamic()).isEqualTo("strict");
 
-    final var properties = indexMapping.properties().stream().toList();
-    assertThat(properties.get(0).name()).isEqualTo("world");
-    assertThat(properties.get(0).typeDefinition()).isEqualTo(Map.of("type", "keyword"));
-    assertThat(properties.get(1).name()).isEqualTo("hello");
-    assertThat(properties.get(1).typeDefinition()).isEqualTo(Map.of("type", "text"));
+    assertThat(indexMapping.properties())
+        .containsExactlyInAnyOrder(
+            new IndexMappingProperty.Builder()
+                .name("hello")
+                .typeDefinition(Map.of("type", "text"))
+                .build(),
+            new IndexMappingProperty.Builder()
+                .name("world")
+                .typeDefinition(Map.of("type", "keyword"))
+                .build());
   }
 }

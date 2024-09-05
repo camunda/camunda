@@ -83,12 +83,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
           .dynamic(dynamic == null ? "strict" : dynamic.toString())
           .properties(
               properties.entrySet().stream()
-                  .map(
-                      entry ->
-                          new IndexMappingProperty.Builder()
-                              .name(entry.getKey())
-                              .typeDefinition(entry.getValue())
-                              .build())
+                  .map(IndexMappingProperty::createIndexMappingProperty)
                   .collect(Collectors.toSet()))
           .build();
     } catch (final IOException e) {
