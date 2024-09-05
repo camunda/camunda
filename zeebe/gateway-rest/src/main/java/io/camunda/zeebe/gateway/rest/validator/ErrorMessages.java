@@ -16,6 +16,7 @@ public final class ErrorMessages {
       No update data provided. Provide at least an "action" or a non-null value \
       for a supported attribute in the "changeset\"""";
   public static final String ERROR_MESSAGE_EMPTY_ATTRIBUTE = "No %s provided";
+  public static final String ERROR_MESSAGE_EMPTY_NESTED_ATTRIBUTE = "No %s provided in '%s'";
   public static final String ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE =
       "The value for %s is '%s' but must be %s";
   public static final String ERROR_SORT_FIELD_MUST_NOT_BE_NULL = "Sort field must not be null";

@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -39,7 +40,7 @@ public class CreateAuthorizationTest {
     final var ownerKey = 1L;
     final var action = PermissionAction.ADD;
     final var ownerType = AuthorizationOwnerType.USER;
-    final var resourceType = "bpmn-id";
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permission =
         new Permission().setPermissionType(PermissionType.CREATE).addResourceId("*");
     final var createdAuthorizationRecord =
@@ -70,7 +71,6 @@ public class CreateAuthorizationTest {
   public void shouldNotDuplicate() {
     // given
     final var ownerKey = 1L;
-    final var permissions = List.of("write:*");
     final var createdAuthorizationRecord =
         engine
             .authorization()
@@ -78,7 +78,7 @@ public class CreateAuthorizationTest {
             .withOwnerKey(1L)
             .withAction(PermissionAction.ADD)
             .withOwnerType(AuthorizationOwnerType.USER)
-            .withResourceType("bpmn-id")
+            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
             .withPermission(PermissionType.CREATE, "*")
             .create();
     // when
@@ -89,7 +89,7 @@ public class CreateAuthorizationTest {
             .withOwnerKey(ownerKey)
             .withAction(PermissionAction.ADD)
             .withOwnerType(AuthorizationOwnerType.USER)
-            .withResourceType("bpmn-id")
+            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
             .withPermission(PermissionType.CREATE, "*")
             .expectRejection()
             .create();

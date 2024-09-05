@@ -19,6 +19,7 @@ import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.vali
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
+import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentMetadataModel;
 import io.camunda.service.JobServices.ActivateJobsRequest;
@@ -29,7 +30,7 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationAssignRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
@@ -43,6 +44,9 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.io.InputStream;
@@ -194,11 +198,27 @@ public class RequestMapper {
                     updateRequest.getChangeset().getTimeout())));
   }
 
-  public static Either<ProblemDetail, AuthorizationAssignRequest> toAuthorizationAssignRequest(
-      final AuthorizationAssignRequest authorizationAssignRequest) {
+  public static Either<ProblemDetail, PatchAuthorizationRequest> toAuthorizationAssignRequest(
+      final long ownerKey, final AuthorizationPatchRequest authorizationPatchRequest) {
     return getResult(
-        validateAuthorizationAssignRequest(authorizationAssignRequest),
-        () -> authorizationAssignRequest);
+        validateAuthorizationAssignRequest(authorizationPatchRequest),
+        () -> {
+          final Map<PermissionType, List<String>> permissions = new HashMap<>();
+          authorizationPatchRequest
+              .getPermissions()
+              .forEach(
+                  permission -> {
+                    permissions.put(
+                        PermissionType.valueOf(permission.getPermissionType().name()),
+                        permission.getResourceIds());
+                  });
+
+          return new PatchAuthorizationRequest(
+              ownerKey,
+              PermissionAction.valueOf(authorizationPatchRequest.getAction().name()),
+              AuthorizationResourceType.valueOf(authorizationPatchRequest.getResourceType().name()),
+              permissions);
+        });
   }
 
   public static Either<ProblemDetail, DocumentCreateRequest> toDocumentCreateRequest(
