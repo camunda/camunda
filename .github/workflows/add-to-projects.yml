@@ -37,7 +37,7 @@ jobs:
           project-url: https://github.com/orgs/camunda/projects/92
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/zeebe
-      - id: add-to-zda
+      - id: add-to-zpa
         name: Add to ZPA project
         uses: actions/add-to-project@v1.0.2
         if: ${{ steps.has-project.outputs.result == 'false' }}
