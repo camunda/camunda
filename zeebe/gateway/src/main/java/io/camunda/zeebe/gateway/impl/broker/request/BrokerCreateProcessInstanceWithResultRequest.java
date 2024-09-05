@@ -64,6 +64,15 @@ public final class BrokerCreateProcessInstanceWithResultRequest
     return this;
   }
 
+  public BrokerCreateProcessInstanceWithResultRequest setInstructions(
+      final List<
+              io.camunda.zeebe.protocol.impl.record.value.processinstance
+                  .ProcessInstanceCreationStartInstruction>
+          instructions) {
+    requestDto.addStartInstructions(instructions);
+    return this;
+  }
+
   public BrokerCreateProcessInstanceWithResultRequest setFetchVariables(
       final List<String> fetchVariables) {
     requestDto.setFetchVariables(fetchVariables);
