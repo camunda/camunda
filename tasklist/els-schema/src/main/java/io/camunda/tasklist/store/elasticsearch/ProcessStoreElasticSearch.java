@@ -37,10 +37,10 @@ import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregation;
 import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.composite.TermsValuesSourceBuilder;
+import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
-import org.elasticsearch.search.aggregations.bucket.terms.ParsedLongTerms;
-import org.elasticsearch.search.aggregations.metrics.ParsedTopHits;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
+import org.elasticsearch.search.aggregations.metrics.TopHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.collapse.CollapseBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -352,19 +352,18 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     return composite.getBuckets().stream()
         .flatMap(
             bucket ->
-                ((ParsedLongTerms)
-                        bucket.getAggregations().asMap().get(MAX_VERSION_DOCUMENTS_AGG_NAME))
+                ((ParsedTerms) bucket.getAggregations().asMap().get(MAX_VERSION_DOCUMENTS_AGG_NAME))
                     .getBuckets().stream()
                         .flatMap(
                             versionBucket -> {
                               final var startedByFormDocs =
-                                  ((ParsedFilter)
+                                  ((Filter)
                                           versionBucket
                                               .getAggregations()
                                               .get(STARTED_BY_FORM_FILTERED_DOCS))
                                       .getAggregations();
                               return Arrays.stream(
-                                  ((ParsedTopHits) startedByFormDocs.get(TOP_HITS_AGG_NAME))
+                                  ((TopHits) startedByFormDocs.get(TOP_HITS_AGG_NAME))
                                       .getHits()
                                       .getHits());
                             }))
@@ -375,13 +374,12 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     return composite.getBuckets().stream()
         .flatMap(
             bucket ->
-                ((ParsedLongTerms)
-                        bucket.getAggregations().asMap().get(MAX_VERSION_DOCUMENTS_AGG_NAME))
+                ((ParsedTerms) bucket.getAggregations().get(MAX_VERSION_DOCUMENTS_AGG_NAME))
                     .getBuckets().stream()
                         .flatMap(
                             versionBucket ->
                                 Arrays.stream(
-                                    ((ParsedTopHits)
+                                    ((TopHits)
                                             versionBucket.getAggregations().get(TOP_HITS_AGG_NAME))
                                         .getHits()
                                         .getHits())))
