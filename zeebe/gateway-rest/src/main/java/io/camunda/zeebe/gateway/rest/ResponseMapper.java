@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceResponse;
@@ -127,9 +128,12 @@ public final class ResponseMapper {
   }
 
   public static ResponseEntity<Object> toMessagePublicationResponse(
-      final MessageRecord brokerResponse) {
+      final BrokerResponse<MessageRecord> brokerResponse) {
+
     final var response =
-        new MessagePublicationResponse().key(1L).tenantId(brokerResponse.getTenantId());
+        new MessagePublicationResponse()
+            .key(brokerResponse.getKey())
+            .tenantId(brokerResponse.getResponse().getTenantId());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 

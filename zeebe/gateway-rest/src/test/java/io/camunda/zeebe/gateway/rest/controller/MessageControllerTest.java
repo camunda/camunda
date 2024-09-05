@@ -16,6 +16,7 @@ import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.service.security.auth.Authentication;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -47,7 +48,7 @@ public class MessageControllerTest extends RestControllerTest {
   private static final String EXPECTED_PUBLICATION_RESPONSE =
       """
             {
-              "key": 1,
+              "key": 123,
               "tenantId": "<default>"
             }""";
   @MockBean MessageServices messageServices;
@@ -587,13 +588,14 @@ public class MessageControllerTest extends RestControllerTest {
         .json(expectedBody);
   }
 
-  private CompletableFuture<MessageRecord> buildPublishResponse() {
-    return CompletableFuture.completedFuture(
+  private CompletableFuture<BrokerResponse<MessageRecord>> buildPublishResponse() {
+    final var record =
         new MessageRecord()
             .setName("messageName")
             .setCorrelationKey("correlationKey")
             .setTimeToLive(123L)
-            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    return CompletableFuture.completedFuture(new BrokerResponse<>(record, 1, 123));
   }
 
   private ResponseSpec withMultiTenancy(
