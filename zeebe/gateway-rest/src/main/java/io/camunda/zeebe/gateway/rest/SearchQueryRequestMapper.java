@@ -328,7 +328,7 @@ public final class SearchQueryRequestMapper {
         case "processName" -> builder.processName();
         case "processVersion" -> builder.processVersion();
         case "bpmnProcessId" -> builder.bpmnProcessId();
-        case "parentKey" -> builder.parentKey();
+        case "parentProcessInstanceKey" -> builder.parentKey();
         case "parentFlowNodeInstanceKey" -> builder.parentFlowNodeInstanceKey();
         case "startDate" -> builder.startDate();
         case "endDate" -> builder.endDate();
