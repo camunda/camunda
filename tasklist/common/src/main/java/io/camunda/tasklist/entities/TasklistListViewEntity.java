@@ -9,22 +9,22 @@ package io.camunda.tasklist.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
-import io.camunda.tasklist.entities.listview.ProcessInstanceEntity;
-import io.camunda.tasklist.entities.listview.UserTaskEntity;
-import io.camunda.tasklist.entities.listview.VariableEntity;
+import io.camunda.tasklist.entities.listview.ProcessInstanceListViewEntity;
+import io.camunda.tasklist.entities.listview.UserTaskListViewEntity;
+import io.camunda.tasklist.entities.listview.VariableListViewEntity;
 
 public class TasklistListViewEntity {
   private String dataType;
 
   // This is only used to persist the Parent/Child relation
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  private ProcessInstanceEntity processInstanceEntity;
+  private ProcessInstanceListViewEntity processInstanceListViewEntity;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  private UserTaskEntity userTaskEntity;
+  private UserTaskListViewEntity userTaskListViewEntity;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  private VariableEntity variableEntity;
+  private VariableListViewEntity variableListViewEntity;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private ListViewJoinRelation listViewJoinRelation;
@@ -39,31 +39,31 @@ public class TasklistListViewEntity {
     return this;
   }
 
-  public ProcessInstanceEntity getProcessInstanceEntity() {
-    return processInstanceEntity;
+  public ProcessInstanceListViewEntity getProcessInstanceEntity() {
+    return processInstanceListViewEntity;
   }
 
   public TasklistListViewEntity setProcessInstanceEntity(
-      final ProcessInstanceEntity processInstanceEntity) {
-    this.processInstanceEntity = processInstanceEntity;
+      final ProcessInstanceListViewEntity processInstanceListViewEntity) {
+    this.processInstanceListViewEntity = processInstanceListViewEntity;
     return this;
   }
 
-  public UserTaskEntity getUserTaskEntity() {
-    return userTaskEntity;
+  public UserTaskListViewEntity getUserTaskEntity() {
+    return userTaskListViewEntity;
   }
 
-  public TasklistListViewEntity setUserTaskEntity(final UserTaskEntity userTaskEntity) {
-    this.userTaskEntity = userTaskEntity;
+  public TasklistListViewEntity setUserTaskEntity(final UserTaskListViewEntity userTaskListViewEntity) {
+    this.userTaskListViewEntity = userTaskListViewEntity;
     return this;
   }
 
-  public VariableEntity getVariableEntity() {
-    return variableEntity;
+  public VariableListViewEntity getVariableEntity() {
+    return variableListViewEntity;
   }
 
-  public TasklistListViewEntity setVariableEntity(final VariableEntity variableEntity) {
-    this.variableEntity = variableEntity;
+  public TasklistListViewEntity setVariableEntity(final VariableListViewEntity variableListViewEntity) {
+    this.variableListViewEntity = variableListViewEntity;
     return this;
   }
 }
