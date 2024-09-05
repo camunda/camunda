@@ -101,7 +101,9 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
 
     final CamundaProcessTestContext camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
-            containerRuntime.getZeebeContainer(), createdClients::add);
+            containerRuntime.getZeebeContainer(),
+            containerRuntime.getConnectorsContainer(),
+            createdClients::add);
 
     // inject fields
     try {
