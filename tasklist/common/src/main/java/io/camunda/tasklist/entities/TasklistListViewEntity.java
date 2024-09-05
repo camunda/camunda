@@ -66,4 +66,13 @@ public class TasklistListViewEntity {
     this.variableListViewEntity = variableListViewEntity;
     return this;
   }
+
+  public ListViewJoinRelation getListViewJoinRelation() {
+    return listViewJoinRelation;
+  }
+
+  public TasklistListViewEntity setListViewJoinRelation(final ListViewJoinRelation listViewJoinRelation) {
+    this.listViewJoinRelation = listViewJoinRelation;
+    return this;
+  }
 }
