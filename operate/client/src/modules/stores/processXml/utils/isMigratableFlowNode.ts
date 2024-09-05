@@ -7,9 +7,26 @@
  */
 
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {hasEventType} from 'modules/bpmn-js/utils/hasEventType';
 import {hasType} from 'modules/bpmn-js/utils/hasType';
 
 const isMigratableFlowNode = (businessObject: BusinessObject) => {
+  if (
+    /**
+     * Check boundary events
+     */
+    hasType({
+      businessObject,
+      types: ['bpmn:BoundaryEvent'],
+    }) &&
+    hasEventType({
+      businessObject,
+      types: ['bpmn:MessageEventDefinition', 'bpmn:TimerEventDefinition'],
+    })
+  ) {
+    return true;
+  }
+
   return hasType({
     businessObject,
     types: [
