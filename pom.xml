@@ -27,6 +27,7 @@
     <module>webapps-common</module>
     <module>webapps-schema</module>
     <module>authentication</module>
+    <module>db</module>
     <module>search</module>
     <module>service</module>
     <module>clients/java</module>
