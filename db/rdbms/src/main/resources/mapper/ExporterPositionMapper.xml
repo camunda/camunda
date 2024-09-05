@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.ExporterPositionMapper">
+
+  <select id="findOne"
+    statementType="PREPARED"
+    parameterType="java.lang.Long"
+    resultType="io.camunda.db.rdbms.domain.ExporterPositionModel">
+      SELECT
+        PARTITION_ID,
+        EXPORTER,
+        LAST_EXPORTED_POSITION,
+        CREATED,
+        LAST_UPDATED
+      FROM
+        EXPORTER_POSITION
+      WHERE PARTITION_ID = #{partitionId}
+  </select>
+
+  <insert
+    id="insert"
+    statementType="PREPARED"
+    parameterType="io.camunda.db.rdbms.domain.ExporterPositionModel"
+    flushCache="true"
+    timeout="20">
+      INSERT INTO EXPORTER_POSITION (PARTITION_ID, EXPORTER, LAST_EXPORTED_POSITION, CREATED, LAST_UPDATED)
+      VALUES (#{partitionId}, #{exporter}, #{lastExportedPosition}, #{created}, #{lastUpdated})
+  </insert>
+
+  <update
+    id="update"
+    statementType="PREPARED"
+    parameterType="io.camunda.db.rdbms.domain.ExporterPositionModel"
+    flushCache="true"
+    timeout="20">
+      UPDATE EXPORTER_POSITION
+      SET LAST_EXPORTED_POSITION = #{lastExportedPosition}, LAST_UPDATED = #{lastUpdated}
+      WHERE PARTITION_ID = #{partitionId}
+  </update>
+</mapper>
