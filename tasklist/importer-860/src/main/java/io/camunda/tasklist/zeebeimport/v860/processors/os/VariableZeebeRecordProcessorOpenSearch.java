@@ -9,7 +9,6 @@ package io.camunda.tasklist.zeebeimport.v860.processors.os;
 
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.DocumentNodeType;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
 import io.camunda.tasklist.entities.listview.VariableListViewEntity;
@@ -105,8 +104,7 @@ public class VariableZeebeRecordProcessorOpenSearch {
 
     if (isTaskOrSubProcessVariable(variableEntity)) {
       VariableListViewEntity = associateVariableWithTask(VariableListViewEntity);
-      return prepareUpdateRequest(
-          VariableListViewEntity, VariableListViewEntity.getScopeKey());
+      return prepareUpdateRequest(VariableListViewEntity, VariableListViewEntity.getScopeKey());
     } else if (isProcessScope(variableEntity)) {
       VariableListViewEntity = associateVariableWithProcess(variableEntity, VariableListViewEntity);
       return prepareUpdateRequest(VariableListViewEntity, variableEntity.getProcessInstanceId());
@@ -141,9 +139,7 @@ public class VariableZeebeRecordProcessorOpenSearch {
   private VariableListViewEntity associateVariableWithTask(
       final VariableListViewEntity variableListViewEntity) {
     return associateVariableWithParent(
-        variableListViewEntity,
-        "taskVariable",
-        variableListViewEntity.getScopeKey());
+        variableListViewEntity, "taskVariable", variableListViewEntity.getScopeKey());
   }
 
   private VariableListViewEntity associateVariableWithParent(

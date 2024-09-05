@@ -10,7 +10,6 @@ package io.camunda.tasklist.zeebeimport.v860.processors.es;
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.DocumentNodeType;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
 import io.camunda.tasklist.entities.listview.VariableListViewEntity;
@@ -118,8 +117,7 @@ public class VariableZeebeRecordProcessorElasticSearch {
 
     if (isTaskOrSubProcessVariable(variableEntity)) {
       variableListViewEntity = associateVariableWithTask(variableListViewEntity);
-      return prepareUpdateRequest(
-          variableListViewEntity, variableListViewEntity.getScopeKey());
+      return prepareUpdateRequest(variableListViewEntity, variableListViewEntity.getScopeKey());
     } else if (isProcessScope(variableEntity)) {
       variableListViewEntity = associateVariableWithProcess(variableEntity, variableListViewEntity);
       return prepareUpdateRequest(variableListViewEntity, variableEntity.getProcessInstanceId());
@@ -154,9 +152,7 @@ public class VariableZeebeRecordProcessorElasticSearch {
   private VariableListViewEntity associateVariableWithTask(
       final VariableListViewEntity variableListViewEntity) {
     return associateVariableWithParent(
-        variableListViewEntity,
-        "taskVariable",
-        variableListViewEntity.getScopeKey());
+        variableListViewEntity, "taskVariable", variableListViewEntity.getScopeKey());
   }
 
   private VariableListViewEntity associateVariableWithParent(

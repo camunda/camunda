@@ -188,7 +188,8 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
 
   private UpdateRequest persistFlowNodeDataToListView(final FlowNodeInstanceEntity flowNodeInstance)
       throws PersistenceException {
-    final ProcessInstanceListViewEntity processInstanceListViewEntity = new ProcessInstanceListViewEntity();
+    final ProcessInstanceListViewEntity processInstanceListViewEntity =
+        new ProcessInstanceListViewEntity();
     final ListViewJoinRelation listViewJoinRelation = new ListViewJoinRelation();
     if (flowNodeInstance.getType().equals(FlowNodeType.PROCESS)) {
       processInstanceListViewEntity.setJoin(new ListViewJoinRelation());
@@ -201,7 +202,8 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
     }
   }
 
-  private UpdateRequest getUpdateRequest(final ProcessInstanceListViewEntity processInstanceListViewEntity)
+  private UpdateRequest getUpdateRequest(
+      final ProcessInstanceListViewEntity processInstanceListViewEntity)
       throws PersistenceException {
     try {
       final Map<String, Object> jsonMap =
@@ -211,7 +213,8 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
           new UpdateRequest()
               .index(tasklistListViewTemplate.getFullQualifiedName())
               .id(processInstanceListViewEntity.getId())
-              .upsert(objectMapper.writeValueAsString(processInstanceListViewEntity), XContentType.JSON)
+              .upsert(
+                  objectMapper.writeValueAsString(processInstanceListViewEntity), XContentType.JSON)
               .doc(jsonMap)
               .retryOnConflict(UPDATE_RETRY_COUNT);
       return updateRequest;

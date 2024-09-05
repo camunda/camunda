@@ -30,10 +30,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
@@ -183,7 +181,8 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
 
   private BulkOperation persistFlowNodeDataToListView(
       final FlowNodeInstanceEntity flowNodeInstance) {
-    final ProcessInstanceListViewEntity processInstanceListViewEntity = new ProcessInstanceListViewEntity();
+    final ProcessInstanceListViewEntity processInstanceListViewEntity =
+        new ProcessInstanceListViewEntity();
 
     if (flowNodeInstance.getType().equals(FlowNodeType.PROCESS)) {
       processInstanceListViewEntity.setJoin(new ListViewJoinRelation());
@@ -195,7 +194,8 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     }
   }
 
-  private BulkOperation getUpdateRequest(final ProcessInstanceListViewEntity processInstanceListViewEntity) {
+  private BulkOperation getUpdateRequest(
+      final ProcessInstanceListViewEntity processInstanceListViewEntity) {
 
     return new BulkOperation.Builder()
         .update(

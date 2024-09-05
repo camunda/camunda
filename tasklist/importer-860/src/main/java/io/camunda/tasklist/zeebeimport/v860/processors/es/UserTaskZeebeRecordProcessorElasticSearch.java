@@ -137,8 +137,7 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
   }
 
   private UserTaskListViewEntity createTaskListViewInput(final TaskEntity taskEntity) {
-    final UserTaskListViewEntity userTaskListViewEntity =
-        new UserTaskListViewEntity();
+    final UserTaskListViewEntity userTaskListViewEntity = new UserTaskListViewEntity();
     Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
         .ifPresent(userTaskListViewEntity::setId); // The ID is necessary for the join
     Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
@@ -187,11 +186,12 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     return userTaskListViewEntity;
   }
 
-  private UpdateRequest persistUserTaskToListView(final UserTaskListViewEntity userTaskListViewEntity)
-      throws PersistenceException {
+  private UpdateRequest persistUserTaskToListView(
+      final UserTaskListViewEntity userTaskListViewEntity) throws PersistenceException {
     try {
       final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(userTaskListViewEntity), HashMap.class);
+          objectMapper.readValue(
+              objectMapper.writeValueAsString(userTaskListViewEntity), HashMap.class);
       return new UpdateRequest()
           .index(tasklistListViewTemplate.getFullQualifiedName())
           .id(userTaskListViewEntity.getId())

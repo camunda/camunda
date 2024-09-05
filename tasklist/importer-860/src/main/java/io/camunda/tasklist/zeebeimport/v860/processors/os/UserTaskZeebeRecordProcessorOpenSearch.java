@@ -131,8 +131,7 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
   }
 
   private UserTaskListViewEntity createTaskListViewInput(final TaskEntity taskEntity) {
-    final UserTaskListViewEntity userTaskListViewEntity =
-        new UserTaskListViewEntity();
+    final UserTaskListViewEntity userTaskListViewEntity = new UserTaskListViewEntity();
     Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
         .ifPresent(userTaskListViewEntity::setId); // The ID is necessary for the join
     Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
