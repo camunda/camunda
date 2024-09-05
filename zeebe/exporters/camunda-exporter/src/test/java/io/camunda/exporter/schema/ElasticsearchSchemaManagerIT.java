@@ -15,7 +15,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.NoopExporterConfiguration.ElasticsearchConfig;
+import io.camunda.exporter.config.ElasticsearchProperties;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.utils.TestSupport;
 import java.io.IOException;
@@ -67,9 +67,9 @@ public class ElasticsearchSchemaManagerIT {
 
   @Test
   void shouldInheritDefaultSettingsIfNoIndexSpecificSettings() throws IOException {
-    final var settings = new ElasticsearchConfig();
-    settings.defaultSettings.numberOfReplicas = 10;
-    settings.defaultSettings.numberOfShards = 10;
+    final var properties = new ElasticsearchProperties();
+    properties.getDefaultSettings().setNumberOfReplicas(10);
+    properties.getDefaultSettings().setNumberOfShards(10);
 
     final var indexTemplate =
         TestUtil.mockIndexTemplate(
@@ -84,7 +84,7 @@ public class ElasticsearchSchemaManagerIT {
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(index), List.of(indexTemplate), settings);
+            searchEngineClient, List.of(index), List.of(indexTemplate), properties);
 
     schemaManager.initialiseResources();
 
@@ -97,11 +97,11 @@ public class ElasticsearchSchemaManagerIT {
 
   @Test
   void shouldUseIndexSpecificSettingsIfSpecified() throws IOException {
-    final var settings = new ElasticsearchConfig();
-    settings.defaultSettings.numberOfReplicas = 10;
-    settings.defaultSettings.numberOfShards = 10;
-    settings.replicasByIndexName.put("index_name", 5);
-    settings.shardsByIndexName.put("index_name", 5);
+    final var properties = new ElasticsearchProperties();
+    properties.getDefaultSettings().setNumberOfReplicas(10);
+    properties.getDefaultSettings().setNumberOfShards(10);
+    properties.setReplicasByIndexName(Map.of("index_name", 5));
+    properties.setShardsByIndexName(Map.of("index_name", 5));
 
     final var indexTemplate =
         TestUtil.mockIndexTemplate(
@@ -116,7 +116,7 @@ public class ElasticsearchSchemaManagerIT {
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(index), List.of(indexTemplate), settings);
+            searchEngineClient, List.of(index), List.of(indexTemplate), properties);
 
     schemaManager.initialiseResources();
 
@@ -140,7 +140,7 @@ public class ElasticsearchSchemaManagerIT {
             "mappings.json");
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(), List.of(indexTemplate), new ElasticsearchConfig());
+            searchEngineClient, List.of(), List.of(indexTemplate), new ElasticsearchProperties());
 
     schemaManager.initialiseResources();
 
@@ -170,7 +170,7 @@ public class ElasticsearchSchemaManagerIT {
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(index), List.of(), new ElasticsearchConfig());
+            searchEngineClient, List.of(index), List.of(), new ElasticsearchProperties());
 
     schemaManager.initialiseResources();
 
