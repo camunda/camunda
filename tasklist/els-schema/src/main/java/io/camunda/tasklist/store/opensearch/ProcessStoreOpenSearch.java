@@ -330,10 +330,8 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                     mn.term(
                         t -> t.field(ProcessIndex.PROCESS_DEFINITION_ID).value(FieldValue.of(""))))
             .build()
-            ._toQuery();
-    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(query, true).stream()
-        .filter(ProcessEntity::isStartedByForm)
-        .toList();
+            .toQuery();
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(query, true);
   }
 
   private Query addFilterOnTenantIdIfRequired(final Query query, final String tenantId) {

@@ -175,7 +175,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     final QueryBuilder qb;
 
     if (tasklistProperties.getIdentity().isResourcePermissionsEnabled()) {
-      if (processDefinitions.size() == 0) {
+      if (processDefinitions.isEmpty()) {
         return new ArrayList<>();
       }
 
@@ -254,7 +254,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
             .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
             .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""));
 
-    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(qb, true).stream().toList();
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(qb, true);
   }
 
   private ProcessEntity fromSearchHit(final String processString) {
