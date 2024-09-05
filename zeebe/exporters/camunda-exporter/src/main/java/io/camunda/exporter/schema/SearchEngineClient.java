@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.schema;
 
-import io.camunda.exporter.NoopExporterConfiguration.IndexSettings;
+import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Set;
