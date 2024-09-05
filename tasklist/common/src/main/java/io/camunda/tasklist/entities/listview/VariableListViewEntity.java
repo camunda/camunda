@@ -9,7 +9,7 @@ package io.camunda.tasklist.entities.listview;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-public class VariableEntity {
+public class VariableListViewEntity {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String id;
 
@@ -33,7 +33,7 @@ public class VariableEntity {
     return id;
   }
 
-  public VariableEntity setId(final String id) {
+  public VariableListViewEntity setId(final String id) {
     this.id = id;
     return this;
   }
@@ -42,7 +42,7 @@ public class VariableEntity {
     return name;
   }
 
-  public VariableEntity setName(final String name) {
+  public VariableListViewEntity setName(final String name) {
     this.name = name;
     return this;
   }
@@ -51,7 +51,7 @@ public class VariableEntity {
     return value;
   }
 
-  public VariableEntity setValue(final String value) {
+  public VariableListViewEntity setValue(final String value) {
     this.value = value;
     return this;
   }
@@ -60,7 +60,7 @@ public class VariableEntity {
     return fullValue;
   }
 
-  public VariableEntity setFullValue(final String fullValue) {
+  public VariableListViewEntity setFullValue(final String fullValue) {
     this.fullValue = fullValue;
     return this;
   }
@@ -69,7 +69,7 @@ public class VariableEntity {
     return isPreview;
   }
 
-  public VariableEntity setIsPreview(final Boolean isPreview) {
+  public VariableListViewEntity setIsPreview(final Boolean isPreview) {
     this.isPreview = isPreview;
     return this;
   }
@@ -78,7 +78,7 @@ public class VariableEntity {
     return scopeKey;
   }
 
-  public VariableEntity setScopeKey(final String scopeKey) {
+  public VariableListViewEntity setScopeKey(final String scopeKey) {
     this.scopeKey = scopeKey;
     return this;
   }

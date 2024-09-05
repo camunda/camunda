@@ -9,7 +9,7 @@ package io.camunda.tasklist.entities.listview;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-public class ProcessInstanceEntity {
+public class ProcessInstanceListViewEntity {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String id;
 
@@ -17,7 +17,7 @@ public class ProcessInstanceEntity {
     return id;
   }
 
-  public ProcessInstanceEntity setId(final String id) {
+  public ProcessInstanceListViewEntity setId(final String id) {
     this.id = id;
     return this;
   }
