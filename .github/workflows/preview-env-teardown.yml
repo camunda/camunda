@@ -47,7 +47,7 @@ jobs:
       uses: camunda/infra-global-github-actions/preview-env/destroy@main
       with:
         revision: ${{ env.BRANCH_NAME }}
-        argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+        argocd_token: ${{ steps.secrets.outputs.ARGOCD_DEV_TOKEN }}
         app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
         argocd_server: dev.argocd.int.camunda.com
 
