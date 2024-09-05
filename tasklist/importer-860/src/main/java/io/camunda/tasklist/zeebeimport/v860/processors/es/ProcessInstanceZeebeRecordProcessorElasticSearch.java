@@ -13,12 +13,12 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.DocumentNodeType;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.entities.FlowNodeType;
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.entities.ProcessInstanceState;
-import io.camunda.tasklist.entities.TasklistListViewEntity;
+import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
+import io.camunda.tasklist.entities.listview.ProcessInstanceListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
@@ -188,32 +188,30 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
 
   private UpdateRequest persistFlowNodeDataToListView(final FlowNodeInstanceEntity flowNodeInstance)
       throws PersistenceException {
-    final TasklistListViewEntity tasklistListViewEntity = new TasklistListViewEntity();
-
-    final Map<String, Object> joinField = new HashMap<>();
-    // Only the Parent Process will be persisted over here
+    final ProcessInstanceListViewEntity processInstanceListViewEntity = new ProcessInstanceListViewEntity();
+    final ListViewJoinRelation listViewJoinRelation = new ListViewJoinRelation();
     if (flowNodeInstance.getType().equals(FlowNodeType.PROCESS)) {
-      tasklistListViewEntity.getProcessInstanceEntity().setId(flowNodeInstance.getId());
-      tasklistListViewEntity.getListViewJoinRelation().setName("process");
-      tasklistListViewEntity.setDataType(
-          DocumentNodeType.valueOf(String.valueOf(DocumentNodeType.PROCESS)));
-      return getUpdateRequest(tasklistListViewEntity);
+      processInstanceListViewEntity.setJoin(new ListViewJoinRelation());
+      processInstanceListViewEntity.setId(flowNodeInstance.getId());
+      listViewJoinRelation.setName("process");
+      processInstanceListViewEntity.setJoin(listViewJoinRelation);
+      return getUpdateRequest(processInstanceListViewEntity);
     } else {
       return null;
     }
   }
 
-  private UpdateRequest getUpdateRequest(final TasklistListViewEntity tasklistListViewEntity)
+  private UpdateRequest getUpdateRequest(final ProcessInstanceListViewEntity processInstanceListViewEntity)
       throws PersistenceException {
     try {
       final Map<String, Object> jsonMap =
           objectMapper.readValue(
-              objectMapper.writeValueAsString(tasklistListViewEntity), HashMap.class);
+              objectMapper.writeValueAsString(processInstanceListViewEntity), HashMap.class);
       final UpdateRequest updateRequest =
           new UpdateRequest()
               .index(tasklistListViewTemplate.getFullQualifiedName())
-              .id(tasklistListViewEntity.getProcessInstanceEntity().getId())
-              .upsert(objectMapper.writeValueAsString(tasklistListViewEntity), XContentType.JSON)
+              .id(processInstanceListViewEntity.getId())
+              .upsert(objectMapper.writeValueAsString(processInstanceListViewEntity), XContentType.JSON)
               .doc(jsonMap)
               .retryOnConflict(UPDATE_RETRY_COUNT);
       return updateRequest;

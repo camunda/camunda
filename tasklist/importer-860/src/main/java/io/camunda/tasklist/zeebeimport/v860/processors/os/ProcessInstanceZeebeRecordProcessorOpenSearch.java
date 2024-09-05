@@ -12,12 +12,12 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.DocumentNodeType;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.entities.FlowNodeType;
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.entities.ProcessInstanceState;
-import io.camunda.tasklist.entities.TasklistListViewEntity;
+import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
+import io.camunda.tasklist.entities.listview.ProcessInstanceListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
@@ -183,29 +183,26 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
 
   private BulkOperation persistFlowNodeDataToListView(
       final FlowNodeInstanceEntity flowNodeInstance) {
-    final TasklistListViewEntity tasklistListViewEntity = new TasklistListViewEntity();
+    final ProcessInstanceListViewEntity processInstanceListViewEntity = new ProcessInstanceListViewEntity();
 
-    final Map<String, Object> joinField = new HashMap<>();
-    // Only the Parent Process will be persisted over here
     if (flowNodeInstance.getType().equals(FlowNodeType.PROCESS)) {
-      tasklistListViewEntity.getProcessInstanceEntity().setId(flowNodeInstance.getId());
-      tasklistListViewEntity.getListViewJoinRelation().setName("process");
-      tasklistListViewEntity.setDataType(
-          DocumentNodeType.valueOf(String.valueOf(DocumentNodeType.PROCESS)));
-      return getUpdateRequest(tasklistListViewEntity);
+      processInstanceListViewEntity.setJoin(new ListViewJoinRelation());
+      processInstanceListViewEntity.setId(flowNodeInstance.getId());
+      processInstanceListViewEntity.getJoin().setName("process");
+      return getUpdateRequest(processInstanceListViewEntity);
     } else {
       return null;
     }
   }
 
-  private BulkOperation getUpdateRequest(final TasklistListViewEntity tasklistListViewEntity) {
+  private BulkOperation getUpdateRequest(final ProcessInstanceListViewEntity processInstanceListViewEntity) {
 
     return new BulkOperation.Builder()
         .update(
             up ->
                 up.index(tasklistListViewTemplate.getFullQualifiedName())
-                    .id(tasklistListViewEntity.getProcessInstanceEntity().getId())
-                    .document(CommonUtils.getJsonObjectFromEntity(tasklistListViewEntity))
+                    .id(processInstanceListViewEntity.getId())
+                    .document(CommonUtils.getJsonObjectFromEntity(processInstanceListViewEntity))
                     .docAsUpsert(true)
                     .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))
         .build();

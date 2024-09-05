@@ -11,10 +11,9 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.DocumentNodeType;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskVariableEntity;
-import io.camunda.tasklist.entities.TasklistListViewEntity;
+import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
 import io.camunda.tasklist.entities.listview.UserTaskListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
@@ -137,10 +136,9 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     }
   }
 
-  private TasklistListViewEntity createTaskListViewInput(final TaskEntity taskEntity) {
-    final TasklistListViewEntity tasklistListViewEntity = new TasklistListViewEntity();
+  private UserTaskListViewEntity createTaskListViewInput(final TaskEntity taskEntity) {
     final UserTaskListViewEntity userTaskListViewEntity =
-        tasklistListViewEntity.getUserTaskEntity();
+        new UserTaskListViewEntity();
     Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
         .ifPresent(userTaskListViewEntity::setId); // The ID is necessary for the join
     Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
@@ -179,27 +177,26 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     Optional.ofNullable(taskEntity.getFormKey()).ifPresent(userTaskListViewEntity::setFormKey);
     Optional.ofNullable(taskEntity.getState()).ifPresent(userTaskListViewEntity::setState);
 
+    userTaskListViewEntity.setJoin(new ListViewJoinRelation());
     // Set Join Field for the parent
-    tasklistListViewEntity.getListViewJoinRelation().setName("task");
-    tasklistListViewEntity
-        .getListViewJoinRelation()
+    userTaskListViewEntity.getJoin().setName("task");
+    userTaskListViewEntity
+        .getJoin()
         .setParent(Long.valueOf(String.valueOf(taskEntity.getProcessInstanceId())));
 
-    tasklistListViewEntity.setDataType(
-        DocumentNodeType.valueOf(String.valueOf(DocumentNodeType.USER_TASK)));
-    return tasklistListViewEntity;
+    return userTaskListViewEntity;
   }
 
-  private UpdateRequest persistUserTaskToListView(final TasklistListViewEntity entity)
+  private UpdateRequest persistUserTaskToListView(final UserTaskListViewEntity userTaskListViewEntity)
       throws PersistenceException {
     try {
       final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class);
+          objectMapper.readValue(objectMapper.writeValueAsString(userTaskListViewEntity), HashMap.class);
       return new UpdateRequest()
           .index(tasklistListViewTemplate.getFullQualifiedName())
-          .id(entity.getUserTaskEntity().getId())
-          .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-          .routing(entity.getUserTaskEntity().getProcessInstanceId())
+          .id(userTaskListViewEntity.getId())
+          .upsert(objectMapper.writeValueAsString(userTaskListViewEntity), XContentType.JSON)
+          .routing(userTaskListViewEntity.getProcessInstanceId())
           .doc(jsonMap)
           .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT);
     } catch (final IOException e) {

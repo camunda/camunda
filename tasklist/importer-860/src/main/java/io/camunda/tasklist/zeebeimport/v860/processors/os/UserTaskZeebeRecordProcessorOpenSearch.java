@@ -12,10 +12,9 @@ import static io.camunda.tasklist.util.OpenSearchUtil.UPDATE_RETRY_COUNT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.DocumentNodeType;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskVariableEntity;
-import io.camunda.tasklist.entities.TasklistListViewEntity;
+import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
 import io.camunda.tasklist.entities.listview.UserTaskListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
@@ -131,10 +130,9 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
     }
   }
 
-  private TasklistListViewEntity createTaskListViewInput(final TaskEntity taskEntity) {
-    final TasklistListViewEntity tasklistListViewEntity = new TasklistListViewEntity();
+  private UserTaskListViewEntity createTaskListViewInput(final TaskEntity taskEntity) {
     final UserTaskListViewEntity userTaskListViewEntity =
-        tasklistListViewEntity.getUserTaskEntity();
+        new UserTaskListViewEntity();
     Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
         .ifPresent(userTaskListViewEntity::setId); // The ID is necessary for the join
     Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
@@ -174,25 +172,24 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
     Optional.ofNullable(taskEntity.getState()).ifPresent(userTaskListViewEntity::setState);
 
     // Set Join Field for the parent
-    tasklistListViewEntity.getListViewJoinRelation().setName("task");
-    tasklistListViewEntity
-        .getListViewJoinRelation()
+    userTaskListViewEntity.setJoin(new ListViewJoinRelation());
+    userTaskListViewEntity.getJoin().setName("task");
+    userTaskListViewEntity
+        .getJoin()
         .setParent(Long.valueOf(String.valueOf(taskEntity.getProcessInstanceId())));
 
-    tasklistListViewEntity.setDataType(
-        DocumentNodeType.valueOf(String.valueOf(DocumentNodeType.USER_TASK)));
-    return tasklistListViewEntity;
+    return userTaskListViewEntity;
   }
 
   private BulkOperation persistUserTaskToListView(
-      final TasklistListViewEntity tasklistListViewEntity) {
+      final UserTaskListViewEntity tasklistListViewEntity) {
     return new BulkOperation.Builder()
         .update(
             up ->
                 up.index(tasklistListViewTemplate.getFullQualifiedName())
-                    .id(tasklistListViewEntity.getUserTaskEntity().getId())
+                    .id(tasklistListViewEntity.getId())
                     .document(CommonUtils.getJsonObjectFromEntity(tasklistListViewEntity))
-                    .routing(tasklistListViewEntity.getUserTaskEntity().getProcessInstanceId())
+                    .routing(tasklistListViewEntity.getProcessInstanceId())
                     .docAsUpsert(true)
                     .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))
         .build();

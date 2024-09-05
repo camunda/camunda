@@ -10,8 +10,8 @@ package io.camunda.tasklist.zeebeimport.v860.processors.os;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.DocumentNodeType;
-import io.camunda.tasklist.entities.TasklistListViewEntity;
 import io.camunda.tasklist.entities.VariableEntity;
+import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
 import io.camunda.tasklist.entities.listview.VariableListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -101,15 +101,15 @@ public class VariableZeebeRecordProcessorOpenSearch {
   private BulkOperation persistVariableToListView(
       final Record record, final VariableRecordValueImpl recordValue) throws PersistenceException {
     final VariableEntity variableEntity = getVariableEntity(record, recordValue);
-    TasklistListViewEntity tasklistListViewEntity = createVariableInputToListView(variableEntity);
+    VariableListViewEntity VariableListViewEntity = createVariableInputToListView(variableEntity);
 
     if (isTaskOrSubProcessVariable(variableEntity)) {
-      tasklistListViewEntity = associateVariableWithTask(tasklistListViewEntity);
+      VariableListViewEntity = associateVariableWithTask(VariableListViewEntity);
       return prepareUpdateRequest(
-          tasklistListViewEntity, tasklistListViewEntity.getVariableEntity().getScopeKey());
+          VariableListViewEntity, VariableListViewEntity.getScopeKey());
     } else if (isProcessScope(variableEntity)) {
-      tasklistListViewEntity = associateVariableWithProcess(variableEntity, tasklistListViewEntity);
-      return prepareUpdateRequest(tasklistListViewEntity, variableEntity.getProcessInstanceId());
+      VariableListViewEntity = associateVariableWithProcess(variableEntity, VariableListViewEntity);
+      return prepareUpdateRequest(VariableListViewEntity, variableEntity.getProcessInstanceId());
     } else {
       throw new PersistenceException(
           String.format(
@@ -118,9 +118,8 @@ public class VariableZeebeRecordProcessorOpenSearch {
     }
   }
 
-  private TasklistListViewEntity createVariableInputToListView(final VariableEntity entity) {
-    final TasklistListViewEntity tasklistListView = new TasklistListViewEntity();
-    final VariableListViewEntity variableListViewEntity = tasklistListView.getVariableEntity();
+  private VariableListViewEntity createVariableInputToListView(final VariableEntity entity) {
+    final VariableListViewEntity variableListViewEntity = new VariableListViewEntity();
     Optional.ofNullable(entity.getValue()).ifPresent(variableListViewEntity::setValue);
     Optional.ofNullable(entity.getFullValue()).ifPresent(variableListViewEntity::setFullValue);
     Optional.ofNullable(entity.getName()).ifPresent(variableListViewEntity::setName);
@@ -128,31 +127,32 @@ public class VariableZeebeRecordProcessorOpenSearch {
     Optional.ofNullable(entity.getScopeFlowNodeId()).ifPresent(variableListViewEntity::setScopeKey);
     Optional.ofNullable(entity.getId()).ifPresent(variableListViewEntity::setId);
     Optional.of(entity.getPartitionId()).ifPresent(variableListViewEntity::setPartitionId);
+    variableListViewEntity.setJoin(new ListViewJoinRelation());
 
-    return tasklistListView;
+    return variableListViewEntity;
   }
 
-  private TasklistListViewEntity associateVariableWithProcess(
-      final VariableEntity entity, final TasklistListViewEntity tasklistListViewEntity) {
+  private VariableListViewEntity associateVariableWithProcess(
+      final VariableEntity entity, final VariableListViewEntity variableListViewEntity) {
     return associateVariableWithParent(
-        tasklistListViewEntity, "processVariable", entity.getProcessInstanceId());
+        variableListViewEntity, "processVariable", entity.getProcessInstanceId());
   }
 
-  private TasklistListViewEntity associateVariableWithTask(
-      final TasklistListViewEntity tasklistListViewEntity) {
+  private VariableListViewEntity associateVariableWithTask(
+      final VariableListViewEntity variableListViewEntity) {
     return associateVariableWithParent(
-        tasklistListViewEntity,
+        variableListViewEntity,
         "taskVariable",
-        tasklistListViewEntity.getVariableEntity().getScopeKey());
+        variableListViewEntity.getScopeKey());
   }
 
-  private TasklistListViewEntity associateVariableWithParent(
-      final TasklistListViewEntity tasklistListViewEntity,
+  private VariableListViewEntity associateVariableWithParent(
+      final VariableListViewEntity variableListViewEntity,
       final String name,
       final String parentId) {
-    tasklistListViewEntity.getListViewJoinRelation().setName(name);
-    tasklistListViewEntity.getListViewJoinRelation().setParent(Long.valueOf(parentId));
-    return tasklistListViewEntity;
+    variableListViewEntity.getJoin().setName(name);
+    variableListViewEntity.getJoin().setParent(Long.valueOf(parentId));
+    return variableListViewEntity;
   }
 
   private boolean isProcessScope(final VariableEntity entity) {
@@ -190,15 +190,14 @@ public class VariableZeebeRecordProcessorOpenSearch {
   }
 
   private BulkOperation prepareUpdateRequest(
-      final TasklistListViewEntity tasklistListViewEntity, final String routingKey) {
-    tasklistListViewEntity.setDataType(DocumentNodeType.VARIABLE);
+      final VariableListViewEntity variableListViewEntity, final String routingKey) {
 
     return new BulkOperation.Builder()
         .update(
             up ->
                 up.index(tasklistListViewTemplate.getFullQualifiedName())
-                    .id(tasklistListViewEntity.getVariableEntity().getId())
-                    .document(CommonUtils.getJsonObjectFromEntity(tasklistListViewEntity))
+                    .id(variableListViewEntity.getId())
+                    .document(CommonUtils.getJsonObjectFromEntity(variableListViewEntity))
                     .docAsUpsert(true)
                     .routing(routingKey)
                     .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))

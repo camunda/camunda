@@ -7,10 +7,14 @@
  */
 package io.camunda.tasklist.entities.listview;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 public class ListViewJoinRelation {
 
   private String name;
 
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long parent;
 
   public ListViewJoinRelation() {}
