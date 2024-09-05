@@ -29,7 +29,18 @@ Define your endpoint and any required data models in the [OpenAPI description](.
 
 1. Consider the [OpenAPI specification](https://spec.openapis.org/oas/v3.0.3) and [guide](https://learn.openapis.org/) for detailed guidance.
 2. Reuse existing data models as much as possible to avoid duplication and foster streamlined models.
-3. Add `description` and `summary` attributes where applicable. The OpenAPI description will be used directly to generate public reference documentation later.
+3. The OpenAPI description will be used directly to generate public reference documentation later. For optimal documentation, follow these rules:
+   1. Add a `summary` property to every API path.
+   2. Add a `description` property to every API path and every schema property.
+   3. Follow the [Camunda style guide](https://confluence.camunda.com/display/HAN/Camunda+style+guide) in all descriptive text.
+   4. Follow these rules for casing:
+      1. Use "Title Case" for path `tags` properties.
+      2. Use "Sentence case" (with no period) for path `summary` properties.
+      3. Use "Sentence case." (with a period) for all other descriptive text.
+      4. Use "lower case" to reference API resources in descriptive text.
+         - Example: use "The decision definition search query failed." instead of "The Decision Definition Search Query failed."
+   5. For multi-line path `description` properties, use a complete sentence for the first line.
+      - Reason: The documentation generator uses only the first line as the `meta description` on the endpoint's page. Incomplete sentences on the first line create a confusing `meta description`.
 
 ### REST controller implementation
 
