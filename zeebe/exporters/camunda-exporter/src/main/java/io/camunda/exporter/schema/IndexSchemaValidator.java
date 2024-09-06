@@ -25,16 +25,6 @@ public class IndexSchemaValidator {
     this.schemaManager = schemaManager;
   }
 
-  //  /**
-  //   * Validates existing indices mappings against index/index template mappings defined.
-  //   *
-  //   * @return newFields map with the new field definitions per index
-  //   * @throws IndexSchemaValidationException if changes are ambiguous in that there are two
-  // different
-  //   *     schemas which match a single descriptor and their differences to the descriptor is
-  //   *     different. Or an unsupported change is introduced in the descriptor. settings
-  //   */
-
   /**
    * Validates existing indices mappings against index/index template mappings defined.
    *
@@ -104,12 +94,10 @@ public class IndexSchemaValidator {
                         .setRight(mapping)
                         .build())
             .filter(difference -> !difference.equal())
-            // Ensure all difference are the same
-            .distinct() // Have to implement IndexMappingDifference.equals and hashcode
+            .distinct()
             .toList();
 
     if (differences.isEmpty()) {
-      // No difference
       return null;
     }
 
