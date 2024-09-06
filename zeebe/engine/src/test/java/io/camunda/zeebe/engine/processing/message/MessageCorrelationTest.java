@@ -1021,6 +1021,11 @@ public final class MessageCorrelationTest {
         .withVariable("key", correlationKey)
         .create();
 
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withMessageName(messageName)
+        .withCorrelationKey(correlationKey)
+        .await();
+
     // when
     engine
         .message()
