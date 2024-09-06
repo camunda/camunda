@@ -15,7 +15,6 @@ import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,14 +25,14 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private final SearchEngineClient elasticsearchClient;
-  private final List<IndexDescriptor> indexDescriptors;
-  private final List<IndexTemplateDescriptor> indexTemplateDescriptors;
+  private final Set<IndexDescriptor> indexDescriptors;
+  private final Set<IndexTemplateDescriptor> indexTemplateDescriptors;
   private final ElasticsearchProperties elasticsearchProperties;
 
   public ElasticsearchSchemaManager(
       final SearchEngineClient elasticsearchClient,
-      final List<IndexDescriptor> indexDescriptors,
-      final List<IndexTemplateDescriptor> indexTemplateDescriptors,
+      final Set<IndexDescriptor> indexDescriptors,
+      final Set<IndexTemplateDescriptor> indexTemplateDescriptors,
       final ElasticsearchProperties elasticsearchProperties) {
     this.elasticsearchClient = elasticsearchClient;
     this.indexDescriptors = indexDescriptors;

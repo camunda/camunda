@@ -21,7 +21,6 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.http.HttpHost;
@@ -84,7 +83,7 @@ public class ElasticsearchSchemaManagerIT {
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(index), List.of(indexTemplate), properties);
+            searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);
 
     schemaManager.initialiseResources();
 
@@ -116,7 +115,7 @@ public class ElasticsearchSchemaManagerIT {
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(index), List.of(indexTemplate), properties);
+            searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);
 
     schemaManager.initialiseResources();
 
@@ -140,7 +139,7 @@ public class ElasticsearchSchemaManagerIT {
             "mappings.json");
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(), List.of(indexTemplate), new ElasticsearchProperties());
+            searchEngineClient, Set.of(), Set.of(indexTemplate), new ElasticsearchProperties());
 
     schemaManager.initialiseResources();
 
@@ -170,7 +169,7 @@ public class ElasticsearchSchemaManagerIT {
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(index), List.of(), new ElasticsearchProperties());
+            searchEngineClient, Set.of(index), Set.of(), new ElasticsearchProperties());
 
     schemaManager.initialiseResources();
 
@@ -199,7 +198,7 @@ public class ElasticsearchSchemaManagerIT {
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(), List.of(), new ElasticsearchProperties());
+            searchEngineClient, Set.of(), Set.of(), new ElasticsearchProperties());
 
     // when
     final var indexMapping = schemaManager.readIndex(index);
