@@ -8,7 +8,6 @@
 package io.camunda.tasklist.entities.listview;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.camunda.tasklist.entities.TasklistZeebeEntity;
 
 public class ProcessInstanceListViewEntity {
   @JsonInclude(JsonInclude.Include.NON_NULL)
