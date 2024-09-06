@@ -194,6 +194,8 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
     if (flowNodeInstance.getType().equals(FlowNodeType.PROCESS)) {
       processInstanceListViewEntity.setJoin(new ListViewJoinRelation());
       processInstanceListViewEntity.setId(flowNodeInstance.getId());
+      processInstanceListViewEntity.setPartitionId(flowNodeInstance.getPartitionId());
+      processInstanceListViewEntity.setTenantId(flowNodeInstance.getTenantId());
       listViewJoinRelation.setName("process");
       processInstanceListViewEntity.setJoin(listViewJoinRelation);
       return getUpdateRequest(processInstanceListViewEntity);

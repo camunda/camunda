@@ -138,6 +138,7 @@ public class VariableZeebeRecordProcessorElasticSearch {
     Optional.ofNullable(entity.getScopeFlowNodeId()).ifPresent(variableListViewEntity::setScopeKey);
     Optional.ofNullable(entity.getId()).ifPresent(variableListViewEntity::setId);
     Optional.of(entity.getPartitionId()).ifPresent(variableListViewEntity::setPartitionId);
+    Optional.ofNullable(entity.getTenantId()).ifPresent(variableListViewEntity::setTenantId);
     variableListViewEntity.setJoin(new ListViewJoinRelation());
 
     return variableListViewEntity;

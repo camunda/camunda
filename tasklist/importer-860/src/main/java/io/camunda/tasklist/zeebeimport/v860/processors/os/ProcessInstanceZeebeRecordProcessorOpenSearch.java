@@ -187,6 +187,8 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     if (flowNodeInstance.getType().equals(FlowNodeType.PROCESS)) {
       processInstanceListViewEntity.setJoin(new ListViewJoinRelation());
       processInstanceListViewEntity.setId(flowNodeInstance.getId());
+      processInstanceListViewEntity.setPartitionId(flowNodeInstance.getPartitionId());
+      processInstanceListViewEntity.setTenantId(flowNodeInstance.getTenantId());
       processInstanceListViewEntity.getJoin().setName("process");
       return getUpdateRequest(processInstanceListViewEntity);
     } else {
