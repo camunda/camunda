@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubs
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.util.collection.Reusable;
 import io.camunda.zeebe.util.collection.ReusableObjectList;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -74,6 +75,15 @@ public final class Subscriptions {
 
   public Subscription peek() {
     return subscriptions.peek();
+  }
+
+  public Optional<Subscription> getFirstMessageStartEventSubscription() {
+    for (final Subscription subscription : subscriptions) {
+      if (subscription.isStartEventSubscription) {
+        return Optional.of(subscription);
+      }
+    }
+    return Optional.empty();
   }
 
   public void visitBpmnProcessIds(final Consumer<DirectBuffer> bpmnProcessIdConsumer) {

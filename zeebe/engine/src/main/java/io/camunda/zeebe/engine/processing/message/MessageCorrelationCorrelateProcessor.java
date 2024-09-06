@@ -126,15 +126,20 @@ public final class MessageCorrelationCorrelateProcessor
                 messageCorrelationRecord.getTenantId()),
             correlatingSubscriptions);
 
-    if (!correlatedSubscriptions.isEmpty()) {
-      final var subscription = correlatedSubscriptions.peek();
-      messageCorrelationRecord.setProcessInstanceKey(subscription.getProcessInstanceKey());
+    correlatedSubscriptions
+        .getFirstMessageStartEventSubscription()
+        .ifPresent(
+            subscription -> {
+              messageCorrelationRecord.setProcessInstanceKey(subscription.getProcessInstanceKey());
 
-      stateWriter.appendFollowUpEvent(
-          messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
-      responseWriter.writeEventOnCommand(
-          messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord, command);
-    }
+              stateWriter.appendFollowUpEvent(
+                  messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
+              responseWriter.writeEventOnCommand(
+                  messageKey,
+                  MessageCorrelationIntent.CORRELATED,
+                  messageCorrelationRecord,
+                  command);
+            });
   }
 
   private void correlateToMessageEventSubscriptions(
