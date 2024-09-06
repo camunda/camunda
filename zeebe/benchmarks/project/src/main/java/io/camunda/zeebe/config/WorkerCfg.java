@@ -25,7 +25,6 @@ public class WorkerCfg {
   private int capacity;
   private Duration pollingDelay;
   private Duration completionDelay;
-  private boolean completeJobsAsync;
   private String payloadPath;
   private boolean isStreamEnabled;
   private Duration timeout;
@@ -84,14 +83,6 @@ public class WorkerCfg {
 
   public void setPayloadPath(final String payloadPath) {
     this.payloadPath = payloadPath;
-  }
-
-  public boolean isCompleteJobsAsync() {
-    return completeJobsAsync;
-  }
-
-  public void setCompleteJobsAsync(final boolean completeJobsAsync) {
-    this.completeJobsAsync = completeJobsAsync;
   }
 
   public boolean isStreamEnabled() {
