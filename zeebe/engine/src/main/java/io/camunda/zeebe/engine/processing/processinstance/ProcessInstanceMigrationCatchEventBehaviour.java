@@ -22,8 +22,8 @@ import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.state.signal.SignalSubscription;
-import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
@@ -50,7 +50,7 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
   private final DistributionState distributionState;
   private final StateWriter stateWriter;
   private final int currentPartitionId;
-  private final int partitionsCount;
+  private final RoutingInfo routingInfo;
 
   public ProcessInstanceMigrationCatchEventBehaviour(
       final ProcessMessageSubscriptionState processMessageSubscriptionState,
@@ -60,7 +60,7 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
       final DistributionState distributionState,
       final StateWriter stateWriter,
       final int currentPartitionId,
-      final int partitionsCount) {
+      final RoutingInfo routingInfo) {
     this.processMessageSubscriptionState = processMessageSubscriptionState;
     this.catchEventBehavior = catchEventBehavior;
     this.commandWriter = commandWriter;
@@ -68,7 +68,7 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
     this.distributionState = distributionState;
     this.stateWriter = stateWriter;
     this.currentPartitionId = currentPartitionId;
-    this.partitionsCount = partitionsCount;
+    this.routingInfo = routingInfo;
   }
 
   /**
@@ -359,20 +359,21 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
             .setElementId(BufferUtil.wrapString(targetCatchEventId)));
 
     final var subscriptionPartitionId =
-        SubscriptionUtil.getSubscriptionPartitionId(
-            BufferUtil.wrapString(messageSubscription.getCorrelationKey()), partitionsCount);
+        routingInfo.partitionForCorrelationKey(
+            BufferUtil.wrapString(messageSubscription.getCorrelationKey()));
 
     final long distributionKey = processMessageSubscription.getKey();
     if (currentPartitionId == subscriptionPartitionId) {
       commandWriter.appendFollowUpCommand(
           distributionKey, MessageSubscriptionIntent.MIGRATE, messageSubscription);
     } else {
-      commandDistributionBehavior.distributeCommand(
-          distributionKey,
-          ValueType.MESSAGE_SUBSCRIPTION,
-          MessageSubscriptionIntent.MIGRATE,
-          messageSubscription,
-          List.of(processMessageSubscriptionRecord.getSubscriptionPartitionId()));
+      commandDistributionBehavior
+          .withKey(distributionKey)
+          .forPartition(processMessageSubscriptionRecord.getSubscriptionPartitionId())
+          .distribute(
+              ValueType.MESSAGE_SUBSCRIPTION,
+              MessageSubscriptionIntent.MIGRATE,
+              messageSubscription);
     }
   }
 

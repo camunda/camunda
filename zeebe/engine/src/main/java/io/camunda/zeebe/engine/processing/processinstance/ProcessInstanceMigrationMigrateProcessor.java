@@ -69,7 +69,6 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final IncidentState incidentState;
   private final EventScopeInstanceState eventScopeInstanceState;
   private final ProcessInstanceMigrationCatchEventBehaviour migrationCatchEventBehaviour;
-  private final RoutingInfo routingInfo;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
@@ -88,7 +87,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     variableState = processingState.getVariableState();
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
-    this.routingInfo = routingInfo;
 
     migrationCatchEventBehaviour =
         new ProcessInstanceMigrationCatchEventBehaviour(
@@ -99,7 +97,7 @@ public class ProcessInstanceMigrationMigrateProcessor
             processingState.getDistributionState(),
             stateWriter,
             partitionId,
-            routingInfo.getPartitions().size());
+            routingInfo);
   }
 
   @Override
