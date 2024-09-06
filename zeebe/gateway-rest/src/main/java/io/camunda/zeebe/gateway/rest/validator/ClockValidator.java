@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
@@ -19,8 +20,13 @@ public class ClockValidator {
   public static Optional<ProblemDetail> validateClockPinRequest(final ClockPinRequest pinRequest) {
     return validate(
         violations -> {
-          if (pinRequest.getTimestamp() == null) {
+          final Long timestamp = pinRequest.getTimestamp();
+          if (timestamp == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("timestamp"));
+          } else if (timestamp < 0) {
+            violations.add(
+                ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+                    "timestamp", timestamp, "not negative"));
           }
         });
   }

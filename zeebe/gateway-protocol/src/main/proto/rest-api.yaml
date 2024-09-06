@@ -603,7 +603,7 @@ paths:
           description: >
             The clock was successfully pinned to the specified time in epoch milliseconds.
         "400":
-          description: The required timestamp parameter is missing.
+          description: The required timestamp parameter is missing or if a negative timestamp value is provided.
           content:
             application/problem+json:
               schema:

@@ -11,9 +11,11 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
@@ -28,6 +30,7 @@ public final class ClockProcessor implements DistributedTypedRecordProcessor<Clo
   private final ControllableStreamClock clock;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final TypedResponseWriter responseWriter;
+  private final TypedRejectionWriter rejectionWriter;
 
   public ClockProcessor(
       final Writers writers,
@@ -38,6 +41,7 @@ public final class ClockProcessor implements DistributedTypedRecordProcessor<Clo
     stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
     responseWriter = writers.response();
+    rejectionWriter = writers.rejection();
     this.clock = clock;
 
     this.commandDistributionBehavior = commandDistributionBehavior;
@@ -49,6 +53,16 @@ public final class ClockProcessor implements DistributedTypedRecordProcessor<Clo
     final var clockRecord = command.getValue();
     final var intent = (ClockIntent) command.getIntent();
     final var resultIntent = followUpIntent(intent);
+
+    if (intent == ClockIntent.PIN && clockRecord.getTime() < 0) {
+      final var rejectionMessage =
+          "Expected pin time to be not negative but it was %d".formatted(clockRecord.getTime());
+
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, rejectionMessage);
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.INVALID_ARGUMENT, rejectionMessage);
+      return;
+    }
 
     applyClockModification(eventKey, intent, resultIntent, clockRecord);
     if (command.hasRequestMetadata()) {
