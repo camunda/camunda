@@ -558,14 +558,14 @@ paths:
       responses:
         "200":
           description: >
-            The User Task Search successful response.
+            The user task search successful response.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserTaskSearchQueryResponse"
         "400":
           description: >
-            The User Task Search Query failed.
+            The user task search Query failed.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -583,11 +583,11 @@ paths:
     put:
       tags:
         - Clock
-      summary: Pin the Zeebe engine’s internal clock to a specific time (experimental)
+      summary: Pin internal clock (experimental)
       description: |
-        Set a precise, static time for the Zeebe engine’s internal clock. When the clock is pinned,
-        it remains at the specified time and does not advance. To change the time, the clock must be
-        pinned again with a new timestamp.
+        Set a precise, static time for the Zeebe engine’s internal clock. 
+        When the clock is pinned, it remains at the specified time and does not advance. 
+        To change the time, the clock must be pinned again with a new timestamp.
 
         :::note
         This endpoint is experimental. It may undergo changes or improvements in future releases.
@@ -640,7 +640,7 @@ paths:
   /process-instances:
     post:
       tags:
-        - Process Instance
+        - Process instance
       summary: Start process instance
       description: |
         Creates and starts an instance of the specified process.
@@ -673,7 +673,7 @@ paths:
   /process-instances/search:
     post:
       tags:
-        - Process Instance
+        - Process instance
       summary: Query process instances (experimental)
       description: |
         Search for process instances based on given criteria.
@@ -715,7 +715,7 @@ paths:
   /decision-definitions/search:
     post:
       tags:
-        - Decision Definition
+        - Decision definition
       summary: Query decision definitions (experimental)
       description: |
         Search for decision definitions based on given criteria.
@@ -757,7 +757,7 @@ paths:
   /decision-definitions/{decisionKey}/xml:
     get:
       tags:
-        - Decision Definition
+        - Decision definition
       summary: Get decision definition XML (experimental)
       description: |
         Returns decision definition as XML.
@@ -984,7 +984,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: Internal Server Error
+          description: Internal server error
           content:
             application/problem+json:
               schema:
@@ -1245,14 +1245,14 @@ paths:
       responses:
         '200':
           description: >
-            The Incident Search successful response.
+            The incident search successful response.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/IncidentSearchQueryResponse"
         '400':
           description: >
-            The Incident Search Query failed.
+            The incident search Query failed.
             More details are provided in the response body.
         "401":
           description: "Unauthorized"
@@ -1430,6 +1430,7 @@ components:
             type: string
         priority:
           type: integer
+          description: The priority of a user task. The higher the value the higher the priority.
           minimum: 0
           maximum: 100
           default: 50
