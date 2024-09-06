@@ -44,9 +44,8 @@ class ElasticsearchClient implements AutoCloseable {
   private final TemplateReader templateReader;
   private final RecordIndexRouter indexRouter;
   private final BulkIndexRequest bulkIndexRequest;
-  private final MeterRegistry meterRegistry;
 
-  private ElasticsearchMetrics metrics;
+  private final ElasticsearchMetrics metrics;
 
   /**
    * Sample to measure the flush latency of the current bulk request.
@@ -64,8 +63,7 @@ class ElasticsearchClient implements AutoCloseable {
         RestClientFactory.of(configuration),
         new RecordIndexRouter(configuration.index),
         new TemplateReader(configuration),
-        null,
-        meterRegistry);
+        new ElasticsearchMetrics(meterRegistry));
   }
 
   ElasticsearchClient(
@@ -74,15 +72,13 @@ class ElasticsearchClient implements AutoCloseable {
       final RestClient client,
       final RecordIndexRouter indexRouter,
       final TemplateReader templateReader,
-      final ElasticsearchMetrics metrics,
-      final MeterRegistry meterRegistry) {
+      final ElasticsearchMetrics metrics) {
     this.configuration = configuration;
     this.bulkIndexRequest = bulkIndexRequest;
     this.client = client;
     this.indexRouter = indexRouter;
     this.templateReader = templateReader;
     this.metrics = metrics;
-    this.meterRegistry = meterRegistry;
   }
 
   @Override
@@ -91,10 +87,6 @@ class ElasticsearchClient implements AutoCloseable {
   }
 
   public void index(final Record<?> record, final RecordSequence recordSequence) {
-    if (metrics == null) {
-      metrics = new ElasticsearchMetrics(record.getPartitionId(), meterRegistry);
-    }
-
     if (bulkIndexRequest.isEmpty()) {
       flushLatencyMeasurement = metrics.startFlushLatencyMeasurement();
     }

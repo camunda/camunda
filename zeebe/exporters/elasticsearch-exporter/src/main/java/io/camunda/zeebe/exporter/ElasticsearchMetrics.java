@@ -17,9 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ElasticsearchMetrics {
   private static final String NAMESPACE = "zeebe.elasticsearch.exporter";
-  private static final String PARTITION_LABEL = "partition";
 
-  private final String partitionIdLabel;
   private final MeterRegistry meterRegistry;
   private final AtomicInteger bulkMemorySize = new AtomicInteger(0);
   private final Timer flushDuration;
@@ -27,19 +25,16 @@ public class ElasticsearchMetrics {
   private final Counter failedFlush;
   private final Timer flushLatency;
 
-  public ElasticsearchMetrics(final int partitionId, final MeterRegistry registry) {
-    partitionIdLabel = String.valueOf(partitionId);
+  public ElasticsearchMetrics(final MeterRegistry registry) {
     meterRegistry = registry;
 
     Gauge.builder(meterName("bulk.memory.size"), bulkMemorySize, AtomicInteger::get)
-        .tags(PARTITION_LABEL, partitionIdLabel)
         .description("Exporter bulk memory size")
         .register(meterRegistry);
 
     flushDuration =
         Timer.builder(meterName("flush.duration.seconds"))
             .description("Flush duration of bulk exporters in seconds")
-            .tags(PARTITION_LABEL, partitionIdLabel)
             .publishPercentileHistogram()
             .minimumExpectedValue(Duration.ofMillis(10))
             .register(meterRegistry);
@@ -47,21 +42,18 @@ public class ElasticsearchMetrics {
     bulkSize =
         DistributionSummary.builder(meterName("bulk.size"))
             .description("Exporter bulk size")
-            .tags(PARTITION_LABEL, partitionIdLabel)
             .serviceLevelObjectives(10, 100, 1_000, 10_000, 100_000)
             .register(meterRegistry);
 
     failedFlush =
         Counter.builder(meterName("failed.flush"))
             .description("Number of failed flush operations")
-            .tags(PARTITION_LABEL, partitionIdLabel)
             .register(meterRegistry);
 
     flushLatency =
         Timer.builder(meterName("flush.latency"))
             .description(
                 "Time of how long a export buffer is open and collects new records before flushing, meaning latency until the next flush is done.")
-            .tags(PARTITION_LABEL, partitionIdLabel)
             .publishPercentileHistogram()
             .register(meterRegistry);
   }
