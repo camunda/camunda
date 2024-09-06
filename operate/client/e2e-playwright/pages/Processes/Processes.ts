@@ -79,4 +79,10 @@ export class Processes {
       .nth(index)
       .locator('label');
   };
+
+  getNthProcessInstanceLink = (index: number) => {
+    return this.processInstancesTable
+      .getByRole('link', {name: /view instance/i})
+      .nth(index);
+  };
 }
