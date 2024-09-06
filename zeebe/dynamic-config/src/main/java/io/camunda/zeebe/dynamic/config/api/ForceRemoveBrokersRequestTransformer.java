@@ -36,4 +36,9 @@ public final class ForceRemoveBrokersRequestTransformer implements Configuration
     return new ForceScaleDownRequestTransformer(membersToRetain, coordinator)
         .operations(clusterConfiguration);
   }
+
+  @Override
+  public boolean isForced() {
+    return true;
+  }
 }
