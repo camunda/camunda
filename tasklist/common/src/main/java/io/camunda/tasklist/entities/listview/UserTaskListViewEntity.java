@@ -12,6 +12,7 @@ import io.camunda.tasklist.entities.TaskState;
 import java.util.Map;
 
 public class UserTaskListViewEntity {
+  // This is identified as the flowNodeInstanceId
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String id;
 
