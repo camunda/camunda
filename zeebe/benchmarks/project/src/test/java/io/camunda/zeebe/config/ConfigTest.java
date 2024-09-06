@@ -63,6 +63,9 @@ public class ConfigTest {
     assertThat(workerCfg.getPayloadPath()).isEqualTo("bpmn/big_payload.json");
     assertThat(workerCfg.isStreamEnabled()).isTrue();
     assertThat(workerCfg.getTimeout()).hasSeconds(0);
+    assertThat(workerCfg.getMessageName()).isEqualTo("messageName");
+    assertThat(workerCfg.isSendMessage()).isFalse();
+    assertThat(workerCfg.getCorrelationKeyVariableName()).isEqualTo("correlationKey-var");
   }
 
   @Test
@@ -112,5 +115,8 @@ public class ConfigTest {
     assertThat(workerCfg.getPayloadPath()).isEqualTo("bpmn/big_payload.json");
     assertThat(workerCfg.isStreamEnabled()).isTrue();
     assertThat(workerCfg.getTimeout()).hasSeconds(0);
+    assertThat(workerCfg.getMessageName()).isEqualTo("msg");
+    assertThat(workerCfg.isSendMessage()).isTrue();
+    assertThat(workerCfg.getCorrelationKeyVariableName()).isEqualTo("var");
   }
 }
