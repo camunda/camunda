@@ -22,6 +22,7 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
 
   private final Set<MemberId> members;
   private final Optional<Integer> newReplicationFactor;
+  private final Optional<Integer> newPartitionCount;
   private final ArrayList<ClusterConfigurationChangeOperation> generatedOperations =
       new ArrayList<>();
 
@@ -31,8 +32,16 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
 
   public ScaleRequestTransformer(
       final Set<MemberId> members, final Optional<Integer> newReplicationFactor) {
+    this(members, newReplicationFactor, Optional.empty());
+  }
+
+  public ScaleRequestTransformer(
+      final Set<MemberId> members,
+      final Optional<Integer> newReplicationFactor,
+      final Optional<Integer> newPartitionCount) {
     this.members = members;
     this.newReplicationFactor = newReplicationFactor;
+    this.newPartitionCount = newPartitionCount;
   }
 
   @Override
@@ -48,7 +57,7 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
         .flatMap(
             ignore ->
                 new PartitionReassignRequestTransformer(
-                        members, newReplicationFactor, Optional.empty())
+                        members, newReplicationFactor, newPartitionCount)
                     .operations(clusterConfiguration))
         .map(this::addToOperations)
         // then remove members that are not part of the new configuration
