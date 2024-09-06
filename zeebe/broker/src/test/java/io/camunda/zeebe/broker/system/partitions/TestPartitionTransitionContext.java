@@ -38,8 +38,15 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+<<<<<<< HEAD
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+||||||| parent of e53de5bb416 (feat: add partition scoped meter registry)
+import io.camunda.zeebe.stream.api.ClusterContext;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
+=======
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
+>>>>>>> e53de5bb416 (feat: add partition scoped meter registry)
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
@@ -75,7 +82,18 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private BackupStore backupStore;
+<<<<<<< HEAD
   private MeterRegistry meterRegistry;
+||||||| parent of e53de5bb416 (feat: add partition scoped meter registry)
+  private DynamicPartitionConfig partitionConfig;
+  private CommandApiService commandApiService;
+  private MeterRegistry meterRegistry;
+  private ControllableStreamClock clock;
+  private ClusterContext clusterContext;
+=======
+  private DynamicPartitionConfig partitionConfig;
+  private ControllableStreamClock clock;
+>>>>>>> e53de5bb416 (feat: add partition scoped meter registry)
 
   @Override
   public int getPartitionId() {
@@ -289,9 +307,17 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public MeterRegistry getMeterRegistry() {
-    return meterRegistry;
+  public MeterRegistry getBrokerMeterRegistry() {
+    return null;
   }
+
+  @Override
+  public MeterRegistry getPartitionMeterRegistry() {
+    return null;
+  }
+
+  @Override
+  public void setPartitionMeterRegistry(final MeterRegistry partitionMeterRegistry) {}
 
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {
     this.gatewayBrokerTransport = gatewayBrokerTransport;
