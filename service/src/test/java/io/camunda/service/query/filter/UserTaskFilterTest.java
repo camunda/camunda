@@ -25,6 +25,7 @@ import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.util.StubbedBrokerClient;
 import io.camunda.service.util.StubbedCamundaSearchClient;
+import java.util.Collections;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -87,7 +88,8 @@ public class UserTaskFilterTest {
   @Test
   public void shouldApplySortConditionByCreationDate() {
     // given
-    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.states("CREATED"));
+    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.states("eq",
+        Collections.singletonList("CREATED")));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery(
             (q) -> q.filter(userTaskStateFilter).sort((s) -> s.creationDate().asc()));
@@ -117,7 +119,8 @@ public class UserTaskFilterTest {
   @Test
   public void shouldApplySortConditionByCompletionDate() {
     // given
-    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.states("CREATED"));
+    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.states("eq",
+        Collections.singletonList("CREATED")));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery(
             (q) -> q.filter(userTaskStateFilter).sort((s) -> s.completionDate().desc()));
@@ -175,7 +178,7 @@ public class UserTaskFilterTest {
   @Test
   public void shouldQueryByTaskState() {
     // given
-    final var taskStateFilter = FilterBuilders.userTask((f) -> f.states("CREATED"));
+    final var taskStateFilter = FilterBuilders.userTask((f) -> f.states("eq", Collections.singletonList("CREATED")));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(taskStateFilter));
 

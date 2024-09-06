@@ -13,6 +13,8 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOW
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_ORDER;
 import static java.util.Optional.ofNullable;
 
+import io.camunda.service.query.FieldFilter;
+import io.camunda.service.query.Filter;
 import io.camunda.service.search.filter.ComparableValueFilter;
 import io.camunda.service.search.filter.DecisionDefinitionFilter;
 import io.camunda.service.search.filter.DecisionRequirementsFilter;
@@ -117,18 +119,19 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
-      final UserTaskSearchQueryRequest request) {
+      final UserTaskSearchQueryRequest request, final List<Filter> parsedFilters) {
 
     if (request == null) {
       return Either.right(SearchQueryBuilders.userTaskSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
+
         toSearchQuerySort(
             request.getSort(),
             SortOptionBuilders::userTask,
             SearchQueryRequestMapper::applyUserTaskSortField);
-    final var filter = toUserTaskFilter(request.getFilter());
+    final var filter = toUserTaskFilter(parsedFilters);
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userTaskSearchQuery);
   }
 
@@ -217,63 +220,81 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static UserTaskFilter toUserTaskFilter(final UserTaskFilterRequest filter) {
+  private static UserTaskFilter toUserTaskFilter(final List<Filter> filters) {
     final var builder = FilterBuilders.userTask();
 
-    if (filter != null) {
-      // key
-      if (filter.getKey() != null) {
-        builder.keys(filter.getKey());
-      }
+    if (filters != null && !filters.isEmpty()) {
+      for (final Filter filter : filters) {
+        switch (filter.getField()) {
+          case "key":
+            if (filter.getOperator().equals("eq") && filter.getValue() instanceof List) {
+              builder.keys((List<Long>) filter.getValue());
+            }
+            break;
 
-      // state
-      if (filter.getState() != null && !filter.getState().isEmpty()) {
-        builder.states(filter.getState());
-      }
+          case "state":
+            if (filter.getOperator().equals("eq") || filter.getOperator().equals("like")) {
+              builder.states(filter.getOperator(), List.of((String) filter.getValue()));
+            }
+            break;
 
-      // bpmnProcessId
-      if (filter.getBpmnDefinitionId() != null && !filter.getBpmnDefinitionId().isEmpty()) {
-        builder.bpmnProcessIds(filter.getBpmnDefinitionId());
-      }
+          case "bpmnProcessId":
+            if (filter.getOperator().equals("eq") && filter.getValue() instanceof List) {
+              builder.bpmnProcessIds((List<String>) filter.getValue());
+            }
+            break;
 
-      // elementId
-      if (filter.getElementId() != null && !filter.getElementId().isEmpty()) {
-        builder.elementIds(filter.getElementId());
-      }
+          case "elementId":
+            if (filter.getOperator().equals("eq") && filter.getValue() instanceof List) {
+              builder.elementIds((List<String>) filter.getValue());
+            }
+            break;
 
-      // assignee
-      if (filter.getAssignee() != null && !filter.getAssignee().isEmpty()) {
-        builder.assignees(filter.getAssignee());
-      }
+          case "assignee":
+            if (filter.getOperator().equals("eq") && filter.getValue() instanceof List) {
+              builder.assignees((List<String>) filter.getValue());
+            }
+            break;
 
-      // candidateGroup
-      if (filter.getCandidateGroup() != null && !filter.getCandidateGroup().isEmpty()) {
-        builder.candidateGroups(filter.getCandidateGroup());
-      }
+          case "candidateGroup":
+            if (filter.getOperator().equals("eq") && filter.getValue() instanceof List) {
+              builder.candidateGroups((List<String>) filter.getValue());
+            }
+            break;
 
-      // candidateUser
-      if (filter.getCandidateUser() != null && !filter.getCandidateUser().isEmpty()) {
-        builder.candidateUsers(filter.getCandidateUser());
-      }
+          case "candidateUser":
+            if (filter.getOperator().equals("eq") && filter.getValue() instanceof List) {
+              builder.candidateUsers((List<String>) filter.getValue());
+            }
+            break;
 
-      // processDefinitionKey
-      if (filter.getProcessDefinitionKey() != null) {
-        builder.processDefinitionKeys(filter.getProcessDefinitionKey());
-      }
+          case "processDefinitionKey":
+            if (filter.getOperator().equals("eq") && filter.getValue() instanceof Long) {
+              builder.processDefinitionKeys((Long) filter.getValue());
+            }
+            break;
 
-      // processInstanceKey
-      if (filter.getProcessInstanceKey() != null) {
-        builder.processInstanceKeys(filter.getProcessInstanceKey());
-      }
+          case "processInstanceKey":
+            if (filter.getOperator().equals("eq") && filter.getValue() instanceof Long) {
+              builder.processInstanceKeys((Long) filter.getValue());
+            }
+            break;
 
-      // tenantIds
-      if (filter.getTenantIds() != null) {
-        builder.tenantIds(filter.getTenantIds());
-      }
+          case "tenantIds":
+            if (filter.getOperator().equals("eq") && filter.getValue() instanceof List) {
+              builder.tenantIds((List<String>) filter.getValue());
+            }
+            break;
 
-      // priority
-      if (filter.getPriority() != null) {
-        builder.priority(mapPriorityFilter(filter.getPriority()));
+          case "priority":
+            if (filter.getOperator().equals("eq") && filter.getValue() instanceof ComparableValueFilter) {
+              builder.priority((ComparableValueFilter) filter.getValue());
+            }
+            break;
+
+          default:
+            throw new IllegalArgumentException("Unknown field: " + filter.getField());
+        }
       }
     }
 

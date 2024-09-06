@@ -1,21 +1,19 @@
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
 package io.camunda.service.query;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 
 @Component
 public class QueryParser {
 
-  public <T> List<Filter> parse(final T request) {
+  // Regex to match filters like {$eq:CREATED}
+  private static final Pattern FILTER_PATTERN = Pattern.compile("\\{\\$(\\w+):(.+)}");
+
+  public <T> List<Filter>  parse(final T request) {
     final List<Filter> filters = new ArrayList<>();
 
     // Use reflection to inspect fields of the request object
@@ -24,9 +22,23 @@ public class QueryParser {
 
       try {
         final Object value = field.get(request);
-        if (value != null) {
-          // Assuming equality for simple fields; you can enhance this with more logic
-          filters.add(new Filter(field.getName(), "$eq", value));
+        if (value != null && value instanceof String) {
+          final String valueStr = (String) value;
+
+          // Try to match the filter pattern (e.g., {$eq:CREATED})
+          final Matcher matcher = FILTER_PATTERN.matcher(valueStr);
+          if (matcher.matches()) {
+            final String operator = matcher.group(1); // Extract the operator (e.g., $eq)
+            // must be $eq or $like
+            if (!operator.equals("eq") && !operator.equals("like")) {
+              throw new IllegalArgumentException("Invalid operator: " + operator);
+            }
+            final String filterValue = matcher.group(2); // Extract the actual value (e.g., CREATED)
+            filters.add(new Filter(field.getName(), operator, filterValue));
+          } else {
+            // If no operator is found, assume equality
+            filters.add(new Filter(field.getName(), "$eq", value));
+          }
         }
       } catch (final IllegalAccessException e) {
         e.printStackTrace();

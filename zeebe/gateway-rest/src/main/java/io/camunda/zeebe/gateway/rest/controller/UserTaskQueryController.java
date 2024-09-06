@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.service.CamundaServices;
 import io.camunda.service.UserTaskServices;
+import io.camunda.service.query.Filter;
 import io.camunda.service.query.QueryParser;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
@@ -16,6 +18,7 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import jakarta.validation.ValidationException;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -39,10 +42,12 @@ public class UserTaskQueryController {
   public ResponseEntity<Object> searchUserTasks(
       @RequestBody(required = false) final UserTaskSearchQueryRequest query) {
 
-    final var queryParsedTest = queryParser.parse(query.getFilter());
+    final List<Filter> queryParsedTest = queryParser.parse(query.getFilter());
     System.out.println(queryParsedTest);
 
-    return SearchQueryRequestMapper.toUserTaskQuery(query)
+
+
+    return SearchQueryRequestMapper.toUserTaskQuery(query, queryParsedTest)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 

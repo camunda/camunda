@@ -1,26 +1,20 @@
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
 package io.camunda.service.search.filter;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
+import io.camunda.service.query.FieldFilter;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public final record UserTaskFilter(
+public record UserTaskFilter(
     List<Long> keys,
     List<String> elementIds,
     List<String> bpmnProcessIds,
     List<String> assignees,
-    List<String> states,
+    FieldFilter<List<String>> states,  // Changed to FieldFilter for states
     List<Long> processInstanceKeys,
     List<Long> processDefinitionKeys,
     List<String> candidateUsers,
@@ -34,7 +28,7 @@ public final record UserTaskFilter(
     private List<String> elementIds;
     private List<String> bpmnProcessIds;
     private List<String> assignees;
-    private List<String> states;
+    private FieldFilter<List<String>> states;  // FieldFilter for states
     private List<Long> processInstanceKeys;
     private List<Long> processDefinitionKeys;
     private List<String> candidateUsers;
@@ -78,12 +72,8 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder states(final String... values) {
-      return states(collectValuesAsList(values));
-    }
-
-    public Builder states(final List<String> values) {
-      states = addValuesToList(states, values);
+    public Builder states(final String operator, final List<String> values) {
+      states = new FieldFilter<>(operator, values);  // Assigning operator and values to FieldFilter
       return this;
     }
 
@@ -144,7 +134,7 @@ public final record UserTaskFilter(
           Objects.requireNonNullElse(elementIds, Collections.emptyList()),
           Objects.requireNonNullElse(bpmnProcessIds, Collections.emptyList()),
           Objects.requireNonNullElse(assignees, Collections.emptyList()),
-          Objects.requireNonNullElse(states, Collections.emptyList()),
+          Objects.requireNonNullElse(states, new FieldFilter<>("$eq", Collections.emptyList())),  // Use FieldFilter for states
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUsers, Collections.emptyList()),
