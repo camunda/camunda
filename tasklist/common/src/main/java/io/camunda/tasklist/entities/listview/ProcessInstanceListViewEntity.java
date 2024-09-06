@@ -8,10 +8,17 @@
 package io.camunda.tasklist.entities.listview;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.tasklist.entities.TasklistZeebeEntity;
 
 public class ProcessInstanceListViewEntity {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String id;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String partitionId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String tenantId;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private ListViewJoinRelation join;
@@ -31,6 +38,24 @@ public class ProcessInstanceListViewEntity {
 
   public ProcessInstanceListViewEntity setJoin(final ListViewJoinRelation join) {
     this.join = join;
+    return this;
+  }
+
+  public String getPartitionId() {
+    return partitionId;
+  }
+
+  public ProcessInstanceListViewEntity setPartitionId(final String partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public ProcessInstanceListViewEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
     return this;
   }
 }

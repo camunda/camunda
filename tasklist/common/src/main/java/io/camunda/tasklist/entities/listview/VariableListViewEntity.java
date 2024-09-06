@@ -32,6 +32,9 @@ public class VariableListViewEntity {
   private Integer partitionId;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String tenantId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private ListViewJoinRelation join;
 
   // Add getter and setters
@@ -95,6 +98,15 @@ public class VariableListViewEntity {
 
   public VariableListViewEntity setPartitionId(final Integer partitionId) {
     this.partitionId = partitionId;
+    return this;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public VariableListViewEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
     return this;
   }
 
