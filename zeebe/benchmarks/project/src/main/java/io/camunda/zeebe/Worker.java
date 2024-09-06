@@ -17,7 +17,6 @@ package io.camunda.zeebe;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
 import io.camunda.zeebe.config.AppCfg;
@@ -25,12 +24,9 @@ import io.camunda.zeebe.config.WorkerCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.Tags;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingDeque;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +47,6 @@ public class Worker extends App {
     final boolean isStreamEnabled = workerCfg.isStreamEnabled();
     final var variables = readVariables(workerCfg.getPayloadPath());
     final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(10_000);
-    final BlockingDeque<DelayedCommand> delayedCommands = new LinkedBlockingDeque<>(10_000);
     final ZeebeClient client = createZeebeClient();
     final JobWorkerMetrics metrics =
         JobWorkerMetrics.micrometer()
@@ -68,17 +63,12 @@ public class Worker extends App {
                 (jobClient, job) -> {
                   final var command =
                       jobClient.newCompleteCommand(job.getKey()).variables(variables);
-                  if (workerCfg.isCompleteJobsAsync()) {
-                    delayedCommands.addLast(
-                        new DelayedCommand(Instant.now().plusMillis(completionDelay), command));
-                  } else {
-                    try {
-                      Thread.sleep(completionDelay);
-                    } catch (final Exception e) {
-                      THROTTLED_LOGGER.error("Exception on sleep", e);
-                    }
-                    requestFutures.add(command.send());
+                  try {
+                    Thread.sleep(completionDelay);
+                  } catch (final Exception e) {
+                    THROTTLED_LOGGER.error("Exception on sleep", e);
                   }
+                  requestFutures.add(command.send());
                 })
             .streamEnabled(isStreamEnabled)
             .metrics(metrics)
@@ -87,18 +77,12 @@ public class Worker extends App {
     final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
     responseChecker.start();
 
-    final var asyncJobCompleter = new DelayedCommandSender(delayedCommands, requestFutures);
-    if (workerCfg.isCompleteJobsAsync()) {
-      asyncJobCompleter.start();
-    }
-
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread(
                 () -> {
                   worker.close();
                   client.close();
-                  asyncJobCompleter.close();
                   responseChecker.close();
                 }));
   }
@@ -129,24 +113,5 @@ public class Worker extends App {
 
   public static void main(final String[] args) {
     createApp(Worker::new);
-  }
-
-  static final class DelayedCommand {
-
-    private final Instant expiration;
-    private final FinalCommandStep<?> command;
-
-    public DelayedCommand(final Instant expiration, final FinalCommandStep<?> command) {
-      this.expiration = expiration;
-      this.command = command;
-    }
-
-    public boolean hasExpired() {
-      return Instant.now().isAfter(expiration);
-    }
-
-    public FinalCommandStep<?> getCommand() {
-      return command;
-    }
   }
 }

@@ -60,7 +60,6 @@ public class ConfigTest {
     assertThat(workerCfg.getCapacity()).isEqualTo(30);
     assertThat(workerCfg.getPollingDelay()).hasSeconds(1);
     assertThat(workerCfg.getCompletionDelay()).hasMillis(300);
-    assertThat(workerCfg.isCompleteJobsAsync()).isFalse();
     assertThat(workerCfg.getPayloadPath()).isEqualTo("bpmn/big_payload.json");
     assertThat(workerCfg.isStreamEnabled()).isTrue();
     assertThat(workerCfg.getTimeout()).hasSeconds(0);
@@ -110,7 +109,6 @@ public class ConfigTest {
     assertThat(workerCfg.getCapacity()).isEqualTo(30);
     assertThat(workerCfg.getPollingDelay()).hasSeconds(1);
     assertThat(workerCfg.getCompletionDelay()).hasMillis(300);
-    assertThat(workerCfg.isCompleteJobsAsync()).isFalse();
     assertThat(workerCfg.getPayloadPath()).isEqualTo("bpmn/big_payload.json");
     assertThat(workerCfg.isStreamEnabled()).isTrue();
     assertThat(workerCfg.getTimeout()).hasSeconds(0);
