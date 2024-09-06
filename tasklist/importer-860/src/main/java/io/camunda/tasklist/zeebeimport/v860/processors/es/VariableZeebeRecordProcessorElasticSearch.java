@@ -120,7 +120,7 @@ public class VariableZeebeRecordProcessorElasticSearch {
       return prepareUpdateRequest(variableListViewEntity, variableListViewEntity.getScopeKey());
     } else if (isProcessScope(variableEntity)) {
       variableListViewEntity = associateVariableWithProcess(variableEntity, variableListViewEntity);
-      return prepareUpdateRequest(variableListViewEntity, variableEntity.getProcessInstanceId());
+      return prepareUpdateRequest(variableListViewEntity, variableListViewEntity.getScopeKey());
     } else {
       throw new PersistenceException(
           String.format(
