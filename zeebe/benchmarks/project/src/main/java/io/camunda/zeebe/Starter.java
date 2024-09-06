@@ -271,7 +271,7 @@ public class Starter extends App {
             final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();
 
             final String endpoint =
-                starterCfg.getOperateUrl() + "v1/v1/process-instances/" + processInstanceKey;
+                starterCfg.getOperateUrl() + "v1/process-instances/" + processInstanceKey;
             final var retrievePIRequest =
                 HttpRequest.newBuilder().uri(URI.create(endpoint)).GET().build();
 
