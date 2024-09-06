@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.service.CamundaServiceException;
 import io.camunda.service.UserServices;
+import io.camunda.service.UserServices.CreateUserRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.protocol.rest.UserWithPasswordRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -52,18 +53,16 @@ public class UserControllerTest extends RestControllerTest {
   @Test
   void createUserShouldReturnNoContent() {
     // given
-    final UserWithPasswordRequest dto = validRequest();
+    final var dto = validCreateUserRequest();
 
     final var userRecord =
         new UserRecord()
-            .setUsername(dto.getUsername())
-            .setName(dto.getName())
-            .setEmail(dto.getEmail())
-            .setPassword(dto.getPassword());
+            .setUsername(dto.username())
+            .setName(dto.name())
+            .setEmail(dto.email())
+            .setPassword(dto.password());
 
-    when(userServices.createUser(
-            dto.getUsername(), dto.getName(), dto.getEmail(), dto.getPassword()))
-        .thenReturn(CompletableFuture.completedFuture(userRecord));
+    when(userServices.createUser(dto)).thenReturn(CompletableFuture.completedFuture(userRecord));
 
     // when
     webClient
@@ -77,8 +76,7 @@ public class UserControllerTest extends RestControllerTest {
         .isNoContent();
 
     // then
-    verify(userServices, times(1))
-        .createUser(dto.getUsername(), dto.getName(), dto.getEmail(), dto.getPassword());
+    verify(userServices, times(1)).createUser(dto);
   }
 
   @Test
@@ -86,10 +84,9 @@ public class UserControllerTest extends RestControllerTest {
     // given
     final String message = "message";
 
-    final UserWithPasswordRequest dto = validRequest();
+    final var dto = validCreateUserRequest();
 
-    when(userServices.createUser(
-            dto.getUsername(), dto.getName(), dto.getEmail(), dto.getPassword()))
+    when(userServices.createUser(dto))
         .thenThrow(new CamundaServiceException(RejectionType.ALREADY_EXISTS.name()));
 
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
@@ -114,7 +111,7 @@ public class UserControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithMissingUsername() {
     // given
-    final var request = validRequest().username(null);
+    final var request = validUserWithPasswordRequest().username(null);
 
     // when then
     assertRequestRejectedExceptionally(
@@ -134,7 +131,7 @@ public class UserControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithBlankUsername() {
     // given
-    final var request = validRequest().username("");
+    final var request = validUserWithPasswordRequest().username("");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -154,7 +151,7 @@ public class UserControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithEmptyName() {
     // given
-    final var request = validRequest().name(null);
+    final var request = validUserWithPasswordRequest().name(null);
 
     // when then
     assertRequestRejectedExceptionally(
@@ -174,7 +171,7 @@ public class UserControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithBlankName() {
     // given
-    final var request = validRequest().name("");
+    final var request = validUserWithPasswordRequest().name("");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -194,7 +191,7 @@ public class UserControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithEmptyPassword() {
     // given
-    final var request = validRequest().password(null);
+    final var request = validUserWithPasswordRequest().password(null);
 
     // when then
     assertRequestRejectedExceptionally(
@@ -214,7 +211,7 @@ public class UserControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithBlankPassword() {
     // given
-    final var request = validRequest().password("");
+    final var request = validUserWithPasswordRequest().password("");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -234,7 +231,7 @@ public class UserControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithEmptyEmail() {
     // given
-    final var request = validRequest().email(null);
+    final var request = validUserWithPasswordRequest().email(null);
 
     // when then
     assertRequestRejectedExceptionally(
@@ -254,7 +251,7 @@ public class UserControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithBlankEmail() {
     // given
-    final var request = validRequest().email("");
+    final var request = validUserWithPasswordRequest().email("");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -275,7 +272,7 @@ public class UserControllerTest extends RestControllerTest {
   void shouldRejectUserCreationWithInvalidEmail() {
     // given
     final var email = "invalid@email.reject";
-    final var request = validRequest().email(email);
+    final var request = validUserWithPasswordRequest().email(email);
 
     // when then
     assertRequestRejectedExceptionally(
@@ -292,7 +289,11 @@ public class UserControllerTest extends RestControllerTest {
     verifyNoInteractions(userServices);
   }
 
-  private UserWithPasswordRequest validRequest() {
+  private CreateUserRequest validCreateUserRequest() {
+    return new CreateUserRequest("foo", "Foo Bar", "bar@baz.com", "zabraboof");
+  }
+
+  private UserWithPasswordRequest validUserWithPasswordRequest() {
     return new UserWithPasswordRequest()
         .username("foo")
         .name("Foo Bar")

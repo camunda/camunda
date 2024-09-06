@@ -44,12 +44,6 @@ public class UserController {
   private CompletableFuture<ResponseEntity<Object>> createUser(final CreateUserRequest request) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
-            userServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .createUser(
-                    request.username(),
-                    request.name(),
-                    request.email(),
-                    passwordEncoder.encode(request.password())));
+            userServices.withAuthentication(RequestMapper.getAuthentication()).createUser(request));
   }
 }

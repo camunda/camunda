@@ -43,14 +43,13 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
     return new UserServices(brokerClient, searchClient, transformers, authentication);
   }
 
-  public CompletableFuture<UserRecord> createUser(
-      final String username, final String name, final String email, final String password) {
+  public CompletableFuture<UserRecord> createUser(final CreateUserRequest request) {
     return sendBrokerRequest(
         new BrokerUserCreateRequest()
-            .setUsername(username)
-            .setName(name)
-            .setEmail(email)
-            .setPassword(password));
+            .setUsername(request.username())
+            .setName(request.name())
+            .setEmail(request.email())
+            .setPassword(request.password()));
   }
 
   public record CreateUserRequest(String username, String name, String email, String password) {}
