@@ -1357,6 +1357,53 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /resources/{resourceKey}/deletion:
+    post:
+      tags:
+        - Resources
+        - Deletion
+      summary: Delete a resource.
+      description: |
+        Deletes a deployed resource.
+        This can be a process definition, decision requirements definition, or form definition deployed using the deploy resources endpoint.
+      parameters:
+        - name: resourceKey
+          in: path
+          required: true
+          description: |
+            The key of the resource that should be deleted.
+            This can be the key of a process definition, the key of a decision requirements definition or the key of a form definition
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteResourceRequest"
+      responses:
+        "200":
+          description: The resource is deleted.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The resource is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
 
   /element-instances/{elementInstanceKey}/variables:
     post:
@@ -2882,6 +2929,18 @@ components:
           minimum: 1
       required:
         - variables
+
+    DeleteResourceRequest:
+      type: object
+      nullable: true
+      properties:
+        operationReference:
+          description: |
+            A reference key chosen by the user and will be part of all records resulting from this operation.
+            Must be > 0 if provided.
+          type: integer
+          format: int64
+          minimum: 1
 
   securitySchemes:
     bearerAuth:
