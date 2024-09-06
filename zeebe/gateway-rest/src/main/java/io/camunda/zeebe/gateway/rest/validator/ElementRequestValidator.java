@@ -11,14 +11,14 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
-import io.camunda.zeebe.gateway.protocol.rest.VariableRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public class ElementRequestValidator {
 
   public static Optional<ProblemDetail> validateVariableRequest(
-      final VariableRequest variableRequest) {
+      final SetVariableRequest variableRequest) {
     return validate(
         violations -> {
           if (variableRequest.getVariables() == null || variableRequest.getVariables().isEmpty()) {

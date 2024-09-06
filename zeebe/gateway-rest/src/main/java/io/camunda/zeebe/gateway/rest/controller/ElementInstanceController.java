@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.service.ElementServices;
-import io.camunda.service.ElementServices.SetVariablesRequest;
-import io.camunda.zeebe.gateway.protocol.rest.VariableRequest;
+import io.camunda.service.ElementInstanceServices;
+import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
@@ -25,11 +25,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/element-instances")
 public class ElementInstanceController {
 
-  private final ElementServices elementServices;
+  private final ElementInstanceServices elementInstanceServices;
 
   @Autowired
-  public ElementInstanceController(final ElementServices elementServices) {
-    this.elementServices = elementServices;
+  public ElementInstanceController(final ElementInstanceServices elementInstanceServices) {
+    this.elementInstanceServices = elementInstanceServices;
   }
 
   @PutMapping(
@@ -38,16 +38,16 @@ public class ElementInstanceController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> setVariables(
       @PathVariable final long elementInstanceKey,
-      @RequestBody final VariableRequest variableRequest) {
+      @RequestBody final SetVariableRequest variableRequest) {
     return RequestMapper.toVariableRequest(variableRequest, elementInstanceKey)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::variables);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::setVariables);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> variables(
+  private CompletableFuture<ResponseEntity<Object>> setVariables(
       final SetVariablesRequest variablesRequest) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
-            elementServices
+            elementInstanceServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .setVariables(variablesRequest));
   }

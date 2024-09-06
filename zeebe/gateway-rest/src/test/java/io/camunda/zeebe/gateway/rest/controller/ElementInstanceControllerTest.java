@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import io.camunda.service.ElementServices;
-import io.camunda.service.ElementServices.SetVariablesRequest;
+import io.camunda.service.ElementInstanceServices;
+import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
@@ -32,18 +32,19 @@ public class ElementInstanceControllerTest extends RestControllerTest {
 
   static final String ELEMENTS_BASE_URL = "/v2/element-instances";
 
-  @MockBean ElementServices elementServices;
+  @MockBean ElementInstanceServices elementInstanceServices;
   @Captor ArgumentCaptor<SetVariablesRequest> requestCaptor;
 
   @BeforeEach
   void setup() {
-    when(elementServices.withAuthentication(any(Authentication.class))).thenReturn(elementServices);
+    when(elementInstanceServices.withAuthentication(any(Authentication.class)))
+        .thenReturn(elementInstanceServices);
   }
 
   @Test
-  void shouldSetVariables() {
+  void shouldSetSetVariables() {
     // given
-    when(elementServices.setVariables(any(SetVariablesRequest.class)))
+    when(elementInstanceServices.setVariables(any(SetVariablesRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(new VariableDocumentRecord()));
 
     final var request =
@@ -67,7 +68,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(elementServices).setVariables(requestCaptor.capture());
+    Mockito.verify(elementInstanceServices).setVariables(requestCaptor.capture());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.elementInstanceKey()).isEqualTo(123L);
     assertThat(capturedRequest.variables()).isEqualTo(Map.of("key", "value"));
@@ -76,7 +77,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectSetVariablesWithVariablesNull() {
+  void shouldRejectSetVariablesWithSetVariablesNull() {
     // given
     final var request =
         """
@@ -111,7 +112,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectSetVariablesWithVariablesEmpty() {
+  void shouldRejectSetVariablesWithSetVariablesEmpty() {
     // given
     final var request =
         """
@@ -146,7 +147,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectSetVariablesWithOperationReferenceNotValid() {
+  void shouldRejectSetSetVariablesWithOperationReferenceNotValid() {
     // given
     final var request =
         """

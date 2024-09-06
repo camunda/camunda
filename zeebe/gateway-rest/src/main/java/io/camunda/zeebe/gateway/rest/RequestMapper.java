@@ -24,7 +24,7 @@ import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.v
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentMetadataModel;
-import io.camunda.service.ElementServices.SetVariablesRequest;
+import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
@@ -45,10 +45,10 @@ import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.VariableRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
@@ -273,7 +273,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, SetVariablesRequest> toVariableRequest(
-      final VariableRequest variableRequest, final long elementInstanceKey) {
+      final SetVariableRequest variableRequest, final long elementInstanceKey) {
     return getResult(
         validateVariableRequest(variableRequest),
         () ->

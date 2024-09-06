@@ -14,7 +14,7 @@ import io.camunda.service.ClockServices;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
-import io.camunda.service.ElementServices;
+import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.MessageServices;
@@ -114,7 +114,7 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  public ElementServices elementServices(final CamundaServices camundaServices) {
+  public ElementInstanceServices elementServices(final CamundaServices camundaServices) {
     return camundaServices.elementServices();
   }
 }

@@ -16,9 +16,9 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentReco
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public class ElementServices extends ApiServices<ElementServices> {
+public class ElementInstanceServices extends ApiServices<ElementInstanceServices> {
 
-  public ElementServices(
+  public ElementInstanceServices(
       final BrokerClient brokerClient,
       final CamundaSearchClient searchClient,
       final ServiceTransformers transformers,
@@ -27,8 +27,8 @@ public class ElementServices extends ApiServices<ElementServices> {
   }
 
   @Override
-  public ElementServices withAuthentication(final Authentication authentication) {
-    return new ElementServices(brokerClient, searchClient, transformers, authentication);
+  public ElementInstanceServices withAuthentication(final Authentication authentication) {
+    return new ElementInstanceServices(brokerClient, searchClient, transformers, authentication);
   }
 
   public CompletableFuture<VariableDocumentRecord> setVariables(final SetVariablesRequest request) {
