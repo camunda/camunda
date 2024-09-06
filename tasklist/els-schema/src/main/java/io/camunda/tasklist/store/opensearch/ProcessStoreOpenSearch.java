@@ -96,8 +96,8 @@ public class ProcessStoreOpenSearch implements ProcessStore {
 
       final SearchResponse<ProcessEntity> response =
           tenantAwareClient.search(searchRequestBuilder, ProcessEntity.class);
-      if (response.hits().hits().size() > 0) {
-        return response.hits().hits().get(0).source();
+      if (!response.hits().hits().isEmpty()) {
+        return response.hits().hits().getFirst().source();
       } else {
         throw new NotFoundException(
             String.format("Process with key %s not found", processDefinitionKey));
@@ -151,8 +151,8 @@ public class ProcessStoreOpenSearch implements ProcessStore {
     final SearchResponse<ProcessEntity> response;
     try {
       response = tenantAwareClient.search(searchRequestBuilder, ProcessEntity.class);
-      if (response.hits().hits().size() > 0) {
-        return response.hits().hits().get(0).source();
+      if (!response.hits().hits().isEmpty()) {
+        return response.hits().hits().getFirst().source();
       } else {
         throw new NotFoundException(
             String.format("Could not find process with id '%s'.", bpmnProcessId));
@@ -177,7 +177,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
 
       final long totalHits = response.hits().total().value();
       if (totalHits == 1L) {
-        return response.hits().hits().get(0).source();
+        return response.hits().hits().getFirst().source();
       } else if (totalHits > 1) {
         throw new TasklistRuntimeException(
             String.format("Could not find unique process with id '%s'.", processId));
@@ -195,18 +195,12 @@ public class ProcessStoreOpenSearch implements ProcessStore {
   @Override
   public List<ProcessEntity> getProcesses(
       final List<String> processDefinitions, final String tenantId, final Boolean isStartedByForm) {
-    final FieldCollapse keyCollapse =
-        new FieldCollapse.Builder().field(ProcessIndex.PROCESS_DEFINITION_ID).build();
-    final SortOptions sortOptions =
-        new SortOptions.Builder()
-            .field(FieldSort.of(f -> f.field(ProcessIndex.VERSION).order(SortOrder.Desc)))
-            .build();
 
     final Query q;
 
     if (tasklistProperties.isSelfManaged()) {
 
-      if (processDefinitions.size() == 0) {
+      if (processDefinitions.isEmpty()) {
         return new ArrayList<>();
       }
 
@@ -221,7 +215,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                                 t.field(ProcessIndex.PROCESS_DEFINITION_ID)
                                     .value(FieldValue.of(""))))
                 .build()
-                ._toQuery();
+                .toQuery();
       } else {
         q =
             QueryBuilders.bool()
@@ -235,7 +229,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                                         v ->
                                             v.value(
                                                 processDefinitions.stream()
-                                                    .map(pd -> FieldValue.of(pd))
+                                                    .map(FieldValue::of)
                                                     .collect(Collectors.toList())))))
                 .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
                 .mustNot(
@@ -245,7 +239,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                                 t.field(ProcessIndex.PROCESS_DEFINITION_ID)
                                     .value(FieldValue.of(""))))
                 .build()
-                ._toQuery();
+                .toQuery();
       }
     } else {
       q =
@@ -257,7 +251,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                           t ->
                               t.field(ProcessIndex.PROCESS_DEFINITION_ID).value(FieldValue.of(""))))
               .build()
-              ._toQuery();
+              .toQuery();
     }
 
     final Query applyTenantIdFilter = addFilterOnTenantIdIfRequired(q, tenantId);
@@ -319,7 +313,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                                 v ->
                                     v.value(
                                         processDefinitions.stream()
-                                            .map(pd -> FieldValue.of(pd))
+                                            .map(FieldValue::of)
                                             .collect(Collectors.toList())))));
       }
     }
