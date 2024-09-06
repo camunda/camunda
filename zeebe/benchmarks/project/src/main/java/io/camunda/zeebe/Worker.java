@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,27 +87,77 @@ public class Worker extends App {
       final long completionDelay,
       final BlockingQueue<Future<?>> requestFutures) {
     return (jobClient, job) -> {
-      if (workerCfg.isSendMessage()) {
-        final String messageName = workerCfg.getMessageName();
-        final Object correlationKey = job.getVariable(workerCfg.getCorrelationKeyVariableName());
+      // we record the start handling time to better calculate the completion delay
+      // as when we send a message we already have a delay due to waiting on the response
+      final long startHandlingTime = System.currentTimeMillis();
 
-        LOGGER.debug("Publish message '{}' with correlation key '{}'", messageName, correlationKey);
-        client
-            .newPublishMessageCommand()
-            .messageName(messageName)
-            .correlationKey(correlationKey.toString())
-            .send();
+      if (workerCfg.isSendMessage()) {
+
+        final var correlationKey =
+            job.getVariable(workerCfg.getCorrelationKeyVariableName()).toString();
+
+        final boolean messagePublishedSuccessfully = publishMessage(client, correlationKey);
+        if (!messagePublishedSuccessfully) {
+          // - On issues with publishing a message we need to retry the job
+          // - thus is to make sure our message gets published
+          // - otherwise our process might get stuck
+          // - failing the job makes it immediately available again
+          jobClient
+              .newFailCommand(job)
+              .retries(job.getRetries())
+              .errorMessage("Message publish failed.")
+              .send();
+          return;
+        }
       }
 
       final var command = jobClient.newCompleteCommand(job.getKey()).variables(variables);
-      try {
-        Thread.sleep(completionDelay);
-      } catch (final Exception e) {
-        THROTTLED_LOGGER.error("Exception on sleep", e);
-      }
-
+      addDelayToCompletion(completionDelay, startHandlingTime);
       requestFutures.add(command.send());
     };
+  }
+
+  private boolean publishMessage(final ZeebeClient client, final String correlationKey) {
+    final var messageName = workerCfg.getMessageName();
+
+    LOGGER.debug("Publish message '{}' with correlation key '{}'", messageName, correlationKey);
+    final var messageSendFuture =
+        client
+            .newPublishMessageCommand()
+            .messageName(messageName)
+            .correlationKey(correlationKey)
+            .send();
+
+    try {
+      messageSendFuture.get(10, TimeUnit.SECONDS);
+      return true;
+    } catch (final Exception ex) {
+      THROTTLED_LOGGER.error(
+          "Exception on publishing a message with name {} and correlationKey {}",
+          messageName,
+          correlationKey,
+          ex);
+      return false;
+    }
+  }
+
+  private static void addDelayToCompletion(
+      final long completionDelay, final long startHandlingTime) {
+    try {
+      final var elapsedTime = System.currentTimeMillis() - startHandlingTime;
+      if (elapsedTime < completionDelay) {
+        final long sleepTime = completionDelay - elapsedTime;
+        LOGGER.debug("Sleep for {} ms", sleepTime);
+        Thread.sleep(sleepTime);
+      } else {
+        LOGGER.debug(
+            "Skip sleep. Elapsed time {} is larger then {} completion delay.",
+            elapsedTime,
+            completionDelay);
+      }
+    } catch (final Exception e) {
+      THROTTLED_LOGGER.error("Exception on sleep with completion delay {}", completionDelay, e);
+    }
   }
 
   private ZeebeClient createZeebeClient() {
