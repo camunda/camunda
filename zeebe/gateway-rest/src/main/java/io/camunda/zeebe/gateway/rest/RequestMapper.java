@@ -273,12 +273,12 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, SetVariablesRequest> toVariableRequest(
-      final VariableRequest variableRequest, final long elementKey) {
+      final VariableRequest variableRequest, final long elementInstanceKey) {
     return getResult(
         validateVariableRequest(variableRequest),
         () ->
             new SetVariablesRequest(
-                elementKey,
+                elementInstanceKey,
                 variableRequest.getVariables(),
                 variableRequest.getLocal(),
                 variableRequest.getOperationReference()));

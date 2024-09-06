@@ -27,10 +27,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(ElementController.class)
-public class ElementControllerTest extends RestControllerTest {
+@WebMvcTest(ElementInstanceController.class)
+public class ElementInstanceControllerTest extends RestControllerTest {
 
-  static final String ELEMENTS_BASE_URL = "/v2/elements";
+  static final String ELEMENTS_BASE_URL = "/v2/element-instances";
 
   @MockBean ElementServices elementServices;
   @Captor ArgumentCaptor<SetVariablesRequest> requestCaptor;
@@ -69,7 +69,7 @@ public class ElementControllerTest extends RestControllerTest {
 
     Mockito.verify(elementServices).setVariables(requestCaptor.capture());
     final var capturedRequest = requestCaptor.getValue();
-    assertThat(capturedRequest.elementKey()).isEqualTo(123L);
+    assertThat(capturedRequest.elementInstanceKey()).isEqualTo(123L);
     assertThat(capturedRequest.variables()).isEqualTo(Map.of("key", "value"));
     assertThat(capturedRequest.local()).isTrue();
     assertThat(capturedRequest.operationReference()).isEqualTo(123L);

@@ -34,7 +34,7 @@ public class ElementServices extends ApiServices<ElementServices> {
   public CompletableFuture<VariableDocumentRecord> setVariables(final SetVariablesRequest request) {
     final var brokerRequest =
         new BrokerSetVariablesRequest()
-            .setElementInstanceKey(request.elementKey())
+            .setElementInstanceKey(request.elementInstanceKey())
             .setVariables(getDocumentOrEmpty(request.variables()))
             .setLocal(request.local());
 
@@ -45,5 +45,8 @@ public class ElementServices extends ApiServices<ElementServices> {
   }
 
   public record SetVariablesRequest(
-      long elementKey, Map<String, Object> variables, Boolean local, Long operationReference) {}
+      long elementInstanceKey,
+      Map<String, Object> variables,
+      Boolean local,
+      Long operationReference) {}
 }

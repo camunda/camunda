@@ -1320,19 +1320,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
-  /elements/{elementKey}/variables:
+  /element-instances/{elementInstanceKey}/variables:
     post:
       tags:
-        - Variables
-        - Elements
-      summary: Updates element variables
+        - Element instance
+      summary: Updates element instance variables
       description: |
         Updates all the variables of a particular scope (e.g. process instance, flow element instance) with the given variable data.
       parameters:
-        - name: elementKey
+        - name: elementInstanceKey
           in: path
           required: true
-          description: The key of the element to which to update the variables.
+          description: The key of the element instance to which to update the variables.
           schema:
             type: integer
             format: int64
@@ -2764,8 +2763,7 @@ components:
           type: object
         local:
           description: |
-            If set to true, the variables will be merged strictly into the local scope
-            (as indicated by elementKey).
+            If set to true, the variables will be merged strictly into the local scope (as indicated by elementInstanceKey).
             Otherwise, the variables are propagated to upper scopes and set at the outermost one.
 
             Let’s consider the following example:
@@ -2775,7 +2773,7 @@ components:
             1 => { "foo" : 2 }
             2 => { "bar" : 1 }
 
-            An update request with elementKey as ‘2’, variables { "foo" : 5 }, and local set
+            An update request with elementInstanceKey as ‘2’, variables { "foo" : 5 }, and local set
             to true leaves scope ‘1’ unchanged and adjusts scope ‘2 ‘ to { "bar" : 1, "foo" 5 }.
 
             By default, with local set to false, scope ‘1’ will be { "foo": 5 }
@@ -2784,8 +2782,8 @@ components:
           default: false
         operationReference:
           description: >
-            A reference key chosen by the user and will be part of all records resulting
-            from this operation. Must be > 0 if provided.
+            A reference key chosen by the user and will be part of all records resulting from this operation.
+            Must be > 0 if provided.
           type: integer
           format: int64
           minimum: 1

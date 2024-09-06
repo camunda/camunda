@@ -22,23 +22,24 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequestMapping("/v2/elements")
-public class ElementController {
+@RequestMapping("/v2/element-instances")
+public class ElementInstanceController {
 
   private final ElementServices elementServices;
 
   @Autowired
-  public ElementController(final ElementServices elementServices) {
+  public ElementInstanceController(final ElementServices elementServices) {
     this.elementServices = elementServices;
   }
 
   @PutMapping(
-      path = "/{elementKey}/variables",
+      path = "/{elementInstanceKey}/variables",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> setVariables(
-      @PathVariable final long elementKey, @RequestBody final VariableRequest variableRequest) {
-    return RequestMapper.toVariableRequest(variableRequest, elementKey)
+      @PathVariable final long elementInstanceKey,
+      @RequestBody final VariableRequest variableRequest) {
+    return RequestMapper.toVariableRequest(variableRequest, elementInstanceKey)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::variables);
   }
 
