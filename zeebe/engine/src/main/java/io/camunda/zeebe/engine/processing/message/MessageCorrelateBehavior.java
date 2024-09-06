@@ -40,9 +40,8 @@ public final class MessageCorrelateBehavior {
     this.commandSender = commandSender;
   }
 
-  public Subscriptions correlateToMessageStartEvents(final MessageData messageData) {
-    final var correlatingSubscriptions = new Subscriptions();
-
+  public Subscriptions correlateToMessageStartEvents(
+      final MessageData messageData, final Subscriptions correlatingSubscriptions) {
     startEventSubscriptionState.visitSubscriptionsByMessageName(
         messageData.tenantId(),
         messageData.messageName(),
@@ -74,8 +73,8 @@ public final class MessageCorrelateBehavior {
     return correlatingSubscriptions;
   }
 
-  public Subscriptions correlateToMessageEvents(final MessageData messageData) {
-    final var correlatingSubscriptions = new Subscriptions();
+  public Subscriptions correlateToMessageEvents(
+      final MessageData messageData, final Subscriptions correlatingSubscriptions) {
 
     messageSubscriptionState.visitSubscriptions(
         messageData.tenantId(),

@@ -122,7 +122,8 @@ public final class MessageCorrelationCorrelateProcessor
                 messageCorrelationRecord.getNameBuffer(),
                 messageCorrelationRecord.getCorrelationKeyBuffer(),
                 messageCorrelationRecord.getVariablesBuffer(),
-                messageCorrelationRecord.getTenantId()));
+                messageCorrelationRecord.getTenantId()),
+            correlatingSubscriptions);
     correlatingSubscriptions.addAll(correlatedSubscriptions);
 
     if (!correlatedSubscriptions.isEmpty()) {
@@ -140,13 +141,13 @@ public final class MessageCorrelationCorrelateProcessor
       final MessageCorrelationRecord messageCorrelationRecord,
       final long messageKey,
       final Subscriptions correlatingSubscriptions) {
-    correlatingSubscriptions.addAll(
-        correlateBehavior.correlateToMessageEvents(
-            new MessageData(
-                messageKey,
-                messageCorrelationRecord.getNameBuffer(),
-                messageCorrelationRecord.getCorrelationKeyBuffer(),
-                messageCorrelationRecord.getVariablesBuffer(),
-                messageCorrelationRecord.getTenantId())));
+    correlateBehavior.correlateToMessageEvents(
+        new MessageData(
+            messageKey,
+            messageCorrelationRecord.getNameBuffer(),
+            messageCorrelationRecord.getCorrelationKeyBuffer(),
+            messageCorrelationRecord.getVariablesBuffer(),
+            messageCorrelationRecord.getTenantId()),
+        correlatingSubscriptions);
   }
 }

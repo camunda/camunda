@@ -111,8 +111,9 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     responseWriter.writeEventOnCommand(
         messageKey, MessageIntent.PUBLISHED, command.getValue(), command);
 
-    correlateToSubscriptions(messageKey, messageRecord);
-    correlateToMessageStartEvents(messageRecord);
+    final var correlatingSubscriptions = new Subscriptions();
+    correlateToSubscriptions(messageKey, messageRecord, correlatingSubscriptions);
+    correlateToMessageStartEvents(messageRecord, correlatingSubscriptions);
 
     if (messageRecord.getTimeToLive() <= 0L) {
       // avoid that the message can be correlated again by writing the EXPIRED event as a follow-up
@@ -120,23 +121,27 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     }
   }
 
-  private void correlateToSubscriptions(final long messageKey, final MessageRecord message) {
+  private void correlateToSubscriptions(
+      final long messageKey, final MessageRecord message, final Subscriptions subscriptions) {
     correlateBehavior.correlateToMessageEvents(
         new MessageData(
             messageKey,
             message.getNameBuffer(),
             message.getCorrelationKeyBuffer(),
             message.getVariablesBuffer(),
-            message.getTenantId()));
+            message.getTenantId()),
+        subscriptions);
   }
 
-  private void correlateToMessageStartEvents(final MessageRecord messageRecord) {
+  private void correlateToMessageStartEvents(
+      final MessageRecord messageRecord, final Subscriptions correlatingSubscriptions) {
     correlateBehavior.correlateToMessageStartEvents(
         new MessageData(
             messageKey,
             messageRecord.getNameBuffer(),
             messageRecord.getCorrelationKeyBuffer(),
             messageRecord.getVariablesBuffer(),
-            messageRecord.getTenantId()));
+            messageRecord.getTenantId()),
+        correlatingSubscriptions);
   }
 }
