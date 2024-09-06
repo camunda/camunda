@@ -1362,17 +1362,19 @@ paths:
       tags:
         - Resources
         - Deletion
-      summary: Delete a resource.
+      summary: Delete a resource
       description: |
         Deletes a deployed resource.
-        This can be a process definition, decision requirements definition, or form definition deployed using the deploy resources endpoint.
+        This can be a process definition, decision requirements definition, or form definition
+        deployed using the deploy resources endpoint.
       parameters:
         - name: resourceKey
           in: path
           required: true
           description: |
             The key of the resource that should be deleted.
-            This can be the key of a process definition, the key of a decision requirements definition or the key of a form definition
+            This can be the key of a process definition, the key of a decision requirements
+            definition or the key of a form definition
           schema:
             type: integer
             format: int64
