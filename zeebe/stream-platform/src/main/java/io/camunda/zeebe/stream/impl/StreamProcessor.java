@@ -166,9 +166,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       final var startRecoveryTimer = metrics.startRecoveryTimer();
       final long snapshotPosition = recoverFromSnapshot();
 
-      scheduledTaskMetrics =
-          ScheduledTaskMetrics.of(
-              streamProcessorContext.getMeterRegistry(), streamProcessorContext.getPartitionId());
+      scheduledTaskMetrics = ScheduledTaskMetrics.of(streamProcessorContext.getMeterRegistry());
       processorActorService =
           new ProcessingScheduleServiceImpl(
               streamProcessorContext::getStreamProcessorPhase,
@@ -287,7 +285,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void tearDown() {
-    scheduledTaskMetrics.close();
     processorActorService.close();
     asyncScheduleService.close();
     streamProcessorContext.getLogStreamReader().close();
