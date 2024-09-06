@@ -734,7 +734,7 @@ paths:
               $ref: "#/components/schemas/CancelProcessInstanceRequest"
       responses:
         "204":
-          description: The process instance is canceled
+          description: The process instance is canceled.
         "400":
           description: The provided data is not valid.
           content:
