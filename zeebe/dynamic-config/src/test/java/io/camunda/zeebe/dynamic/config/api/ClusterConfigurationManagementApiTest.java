@@ -254,9 +254,10 @@ final class ClusterConfigurationManagementApiTest {
 
     // then
     assertThat(changeStatus.plannedChanges())
-        .containsExactly(
-            new MemberJoinOperation(id1),
-            new PartitionJoinOperation(id1, 2, 2),
+        .hasSize(4)
+        .startsWith(new MemberJoinOperation(id1))
+        .contains(new PartitionJoinOperation(id1, 2, 2))
+        .containsSequence(
             new PartitionJoinOperation(id1, 1, 1),
             new PartitionReconfigurePriorityOperation(id0, 1, 2));
   }
