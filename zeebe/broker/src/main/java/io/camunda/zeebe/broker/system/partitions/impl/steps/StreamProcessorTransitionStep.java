@@ -152,7 +152,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         SkipPositionsFilter.of(context.getBrokerCfg().getProcessing().skipPositions());
 
     return StreamProcessor.builder()
-        .meterRegistry(context.getBrokerMeterRegistry())
+        .meterRegistry(context.getPartitionMeterRegistry())
         .logStream(context.getLogStream())
         .actorSchedulingService(context.getActorSchedulingService())
         .zeebeDb(context.getZeebeDb())
