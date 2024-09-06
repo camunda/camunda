@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.test.upgrade;
+package io.camunda.optimize.test.upgrade.client;
 
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 
@@ -38,63 +38,138 @@ import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.repositories.fs.FsRepository;
 
-public class ElasticClient {
+public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestClient {
 
-  public static final String SNAPSHOT_REPOSITORY_NAME = "my_backup";
-  public static final String SNAPSHOT_NAME_1 = "snapshot_1";
-  public static final String SNAPSHOT_NAME_2 = "snapshot_2";
-  public static final String OPTIMIZE_INDEX_PREFIX = "optimize";
-  public static final String DEFAULT_OPTIMIZE_INDEX_PATTERN =
-      OPTIMIZE_INDEX_PREFIX + "-*,-" + OPTIMIZE_INDEX_PREFIX + "-update-log*";
   private static final org.slf4j.Logger log =
-      org.slf4j.LoggerFactory.getLogger(ElasticClient.class);
-  private static final String[] SETTINGS_FILTER =
-      new String[] {
-        "index.analysis.*",
-        "index.number_of_shards",
-        "index.number_of_replicas",
-        "index.max_ngram_diff",
-        "index.mapping.*",
-        "index.refresh_interval"
-      };
-  private final String name;
+      org.slf4j.LoggerFactory.getLogger(ElasticsearchSchemaTestClient.class);
   private final RestHighLevelClient client;
-  private final Boolean readonlySnapshotRepository;
 
-  public ElasticClient(
-      final String name,
-      final int port,
-      final String host,
-      final Boolean readonlySnapshotRepository) {
-    this.name = name;
+  public ElasticsearchSchemaTestClient(final String name, final int port) {
+    super(name);
     client =
         new RestHighLevelClient(
-            RestClient.builder(new HttpHost(host, port, "http"))
+            RestClient.builder(new HttpHost("localhost", port, "http"))
                 .setRequestConfigCallback(
                     requestConfigBuilder ->
                         requestConfigBuilder.setConnectTimeout(5000).setSocketTimeout(0)));
-    this.readonlySnapshotRepository = readonlySnapshotRepository;
   }
 
-  public ElasticClient(final String name, final int port) {
-    this(name, port, "localhost", false);
-  }
-
+  @Override
   public void close() throws IOException {
     client.close();
   }
 
+  @Override
   public void refreshAll() throws IOException {
     log.info("Refreshing all indices of {} Elasticsearch...", name);
     client.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
     log.info("Successfully refreshed all indices of {} Elasticsearch!", name);
   }
 
+  @Override
   public void cleanIndicesAndTemplates() throws IOException {
     log.info("Wiping all indices & templates from {} Elasticsearch...", name);
     client.indices().delete(new DeleteIndexRequest("_all"), RequestOptions.DEFAULT);
     client.indices().deleteTemplate(new DeleteIndexTemplateRequest("*"), RequestOptions.DEFAULT);
     log.info("Successfully wiped all indices & templates from {} Elasticsearch!", name);
+  }
+
+  @Override
+  public void createSnapshotRepository() throws IOException {
+    log.info("Creating snapshot repository on {} Elasticsearch...", name);
+    final Settings settings =
+        Settings.builder()
+            .put(FsRepository.LOCATION_SETTING.getKey(), "/var/tmp")
+            .put(FsRepository.COMPRESS_SETTING.getKey(), true)
+            .put(FsRepository.READONLY_SETTING_KEY, false)
+            .build();
+    client
+        .snapshot()
+        .createRepository(
+            new PutRepositoryRequest(SNAPSHOT_REPOSITORY_NAME)
+                .settings(settings)
+                .type(FsRepository.TYPE),
+            RequestOptions.DEFAULT);
+    log.info("Done creating snapshot repository on {} Elasticsearch!", name);
+  }
+
+  @Override
+  public void deleteSnapshotRepository() throws IOException {
+    log.info("Removing snapshot repository on {} Elasticsearch...", name);
+    client
+        .snapshot()
+        .deleteRepository(
+            new DeleteRepositoryRequest().name(SNAPSHOT_REPOSITORY_NAME), RequestOptions.DEFAULT);
+    log.info("Done removing snapshot repository on {} Elasticsearch!", name);
+  }
+
+  @Override
+  public void createSnapshotOfOptimizeIndices() throws IOException {
+    log.info("Creating snapshot on {} Elasticsearch...", name);
+    // using low level client for compatibility here, see
+    // https://github.com/elastic/elasticsearch/pull/57661
+    final Request createSnapshotRequest =
+        new Request("PUT", "/_snapshot/" + SNAPSHOT_REPOSITORY_NAME + "/" + SNAPSHOT_NAME_1);
+    createSnapshotRequest.addParameter("wait_for_completion", String.valueOf(true));
+    createSnapshotRequest.setJsonEntity(
+        "{\"indices\":\"optimize-*\",\n\"include_global_state\":true}");
+    final Response response = client.getLowLevelClient().performRequest(createSnapshotRequest);
+    if (HttpURLConnection.HTTP_OK != response.getStatusLine().getStatusCode()) {
+      throw new RuntimeException(
+          "Failed Creating Snapshot, statusCode: " + response.getStatusLine().getStatusCode());
+    }
+    log.info("Done creating snapshot on {} Elasticsearch!", name);
+  }
+
+  @Override
+  public void createAsyncSnapshot() throws IOException {
+    log.info("Creating snapshot on {} Elasticsearch...", name);
+    // using low level client for compatibility here, see
+    // https://github.com/elastic/elasticsearch/pull/57661
+    final Request createSnapshotRequest =
+        new Request("PUT", "/_snapshot/" + SNAPSHOT_REPOSITORY_NAME + "/" + SNAPSHOT_NAME_2);
+    createSnapshotRequest.addParameter("wait_for_completion", String.valueOf(false));
+    createSnapshotRequest.setJsonEntity("{\"include_global_state\":true}");
+    final Response response = client.getLowLevelClient().performRequest(createSnapshotRequest);
+    if (HttpURLConnection.HTTP_OK != (response.getStatusLine().getStatusCode())) {
+      throw new RuntimeException(
+          "Failed Creating Snapshot, statusCode: " + response.getStatusLine().getStatusCode());
+    }
+    log.info("Done starting asynchronous snapshot operation on {} Elasticsearch!", name);
+  }
+
+  @Override
+  public void restoreSnapshot() throws IOException {
+    log.info("Restoring snapshot on {} Elasticsearch...", name);
+    client
+        .snapshot()
+        .restore(
+            new RestoreSnapshotRequest(SNAPSHOT_REPOSITORY_NAME, SNAPSHOT_NAME_1)
+                .includeGlobalState(true)
+                .waitForCompletion(true),
+            RequestOptions.DEFAULT);
+    log.info("Done restoring snapshot on {} Elasticsearch!", name);
+  }
+
+  @Override
+  public void deleteSnapshot() throws IOException {
+    deleteSnapshot(SNAPSHOT_NAME_1);
+  }
+
+  @Override
+  public void deleteAsyncSnapshot() throws IOException {
+    deleteSnapshot(SNAPSHOT_NAME_2);
+  }
+
+  @Override
+  public void deleteSnapshot(final String snapshotName) throws IOException {
+    log.info("Deleting snapshot {} on {} Elasticsearch...", snapshotName, name);
+    client
+        .snapshot()
+        .delete(
+            new DeleteSnapshotRequest(SNAPSHOT_REPOSITORY_NAME, snapshotName),
+            RequestOptions.DEFAULT);
+    log.info("Done deleting {} snapshot on {} Elasticsearch!", snapshotName, name);
   }
 
   public Map<String, Map> getSettings() throws IOException {
@@ -105,20 +180,21 @@ public class ElasticClient {
                 + DEFAULT_OPTIMIZE_INDEX_PATTERN
                 + "/_settings/"
                 + String.join(",", SETTINGS_FILTER));
-    Response response = client.getLowLevelClient().performRequest(request);
-    Map<String, Map> map = OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), Map.class);
-    for (Map stringStringEntry : map.values()) {
-      Map analysis =
+    final Response response = client.getLowLevelClient().performRequest(request);
+    final Map<String, Map> map =
+        OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), Map.class);
+    for (final Map stringStringEntry : map.values()) {
+      final Map analysis =
           (Map) ((Map) ((Map) stringStringEntry.get("settings")).get("index")).get("analysis");
-      Map analyzer = (Map) ((Map) analysis.get("analyzer")).get("is_present_analyzer");
+      final Map analyzer = (Map) ((Map) analysis.get("analyzer")).get("is_present_analyzer");
       if (!List.class.isInstance(analyzer.get("filter"))) {
         analyzer.put("filter", List.of(analyzer.get("filter")));
       }
-      Map lowercaseNgram = (Map) ((Map) analysis.get("analyzer")).get("lowercase_ngram");
+      final Map lowercaseNgram = (Map) ((Map) analysis.get("analyzer")).get("lowercase_ngram");
       if (!List.class.isInstance(lowercaseNgram.get("filter"))) {
         lowercaseNgram.put("filter", List.of(lowercaseNgram.get("filter")));
       }
-      Map ngramTokenizer = (Map) ((Map) analysis.get("tokenizer")).get("ngram_tokenizer");
+      final Map ngramTokenizer = (Map) ((Map) analysis.get("tokenizer")).get("ngram_tokenizer");
       if (!ngramTokenizer.containsKey("token_chars")) {
         ngramTokenizer.put(
             "token_chars",
@@ -156,95 +232,5 @@ public class ElasticClient {
         .getIndexTemplate(
             new GetIndexTemplatesRequest(DEFAULT_OPTIMIZE_INDEX_PATTERN), RequestOptions.DEFAULT)
         .getIndexTemplates();
-  }
-
-  public void createSnapshotRepository() throws IOException {
-    log.info("Creating snapshot repository on {} Elasticsearch...", name);
-    final Settings settings =
-        Settings.builder()
-            .put(FsRepository.LOCATION_SETTING.getKey(), "/var/tmp")
-            .put(FsRepository.COMPRESS_SETTING.getKey(), true)
-            .put(FsRepository.READONLY_SETTING_KEY, readonlySnapshotRepository)
-            .build();
-    client
-        .snapshot()
-        .createRepository(
-            new PutRepositoryRequest(SNAPSHOT_REPOSITORY_NAME)
-                .settings(settings)
-                .type(FsRepository.TYPE),
-            RequestOptions.DEFAULT);
-    log.info("Done creating snapshot repository on {} Elasticsearch!", name);
-  }
-
-  public void deleteSnapshotRepository() throws IOException {
-    log.info("Removing snapshot repository on {} Elasticsearch...", name);
-    client
-        .snapshot()
-        .deleteRepository(
-            new DeleteRepositoryRequest().name(SNAPSHOT_REPOSITORY_NAME), RequestOptions.DEFAULT);
-    log.info("Done removing snapshot repository on {} Elasticsearch!", name);
-  }
-
-  public void createSnapshotOfOptimizeIndices() throws IOException {
-    log.info("Creating snapshot on {} Elasticsearch...", name);
-    // using low level client for compatibility here, see
-    // https://github.com/elastic/elasticsearch/pull/57661
-    final Request createSnapshotRequest =
-        new Request("PUT", "/_snapshot/" + SNAPSHOT_REPOSITORY_NAME + "/" + SNAPSHOT_NAME_1);
-    createSnapshotRequest.addParameter("wait_for_completion", String.valueOf(true));
-    createSnapshotRequest.setJsonEntity(
-        "{\"indices\":\"optimize-*\",\n\"include_global_state\":true}");
-    final Response response = client.getLowLevelClient().performRequest(createSnapshotRequest);
-    if (HttpURLConnection.HTTP_OK != response.getStatusLine().getStatusCode()) {
-      throw new RuntimeException(
-          "Failed Creating Snapshot, statusCode: " + response.getStatusLine().getStatusCode());
-    }
-    log.info("Done creating snapshot on {} Elasticsearch!", name);
-  }
-
-  public void createAsyncSnapshot() throws IOException {
-    log.info("Creating snapshot on {} Elasticsearch...", name);
-    // using low level client for compatibility here, see
-    // https://github.com/elastic/elasticsearch/pull/57661
-    final Request createSnapshotRequest =
-        new Request("PUT", "/_snapshot/" + SNAPSHOT_REPOSITORY_NAME + "/" + SNAPSHOT_NAME_2);
-    createSnapshotRequest.addParameter("wait_for_completion", String.valueOf(false));
-    createSnapshotRequest.setJsonEntity("{\"include_global_state\":true}");
-    final Response response = client.getLowLevelClient().performRequest(createSnapshotRequest);
-    if (HttpURLConnection.HTTP_OK != (response.getStatusLine().getStatusCode())) {
-      throw new RuntimeException(
-          "Failed Creating Snapshot, statusCode: " + response.getStatusLine().getStatusCode());
-    }
-    log.info("Done starting asynchronous snapshot operation on {} Elasticsearch!", name);
-  }
-
-  public void restoreSnapshot() throws IOException {
-    log.info("Restoring snapshot on {} Elasticsearch...", name);
-    client
-        .snapshot()
-        .restore(
-            new RestoreSnapshotRequest(SNAPSHOT_REPOSITORY_NAME, SNAPSHOT_NAME_1)
-                .includeGlobalState(true)
-                .waitForCompletion(true),
-            RequestOptions.DEFAULT);
-    log.info("Done restoring snapshot on {} Elasticsearch!", name);
-  }
-
-  public void deleteSnapshot() throws IOException {
-    deleteSnapshot(SNAPSHOT_NAME_1);
-  }
-
-  public void deleteAsyncSnapshot() throws IOException {
-    deleteSnapshot(SNAPSHOT_NAME_2);
-  }
-
-  public void deleteSnapshot(final String snapshotName) throws IOException {
-    log.info("Deleting snapshot {} on {} Elasticsearch...", snapshotName, name);
-    client
-        .snapshot()
-        .delete(
-            new DeleteSnapshotRequest(SNAPSHOT_REPOSITORY_NAME, snapshotName),
-            RequestOptions.DEFAULT);
-    log.info("Done deleting {} snapshot on {} Elasticsearch!", snapshotName, name);
   }
 }
