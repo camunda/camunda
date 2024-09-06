@@ -32,14 +32,14 @@ public class DeleteIndexTemplateIfExistsStep extends UpgradeStep {
   }
 
   @Override
-  public UpgradeStepType getType() {
-    return SCHEMA_DELETE_TEMPLATE;
-  }
-
-  @Override
   public IndexMappingCreator getIndex() {
     throw new UpgradeRuntimeException(
         "Index class does not exist as its template is being deleted");
+  }
+
+  @Override
+  public UpgradeStepType getType() {
+    return SCHEMA_DELETE_TEMPLATE;
   }
 
   @Override
