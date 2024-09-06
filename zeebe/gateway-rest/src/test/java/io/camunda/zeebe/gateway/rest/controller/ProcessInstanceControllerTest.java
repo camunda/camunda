@@ -13,16 +13,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -40,9 +43,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
          "tenantId":"tenantId"
       }""";
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";
+  static final String CANCEL_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/cancellation";
 
   @Captor ArgumentCaptor<ProcessInstanceCreateRequest> requestCaptor;
-
+  @Captor ArgumentCaptor<ProcessInstanceCancelRequest> cancelRequestCaptor;
   @MockBean ProcessInstanceServices processInstanceServices;
 
   @BeforeEach
@@ -395,6 +399,119 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     webClient
         .post()
         .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldCancelProcessInstance() {
+    // given
+    when(processInstanceServices.cancelProcessInstance(any(ProcessInstanceCancelRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceRecord()));
+
+    final var request =
+        """
+        {
+          "operationReference": 123
+        }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(CANCEL_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(processInstanceServices).cancelProcessInstance(cancelRequestCaptor.capture());
+    final var capturedRequest = cancelRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.operationReference()).isEqualTo(123L);
+  }
+
+  @Test
+  void shouldCancelProcessInstanceWithNoBody() {
+    // given
+    when(processInstanceServices.cancelProcessInstance(any(ProcessInstanceCancelRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceRecord()));
+
+    // when/then
+    webClient
+        .post()
+        .uri(CANCEL_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(processInstanceServices).cancelProcessInstance(cancelRequestCaptor.capture());
+    final var capturedRequest = cancelRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.operationReference()).isNull();
+  }
+
+  @Test
+  void shouldDeleteResourceWithEmptyBody() {
+    // given
+    when(processInstanceServices.cancelProcessInstance(any(ProcessInstanceCancelRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceRecord()));
+
+    final var request =
+        """
+        {}""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(CANCEL_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(processInstanceServices).cancelProcessInstance(cancelRequestCaptor.capture());
+    final var capturedRequest = cancelRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.operationReference()).isEqualTo(null);
+  }
+
+  @Test
+  void shouldRejectCancelProcessInstanceWithOperationReferenceNotValid() {
+    // given
+    final var request =
+        """
+        {
+          "operationReference": -123
+        }""";
+
+    final var expectedBody =
+        """
+        {
+            "type":"about:blank",
+            "title":"INVALID_ARGUMENT",
+            "status":400,
+            "detail":"The value for operationReference is '-123' but must be > 0.",
+            "instance":"/v2/process-instances/1/cancellation"
+         }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(CANCEL_PROCESS_URL.formatted("1"))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
