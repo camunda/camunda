@@ -34,7 +34,7 @@ Define your endpoint and any required data models in the [OpenAPI description](.
    2. Add a `description` property to every API path and every schema property.
    3. Follow the [Camunda style guide](https://confluence.camunda.com/display/HAN/Camunda+style+guide) in all descriptive text.
    4. Follow these rules for casing:
-      1. Use "Title Case" for path `tags` properties.
+      1. Use "Sentence case" (with no period) for path `tags` properties.
       2. Use "Sentence case" (with no period) for path `summary` properties.
       3. Use "Sentence case." (with a period) for all other descriptive text.
       4. Use "lower case" to reference API resources in descriptive text.
