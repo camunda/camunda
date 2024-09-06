@@ -21,6 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
+import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.containers.ZeebeContainer;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
@@ -58,6 +59,7 @@ public class ExecutionListenerTest {
   @Mock private CamundaContainerRuntime camundaContainerRuntime;
   @Mock private ZeebeContainer zeebeContainer;
   @Mock private OperateContainer operateContainer;
+  @Mock private ConnectorsContainer connectorsContainer;
 
   @Mock private ZeebeClientProxy zeebeClientProxy;
   @Mock private CamundaProcessTestContextProxy camundaProcessTestContextProxy;
@@ -84,6 +86,8 @@ public class ExecutionListenerTest {
     when(camundaContainerRuntime.getOperateContainer()).thenReturn(operateContainer);
     when(operateContainer.getHost()).thenReturn("my-host");
     when(operateContainer.getRestApiPort()).thenReturn(100);
+
+    when(camundaContainerRuntime.getConnectorsContainer()).thenReturn(connectorsContainer);
 
     when(testContext.getApplicationContext()).thenReturn(applicationContext);
     when(applicationContext.getBean(ZeebeClientProxy.class)).thenReturn(zeebeClientProxy);
@@ -122,6 +126,9 @@ public class ExecutionListenerTest {
   @Test
   void shouldWireProcessTestContext() throws Exception {
     // given
+    final URI connectorsRestApiAddress = URI.create("http://my-host:300");
+    when(connectorsContainer.getRestApiAddress()).thenReturn(connectorsRestApiAddress);
+
     final CamundaProcessTestExecutionListener listener =
         new CamundaProcessTestExecutionListener(camundaContainerRuntimeBuilder);
 
@@ -137,6 +144,8 @@ public class ExecutionListenerTest {
     assertThat(camundaProcessTestContext).isNotNull();
     assertThat(camundaProcessTestContext.getZeebeGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
     assertThat(camundaProcessTestContext.getZeebeRestAddress()).isEqualTo(REST_API_ADDRESS);
+    assertThat(camundaProcessTestContext.getConnectorsAddress())
+        .isEqualTo(connectorsRestApiAddress);
 
     final ZeebeClient newZeebeClient = camundaProcessTestContext.createClient();
     assertThat(newZeebeClient).isNotNull();
@@ -238,5 +247,39 @@ public class ExecutionListenerTest {
     verify(camundaContainerRuntimeBuilder).withZeebeEnv(zeebeEnvVars);
     verify(camundaContainerRuntimeBuilder).withZeebeExposedPort(100);
     verify(camundaContainerRuntimeBuilder).withZeebeExposedPort(200);
+  }
+
+  @Test
+  void shouldConfigureConnectors() throws Exception {
+    // given
+    final Map<String, String> connectorsEnvVars =
+        Map.ofEntries(entry("env-1", "test-1"), entry("env-2", "test-2"));
+
+    final Map<String, String> connectorsSecrets =
+        Map.ofEntries(entry("secret-1", "1"), entry("secret-2", "2"));
+
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(camundaContainerRuntimeBuilder);
+
+    final CamundaContainerRuntimeConfiguration runtimeConfiguration =
+        new CamundaContainerRuntimeConfiguration();
+    runtimeConfiguration.setConnectorsEnabled(true);
+    runtimeConfiguration.setConnectorsDockerImageName("custom-connectors");
+    runtimeConfiguration.setConnectorsDockerImageVersion("8.6.0-custom");
+    runtimeConfiguration.setConnectorsEnvVars(connectorsEnvVars);
+    runtimeConfiguration.setConnectorsSecrets(connectorsSecrets);
+
+    when(applicationContext.getBean(CamundaContainerRuntimeConfiguration.class))
+        .thenReturn(runtimeConfiguration);
+
+    // when
+    listener.beforeTestMethod(testContext);
+
+    // then
+    verify(camundaContainerRuntimeBuilder).withConnectorsEnabled(true);
+    verify(camundaContainerRuntimeBuilder).withConnectorsDockerImageName("custom-connectors");
+    verify(camundaContainerRuntimeBuilder).withConnectorsDockerImageVersion("8.6.0-custom");
+    verify(camundaContainerRuntimeBuilder).withConnectorsEnv(connectorsEnvVars);
+    verify(camundaContainerRuntimeBuilder).withConnectorsSecrets(connectorsSecrets);
   }
 }

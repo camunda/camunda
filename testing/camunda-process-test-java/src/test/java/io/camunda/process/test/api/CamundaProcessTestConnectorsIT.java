@@ -19,11 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
 import java.time.Duration;
-import java.time.Instant;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -32,89 +29,23 @@ import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@SpringBootTest(classes = {CamundaSpringProcessTestListenerIT.class})
-@CamundaSpringProcessTest
-public class CamundaSpringProcessTestListenerIT {
+public class CamundaProcessTestConnectorsIT {
 
   // The ID is part of the connector configuration in the BPMN element
   private static final String INBOUND_CONNECTOR_ID = "941c5492-ab2b-4305-aa18-ac86991ff4ca";
 
-  @Autowired private ZeebeClient client;
-  @Autowired private CamundaProcessTestContext processTestContext;
+  @RegisterExtension
+  private final CamundaProcessTestExtension extension =
+      new CamundaProcessTestExtension()
+          .withConnectorsEnabled(true)
+          .withConnectorsSecret(
+              "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness");
 
-  @Test
-  void shouldCreateProcessInstance() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .name("start")
-            .zeebeOutputExpression("\"active\"", "status")
-            .userTask()
-            .name("task")
-            .endEvent()
-            .name("end")
-            .zeebeOutputExpression("\"ok\"", "result")
-            .done();
-
-    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
-
-    // when
-    final ProcessInstanceEvent processInstance =
-        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
-
-    // then
-    CamundaAssert.assertThat(processInstance)
-        .isActive()
-        .hasCompletedElements("start")
-        .hasActiveElements("task")
-        .hasVariable("status", "active");
-  }
-
-  @Test
-  void shouldTriggerTimerEvent() {
-    // given
-    final Duration timerDuration = Duration.ofHours(1);
-
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .name("start")
-            .userTask("A")
-            .name("A")
-            .endEvent()
-            // attach boundary timer event
-            .moveToActivity("A")
-            .boundaryEvent()
-            .timerWithDuration(timerDuration.toString())
-            .userTask()
-            .name("B")
-            .endEvent()
-            .done();
-
-    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
-
-    final ProcessInstanceEvent processInstance =
-        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
-
-    // when
-    CamundaAssert.assertThat(processInstance).hasActiveElements("A");
-
-    final Instant timeBefore = processTestContext.getCurrentTime();
-
-    processTestContext.increaseTime(timerDuration);
-
-    final Instant timeAfter = processTestContext.getCurrentTime();
-
-    // then
-    CamundaAssert.assertThat(processInstance).hasTerminatedElements("A").hasActiveElements("B");
-
-    assertThat(Duration.between(timeBefore, timeAfter))
-        .isCloseTo(timerDuration, Duration.ofSeconds(10));
-  }
+  // to be injected
+  private ZeebeClient client;
+  private CamundaProcessTestContext processTestContext;
 
   @Test
   void shouldInvokeInAndOutboundConnectors() throws IOException {
