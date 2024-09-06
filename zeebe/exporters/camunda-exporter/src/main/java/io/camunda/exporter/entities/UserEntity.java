@@ -9,6 +9,7 @@ package io.camunda.exporter.entities;
 
 public class UserEntity implements ExporterEntity<UserEntity> {
   private String id;
+  private Long key;
   private String username;
   private String name;
   private String email;
@@ -22,6 +23,15 @@ public class UserEntity implements ExporterEntity<UserEntity> {
   @Override
   public UserEntity setId(final String id) {
     this.id = id;
+    return this;
+  }
+
+  public Long getKey() {
+    return key;
+  }
+
+  public UserEntity setKey(final Long key) {
+    this.key = key;
     return this;
   }
 
