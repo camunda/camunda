@@ -121,5 +121,9 @@
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-els-schema</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-elasticsearch-exporter</artifactId>
+    </dependency>
   </dependencies>
 </project>

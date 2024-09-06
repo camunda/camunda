@@ -33,21 +33,26 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 @AutoCloseResources
 final class ExportingEndpointIT {
-  @TestZeebe
-  private static final TestCluster CLUSTER =
-      TestCluster.builder()
-          .useRecordingExporter(true)
-          .withBrokersCount(2)
-          .withPartitionsCount(2)
-          .withReplicationFactor(1)
-          .withEmbeddedGateway(true)
-          .build();
+  @TestZeebe(initMethod = "initTestCluster")
+  private static TestCluster cluster;
 
-  @AutoCloseResource private final ZeebeClient client = CLUSTER.newClientBuilder().build();
+  @AutoCloseResource private final ZeebeClient client = cluster.newClientBuilder().build();
+
+  @SuppressWarnings("unused")
+  static void initTestCluster() {
+    cluster =
+        TestCluster.builder()
+            .useRecordingExporter(true)
+            .withBrokersCount(2)
+            .withPartitionsCount(2)
+            .withReplicationFactor(1)
+            .withEmbeddedGateway(true)
+            .build();
+  }
 
   @BeforeAll
   static void beforeAll() {
-    try (final var client = CLUSTER.newClientBuilder().build()) {
+    try (final var client = cluster.newClientBuilder().build()) {
       client
           .newDeployResourceCommand()
           .addProcessModel(
@@ -153,8 +158,8 @@ final class ExportingEndpointIT {
 
     // when
     getActuator().pause();
-    CLUSTER.shutdown();
-    CLUSTER.start();
+    cluster.shutdown();
+    cluster.start();
 
     client
         .newPublishMessageCommand()
@@ -176,11 +181,11 @@ final class ExportingEndpointIT {
   }
 
   private ExportingActuator getActuator() {
-    return ExportingActuator.of(CLUSTER.availableGateway());
+    return ExportingActuator.of(cluster.availableGateway());
   }
 
   private void allPartitionsPausedExporting() {
-    for (final var broker : CLUSTER.brokers().values()) {
+    for (final var broker : cluster.brokers().values()) {
       assertThat(PartitionsActuator.of(broker).query().values())
           .allMatch(
               status -> status.exporterPhase() == null || status.exporterPhase().equals("PAUSED"),
@@ -189,7 +194,7 @@ final class ExportingEndpointIT {
   }
 
   private void allPartitionsSoftPausedExporting() {
-    for (final var broker : CLUSTER.brokers().values()) {
+    for (final var broker : cluster.brokers().values()) {
       assertThat(PartitionsActuator.of(broker).query().values())
           .allMatch(
               status ->
@@ -199,7 +204,7 @@ final class ExportingEndpointIT {
   }
 
   private void allPartitionsExporting() {
-    for (final var broker : CLUSTER.brokers().values()) {
+    for (final var broker : cluster.brokers().values()) {
       assertThat(PartitionsActuator.of(broker).query().values())
           .allMatch(
               status ->
@@ -325,8 +330,8 @@ final class ExportingEndpointIT {
     final var exportedPositionBeforeRestart = getExportedPositions();
 
     // when
-    CLUSTER.shutdown();
-    CLUSTER.start();
+    cluster.shutdown();
+    cluster.start();
 
     client
         .newPublishMessageCommand()
@@ -367,7 +372,7 @@ final class ExportingEndpointIT {
 
   Map<Integer, Long> getExportedPositions() {
     final Map<Integer, Long> exportedPositionPerPartition = new HashMap<>();
-    for (final var broker : CLUSTER.brokers().values()) {
+    for (final var broker : cluster.brokers().values()) {
       PartitionsActuator.of(broker)
           .query()
           .forEach(

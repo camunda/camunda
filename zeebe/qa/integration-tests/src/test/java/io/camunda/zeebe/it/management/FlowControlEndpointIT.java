@@ -20,20 +20,25 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 @AutoCloseResources
 final class FlowControlEndpointIT {
-  @TestZeebe
-  private static final TestCluster CLUSTER =
-      TestCluster.builder()
-          .useRecordingExporter(true)
-          .withBrokersCount(2)
-          .withPartitionsCount(2)
-          .withReplicationFactor(1)
-          .withEmbeddedGateway(true)
-          .build();
+  @TestZeebe(initMethod = "initTestCluster")
+  private static TestCluster cluster;
+
+  @SuppressWarnings("unused")
+  static void initTestCluster() {
+    cluster =
+        TestCluster.builder()
+            .useRecordingExporter(true)
+            .withBrokersCount(2)
+            .withPartitionsCount(2)
+            .withReplicationFactor(1)
+            .withEmbeddedGateway(true)
+            .build();
+  }
 
   @Test
   void shouldSetFLowControl() {
     // given
-    final var actuator = FlowControlActuator.of(CLUSTER.availableGateway());
+    final var actuator = FlowControlActuator.of(cluster.availableGateway());
     actuator.setFlowControlConfiguration(
         // language=JSON
         """
@@ -72,7 +77,7 @@ final class FlowControlEndpointIT {
   @Test
   void canConfigureJustOneOfTheLimits() {
     // given
-    final var actuator = FlowControlActuator.of(CLUSTER.availableGateway());
+    final var actuator = FlowControlActuator.of(cluster.availableGateway());
     // to configure just one of the limits, we have to set the others to null
     actuator.setFlowControlConfiguration(
         // language=JSON
@@ -117,7 +122,7 @@ final class FlowControlEndpointIT {
   @Test
   void canDisableALimit() {
     // given
-    final var actuator = FlowControlActuator.of(CLUSTER.availableGateway());
+    final var actuator = FlowControlActuator.of(cluster.availableGateway());
     actuator.setFlowControlConfiguration(
         // language=JSON
         """

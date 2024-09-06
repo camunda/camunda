@@ -22,6 +22,7 @@ import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
@@ -72,6 +73,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   private final BrokerBasedProperties brokerProperties;
   private final OperateProperties operateProperties;
   private final TasklistProperties tasklistProperties;
+  private final ElasticsearchExporterConfiguration elasticsearchExporterConfiguration;
 
   public TestStandaloneCamunda() {
     super(
@@ -105,6 +107,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
 
     operateProperties = new OperateProperties();
     tasklistProperties = new TasklistProperties();
+    elasticsearchExporterConfiguration = new ElasticsearchExporterConfiguration();
 
     //noinspection resource
     withBean("config", brokerProperties, BrokerBasedProperties.class)
@@ -131,6 +134,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     operateProperties.getZeebeElasticsearch().setUrl(esURL);
     tasklistProperties.getElasticsearch().setUrl(esURL);
     tasklistProperties.getZeebeElasticsearch().setUrl(esURL);
+    elasticsearchExporterConfiguration.url = esURL;
     return super.start().withRecordingExporter(true);
   }
 
@@ -138,9 +142,12 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   public TestStandaloneCamunda stop() {
     // clean up ES/OS indices
     LOGGER.info("Stopping standalone camunda test...");
+    /*
     (bean(TestOperateElasticsearchSchemaManager.class)).deleteSchema();
     (bean(TestTasklistElasticsearchSchemaManager.class)).deleteSchema();
-
+    new ExporterTestClient(elasticsearchExporterConfiguration).deleteIndices();
+    */
+    esContainer.stop();
     return super.stop();
   }
 

@@ -49,20 +49,25 @@ final class QueryApiIT {
           .endEvent()
           .done();
 
-  @TestZeebe
-  private static final TestStandaloneBroker BROKER =
-      new TestStandaloneBroker()
-          .withBrokerConfig(cfg -> cfg.getExperimental().getQueryApi().setEnabled(true))
-          .withBrokerConfig(
-              cfg -> {
-                final var config = new InterceptorCfg();
-                config.setId("auth");
-                config.setClassName(TestAuthorizationServerInterceptor.class.getName());
-                config.setJarPath(createInterceptorJar().getAbsolutePath());
-                cfg.getGateway().getInterceptors().add(config);
-              });
+  @TestZeebe(initMethod = "initTestStandaloneBroker")
+  private static TestStandaloneBroker broker;
 
   private static long processDefinitionKey;
+
+  @SuppressWarnings("unused")
+  static void initTestStandaloneBroker() {
+    broker =
+        new TestStandaloneBroker()
+            .withBrokerConfig(cfg -> cfg.getExperimental().getQueryApi().setEnabled(true))
+            .withBrokerConfig(
+                cfg -> {
+                  final var config = new InterceptorCfg();
+                  config.setId("auth");
+                  config.setClassName(TestAuthorizationServerInterceptor.class.getName());
+                  config.setJarPath(createInterceptorJar().getAbsolutePath());
+                  cfg.getGateway().getInterceptors().add(config);
+                });
+  }
 
   @BeforeAll
   static void beforeAll() {
@@ -199,7 +204,7 @@ final class QueryApiIT {
   }
 
   private static ZeebeClient createZeebeClient(final String tenant) {
-    return BROKER
+    return broker
         .newClientBuilder()
         .withInterceptors(new TestAuthorizationClientInterceptor(tenant))
         .defaultRequestTimeout(Duration.ofMinutes(1))

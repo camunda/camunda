@@ -29,13 +29,18 @@ import org.junit.jupiter.api.Test;
 class UserTaskQueryTest {
   private static Long userTaskKeyTaskAssigned;
 
-  @TestZeebe
-  private static TestStandaloneCamunda testStandaloneCamunda = new TestStandaloneCamunda();
+  @TestZeebe(initMethod = "initTestStandaloneCamunda")
+  private static TestStandaloneCamunda testStandaloneCamunda;
 
   private static ZeebeClient camundaClient;
 
+  @SuppressWarnings("unused")
+  static void initTestStandaloneCamunda() {
+    testStandaloneCamunda = new TestStandaloneCamunda();
+  }
+
   @BeforeAll
-  public static void setup() {
+  static void beforeAll() {
     camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     deployProcess("process", "simple.bpmn", "test", "", "");
