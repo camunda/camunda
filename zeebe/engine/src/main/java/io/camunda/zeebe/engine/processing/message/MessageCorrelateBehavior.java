@@ -40,7 +40,7 @@ public final class MessageCorrelateBehavior {
     this.commandSender = commandSender;
   }
 
-  public Subscriptions correlateToMessageStartEvents(
+  public void correlateToMessageStartEvents(
       final MessageData messageData, final Subscriptions correlatingSubscriptions) {
     startEventSubscriptionState.visitSubscriptionsByMessageName(
         messageData.tenantId(),
@@ -69,11 +69,9 @@ public final class MessageCorrelateBehavior {
             correlatingSubscriptions.add(subscriptionRecord);
           }
         });
-
-    return correlatingSubscriptions;
   }
 
-  public Subscriptions correlateToMessageEvents(
+  public void correlateToMessageEvents(
       final MessageData messageData, final Subscriptions correlatingSubscriptions) {
 
     messageSubscriptionState.visitSubscriptions(
@@ -103,12 +101,11 @@ public final class MessageCorrelateBehavior {
 
           return true;
         });
-    return correlatingSubscriptions;
   }
 
-  public boolean sendCorrelateCommands(
+  public void sendCorrelateCommands(
       final MessageData messageData, final Subscriptions correlatingSubscriptions) {
-    return correlatingSubscriptions.visitSubscriptions(
+    correlatingSubscriptions.visitSubscriptions(
         subscription ->
             commandSender.correlateProcessMessageSubscription(
                 subscription.getProcessInstanceKey(),
