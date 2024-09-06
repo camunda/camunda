@@ -712,6 +712,49 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /process-instances/{processInstanceKey}/cancellation:
+    post:
+      tags:
+        - Process Instance
+      summary: Cancel process instance
+      description: Cancel a running process instance.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The key of the process instance that should be modified.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelProcessInstanceRequest"
+      responses:
+        "204":
+          description: The process instance is canceled
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The process instance is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
+
   /decision-definitions/search:
     post:
       tags:
@@ -1634,6 +1677,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceReferenceItem"
+    CancelProcessInstanceRequest:
+      type: object
+      nullable: true
+      properties:
+        operationReference:
+          description: |
+            A reference key chosen by the user and will be part of all records resulting from this operation.
+            Must be > 0 if provided.
+          type: integer
+          format: int64
+          minimum: 1
+
     DecisionDefinitionSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
