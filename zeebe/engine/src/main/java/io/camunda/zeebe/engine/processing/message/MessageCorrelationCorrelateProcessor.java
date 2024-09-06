@@ -97,6 +97,7 @@ public final class MessageCorrelationCorrelateProcessor
     final var correlatingSubscriptions = new Subscriptions();
     correlateToMessageEventSubscriptions(command.getValue(), messageKey, correlatingSubscriptions);
     correlateToMessageStartEventSubscriptions(command, messageKey, correlatingSubscriptions);
+    sendCorrelateCommands(messageKey, messageRecord, correlatingSubscriptions);
 
     if (correlatingSubscriptions.isEmpty()) {
       final var errorMessage =
@@ -148,5 +149,17 @@ public final class MessageCorrelationCorrelateProcessor
             messageCorrelationRecord.getVariablesBuffer(),
             messageCorrelationRecord.getTenantId()),
         correlatingSubscriptions);
+  }
+
+  private void sendCorrelateCommands(
+      final long messageKey, final MessageRecord message, final Subscriptions subscriptions) {
+    correlateBehavior.sendCorrelateCommands(
+        new MessageData(
+            messageKey,
+            message.getNameBuffer(),
+            message.getCorrelationKeyBuffer(),
+            message.getVariablesBuffer(),
+            message.getTenantId()),
+        subscriptions);
   }
 }

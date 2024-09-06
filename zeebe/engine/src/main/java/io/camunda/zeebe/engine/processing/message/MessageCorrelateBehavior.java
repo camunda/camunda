@@ -99,21 +99,26 @@ public final class MessageCorrelateBehavior {
                 correlatingSubscription);
 
             correlatingSubscriptions.add(correlatingSubscription);
-
-            commandSender.correlateProcessMessageSubscription(
-                correlatingSubscription.getProcessInstanceKey(),
-                correlatingSubscription.getElementInstanceKey(),
-                correlatingSubscription.getBpmnProcessIdBuffer(),
-                messageData.messageName(),
-                messageData.messageKey(),
-                messageData.variables(),
-                messageData.correlationKey(),
-                messageData.tenantId());
           }
 
           return true;
         });
     return correlatingSubscriptions;
+  }
+
+  public boolean sendCorrelateCommands(
+      final MessageData messageData, final Subscriptions correlatingSubscriptions) {
+    return correlatingSubscriptions.visitSubscriptions(
+        subscription ->
+            commandSender.correlateProcessMessageSubscription(
+                subscription.getProcessInstanceKey(),
+                subscription.getElementInstanceKey(),
+                subscription.getBpmnProcessId(),
+                messageData.messageName(),
+                messageData.messageKey(),
+                messageData.variables(),
+                messageData.correlationKey(),
+                messageData.tenantId()));
   }
 
   public record MessageData(

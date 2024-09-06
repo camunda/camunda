@@ -114,6 +114,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     final var correlatingSubscriptions = new Subscriptions();
     correlateToSubscriptions(messageKey, messageRecord, correlatingSubscriptions);
     correlateToMessageStartEvents(messageRecord, correlatingSubscriptions);
+    sendCorrelateCommands(messageKey, messageRecord, correlatingSubscriptions);
 
     if (messageRecord.getTimeToLive() <= 0L) {
       // avoid that the message can be correlated again by writing the EXPIRED event as a follow-up
@@ -143,5 +144,17 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             messageRecord.getVariablesBuffer(),
             messageRecord.getTenantId()),
         correlatingSubscriptions);
+  }
+
+  private void sendCorrelateCommands(
+      final long messageKey, final MessageRecord message, final Subscriptions subscriptions) {
+    correlateBehavior.sendCorrelateCommands(
+        new MessageData(
+            messageKey,
+            message.getNameBuffer(),
+            message.getCorrelationKeyBuffer(),
+            message.getVariablesBuffer(),
+            message.getTenantId()),
+        subscriptions);
   }
 }
