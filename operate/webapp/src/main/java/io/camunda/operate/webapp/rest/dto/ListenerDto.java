@@ -11,6 +11,7 @@ import io.camunda.operate.entities.JobEntity;
 import io.camunda.operate.entities.ListenerEventType;
 import io.camunda.operate.entities.ListenerState;
 import io.camunda.operate.entities.ListenerType;
+import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;
@@ -23,7 +24,7 @@ public class ListenerDto {
   private ListenerEventType event;
   private OffsetDateTime time;
 
-  private Object[] sortValues;
+  private SortValuesWrapper[] sortValues;
 
   public ListenerType getListenerType() {
     return listenerType;
@@ -79,11 +80,11 @@ public class ListenerDto {
     return this;
   }
 
-  public Object[] getSortValues() {
+  public SortValuesWrapper[] getSortValues() {
     return sortValues;
   }
 
-  public ListenerDto setSortValues(final Object[] sortValues) {
+  public ListenerDto setSortValues(final SortValuesWrapper[] sortValues) {
     this.sortValues = sortValues;
     return this;
   }

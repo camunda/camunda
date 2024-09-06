@@ -118,9 +118,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     assertEquals("12", resultListeners1.get(2).getListenerKey());
 
     // next page - test searchAfter
-    final Object[] sortValuesFromLastInResultOfPage = resultListeners1.get(2).getSortValues();
-    final SortValuesWrapper[] sortValuesAfter =
-        SortValuesWrapper.createFrom(sortValuesFromLastInResultOfPage, objectMapper);
+    final SortValuesWrapper[] sortValuesAfter = resultListeners1.get(2).getSortValues();
     final ListenerRequestDto request2 =
         new ListenerRequestDto()
             .setPageSize(3)
@@ -136,9 +134,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     assertEquals("31", resultListeners2.get(1).getListenerKey());
 
     // test searchBefore (from last result)
-    final Object[] sortValuesFromLastResult = resultListeners2.get(1).getSortValues();
-    final SortValuesWrapper[] sortValuesBefore =
-        SortValuesWrapper.createFrom(sortValuesFromLastResult, objectMapper);
+    final SortValuesWrapper[] sortValuesBefore = resultListeners2.get(1).getSortValues();
     final ListenerRequestDto request3 =
         new ListenerRequestDto()
             .setPageSize(3)

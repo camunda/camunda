@@ -21,6 +21,7 @@ import io.camunda.operate.webapp.reader.ListenerReader;
 import io.camunda.operate.webapp.rest.dto.ListenerDto;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import io.camunda.operate.webapp.rest.dto.ListenerResponseDto;
+import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -73,7 +74,9 @@ public class OpensearchListenerReader extends OpensearchAbstractReader implement
             .map(
                 hit -> {
                   final JobEntity entity = hit.source();
-                  return ListenerDto.fromJobEntity(entity).setSortValues(hit.sort().toArray());
+                  final SortValuesWrapper[] sortValues =
+                      SortValuesWrapper.createFrom(hit.sort().toArray(), objectMapper);
+                  return ListenerDto.fromJobEntity(entity).setSortValues(sortValues);
                 })
             .collect(Collectors.toList());
     if (request.getSearchBefore() != null) {

@@ -21,6 +21,7 @@ import io.camunda.operate.webapp.reader.ListenerReader;
 import io.camunda.operate.webapp.rest.dto.ListenerDto;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import io.camunda.operate.webapp.rest.dto.ListenerResponseDto;
+import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -88,7 +89,9 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
                 final JobEntity entity =
                     fromSearchHit(searchHit.getSourceAsString(), objectMapper, JobEntity.class);
                 final ListenerDto dto = ListenerDto.fromJobEntity(entity);
-                dto.setSortValues(searchHit.getSortValues());
+                final SortValuesWrapper[] sortValues =
+                    SortValuesWrapper.createFrom(searchHit.getSortValues(), objectMapper);
+                dto.setSortValues(sortValues);
                 return dto;
               });
       if (request.getSearchBefore() != null) {
