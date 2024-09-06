@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.service.UserServices;
 import io.camunda.service.entities.UserEntity;
-import io.camunda.service.entities.UserEntity.User;
 import io.camunda.service.search.query.SearchQueryResult;
 import java.util.Collections;
 import java.util.List;
@@ -44,7 +43,7 @@ public class CamundaUserDetailsServiceTest {
     when(userService.search(any()))
         .thenReturn(
             new SearchQueryResult<>(
-                1, List.of(new UserEntity(new User(TEST_USER_ID, "", "", "password1"))), null));
+                1, List.of(new UserEntity(1L, TEST_USER_ID, "", "", "password1")), null));
     // when
     final UserDetails user = userDetailsService.loadUserByUsername(TEST_USER_ID);
 
