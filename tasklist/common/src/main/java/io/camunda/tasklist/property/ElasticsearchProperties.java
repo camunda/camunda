@@ -9,9 +9,10 @@ package io.camunda.tasklist.property;
 
 import static io.camunda.tasklist.util.ConversionUtils.stringIsEmpty;
 
+import io.camunda.search.connect.plugin.PluginConfiguration;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Map;
+import java.util.List;
 import java.util.function.Function;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -44,7 +45,7 @@ public class ElasticsearchProperties {
 
   @NestedConfigurationProperty private SslProperties ssl;
 
-  @NestedConfigurationProperty private Map<String, InterceptorPluginProperties> interceptorPlugins;
+  private List<PluginConfiguration> interceptorPlugins;
 
   public String getClusterName() {
     return clusterName;
@@ -168,12 +169,11 @@ public class ElasticsearchProperties {
     this.ssl = ssl;
   }
 
-  public Map<String, InterceptorPluginProperties> getInterceptorPlugins() {
+  public List<PluginConfiguration> getInterceptorPlugins() {
     return interceptorPlugins;
   }
 
-  public void setInterceptorPlugins(
-      final Map<String, InterceptorPluginProperties> interceptorPlugins) {
+  public void setInterceptorPlugins(final List<PluginConfiguration> interceptorPlugins) {
     this.interceptorPlugins = interceptorPlugins;
   }
 }
