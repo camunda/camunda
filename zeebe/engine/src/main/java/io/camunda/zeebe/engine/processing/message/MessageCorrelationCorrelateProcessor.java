@@ -95,8 +95,8 @@ public final class MessageCorrelationCorrelateProcessor
         messageKey, MessageCorrelationIntent.CORRELATING, messageCorrelationRecord);
 
     final var correlatingSubscriptions = new Subscriptions();
-    correlateToMessageStartEventSubscriptions(command, messageKey, correlatingSubscriptions);
     correlateToMessageEventSubscriptions(command.getValue(), messageKey, correlatingSubscriptions);
+    correlateToMessageStartEventSubscriptions(command, messageKey, correlatingSubscriptions);
 
     if (correlatingSubscriptions.isEmpty()) {
       final var errorMessage =
@@ -124,7 +124,6 @@ public final class MessageCorrelationCorrelateProcessor
                 messageCorrelationRecord.getVariablesBuffer(),
                 messageCorrelationRecord.getTenantId()),
             correlatingSubscriptions);
-    correlatingSubscriptions.addAll(correlatedSubscriptions);
 
     if (!correlatedSubscriptions.isEmpty()) {
       final var subscription = correlatedSubscriptions.peek();
