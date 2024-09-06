@@ -24,6 +24,7 @@ type TabType = {
   label: string;
   content: React.ReactNode;
   removePadding?: boolean;
+  testId?: string;
   onClick?: () => void;
 };
 
@@ -44,9 +45,10 @@ const TabView: React.FC<Props> = ({tabs = [], eventName, dataTestId}) => {
       ) : (
         <Tabs>
           <TabList aria-label="Variable Panel Tabs">
-            {tabs.map(({id, labelIcon, label, onClick}) => (
+            {tabs.map(({id, labelIcon, label, testId, onClick}) => (
               <Tab
                 key={id}
+                data-testid={testId}
                 onClick={() => {
                   onClick?.();
                   if (eventName !== undefined) {

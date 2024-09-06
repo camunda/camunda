@@ -86,6 +86,7 @@ const VariablePanel = observer(function VariablePanel() {
                 ? [
                     {
                       id: 'listeners',
+                      testId: 'listeners-tab-button',
                       ...(getListenersFailureCount() && {
                         labelIcon: <WarningFilled />,
                       }),
