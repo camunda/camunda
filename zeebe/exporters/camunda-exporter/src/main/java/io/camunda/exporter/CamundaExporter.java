@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.USER;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.clients.elasticsearch.ElasticsearchClientFactory;
 import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
@@ -39,13 +40,14 @@ public class CamundaExporter implements Exporter {
   private ElasticsearchClient client;
   private ExporterBatchWriter writer;
   private long lastPosition = -1;
-  private final ExporterComponentsProvider provider;
+  private final ExporterResourceProvider provider;
 
   public CamundaExporter() {
-    this(new DefaultExporterComponentsProvider());
+    this(new DefaultExporterResourceProvider());
   }
 
-  public CamundaExporter(final ExporterComponentsProvider provider) {
+  @VisibleForTesting
+  public CamundaExporter(final ExporterResourceProvider provider) {
     this.provider = provider;
   }
 

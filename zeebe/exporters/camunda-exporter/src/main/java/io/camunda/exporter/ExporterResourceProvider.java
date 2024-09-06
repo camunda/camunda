@@ -11,8 +11,19 @@ import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
 import java.util.List;
 
-public interface ExporterComponentsProvider {
+public interface ExporterResourceProvider {
+
+  /**
+   * This should return descriptors describing the desired state of all indices provided.
+   *
+   * @return A {@link List} of {@link IndexDescriptor}
+   */
   List<IndexDescriptor> getIndexDescriptors();
 
+  /**
+   * This should return descriptors describing the desired state of all index templates provided.
+   *
+   * @return A {@link List} of {@link IndexTemplateDescriptor}
+   */
   List<IndexTemplateDescriptor> getIndexTemplateDescriptors();
 }
