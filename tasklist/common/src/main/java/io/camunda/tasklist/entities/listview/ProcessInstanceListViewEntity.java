@@ -15,7 +15,7 @@ public class ProcessInstanceListViewEntity {
   private String id;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  private String partitionId;
+  private Integer partitionId;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String tenantId;
@@ -41,11 +41,11 @@ public class ProcessInstanceListViewEntity {
     return this;
   }
 
-  public String getPartitionId() {
+  public Integer getPartitionId() {
     return partitionId;
   }
 
-  public ProcessInstanceListViewEntity setPartitionId(final String partitionId) {
+  public ProcessInstanceListViewEntity setPartitionId(final Integer partitionId) {
     this.partitionId = partitionId;
     return this;
   }
