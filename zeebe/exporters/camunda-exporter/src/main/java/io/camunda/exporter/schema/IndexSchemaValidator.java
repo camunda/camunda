@@ -62,13 +62,13 @@ public class IndexSchemaValidator {
       final IndexDescriptor indexDescriptor,
       final IndexMappingDifference difference,
       final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
-    if (difference != null && !difference.isEqual()) {
+    if (difference != null && !difference.equal()) {
       LOGGER.debug(
           "Index fields differ from expected. Index name: {}. Difference: {}.",
           indexDescriptor.getIndexName(),
           difference);
 
-      if (!difference.getEntriesDiffering().isEmpty()) {
+      if (!difference.entriesDiffering().isEmpty()) {
         // This call will throw an exception unless the index is dynamic, in which case
         // field differences will be ignored. In the case of a dynamic index, we still want
         // to collect any new fields, so we should continue to the next checks instead of making
@@ -76,15 +76,15 @@ public class IndexSchemaValidator {
         failIfIndexNotDynamic(difference, indexDescriptor);
       }
 
-      if (!difference.getEntriesOnlyOnRight().isEmpty()) {
+      if (!difference.entriesOnlyOnRight().isEmpty()) {
         LOGGER.info(
             "Index name: {}. Field deletion is requested, will be ignored. Fields: {}",
             indexDescriptor.getIndexName(),
-            difference.getEntriesOnlyOnRight());
+            difference.entriesOnlyOnRight());
 
-      } else if (!difference.getEntriesOnlyOnLeft().isEmpty()) {
+      } else if (!difference.entriesOnlyOnLeft().isEmpty()) {
         // Collect the new fields
-        newFields.put(indexDescriptor, difference.getEntriesOnlyOnLeft());
+        newFields.put(indexDescriptor, difference.entriesOnlyOnLeft());
       }
     } else {
       LOGGER.debug("Index fields are up to date. Index name: {}.", indexDescriptor.getIndexName());
@@ -103,7 +103,7 @@ public class IndexSchemaValidator {
                         .setLeft(indexMappingMustBe)
                         .setRight(mapping)
                         .build())
-            .filter(difference -> !difference.isEqual())
+            .filter(difference -> !difference.equal())
             // Ensure all difference are the same
             .distinct() // Have to implement IndexMappingDifference.equals and hashcode
             .toList();
@@ -159,21 +159,21 @@ public class IndexSchemaValidator {
 
   private void failIfIndexNotDynamic(
       final IndexMappingDifference difference, final IndexDescriptor indexDescriptor) {
-    if (indexIsDynamic(difference.getLeftIndexMapping())) {
+    if (indexIsDynamic(difference.leftIndexMapping())) {
       LOGGER.debug(
-          String.format(
-              "Left index name: %s is dynamic, ignoring changes found: %s",
-              indexDescriptor.getIndexName(), difference.getEntriesDiffering()));
-    } else if (indexIsDynamic(difference.getRightIndexMapping())) {
+          "Left index name: {} is dynamic, ignoring changes found: {}",
+          indexDescriptor.getIndexName(),
+          difference.entriesDiffering());
+    } else if (indexIsDynamic(difference.rightIndexMapping())) {
       LOGGER.debug(
-          String.format(
-              "Right index name: %s is dynamic, ignoring changes found: %s",
-              indexDescriptor.getIndexName(), difference.getEntriesDiffering()));
+          "Right index name: {} is dynamic, ignoring changes found: {}",
+          indexDescriptor.getIndexName(),
+          difference.entriesDiffering());
     } else {
       final String errorMsg =
           String.format(
               "Index name: %s. Not supported index changes are introduced. Data migration is required. Changes found: %s",
-              indexDescriptor.getIndexName(), difference.getEntriesDiffering());
+              indexDescriptor.getIndexName(), difference.entriesDiffering());
       LOGGER.error(errorMsg);
       throw new IndexSchemaValidationException(errorMsg);
     }
