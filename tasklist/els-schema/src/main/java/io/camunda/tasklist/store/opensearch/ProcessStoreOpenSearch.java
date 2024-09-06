@@ -281,12 +281,22 @@ public class ProcessStoreOpenSearch implements ProcessStore {
     final BoolQuery.Builder query =
         QueryBuilders.bool()
             .should(s -> s.term(t -> t.field(ProcessIndex.ID).value(FieldValue.of(search))))
-            .should(s -> s.regexp(regex -> regex.field(ProcessIndex.NAME).value(regexSearch)))
             .should(
                 s ->
                     s.regexp(
                         regex ->
-                            regex.field(ProcessIndex.PROCESS_DEFINITION_ID).value(regexSearch)))
+                            regex
+                                .field(ProcessIndex.NAME)
+                                .caseInsensitive(CASE_INSENSITIVE)
+                                .value(regexSearch)))
+            .should(
+                s ->
+                    s.regexp(
+                        regex ->
+                            regex
+                                .field(ProcessIndex.PROCESS_DEFINITION_ID)
+                                .caseInsensitive(CASE_INSENSITIVE)
+                                .value(regexSearch)))
             .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
             .mustNot(
                 mn ->
