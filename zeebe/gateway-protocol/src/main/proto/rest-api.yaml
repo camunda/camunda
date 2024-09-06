@@ -1320,14 +1320,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
-  /elements/{elementKey}/variabels:
+  /elements/{elementKey}/variables:
     post:
       tags:
         - Variables
+        - Elements
       summary: Updates element variables
       description: |
-        Updates all the variables of a particular scope (e.g. process instance, flow element
-        instance) with the given variable data.
+        Updates all the variables of a particular scope (e.g. process instance, flow element instance) with the given variable data.
       parameters:
         - name: elementKey
           in: path
@@ -2763,7 +2763,7 @@ components:
           additionalProperties: true
           type: object
         local:
-          description: >
+          description: |
             If set to true, the variables will be merged strictly into the local scope
             (as indicated by elementKey).
             Otherwise, the variables are propagated to upper scopes and set at the outermost one.
