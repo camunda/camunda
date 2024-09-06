@@ -17,10 +17,11 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.NoopExporterConfiguration.ElasticsearchConfig;
-import io.camunda.exporter.NoopExporterConfiguration.IndexSettings;
+import io.camunda.exporter.config.ElasticsearchProperties;
+import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
 import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
+import io.camunda.exporter.utils.TestSupport;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -64,7 +65,7 @@ public class IndexSchemaValidatorIT {
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(), List.of(), new ElasticsearchConfig());
+            searchEngineClient, List.of(), List.of(), new ElasticsearchProperties());
 
     validator = new IndexSchemaValidator(schemaManager);
   }

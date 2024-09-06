@@ -7,29 +7,40 @@
  */
 package io.camunda.exporter.schema;
 
-import com.google.common.collect.Maps;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
 import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class IndexSchemaValidator {
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexSchemaValidator.class);
 
-  SchemaManager schemaManager;
+  private final SchemaManager schemaManager;
 
   public IndexSchemaValidator(final SchemaManager schemaManager) {
     this.schemaManager = schemaManager;
   }
 
+  //  /**
+  //   * Validates existing indices mappings against index/index template mappings defined.
+  //   *
+  //   * @return newFields map with the new field definitions per index
+  //   * @throws IndexSchemaValidationException if changes are ambiguous in that there are two
+  // different
+  //   *     schemas which match a single descriptor and their differences to the descriptor is
+  //   *     different. Or an unsupported change is introduced in the descriptor. settings
+  //   */
+
   /**
-   * Validates existing indices mappings against schema files defined in codebase.
+   * Validates existing indices mappings against index/index template mappings defined.
    *
-   * @return newFields map with the new field definitions per index
-   * @throws RuntimeException in case some fields would need to be deleted or have different
-   *     settings
+   * @param mappings is a map of all the mappings to compare.
+   * @param indexDescriptors is the set of all index descriptors representing desired schema states.
+   * @return new mapping properties to add to schemas so they align with the descriptors.
    */
   public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings(
       final Map<String, IndexMapping> mappings, final Set<IndexDescriptor> indexDescriptors) {
@@ -53,33 +64,30 @@ public class IndexSchemaValidator {
       final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
     if (difference != null && !difference.isEqual()) {
       LOGGER.debug(
-          String.format(
-              "Index fields differ from expected. Index name: %s. Difference: %s.",
-              indexDescriptor.getIndexName(), difference));
+          "Index fields differ from expected. Index name: {}. Difference: {}.",
+          indexDescriptor.getIndexName(),
+          difference);
 
       if (!difference.getEntriesDiffering().isEmpty()) {
         // This call will throw an exception unless the index is dynamic, in which case
         // field differences will be ignored. In the case of a dynamic index, we still want
         // to collect any new fields, so we should continue to the next checks instead of making
         // this part of the if/else block
-        validateFieldsDifferBetweenIndices(difference, indexDescriptor);
+        failIfIndexNotDynamic(difference, indexDescriptor);
       }
 
       if (!difference.getEntriesOnlyOnRight().isEmpty()) {
-        final String message =
-            String.format(
-                "Index name: %s. Field deletion is requested, will be ignored. Fields: %s",
-                indexDescriptor.getIndexName(), difference.getEntriesOnlyOnRight());
-        LOGGER.info(message);
+        LOGGER.info(
+            "Index name: {}. Field deletion is requested, will be ignored. Fields: {}",
+            indexDescriptor.getIndexName(),
+            difference.getEntriesOnlyOnRight());
 
       } else if (!difference.getEntriesOnlyOnLeft().isEmpty()) {
         // Collect the new fields
         newFields.put(indexDescriptor, difference.getEntriesOnlyOnLeft());
       }
     } else {
-      LOGGER.debug(
-          String.format(
-              "Index fields are up to date. Index name: %s.", indexDescriptor.getIndexName()));
+      LOGGER.debug("Index fields are up to date. Index name: {}.", indexDescriptor.getIndexName());
     }
   }
 
@@ -87,51 +95,54 @@ public class IndexSchemaValidator {
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
     final IndexMapping indexMappingMustBe = schemaManager.readIndex(indexDescriptor);
 
-    IndexMappingDifference difference = null;
-    // compare every index in group
-    for (final Map.Entry<String, IndexMapping> singleIndexMapping : indexMappingsGroup.entrySet()) {
-      final IndexMappingDifference currentDifference =
-          new IndexMappingDifference.IndexMappingDifferenceBuilder()
-              .setLeft(indexMappingMustBe)
-              .setRight(singleIndexMapping.getValue())
-              .build();
-      if (!currentDifference.isEqual()) {
-        if (difference == null) {
-          difference = currentDifference;
-          // If there is a difference between the template and the existing runtime/data
-          //     indices,
-          // all those indices should have the same difference. Compare based only on the
-          // differences (exclude the IndexMapping fields in the comparison)
-        } else if (!difference.checkEqualityForDifferences(currentDifference)) {
-          throw new IndexSchemaValidationException(
-              "Ambiguous schema update. First bring runtime and date indices to one schema. Difference 1: "
-                  + difference
-                  + ". Difference 2: "
-                  + currentDifference);
-        }
-      }
+    final var differences =
+        indexMappingsGroup.values().stream()
+            .map(
+                mapping ->
+                    new IndexMappingDifference.IndexMappingDifferenceBuilder()
+                        .setLeft(indexMappingMustBe)
+                        .setRight(mapping)
+                        .build())
+            .filter(difference -> !difference.isEqual())
+            // Ensure all difference are the same
+            .distinct() // Have to implement IndexMappingDifference.equals and hashcode
+            .toList();
+
+    if (differences.isEmpty()) {
+      // No difference
+      return null;
     }
-    return difference;
+
+    if (differences.size() > 1) {
+      throw new IndexSchemaValidationException(
+          "Ambiguous schema update. First bring runtime and date indices to one schema. Differences: "
+              + differences);
+    }
+
+    return differences.getFirst();
   }
 
-  //
   /**
-   * Leave only runtime and dated indices that correspond to the given IndexDescriptor.
+   * Given a {@link Map} of all index mappings, only return those which match the <code>
+   * indexDescriptor</code>.
    *
-   * @param indexMappings
-   * @param indexDescriptor
-   * @return
+   * <p>Mappings can be retrieved using {@link SearchEngineClient#getMappings}
+   *
+   * @param indexMappings represents mappings that will be checked
+   * @param indexDescriptor represents the desired state of indices/index templates
+   * @return a filtered map of all indexMappings matching the descriptor
    */
   private Map<String, IndexMapping> filterIndexMappings(
       final Map<String, IndexMapping> indexMappings, final IndexDescriptor indexDescriptor) {
     if (indexDescriptor instanceof IndexTemplateDescriptor) {
-      return Maps.filterEntries(
-          indexMappings,
-          e -> e.getKey().equals(((IndexTemplateDescriptor) indexDescriptor).getTemplateName()));
+      return indexMappings.entrySet().stream()
+          .filter(
+              e -> e.getKey().equals(((IndexTemplateDescriptor) indexDescriptor).getTemplateName()))
+          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     } else {
-      return Maps.filterEntries(
-          indexMappings,
-          e -> e.getKey().matches(indexDescriptor.getAllVersionsIndexNameRegexPattern()));
+      return indexMappings.entrySet().stream()
+          .filter(e -> e.getKey().matches(indexDescriptor.getAllVersionsIndexNameRegexPattern()))
+          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     }
   }
 
@@ -146,7 +157,7 @@ public class IndexSchemaValidator {
     return Boolean.parseBoolean(mapping.dynamic());
   }
 
-  private void validateFieldsDifferBetweenIndices(
+  private void failIfIndexNotDynamic(
       final IndexMappingDifference difference, final IndexDescriptor indexDescriptor) {
     if (indexIsDynamic(difference.getLeftIndexMapping())) {
       LOGGER.debug(

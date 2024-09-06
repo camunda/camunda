@@ -199,7 +199,7 @@ public class ElasticsearchSchemaManagerIT {
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(), List.of(), new ElasticsearchConfig());
+            searchEngineClient, List.of(), List.of(), new ElasticsearchProperties());
 
     // when
     final var indexMapping = schemaManager.readIndex(index);
