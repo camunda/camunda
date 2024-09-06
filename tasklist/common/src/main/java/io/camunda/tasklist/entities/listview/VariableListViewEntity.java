@@ -8,6 +8,7 @@
 package io.camunda.tasklist.entities.listview;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.tasklist.entities.VariableEntity;
 
 public class VariableListViewEntity {
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -36,6 +37,21 @@ public class VariableListViewEntity {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private ListViewJoinRelation join;
+
+  public VariableListViewEntity(final VariableEntity entity) {
+    setValue(entity.getValue());
+    setFullValue(entity.getFullValue());
+    setName(entity.getName());
+    setIsPreview(entity.getIsPreview());
+    setScopeKey(entity.getScopeFlowNodeId());
+    setId(entity.getId());
+    setPartitionId(entity.getPartitionId());
+    setTenantId(entity.getTenantId());
+
+    // Set the join relation
+    final ListViewJoinRelation joinRelation = new ListViewJoinRelation();
+    setJoin(joinRelation);
+  }
 
   // Add getter and setters
   public String getId() {

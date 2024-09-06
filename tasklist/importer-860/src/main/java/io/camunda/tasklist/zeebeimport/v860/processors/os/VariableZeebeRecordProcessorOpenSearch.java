@@ -54,28 +54,7 @@ public class VariableZeebeRecordProcessorOpenSearch {
 
   private BulkOperation persistVariable(
       final Record record, final VariableRecordValueImpl recordValue) throws PersistenceException {
-
-    final VariableEntity entity = new VariableEntity();
-    entity.setId(
-        VariableEntity.getIdBy(String.valueOf(recordValue.getScopeKey()), recordValue.getName()));
-    entity.setKey(record.getKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setScopeFlowNodeId(String.valueOf(recordValue.getScopeKey()));
-    entity.setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()));
-    entity.setName(recordValue.getName());
-    entity.setTenantId(recordValue.getTenantId());
-    if (recordValue.getValue().length()
-        > tasklistProperties.getImporter().getVariableSizeThreshold()) {
-      // store preview
-      entity.setValue(
-          recordValue
-              .getValue()
-              .substring(0, tasklistProperties.getImporter().getVariableSizeThreshold()));
-      entity.setIsPreview(true);
-    } else {
-      entity.setValue(recordValue.getValue());
-    }
-    entity.setFullValue(recordValue.getValue());
+    final VariableEntity entity = getVariableEntity(record, recordValue);
     return getVariableQuery(entity);
   }
 
@@ -100,47 +79,34 @@ public class VariableZeebeRecordProcessorOpenSearch {
   private BulkOperation persistVariableToListView(
       final Record record, final VariableRecordValueImpl recordValue) throws PersistenceException {
     final VariableEntity variableEntity = getVariableEntity(record, recordValue);
-    VariableListViewEntity variableListViewEntity = createVariableInputToListView(variableEntity);
+    final VariableListViewEntity variableListViewEntity =
+        createVariableInputToListView(variableEntity);
 
     if (isTaskOrSubProcessVariable(variableEntity)) {
-      variableListViewEntity = associateVariableWithTask(variableListViewEntity);
-      return prepareUpdateRequest(variableListViewEntity, variableListViewEntity.getScopeKey());
+      variableListViewEntity.setJoin(
+          createListViewJoinRelation("taskVariable", variableListViewEntity.getScopeKey()));
     } else if (isProcessScope(variableEntity)) {
-      variableListViewEntity = associateVariableWithProcess(variableEntity, variableListViewEntity);
-      return prepareUpdateRequest(variableListViewEntity, variableEntity.getProcessInstanceId());
+      variableListViewEntity.setJoin(
+          createListViewJoinRelation("processVariable", variableListViewEntity.getScopeKey()));
     } else {
       throw new PersistenceException(
           String.format(
-              "Error preparing the query to upsert variable instance [%s]  for list view",
+              "Error to associate Variable with parent. Variable id: [%s]",
               variableEntity.getId()));
     }
+    return prepareUpdateRequest(variableListViewEntity, variableListViewEntity.getScopeKey());
   }
 
   private VariableListViewEntity createVariableInputToListView(final VariableEntity entity) {
-    final VariableListViewEntity variableListViewEntity = new VariableListViewEntity();
-    Optional.ofNullable(entity.getValue()).ifPresent(variableListViewEntity::setValue);
-    Optional.ofNullable(entity.getFullValue()).ifPresent(variableListViewEntity::setFullValue);
-    Optional.ofNullable(entity.getName()).ifPresent(variableListViewEntity::setName);
-    Optional.of(entity.getIsPreview()).ifPresent(variableListViewEntity::setIsPreview);
-    Optional.ofNullable(entity.getScopeFlowNodeId()).ifPresent(variableListViewEntity::setScopeKey);
-    Optional.ofNullable(entity.getId()).ifPresent(variableListViewEntity::setId);
-    Optional.of(entity.getPartitionId()).ifPresent(variableListViewEntity::setPartitionId);
-    Optional.ofNullable(entity.getTenantId()).ifPresent(variableListViewEntity::setTenantId);
-    variableListViewEntity.setJoin(new ListViewJoinRelation());
-
-    return variableListViewEntity;
+    return new VariableListViewEntity(entity);
   }
 
-  private VariableListViewEntity associateVariableWithProcess(
-      final VariableEntity entity, final VariableListViewEntity variableListViewEntity) {
-    return associateVariableWithParent(
-        variableListViewEntity, "processVariable", entity.getProcessInstanceId());
-  }
-
-  private VariableListViewEntity associateVariableWithTask(
-      final VariableListViewEntity variableListViewEntity) {
-    return associateVariableWithParent(
-        variableListViewEntity, "taskVariable", variableListViewEntity.getScopeKey());
+  private ListViewJoinRelation createListViewJoinRelation(
+      final String name, final String parentId) {
+    final var result = new ListViewJoinRelation();
+    result.setName(name);
+    result.setParent(Long.valueOf(parentId));
+    return result;
   }
 
   private VariableListViewEntity associateVariableWithParent(

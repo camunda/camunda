@@ -13,13 +13,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskVariableEntity;
-import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
 import io.camunda.tasklist.entities.listview.UserTaskListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
-import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToTaskEntityMapper;
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToVariableEntityMapper;
 import io.camunda.zeebe.protocol.record.Record;
@@ -137,53 +136,7 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
   }
 
   private UserTaskListViewEntity createTaskListViewInput(final TaskEntity taskEntity) {
-    final UserTaskListViewEntity userTaskListViewEntity = new UserTaskListViewEntity();
-    Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
-        .ifPresent(userTaskListViewEntity::setId); // The ID is necessary for the join
-    Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
-        .ifPresent(userTaskListViewEntity::setFlowNodeInstanceId);
-    Optional.ofNullable(taskEntity.getProcessInstanceId())
-        .ifPresent(userTaskListViewEntity::setProcessInstanceId);
-    Optional.ofNullable(taskEntity.getFlowNodeBpmnId())
-        .ifPresent(userTaskListViewEntity::setTaskId);
-    Optional.ofNullable(taskEntity.getFlowNodeBpmnId())
-        .ifPresent(userTaskListViewEntity::setFlowNodeBpmnId);
-    Optional.of(taskEntity.getKey()).ifPresent(userTaskListViewEntity::setKey);
-    Optional.of(taskEntity.getPartitionId()).ifPresent(userTaskListViewEntity::setPartitionId);
-    Optional.ofNullable(taskEntity.getCompletionTime())
-        .map(Object::toString)
-        .ifPresent(userTaskListViewEntity::setCompletionTime);
-    Optional.ofNullable(taskEntity.getAssignee()).ifPresent(userTaskListViewEntity::setAssignee);
-    Optional.ofNullable(taskEntity.getCreationTime())
-        .map(Object::toString)
-        .ifPresent(userTaskListViewEntity::setCreationTime);
-    Optional.ofNullable(taskEntity.getProcessDefinitionVersion())
-        .ifPresent(userTaskListViewEntity::setProcessDefinitionVersion);
-    Optional.ofNullable(taskEntity.getPriority()).ifPresent(userTaskListViewEntity::setPriority);
-    Optional.ofNullable(taskEntity.getCandidateGroups())
-        .ifPresent(userTaskListViewEntity::setCandidateGroups);
-    Optional.ofNullable(taskEntity.getCandidateUsers())
-        .ifPresent(userTaskListViewEntity::setCandidateUsers);
-    Optional.ofNullable(taskEntity.getBpmnProcessId())
-        .ifPresent(userTaskListViewEntity::setBpmnProcessId);
-    Optional.ofNullable(taskEntity.getProcessDefinitionId())
-        .ifPresent(userTaskListViewEntity::setProcessDefinitionId);
-    Optional.ofNullable(taskEntity.getTenantId()).ifPresent(userTaskListViewEntity::setTenantId);
-    Optional.ofNullable(taskEntity.getExternalFormReference())
-        .ifPresent(userTaskListViewEntity::setExternalFormReference);
-    Optional.ofNullable(taskEntity.getCustomHeaders())
-        .ifPresent(userTaskListViewEntity::setCustomHeaders);
-    Optional.ofNullable(taskEntity.getFormKey()).ifPresent(userTaskListViewEntity::setFormKey);
-    Optional.ofNullable(taskEntity.getState()).ifPresent(userTaskListViewEntity::setState);
-
-    userTaskListViewEntity.setJoin(new ListViewJoinRelation());
-    // Set Join Field for the parent
-    userTaskListViewEntity.getJoin().setName("task");
-    userTaskListViewEntity
-        .getJoin()
-        .setParent(Long.valueOf(String.valueOf(taskEntity.getProcessInstanceId())));
-
-    return userTaskListViewEntity;
+    return new UserTaskListViewEntity(taskEntity);
   }
 
   private UpdateRequest persistUserTaskToListView(
@@ -198,7 +151,7 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
           .upsert(objectMapper.writeValueAsString(userTaskListViewEntity), XContentType.JSON)
           .routing(userTaskListViewEntity.getProcessInstanceId())
           .doc(jsonMap)
-          .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT);
+          .retryOnConflict(ElasticsearchUtil.UPDATE_RETRY_COUNT);
     } catch (final IOException e) {
       throw new PersistenceException("Error preparing the query to upsert snapshot entity", e);
     }
