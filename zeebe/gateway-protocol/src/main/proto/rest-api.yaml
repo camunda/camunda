@@ -945,14 +945,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
-  /messages/pubblication:
+  /messages/publication:
     post:
       tags:
         - Message
       summary: Publish a message
       description: |
-        Publishes a single message. Messages are published to specific partitions computed from
-        their correlation keys.
+        Publishes a single message.
+        Messages are published to specific partitions computed from their correlation keys.
         The endpoint does not wait for a correlation result.
         Use the message correlation endpoint for such use cases.
       requestBody:
@@ -975,7 +975,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: Internal Server Error.
+          description: Internal server error.
           content:
             application/problem+json:
               schema:
