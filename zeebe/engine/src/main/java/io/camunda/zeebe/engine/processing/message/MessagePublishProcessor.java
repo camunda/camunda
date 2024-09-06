@@ -112,9 +112,10 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
         messageKey, MessageIntent.PUBLISHED, command.getValue(), command);
 
     final var correlatingSubscriptions = new Subscriptions();
-    correlateToSubscriptions(messageKey, messageRecord, correlatingSubscriptions);
-    correlateToMessageStartEvents(messageRecord, correlatingSubscriptions);
-    sendCorrelateCommands(messageKey, messageRecord, correlatingSubscriptions);
+    final var messageData = createMessageData(messageKey, messageRecord);
+    correlateBehavior.correlateToMessageEvents(messageData, correlatingSubscriptions);
+    correlateBehavior.correlateToMessageStartEvents(messageData, correlatingSubscriptions);
+    correlateBehavior.sendCorrelateCommands(messageData, correlatingSubscriptions);
 
     if (messageRecord.getTimeToLive() <= 0L) {
       // avoid that the message can be correlated again by writing the EXPIRED event as a follow-up
@@ -122,39 +123,13 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     }
   }
 
-  private void correlateToSubscriptions(
-      final long messageKey, final MessageRecord message, final Subscriptions subscriptions) {
-    correlateBehavior.correlateToMessageEvents(
-        new MessageData(
-            messageKey,
-            message.getNameBuffer(),
-            message.getCorrelationKeyBuffer(),
-            message.getVariablesBuffer(),
-            message.getTenantId()),
-        subscriptions);
-  }
-
-  private void correlateToMessageStartEvents(
-      final MessageRecord messageRecord, final Subscriptions correlatingSubscriptions) {
-    correlateBehavior.correlateToMessageStartEvents(
-        new MessageData(
-            messageKey,
-            messageRecord.getNameBuffer(),
-            messageRecord.getCorrelationKeyBuffer(),
-            messageRecord.getVariablesBuffer(),
-            messageRecord.getTenantId()),
-        correlatingSubscriptions);
-  }
-
-  private void sendCorrelateCommands(
-      final long messageKey, final MessageRecord message, final Subscriptions subscriptions) {
-    correlateBehavior.sendCorrelateCommands(
-        new MessageData(
-            messageKey,
-            message.getNameBuffer(),
-            message.getCorrelationKeyBuffer(),
-            message.getVariablesBuffer(),
-            message.getTenantId()),
-        subscriptions);
+  private MessageData createMessageData(
+      final long messageKey, final MessageRecord messageCorrelationRecord) {
+    return new MessageData(
+        messageKey,
+        messageCorrelationRecord.getNameBuffer(),
+        messageCorrelationRecord.getCorrelationKeyBuffer(),
+        messageCorrelationRecord.getVariablesBuffer(),
+        messageCorrelationRecord.getTenantId());
   }
 }
