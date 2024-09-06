@@ -39,7 +39,7 @@ Define your endpoint and any required data models in the [OpenAPI description](.
       3. Use "Sentence case." (with a period) for all other descriptive text.
       4. Use "lower case" to reference API resources in descriptive text.
          - Example: use "The decision definition search query failed." instead of "The Decision Definition Search Query failed."
-   5. For multi-line path `description` properties, use a complete sentence for the first line.
+   5. For multi-line path `description` properties, use a complete sentence with no line breaks for the first line.
       - Reason: The documentation generator uses only the first line as the `meta description` on the endpoint's page. Incomplete sentences on the first line create a confusing `meta description`.
 
 ### REST controller implementation
