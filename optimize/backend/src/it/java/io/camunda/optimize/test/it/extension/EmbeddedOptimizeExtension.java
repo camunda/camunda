@@ -143,13 +143,6 @@ public class EmbeddedOptimizeExtension
   public void setupOptimize() {
     try {
       objectMapper = getBean(ObjectMapper.class);
-      requestExecutor =
-          new OptimizeRequestExecutor(
-                  DEFAULT_USERNAME,
-                  DEFAULT_PASSWORD,
-                  IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint(
-                      applicationContext))
-              .initAuthCookie();
       if (isResetImportOnStart()) {
         resetPositionBasedImportStartIndexes();
         setResetImportOnStart(true);
