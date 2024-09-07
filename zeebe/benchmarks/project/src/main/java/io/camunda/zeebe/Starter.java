@@ -305,6 +305,7 @@ public class Starter extends App {
             // TODO metrics update
             final long pIAvailableToUser = System.currentTimeMillis();
             final var delay = pIAvailableToUser - createPITime;
+            LOG.debug("Process instance was available in Operate after {} ms ", delay);
             dataAvailabilityDelay.record(delay, TimeUnit.MILLISECONDS);
           });
       requestFutures.put(createPIFuture);
