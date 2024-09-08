@@ -42,7 +42,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   @Override
   public void initialiseResources() {
-    indexTemplateDescriptors.forEach(this::createIndexTemplate);
+    indexTemplateDescriptors.forEach(descriptor -> createIndexTemplate(descriptor, true));
     indexDescriptors.forEach(elasticsearchClient::createIndex);
   }
 
@@ -54,7 +54,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
       if (descriptor instanceof IndexTemplateDescriptor) {
         LOG.info("Updating template: {}", ((IndexTemplateDescriptor) descriptor).getTemplateName());
-        createIndexTemplate((IndexTemplateDescriptor) descriptor);
+        createIndexTemplate((IndexTemplateDescriptor) descriptor, false);
       } else {
         LOG.info(
             "Index alias: {}. New fields will be added {}", descriptor.getAlias(), newProperties);
@@ -93,7 +93,8 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     }
   }
 
-  private void createIndexTemplate(final IndexTemplateDescriptor templateDescriptor) {
+  private void createIndexTemplate(
+      final IndexTemplateDescriptor templateDescriptor, final boolean create) {
     final var templateReplicas =
         elasticsearchProperties
             .getReplicasByIndexName()
@@ -111,6 +112,6 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     settings.setNumberOfShards(templateShards);
     settings.setNumberOfReplicas(templateReplicas);
 
-    elasticsearchClient.createIndexTemplate(templateDescriptor, settings, false);
+    elasticsearchClient.createIndexTemplate(templateDescriptor, settings, create);
   }
 }
