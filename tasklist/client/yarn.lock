@@ -922,16 +922,16 @@
   dependencies:
     "@monaco-editor/loader" "^1.4.0"
 
-"@mswjs/interceptors@^0.29.0":
-  version "0.29.1"
-  resolved "https://registry.yarnpkg.com/@mswjs/interceptors/-/interceptors-0.29.1.tgz#e77fc58b5188569041d0440b25c9e9ebb1ccd60a"
-  integrity sha512-3rDakgJZ77+RiQUuSK69t1F0m8BQKA8Vh5DCS5V0DWvNY67zob2JhhQrhCO0AKLGINTRSFd1tBaHcJTkhefoSw==
+"@mswjs/interceptors@^0.35.0":
+  version "0.35.0"
+  resolved "https://registry.yarnpkg.com/@mswjs/interceptors/-/interceptors-0.35.0.tgz#ccdabb668833b97d3c5f26e761f5ea665629dd5f"
+  integrity sha512-f5cHyIvm4m4g1I5x9EH1etGx0puaU0OaX2szqGRVBVgUC6aMASlOI5hbpe7tJ9l4/VWjCUu5OMraCazLZGI24A==
   dependencies:
     "@open-draft/deferred-promise" "^2.2.0"
     "@open-draft/logger" "^0.3.0"
     "@open-draft/until" "^2.0.0"
     is-node-process "^1.2.0"
-    outvariant "^1.2.1"
+    outvariant "^1.4.3"
     strict-event-emitter "^0.5.1"
 
 "@nodelib/fs.scandir@2.1.5":
@@ -1251,29 +1251,29 @@
   dependencies:
     "@typescript-eslint/utils" "^8.3.0"
 
-"@tanstack/query-core@5.54.1":
-  version "5.54.1"
-  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.54.1.tgz#8d6c5e6691dd023f9181d69f7f9d790f52f1bdda"
-  integrity sha512-hKS+WRpT5zBFip21pB6Jx1C0hranWQrbv5EJ7qPoiV5MYI3C8rTCqWC9DdBseiPT1JgQWh8Y55YthuYZNiw3Xw==
+"@tanstack/query-core@5.55.2":
+  version "5.55.2"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.55.2.tgz#3109abeb3393f48a0781667093ad7c21ca34920c"
+  integrity sha512-WfuUx06sw/V3R2tRRQf4KZj0g4Q5EHrTdwJmCUovMFuHWVzDvLd5U+B7d5Pk8ni5w5SGpUuzGuQv3nN8xo1QbQ==
 
 "@tanstack/query-devtools@5.55.1":
   version "5.55.1"
   resolved "https://registry.yarnpkg.com/@tanstack/query-devtools/-/query-devtools-5.55.1.tgz#fa83c40e77d21f894ca447a62424cf62a6d75706"
   integrity sha512-2g0TWQGlkyHs9maHIU5A7lRunG4Rj3Y5lOEenE+fydE4zk7GqRs7rKJBp7F74iqRo/cA9V6t1YYQWqd6YRBmcQ==
 
-"@tanstack/react-query-devtools@5.55.1":
-  version "5.55.1"
-  resolved "https://registry.yarnpkg.com/@tanstack/react-query-devtools/-/react-query-devtools-5.55.1.tgz#5d6b147f35aee4a8d0d31c8b3d95802f4e46dfe6"
-  integrity sha512-u1QFIKHEd3qPnfIbqMaTE593f602ryWCvfMp3+vDu0D4EZMa41If2p5NaIDdhJ4F86YdkNC66T0HdDXSF2S/uw==
+"@tanstack/react-query-devtools@5.55.2":
+  version "5.55.2"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query-devtools/-/react-query-devtools-5.55.2.tgz#599d341d15e068f42b41e3da9f56263e35e66ab0"
+  integrity sha512-QkL5Saai7MqEEkGNjhtNB0F1iD4DjpKnvrBM3510L54N8/+4tBPXjMB5a2+ADTYgOrtm4Gn8sJQs/qWKmdpqIg==
   dependencies:
     "@tanstack/query-devtools" "5.55.1"
 
-"@tanstack/react-query@5.55.1":
-  version "5.55.1"
-  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.55.1.tgz#4cacb43e9c4729e854441e41f78189603dd7e3cf"
-  integrity sha512-WpHBGFNFkJkApUIxsoJaOLXQdXp61sjPdbppyvO52RtMJg0lbMgYx56qien7W3DUJwYU7Gnk4L6w4IQEYm1cfw==
+"@tanstack/react-query@5.55.2":
+  version "5.55.2"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.55.2.tgz#071c5a2f67aecefc06bbed866753f5e07a9239bd"
+  integrity sha512-PkbEmO64nphWPhufkE9aJ+iEScg8tNNCykYlH7vDwb2R6G8uJC+HTJgXc2n8cRaJe6ETVIeQLFFESVd+2N/tww==
   dependencies:
-    "@tanstack/query-core" "5.54.1"
+    "@tanstack/query-core" "5.55.2"
 
 "@testing-library/dom@10.4.0":
   version "10.4.0"
@@ -4422,16 +4422,16 @@ ms@2.1.2:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.2.tgz#d09d1f357b443f493382a8eb3ccd183872ae6009"
   integrity sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==
 
-msw@2.4.3:
-  version "2.4.3"
-  resolved "https://registry.yarnpkg.com/msw/-/msw-2.4.3.tgz#e55ee0067ae14852a9296821225704d895fe49b1"
-  integrity sha512-PXK3wOQHwDtz6JYVyAVlQtzrLr6bOAJxggw5UHm3CId79+W7238aNBD1zJVkFY53o/DMacuIfgesW2nv9yCO3Q==
+msw@2.4.4:
+  version "2.4.4"
+  resolved "https://registry.yarnpkg.com/msw/-/msw-2.4.4.tgz#d40c12b2d99750e3b2cbd94ef269a23b06a9aa67"
+  integrity sha512-iuM0qGs4YmgYCLH+xqb07w2e/e4fYmsx3+WHVlIOUA34TW1sw+wRpNmOlXnLDkw/T7233Jnm6t+aNf4v2E3e2Q==
   dependencies:
     "@bundled-es-modules/cookie" "^2.0.0"
     "@bundled-es-modules/statuses" "^1.0.1"
     "@bundled-es-modules/tough-cookie" "^0.1.6"
     "@inquirer/confirm" "^3.0.0"
-    "@mswjs/interceptors" "^0.29.0"
+    "@mswjs/interceptors" "^0.35.0"
     "@open-draft/until" "^2.1.0"
     "@types/cookie" "^0.6.0"
     "@types/statuses" "^2.0.4"
@@ -4571,10 +4571,15 @@ optionator@^0.9.3:
     type-check "^0.4.0"
     word-wrap "^1.2.5"
 
-outvariant@^1.2.1, outvariant@^1.4.0, outvariant@^1.4.2:
+outvariant@^1.4.0, outvariant@^1.4.2:
   version "1.4.2"
   resolved "https://registry.yarnpkg.com/outvariant/-/outvariant-1.4.2.tgz#f54f19240eeb7f15b28263d5147405752d8e2066"
   integrity sha512-Ou3dJ6bA/UJ5GVHxah4LnqDwZRwAmWxrG3wtrHrbGnP4RnLCtA64A4F+ae7Y8ww660JaddSoArUR5HjipWSHAQ==
+
+outvariant@^1.4.3:
+  version "1.4.3"
+  resolved "https://registry.yarnpkg.com/outvariant/-/outvariant-1.4.3.tgz#221c1bfc093e8fec7075497e7799fdbf43d14873"
+  integrity sha512-+Sl2UErvtsoajRDKCE5/dBz4DIvHXQQnAxtQTF04OJxY0+DyZXSo5P5Bb7XYWOh81syohlYL24hbDwxedPUJCA==
 
 p-cancelable@^2.0.0:
   version "2.1.1"
