@@ -32,9 +32,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregationSource;
+import org.opensearch.client.opensearch._types.aggregations.CompositeTermsAggregationSource;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation.Builder;
-import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
@@ -102,7 +102,7 @@ public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateG
             TERMS_AGG,
             new CompositeAggregationSource.Builder()
                 .terms(
-                    new TermsAggregation.Builder()
+                    new CompositeTermsAggregationSource.Builder()
                         .field(getUserTaskFieldPath(userTaskFieldName))
                         .build())
                 .build()));

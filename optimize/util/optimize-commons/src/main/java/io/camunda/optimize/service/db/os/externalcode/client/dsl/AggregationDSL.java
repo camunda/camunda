@@ -23,6 +23,7 @@ import org.opensearch.client.opensearch._types.aggregations.CardinalityAggregati
 import org.opensearch.client.opensearch._types.aggregations.ChildrenAggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregationSource;
+import org.opensearch.client.opensearch._types.aggregations.CompositeTermsAggregationSource;
 import org.opensearch.client.opensearch._types.aggregations.DateHistogramAggregation;
 import org.opensearch.client.opensearch._types.aggregations.FiltersAggregation;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
@@ -147,7 +148,7 @@ public interface AggregationDSL {
   }
 
   static CompositeAggregationSource compositeTermsAggregationSource(
-      final TermsAggregation aggregation) {
+      final CompositeTermsAggregationSource aggregation) {
     return CompositeAggregationSource.of(a -> a.terms(aggregation));
   }
 }
