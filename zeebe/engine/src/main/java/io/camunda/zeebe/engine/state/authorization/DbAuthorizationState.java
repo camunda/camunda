@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.List;
 import java.util.Optional;
 
 public class DbAuthorizationState implements AuthorizationState, MutableAuthorizationState {
@@ -39,11 +41,12 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
       resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily;
 
   private final DbString resourceId;
-  private final DbCompositeKey<DbString, DbLong> resourceIdAndOwnerKeyCompositeKey;
-  // resource id + owner key -> owner key + resource type + permission type
+  private final DbCompositeKey<DbString, DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>>>
+      resourceIdAndOwnerKeyAndResourceTypeAndPermissionTypeCompositeKey;
+  // resource id + owner key + resource type + permission type -> DbNil
   private final ColumnFamily<
-          DbCompositeKey<DbString, DbLong>,
-          DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>>>
+          DbCompositeKey<DbString, DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>>>,
+          DbNil>
       authorizationKeyByResourceIdAndOwnerKeyColumnFamily;
 
   private final DbString ownerType;
@@ -67,13 +70,14 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
             resourceIdentifiers);
 
     resourceId = new DbString();
-    resourceIdAndOwnerKeyCompositeKey = new DbCompositeKey<>(resourceId, ownerKey);
+    resourceIdAndOwnerKeyAndResourceTypeAndPermissionTypeCompositeKey =
+        new DbCompositeKey<>(resourceId, ownerKeyAndResourceTypeAndPermissionCompositeKey);
     authorizationKeyByResourceIdAndOwnerKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.AUTHORIZATION_KEY_BY_RESOURCE_ID_AND_OWNER_KEY,
             transactionContext,
-            resourceIdAndOwnerKeyCompositeKey,
-            ownerKeyAndResourceTypeAndPermissionCompositeKey);
+            resourceIdAndOwnerKeyAndResourceTypeAndPermissionTypeCompositeKey,
+            DbNil.INSTANCE);
 
     ownerType = new DbString();
     ownerTypeByOwnerKeyColumnFamily =
