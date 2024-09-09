@@ -32,6 +32,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Optional;
 import lombok.SneakyThrows;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -70,6 +71,13 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
         sessionService,
         authCookieService);
     this.ccsmTokenService = ccsmTokenService;
+  }
+
+  @Bean
+  public FilterRegistrationBean registration(final CCSMAuthenticationCookieFilter filter) {
+    final FilterRegistrationBean registration = new FilterRegistrationBean(filter);
+    registration.setEnabled(false);
+    return registration;
   }
 
   @Bean
