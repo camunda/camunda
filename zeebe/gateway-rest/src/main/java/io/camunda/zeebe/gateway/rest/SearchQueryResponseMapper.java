@@ -253,8 +253,9 @@ public final class SearchQueryResponseMapper {
   public static Either<ProblemDetail, UserResponse> toUser(final UserEntity user) {
     return Either.right(
         new UserResponse()
-            .username(user.value().username())
-            .email(user.value().email())
-            .name(user.value().name()));
+            .key(user.key())
+            .username(user.username())
+            .email(user.email())
+            .name(user.name()));
   }
 }

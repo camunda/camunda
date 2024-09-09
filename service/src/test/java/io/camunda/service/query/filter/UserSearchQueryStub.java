@@ -23,15 +23,11 @@ public class UserSearchQueryStub implements RequestStub<UserEntity> {
         List.of(
             new SearchQueryHit.Builder<UserEntity>()
                 .id("1")
-                .source(
-                    new UserEntity(
-                        new UserEntity.User("username1", "name1", "email1", "password1")))
+                .source(new UserEntity(1L, "username1", "name1", "email1", "password1"))
                 .build(),
             new SearchQueryHit.Builder<UserEntity>()
                 .id("2")
-                .source(
-                    new UserEntity(
-                        new UserEntity.User("username2", "name2", "email2", "password2")))
+                .source(new UserEntity(2L, "username2", "name2", "email2", "password2"))
                 .build());
 
     final SearchQueryResponse<UserEntity> response =

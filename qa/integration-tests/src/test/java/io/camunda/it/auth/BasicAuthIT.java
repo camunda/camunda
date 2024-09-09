@@ -19,7 +19,6 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.sources.DefaultObjectMapperConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.service.entities.UserEntity;
-import io.camunda.service.entities.UserEntity.User;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
@@ -70,8 +69,7 @@ public class BasicAuthIT {
         .thenReturn(
             new SearchQueryResult<>(
                 1,
-                List.of(
-                    new UserEntity(new User(USERNAME, "", "", passwordEncoder.encode(PASSWORD)))),
+                List.of(new UserEntity(1L, USERNAME, "", "", passwordEncoder.encode(PASSWORD))),
                 null));
 
     content =
