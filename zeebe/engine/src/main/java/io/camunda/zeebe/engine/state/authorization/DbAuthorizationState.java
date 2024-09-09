@@ -133,6 +133,13 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   }
 
   @Override
+  public void insertOwnerTypeByKey(final long ownerKey, final AuthorizationOwnerType ownerType) {
+    this.ownerKey.wrapLong(ownerKey);
+    this.ownerType.wrapString(ownerType.name());
+    ownerTypeByOwnerKeyColumnFamily.insert(this.ownerKey, this.ownerType);
+  }
+
+  @Override
   public ResourceIdentifiers getResourceIdentifiers(
       final Long ownerKey,
       final AuthorizationOwnerType ownerType,

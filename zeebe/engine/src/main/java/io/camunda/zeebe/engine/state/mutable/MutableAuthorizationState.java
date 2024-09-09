@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
@@ -34,4 +35,12 @@ public interface MutableAuthorizationState extends AuthorizationState {
       AuthorizationResourceType resourceType,
       PermissionType permissionType,
       List<String> resourceIds);
+
+  /**
+   * Stores the owner type for a new owner in the state.
+   *
+   * @param ownerKey the key of the owner
+   * @param ownerType the type of the owner
+   */
+  void insertOwnerTypeByKey(final long ownerKey, final AuthorizationOwnerType ownerType);
 }
