@@ -439,8 +439,10 @@ public class DecisionQueryTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = zeebeClient.newDecisionDefinitionQuery().send().join();
-              assertThat(result.items().size()).isEqualTo(DEPLOYED_DECISIONS.size());
+              assertThat(zeebeClient.newDecisionDefinitionQuery().send().join().items().size())
+                  .isEqualTo(DEPLOYED_DECISIONS.size());
+              assertThat(zeebeClient.newDecisionRequirementsQuery().send().join().items().size())
+                  .isEqualTo(DEPLOYED_DECISION_REQUIREMENTS.size());
             });
   }
 
