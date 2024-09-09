@@ -26,7 +26,7 @@ public class IndexSchemaValidatorTest {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private static final IndexSchemaValidator validator =
+  private static final IndexSchemaValidator VALIDATOR =
       new IndexSchemaValidator(
           Mockito.mock(ElasticsearchSchemaManager.class, Mockito.CALLS_REAL_METHODS));
 
@@ -41,7 +41,7 @@ public class IndexSchemaValidatorTest {
         TestUtil.mockIndex("qualified_name", "alias", "index_name", "mappings-added-property.json");
 
     // then
-    final var difference = validator.validateIndexMappings(currentIndices, Set.of(index));
+    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
 
     assertThat(difference)
         .containsExactly(
@@ -64,7 +64,7 @@ public class IndexSchemaValidatorTest {
     final var index = TestUtil.mockIndex("qualified_name", "alias", "index_name", "mappings.json");
 
     // then
-    final var difference = validator.validateIndexMappings(currentIndices, Set.of(index));
+    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
 
     assertThat(difference).isEmpty();
   }
@@ -74,7 +74,7 @@ public class IndexSchemaValidatorTest {
 
     // given, when, then
     final var index = TestUtil.mockIndex("qualified_name", "alias", "index_name", "mappings.json");
-    final var difference = validator.validateIndexMappings(Map.of(), Set.of(index));
+    final var difference = VALIDATOR.validateIndexMappings(Map.of(), Set.of(index));
 
     assertThat(difference).isEmpty();
   }
@@ -95,7 +95,7 @@ public class IndexSchemaValidatorTest {
         TestUtil.mockIndex("qualified_name", "alias3", "index_name", "mappings.json");
 
     // then
-    assertThatThrownBy(() -> validator.validateIndexMappings(currentIndices, Set.of(currentIndex)))
+    assertThatThrownBy(() -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(currentIndex)))
         .isInstanceOf(IndexSchemaValidationException.class)
         .hasMessageContaining(
             "Ambiguous schema update. First bring runtime and date indices to one schema.");
@@ -113,7 +113,7 @@ public class IndexSchemaValidatorTest {
     final var index = TestUtil.mockIndex("qualified_name", "alias", "index_name", "mappings.json");
 
     // then
-    final var difference = validator.validateIndexMappings(currentIndices, Set.of(index));
+    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
 
     assertThat(difference).isEmpty();
   }
@@ -130,7 +130,7 @@ public class IndexSchemaValidatorTest {
             "qualified_name", "alias", "index_name", "mappings-changed-property-invalid.json");
 
     // then
-    assertThatThrownBy(() -> validator.validateIndexMappings(currentIndices, Set.of(index)))
+    assertThatThrownBy(() -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(index)))
         .isInstanceOf(IndexSchemaValidationException.class)
         .hasMessageContaining(
             "Not supported index changes are introduced. Data migration is required.");
@@ -153,7 +153,7 @@ public class IndexSchemaValidatorTest {
             "mappings-added-property.json");
 
     // then
-    final var difference = validator.validateIndexMappings(currentMappings, Set.of(indexTemplate));
+    final var difference = VALIDATOR.validateIndexMappings(currentMappings, Set.of(indexTemplate));
 
     assertThat(difference)
         .containsExactly(
@@ -183,7 +183,7 @@ public class IndexSchemaValidatorTest {
             "mappings-deleted-property.json");
 
     // then
-    final var difference = validator.validateIndexMappings(currentMappings, Set.of(indexTemplate));
+    final var difference = VALIDATOR.validateIndexMappings(currentMappings, Set.of(indexTemplate));
 
     assertThat(difference).isEmpty();
   }

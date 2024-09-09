@@ -92,7 +92,7 @@ public record IndexMappingDifference(
   private record PropertyDifference(
       String name, IndexMappingProperty leftValue, IndexMappingProperty rightValue) {
 
-    private static class Builder {
+    private static final class Builder {
       private String name;
       private IndexMappingProperty leftValue;
       private IndexMappingProperty rightValue;
