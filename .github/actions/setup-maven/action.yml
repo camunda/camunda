@@ -41,8 +41,6 @@ runs:
     uses: stCarolas/setup-maven@v4.5
     with:
       maven-version: ${{ inputs.maven-version }}
-    env:
-      ACTIONS_STEP_DEBUG: true
   - name: 'Create settings.xml'
     uses: s4u/maven-settings-action@7802f6aec16c9098b4798ad1f1d8ac75198194bd # v3.0.0
     with:

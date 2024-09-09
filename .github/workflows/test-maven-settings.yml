@@ -1,0 +1,34 @@
+name: Test Maven CI
+on:
+  pull_request:
+
+# Will limit the workflow to 1 concurrent run per ref (branch / PR)
+# If a new commits occurs, the current run will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# set permissions to allow to publish test results
+permissions:
+  contents: read
+  issues: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  docker:
+    name: Optimize Build 1
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/optimize-ci-build-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref }}
+
+  build-optimize:
+    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
+    name: Optimize Build 2
+    uses: ./.github/workflows/optimize-ci-build-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref }}
+      pushDocker: true

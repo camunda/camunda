@@ -93,6 +93,14 @@ jobs:
       branch: ${{ github.head_ref }}
       pushDocker: true
 
+  docker:
+    name: Optimize Build
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/optimize-ci-build-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref }}
+
   build-operate:
     if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
     name: Operate Build
