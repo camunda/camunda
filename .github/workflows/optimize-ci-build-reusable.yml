@@ -70,6 +70,8 @@ jobs:
         uses: ./.github/actions/setup-maven
         with:
           secrets: ${{ toJSON(secrets) }}
+        env:
+          ACTIONS_STEP_DEBUG: true
 
       #########################################################################
       # Build Optimize
