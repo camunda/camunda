@@ -465,7 +465,7 @@ jobs:
     if: needs.detect-changes.outputs.optimize-backend-changes == 'true'
     needs: [detect-changes]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       LIMITS_CPU: 4
     steps:
