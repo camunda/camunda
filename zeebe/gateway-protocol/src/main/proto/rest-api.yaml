@@ -1319,7 +1319,7 @@ paths:
   /deployments:
     post:
       tags:
-        - Resources
+        - Resource
       summary: Deploy resources
       description: |
         Deploys one or more resources (e.g. processes, decision models, or forms). 
@@ -1360,19 +1360,18 @@ paths:
   /resources/{resourceKey}/deletion:
     post:
       tags:
-        - Resources
-        - Deletion
-      summary: Delete a resource
+        - Resource
+      summary: Delete resource
       description: |
         Deletes a deployed resource.
         This can be a process definition, decision requirements definition, or form definition
-        deployed using the deploy resources endpoint.
+        deployed using the deploy resources endpoint. Specify the resource you want to delete in the `resourceKey` parameter.
       parameters:
         - name: resourceKey
           in: path
           required: true
           description: |
-            The key of the resource that should be deleted.
+            The key of the resource to delete.
             This can be the key of a process definition, the key of a decision requirements
             definition or the key of a form definition
           schema:
@@ -2828,8 +2827,8 @@ components:
           type: string
         operationReference:
           description: |
-            A reference key chosen by the user and will be part of all records resulting
-            from this operation. Must be >0 if provided.
+            A reference key chosen by the user that will be part of all records resulting from this operation.
+            Must be >0 if provided.
           type: integer
           format: int64
           minimum: 1
