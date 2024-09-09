@@ -13,14 +13,14 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.service.search.filter.FlownodeInstanceFilter;
+import io.camunda.service.search.filter.FlowNodeInstanceFilter;
 import java.util.List;
 
 public class FlownodeInstanceFilterTransformer
-    implements FilterTransformer<FlownodeInstanceFilter> {
+    implements FilterTransformer<FlowNodeInstanceFilter> {
 
   @Override
-  public SearchQuery toSearchQuery(final FlownodeInstanceFilter filter) {
+  public SearchQuery toSearchQuery(final FlowNodeInstanceFilter filter) {
     return and(
         getKeysQuery(filter.keys()),
         longTerms("processInstanceKey", filter.processInstanceKeys()),
@@ -36,7 +36,7 @@ public class FlownodeInstanceFilterTransformer
   }
 
   @Override
-  public List<String> toIndices(final FlownodeInstanceFilter filter) {
+  public List<String> toIndices(final FlowNodeInstanceFilter filter) {
     return List.of("operate-flownode-instance-8.3.1_alias");
   }
 

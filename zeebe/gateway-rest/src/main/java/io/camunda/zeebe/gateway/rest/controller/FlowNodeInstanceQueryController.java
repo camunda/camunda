@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.service.FlownodeInstanceServices;
-import io.camunda.service.search.query.FlownodeInstanceQuery;
-import io.camunda.zeebe.gateway.protocol.rest.FlownodeInstanceSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.FlownodeInstanceSearchQueryResponse;
+import io.camunda.service.FlowNodeInstanceServices;
+import io.camunda.service.search.query.FlowNodeInstanceQuery;
+import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -24,11 +24,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestQueryController
 @RequestMapping("/v2/flownode-instances")
-public class FlownodeInstanceQueryController {
+public class FlowNodeInstanceQueryController {
 
-  private final FlownodeInstanceServices flownodeInstanceServices;
+  private final FlowNodeInstanceServices flownodeInstanceServices;
 
-  public FlownodeInstanceQueryController(final FlownodeInstanceServices flownodeInstanceServices) {
+  public FlowNodeInstanceQueryController(final FlowNodeInstanceServices flownodeInstanceServices) {
     this.flownodeInstanceServices = flownodeInstanceServices;
   }
 
@@ -36,14 +36,14 @@ public class FlownodeInstanceQueryController {
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<FlownodeInstanceSearchQueryResponse> searchFlownodeInstances(
-      @RequestBody(required = false) final FlownodeInstanceSearchQueryRequest query) {
+  public ResponseEntity<FlowNodeInstanceSearchQueryResponse> searchFlownodeInstances(
+      @RequestBody(required = false) final FlowNodeInstanceSearchQueryRequest query) {
     return SearchQueryRequestMapper.toFlownodeInstanceQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private ResponseEntity<FlownodeInstanceSearchQueryResponse> search(
-      final FlownodeInstanceQuery query) {
+  private ResponseEntity<FlowNodeInstanceSearchQueryResponse> search(
+      final FlowNodeInstanceQuery query) {
     try {
       final var result =
           flownodeInstanceServices

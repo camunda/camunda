@@ -18,7 +18,7 @@ import io.camunda.service.search.page.SearchQueryPage;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
 import io.camunda.service.search.query.DecisionRequirementsQuery;
 import io.camunda.service.search.query.IncidentQuery;
-import io.camunda.service.search.query.FlownodeInstanceQuery;
+import io.camunda.service.search.query.FlowNodeInstanceQuery;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.TypedSearchQueryBuilder;
@@ -27,7 +27,7 @@ import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.sort.DecisionDefinitionSort;
 import io.camunda.service.search.sort.DecisionRequirementsSort;
 import io.camunda.service.search.sort.IncidentSort;
-import io.camunda.service.search.sort.FlownodeInstanceSort;
+import io.camunda.service.search.sort.FlowNodeInstanceSort;
 import io.camunda.service.search.sort.ProcessInstanceSort;
 import io.camunda.service.search.sort.SortOption;
 import io.camunda.service.search.sort.SortOptionBuilders;
@@ -96,8 +96,8 @@ public final class SearchQueryRequestMapper {
         filter, sort, page, SearchQueryBuilders::decisionRequirementsSearchQuery);
   }
 
-  public static Either<ProblemDetail, FlownodeInstanceQuery> toFlownodeInstanceQuery(
-      final FlownodeInstanceSearchQueryRequest request) {
+  public static Either<ProblemDetail, FlowNodeInstanceQuery> toFlownodeInstanceQuery(
+      final FlowNodeInstanceSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.flownodeInstanceSearchQuery().build());
     }
@@ -240,8 +240,8 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static FlownodeInstanceFilter toFlownodeInstanceFilter(
-      final FlownodeInstanceFilterRequest filter) {
+  private static FlowNodeInstanceFilter toFlownodeInstanceFilter(
+      final FlowNodeInstanceFilterRequest filter) {
     final var builder = FilterBuilders.flownodeInstance();
     return builder.build();
   }
@@ -406,7 +406,7 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyFlownodeInstanceSortField(
-      final String field, final FlownodeInstanceSort.Builder builder) {
+      final String field, final FlowNodeInstanceSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     return validationErrors;
   }

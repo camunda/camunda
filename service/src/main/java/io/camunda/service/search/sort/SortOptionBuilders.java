@@ -34,12 +34,12 @@ public final class SortOptionBuilders {
     return new DecisionRequirementsSort.Builder();
   }
 
-  public static FlownodeInstanceSort.Builder flownodeInstance() {
-    return new FlownodeInstanceSort.Builder();
+  public static FlowNodeInstanceSort.Builder flownodeInstance() {
+    return new FlowNodeInstanceSort.Builder();
   }
 
-  public static FlownodeInstanceSort flownodeInstance(
-      final Function<FlownodeInstanceSort.Builder, ObjectBuilder<FlownodeInstanceSort>> fn) {
+  public static FlowNodeInstanceSort flownodeInstance(
+      final Function<FlowNodeInstanceSort.Builder, ObjectBuilder<FlowNodeInstanceSort>> fn) {
     return fn.apply(flownodeInstance()).build();
   }
 

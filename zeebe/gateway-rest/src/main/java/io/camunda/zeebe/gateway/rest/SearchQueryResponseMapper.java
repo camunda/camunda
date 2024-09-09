@@ -54,10 +54,10 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static FlownodeInstanceSearchQueryResponse toFlownodeInstanceSearchQueryResponse(
-      final SearchQueryResult<FlownodeInstanceEntity> result) {
+  public static FlowNodeInstanceSearchQueryResponse toFlownodeInstanceSearchQueryResponse(
+      final SearchQueryResult<FlowNodeInstanceEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new FlownodeInstanceSearchQueryResponse()
+    return new FlowNodeInstanceSearchQueryResponse()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -184,13 +184,13 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionRequirements).toList();
   }
 
-  private static List<FlownodeInstanceItem> toFlownodeInstance(
-      final List<FlownodeInstanceEntity> instances) {
-    return instances.stream().map(SearchQueryResponseMapper::toFlownodeInstance).toList();
+  private static List<FlowNodeInstanceItem> toFlownodeInstance(
+      final List<FlowNodeInstanceEntity> instances) {
+    return instances.stream().map(SearchQueryResponseMapper::toFlowNodeInstance).toList();
   }
 
-  private static FlownodeInstanceItem toFlownodeInstance(final FlownodeInstanceEntity instance) {
-    return new FlownodeInstanceItem();
+  private static FlowNodeInstanceItem toFlowNodeInstance(final FlowNodeInstanceEntity instance) {
+    return new FlowNodeInstanceItem();
   }
 
   private static DecisionDefinitionItem toDecisionDefinition(final DecisionDefinitionEntity d) {
