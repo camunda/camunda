@@ -72,7 +72,7 @@ public class ElasticsearchEngineClientIT {
     elsClient.indices().create(req -> req.index(indexName));
 
     final var descriptor = mock(IndexDescriptor.class);
-    doReturn(indexName).when(descriptor).getIndexName();
+    doReturn(indexName).when(descriptor).getFullQualifiedName();
 
     final Set<IndexMappingProperty> newProperties = new HashSet<>();
     newProperties.add(new IndexMappingProperty("email", Map.of("type", "keyword")));
