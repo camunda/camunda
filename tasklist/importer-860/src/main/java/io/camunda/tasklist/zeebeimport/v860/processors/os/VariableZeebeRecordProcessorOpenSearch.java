@@ -70,8 +70,8 @@ public class VariableZeebeRecordProcessorOpenSearch {
             up ->
                 up.index(variableIndex.getFullQualifiedName())
                     .id(entity.getId())
-                    .document(CommonUtils.getJsonObjectFromEntity(entity))
-                    .docAsUpsert(true)
+                    .document(CommonUtils.getJsonObjectFromEntity(updateFields))
+                    .upsert(CommonUtils.getJsonObjectFromEntity(entity))
                     .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))
         .build();
   }
@@ -94,7 +94,7 @@ public class VariableZeebeRecordProcessorOpenSearch {
               "Error to associate Variable with parent. Variable id: [%s]",
               variableEntity.getId()));
     }
-    return prepareUpdateRequest(variableListViewEntity, variableListViewEntity.getScopeKey());
+    return prepareUpdateRequest(variableListViewEntity);
   }
 
   private VariableListViewEntity createVariableInputToListView(final VariableEntity entity) {
@@ -107,15 +107,6 @@ public class VariableZeebeRecordProcessorOpenSearch {
     result.setName(name);
     result.setParent(Long.valueOf(parentId));
     return result;
-  }
-
-  private VariableListViewEntity associateVariableWithParent(
-      final VariableListViewEntity variableListViewEntity,
-      final String name,
-      final String parentId) {
-    variableListViewEntity.getJoin().setName(name);
-    variableListViewEntity.getJoin().setParent(Long.valueOf(parentId));
-    return variableListViewEntity;
   }
 
   private boolean isProcessScope(final VariableEntity entity) {
@@ -152,17 +143,22 @@ public class VariableZeebeRecordProcessorOpenSearch {
     return entity;
   }
 
-  private BulkOperation prepareUpdateRequest(
-      final VariableListViewEntity variableListViewEntity, final String routingKey) {
+  private BulkOperation prepareUpdateRequest(final VariableListViewEntity variableListViewEntity) {
+
+    final Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(TasklistListViewTemplate.VARIABLE_VALUE, variableListViewEntity.getValue());
+    updateFields.put(
+        TasklistListViewTemplate.VARIABLE_FULL_VALUE, variableListViewEntity.getFullValue());
+    updateFields.put(TasklistListViewTemplate.IS_PREVIEW, variableListViewEntity.getIsPreview());
 
     return new BulkOperation.Builder()
         .update(
             up ->
                 up.index(tasklistListViewTemplate.getFullQualifiedName())
                     .id(variableListViewEntity.getId())
-                    .document(CommonUtils.getJsonObjectFromEntity(variableListViewEntity))
-                    .docAsUpsert(true)
-                    .routing(routingKey)
+                    .document(CommonUtils.getJsonObjectFromEntity(updateFields))
+                    .upsert(CommonUtils.getJsonObjectFromEntity(variableListViewEntity))
+                    .routing(variableListViewEntity.getScopeKey())
                     .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))
         .build();
   }

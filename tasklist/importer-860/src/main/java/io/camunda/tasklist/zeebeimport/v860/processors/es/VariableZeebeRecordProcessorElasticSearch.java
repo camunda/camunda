@@ -107,7 +107,7 @@ public class VariableZeebeRecordProcessorElasticSearch {
               "Error to associate Variable with parent. Variable id: [%s]",
               variableEntity.getId()));
     }
-    return prepareUpdateRequest(variableListViewEntity, variableListViewEntity.getScopeKey());
+    return prepareUpdateRequest(variableListViewEntity);
   }
 
   private VariableListViewEntity createVariableInputToListView(final VariableEntity entity) {
@@ -156,8 +156,7 @@ public class VariableZeebeRecordProcessorElasticSearch {
     return entity;
   }
 
-  private UpdateRequest prepareUpdateRequest(
-      final VariableListViewEntity variableListViewEntity, final String routingKey)
+  private UpdateRequest prepareUpdateRequest(final VariableListViewEntity variableListViewEntity)
       throws PersistenceException {
     try {
       final Map<String, Object> updateFields = new HashMap<>();
@@ -171,13 +170,9 @@ public class VariableZeebeRecordProcessorElasticSearch {
               .index(tasklistListViewTemplate.getFullQualifiedName())
               .id(variableListViewEntity.getId())
               .upsert(objectMapper.writeValueAsString(variableListViewEntity), XContentType.JSON)
-              .routing(routingKey)
+              .routing(variableListViewEntity.getScopeKey())
               .doc(updateFields)
               .retryOnConflict(UPDATE_RETRY_COUNT);
-
-      if (routingKey != null) {
-        request.routing(routingKey);
-      }
 
       return request;
     } catch (final IOException e) {

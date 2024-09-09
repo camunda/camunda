@@ -65,7 +65,7 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
     final Optional<TaskEntity> taskEntity = userTaskRecordToTaskEntityMapper.map(record);
     if (taskEntity.isPresent()) {
       operations.add(getTaskQuery(taskEntity.get(), record));
-      operations.add(persistUserTaskToListView(createTaskListViewInput(taskEntity.get())));
+      operations.add(persistUserTaskToListView(taskEntity.get(), record));
     }
 
     if (!record.getValue().getVariables().isEmpty()) {
@@ -129,20 +129,22 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
     }
   }
 
-  private UserTaskListViewEntity createTaskListViewInput(final TaskEntity taskEntity) {
-    return new UserTaskListViewEntity(taskEntity);
-  }
-
   private BulkOperation persistUserTaskToListView(
-      final UserTaskListViewEntity tasklistListViewEntity) {
+      final TaskEntity taskEntity, final Record record) {
+
+    final UserTaskListViewEntity tasklistListViewEntity = new UserTaskListViewEntity(taskEntity);
+
+    final Map<String, Object> updateFields =
+        userTaskRecordToTaskEntityMapper.getUpdateFieldsListViewMap(tasklistListViewEntity, record);
+
     return new BulkOperation.Builder()
         .update(
             up ->
                 up.index(tasklistListViewTemplate.getFullQualifiedName())
                     .id(tasklistListViewEntity.getId())
-                    .document(CommonUtils.getJsonObjectFromEntity(tasklistListViewEntity))
+                    .document(CommonUtils.getJsonObjectFromEntity(updateFields))
+                    .upsert(CommonUtils.getJsonObjectFromEntity(tasklistListViewEntity))
                     .routing(tasklistListViewEntity.getProcessInstanceId())
-                    .docAsUpsert(true)
                     .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))
         .build();
   }
