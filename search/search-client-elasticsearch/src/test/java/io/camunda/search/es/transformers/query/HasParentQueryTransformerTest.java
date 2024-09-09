@@ -35,7 +35,8 @@ public class HasParentQueryTransformerTest {
   private static Stream<Arguments> provideQueries() {
     return Stream.of(
         Arguments.arguments(
-            SearchQueryBuilders.hasParentQuery("fooParentType", SearchQueryBuilders.term("fooField", 123)),
+            SearchQueryBuilders.hasParentQuery(
+                "fooParentType", SearchQueryBuilders.term("fooField", 123)),
             "Query: {\"has_parent\":{\"parent_type\":\"fooParentType\",\"query\":{\"term\":{\"fooField\":{\"value\":123}}}}}"),
         Arguments.arguments(
             SearchQueryBuilders.hasParent()
@@ -86,7 +87,7 @@ public class HasParentQueryTransformerTest {
 
     // when - throw
     assertThatThrownBy(
-        () -> SearchQueryBuilders.hasParent().query(SearchQueryBuilders.term("foo", 1)).build())
+            () -> SearchQueryBuilders.hasParent().query(SearchQueryBuilders.term("foo", 1)).build())
         .hasMessageContaining(
             "Expected a non-null parentType parameter for the hasParent query, with query:")
         .hasMessageContaining("field=foo")
@@ -100,7 +101,7 @@ public class HasParentQueryTransformerTest {
 
     // when - throw
     assertThatThrownBy(
-        () -> SearchQueryBuilders.hasParentQuery(null, SearchQueryBuilders.term("foo", 1)))
+            () -> SearchQueryBuilders.hasParentQuery(null, SearchQueryBuilders.term("foo", 1)))
         .hasMessageContaining(
             "Expected a non-null parentType parameter for the hasParent query, with query:")
         .hasMessageContaining("field=foo")
