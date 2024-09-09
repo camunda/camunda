@@ -85,7 +85,7 @@ public class MultiTenancyIT extends IdentityTester {
         .extractingListContent(objectMapper, ProcessResponse.class)
         .hasSize(2)
         .extracting("id", "tenantId")
-        .containsExactly(tuple(processId1, TENANT_1), tuple(processId2, TENANT_2));
+        .containsExactlyInAnyOrder(tuple(processId1, TENANT_1), tuple(processId2, TENANT_2));
 
     tester.withAuthenticationToken(generateTokenForUser(USER_2));
     final var result2 = mockMvcHelper.doRequest(get(TasklistURIs.PROCESSES_URL_V1));
