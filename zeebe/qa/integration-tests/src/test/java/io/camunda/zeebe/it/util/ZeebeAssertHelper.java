@@ -277,14 +277,11 @@ public final class ZeebeAssertHelper {
 
   public static void assertElementInState(
       final long processInstanceKey, final String elementId, final ProcessInstanceIntent intent) {
-    final Record<ProcessInstanceRecordValue> record =
+    consumeFirstProcessInstanceRecord(
         RecordingExporter.processInstanceRecords(intent)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementId(elementId)
-            .findFirst()
-            .orElse(null);
-
-    assertThat(record).isNotNull();
+            .withElementId(elementId),
+        v -> {});
   }
 
   public static void assertElementInState(
@@ -292,13 +289,12 @@ public final class ZeebeAssertHelper {
       final String elementId,
       final BpmnElementType elementType,
       final ProcessInstanceIntent intent) {
-    assertThat(
-            RecordingExporter.processInstanceRecords(intent)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(elementType)
-                .withElementId(elementId)
-                .exists())
-        .isTrue();
+    consumeFirstProcessInstanceRecord(
+        RecordingExporter.processInstanceRecords(intent)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(elementType)
+            .withElementId(elementId),
+        v -> {});
   }
 
   public static void assertElementInState(
@@ -307,6 +303,22 @@ public final class ZeebeAssertHelper {
       final Consumer<ProcessInstanceRecordValue> consumer) {
     consumeFirstProcessInstanceRecord(
         RecordingExporter.processInstanceRecords(intent).withElementId(element), consumer);
+  }
+
+  public static void assertElementRecordInState(
+      final long processInstanceKey,
+      final String element,
+      final ProcessInstanceIntent intent,
+      final Consumer<Record<ProcessInstanceRecordValue>> consumer) {
+    final Record<ProcessInstanceRecordValue> record =
+        RecordingExporter.processInstanceRecords(intent)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(element)
+            .findFirst()
+            .orElse(null);
+
+    assertThat(record).isNotNull();
+    consumer.accept(record);
   }
 
   private static void consumeFirstProcessInstanceRecord(

@@ -17,9 +17,11 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
@@ -146,6 +148,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.USER_TASK, this::summarizeUserTask);
     valueLoggers.put(ValueType.COMMAND_DISTRIBUTION, this::summarizeCommandDistribution);
     valueLoggers.put(ValueType.MESSAGE_CORRELATION, this::summarizeMessageCorrelation);
+    valueLoggers.put(ValueType.CLOCK, this::summarizeClock);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -849,6 +852,24 @@ public class CompactRecordLogger {
         .append(summarizeVariables(value.getVariables()));
 
     return result.toString();
+  }
+
+  private String summarizeClock(final Record<?> record) {
+    final var value = (ClockRecordValue) record.getValue();
+    final var intent = record.getIntent();
+
+    final var clockValue =
+        switch (intent) {
+          case ClockIntent.PIN, ClockIntent.PINNED -> {
+            final long time = value.getTime();
+            final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault());
+            yield String.format("%s (timestamp: %d)", shortenDateTime(dateTime), time);
+          }
+          case ClockIntent.RESET, ClockIntent.RESETTED -> "system time";
+          default -> value.getTime();
+        };
+
+    return String.format("%s clock to %s", intent.name().toLowerCase(), clockValue);
   }
 
   /**
