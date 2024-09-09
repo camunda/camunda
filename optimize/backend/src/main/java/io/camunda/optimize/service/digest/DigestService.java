@@ -357,7 +357,11 @@ public class DigestService implements ConfigurationReloadable {
       if (ViewProperty.DURATION.equals(kpiMeasure)) {
         targetString = target + " " + StringUtils.capitalize(unit.getId());
       } else if (ViewProperty.PERCENTAGE.equals(kpiMeasure)) {
-        targetString = String.format("%.2f %%", Double.parseDouble(target));
+        try {
+          targetString = String.format("%.2f %%", Double.parseDouble(target));
+        } catch (NumberFormatException e) {
+          throw new OptimizeRuntimeException("Value could not be parsed to number: " + target, e);
+        }
       } else {
         targetString = target;
       }
@@ -372,11 +376,15 @@ public class DigestService implements ConfigurationReloadable {
         try {
           return DurationFormatterUtil.formatMilliSecondsToReadableDurationString(
               (long) Double.parseDouble(value));
-        } catch (final NumberFormatException exception) {
-          throw new OptimizeRuntimeException("Value could not be parsed to number: " + value);
+        } catch (final NumberFormatException e) {
+          throw new OptimizeRuntimeException("Value could not be parsed to number: " + value, e);
         }
       } else if (ViewProperty.PERCENTAGE.equals(kpiMeasure)) {
-        return String.format("%.2f %%", Double.parseDouble(value));
+        try {
+          return String.format("%.2f %%", Double.parseDouble(value));
+        } catch (NumberFormatException e) {
+          throw new OptimizeRuntimeException("Value could not be parsed to number: " + value, e);
+        }
       } else {
         return value;
       }
@@ -384,8 +392,14 @@ public class DigestService implements ConfigurationReloadable {
 
     private Double getKpiChangeInPercent(
         final KpiResultDto kpiResult, @Nullable final String previousValue) {
-      final double previousValueAsDouble =
-          previousValue == null ? Double.NaN : Double.parseDouble(previousValue);
+      final double previousValueAsDouble;
+      try {
+        previousValueAsDouble =
+            previousValue == null ? Double.NaN : Double.parseDouble(previousValue);
+      } catch (NumberFormatException e) {
+        throw new OptimizeRuntimeException(
+            "Unable to correctly parse previousValue in kpi result: " + previousValue);
+      }
       return previousValue == null || previousValueAsDouble == 0.
           ? 0.
           : calculatePercentageChange(kpiResult, previousValueAsDouble);

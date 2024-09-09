@@ -34,20 +34,21 @@ public class DatabaseVersionChecker {
   public static final String MIN_ES_SUPPORTED_VERSION = "8.13.0";
   public static final String MIN_OS_SUPPORTED_VERSION = "2.9.0";
 
-  private static final Comparator<String> MAJOR_COMPARATOR =
-      Comparator.comparingInt(major -> Integer.parseInt(getMajorVersionFrom(major)));
-  private static final Comparator<String> MINOR_COMPARATOR =
-      Comparator.comparingInt(minor -> Integer.parseInt(getMinorVersionFrom(minor)));
-  private static final Comparator<String> PATCH_COMPARATOR =
-      Comparator.comparingInt(patch -> Integer.parseInt(getPatchVersionFrom(patch)));
-
-  private static final Comparator<String> LATEST_VERSION_COMPARATOR =
-      MAJOR_COMPARATOR.thenComparing(MINOR_COMPARATOR).thenComparing(PATCH_COMPARATOR);
+  private static final Comparator<String> MAJOR_COMPARATOR;
+  private static final Comparator<String> MINOR_COMPARATOR;
+  private static final Comparator<String> PATCH_COMPARATOR;
+  private static final Comparator<String> LATEST_VERSION_COMPARATOR;
 
   private static final EnumMap<DatabaseType, List<String>> databaseSupportedVersionsMap =
       new EnumMap<>(DatabaseType.class);
 
   static {
+    MAJOR_COMPARATOR = Comparator.comparingInt(major -> parseVersion(getMajorVersionFrom(major)));
+    MINOR_COMPARATOR = Comparator.comparingInt(minor -> parseVersion(getMinorVersionFrom(minor)));
+    PATCH_COMPARATOR = Comparator.comparingInt(patch -> parseVersion(getPatchVersionFrom(patch)));
+    LATEST_VERSION_COMPARATOR =
+        MAJOR_COMPARATOR.thenComparing(MINOR_COMPARATOR).thenComparing(PATCH_COMPARATOR);
+
     databaseSupportedVersionsMap.put(
         DatabaseType.ELASTICSEARCH,
         List.of(
@@ -114,10 +115,10 @@ public class DatabaseVersionChecker {
   public static boolean doesVersionNeedWarning(
       final String currentVersion, final String latestSupportedVersion) {
     try {
-      return (Integer.parseInt(getMajorVersionFrom(currentVersion))
-              == Integer.parseInt(getMajorVersionFrom(latestSupportedVersion)))
-          && (Integer.parseInt(getMinorVersionFrom(currentVersion))
-              > Integer.parseInt(getMinorVersionFrom(latestSupportedVersion)));
+      return (parseVersion(getMajorVersionFrom(currentVersion))
+              == parseVersion(getMajorVersionFrom(latestSupportedVersion)))
+          && (parseVersion(getMinorVersionFrom(currentVersion))
+              > parseVersion(getMinorVersionFrom(latestSupportedVersion)));
     } catch (final NumberFormatException exception) {
       throw new OptimizeConfigurationException(
           String.format(
@@ -136,11 +137,20 @@ public class DatabaseVersionChecker {
                 final String neededVersion = stripToPlainVersion(v);
                 final String neededMajorAndMinor = getMajorAndMinor(neededVersion);
                 return currentMajorAndMinor.equals(neededMajorAndMinor)
-                    && Integer.parseInt(getPatchVersionFrom(currentVersion))
-                        >= Integer.parseInt(getPatchVersionFrom(neededVersion));
+                    && parseVersion(getPatchVersionFrom(currentVersion))
+                        >= parseVersion(getPatchVersionFrom(neededVersion));
               });
     } catch (final NumberFormatException exception) {
       throw new OptimizeConfigurationException("Was not able to determine Database version");
+    }
+  }
+
+  private static int parseVersion(String version) {
+    try {
+      return Integer.parseInt(version);
+    } catch (NumberFormatException e) {
+      throw new OptimizeRuntimeException(
+          "Unable to correctly parse major, minor, or patch version.");
     }
   }
 
