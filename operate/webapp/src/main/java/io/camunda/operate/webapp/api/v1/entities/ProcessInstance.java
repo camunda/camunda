@@ -20,6 +20,7 @@ public class ProcessInstance {
 
   public static final String KEY = ListViewTemplate.PROCESS_INSTANCE_KEY,
       VERSION = ListViewTemplate.PROCESS_VERSION,
+      VERSION_TAG = ListViewTemplate.PROCESS_VERSION_TAG,
       BPMN_PROCESS_ID = ListViewTemplate.BPMN_PROCESS_ID,
       PROCESS_DEFINITION_KEY = ListViewTemplate.PROCESS_KEY,
       PARENT_KEY = ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY,
@@ -32,6 +33,7 @@ public class ProcessInstance {
 
   private Long key;
   private Integer processVersion;
+  private String processVersionTag;
   private String bpmnProcessId;
   private Long parentKey;
   private Long parentFlowNodeInstanceKey;
@@ -64,6 +66,15 @@ public class ProcessInstance {
     return this;
   }
 
+  public String getProcessVersionTag() {
+    return processVersionTag;
+  }
+
+  public ProcessInstance setProcessVersionTag(final String processVersionTag) {
+    this.processVersionTag = processVersionTag;
+    return this;
+  }
+
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
@@ -84,7 +95,7 @@ public class ProcessInstance {
 
   @JsonProperty("parentProcessInstanceKey")
   public ProcessInstance setParentProcessInstanceKey(final Long parentProcessInstanceKey) {
-    this.parentKey = parentProcessInstanceKey;
+    parentKey = parentProcessInstanceKey;
     return this;
   }
 
@@ -92,7 +103,7 @@ public class ProcessInstance {
     return parentFlowNodeInstanceKey;
   }
 
-  public ProcessInstance setParentFlowNodeInstanceKey(Long parentFlowNodeInstanceKey) {
+  public ProcessInstance setParentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey) {
     this.parentFlowNodeInstanceKey = parentFlowNodeInstanceKey;
     return this;
   }
@@ -146,31 +157,9 @@ public class ProcessInstance {
     return tenantId;
   }
 
-  public ProcessInstance setTenantId(String tenantId) {
+  public ProcessInstance setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final ProcessInstance that = (ProcessInstance) o;
-    return Objects.equals(key, that.key)
-        && Objects.equals(processVersion, that.processVersion)
-        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.equals(parentKey, that.parentKey)
-        && Objects.equals(parentFlowNodeInstanceKey, that.parentFlowNodeInstanceKey)
-        && Objects.equals(startDate, that.startDate)
-        && Objects.equals(endDate, that.endDate)
-        && Objects.equals(state, that.state)
-        && Objects.equals(incident, that.incident)
-        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
-        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
@@ -178,6 +167,7 @@ public class ProcessInstance {
     return Objects.hash(
         key,
         processVersion,
+        processVersionTag,
         bpmnProcessId,
         parentKey,
         parentFlowNodeInstanceKey,
@@ -190,12 +180,37 @@ public class ProcessInstance {
   }
 
   @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessInstance that = (ProcessInstance) o;
+    return Objects.equals(key, that.key)
+        && Objects.equals(processVersion, that.processVersion)
+        && Objects.equals(processVersionTag, that.processVersionTag)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(parentKey, that.parentKey)
+        && Objects.equals(parentFlowNodeInstanceKey, that.parentFlowNodeInstanceKey)
+        && Objects.equals(startDate, that.startDate)
+        && Objects.equals(endDate, that.endDate)
+        && Objects.equals(state, that.state)
+        && Objects.equals(incident, that.incident)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(tenantId, that.tenantId);
+  }
+
+  @Override
   public String toString() {
     return "ProcessInstance{"
         + "key="
         + key
         + ", processVersion="
         + processVersion
+        + ", processVersionTag="
+        + processVersionTag
         + ", bpmnProcessId='"
         + bpmnProcessId
         + '\''
