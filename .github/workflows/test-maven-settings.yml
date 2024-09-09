@@ -1,21 +1,42 @@
 name: Test Maven CI
 on:
   pull_request:
+  workflow_dispatch:
+
+# Will limit the workflow to 1 concurrent run per ref (branch / PR)
+# If a new commits occurs, the current run will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# set permissions to allow to publish test results
+permissions:
+  contents: read
+  issues: read
+  checks: write
+  pull-requests: write
 
 jobs:
+  detect-changes:
+    name: Get changed directories
+    runs-on: ubuntu-latest
+    outputs:
+      backend-changes: ${{ steps.filter.outputs.backend-changes }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+    - name: Get list of changed directories
+      id: filter
+      uses: ./.github/actions/optimize-paths-filter
+  unit-tests:
+    name: Unit Tests
+    uses: ./.github/workflows/optimize-unit-tests.yml
+    secrets: inherit
+
   docker:
-    name: Optimize Build 1
+    name: Optimize Build
     if: github.event_name == 'pull_request'
     uses: ./.github/workflows/optimize-ci-build-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref }}
-
-  build-optimize:
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
-    name: Optimize Build 2
-    uses: ./.github/workflows/optimize-ci-build-reusable.yml
-    secrets: inherit
-    with:
-      branch: ${{ github.head_ref }}
-      pushDocker: true
