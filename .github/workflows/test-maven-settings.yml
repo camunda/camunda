@@ -17,17 +17,6 @@ permissions:
   pull-requests: write
 
 jobs:
-  detect-changes:
-    name: Get changed directories
-    runs-on: ubuntu-latest
-    outputs:
-      backend-changes: ${{ steps.filter.outputs.backend-changes }}
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
-    - name: Get list of changed directories
-      id: filter
-      uses: ./.github/actions/optimize-paths-filter
   unit-tests:
     name: Unit Tests
     uses: ./.github/workflows/optimize-unit-tests.yml
