@@ -36,18 +36,18 @@ public class OptimizeWrapper {
   private Process process;
   private Process upgradeProcess;
   private final OptimizeRequestExecutor requestExecutor;
-  private final int elasticPort;
+  private final int databasePort;
 
   public OptimizeWrapper(
       final DatabaseType databaseType,
       final String optimizeVersion,
       final String baseDirectory,
-      final int elasticPort) {
+      final int databasePort) {
     this.optimizeVersion = optimizeVersion;
     this.databaseType = databaseType;
     optimizeDirectory = baseDirectory + "/" + optimizeVersion;
     requestExecutor = new OptimizeRequestExecutor("demo", "demo", "http://localhost:8090/api");
-    this.elasticPort = elasticPort;
+    this.databasePort = databasePort;
   }
 
   public void startUpgrade(final String outputFilePath) throws IOException {
@@ -57,7 +57,7 @@ public class OptimizeWrapper {
     log.info(
         "Running upgrade to Optimize {} on Elasticsearch with port {}...",
         optimizeVersion,
-        elasticPort);
+        databasePort);
 
     final ProcessBuilder processBuilder =
         new ProcessBuilder()
@@ -65,7 +65,7 @@ public class OptimizeWrapper {
             .directory(new File(optimizeDirectory))
             .redirectOutput(Redirect.to(new File(outputFilePath)));
     final Map<String, String> envVars = new HashMap<>();
-    envVars.put("OPTIMIZE_ELASTICSEARCH_HTTP_PORT", String.valueOf(elasticPort));
+    envVars.put("OPTIMIZE_ELASTICSEARCH_HTTP_PORT", String.valueOf(databasePort));
     processBuilder.environment().putAll(envVars);
     upgradeProcess = processBuilder.start();
   }
@@ -99,7 +99,7 @@ public class OptimizeWrapper {
             .command("bash", "-c", "./optimize-startup.sh")
             .redirectOutput(Redirect.to(new File(outputFilePath)))
             .directory(new File(optimizeDirectory));
-    final Map<String, String> envVars = getStringStringMap();
+    final Map<String, String> envVars = getEnvVarsMap();
 
     processBuilder.environment().putAll(envVars);
     process = processBuilder.start();
@@ -125,14 +125,14 @@ public class OptimizeWrapper {
   }
 
   @NotNull
-  private Map<String, String> getStringStringMap() {
+  private Map<String, String> getEnvVarsMap() {
     final Map<String, String> envVars = new HashMap<>();
     if (databaseType == DatabaseType.ELASTICSEARCH) {
-      envVars.put("OPTIMIZE_ELASTICSEARCH_HTTP_PORT", String.valueOf(elasticPort));
+      envVars.put("OPTIMIZE_ELASTICSEARCH_HTTP_PORT", String.valueOf(databasePort));
       envVars.put("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_REPLICAS", "0");
       envVars.put("CAMUNDA_OPTIMIZE_DATABASE", ELASTICSEARCH_DATABASE_PROPERTY);
     } else if (databaseType == DatabaseType.OPENSEARCH) {
-      envVars.put("CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT", String.valueOf(elasticPort));
+      envVars.put("CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT", String.valueOf(databasePort));
       envVars.put("CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_NUMBER_OF_REPLICAS", "0");
       envVars.put("CAMUNDA_OPTIMIZE_DATABASE", OPENSEARCH_DATABASE_PROPERTY);
     }

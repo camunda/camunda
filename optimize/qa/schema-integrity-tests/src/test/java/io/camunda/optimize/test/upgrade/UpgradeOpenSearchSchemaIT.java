@@ -46,7 +46,6 @@ public class UpgradeOpenSearchSchemaIT
 
   @Override
   protected void assertMigratedDatabaseIndicesMatchExpected() throws IOException {
-    // Indices
     log.info(
         "Expected settings size: {}, keys: {}", expectedSettings.size(), expectedSettings.keySet());
     final Map<String, IndexState> newSettings = newDatabaseSchemaClient.getSettings();
@@ -66,7 +65,6 @@ public class UpgradeOpenSearchSchemaIT
 
   @Override
   protected void assertMigratedDatabaseTemplatesMatchExpected() throws IOException {
-    // Templates
     log.info(
         "Expected templates size: {}, names: {}",
         expectedTemplates.size(),

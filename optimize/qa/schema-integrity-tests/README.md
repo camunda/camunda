@@ -3,7 +3,7 @@
 This test suite verifies that the Optimize upgrade completes successfully and that the schema has the expected structure.
 
 It starts a given previous version, waits until all data is imported, kills it and starts the upgrade to the target version.
-There are two profiles available, depending on which DB is being used. (differnet test classes are invoked):
+There are two profiles available, depending on which DB is being used. (different test classes are invoked):
 - A full schema in Elasticsearch with the profile `es-schema-integrity-tests`
 - A full schema in OpenSearch with the profile `os-schema-integrity-tests`
 
