@@ -103,7 +103,7 @@ public class OpenSearchCompositeAggregationScroller {
       final CompositeAggregate compositeAggregationResult =
           extractCompositeAggregationResult(searchResponse);
 
-      Map<String, String> convertedCompositeBucketConsumer =
+      Map<String, String> safeAfterKeyMap =
           compositeAggregationResult.afterKey().entrySet().stream()
               // Below is a workaround for a known java issue
               // https://bugs.openjdk.org/browse/JDK-8148463
@@ -112,8 +112,7 @@ public class OpenSearchCompositeAggregationScroller {
                   (m, v) -> m.put(v.getKey(), v.getValue().to(String.class)),
                   HashMap::putAll);
 
-      aggregations =
-          updateAfterKeyInCompositeAggregation(convertedCompositeBucketConsumer, aggregations);
+      aggregations = updateAfterKeyInCompositeAggregation(safeAfterKeyMap, aggregations);
 
       return compositeAggregationResult.buckets().array();
     } catch (RuntimeException e) {
@@ -129,10 +128,20 @@ public class OpenSearchCompositeAggregationScroller {
   }
 
   private HashMap<String, Aggregation> updateAfterKeyInCompositeAggregation(
-      Map<String, String> convertedCompositeBucketConsumer, Map<String, Aggregation> currentAgg) {
+      Map<String, String> safeAfterKeyMap, Map<String, Aggregation> currentAgg) {
+    return updateAfterKeyInCompositeAggregation(safeAfterKeyMap, currentAgg, false);
+  }
+
+  private HashMap<String, Aggregation> updateAfterKeyInCompositeAggregation(
+      Map<String, String> safeAfterKeyMap,
+      Map<String, Aggregation> currentAgg,
+      boolean isFromNested) {
     HashMap<String, Aggregation> newAggregations = new HashMap<>();
 
-    // find aggregation response
+    if (safeAfterKeyMap.isEmpty()) {
+      return new HashMap<>(currentAgg);
+    }
+
     for (String aggPath : pathToAggregation) {
       Aggregation agg = currentAgg.get(aggPath);
       if (agg != null) {
@@ -142,14 +151,25 @@ public class OpenSearchCompositeAggregationScroller {
                   .nested(new NestedAggregation.Builder().path(agg.nested().path()).build())
                   .aggregations(
                       updateAfterKeyInCompositeAggregation(
-                          convertedCompositeBucketConsumer, agg.aggregations()))
+                          safeAfterKeyMap, agg.aggregations(), true))
                   .build();
           newAggregations.put(aggPath, newNestedAgg);
         } else if (agg.isComposite()) {
-          newAggregations.put(
-              aggPath,
-              updateCompositeAggregation(convertedCompositeBucketConsumer, agg.composite())
-                  ._toAggregation());
+          CompositeAggregation newAgg =
+              updateCompositeAggregation(agg.composite(), safeAfterKeyMap);
+          if (isFromNested) {
+            newAggregations.put(aggPath, newAgg._toAggregation());
+          } else {
+            Aggregation upgradeAgg =
+                Aggregation.of(
+                    a -> {
+                      if (agg.aggregations() != null) {
+                        a.aggregations(agg.aggregations());
+                      }
+                      return a.composite(newAgg);
+                    });
+            newAggregations.put(aggPath, upgradeAgg);
+          }
         }
       }
     }
@@ -157,13 +177,13 @@ public class OpenSearchCompositeAggregationScroller {
   }
 
   private CompositeAggregation updateCompositeAggregation(
-      Map<String, String> convertedCompositeBucketConsumer,
-      CompositeAggregation prevCompositeAggregation) {
-    // find aggregation and adjust after key for next invocation
+      CompositeAggregation prevCompositeAggregation, Map<String, String> safeAfterKeyMap) {
     return new CompositeAggregation.Builder()
         .sources(prevCompositeAggregation.sources())
         .size(prevCompositeAggregation.size())
-        .after(convertedCompositeBucketConsumer)
+        .name(prevCompositeAggregation.name())
+        .meta(prevCompositeAggregation.meta())
+        .after(safeAfterKeyMap)
         .build();
   }
 
