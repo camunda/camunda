@@ -1,0 +1,83 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.process.test.impl.containers;
+
+import io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs;
+import io.camunda.process.test.impl.runtime.ContainerRuntimePorts;
+import java.net.URI;
+import java.time.Duration;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
+import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
+import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy.Mode;
+import org.testcontainers.utility.DockerImageName;
+
+public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
+
+  private static final Duration DEFAULT_STARTUP_TIMEOUT = Duration.ofMinutes(1);
+  private static final String CONNECTORS_READY_ENDPOINT = "/actuator/health/readiness";
+
+  public ConnectorsContainer(final DockerImageName dockerImageName) {
+    super(dockerImageName);
+    applyDefaultConfiguration();
+  }
+
+  private void applyDefaultConfiguration() {
+    withNetwork(Network.SHARED)
+        .waitingFor(newDefaultWaitStrategy())
+        .withEnv("management.endpoints.web.exposure.include", "health")
+        .withEnv("management.endpoint.health.probes.enabled", "true")
+        .addExposedPorts(ContainerRuntimePorts.CONNECTORS_REST_API);
+  }
+
+  public ConnectorsContainer withZeebeGrpcApi(final String zeebeGrpcApi) {
+    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_ZEEBE_CLIENT_BROKER_GATEWAY_ADDRESS, zeebeGrpcApi);
+    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_ZEEBE_CLIENT_SECURITY_PLAINTEXT, "true");
+    return this;
+  }
+
+  public ConnectorsContainer withOperateApi(final String operateRestApi) {
+    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_OPERATE_CLIENT_URL, operateRestApi);
+    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_OPERATE_CLIENT_USERNAME, "demo");
+    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_OPERATE_CLIENT_PASSWORD, "demo");
+    return this;
+  }
+
+  public static HttpWaitStrategy newDefaultConnectorsReadyCheck() {
+    return new HttpWaitStrategy()
+        .forPath(CONNECTORS_READY_ENDPOINT)
+        .forPort(ContainerRuntimePorts.CONNECTORS_REST_API)
+        .forStatusCodeMatching(status -> status >= 200 && status < 300)
+        .withReadTimeout(Duration.ofSeconds(10));
+  }
+
+  private WaitAllStrategy newDefaultWaitStrategy() {
+    return new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
+        .withStrategy(new HostPortWaitStrategy())
+        .withStrategy(newDefaultConnectorsReadyCheck())
+        .withStartupTimeout(DEFAULT_STARTUP_TIMEOUT);
+  }
+
+  public int getRestApiPort() {
+    return getMappedPort(ContainerRuntimePorts.CONNECTORS_REST_API);
+  }
+
+  public URI getRestApiAddress() {
+    return URI.create("http://" + getHost() + ":" + getRestApiPort());
+  }
+}
