@@ -49,10 +49,8 @@ public final class ClockProcessor implements DistributedTypedRecordProcessor<Clo
 
   @Override
   public void processNewCommand(final TypedRecord<ClockRecord> command) {
-    final long eventKey = keyGenerator.nextKey();
-    final var clockRecord = command.getValue();
     final var intent = (ClockIntent) command.getIntent();
-    final var resultIntent = followUpIntent(intent);
+    final var clockRecord = command.getValue();
 
     if (intent == ClockIntent.PIN && clockRecord.getTime() < 0) {
       final var rejectionMessage =
@@ -63,6 +61,9 @@ public final class ClockProcessor implements DistributedTypedRecordProcessor<Clo
           command, RejectionType.INVALID_ARGUMENT, rejectionMessage);
       return;
     }
+
+    final long eventKey = keyGenerator.nextKey();
+    final var resultIntent = followUpIntent(intent);
 
     applyClockModification(eventKey, intent, resultIntent, clockRecord);
     if (command.hasRequestMetadata()) {

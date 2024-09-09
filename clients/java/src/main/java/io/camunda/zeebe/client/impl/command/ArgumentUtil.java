@@ -51,9 +51,7 @@ public final class ArgumentUtil {
   }
 
   public static void ensureNotNegative(final String property, final Duration testValue) {
-    if (testValue.isNegative()) {
-      throw new IllegalArgumentException(String.format("%s must be not negative", property));
-    }
+    ensureNotNegative(property, testValue.toMillis());
   }
 
   public static void ensureNotZero(final String property, final Duration testValue) {
