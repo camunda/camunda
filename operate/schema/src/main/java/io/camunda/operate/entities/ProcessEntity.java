@@ -18,6 +18,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
 
   private String name;
   private int version;
+  private String versionTag;
   private String bpmnProcessId;
   private String bpmnXml;
   private String resourceName;
@@ -48,6 +49,9 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
         + '\''
         + ", version="
         + version
+        + '\''
+        + ", versionTag="
+        + versionTag
         + ", bpmnProcessId='"
         + bpmnProcessId
         + '\''
@@ -72,6 +76,15 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
 
   public ProcessEntity setVersion(int version) {
     this.version = version;
+    return this;
+  }
+
+  public String getVersionTag() {
+    return versionTag;
+  }
+
+  public ProcessEntity setVersionTag(final String versionTag) {
+    this.versionTag = versionTag;
     return this;
   }
 
@@ -124,7 +137,21 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        name,
+        version,
+        versionTag,
+        bpmnProcessId,
+        bpmnXml,
+        resourceName,
+        flowNodes,
+        tenantId);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -136,17 +163,12 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     }
     final ProcessEntity that = (ProcessEntity) o;
     return version == that.version
+        && Objects.equals(versionTag, that.versionTag)
         && Objects.equals(name, that.name)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(bpmnXml, that.bpmnXml)
         && Objects.equals(resourceName, that.resourceName)
         && Objects.equals(flowNodes, that.flowNodes)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(), name, version, bpmnProcessId, bpmnXml, resourceName, flowNodes, tenantId);
   }
 }

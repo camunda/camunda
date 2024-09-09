@@ -28,6 +28,9 @@
 			"version": {
 				"type": "long"
       },
+      "versionTag": {
+        "type": "keyword"
+      },
       "flowNodes": {
         "type": "object",
         "properties": {
