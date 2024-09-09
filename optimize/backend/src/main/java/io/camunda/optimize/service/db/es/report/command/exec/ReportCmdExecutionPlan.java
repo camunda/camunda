@@ -78,19 +78,19 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
     SearchRequest searchRequest = createBaseQuerySearchRequest(executionContext);
     SearchResponse response;
     try {
-      response = executeRequests(executionContext, searchRequest);
+      response = executeRequests(executionContext, searchRequest, false);
     } catch (RuntimeException e) {
       if (isInstanceIndexNotFoundException(e)) {
         if (executionContext.getReportData().getDefinitions().size() > 1) {
           // If there are multiple data sources, we retry with the process instance index multi
-          // alias to get a result
+          // alias to get a result.
           log.info(
               "Could not evaluate report because at least one required instance index {} does not exist. Retrying with index "
                   + "multi alias",
               Arrays.asList(getIndexNames(executionContext)));
-          searchRequest.indices(getMultiIndexAlias());
+
           try {
-            response = executeRequests(executionContext, searchRequest);
+            response = executeRequests(executionContext, searchRequest, true);
           } catch (RuntimeException ex) {
             if (isInstanceIndexNotFoundException(e)) {
               return returnEmptyResult(executionContext);
@@ -137,11 +137,20 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
   }
 
   private SearchResponse executeRequests(
-      final ExecutionContext<D> executionContext, final SearchRequest searchRequest)
+      final ExecutionContext<D> executionContext,
+      final SearchRequest searchRequest,
+      final boolean useMultiInstanceIndexAlias)
       throws IOException {
-    SearchResponse response;
-    response = executeElasticSearchCommand(executionContext, searchRequest);
-    String[] indices = getIndexNames(executionContext);
+
+    String[] indices;
+    if (useMultiInstanceIndexAlias) {
+      indices = getMultiIndexAlias();
+      searchRequest.indices(indices);
+    } else {
+      indices = getIndexNames(executionContext);
+    }
+
+    SearchResponse response = executeElasticSearchCommand(executionContext, searchRequest);
     BoolQueryBuilder countQuery = setupUnfilteredBaseQuery(executionContext);
     executionContext.setUnfilteredTotalInstanceCount(databaseClient.count(indices, countQuery));
     return response;
