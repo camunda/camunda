@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.schema;
 
+import static io.camunda.exporter.schema.SchemaTestUtil.validateMappings;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
@@ -89,7 +90,7 @@ public class ElasticsearchEngineClientIT {
   void shouldCreateIndexTemplateCorrectly() throws IOException {
     // given, when
     final var indexTemplate =
-        TestUtil.mockIndexTemplate(
+        SchemaTestUtil.mockIndexTemplate(
             "index_name",
             "test*",
             "alias",
@@ -105,10 +106,8 @@ public class ElasticsearchEngineClientIT {
         elsClient.indices().getIndexTemplate(req -> req.name("template_name")).indexTemplates();
 
     assertThat(indexTemplates.size()).isEqualTo(1);
-
-    final var retrievedTemplate = indexTemplates.getFirst().indexTemplate().template();
-    assertThat(retrievedTemplate.mappings().properties().get("hello").isText()).isTrue();
-    assertThat(retrievedTemplate.mappings().properties().get("world").isKeyword()).isTrue();
+    validateMappings(
+        indexTemplates.getFirst().indexTemplate().template().mappings(), "mappings.json");
   }
 
   @Test
@@ -116,7 +115,7 @@ public class ElasticsearchEngineClientIT {
     // given
     final var qualifiedIndexName = "full_name";
     final var descriptor =
-        TestUtil.mockIndex(qualifiedIndexName, "alias", "index_name", "mappings.json");
+        SchemaTestUtil.mockIndex(qualifiedIndexName, "alias", "index_name", "mappings.json");
 
     // when
     elsEngineClient.createIndex(descriptor);
@@ -125,14 +124,13 @@ public class ElasticsearchEngineClientIT {
     final var index =
         elsClient.indices().get(req -> req.index(qualifiedIndexName)).get(qualifiedIndexName);
 
-    assertThat(index.mappings().properties().get("hello").isText()).isTrue();
-    assertThat(index.mappings().properties().get("world").isKeyword()).isTrue();
+    validateMappings(index.mappings(), "mappings.json");
   }
 
   @Test
   void shouldRetrieveAllIndexMappingsWithImplementationAgnosticReturnType() {
     final var index =
-        TestUtil.mockIndex("index_qualified_name", "alias", "index_name", "mappings.json");
+        SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "mappings.json");
 
     elsEngineClient.createIndex(index);
 
@@ -156,7 +154,7 @@ public class ElasticsearchEngineClientIT {
   @Test
   void shouldRetrieveAllIndexTemplateMappingsWithImplementationAgnosticReturnType() {
     final var template =
-        TestUtil.mockIndexTemplate(
+        SchemaTestUtil.mockIndexTemplate(
             "index_name", "index_pattern.*", "alias", List.of(), "template_name", "mappings.json");
 
     elsEngineClient.createIndexTemplate(template, new IndexSettings(), true);

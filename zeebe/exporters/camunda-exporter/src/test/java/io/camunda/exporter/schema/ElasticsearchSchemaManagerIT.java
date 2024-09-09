@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.schema;
 
+import static io.camunda.exporter.schema.SchemaTestUtil.validateMappings;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -71,7 +72,7 @@ public class ElasticsearchSchemaManagerIT {
     properties.getDefaultSettings().setNumberOfShards(10);
 
     final var indexTemplate =
-        TestUtil.mockIndexTemplate(
+        SchemaTestUtil.mockIndexTemplate(
             "indexName",
             "full_name*",
             "alias",
@@ -79,7 +80,7 @@ public class ElasticsearchSchemaManagerIT {
             "template_name",
             "mappings.json");
 
-    final var index = TestUtil.mockIndex("full_name", "alias", "index_name", "mappings.json");
+    final var index = SchemaTestUtil.mockIndex("full_name", "alias", "index_name", "mappings.json");
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
@@ -103,7 +104,7 @@ public class ElasticsearchSchemaManagerIT {
     properties.setShardsByIndexName(Map.of("index_name", 5));
 
     final var indexTemplate =
-        TestUtil.mockIndexTemplate(
+        SchemaTestUtil.mockIndexTemplate(
             "index_name",
             "full_name*",
             "alias",
@@ -111,7 +112,7 @@ public class ElasticsearchSchemaManagerIT {
             "template_name",
             "mappings.json");
 
-    final var index = TestUtil.mockIndex("full_name", "alias", "index_name", "mappings.json");
+    final var index = SchemaTestUtil.mockIndex("full_name", "alias", "index_name", "mappings.json");
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
@@ -130,7 +131,7 @@ public class ElasticsearchSchemaManagerIT {
   void shouldOverwriteIndexTemplateIfMappingsFileChanged() throws IOException {
     // given
     final var indexTemplate =
-        TestUtil.mockIndexTemplate(
+        SchemaTestUtil.mockIndexTemplate(
             "index_name",
             "full_name*",
             "alias",
@@ -158,14 +159,15 @@ public class ElasticsearchSchemaManagerIT {
             .indexTemplates()
             .getFirst();
 
-    assertThat(template.indexTemplate().template().mappings().properties().get("foo").isText())
-        .isTrue();
+    validateMappings(
+        template.indexTemplate().template().mappings(), "mappings-added-property.json");
   }
 
   @Test
   void shouldAppendToIndexMappingsWithNewProperties() throws IOException {
     // given
-    final var index = TestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");
+    final var index =
+        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
@@ -194,7 +196,8 @@ public class ElasticsearchSchemaManagerIT {
   @Test
   void shouldReadIndexMappingsFileCorrectly() {
     // given
-    final var index = TestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");
+    final var index =
+        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
