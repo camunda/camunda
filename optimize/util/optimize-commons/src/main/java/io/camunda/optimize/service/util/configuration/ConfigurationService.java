@@ -40,7 +40,6 @@ import io.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import io.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.util.configuration.analytics.AnalyticsConfiguration;
-import io.camunda.optimize.service.util.configuration.archive.DataArchiveConfiguration;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import io.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
 import io.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
@@ -85,7 +84,6 @@ public class ConfigurationService {
   private OpenSearchConfiguration openSearchConfiguration;
   private ReadContext configJsonContext;
   private SecurityConfiguration securityConfiguration;
-  private DataArchiveConfiguration dataArchiveConfiguration;
   private UsersConfiguration usersConfiguration;
   private Map<String, EngineConfiguration> configuredEngines;
   private ZeebeConfiguration configuredZeebe;
@@ -274,15 +272,6 @@ public class ConfigurationService {
               ConfigurationServiceConstants.SECURITY, SecurityConfiguration.class);
     }
     return securityConfiguration;
-  }
-
-  public DataArchiveConfiguration getDataArchiveConfiguration() {
-    if (dataArchiveConfiguration == null) {
-      dataArchiveConfiguration =
-          configJsonContext.read(
-              ConfigurationServiceConstants.DATA_ARCHIVE, DataArchiveConfiguration.class);
-    }
-    return dataArchiveConfiguration;
   }
 
   public UsersConfiguration getUsersConfiguration() {
