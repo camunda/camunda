@@ -212,7 +212,8 @@ public class UserTaskRecordToTaskEntityMapper {
       case MIGRATED -> {
         updateFields.put(TasklistListViewTemplate.FLOW_NODE_BPMN_ID, entity.getFlowNodeBpmnId());
         updateFields.put(TasklistListViewTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
-        updateFields.put(TasklistListViewTemplate.PROCESS_DEFINITION_ID, entity.getProcessDefinitionId());
+        updateFields.put(
+            TasklistListViewTemplate.PROCESS_DEFINITION_ID, entity.getProcessDefinitionId());
       }
       case COMPLETED, CANCELED -> {
         updateFields.put(TasklistListViewTemplate.STATE, entity.getState());
@@ -227,13 +228,17 @@ public class UserTaskRecordToTaskEntityMapper {
         for (final String attribute : changedAttributes) {
           switch (attribute) {
             case "candidateGroupsList" ->
-                updateFields.put(TasklistListViewTemplate.CANDIDATE_GROUPS, entity.getCandidateGroups());
+                updateFields.put(
+                    TasklistListViewTemplate.CANDIDATE_GROUPS, entity.getCandidateGroups());
             case "candidateUsersList" ->
-                updateFields.put(TasklistListViewTemplate.CANDIDATE_USERS, entity.getCandidateUsers());
-            case "dueDate" -> updateFields.put(TasklistListViewTemplate.DUE_DATE, entity.getDueDate());
+                updateFields.put(
+                    TasklistListViewTemplate.CANDIDATE_USERS, entity.getCandidateUsers());
+            case "dueDate" ->
+                updateFields.put(TasklistListViewTemplate.DUE_DATE, entity.getDueDate());
             case "followUpDate" ->
                 updateFields.put(TasklistListViewTemplate.FOLLOW_UP_DATE, entity.getFollowUpDate());
-            case "priority" -> updateFields.put(TasklistListViewTemplate.PRIORITY, entity.getPriority());
+            case "priority" ->
+                updateFields.put(TasklistListViewTemplate.PRIORITY, entity.getPriority());
             default -> {
               LOGGER.warn(
                   "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}", attribute);

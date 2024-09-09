@@ -160,13 +160,19 @@ public class VariableZeebeRecordProcessorElasticSearch {
       final VariableListViewEntity variableListViewEntity, final String routingKey)
       throws PersistenceException {
     try {
+      final Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(TasklistListViewTemplate.VARIABLE_VALUE, variableListViewEntity.getValue());
+      updateFields.put(
+          TasklistListViewTemplate.VARIABLE_FULL_VALUE, variableListViewEntity.getValue());
+      updateFields.put(TasklistListViewTemplate.IS_PREVIEW, variableListViewEntity.getIsPreview());
+
       final UpdateRequest request =
           new UpdateRequest()
               .index(tasklistListViewTemplate.getFullQualifiedName())
               .id(variableListViewEntity.getId())
               .upsert(objectMapper.writeValueAsString(variableListViewEntity), XContentType.JSON)
               .routing(routingKey)
-              .doc(objectMapper.writeValueAsString(variableListViewEntity), XContentType.JSON)
+              .doc(updateFields)
               .retryOnConflict(UPDATE_RETRY_COUNT);
 
       if (routingKey != null) {
