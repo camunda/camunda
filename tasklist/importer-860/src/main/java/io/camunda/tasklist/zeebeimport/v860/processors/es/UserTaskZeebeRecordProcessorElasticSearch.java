@@ -66,7 +66,7 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     final Optional<TaskEntity> taskEntity = userTaskRecordToTaskEntityMapper.map(record);
     if (taskEntity.isPresent()) {
       bulkRequest.add(getTaskQuery(taskEntity.get(), record));
-      bulkRequest.add(persistUserTaskToListView(createTaskListViewInput(taskEntity.get())));
+      bulkRequest.add(persistUserTaskToListView(taskEntity.get(), record));
       // Variables
       if (!record.getValue().getVariables().isEmpty()) {
         final List<TaskVariableEntity> variables =
@@ -135,16 +135,18 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     }
   }
 
-  private UserTaskListViewEntity createTaskListViewInput(final TaskEntity taskEntity) {
-    return new UserTaskListViewEntity(taskEntity);
-  }
-
-  private UpdateRequest persistUserTaskToListView(
-      final UserTaskListViewEntity userTaskListViewEntity) throws PersistenceException {
+  private UpdateRequest persistUserTaskToListView(final TaskEntity taskEntity, Record record)
+      throws PersistenceException {
     try {
+      final UserTaskListViewEntity userTaskListViewEntity = new UserTaskListViewEntity(taskEntity);
+
+      final Map<String, Object> updateFields =
+          userTaskRecordToTaskEntityMapper.getUpdateFieldsListViewMap(
+              userTaskListViewEntity, record);
+
       final Map<String, Object> jsonMap =
-          objectMapper.readValue(
-              objectMapper.writeValueAsString(userTaskListViewEntity), HashMap.class);
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+
       return new UpdateRequest()
           .index(tasklistListViewTemplate.getFullQualifiedName())
           .id(userTaskListViewEntity.getId())
