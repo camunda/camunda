@@ -3,7 +3,6 @@ name: Tasklist-tests
 on:
   workflow_dispatch:
   push:
-  pull_request:
 
 jobs:
   testing:
@@ -24,3 +23,8 @@ jobs:
     
     - name: "Checkout repo"
       uses: actions/checkout@v4
+
+    - name: "Run makefile"
+      run: |
+        cd tasklist;
+        make 
