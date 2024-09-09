@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # set constants
-CAMUNDA_VERSION="8.6.0-alpha3"
-CAMUNDA_CONNECTORS_VERSION="8.6.0-alpha3"
+CAMUNDA_VERSION="8.6.0-alpha5"
+CAMUNDA_CONNECTORS_VERSION="8.6.0-alpha5"
 ELASTICSEARCH_VERSION="8.13.4"
 
 architectureRaw="$(uname -m)"
@@ -44,13 +44,11 @@ fi
 tar -czvf camunda8-run-$CAMUNDA_VERSION-$architecture.tar.gz \
   -C ../ \
   c8run/start.sh \
-  c8run/start.bat \
   c8run/shutdown.sh \
   c8run/README.md \
   c8run/connectors-application.properties \
   c8run/"$connectorsFileName" \
   c8run/internal/run.sh \
-  c8run/internal/run.bat \
   c8run/"elasticsearch-$ELASTICSEARCH_VERSION" \
   c8run/custom_connectors \
   c8run/configuration \
