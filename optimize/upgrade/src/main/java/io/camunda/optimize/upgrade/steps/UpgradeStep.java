@@ -7,12 +7,15 @@
  */
 package io.camunda.optimize.upgrade.steps;
 
+import com.google.common.annotations.VisibleForTesting;
+import io.camunda.optimize.service.db.schema.IndexLookupUtil;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
-import io.camunda.optimize.upgrade.es.SchemaUpgradeClient;
+import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -20,7 +23,22 @@ import lombok.NoArgsConstructor;
 public abstract class UpgradeStep {
   protected IndexMappingCreator index;
 
+  // This should always be false in real upgrades. In test scenarios, it can be set to true to avoid
+  // failing conversion of test indices that don't have lookups
+  @VisibleForTesting @Setter protected boolean skipIndexConversion = false;
+
+  protected UpgradeStep(IndexMappingCreator index) {
+    this.index = index;
+  }
+
   public abstract UpgradeStepType getType();
 
-  public abstract void execute(SchemaUpgradeClient schemaUpgradeClient);
+  protected abstract void performUpgradeStep(SchemaUpgradeClient<?, ?> schemaUpgradeClient);
+
+  public void execute(SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
+    if (!skipIndexConversion) {
+      index = IndexLookupUtil.convertIndexForDatabase(index, schemaUpgradeClient.getDatabaseType());
+    }
+    performUpgradeStep(schemaUpgradeClient);
+  }
 }

@@ -12,8 +12,8 @@ import static io.camunda.optimize.upgrade.steps.UpgradeStepType.SCHEMA_DELETE_IN
 import static io.camunda.optimize.upgrade.steps.UpgradeStepType.SCHEMA_DELETE_TEMPLATE;
 
 import com.vdurmont.semver4j.Semver;
-import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import io.camunda.optimize.upgrade.es.SchemaUpgradeClient;
+import io.camunda.optimize.service.db.DatabaseClient;
+import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
@@ -32,17 +32,17 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class UpgradeProcedure {
 
-  protected final OptimizeElasticsearchClient esClient;
+  protected final DatabaseClient dbClient;
   protected final UpgradeValidationService upgradeValidationService;
   protected final SchemaUpgradeClient schemaUpgradeClient;
   protected final UpgradeStepLogService upgradeStepLogService;
 
   public UpgradeProcedure(
-      final OptimizeElasticsearchClient esClient,
+      final DatabaseClient dbClient,
       final UpgradeValidationService upgradeValidationService,
       final SchemaUpgradeClient schemaUpgradeClient,
       final UpgradeStepLogService upgradeStepLogService) {
-    this.esClient = esClient;
+    this.dbClient = dbClient;
     this.upgradeValidationService = upgradeValidationService;
     this.schemaUpgradeClient = schemaUpgradeClient;
     this.upgradeStepLogService = upgradeStepLogService;
@@ -74,7 +74,7 @@ public class UpgradeProcedure {
       }
     } else {
       log.info(
-          "No Connection to elasticsearch or no Optimize Metadata index found, skipping update to {}.",
+          "No Connection to database or no Optimize Metadata index found, skipping update to {}.",
           targetVersion);
     }
   }
@@ -131,7 +131,8 @@ public class UpgradeProcedure {
   }
 
   private void validateVersions(final Semver schemaVersion, final UpgradePlan upgradePlan) {
-    upgradeValidationService.validateESVersion(esClient, upgradePlan.getToVersion().toString());
+    upgradeValidationService.validateDatabaseVersion(
+        dbClient, upgradePlan.getToVersion().toString());
     upgradeValidationService.validateSchemaVersions(
         schemaVersion.getValue(),
         upgradePlan.getFromVersion().getValue(),
@@ -143,10 +144,10 @@ public class UpgradeProcedure {
       final ReindexStep reindexStep = (ReindexStep) step;
       return String.format(
           "%s-TO-%s",
-          esClient
+          dbClient
               .getIndexNameService()
               .getOptimizeIndexNameWithVersion(reindexStep.getSourceIndex()),
-          esClient
+          dbClient
               .getIndexNameService()
               .getOptimizeIndexNameWithVersion(reindexStep.getTargetIndex()));
     } else if (SCHEMA_DELETE_INDEX.equals(step.getType())) {
@@ -154,7 +155,7 @@ public class UpgradeProcedure {
     } else if (SCHEMA_DELETE_TEMPLATE.equals(step.getType())) {
       return ((DeleteIndexTemplateIfExistsStep) step).getVersionedTemplateNameWithTemplateSuffix();
     } else {
-      return esClient.getIndexNameService().getOptimizeIndexNameWithVersion(step.getIndex());
+      return dbClient.getIndexNameService().getOptimizeIndexNameWithVersion(step.getIndex());
     }
   }
 }

@@ -25,6 +25,9 @@ import io.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import io.camunda.optimize.dto.optimize.query.MetadataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
+import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
+import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
@@ -45,6 +48,7 @@ import java.util.Set;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
+import org.elasticsearch.xcontent.XContentBuilder;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -350,9 +354,71 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.getImportedActivityCount();
   }
 
-  public List<String> getAllIndicesWithWriteAlias(final String externalProcessVariableIndexName) {
+  public void createIndex(
+      final String optimizeIndexNameWithVersion,
+      final String optimizeIndexAliasForIndex,
+      DefaultIndexMappingCreator mapping)
+      throws IOException {
+    createIndex(optimizeIndexNameWithVersion, optimizeIndexAliasForIndex, mapping, true);
+  }
+
+  public List<String> getAllIndicesWithWriteAlias(final String indexName) {
     final String aliasNameWithPrefix =
-        getIndexNameService().getOptimizeIndexAliasForIndex(externalProcessVariableIndexName);
+        getIndexNameService().getOptimizeIndexAliasForIndex(indexName);
     return databaseTestService.getAllIndicesWithWriteAlias(aliasNameWithPrefix);
+  }
+
+  public void deleteAllDocumentsInIndex(String optimizeIndexAliasForIndex) {
+    databaseTestService.deleteAllDocumentsInIndex(optimizeIndexAliasForIndex);
+  }
+
+  public void insertTestDocuments(int amount, String indexName, String documentContentAsJson)
+      throws IOException {
+    databaseTestService.insertTestDocuments(amount, indexName, documentContentAsJson);
+  }
+
+  public void performLowLevelBulkRequest(String methodName, String endpoint, String bulkPayload)
+      throws IOException {
+    databaseTestService.performLowLevelBulkRequest(methodName, endpoint, bulkPayload);
+  }
+
+  public void initSchema(
+      List<IndexMappingCreator<XContentBuilder>> mappingCreators,
+      DatabaseMetadataService metadataService) {
+    databaseTestService.initSchema(mappingCreators, metadataService);
+  }
+
+  public Map<String, ?> getMappingFields(final String indexName) throws IOException {
+    return databaseTestService.getMappingFields(indexName);
+  }
+
+  public boolean indexExists(String versionedIndexName, Boolean addMappingFeatures) {
+    return databaseTestService.indexExists(versionedIndexName, addMappingFeatures);
+  }
+
+  public void createIndex(
+      final String optimizeIndexNameWithVersion,
+      final String optimizeIndexAliasForIndex,
+      DefaultIndexMappingCreator mapping,
+      Boolean isWriteIndex)
+      throws IOException {
+    createIndex(
+        optimizeIndexNameWithVersion, Map.of(optimizeIndexAliasForIndex, isWriteIndex), mapping);
+  }
+
+  public void createIndex(
+      final String optimizeIndexNameWithVersion,
+      final Map<String, Boolean> aliases,
+      DefaultIndexMappingCreator mapping)
+      throws IOException {
+    databaseTestService.createIndex(optimizeIndexNameWithVersion, aliases, mapping);
+  }
+
+  public boolean templateExists(String optimizeIndexTemplateNameWithVersion) throws IOException {
+    return databaseTestService.templateExists(optimizeIndexTemplateNameWithVersion);
+  }
+
+  public boolean isAliasReadOnly(String readOnlyAliasForIndex) throws IOException {
+    return databaseTestService.isAliasReadOnly(readOnlyAliasForIndex);
   }
 }

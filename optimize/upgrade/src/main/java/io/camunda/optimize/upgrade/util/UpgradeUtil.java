@@ -30,12 +30,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class UpgradeUtil {
 
-  public static UpgradeExecutionDependencies createUpgradeDependencies() {
-    return createUpgradeDependenciesWithAdditionalConfigLocation((String[]) null);
+  public static UpgradeExecutionDependencies createUpgradeDependencies(DatabaseType databaseType) {
+    return createUpgradeDependenciesWithAdditionalConfigLocation(databaseType, (String[]) null);
   }
 
   public static UpgradeExecutionDependencies createUpgradeDependenciesWithAdditionalConfigLocation(
-      final String... configLocations) {
+      final DatabaseType databaseType, final String... configLocations) {
     final ConfigurationService configurationService;
     if (configLocations == null || configLocations.length == 0) {
       configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
@@ -44,11 +44,11 @@ public class UpgradeUtil {
           ConfigurationServiceBuilder.createConfigurationWithDefaultAndAdditionalLocations(
               configLocations);
     }
-    return createUpgradeDependenciesWithAConfigurationService(configurationService);
+    return createUpgradeDependenciesWithAConfigurationService(databaseType, configurationService);
   }
 
   public static UpgradeExecutionDependencies createUpgradeDependenciesWithAConfigurationService(
-      final ConfigurationService configurationService) {
+      final DatabaseType databaseType, final ConfigurationService configurationService) {
     final OptimizeIndexNameService indexNameService =
         new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH);
     final OptimizeElasticsearchClient esClient =
@@ -60,7 +60,12 @@ public class UpgradeUtil {
     final ElasticSearchMetadataService metadataService =
         new ElasticSearchMetadataService(OPTIMIZE_MAPPER);
     return new UpgradeExecutionDependencies(
-        configurationService, indexNameService, esClient, OPTIMIZE_MAPPER, metadataService);
+        databaseType,
+        configurationService,
+        indexNameService,
+        esClient,
+        OPTIMIZE_MAPPER,
+        metadataService);
   }
 
   public static String readClasspathFileAsString(final String filePath) {

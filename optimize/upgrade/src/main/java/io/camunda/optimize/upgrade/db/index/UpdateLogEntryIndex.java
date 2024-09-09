@@ -20,8 +20,8 @@ import org.elasticsearch.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UpdateLogEntryIndex extends DefaultIndexMappingCreator<XContentBuilder> {
-
+public abstract class UpdateLogEntryIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
+  public static final String INDEX_NAME = "update-log";
   public static final int VERSION = 1;
 
   @Override
@@ -54,11 +54,5 @@ public class UpdateLogEntryIndex extends DefaultIndexMappingCreator<XContentBuil
         .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
         .endObject();
     // @formatter:on
-  }
-
-  @Override
-  public XContentBuilder addStaticSetting(
-      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
-    return contentBuilder.field(key, value);
   }
 }

@@ -15,21 +15,23 @@ import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.c
 import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.getTaskResponse;
 import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.validateTaskResponse;
+import static io.camunda.optimize.service.db.schema.OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
+import io.camunda.optimize.service.db.DatabaseQueryWrapper;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
-import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.service.util.configuration.DatabaseType;
+import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
 import io.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto.Fields;
 import java.io.IOException;
@@ -40,6 +42,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Matcher;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -59,7 +62,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
-import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.AbstractQueryBuilder;
 import org.elasticsearch.index.reindex.AbstractBulkByScrollRequest;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
@@ -67,39 +70,36 @@ import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.tasks.TaskInfo;
+import org.elasticsearch.xcontent.XContentBuilder;
 import org.elasticsearch.xcontent.XContentType;
 
+@Getter
 @Slf4j
-public class SchemaUpgradeClient {
-  private final ElasticSearchSchemaManager schemaManager;
-  private final ElasticSearchMetadataService metadataService;
-  private final OptimizeElasticsearchClient elasticsearchClient;
-  @Getter private final ObjectMapper objectMapper;
+public class SchemaUpgradeClientES
+    extends SchemaUpgradeClient<OptimizeElasticsearchClient, XContentBuilder> {
+  private final ObjectMapper objectMapper;
 
-  public SchemaUpgradeClient(
+  public SchemaUpgradeClientES(
       final ElasticSearchSchemaManager schemaManager,
       final ElasticSearchMetadataService metadataService,
       final OptimizeElasticsearchClient elasticsearchClient,
       final ObjectMapper objectMapper) {
-    this.schemaManager = schemaManager;
-    this.metadataService = metadataService;
-    this.elasticsearchClient = elasticsearchClient;
+    super(schemaManager, metadataService, DatabaseType.ELASTICSEARCH, elasticsearchClient);
     this.objectMapper = objectMapper;
   }
 
-  public Optional<String> getSchemaVersion() {
-    return metadataService.getSchemaVersion(elasticsearchClient);
-  }
-
+  @Override
   public void reindex(final String sourceIndex, final String targetIndex) {
-    this.reindex(sourceIndex, targetIndex, null, Collections.emptyMap());
+    reindex(sourceIndex, targetIndex, null, Collections.emptyMap());
   }
 
+  @Override
   public void reindex(
-      final IndexMappingCreator sourceIndex,
-      final IndexMappingCreator targetIndex,
-      final QueryBuilder sourceDocumentFilterQuery,
+      final IndexMappingCreator<XContentBuilder> sourceIndex,
+      final IndexMappingCreator<XContentBuilder> targetIndex,
+      final DatabaseQueryWrapper queryWrapper,
       final String mappingScript) {
+    final AbstractQueryBuilder<?> sourceDocumentFilterQuery = queryWrapper.esQuery();
     final ReindexRequest reindexRequest =
         createReindexRequest(
             getIndexNameService().getOptimizeIndexNameWithVersion(sourceIndex),
@@ -114,6 +114,7 @@ public class SchemaUpgradeClient {
     waitUntilTaskIsFinished(reindexTaskId, targetIndex.getIndexName());
   }
 
+  @Override
   public void reindex(
       final String sourceIndex,
       final String targetIndex,
@@ -143,9 +144,10 @@ public class SchemaUpgradeClient {
     }
   }
 
+  @Override
   public <T> void upsert(final String index, final String id, final T documentDto) {
     try {
-      elasticsearchClient.update(
+      databaseClient.update(
           new UpdateRequest(index, id)
               .doc(objectMapper.writeValueAsString(documentDto), XContentType.JSON)
               .docAsUpsert(true));
@@ -156,10 +158,11 @@ public class SchemaUpgradeClient {
     }
   }
 
+  @Override
   public <T> Optional<T> getDocumentByIdAs(
       final String index, final String id, final Class<T> resultType) {
     try {
-      final GetResponse getResponse = elasticsearchClient.get(new GetRequest(index, id));
+      final GetResponse getResponse = databaseClient.get(new GetRequest(index, id));
       return getResponse.isSourceEmpty()
           ? Optional.empty()
           : Optional.ofNullable(
@@ -171,6 +174,7 @@ public class SchemaUpgradeClient {
     }
   }
 
+  @Override
   public List<UpgradeStepLogEntryDto> getAppliedUpdateStepsForTargetVersion(
       final String targetOptimizeVersion) {
     SearchResponse searchResponse;
@@ -180,7 +184,7 @@ public class SchemaUpgradeClient {
               .query(boolQuery().must(termQuery(Fields.optimizeVersion, targetOptimizeVersion)))
               .size(LIST_FETCH_LIMIT);
       searchResponse =
-          elasticsearchClient.search(
+          databaseClient.search(
               new SearchRequest(UPDATE_LOG_ENTRY_INDEX_NAME).source(searchSourceBuilder));
     } catch (IOException e) {
       String reason =
@@ -195,10 +199,11 @@ public class SchemaUpgradeClient {
         searchResponse.getHits(), UpgradeStepLogEntryDto.class, objectMapper);
   }
 
+  @Override
   public boolean indexExists(final String indexName) {
     log.debug("Checking if index exists [{}].", indexName);
     try {
-      return elasticsearchClient.exists(indexName);
+      return databaseClient.exists(indexName);
     } catch (Exception e) {
       String errorMessage =
           String.format("Could not validate whether index [%s] exists!", indexName);
@@ -206,10 +211,11 @@ public class SchemaUpgradeClient {
     }
   }
 
+  @Override
   public void deleteIndexIfExists(final String indexName) {
     if (indexExists(indexName)) {
       try {
-        elasticsearchClient.deleteIndexByRawIndexNames(indexName);
+        databaseClient.deleteIndexByRawIndexNames(indexName);
       } catch (Exception e) {
         String errorMessage = String.format("Could not delete index [%s]!", indexName);
         throw new UpgradeRuntimeException(errorMessage, e);
@@ -217,10 +223,11 @@ public class SchemaUpgradeClient {
     }
   }
 
+  @Override
   public boolean indexTemplateExists(final String indexTemplateName) {
     log.debug("Checking if index template exists [{}].", indexTemplateName);
     try {
-      return elasticsearchClient.templateExists(indexTemplateName);
+      return databaseClient.templateExists(indexTemplateName);
     } catch (Exception e) {
       String errorMessage =
           String.format(
@@ -229,11 +236,12 @@ public class SchemaUpgradeClient {
     }
   }
 
+  @Override
   public void deleteTemplateIfExists(final String indexTemplateName) {
     if (indexTemplateExists(indexTemplateName)) {
       try {
         log.debug("Deleting index template [{}]", indexTemplateName);
-        elasticsearchClient.deleteIndexTemplateByIndexTemplateName(indexTemplateName);
+        databaseClient.deleteIndexTemplateByIndexTemplateName(indexTemplateName);
       } catch (Exception e) {
         String errorMessage =
             String.format("Could not delete index template [%s]!", indexTemplateName);
@@ -246,35 +254,11 @@ public class SchemaUpgradeClient {
     }
   }
 
-  public void createOrUpdateTemplateWithoutAliases(final IndexMappingCreator mappingCreator) {
-    schemaManager.createOrUpdateTemplateWithoutAliases(elasticsearchClient, mappingCreator);
-  }
-
-  public void createOrUpdateIndex(final IndexMappingCreator indexMapping) {
-    schemaManager.createOrUpdateOptimizeIndex(elasticsearchClient, indexMapping);
-  }
-
-  public void createOrUpdateIndex(
-      final IndexMappingCreator indexMapping, final Set<String> readOnlyAliases) {
-    schemaManager.createOrUpdateOptimizeIndex(elasticsearchClient, indexMapping, readOnlyAliases);
-  }
-
-  public void initializeSchema() {
-    schemaManager.initializeSchema(elasticsearchClient);
-  }
-
-  public void updateOptimizeVersion(final UpgradePlan upgradePlan) {
-    log.info(
-        "Updating Optimize Elasticsearch data structure version tag from {} to {}.",
-        upgradePlan.getFromVersion().toString(),
-        upgradePlan.getToVersion().toString());
-    metadataService.upsertMetadata(elasticsearchClient, upgradePlan.getToVersion().toString());
-  }
-
+  @Override
   public void createIndexFromTemplate(final String indexNameWithSuffix) {
     CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexNameWithSuffix);
     try {
-      elasticsearchClient.createIndex(createIndexRequest);
+      databaseClient.createIndex(createIndexRequest);
     } catch (ElasticsearchStatusException e) {
       if (e.status() == RestStatus.BAD_REQUEST
           && e.getMessage().contains(INDEX_ALREADY_EXISTS_EXCEPTION_TYPE)) {
@@ -289,36 +273,27 @@ public class SchemaUpgradeClient {
     }
   }
 
-  public void setAllAliasesToReadOnly(final String indexName, final Set<AliasMetadata> aliases) {
-    log.debug("Setting all aliases pointing to {} to readonly.", indexName);
-
-    final String[] aliasNames = aliases.stream().map(AliasMetadata::alias).toArray(String[]::new);
-    try {
-      final IndicesAliasesRequest indicesAliasesRequest = new IndicesAliasesRequest();
-      final AliasActions removeAllAliasesAction =
-          new AliasActions(AliasActions.Type.REMOVE).index(indexName).aliases(aliasNames);
-      final AliasActions addReadOnlyAliasAction =
-          new AliasActions(AliasActions.Type.ADD)
-              .index(indexName)
-              .writeIndex(false)
-              .aliases(aliasNames);
-      indicesAliasesRequest.addAliasAction(removeAllAliasesAction);
-      indicesAliasesRequest.addAliasAction(addReadOnlyAliasAction);
-
-      getHighLevelRestClient()
-          .indices()
-          .updateAliases(indicesAliasesRequest, elasticsearchClient.requestOptions());
-    } catch (Exception e) {
-      String errorMessage = String.format("Could not add alias to index [%s]!", indexName);
-      throw new UpgradeRuntimeException(errorMessage, e);
-    }
-  }
-
+  @Override
   public void addAlias(
       final String indexAlias, final String completeIndexName, final boolean isWriteAlias) {
     addAliases(Collections.singleton(indexAlias), completeIndexName, isWriteAlias);
   }
 
+  @Override
+  public void updateIndex(
+      final IndexMappingCreator<XContentBuilder> indexMapping,
+      final String mappingScript,
+      final Map<String, Object> parameters,
+      final Set<String> additionalReadAliases) {
+    if (indexMapping.isCreateFromTemplate()) {
+      updateIndexTemplateAndAssociatedIndexes(
+          indexMapping, mappingScript, parameters, additionalReadAliases);
+    } else {
+      migrateSingleIndex(indexMapping, mappingScript, parameters, additionalReadAliases);
+    }
+  }
+
+  @Override
   public void addAliases(
       final Set<String> indexAliases, final String completeIndexName, final boolean isWriteAlias) {
     log.debug("Adding aliases [{}] to index [{}].", indexAliases, completeIndexName);
@@ -333,51 +308,28 @@ public class SchemaUpgradeClient {
       indicesAliasesRequest.addAliasAction(aliasAction);
       getHighLevelRestClient()
           .indices()
-          .updateAliases(indicesAliasesRequest, elasticsearchClient.requestOptions());
+          .updateAliases(indicesAliasesRequest, databaseClient.requestOptions());
     } catch (Exception e) {
       String errorMessage = String.format("Could not add alias to index [%s]!", completeIndexName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }
 
-  public Map<String, Set<AliasMetadata>> getAliasMap(final String aliasName) {
-    GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasName);
-    try {
-      return getHighLevelRestClient()
-          .indices()
-          .getAlias(aliasesRequest, elasticsearchClient.requestOptions())
-          .getAliases();
-    } catch (Exception e) {
-      String message = String.format("Could not retrieve alias map for alias {%s}.", aliasName);
-      throw new OptimizeRuntimeException(message, e);
-    }
-  }
-
-  public void insertDataByIndexName(final IndexMappingCreator indexMapping, final String data) {
-    final String aliasName = getIndexNameService().getOptimizeIndexAliasForIndex(indexMapping);
-    log.debug("Inserting data to indexAlias [{}]. Data payload is [{}]", aliasName, data);
-    try {
-      final IndexRequest indexRequest = new IndexRequest(aliasName);
-      indexRequest.source(data, XContentType.JSON);
-      indexRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-      getHighLevelRestClient().index(indexRequest, elasticsearchClient.requestOptions());
-    } catch (Exception e) {
-      String errorMessage = String.format("Could not add data to indexAlias [%s]!", aliasName);
-      throw new UpgradeRuntimeException(errorMessage, e);
-    }
-  }
-
+  @Override
   public void updateDataByIndexName(
-      final IndexMappingCreator indexMapping,
-      final QueryBuilder query,
-      final String updateScript,
-      final Map<String, Object> parameters) {
+      IndexMappingCreator<XContentBuilder> indexMapping,
+      DatabaseQueryWrapper queryWrapper,
+      String updateScript,
+      Map<String, Object> parameters) {
     final String aliasName = getIndexNameService().getOptimizeIndexAliasForIndex(indexMapping);
     log.debug(
-        "Updating data on [{}] using script [{}] and query [{}].", aliasName, updateScript, query);
+        "Updating data on [{}] using script [{}] and query [{}].",
+        aliasName,
+        updateScript,
+        queryWrapper.esQuery());
     final UpdateByQueryRequest request = new UpdateByQueryRequest(aliasName);
     request.setRefresh(true);
-    request.setQuery(query);
+    request.setQuery(queryWrapper.esQuery());
     request.setScript(
         createDefaultScriptWithSpecificDtoParams(updateScript, parameters, objectMapper));
 
@@ -388,8 +340,39 @@ public class SchemaUpgradeClient {
         String -> submitUpdateTask(request));
   }
 
+  public Map<String, Set<AliasMetadata>> getAliasMap(final String aliasName) {
+    GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasName);
+    try {
+      return getHighLevelRestClient()
+          .indices()
+          .getAlias(aliasesRequest, databaseClient.requestOptions())
+          .getAliases();
+    } catch (Exception e) {
+      String message = String.format("Could not retrieve alias map for alias {%s}.", aliasName);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  @Override
+  public void insertDataByIndexName(final IndexMappingCreator indexMapping, final String data) {
+    final String aliasName = getIndexNameService().getOptimizeIndexAliasForIndex(indexMapping);
+    log.debug("Inserting data to indexAlias [{}]. Data payload is [{}]", aliasName, data);
+    try {
+      final IndexRequest indexRequest = new IndexRequest(aliasName);
+      indexRequest.source(data, XContentType.JSON);
+      indexRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+      getHighLevelRestClient().index(indexRequest, databaseClient.requestOptions());
+    } catch (Exception e) {
+      String errorMessage = String.format("Could not add data to indexAlias [%s]!", aliasName);
+      throw new UpgradeRuntimeException(errorMessage, e);
+    }
+  }
+
+  @Override
   public void deleteDataByIndexName(
-      final IndexMappingCreator indexMapping, final QueryBuilder query) {
+      final IndexMappingCreator<XContentBuilder> indexMapping,
+      final DatabaseQueryWrapper queryWrapper) {
+    final AbstractQueryBuilder<?> query = queryWrapper.esQuery();
     final String aliasName = getIndexNameService().getOptimizeIndexAliasForIndex(indexMapping);
     log.debug("Deleting data on [{}] with query [{}].", aliasName, query);
 
@@ -404,8 +387,9 @@ public class SchemaUpgradeClient {
         String -> submitDeleteTask(request));
   }
 
+  @Override
   public void updateIndexDynamicSettingsAndMappings(final IndexMappingCreator indexMapping) {
-    schemaManager.updateDynamicSettingsAndMappings(elasticsearchClient, indexMapping);
+    schemaManager.updateDynamicSettingsAndMappings(databaseClient, indexMapping);
   }
 
   public Set<AliasMetadata> getAllAliasesForIndex(final String indexName) {
@@ -414,7 +398,7 @@ public class SchemaUpgradeClient {
       return new HashSet<>(
           getHighLevelRestClient()
               .indices()
-              .getAlias(getAliasesRequest, elasticsearchClient.requestOptions())
+              .getAlias(getAliasesRequest, databaseClient.requestOptions())
               .getAliases()
               .getOrDefault(indexName, Sets.newHashSet()));
     } catch (Exception e) {
@@ -423,20 +407,16 @@ public class SchemaUpgradeClient {
     }
   }
 
-  public OptimizeIndexNameService getIndexNameService() {
-    return elasticsearchClient.getIndexNameService();
-  }
-
   private RestHighLevelClient getHighLevelRestClient() {
-    return elasticsearchClient.getHighLevelClient();
+    return databaseClient.getHighLevelClient();
   }
 
   private boolean areDocCountsEqual(final String sourceIndex, final String targetIndex) {
     try {
       final long sourceIndexDocCount =
-          elasticsearchClient.countWithoutPrefix(new CountRequest(sourceIndex));
+          databaseClient.countWithoutPrefix(new CountRequest(sourceIndex));
       final long targetIndexDocCount =
-          elasticsearchClient.countWithoutPrefix(new CountRequest(targetIndex));
+          databaseClient.countWithoutPrefix(new CountRequest(targetIndex));
       return sourceIndexDocCount == targetIndexDocCount;
     } catch (Exception e) {
       final String errorMessage =
@@ -492,7 +472,7 @@ public class SchemaUpgradeClient {
       final T request, final String taskAction) {
     try {
       final ListTasksResponse tasksResponse =
-          elasticsearchClient.getTaskList(
+          databaseClient.getTaskList(
               new ListTasksRequest().setDetailed(true).setActions(taskAction));
       return tasksResponse.getTasks().stream()
           .filter(
@@ -518,7 +498,7 @@ public class SchemaUpgradeClient {
 
   private String submitReindexTask(final ReindexRequest reindexRequest) {
     try {
-      return elasticsearchClient.submitReindexTask(reindexRequest).getTask();
+      return databaseClient.submitReindexTask(reindexRequest).getTask();
     } catch (IOException ex) {
       throw new UpgradeRuntimeException("Could not submit reindex task");
     }
@@ -526,7 +506,7 @@ public class SchemaUpgradeClient {
 
   private String submitUpdateTask(final UpdateByQueryRequest request) {
     try {
-      return elasticsearchClient.submitUpdateTask(request).getTask();
+      return databaseClient.submitUpdateTask(request).getTask();
     } catch (IOException ex) {
       throw new UpgradeRuntimeException("Could not submit update task");
     }
@@ -534,7 +514,7 @@ public class SchemaUpgradeClient {
 
   private String submitDeleteTask(final DeleteByQueryRequest request) {
     try {
-      return elasticsearchClient.submitDeleteTask(request).getTask();
+      return databaseClient.submitDeleteTask(request).getTask();
     } catch (IOException ex) {
       throw new UpgradeRuntimeException("Could not submit delete task");
     }
@@ -542,7 +522,7 @@ public class SchemaUpgradeClient {
 
   private void waitUntilTaskIsFinished(final String taskId, final String taskIdentifier) {
     try {
-      ElasticsearchWriterUtil.waitUntilTaskIsFinished(elasticsearchClient, taskId, taskIdentifier);
+      ElasticsearchWriterUtil.waitUntilTaskIsFinished(databaseClient, taskId, taskIdentifier);
     } catch (OptimizeRuntimeException e) {
       throw new UpgradeRuntimeException(e.getCause().getMessage(), e);
     }
@@ -551,7 +531,7 @@ public class SchemaUpgradeClient {
   private void validateStatusOfPendingTask(final String reindexTaskId)
       throws UpgradeRuntimeException, IOException {
     try {
-      validateTaskResponse(getTaskResponse(elasticsearchClient, reindexTaskId));
+      validateTaskResponse(getTaskResponse(databaseClient, reindexTaskId));
     } catch (OptimizeRuntimeException ex) {
       throw new UpgradeRuntimeException(
           String.format(
@@ -572,5 +552,143 @@ public class SchemaUpgradeClient {
           0, descriptionString.length() - ELASTICSEARCH_TASK_DESCRIPTION_DOC_SUFFIX.length());
     }
     return descriptionString;
+  }
+
+  private void updateIndexTemplateAndAssociatedIndexes(
+      final IndexMappingCreator<XContentBuilder> index,
+      final String mappingScript,
+      final Map<String, Object> parameters,
+      final Set<String> additionalReadAliases) {
+    final String indexAlias = getIndexAlias(index);
+    final String sourceTemplateName = getSourceIndexOrTemplateName(index, indexAlias);
+    // create new template & indices and reindex data to it
+    createOrUpdateTemplateWithoutAliases(index);
+    final Set<String> indexAliases = getAliases(indexAlias);
+    // this ensures the migration happens in a consistent order
+    final List<String> sortedIndices =
+        indexAliases.stream()
+            // we are only interested in indices based on the source template
+            // in resumed update scenarios this could also contain indices based on the
+            // targetTemplateName already
+            // which we don't need to care about
+            .filter(indexName -> indexName.contains(sourceTemplateName))
+            .sorted()
+            .toList();
+    for (final String sourceIndex : sortedIndices) {
+      final String suffix;
+      final Matcher suffixMatcher = indexSuffixPattern.matcher(sourceIndex);
+      if (suffixMatcher.find()) {
+        // sourceIndex is already suffixed
+        suffix = sourceIndex.substring(sourceIndex.lastIndexOf("-"));
+      } else {
+        // sourceIndex is not yet suffixed, use default suffix
+        suffix = index.getIndexNameInitialSuffix();
+      }
+
+      final String targetIndexName =
+          getIndexNameService().getOptimizeIndexTemplateNameWithVersion(index) + suffix;
+
+      final Set<AliasMetadata> existingAliases = getAllAliasesForIndex(sourceIndex);
+      setAllAliasesToReadOnly(sourceIndex, existingAliases);
+      createIndexFromTemplate(targetIndexName);
+      reindex(sourceIndex, targetIndexName, mappingScript, parameters);
+      applyAliasesToIndex(targetIndexName, existingAliases);
+      applyAdditionalReadOnlyAliasesToIndex(additionalReadAliases, targetIndexName);
+      // for rolled over indices only the last one is eligible as writeIndex
+      if (sortedIndices.indexOf(sourceIndex) == sortedIndices.size() - 1) {
+        // in case of retries it might happen that the default write index flag is overwritten as
+        // the source index
+        // was already set to be a read-only index for all associated indices
+        addAlias(indexAlias, targetIndexName, true);
+      }
+      deleteIndexIfExists(sourceIndex);
+      deleteTemplateIfExists(sourceTemplateName);
+    }
+  }
+
+  private void migrateSingleIndex(
+      final IndexMappingCreator<XContentBuilder> index,
+      final String mappingScript,
+      final Map<String, Object> parameters,
+      final Set<String> additionalReadAliases) {
+    final String indexAlias = getIndexAlias(index);
+    final String sourceIndexName = getSourceIndexOrTemplateName(index, indexAlias);
+    final String targetIndexName = getIndexNameService().getOptimizeIndexNameWithVersion(index);
+    if (!indexExists(sourceIndexName)) {
+      // if the expected source index is not available anymore there are only two possibilities:
+      // 1. it never existed (unexpected edge-case)
+      // 2. a previous upgrade run completed this step already
+      // in both cases we can try to create/update the target index in a fail-safe way
+      log.info(
+          "Source index {} was not found, will just create/update the new index {}.",
+          sourceIndexName,
+          targetIndexName);
+      createOrUpdateIndex(index);
+    } else {
+      // create new index and reindex data to it
+      final Set<AliasMetadata> existingAliases = getAllAliasesForIndex(sourceIndexName);
+      setAllAliasesToReadOnly(sourceIndexName, existingAliases);
+      createOrUpdateIndex(index);
+      reindex(sourceIndexName, targetIndexName, mappingScript, parameters);
+      applyAliasesToIndex(targetIndexName, existingAliases);
+      applyAdditionalReadOnlyAliasesToIndex(additionalReadAliases, targetIndexName);
+      // in case of retries it might happen that the default write index flag is overwritten as the
+      // source index
+      // was already set to be a read-only index for all associated indices
+      addAlias(indexAlias, targetIndexName, true);
+      deleteIndexIfExists(sourceIndexName);
+    }
+  }
+
+  private String getIndexAlias(final IndexMappingCreator<XContentBuilder> index) {
+    return getIndexNameService().getOptimizeIndexAliasForIndex(index.getIndexName());
+  }
+
+  private String getSourceIndexOrTemplateName(
+      final IndexMappingCreator<XContentBuilder> index, final String indexAlias) {
+    return getOptimizeIndexOrTemplateNameForAliasAndVersion(
+        indexAlias, String.valueOf(index.getVersion() - 1));
+  }
+
+  private void applyAliasesToIndex(final String indexName, final Set<AliasMetadata> aliases) {
+    for (AliasMetadata alias : aliases) {
+      addAlias(
+          alias.getAlias(),
+          indexName,
+          // defaulting to true if this flag is not set but only one index exists
+          Optional.ofNullable(alias.writeIndex()).orElse(aliases.size() == 1));
+    }
+  }
+
+  private void applyAdditionalReadOnlyAliasesToIndex(
+      final Set<String> additionalReadAliases, final String indexName) {
+    for (String alias : additionalReadAliases) {
+      addAlias(getIndexNameService().getOptimizeIndexAliasForIndex(alias), indexName, false);
+    }
+  }
+
+  private void setAllAliasesToReadOnly(final String indexName, final Set<AliasMetadata> aliases) {
+    log.debug("Setting all aliases pointing to {} to readonly.", indexName);
+
+    final String[] aliasNames = aliases.stream().map(AliasMetadata::alias).toArray(String[]::new);
+    try {
+      final IndicesAliasesRequest indicesAliasesRequest = new IndicesAliasesRequest();
+      final AliasActions removeAllAliasesAction =
+          new AliasActions(AliasActions.Type.REMOVE).index(indexName).aliases(aliasNames);
+      final AliasActions addReadOnlyAliasAction =
+          new AliasActions(AliasActions.Type.ADD)
+              .index(indexName)
+              .writeIndex(false)
+              .aliases(aliasNames);
+      indicesAliasesRequest.addAliasAction(removeAllAliasesAction);
+      indicesAliasesRequest.addAliasAction(addReadOnlyAliasAction);
+
+      getHighLevelRestClient()
+          .indices()
+          .updateAliases(indicesAliasesRequest, databaseClient.requestOptions());
+    } catch (Exception e) {
+      String errorMessage = String.format("Could not add alias to index [%s]!", indexName);
+      throw new UpgradeRuntimeException(errorMessage, e);
+    }
   }
 }

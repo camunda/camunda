@@ -121,6 +121,7 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
   private final String indexName;
 
   protected ProcessInstanceIndex(final String processInstanceIndexKey) {
+    super(processInstanceIndexKey);
     indexName = getIndexPrefix() + processInstanceIndexKey.toLowerCase(Locale.ENGLISH);
   }
 

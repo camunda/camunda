@@ -31,6 +31,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -340,6 +341,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   @Override
+  public void refresh(String indexPattern) {
+    getRichOpenSearchClient().index().refresh(indexPattern);
+  }
+
+  @Override
   public <T> long count(final String[] indexNames, final T query) throws IOException {
     return count(
         indexNames, query, "Could not execute count request for " + Arrays.toString(indexNames));
@@ -483,6 +489,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     final GetAliasRequest getAliasesRequest =
         new GetAliasRequest.Builder().index(convertToPrefixedAliasName(indexNamePattern)).build();
     return openSearchClient.indices().getAlias(getAliasesRequest);
+  }
+
+  @Override
+  public List<String> getAllIndexNames() throws IOException {
+    return new ArrayList<>(getRichOpenSearchClient().index().getIndexNamesWithRetries("*"));
   }
 
   public <T> long count(final String[] indexNames, final T query, final String errorMessage) {
@@ -852,6 +863,14 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     final Status taskStatus = richOpenSearchClient.task().task(taskId).response();
     log.debug("Deleted [{}] {}.", taskStatus.updated(), deleteItemIdentifier);
     return taskStatus.updated() > 0L;
+  }
+
+  @Override
+  public void deleteIndexByRawIndexNames(final String... indexNames) {
+    final String indexNamesString = Arrays.toString(indexNames);
+    log.debug("Deleting indices [{}].", indexNamesString);
+    richOpenSearchClient.index().deleteIndicesWithRetries(indexNames);
+    log.debug("Successfully deleted index [{}].", indexNamesString);
   }
 
   private void waitUntilTaskIsFinished(final String taskId, final String taskItemIdentifier) {

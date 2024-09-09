@@ -14,6 +14,7 @@ import static java.util.stream.Collectors.toSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
+import io.camunda.optimize.service.db.es.MappingMetadataUtilES;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.schema.index.AlertIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessKeyIndexES;
@@ -39,7 +40,6 @@ import io.camunda.optimize.service.db.es.schema.index.report.SingleDecisionRepor
 import io.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
 import io.camunda.optimize.service.db.schema.DatabaseSchemaManager;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
-import io.camunda.optimize.service.db.schema.MappingMetadataUtil;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -372,8 +372,9 @@ public class ElasticSearchSchemaManager
       updateDynamicSettingsAndMappings(esClient, mapping);
     }
 
-    final List<IndexMappingCreator<?>> allDynamicMappings =
-        new MappingMetadataUtil(esClient).getAllDynamicMappings(indexNameService.getIndexPrefix());
+    final List<IndexMappingCreator<XContentBuilder>> allDynamicMappings =
+        new MappingMetadataUtilES(esClient)
+            .getAllDynamicMappings(indexNameService.getIndexPrefix());
     for (final IndexMappingCreator<?> mapping : allDynamicMappings) {
       updateDynamicSettingsAndMappings(esClient, (IndexMappingCreator<XContentBuilder>) mapping);
     }

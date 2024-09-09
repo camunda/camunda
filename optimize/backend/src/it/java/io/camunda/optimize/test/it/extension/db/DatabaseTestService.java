@@ -31,10 +31,14 @@ import io.camunda.optimize.dto.optimize.query.MetadataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.repository.IndexRepository;
+import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
+import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
+import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
@@ -54,6 +58,7 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
+import org.elasticsearch.xcontent.XContentBuilder;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
@@ -207,6 +212,12 @@ public abstract class DatabaseTestService {
   public abstract void createIndex(
       String optimizeIndexNameWithVersion, String optimizeIndexAliasForIndex) throws IOException;
 
+  public abstract void createIndex(
+      String optimizeIndexNameWithVersion,
+      Map<String, Boolean> aliases,
+      DefaultIndexMappingCreator mapping)
+      throws IOException;
+
   public abstract Optional<MetadataDto> readMetadata();
 
   public void cleanAndVerifyDatabase() {
@@ -215,7 +226,6 @@ public abstract class DatabaseTestService {
       deleteAllOptimizeData();
     } catch (final Exception e) {
       // nothing to do
-      log.error("can't clean optimize indexes", e);
     }
   }
 
@@ -285,4 +295,28 @@ public abstract class DatabaseTestService {
   public abstract Long getImportedActivityCount();
 
   public abstract List<String> getAllIndicesWithWriteAlias(String aliasNameWithPrefix);
+
+  public abstract VariableUpdateInstanceIndex getVariableUpdateInstanceIndex();
+
+  public abstract void deleteAllDocumentsInIndex(String optimizeIndexAliasForIndex);
+
+  public abstract void insertTestDocuments(int amount, String indexName, String jsonDocument)
+      throws IOException;
+
+  public abstract void performLowLevelBulkRequest(
+      String methodName, String endpoint, String bulkPayload) throws IOException;
+
+  public abstract void initSchema(
+      List<IndexMappingCreator<XContentBuilder>> mappingCreators,
+      DatabaseMetadataService metadataService);
+
+  public abstract Map<String, ? extends Object> getMappingFields(final String indexName)
+      throws IOException;
+
+  public abstract boolean indexExists(String versionedIndexName, Boolean addMappingFeatures);
+
+  public abstract boolean templateExists(String optimizeIndexTemplateNameWithVersion)
+      throws IOException;
+
+  public abstract boolean isAliasReadOnly(String readOnlyAliasForIndex) throws IOException;
 }

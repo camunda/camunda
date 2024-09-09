@@ -11,13 +11,6 @@ import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
-import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
-import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
-import io.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
-import io.camunda.optimize.service.db.os.schema.index.DecisionInstanceIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -27,38 +20,38 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class MappingMetadataUtil {
+public abstract class MappingMetadataUtil<BUILDER> {
 
   private final DatabaseClient dbClient;
-  private final boolean isElasticSearchClient;
 
   public MappingMetadataUtil(final DatabaseClient dbClient) {
     this.dbClient = dbClient;
-    isElasticSearchClient = dbClient instanceof OptimizeElasticsearchClient;
   }
 
-  public List<IndexMappingCreator<?>> getAllMappings(final String indexPrefix) {
-    final List<IndexMappingCreator<?>> allMappings = new ArrayList<>();
+  public List<IndexMappingCreator<BUILDER>> getAllMappings(final String indexPrefix) {
+    List<IndexMappingCreator<BUILDER>> allMappings = new ArrayList<>();
     allMappings.addAll(getAllNonDynamicMappings());
     allMappings.addAll(getAllDynamicMappings(indexPrefix));
     return allMappings;
   }
 
-  private Collection<? extends IndexMappingCreator<?>> getAllNonDynamicMappings() {
-    return isElasticSearchClient
-        ? ElasticSearchSchemaManager.getAllNonDynamicMappings()
-        : OpenSearchSchemaManager.getAllNonDynamicMappings();
-  }
-
-  public List<IndexMappingCreator<?>> getAllDynamicMappings(final String indexPrefix) {
-    final List<IndexMappingCreator<?>> dynamicMappings = new ArrayList<>();
+  public List<IndexMappingCreator<BUILDER>> getAllDynamicMappings(final String indexPrefix) {
+    List<IndexMappingCreator<BUILDER>> dynamicMappings = new ArrayList<>();
     dynamicMappings.addAll(retrieveAllProcessInstanceIndices(indexPrefix));
     dynamicMappings.addAll(retrieveAllDecisionInstanceIndices());
     return dynamicMappings;
   }
+
+  protected abstract DecisionInstanceIndex<BUILDER> getDecisionInstanceIndex(final String key);
+
+  protected abstract ProcessInstanceIndex<BUILDER> getProcessInstanceIndex(final String key);
+
+  protected abstract Collection<? extends IndexMappingCreator<BUILDER>> getAllNonDynamicMappings();
 
   public List<String> retrieveProcessInstanceIndexIdentifiers(final String configuredIndexPrefix) {
     final Map<String, Set<String>> aliases;
@@ -79,25 +72,16 @@ public class MappingMetadataUtil {
         .toList();
   }
 
-  private List<? extends DecisionInstanceIndex<?>> retrieveAllDecisionInstanceIndices() {
-    return retrieveAllDynamicIndexKeysForPrefix(DECISION_INSTANCE_INDEX_PREFIX).stream()
-        .map(
-            key ->
-                isElasticSearchClient
-                    ? new DecisionInstanceIndexES(key)
-                    : new DecisionInstanceIndexOS(key))
-        .toList();
+  private List<DecisionInstanceIndex<BUILDER>> retrieveAllDecisionInstanceIndices() {
+    return extractIndicesToClass(
+        () -> retrieveAllDynamicIndexKeysForPrefix(DECISION_INSTANCE_INDEX_PREFIX),
+        this::getDecisionInstanceIndex);
   }
 
-  private List<? extends ProcessInstanceIndex<?>> retrieveAllProcessInstanceIndices(
+  private List<ProcessInstanceIndex<BUILDER>> retrieveAllProcessInstanceIndices(
       final String indexPrefix) {
-    return retrieveProcessInstanceIndexIdentifiers(indexPrefix).stream()
-        .map(
-            key ->
-                isElasticSearchClient
-                    ? new ProcessInstanceIndexES(key)
-                    : new ProcessInstanceIndexOS(key))
-        .toList();
+    return extractIndicesToClass(
+        () -> retrieveProcessInstanceIndexIdentifiers(indexPrefix), this::getProcessInstanceIndex);
   }
 
   private List<String> retrieveAllDynamicIndexKeysForPrefix(final String dynamicIndexPrefix) {
@@ -112,5 +96,11 @@ public class MappingMetadataUtil {
       throw new OptimizeRuntimeException(
           "Failed retrieving aliases for dynamic index prefix " + dynamicIndexPrefix, e);
     }
+  }
+
+  private <T> List<T> extractIndicesToClass(
+      final Supplier<List<String>> defKeySupplier,
+      final Function<String, T> convertKeyToIndexFunction) {
+    return defKeySupplier.get().stream().map(convertKeyToIndexFunction).toList();
   }
 }

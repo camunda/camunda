@@ -8,9 +8,9 @@
 package io.camunda.optimize.upgrade.service;
 
 import static io.camunda.optimize.service.metadata.Version.getMajorAndMinor;
-import static io.camunda.optimize.service.util.DatabaseVersionChecker.checkESVersionSupport;
+import static io.camunda.optimize.service.util.DatabaseVersionChecker.checkDatabaseVersionSupported;
 
-import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,10 +42,9 @@ public class UpgradeValidationService {
     }
   }
 
-  public void validateESVersion(
-      final OptimizeElasticsearchClient restClient, final String toVersion) {
+  public void validateDatabaseVersion(final DatabaseClient dbClient, final String toVersion) {
     try {
-      checkESVersionSupport(restClient.getHighLevelClient(), restClient.requestOptions());
+      checkDatabaseVersionSupported(dbClient.getDatabaseVersion(), dbClient.getDatabaseVendor());
     } catch (Exception e) {
       String errorMessage =
           "It was not possible to upgrade Optimize to version "

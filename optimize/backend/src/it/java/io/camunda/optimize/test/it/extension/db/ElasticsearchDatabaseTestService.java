@@ -21,9 +21,11 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.P
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
+import static io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static io.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
+import static io.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -46,16 +48,21 @@ import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
+import io.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
+import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
+import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
+import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
+import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.DatabaseHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -72,6 +79,7 @@ import java.lang.module.ModuleDescriptor;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -83,6 +91,9 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.nio.entity.NStringEntity;
 import org.apache.tika.utils.StringUtils;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
@@ -98,11 +109,15 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.GetMappingsRequest;
+import org.elasticsearch.client.indices.GetMappingsResponse;
+import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
@@ -341,6 +356,24 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     getOptimizeElasticClient().deleteIndexByRawIndexNames(indexNames);
   }
 
+  @Override
+  public void createIndex(
+      String indexName, Map<String, Boolean> aliases, DefaultIndexMappingCreator indexMapping)
+      throws IOException {
+    final Settings indexSettings = createIndexSettings(indexMapping, createConfigurationService());
+    final CreateIndexRequest request = new CreateIndexRequest(indexName);
+    for (Map.Entry<String, Boolean> alias : aliases.entrySet()) {
+      request.alias(new Alias(alias.getKey()).writeIndex(alias.getValue()));
+    }
+    request.settings(indexSettings);
+    request.mapping(indexMapping.getSource());
+    indexMapping.setDynamic("false");
+    getOptimizeElasticClient()
+        .getHighLevelClient()
+        .indices()
+        .create(request, getOptimizeElasticClient().requestOptions());
+  }
+
   @SneakyThrows
   @Override
   public void deleteIndicesStartingWithPrefix(final String term) {
@@ -490,7 +523,15 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public boolean indexExistsCheckWithApplyingOptimizePrefix(final String indexOrAliasName) {
+    return indexExists(indexOrAliasName, false);
+  }
+
+  @Override
+  public boolean indexExists(final String indexOrAliasName, Boolean addMappingFeatures) {
     final GetIndexRequest request = new GetIndexRequest(indexOrAliasName);
+    if (addMappingFeatures) {
+      request.features(GetIndexRequest.Feature.MAPPINGS);
+    }
     try {
       return getOptimizeElasticClient().exists(request);
     } catch (final IOException e) {
@@ -499,6 +540,27 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
               "Could not check if [%s] index already exist.", String.join(",", indexOrAliasName));
       throw new OptimizeRuntimeException(message, e);
     }
+  }
+
+  @Override
+  public boolean templateExists(String optimizeIndexTemplateNameWithVersion) throws IOException {
+    return getOptimizeElasticClient()
+        .getHighLevelClient()
+        .indices()
+        .existsTemplate(
+            new IndexTemplatesExistRequest(optimizeIndexTemplateNameWithVersion),
+            getOptimizeElasticClient().requestOptions());
+  }
+
+  @Override
+  public boolean isAliasReadOnly(String readOnlyAliasForIndex) throws IOException {
+    GetAliasesRequest aliasesRequest = new GetAliasesRequest(readOnlyAliasForIndex);
+    GetAliasesResponse aliases = getOptimizeElasticClient().getAlias(aliasesRequest);
+    return aliases.getAliases().values().stream()
+        .flatMap(Collection::stream)
+        .collect(Collectors.toSet())
+        .stream()
+        .noneMatch(AliasMetadata::writeIndex);
   }
 
   @Override
@@ -760,6 +822,11 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
         .toList();
   }
 
+  @Override
+  public VariableUpdateInstanceIndex getVariableUpdateInstanceIndex() {
+    return new VariableUpdateInstanceIndexES();
+  }
+
   public OptimizeIndexNameService getIndexNameService() {
     return getOptimizeElasticClient().getIndexNameService();
   }
@@ -953,5 +1020,90 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   private void deleteIndexOfMapping(final IndexMappingCreator<XContentBuilder> indexMapping) {
     getOptimizeElasticClient().deleteIndex(indexMapping);
+  }
+
+  private Settings createIndexSettings(
+      final IndexMappingCreator indexMappingCreator, ConfigurationService configurationService) {
+    try {
+      return ElasticSearchIndexSettingsBuilder.buildAllSettings(
+          configurationService, indexMappingCreator);
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not create index settings");
+    }
+  }
+
+  @Override
+  public void deleteAllDocumentsInIndex(String optimizeIndexAliasForIndex) {
+    final DeleteByQueryRequest request =
+        new DeleteByQueryRequest(optimizeIndexAliasForIndex)
+            .setQuery(matchAllQuery())
+            .setRefresh(true);
+
+    try {
+      getOptimizeElasticClient()
+          .getHighLevelClient()
+          .deleteByQuery(request, getOptimizeElasticClient().requestOptions());
+    } catch (final IOException | ElasticsearchStatusException e) {
+      throw new OptimizeIntegrationTestException(
+          "Could not delete data in index " + optimizeIndexAliasForIndex, e);
+    }
+  }
+
+  @Override
+  public void insertTestDocuments(int amount, String indexName, String jsonDocument)
+      throws IOException {
+    final BulkRequest bulkRequest = new BulkRequest();
+    for (int i = 0; i < amount; i++) {
+      bulkRequest.add(
+          new IndexRequest(indexName).source(String.format(jsonDocument, i), XContentType.JSON));
+    }
+    getOptimizeElasticClient().bulk(bulkRequest);
+    getOptimizeElasticClient().refresh(indexName);
+  }
+
+  @Override
+  public void performLowLevelBulkRequest(String methodName, String endpoint, String bulkPayload)
+      throws IOException {
+    final HttpEntity entity = new NStringEntity(bulkPayload, ContentType.APPLICATION_JSON);
+    final Request request = new Request(methodName, endpoint);
+    request.setEntity(entity);
+    getOptimizeElasticClient().getLowLevelClient().performRequest(request);
+  }
+
+  @Override
+  public void initSchema(
+      List<IndexMappingCreator<XContentBuilder>> mappingCreators,
+      DatabaseMetadataService metadataService) {
+    ElasticSearchSchemaManager schemaManager =
+        new ElasticSearchSchemaManager(
+            (ElasticSearchMetadataService) metadataService,
+            createDefaultConfiguration(),
+            getIndexNameService(),
+            mappingCreators);
+    schemaManager.initializeSchema(getOptimizeElasticClient());
+  }
+
+  @Override
+  public Map<String, ? extends Object> getMappingFields(final String indexName) throws IOException {
+    @SuppressWarnings(UNCHECKED_CAST)
+    GetMappingsRequest request = new GetMappingsRequest();
+    request.indices(indexName);
+
+    GetMappingsResponse getMappingResponse = getOptimizeElasticClient().getMapping(request);
+    final Object propertiesMap =
+        getMappingResponse.mappings().values().stream()
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new OptimizeRuntimeException(
+                        "There should be at least one mapping available for the index!"))
+            .getSourceAsMap()
+            .get("properties");
+    if (propertiesMap instanceof Map) {
+      return (Map<String, Object>) propertiesMap;
+    } else {
+      throw new OptimizeRuntimeException(
+          "ElasticSearch index mapping properties should be of type map");
+    }
   }
 }
