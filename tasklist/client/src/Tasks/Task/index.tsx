@@ -156,7 +156,7 @@ const Task: React.FC = observer(() => {
   }
 
   const isDeployedForm = typeof formId === 'string';
-  const isEmbeddedForm = typeof formKey === 'string' && !isDeployedForm;
+  const isEmbeddedForm = typeof formKey === 'string' && task.isFormEmbedded;
   if (isEmbeddedForm || isDeployedForm) {
     return (
       <FormJS
