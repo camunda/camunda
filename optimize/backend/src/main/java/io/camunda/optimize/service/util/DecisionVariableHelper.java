@@ -57,22 +57,15 @@ public class DecisionVariableHelper {
 
   public static String getVariableValueFieldForType(
       final String variablePath, final VariableType type) {
-    switch (Optional.ofNullable(type)
+    return switch (Optional.ofNullable(type)
         .orElseThrow(() -> new IllegalArgumentException("No Type provided"))) {
-      case BOOLEAN:
-      case STRING:
-        return getVariableValueField(variablePath);
-      case DOUBLE:
-        return getVariableValueField(variablePath) + "." + MULTIVALUE_FIELD_DOUBLE;
-      case SHORT:
-      case INTEGER:
-      case LONG:
-        return getVariableValueField(variablePath) + "." + MULTIVALUE_FIELD_LONG;
-      case DATE:
-        return getVariableValueField(variablePath) + "." + MULTIVALUE_FIELD_DATE;
-      default:
-        throw new IllegalArgumentException("Unhandled type: " + type);
-    }
+      case BOOLEAN, STRING, OBJECT -> getVariableValueField(variablePath);
+      case DOUBLE -> getVariableValueField(variablePath) + "." + MULTIVALUE_FIELD_DOUBLE;
+      case SHORT, INTEGER, LONG ->
+          getVariableValueField(variablePath) + "." + MULTIVALUE_FIELD_LONG;
+      case DATE -> getVariableValueField(variablePath) + "." + MULTIVALUE_FIELD_DATE;
+      default -> throw new IllegalArgumentException("Unhandled type: " + type);
+    };
   }
 
   public static String getVariableClauseIdField(final String variablePath) {

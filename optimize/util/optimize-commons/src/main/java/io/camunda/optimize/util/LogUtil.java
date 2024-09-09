@@ -33,4 +33,8 @@ public class LogUtil extends CompositeConverter<ILoggingEvent> {
         // paragraph separator
         .replace("\u2029", "\\u2029");
   }
+
+  public static String sanitizeLogMessage(String input) {
+    return input.replaceAll("[\n|\r|\t]", "_");
+  }
 }

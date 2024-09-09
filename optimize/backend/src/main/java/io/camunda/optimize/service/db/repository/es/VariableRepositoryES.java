@@ -8,13 +8,19 @@
 package io.camunda.optimize.service.db.repository.es;
 
 import static io.camunda.optimize.dto.optimize.DefinitionType.DECISION;
+import static io.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static io.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 import static io.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_GRAM;
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.DatabaseConstants.VARIABLE_LABEL_INDEX_NAME;
 import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
+import static io.camunda.optimize.service.db.schema.index.AbstractInstanceIndex.LOWERCASE_FIELD;
+import static io.camunda.optimize.service.db.schema.index.AbstractInstanceIndex.N_GRAM_FIELD;
 import static io.camunda.optimize.service.db.schema.index.ExternalProcessVariableIndex.INGESTION_TIMESTAMP;
+import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex.TIMESTAMP;
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
@@ -22,6 +28,9 @@ import static io.camunda.optimize.service.util.DefinitionQueryUtilES.createDefin
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
+import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
+import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
+import static io.camunda.optimize.util.LogUtil.sanitizeLogMessage;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -39,20 +48,35 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import io.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
+import io.camunda.optimize.dto.optimize.query.variable.ProcessToQueryDto;
+import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
+import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
+import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableSourceDto;
+import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableValuesQueryDto;
+import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
+import io.camunda.optimize.service.db.es.ElasticsearchCompositeAggregationScroller;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.filter.FilterContext;
+import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancer;
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
+import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
 import io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import io.camunda.optimize.service.db.reader.DecisionDefinitionReader;
+import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.repository.VariableRepository;
 import io.camunda.optimize.service.db.repository.script.ProcessInstanceScriptFactory;
 import io.camunda.optimize.service.db.schema.ScriptData;
+import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.service.util.DefinitionQueryUtilES;
+import io.camunda.optimize.service.util.InstanceIndexUtil;
+import io.camunda.optimize.service.util.ProcessVariableHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
@@ -87,6 +111,10 @@ import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
+import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.composite.CompositeValuesSourceBuilder;
+import org.elasticsearch.search.aggregations.bucket.composite.ParsedComposite;
+import org.elasticsearch.search.aggregations.bucket.composite.TermsValuesSourceBuilder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
@@ -108,6 +136,8 @@ public class VariableRepositoryES implements VariableRepository {
   private final ConfigurationService configurationService;
   private final DateTimeFormatter dateTimeFormatter;
   private final DecisionDefinitionReader decisionDefinitionReader;
+  private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
+  private final ProcessDefinitionReader processDefinitionReader;
 
   @Override
   public void deleteVariableDataByProcessInstanceIds(
@@ -327,7 +357,7 @@ public class VariableRepositoryES implements VariableRepository {
     final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(query)
-            .aggregation(getVariableValueAggregation(requestDto, variablesPath))
+            .aggregation(getDecisionVariableValueAggregation(requestDto, variablesPath))
             .size(0);
 
     final SearchRequest searchRequest =
@@ -358,6 +388,142 @@ public class VariableRepositoryES implements VariableRepository {
     }
   }
 
+  @Override
+  public List<ProcessVariableNameResponseDto> getVariableNames(
+      final ProcessVariableNameRequestDto variableNameRequest,
+      final List<ProcessToQueryDto> validNameRequests,
+      final List<String> processDefinitionKeys,
+      final Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos) {
+    BoolQueryBuilder query = boolQuery().minimumShouldMatch(1);
+    validNameRequests.forEach(
+        request ->
+            query.should(
+                DefinitionQueryUtilES.createDefinitionQuery(
+                    request.getProcessDefinitionKey(),
+                    request.getProcessDefinitionVersions(),
+                    request.getTenantIds(),
+                    new ProcessInstanceIndexES(request.getProcessDefinitionKey()),
+                    processDefinitionReader::getLatestVersionToKey)));
+
+    processQueryFilterEnhancer.addFilterToQuery(
+        query,
+        variableNameRequest.getFilter().stream()
+            .filter(filter -> filter.getAppliedTo().contains(APPLIED_TO_ALL_DEFINITIONS))
+            .toList(),
+        FilterContext.builder().timezone(variableNameRequest.getTimezone()).build());
+
+    return getVariableNamesForInstancesMatchingQuery(
+        processDefinitionKeys, query, definitionLabelsDtos);
+  }
+
+  @Override
+  public List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(
+      final List<String> processDefinitionKeysToTarget,
+      final BoolQueryBuilder baseQuery,
+      final Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos) {
+    List<CompositeValuesSourceBuilder<?>> variableNameAndTypeTerms = new ArrayList<>();
+    variableNameAndTypeTerms.add(
+        new TermsValuesSourceBuilder(NAME_AGGREGATION).field(getNestedVariableNameField()));
+    variableNameAndTypeTerms.add(
+        new TermsValuesSourceBuilder(TYPE_AGGREGATION).field(getNestedVariableTypeField()));
+    variableNameAndTypeTerms.add(
+        new TermsValuesSourceBuilder(INDEX_AGGREGATION).field(INDEX_AGGREGATION));
+
+    CompositeAggregationBuilder varNameAndTypeAgg =
+        new CompositeAggregationBuilder(VAR_NAME_AND_TYPE_COMPOSITE_AGG, variableNameAndTypeTerms)
+            .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit());
+
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(baseQuery)
+            .aggregation(nested(VARIABLES, VARIABLES).subAggregation(varNameAndTypeAgg))
+            .size(0);
+
+    String[] indicesToTarget =
+        processDefinitionKeysToTarget.stream()
+            .map(InstanceIndexUtil::getProcessInstanceIndexAliasName)
+            .toArray(String[]::new);
+    SearchRequest searchRequest = new SearchRequest(indicesToTarget).source(searchSourceBuilder);
+
+    List<ProcessVariableNameResponseDto> variableNames = new ArrayList<>();
+    ElasticsearchCompositeAggregationScroller.create()
+        .setEsClient(esClient)
+        .setSearchRequest(searchRequest)
+        .setPathToAggregation(VARIABLES, VAR_NAME_AND_TYPE_COMPOSITE_AGG)
+        .setCompositeBucketConsumer(
+            bucket -> variableNames.add(extractVariableNameAndLabel(bucket, definitionLabelsDtos)))
+        .consumeAllPages();
+    return filterVariableNameResults(variableNames);
+  }
+
+  @Override
+  public List<String> getVariableValues(
+      final ProcessVariableValuesQueryDto requestDto,
+      final List<ProcessVariableSourceDto> processVariableSources) {
+    final BoolQueryBuilder query = boolQuery();
+    processVariableSources.forEach(
+        source -> {
+          query.should(
+              DefinitionQueryUtilES.createDefinitionQuery(
+                  source.getProcessDefinitionKey(),
+                  source.getProcessDefinitionVersions(),
+                  source.getTenantIds(),
+                  new ProcessInstanceIndexES(source.getProcessDefinitionKey()),
+                  processDefinitionReader::getLatestVersionToKey));
+          if (source.getProcessInstanceId() != null) {
+            query.must(
+                termQuery(ProcessInstanceIndex.PROCESS_INSTANCE_ID, source.getProcessInstanceId()));
+          }
+        });
+
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(query)
+            .aggregation(getVariableValueAggregation(requestDto))
+            .size(0);
+
+    final SearchRequest searchRequest =
+        new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder);
+
+    try {
+      final SearchResponse searchResponse = esClient.search(searchRequest);
+      final Aggregations aggregations = searchResponse.getAggregations();
+
+      return extractVariableValues(aggregations, requestDto);
+    } catch (IOException e) {
+      final String reason =
+          String.format(
+              "Was not able to fetch values for variable [%s] with type [%s] ",
+              requestDto.getName(), requestDto.getType().getId());
+      log.error(sanitizeLogMessage(reason), e);
+      throw new OptimizeRuntimeException(reason, e);
+    } catch (ElasticsearchStatusException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+            "Was not able to fetch variable values because no instance indices exist. Returning empty list.");
+        return Collections.emptyList();
+      }
+      throw e;
+    }
+  }
+
+  private ProcessVariableNameResponseDto extractVariableNameAndLabel(
+      final ParsedComposite.ParsedBucket bucket,
+      final Map<String, DefinitionVariableLabelsDto> definitionLabelsByKey) {
+    final String processDefinitionKey =
+        extractProcessDefinitionKeyFromIndexName(((String) bucket.getKey().get(INDEX_AGGREGATION)));
+    final String variableName = (String) (bucket.getKey().get(NAME_AGGREGATION));
+    final String variableType = (String) (bucket.getKey().get(TYPE_AGGREGATION));
+    return processVariableNameResponseDtoFrom(
+        definitionLabelsByKey, processDefinitionKey, variableName, variableType);
+  }
+
+  private List<String> extractVariableValues(
+      final Aggregations aggregations, final ProcessVariableValuesQueryDto requestDto) {
+    return extractVariableValues(
+        aggregations, requestDto.getResultOffset(), requestDto.getNumResults(), VARIABLES);
+  }
+
   private List<String> extractVariableValues(
       final Aggregations aggregations,
       final DecisionVariableValueRequestDto requestDto,
@@ -375,17 +541,50 @@ public class VariableRepositoryES implements VariableRepository {
     return allValues.subList(requestDto.getResultOffset(), lastIndex);
   }
 
-  private AggregationBuilder getVariableValueAggregation(
-      final DecisionVariableValueRequestDto requestDto, final String variablePath) {
-    final TermsAggregationBuilder collectAllVariableValues =
-        terms(VALUE_AGGREGATION)
-            .field(getVariableValueFieldForType(variablePath, requestDto.getVariableType()))
-            .size(MAX_RESPONSE_SIZE_LIMIT)
-            .order(BucketOrder.key(true));
+  private List<String> extractVariableValues(
+      final Aggregations aggregations,
+      final Integer resultOffset,
+      final Integer numResults,
+      final String variableFieldLabel) {
+    final Nested variablesFromType = aggregations.get(variableFieldLabel);
+    final Filter filteredVariables =
+        variablesFromType.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
+    final Terms valueTerms = filteredVariables.getAggregations().get(VALUE_AGGREGATION);
+    final List<String> allValues = new ArrayList<>();
+    for (final Terms.Bucket valueBucket : valueTerms.getBuckets()) {
+      allValues.add(valueBucket.getKeyAsString());
+    }
+    int lastIndex = Math.min(allValues.size(), resultOffset + numResults);
+    return allValues.subList(resultOffset, lastIndex);
+  }
 
+  private AggregationBuilder getDecisionVariableValueAggregation(
+      final DecisionVariableValueRequestDto requestDto, final String variablePath) {
     final FilterAggregationBuilder filterForVariableWithGivenIdAndPrefix =
         getVariableValueFilterAggregation(
             requestDto.getVariableId(), variablePath, requestDto.getValueFilter());
+    return getVariableValuesAggregation(
+        variablePath, requestDto.getVariableType(), filterForVariableWithGivenIdAndPrefix);
+  }
+
+  private AggregationBuilder getVariableValueAggregation(
+      final ProcessVariableValuesQueryDto requestDto) {
+    final FilterAggregationBuilder filterForVariableWithGivenIdAndPrefix =
+        getProcessVariableValueFilterAggregation(
+            requestDto.getName(), requestDto.getType(), requestDto.getValueFilter());
+    return getVariableValuesAggregation(
+        VARIABLES, requestDto.getType(), filterForVariableWithGivenIdAndPrefix);
+  }
+
+  private AggregationBuilder getVariableValuesAggregation(
+      final String variablePath,
+      final VariableType variableType,
+      final FilterAggregationBuilder filterForVariableWithGivenIdAndPrefix) {
+    final TermsAggregationBuilder collectAllVariableValues =
+        terms(VALUE_AGGREGATION)
+            .field(getVariableValueFieldForType(variablePath, variableType))
+            .size(MAX_RESPONSE_SIZE_LIMIT)
+            .order(BucketOrder.key(true));
 
     return nested(variablePath, variablePath)
         .subAggregation(
@@ -400,6 +599,43 @@ public class VariableRepositoryES implements VariableRepository {
     addValueFilter(variablePath, valueFilter, filterQuery);
 
     return filter(FILTERED_VARIABLES_AGGREGATION, filterQuery);
+  }
+
+  private FilterAggregationBuilder getProcessVariableValueFilterAggregation(
+      final String variableName, final VariableType type, final String valueFilter) {
+    final BoolQueryBuilder filterQuery =
+        boolQuery()
+            .must(termQuery(getNestedVariableNameField(), variableName))
+            .must(termQuery(getNestedVariableTypeField(), type.getId()));
+
+    addValueFilter(type, valueFilter, filterQuery);
+    return filter(FILTERED_VARIABLES_AGGREGATION, filterQuery);
+  }
+
+  private void addValueFilter(
+      final VariableType variableType,
+      final String valueFilter,
+      final BoolQueryBuilder filterQuery) {
+    boolean isStringVariable = VariableType.STRING.equals(variableType);
+    boolean valueFilterIsConfigured = valueFilter != null && !valueFilter.isEmpty();
+    if (isStringVariable && valueFilterIsConfigured) {
+      final String lowerCaseValue = valueFilter.toLowerCase(Locale.ENGLISH);
+      QueryBuilder filter =
+          (lowerCaseValue.length() > MAX_GRAM)
+              /*
+                using the slow wildcard query for uncommonly large filter strings (> 10 chars)
+              */
+              ? wildcardQuery(
+                  ProcessVariableHelper.getValueSearchField(LOWERCASE_FIELD),
+                  buildWildcardQuery(lowerCaseValue))
+              /*
+                using Elasticsearch ngrams to filter for strings < 10 chars,
+                because it's fast but increasing the number of chars makes the index bigger
+              */
+              : termQuery(ProcessVariableHelper.getValueSearchField(N_GRAM_FIELD), lowerCaseValue);
+
+      filterQuery.must(filter);
+    }
   }
 
   private void addValueFilter(

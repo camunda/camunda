@@ -109,6 +109,7 @@ import org.opensearch.client.opensearch.core.bulk.BulkOperationBase;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
+import org.opensearch.client.opensearch.core.mget.MultiGetOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 import org.opensearch.client.opensearch.indices.GetAliasRequest;
@@ -349,6 +350,13 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final SearchScrollRequest scrollRequest) throws IOException {
     // todo will be handle in the OPT-7469
     return new org.elasticsearch.action.search.SearchResponse(null);
+  }
+
+  public <T> MgetResponse<T> mget(
+      final Class<T> responseType,
+      final String errorMessage,
+      final List<MultiGetOperation> operations) {
+    return richOpenSearchClient.doc().mget(responseType, e -> errorMessage, operations);
   }
 
   @Override
