@@ -11,20 +11,20 @@ import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
 
-public record FlownodeInstanceSort(List<FieldSorting> orderings) implements SortOption {
+public record FlowNodeInstanceSort(List<FieldSorting> orderings) implements SortOption {
 
   @Override
   public List<FieldSorting> getFieldSortings() {
     return orderings;
   }
 
-  public static FlownodeInstanceSort of(
-      final Function<FlownodeInstanceSort.Builder, ObjectBuilder<FlownodeInstanceSort>> fn) {
+  public static FlowNodeInstanceSort of(
+      final Function<FlowNodeInstanceSort.Builder, ObjectBuilder<FlowNodeInstanceSort>> fn) {
     return SortOptionBuilders.flownodeInstance(fn);
   }
 
   public static final class Builder extends AbstractBuilder<Builder>
-      implements ObjectBuilder<FlownodeInstanceSort> {
+      implements ObjectBuilder<FlowNodeInstanceSort> {
 
     public Builder key() {
       currentOrdering = new FieldSorting("key", null);
@@ -82,8 +82,8 @@ public record FlownodeInstanceSort(List<FieldSorting> orderings) implements Sort
     }
 
     @Override
-    public FlownodeInstanceSort build() {
-      return new FlownodeInstanceSort(orderings);
+    public FlowNodeInstanceSort build() {
+      return new FlowNodeInstanceSort(orderings);
     }
 
     @Override

@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public record FlownodeInstanceFilter(
+public record FlowNodeInstanceFilter(
     List<Long> keys,
     List<Long> processInstanceKeys,
     List<Long> processDefinitionKeys,
@@ -29,7 +29,7 @@ public record FlownodeInstanceFilter(
     List<String> tenantIds)
     implements FilterBase {
 
-  public static final class Builder implements ObjectBuilder<FlownodeInstanceFilter> {
+  public static final class Builder implements ObjectBuilder<FlowNodeInstanceFilter> {
 
     private List<Long> keys;
     private List<Long> processInstanceKeys;
@@ -43,104 +43,104 @@ public record FlownodeInstanceFilter(
     private List<Long> incidentKeys;
     private List<String> tenantIds;
 
-    public FlownodeInstanceFilter.Builder keys(final List<Long> values) {
+    public FlowNodeInstanceFilter.Builder keys(final List<Long> values) {
       keys = addValuesToList(keys, values);
       return this;
     }
 
-    public FlownodeInstanceFilter.Builder keys(final Long... values) {
+    public FlowNodeInstanceFilter.Builder keys(final Long... values) {
       return keys(collectValuesAsList(values));
     }
 
-    public FlownodeInstanceFilter.Builder processInstanceKeys(final List<Long> values) {
+    public FlowNodeInstanceFilter.Builder processInstanceKeys(final List<Long> values) {
       processInstanceKeys = addValuesToList(processInstanceKeys, values);
       return this;
     }
 
-    public FlownodeInstanceFilter.Builder processInstanceKeys(final Long... values) {
+    public FlowNodeInstanceFilter.Builder processInstanceKeys(final Long... values) {
       return processInstanceKeys(collectValuesAsList(values));
     }
 
-    public FlownodeInstanceFilter.Builder processDefinitionKeys(final List<Long> values) {
+    public FlowNodeInstanceFilter.Builder processDefinitionKeys(final List<Long> values) {
       processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
       return this;
     }
 
-    public FlownodeInstanceFilter.Builder processDefinitionKeys(final Long... values) {
+    public FlowNodeInstanceFilter.Builder processDefinitionKeys(final Long... values) {
       return processDefinitionKeys(collectValuesAsList(values));
     }
 
-    public FlownodeInstanceFilter.Builder states(final List<String> values) {
+    public FlowNodeInstanceFilter.Builder states(final List<String> values) {
       states = addValuesToList(states, values);
       return this;
     }
 
-    public FlownodeInstanceFilter.Builder states(final String... values) {
+    public FlowNodeInstanceFilter.Builder states(final String... values) {
       return states(collectValuesAsList(values));
     }
 
-    public FlownodeInstanceFilter.Builder types(final List<String> values) {
+    public FlowNodeInstanceFilter.Builder types(final List<String> values) {
       types = addValuesToList(types, values);
       return this;
     }
 
-    public FlownodeInstanceFilter.Builder types(final String... values) {
+    public FlowNodeInstanceFilter.Builder types(final String... values) {
       return types(collectValuesAsList(values));
     }
 
-    public FlownodeInstanceFilter.Builder flowNodeIds(final List<String> values) {
+    public FlowNodeInstanceFilter.Builder flowNodeIds(final List<String> values) {
       flowNodeIds = addValuesToList(flowNodeIds, values);
       return this;
     }
 
-    public FlownodeInstanceFilter.Builder flowNodeIds(final String... values) {
+    public FlowNodeInstanceFilter.Builder flowNodeIds(final String... values) {
       return flowNodeIds(collectValuesAsList(values));
     }
 
-    public FlownodeInstanceFilter.Builder flowNodeNames(final List<String> values) {
+    public FlowNodeInstanceFilter.Builder flowNodeNames(final List<String> values) {
       flowNodeNames = addValuesToList(flowNodeNames, values);
       return this;
     }
 
-    public FlownodeInstanceFilter.Builder flowNodeNames(final String... values) {
+    public FlowNodeInstanceFilter.Builder flowNodeNames(final String... values) {
       return flowNodeNames(collectValuesAsList(values));
     }
 
-    public FlownodeInstanceFilter.Builder treePaths(final List<String> values) {
+    public FlowNodeInstanceFilter.Builder treePaths(final List<String> values) {
       treePaths = addValuesToList(treePaths, values);
       return this;
     }
 
-    public FlownodeInstanceFilter.Builder treePaths(final String... values) {
+    public FlowNodeInstanceFilter.Builder treePaths(final String... values) {
       return treePaths(collectValuesAsList(values));
     }
 
-    public FlownodeInstanceFilter.Builder incident(final Boolean value) {
+    public FlowNodeInstanceFilter.Builder incident(final Boolean value) {
       incident = value;
       return this;
     }
 
-    public FlownodeInstanceFilter.Builder incidentKeys(final List<Long> values) {
+    public FlowNodeInstanceFilter.Builder incidentKeys(final List<Long> values) {
       incidentKeys = addValuesToList(incidentKeys, values);
       return this;
     }
 
-    public FlownodeInstanceFilter.Builder incidentKeys(final Long... values) {
+    public FlowNodeInstanceFilter.Builder incidentKeys(final Long... values) {
       return incidentKeys(collectValuesAsList(values));
     }
 
-    public FlownodeInstanceFilter.Builder tenantIds(final List<String> values) {
+    public FlowNodeInstanceFilter.Builder tenantIds(final List<String> values) {
       tenantIds = addValuesToList(tenantIds, values);
       return this;
     }
 
-    public FlownodeInstanceFilter.Builder tenantIds(final String... values) {
+    public FlowNodeInstanceFilter.Builder tenantIds(final String... values) {
       return tenantIds(collectValuesAsList(values));
     }
 
     @Override
-    public FlownodeInstanceFilter build() {
-      return new FlownodeInstanceFilter(
+    public FlowNodeInstanceFilter build() {
+      return new FlowNodeInstanceFilter(
           Objects.requireNonNullElse(keys, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
