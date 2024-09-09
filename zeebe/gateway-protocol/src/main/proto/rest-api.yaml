@@ -1252,7 +1252,7 @@ paths:
                 $ref: "#/components/schemas/IncidentSearchQueryResponse"
         '400':
           description: >
-            The incident search Query failed.
+            The incident search query failed.
             More details are provided in the response body.
         "401":
           description: "Unauthorized"
