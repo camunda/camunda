@@ -24,7 +24,6 @@ import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.state.signal.SignalSubscription;
-import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
