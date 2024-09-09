@@ -397,6 +397,10 @@ public final class EngineRule extends ExternalResource {
     environmentRule.pauseProcessing(partitionId);
   }
 
+  public void banInstanceInNewTransaction(final int partitionId, final long processInstanceKey) {
+    environmentRule.banInstanceInNewTransaction(partitionId, processInstanceKey);
+  }
+
   public void resumeProcessing(final int partitionId) {
     environmentRule.resumeProcessing(partitionId);
   }
