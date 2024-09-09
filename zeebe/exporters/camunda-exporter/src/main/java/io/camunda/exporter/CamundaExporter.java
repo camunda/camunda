@@ -19,6 +19,14 @@ import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
+import io.camunda.exporter.schema.ElasticsearchEngineClient;
+import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
+import io.camunda.exporter.schema.ElasticsearchSchemaManager;
+import io.camunda.exporter.schema.IndexMappingProperty;
+import io.camunda.exporter.schema.IndexSchemaValidator;
+import io.camunda.exporter.schema.SchemaManager;
+import io.camunda.exporter.schema.SearchEngineClient;
+import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.store.ElasticsearchBatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
@@ -30,7 +38,9 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +50,9 @@ public class CamundaExporter implements Exporter {
   private Controller controller;
   private ElasticsearchExporterConfiguration configuration;
   private ElasticsearchClient client;
+  private SearchEngineClient searchEngineClient;
+  private SchemaManager schemaManager;
+  private IndexSchemaValidator schemaValidator;
   private ExporterBatchWriter writer;
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
@@ -66,7 +79,11 @@ public class CamundaExporter implements Exporter {
   public void open(final Controller controller) {
     this.controller = controller;
     client = createClient();
-    // TODO createSchemaWhenNeeded();
+    searchEngineClient = new ElasticsearchEngineClient(client);
+    schemaManager = createSchemaManager();
+    schemaValidator = new IndexSchemaValidator(schemaManager);
+
+    schemaStartup();
     writer = createBatchWriter();
 
     scheduleDelayedFlush();
@@ -102,6 +119,51 @@ public class CamundaExporter implements Exporter {
       // fails then the exporter will be invoked with the same record again.
       updateLastExportedPosition();
     }
+  }
+
+  private void schemaStartup() {
+    if (!configuration.elasticsearch.isCreateSchema()) {
+      LOG.info(
+          "Will not make any changes to indices and index templates as [createSchema] is false");
+      return;
+    }
+
+    final var newIndexProperties = validateIndices();
+    final var newIndexTemplateProperties = validateIndexTemplates();
+    //  used to create any indices/templates which don't exist
+    schemaManager.initialiseResources();
+
+    //  used to update existing indices/templates
+    schemaManager.updateSchema(newIndexProperties);
+    schemaManager.updateSchema(newIndexTemplateProperties);
+  }
+
+  private Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndices() {
+    final var currentIndices =
+        searchEngineClient.getMappings(
+            configuration.elasticsearch.getIndexPrefix() + "*", MappingSource.INDEX);
+
+    return schemaValidator.validateIndexMappings(currentIndices, provider.getIndexDescriptors());
+  }
+
+  private Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexTemplates() {
+    final var currentTemplates =
+        searchEngineClient.getMappings(
+            configuration.elasticsearch.getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE);
+
+    return schemaValidator.validateIndexMappings(
+        currentTemplates,
+        provider.getIndexTemplateDescriptors().stream()
+            .map(IndexDescriptor.class::cast)
+            .collect(Collectors.toSet()));
+  }
+
+  private SchemaManager createSchemaManager() {
+    return new ElasticsearchSchemaManager(
+        searchEngineClient,
+        provider.getIndexDescriptors(),
+        provider.getIndexTemplateDescriptors(),
+        configuration.elasticsearch);
   }
 
   private ElasticsearchClient createClient() {

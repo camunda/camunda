@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ElasticsearchProperties;
 import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
+import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
@@ -42,8 +43,22 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   @Override
   public void initialiseResources() {
-    indexTemplateDescriptors.forEach(descriptor -> createIndexTemplate(descriptor, true));
-    indexDescriptors.forEach(elasticsearchClient::createIndex);
+    final var existingTemplateNames =
+        elasticsearchClient
+            .getMappings(
+                elasticsearchProperties.getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE)
+            .keySet();
+    final var existingIndexNames =
+        elasticsearchClient
+            .getMappings(elasticsearchProperties.getIndexPrefix() + "*", MappingSource.INDEX)
+            .keySet();
+    indexTemplateDescriptors.stream()
+        .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
+        .forEach(descriptor -> createIndexTemplate(descriptor, true));
+
+    indexDescriptors.stream()
+        .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
+        .forEach(elasticsearchClient::createIndex);
   }
 
   @Override
