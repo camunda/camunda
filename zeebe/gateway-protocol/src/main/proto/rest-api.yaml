@@ -717,12 +717,12 @@ paths:
       tags:
         - Process Instance
       summary: Cancel process instance
-      description: Cancel a running process instance.
+      description: Cancels a running process instance.
       parameters:
         - name: processInstanceKey
           in: path
           required: true
-          description: The key of the process instance that should be modified.
+          description: The key of the process instance to cancel.
           schema:
             type: integer
             format: int64
@@ -1683,7 +1683,7 @@ components:
       properties:
         operationReference:
           description: |
-            A reference key chosen by the user and will be part of all records resulting from this operation.
+            A reference key chosen by the user that will be part of all records resulting from this operation.
             Must be > 0 if provided.
           type: integer
           format: int64
@@ -2834,8 +2834,8 @@ components:
           type: string
         operationReference:
           description: |
-            A reference key chosen by the user and will be part of all records resulting
-            from this operation. Must be >0 if provided.
+            A refereA reference key chosen by the user that will be part of all records resulting from this operation.
+            Must be >0 if provided.
           type: integer
           format: int64
           minimum: 1
