@@ -51,7 +51,6 @@ public class AuthorizationCreateProcessor
     final var authorization =
         authorizationState.getResourceIdentifiers(
             authorizationToCreate.getOwnerKey(),
-            authorizationToCreate.getOwnerType(),
             authorizationToCreate.getResourceType(),
             PermissionType.CREATE);
 

@@ -41,10 +41,7 @@ public class AuthorizationStateTest {
     // when
     final var persistedAuth =
         authorizationState.getResourceIdentifiers(
-            1L,
-            AuthorizationOwnerType.USER,
-            AuthorizationResourceType.DEPLOYMENT,
-            PermissionType.CREATE);
+            1L, AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
     // then
     assertThat(persistedAuth).isNull();
   }

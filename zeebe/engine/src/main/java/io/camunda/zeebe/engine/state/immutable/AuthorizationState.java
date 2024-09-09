@@ -15,10 +15,7 @@ import java.util.Optional;
 
 public interface AuthorizationState {
   ResourceIdentifiers getResourceIdentifiers(
-      Long ownerKey,
-      AuthorizationOwnerType ownerType,
-      AuthorizationResourceType resourceType,
-      final PermissionType permissionType);
+      Long ownerKey, AuthorizationResourceType resourceType, final PermissionType permissionType);
 
   Optional<AuthorizationOwnerType> getOwnerType(final long ownerKey);
 }
