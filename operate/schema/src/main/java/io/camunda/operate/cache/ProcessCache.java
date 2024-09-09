@@ -32,7 +32,8 @@ public class ProcessCache {
   private final Map<Long, ProcessEntity> cache = new ConcurrentHashMap<>();
   @Autowired private ProcessStore processStore;
 
-  public String getProcessNameOrDefaultValue(Long processDefinitionKey, String defaultValue) {
+  public String getProcessNameOrDefaultValue(
+      final Long processDefinitionKey, final String defaultValue) {
     final ProcessEntity cachedProcessData =
         getCachedProcessEntity(processDefinitionKey).orElse(null);
     String processName = defaultValue;
@@ -46,7 +47,8 @@ public class ProcessCache {
     return processName;
   }
 
-  public String getProcessNameOrBpmnProcessId(Long processDefinitionKey, String defaultValue) {
+  public String getProcessNameOrBpmnProcessId(
+      final Long processDefinitionKey, final String defaultValue) {
     final ProcessEntity cachedProcessData =
         getCachedProcessEntity(processDefinitionKey).orElse(null);
     String processName = null;
@@ -64,7 +66,7 @@ public class ProcessCache {
   }
 
   public String getFlowNodeNameOrDefaultValue(
-      Long processDefinitionKey, String flowNodeId, String defaultValue) {
+      final Long processDefinitionKey, final String flowNodeId, final String defaultValue) {
     final ProcessEntity cachedProcessData =
         getCachedProcessEntity(processDefinitionKey).orElse(null);
     String flowNodeName = defaultValue;
@@ -85,7 +87,7 @@ public class ProcessCache {
     return flowNodeName;
   }
 
-  private Optional<ProcessEntity> getCachedProcessEntity(Long processDefinitionKey) {
+  private Optional<ProcessEntity> getCachedProcessEntity(final Long processDefinitionKey) {
     ProcessEntity cachedProcessData = cache.get(processDefinitionKey);
     if (cachedProcessData == null) {
       final Optional<ProcessEntity> processMaybe =
@@ -98,16 +100,16 @@ public class ProcessCache {
     return Optional.ofNullable(cachedProcessData);
   }
 
-  private Optional<ProcessEntity> readProcessByKey(Long processDefinitionKey) {
+  private Optional<ProcessEntity> readProcessByKey(final Long processDefinitionKey) {
     try {
       return Optional.of(processStore.getProcessByKey(processDefinitionKey));
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       return Optional.empty();
     }
   }
 
   public Optional<ProcessEntity> findOrWaitProcess(
-      Long processDefinitionKey, int attempts, long sleepInMilliseconds) {
+      final Long processDefinitionKey, final int attempts, final long sleepInMilliseconds) {
     int attemptsCount = 0;
     Optional<ProcessEntity> foundProcess = Optional.empty();
     while (foundProcess.isEmpty() && attemptsCount < attempts) {
@@ -131,7 +133,7 @@ public class ProcessCache {
     return foundProcess;
   }
 
-  public void putToCache(Long processDefinitionKey, ProcessEntity process) {
+  public void putToCache(final Long processDefinitionKey, final ProcessEntity process) {
     if (cache.size() >= CACHE_MAX_SIZE) {
       // remove 1st element
       final Iterator<Long> iterator = cache.keySet().iterator();

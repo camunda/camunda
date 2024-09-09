@@ -29,13 +29,13 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return name;
   }
 
-  public ProcessEntity setName(String name) {
+  public ProcessEntity setName(final String name) {
     this.name = name;
     return this;
   }
 
   @Override
-  public ProcessEntity setId(String id) {
+  public ProcessEntity setId(final String id) {
     super.setId(id);
     setKey(ConversionUtils.toLongOrNull(id));
     return this;
@@ -74,7 +74,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return version;
   }
 
-  public ProcessEntity setVersion(int version) {
+  public ProcessEntity setVersion(final int version) {
     this.version = version;
     return this;
   }
@@ -92,7 +92,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return bpmnProcessId;
   }
 
-  public ProcessEntity setBpmnProcessId(String bpmnProcessId) {
+  public ProcessEntity setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -101,7 +101,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return bpmnXml;
   }
 
-  public ProcessEntity setBpmnXml(String bpmnXml) {
+  public ProcessEntity setBpmnXml(final String bpmnXml) {
     this.bpmnXml = bpmnXml;
     return this;
   }
@@ -110,7 +110,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return resourceName;
   }
 
-  public ProcessEntity setResourceName(String resourceName) {
+  public ProcessEntity setResourceName(final String resourceName) {
     this.resourceName = resourceName;
     return this;
   }
@@ -122,7 +122,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return flowNodes;
   }
 
-  public ProcessEntity setFlowNodes(List<ProcessFlowNodeEntity> flowNodes) {
+  public ProcessEntity setFlowNodes(final List<ProcessFlowNodeEntity> flowNodes) {
     this.flowNodes = flowNodes;
     return this;
   }
@@ -131,7 +131,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return tenantId;
   }
 
-  public ProcessEntity setTenantId(String tenantId) {
+  public ProcessEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
