@@ -192,7 +192,9 @@ public enum ZbColumnFamilies implements EnumValue {
   AUTHORIZATION_KEY_BY_RESOURCE_ID_AND_OWNER_KEY(94),
   OWNER_TYPE_BY_OWNER_KEY(95),
 
-  ROUTING(96);
+  ROUTING(96),
+
+  QUEUED_DISTRIBUTION(97);
 
   private final int value;
 

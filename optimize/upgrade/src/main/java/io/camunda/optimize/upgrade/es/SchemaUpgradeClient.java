@@ -232,12 +232,17 @@ public class SchemaUpgradeClient {
   public void deleteTemplateIfExists(final String indexTemplateName) {
     if (indexTemplateExists(indexTemplateName)) {
       try {
+        log.debug("Deleting index template [{}]", indexTemplateName);
         elasticsearchClient.deleteIndexTemplateByIndexTemplateName(indexTemplateName);
       } catch (Exception e) {
         String errorMessage =
             String.format("Could not delete index template [%s]!", indexTemplateName);
         throw new UpgradeRuntimeException(errorMessage, e);
       }
+    } else {
+      log.debug(
+          "Index template [{}] does not exist and will therefore not be deleted.",
+          indexTemplateName);
     }
   }
 

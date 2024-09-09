@@ -15,8 +15,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import java.util.List;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,7 +40,11 @@ public class AuthorizationStateTest {
   void shouldReturnNullIfNoAuthorizationForOwnerAndResourceExists() {
     // when
     final var persistedAuth =
-        authorizationState.getResourceIdentifiers(1L, AuthorizationOwnerType.USER, "resource");
+        authorizationState.getResourceIdentifiers(
+            1L,
+            AuthorizationOwnerType.USER,
+            AuthorizationResourceType.DEPLOYMENT,
+            PermissionType.CREATE);
     // then
     assertThat(persistedAuth).isNull();
   }
@@ -50,10 +57,11 @@ public class AuthorizationStateTest {
     final AuthorizationRecord authorizationRecord =
         new AuthorizationRecord()
             .setOwnerKey(1L)
+            .setAction(PermissionAction.ADD)
             .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceKey("resource")
-            .setResourceType("resourceType")
-            .setPermissions(List.of("write:*"));
+            .setResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .addPermission(
+                new Permission().setPermissionType(PermissionType.CREATE).addResourceId("*"));
     authorizationState.createAuthorization(authorizationRecord);
 
     // then
@@ -61,9 +69,10 @@ public class AuthorizationStateTest {
         authorizationState.getResourceIdentifiers(
             authorizationRecord.getOwnerKey(),
             authorizationRecord.getOwnerType(),
-            authorizationRecord.getResourceType());
+            authorizationRecord.getResourceType(),
+            PermissionType.CREATE);
     assertThat(persistedAuthorization.getResourceIdentifiers())
-        .isEqualTo(authorizationRecord.getPermissions());
+        .isEqualTo(authorizationRecord.getPermissions().getFirst().getResourceIds());
   }
 
   @DisplayName(
@@ -74,12 +83,12 @@ public class AuthorizationStateTest {
     // given
     final AuthorizationRecord authorizationRecord =
         new AuthorizationRecord()
-            .setAuthorizationKey(1L)
             .setOwnerKey(ownerKey)
+            .setAction(PermissionAction.ADD)
             .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceKey("my-resource-key")
-            .setResourceType("process-definition")
-            .setPermissions(List.of("write:*"));
+            .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .addPermission(
+                new Permission().setPermissionType(PermissionType.CREATE).addResourceId("*"));
     authorizationState.createAuthorization(authorizationRecord);
 
     // when/then
@@ -88,7 +97,7 @@ public class AuthorizationStateTest {
         .hasMessageContaining(
             "Key DbCompositeKey{first=DbLong{"
                 + ownerKey
-                + "}, second=DbCompositeKey{first=process-definition, second=}} in ColumnFamily RESOURCE_IDS_BY_OWNER_KEY_RESOURCE_TYPE_AND_PERMISSION already exists");
+                + "}, second=DbCompositeKey{first=PROCESS_DEFINITION, second=CREATE}} in ColumnFamily RESOURCE_IDS_BY_OWNER_KEY_RESOURCE_TYPE_AND_PERMISSION already exists");
   }
 
   @DisplayName("should return the correct authorization")
@@ -97,40 +106,46 @@ public class AuthorizationStateTest {
     // given
     final AuthorizationRecord authorizationRecordOne =
         new AuthorizationRecord()
-            .setAuthorizationKey(1L)
             .setOwnerKey(1L)
+            .setAction(PermissionAction.ADD)
             .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceKey("resource")
-            .setResourceType("resourceType")
-            .setPermissions(List.of("read:*"));
+            .setResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .addPermission(
+                new Permission()
+                    .setPermissionType(PermissionType.READ)
+                    .addResourceId("bpmnProcessId:foo"));
     authorizationState.createAuthorization(authorizationRecordOne);
 
     final AuthorizationRecord authorizationRecordTwo =
         new AuthorizationRecord()
-            .setAuthorizationKey(2L)
             .setOwnerKey(2L)
+            .setAction(PermissionAction.ADD)
             .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceKey("resource")
-            .setResourceType("resourceType")
-            .setPermissions(List.of("write:*"));
+            .setResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .addPermission(
+                new Permission()
+                    .setPermissionType(PermissionType.CREATE)
+                    .addResourceId("bpmnProcessId:bar"));
     authorizationState.createAuthorization(authorizationRecordTwo);
 
     final var authorizationOne =
         authorizationState.getResourceIdentifiers(
             authorizationRecordOne.getOwnerKey(),
             authorizationRecordOne.getOwnerType(),
-            authorizationRecordOne.getResourceType());
+            authorizationRecordOne.getResourceType(),
+            PermissionType.READ);
 
     final var authorizationTwo =
         authorizationState.getResourceIdentifiers(
             authorizationRecordTwo.getOwnerKey(),
             authorizationRecordTwo.getOwnerType(),
-            authorizationRecordTwo.getResourceType());
+            authorizationRecordTwo.getResourceType(),
+            PermissionType.CREATE);
 
     assertThat(authorizationOne).isNotEqualTo(authorizationTwo);
     assertThat(authorizationOne.getResourceIdentifiers())
-        .isEqualTo(authorizationRecordOne.getPermissions());
+        .isEqualTo(authorizationRecordOne.getPermissions().getFirst().getResourceIds());
     assertThat(authorizationTwo.getResourceIdentifiers())
-        .isEqualTo(authorizationRecordTwo.getPermissions());
+        .isEqualTo(authorizationRecordTwo.getPermissions().getFirst().getResourceIds());
   }
 }

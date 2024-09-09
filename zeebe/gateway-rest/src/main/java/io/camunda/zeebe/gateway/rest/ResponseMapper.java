@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecision;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirements;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentForm;
@@ -30,10 +31,13 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -184,6 +188,49 @@ public final class ResponseMapper {
                     .resourceName(process.getResourceName()))
         .map(deploymentProcess -> new DeploymentMetadata().process(deploymentProcess))
         .forEach(response::addDeploymentsItem);
+  }
+
+  public static ResponseEntity<Object> toCreateProcessInstanceResponse(
+      final ProcessInstanceCreationRecord brokerResponse) {
+    return buildCreateProcessInstanceResponse(
+        brokerResponse.getProcessDefinitionKey(),
+        brokerResponse.getBpmnProcessId(),
+        brokerResponse.getVersion(),
+        brokerResponse.getProcessInstanceKey(),
+        brokerResponse.getTenantId(),
+        null);
+  }
+
+  public static ResponseEntity<Object> toCreateProcessInstanceWithResultResponse(
+      final ProcessInstanceResultRecord brokerResponse) {
+    return buildCreateProcessInstanceResponse(
+        brokerResponse.getProcessDefinitionKey(),
+        brokerResponse.getBpmnProcessId(),
+        brokerResponse.getVersion(),
+        brokerResponse.getProcessInstanceKey(),
+        brokerResponse.getTenantId(),
+        brokerResponse.getVariables());
+  }
+
+  private static ResponseEntity<Object> buildCreateProcessInstanceResponse(
+      final Long processDefinitionKey,
+      final String bpmnProcessId,
+      final Integer version,
+      final Long processInstanceKey,
+      final String tenantId,
+      final Map<String, Object> variables) {
+    final var response =
+        new CreateProcessInstanceResponse()
+            .processKey(processDefinitionKey)
+            .bpmnProcessId(bpmnProcessId)
+            .version(version)
+            .processInstanceKey(processInstanceKey)
+            .tenantId(tenantId);
+    if (variables != null) {
+      response.variables(variables);
+    }
+
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   static class RestJobActivationResult implements JobActivationResult<JobActivationResponse> {

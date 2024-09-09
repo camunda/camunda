@@ -10,9 +10,9 @@ package io.camunda.tasklist.zeebeimport.v860.processors.es;
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.DocumentNodeType;
-import io.camunda.tasklist.entities.TasklistListViewEntity;
 import io.camunda.tasklist.entities.VariableEntity;
+import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
+import io.camunda.tasklist.entities.listview.VariableListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.VariableIndex;
@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
@@ -62,28 +61,8 @@ public class VariableZeebeRecordProcessorElasticSearch {
 
   private UpdateRequest persistVariable(
       final Record record, final VariableRecordValueImpl recordValue) throws PersistenceException {
-    final VariableEntity entity = new VariableEntity();
-    entity.setId(
-        VariableEntity.getIdBy(String.valueOf(recordValue.getScopeKey()), recordValue.getName()));
-    entity.setKey(record.getKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setScopeFlowNodeId(String.valueOf(recordValue.getScopeKey()));
-    entity.setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()));
-    entity.setName(recordValue.getName());
-    entity.setTenantId(recordValue.getTenantId());
-    if (recordValue.getValue().length()
-        > tasklistProperties.getImporter().getVariableSizeThreshold()) {
-      // store preview
-      entity.setValue(
-          recordValue
-              .getValue()
-              .substring(0, tasklistProperties.getImporter().getVariableSizeThreshold()));
-      entity.setIsPreview(true);
-    } else {
-      entity.setValue(recordValue.getValue());
-    }
-    entity.setFullValue(recordValue.getValue());
-    return getVariableQuery(entity);
+    final VariableEntity variableEntity = getVariableEntity(record, recordValue);
+    return getVariableQuery(variableEntity);
   }
 
   private UpdateRequest getVariableQuery(final VariableEntity entity) throws PersistenceException {
@@ -113,54 +92,34 @@ public class VariableZeebeRecordProcessorElasticSearch {
   private UpdateRequest persistVariableToListView(
       final Record record, final VariableRecordValueImpl recordValue) throws PersistenceException {
     final VariableEntity variableEntity = getVariableEntity(record, recordValue);
-    TasklistListViewEntity tasklistListViewEntity = createVariableInputToListView(variableEntity);
+    final VariableListViewEntity variableListViewEntity =
+        createVariableInputToListView(variableEntity);
 
     if (isTaskOrSubProcessVariable(variableEntity)) {
-      tasklistListViewEntity = associateVariableWithTask(tasklistListViewEntity);
-      return prepareUpdateRequest(tasklistListViewEntity, tasklistListViewEntity.getVarScopeKey());
+      variableListViewEntity.setJoin(
+          createListViewJoinRelation("taskVariable", variableListViewEntity.getScopeKey()));
     } else if (isProcessScope(variableEntity)) {
-      tasklistListViewEntity = associateVariableWithProcess(variableEntity, tasklistListViewEntity);
-      return prepareUpdateRequest(tasklistListViewEntity, variableEntity.getProcessInstanceId());
+      variableListViewEntity.setJoin(
+          createListViewJoinRelation("processVariable", variableListViewEntity.getScopeKey()));
     } else {
       throw new PersistenceException(
           String.format(
               "Error to associate Variable with parent. Variable id: [%s]",
               variableEntity.getId()));
     }
+    return prepareUpdateRequest(variableListViewEntity);
   }
 
-  private TasklistListViewEntity createVariableInputToListView(final VariableEntity entity) {
-    final TasklistListViewEntity tasklistListView = new TasklistListViewEntity();
-    Optional.ofNullable(entity.getValue()).ifPresent(tasklistListView::setVarValue);
-    Optional.ofNullable(entity.getFullValue()).ifPresent(tasklistListView::setVarFullValue);
-    Optional.ofNullable(entity.getName()).ifPresent(tasklistListView::setVarName);
-    Optional.of(entity.getIsPreview()).ifPresent(tasklistListView::setIsPreview);
-    Optional.ofNullable(entity.getScopeFlowNodeId()).ifPresent(tasklistListView::setVarScopeKey);
-    Optional.ofNullable(entity.getId()).ifPresent(tasklistListView::setId);
-    Optional.of(entity.getPartitionId()).ifPresent(tasklistListView::setPartitionId);
-
-    return tasklistListView;
+  private VariableListViewEntity createVariableInputToListView(final VariableEntity entity) {
+    return new VariableListViewEntity(entity);
   }
 
-  private TasklistListViewEntity associateVariableWithProcess(
-      final VariableEntity entity, final TasklistListViewEntity tasklistListViewEntity) {
-    return associateVariableWithParent(
-        tasklistListViewEntity, "processVariable", entity.getProcessInstanceId());
-  }
-
-  private TasklistListViewEntity associateVariableWithTask(
-      final TasklistListViewEntity tasklistListViewEntity) {
-    return associateVariableWithParent(
-        tasklistListViewEntity, "taskVariable", tasklistListViewEntity.getVarScopeKey());
-  }
-
-  private TasklistListViewEntity associateVariableWithParent(
-      final TasklistListViewEntity snapshot, final String name, final String parentId) {
-    final Map<String, Object> joinField = new HashMap<>();
-    joinField.put("name", name);
-    joinField.put("parent", parentId);
-    snapshot.setJoin(joinField);
-    return snapshot;
+  private ListViewJoinRelation createListViewJoinRelation(
+      final String name, final String parentId) {
+    final var result = new ListViewJoinRelation();
+    result.setName(name);
+    result.setParent(Long.valueOf(parentId));
+    return result;
   }
 
   private boolean isProcessScope(final VariableEntity entity) {
@@ -197,27 +156,30 @@ public class VariableZeebeRecordProcessorElasticSearch {
     return entity;
   }
 
-  private UpdateRequest prepareUpdateRequest(
-      final TasklistListViewEntity snapshot, final String routingKey) throws PersistenceException {
+  private UpdateRequest prepareUpdateRequest(final VariableListViewEntity variableListViewEntity)
+      throws PersistenceException {
     try {
-      snapshot.setDataType(DocumentNodeType.VARIABLE);
+      final Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(TasklistListViewTemplate.VARIABLE_VALUE, variableListViewEntity.getValue());
+      updateFields.put(
+          TasklistListViewTemplate.VARIABLE_FULL_VALUE, variableListViewEntity.getValue());
+      updateFields.put(TasklistListViewTemplate.IS_PREVIEW, variableListViewEntity.getIsPreview());
+
       final UpdateRequest request =
           new UpdateRequest()
               .index(tasklistListViewTemplate.getFullQualifiedName())
-              .id(snapshot.getId())
-              .upsert(objectMapper.writeValueAsString(snapshot), XContentType.JSON)
-              .routing(routingKey)
-              .doc(objectMapper.writeValueAsString(snapshot), XContentType.JSON)
+              .id(variableListViewEntity.getId())
+              .upsert(objectMapper.writeValueAsString(variableListViewEntity), XContentType.JSON)
+              .routing(variableListViewEntity.getScopeKey())
+              .doc(updateFields)
               .retryOnConflict(UPDATE_RETRY_COUNT);
-
-      if (routingKey != null) {
-        request.routing(routingKey);
-      }
 
       return request;
     } catch (final IOException e) {
       throw new PersistenceException(
-          String.format("Error preparing the query to upsert task instance [%s]", snapshot.getId()),
+          String.format(
+              "Error preparing the query to upsert task instance [%s]",
+              variableListViewEntity.getId()),
           e);
     }
   }

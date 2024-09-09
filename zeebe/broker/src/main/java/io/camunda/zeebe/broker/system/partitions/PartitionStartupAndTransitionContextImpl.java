@@ -47,6 +47,8 @@ import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -102,7 +104,8 @@ public class PartitionStartupAndTransitionContextImpl
   private BackupStore backupStore;
   private AdminApiRequestHandler adminApiService;
   private PartitionAdminAccess adminAccess;
-  private final MeterRegistry meterRegistry;
+  private final MeterRegistry brokerMeterRegistry;
+  private MeterRegistry partitionMeterRegistry;
   private ControllableStreamClock clock;
 
   public PartitionStartupAndTransitionContextImpl(
@@ -124,7 +127,7 @@ public class PartitionStartupAndTransitionContextImpl
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final AtomixServerTransport gatewayBrokerTransport,
       final TopologyManager topologyManager,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry brokerMeterRegistry) {
     this.nodeId = nodeId;
     this.partitionCount = partitionCount;
     this.clusterCommunicationService = clusterCommunicationService;
@@ -145,7 +148,8 @@ public class PartitionStartupAndTransitionContextImpl
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     this.topologyManager = topologyManager;
-    this.meterRegistry = meterRegistry;
+    this.brokerMeterRegistry = new CompositeMeterRegistry().add(brokerMeterRegistry);
+    this.brokerMeterRegistry.config().commonTags(Tags.of("partition", String.valueOf(partitionId)));
   }
 
   public PartitionAdminControl getPartitionAdminControl() {
@@ -357,8 +361,18 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public MeterRegistry getMeterRegistry() {
-    return meterRegistry;
+  public MeterRegistry getBrokerMeterRegistry() {
+    return brokerMeterRegistry;
+  }
+
+  @Override
+  public MeterRegistry getPartitionMeterRegistry() {
+    return partitionMeterRegistry;
+  }
+
+  @Override
+  public void setPartitionMeterRegistry(final MeterRegistry partitionMeterRegistry) {
+    this.partitionMeterRegistry = partitionMeterRegistry;
   }
 
   @Override

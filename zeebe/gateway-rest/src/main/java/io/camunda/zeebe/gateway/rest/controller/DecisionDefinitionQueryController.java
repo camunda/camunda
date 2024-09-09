@@ -19,6 +19,7 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -51,7 +52,9 @@ public class DecisionDefinitionQueryController {
   public ResponseEntity<String> getDecisionDefinitionXml(
       @PathVariable("decisionKey") final Long decisionKey) {
     try {
-      return ResponseEntity.ok(decisionDefinitionServices.getDecisionDefinitionXml(decisionKey));
+      return ResponseEntity.ok()
+          .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
+          .body(decisionDefinitionServices.getDecisionDefinitionXml(decisionKey));
     } catch (final NotFoundException nfe) {
       final var problemDetail =
           RestErrorMapper.createProblemDetail(

@@ -23,15 +23,25 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableAuthorizationRecordValue.Builder.class)
 public interface AuthorizationRecordValue extends RecordValue {
-  Long getAuthorizationKey();
+
+  PermissionAction getAction();
 
   Long getOwnerKey();
 
   AuthorizationOwnerType getOwnerType();
 
-  String getResourceKey();
+  AuthorizationResourceType getResourceType();
 
-  String getResourceType();
+  List<PermissionValue> getPermissions();
 
-  List<String> getPermissions();
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutablePermissionValue.Builder.class)
+  interface PermissionValue {
+
+    /** Returns the type of permission for the resourceIds in this object */
+    PermissionType getPermissionType();
+
+    /** Returns the resourceIds of this permission */
+    List<String> getResourceIds();
+  }
 }

@@ -102,8 +102,7 @@ public class IndexSchemaValidatorUtil {
         final Object typeDefinition = propertyDifference.getLeftValue().getTypeDefinition();
         if (propertyDifference.getLeftValue().getTypeDefinition() instanceof Map) {
           final Map<String, Object> typeDefMap = (Map<String, Object>) typeDefinition;
-          final Object dynamicValue =
-              typeDefMap.get("dynamic") != null ? typeDefMap.get("dynamic") : false;
+          final Object dynamicValue = typeDefMap.getOrDefault("dynamic", false);
           if (dynamicValue.equals(true)) {
             LOGGER.debug(
                 String.format(

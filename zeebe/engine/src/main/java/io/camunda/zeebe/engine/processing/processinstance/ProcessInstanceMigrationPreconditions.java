@@ -53,11 +53,12 @@ public final class ProcessInstanceMigrationPreconditions {
           BpmnElementType.EXCLUSIVE_GATEWAY,
           BpmnElementType.EVENT_BASED_GATEWAY,
           BpmnElementType.BUSINESS_RULE_TASK,
-          BpmnElementType.SCRIPT_TASK);
+          BpmnElementType.SCRIPT_TASK,
+          BpmnElementType.SEND_TASK);
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.complementOf(SUPPORTED_ELEMENT_TYPES);
   private static final Set<BpmnEventType> SUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPES =
-      EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER);
+      EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL);
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to migrate process instance but no process instance found with key '%d'";

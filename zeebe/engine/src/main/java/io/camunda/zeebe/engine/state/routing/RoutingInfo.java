@@ -7,62 +7,97 @@
  */
 package io.camunda.zeebe.engine.state.routing;
 
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.engine.state.immutable.RoutingState.MessageCorrelation;
+import io.camunda.zeebe.engine.state.immutable.RoutingState;
 import io.camunda.zeebe.engine.state.immutable.RoutingState.MessageCorrelation.HashMod;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.value.IntegerValue;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.agrona.DirectBuffer;
 
-public class RoutingInfo extends UnpackedObject implements DbValue {
-  private final ArrayProperty<IntegerValue> partitions =
-      new ArrayProperty<>("partitions", IntegerValue::new);
-  private final EnumProperty<MessageCorrelationStrategy> messageCorrelationStrategy =
-      new EnumProperty<>(
-          "messageCorrelationStrategy",
-          MessageCorrelationStrategy.class,
-          MessageCorrelationStrategy.HASH_MOD);
-  private final IntegerProperty hashModPartitionCount =
-      new IntegerProperty("hashModPartitionCount", -1);
+/**
+ * Utility class that holds the current routing information. To be uses everywhere the number of
+ * partitions or message correlation strategy is needed.
+ *
+ * <p>The information always reflects the current persisted routing info from {@link
+ * DbRoutingState}.
+ */
+public interface RoutingInfo {
+  /** Returns the current set of partitions. */
+  Set<Integer> partitions();
 
-  public RoutingInfo() {
-    super(3);
-    declareProperty(partitions)
-        .declareProperty(messageCorrelationStrategy)
-        .declareProperty(hashModPartitionCount);
+  /** Returns the current partition id for the given correlation key. */
+  int partitionForCorrelationKey(final DirectBuffer correlationKey);
+
+  /**
+   * Creates a {@link RoutingInfo} instance for static partitions. This is used when the partitions
+   * are fixed and known at startup. Only relevant for testing.
+   */
+  static RoutingInfo forStaticPartitions(final int partitionCount) {
+    final var partitions =
+        IntStream.rangeClosed(Protocol.START_PARTITION_ID, partitionCount)
+            .boxed()
+            .collect(Collectors.toSet());
+    return new StaticRoutingInfo(partitions, partitionCount);
   }
 
-  public Set<Integer> getPartitions() {
-    return partitions.stream().map(IntegerValue::getValue).collect(Collectors.toUnmodifiableSet());
+  static RoutingInfo dynamic(final RoutingState routingState, final RoutingInfo fallback) {
+    return new DynamicRoutingInfo(routingState, fallback);
   }
 
-  public void setPartitions(final Set<Integer> partitions) {
-    this.partitions.reset();
-    for (final var partition : partitions) {
-      this.partitions.add().setValue(partition);
+  class StaticRoutingInfo implements RoutingInfo {
+    private final Set<Integer> otherPartitions;
+    private final int partitionCount;
+
+    public StaticRoutingInfo(final Set<Integer> otherPartitions, final int partitionCount) {
+      this.otherPartitions = otherPartitions;
+      this.partitionCount = partitionCount;
+    }
+
+    @Override
+    public Set<Integer> partitions() {
+      return otherPartitions;
+    }
+
+    @Override
+    public int partitionForCorrelationKey(final DirectBuffer correlationKey) {
+      return SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionCount);
     }
   }
 
-  public MessageCorrelation getMessageCorrelation() {
-    return switch (messageCorrelationStrategy.getValue()) {
-      case HASH_MOD -> new MessageCorrelation.HashMod(hashModPartitionCount.getValue());
-    };
-  }
+  /**
+   * Naive implementation that always looks up the routing information from the {@link
+   * RoutingState}. Later on, we might want to cache this information.
+   */
+  class DynamicRoutingInfo implements RoutingInfo {
+    private final RoutingState routingState;
+    private final RoutingInfo fallback;
 
-  public void setMessageCorrelation(final MessageCorrelation messageCorrelation) {
-    switch (messageCorrelation) {
-      case HashMod(final int partitionCount) -> {
-        messageCorrelationStrategy.setValue(MessageCorrelationStrategy.HASH_MOD);
-        hashModPartitionCount.setValue(partitionCount);
+    public DynamicRoutingInfo(final RoutingState routingState, final RoutingInfo fallback) {
+      this.routingState = routingState;
+      this.fallback = fallback;
+    }
+
+    @Override
+    public Set<Integer> partitions() {
+      if (!routingState.isInitialized()) {
+        return fallback.partitions();
+      }
+      return routingState.partitions();
+    }
+
+    @Override
+    public int partitionForCorrelationKey(final DirectBuffer correlationKey) {
+      if (!routingState.isInitialized()) {
+        return fallback.partitionForCorrelationKey(correlationKey);
+      }
+
+      switch (routingState.messageCorrelation()) {
+        case HashMod(final var partitionCount) -> {
+          return SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionCount);
+        }
       }
     }
-  }
-
-  enum MessageCorrelationStrategy {
-    HASH_MOD,
   }
 }

@@ -283,7 +283,9 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   }
 
   private void destroyClient() {
-    zeebeClient.close();
-    zeebeClient = null;
+    if (zeebeClient != null) {
+      zeebeClient.close();
+      zeebeClient = null;
+    }
   }
 }

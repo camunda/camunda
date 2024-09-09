@@ -7,18 +7,17 @@
  */
 package io.camunda.tasklist.zeebeimport.v860.processors.es;
 
-import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.DocumentNodeType;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.entities.FlowNodeType;
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.entities.ProcessInstanceState;
-import io.camunda.tasklist.entities.TasklistListViewEntity;
+import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
+import io.camunda.tasklist.entities.listview.ProcessInstanceListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
@@ -36,9 +35,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +86,7 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
     if (isVariableScopeType(recordValue) && FLOW_NODE_STATES.contains(record.getIntent().name())) {
       final FlowNodeInstanceEntity flowNodeInstance = createFlowNodeInstance(record);
       bulkRequest.add(getFlowNodeInstanceQuery(flowNodeInstance));
-      final UpdateRequest processRequest = persistFlowNodeDataToListView(flowNodeInstance);
+      final IndexRequest processRequest = persistFlowNodeDataToListView(flowNodeInstance);
       if (processRequest != null) {
         bulkRequest.add(processRequest);
       }
@@ -186,40 +185,43 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
     return bpmnElementType.equals(type);
   }
 
-  private UpdateRequest persistFlowNodeDataToListView(final FlowNodeInstanceEntity flowNodeInstance)
+  private IndexRequest persistFlowNodeDataToListView(final FlowNodeInstanceEntity flowNodeInstance)
       throws PersistenceException {
-    final TasklistListViewEntity tasklistListViewEntity = new TasklistListViewEntity();
+    final ProcessInstanceListViewEntity processInstanceListViewEntity =
+        new ProcessInstanceListViewEntity();
 
-    final Map<String, Object> joinField = new HashMap<>();
-    // Only the Parent Process will be persisted over here
     if (flowNodeInstance.getType().equals(FlowNodeType.PROCESS)) {
-      tasklistListViewEntity.setId(flowNodeInstance.getId());
-      joinField.put("name", "process");
-      tasklistListViewEntity.setJoin(joinField);
-      tasklistListViewEntity.setDataType(
-          DocumentNodeType.valueOf(String.valueOf(DocumentNodeType.PROCESS)));
-      return getUpdateRequest(tasklistListViewEntity);
+      final ListViewJoinRelation listViewJoinRelation = new ListViewJoinRelation();
+      processInstanceListViewEntity.setId(flowNodeInstance.getId());
+      processInstanceListViewEntity.setPartitionId(flowNodeInstance.getPartitionId());
+      processInstanceListViewEntity.setTenantId(flowNodeInstance.getTenantId());
+      listViewJoinRelation.setName("process");
+      processInstanceListViewEntity.setJoin(listViewJoinRelation);
+      return getUpdateRequest(processInstanceListViewEntity);
     } else {
       return null;
     }
   }
 
-  private UpdateRequest getUpdateRequest(final TasklistListViewEntity tasklistListViewEntity)
+  private IndexRequest getUpdateRequest(
+      final ProcessInstanceListViewEntity processInstanceListViewEntity)
       throws PersistenceException {
     try {
+      // Convert the entity to a JSON map using ObjectMapper
       final Map<String, Object> jsonMap =
           objectMapper.readValue(
-              objectMapper.writeValueAsString(tasklistListViewEntity), HashMap.class);
-      final UpdateRequest updateRequest =
-          new UpdateRequest()
+              objectMapper.writeValueAsString(processInstanceListViewEntity), HashMap.class);
+
+      final IndexRequest indexRequest =
+          new IndexRequest()
               .index(tasklistListViewTemplate.getFullQualifiedName())
-              .id(tasklistListViewEntity.getId())
-              .upsert(objectMapper.writeValueAsString(tasklistListViewEntity), XContentType.JSON)
-              .doc(jsonMap)
-              .retryOnConflict(UPDATE_RETRY_COUNT);
-      return updateRequest;
+              .id(processInstanceListViewEntity.getId())
+              .source(jsonMap, XContentType.JSON)
+              .opType(DocWriteRequest.OpType.INDEX);
+
+      return indexRequest;
     } catch (final IOException e) {
-      throw new PersistenceException("Error preparing the query to upsert snapshot entity", e);
+      throw new PersistenceException("Error preparing the query to index snapshot entity", e);
     }
   }
 }

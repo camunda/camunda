@@ -20,7 +20,11 @@ import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
 final class ClusterEndpointResponseIT {
-  @TestZeebe static TestStandaloneBroker broker = new TestStandaloneBroker();
+  @TestZeebe
+  static TestStandaloneBroker broker =
+      new TestStandaloneBroker()
+          .withBrokerConfig(
+              cfg -> cfg.getExperimental().getFeatures().setEnablePartitionScaling(true));
 
   @Test
   void shouldMatchExpectedSerialization() throws IOException, InterruptedException {
@@ -30,30 +34,39 @@ final class ClusterEndpointResponseIT {
       final var response = httpClient.send(request, BodyHandlers.ofString());
       assertEquality(
           response.body(),
+          // language=JSON
           """
-                        {
-                          "version": 1,
-                          "brokers": [
-                            {
-                              "id": 0,
-                              "state": "ACTIVE",
-                              "version": 0,
-                              "lastUpdatedAt": "0000-01-01T00:00:00Z",
-                              "partitions": [
-                                {
-                                  "id": 1,
-                                  "state": "ACTIVE",
-                                  "priority": 1,
-                                  "config":{
-                                     "exporting": {
-                                        "exporters": []
-                                     }
-                                  }
-                                }
-                              ]
-                            }
-                          ]
-                        }""");
+          {
+            "version": 1,
+            "brokers": [
+              {
+                "id": 0,
+                "state": "ACTIVE",
+                "version": 0,
+                "lastUpdatedAt": "0000-01-01T00:00:00Z",
+                "partitions": [
+                  {
+                    "id": 1,
+                    "state": "ACTIVE",
+                    "priority": 1,
+                    "config":{
+                       "exporting": {
+                          "exporters": []
+                       }
+                    }
+                  }
+                ]
+              }
+            ],
+            "routing": {
+              "version": 1,
+              "activePartitions": [1],
+              "messageCorrelation": {
+                "strategy": "HashMod",
+                "partitionCount": 1
+              }
+            }
+          }""");
     }
   }
 }

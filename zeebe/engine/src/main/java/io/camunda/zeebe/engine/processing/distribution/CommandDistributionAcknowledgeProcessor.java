@@ -24,15 +24,17 @@ public class CommandDistributionAcknowledgeProcessor
       """
       Expected to find pending distribution with key %d for partition %d, but no pending \
       distribution was found.""";
-  private static final CommandDistributionRecord EMPTY_DISTRIBUTION_RECORD =
-      new CommandDistributionRecord();
 
+  private final CommandDistributionBehavior commandDistributionBehavior;
   private final DistributionState distributionState;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
 
   public CommandDistributionAcknowledgeProcessor(
-      final DistributionState distributionState, final Writers writers) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final DistributionState distributionState,
+      final Writers writers) {
+    this.commandDistributionBehavior = commandDistributionBehavior;
     this.distributionState = distributionState;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -54,6 +56,8 @@ public class CommandDistributionAcknowledgeProcessor
 
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.ACKNOWLEDGED, recordValue);
+
+    commandDistributionBehavior.distributeNextInQueue(distributionKey, partitionId);
 
     if (!distributionState.hasPendingDistribution(distributionKey)) {
       // We write an empty command here as a distribution could contain a lot of data. Because of

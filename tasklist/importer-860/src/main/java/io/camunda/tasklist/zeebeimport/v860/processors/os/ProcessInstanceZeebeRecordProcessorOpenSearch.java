@@ -12,12 +12,12 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.DocumentNodeType;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.entities.FlowNodeType;
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.entities.ProcessInstanceState;
-import io.camunda.tasklist.entities.TasklistListViewEntity;
+import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
+import io.camunda.tasklist.entities.listview.ProcessInstanceListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
@@ -30,10 +30,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
@@ -183,29 +181,30 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
 
   private BulkOperation persistFlowNodeDataToListView(
       final FlowNodeInstanceEntity flowNodeInstance) {
-    final TasklistListViewEntity entity = new TasklistListViewEntity();
+    final ProcessInstanceListViewEntity processInstanceListViewEntity =
+        new ProcessInstanceListViewEntity();
 
-    final Map<String, Object> joinField = new HashMap<>();
-    // Only the Parent Process will be persisted over here
     if (flowNodeInstance.getType().equals(FlowNodeType.PROCESS)) {
-      entity.setId(flowNodeInstance.getId());
-      joinField.put("name", "process");
-      entity.setJoin(joinField);
-      entity.setDataType(DocumentNodeType.valueOf(String.valueOf(DocumentNodeType.PROCESS)));
-      return getUpdateRequest(entity);
+      processInstanceListViewEntity.setJoin(new ListViewJoinRelation());
+      processInstanceListViewEntity.setId(flowNodeInstance.getId());
+      processInstanceListViewEntity.setPartitionId(flowNodeInstance.getPartitionId());
+      processInstanceListViewEntity.setTenantId(flowNodeInstance.getTenantId());
+      processInstanceListViewEntity.getJoin().setName("process");
+      return getUpdateRequest(processInstanceListViewEntity);
     } else {
       return null;
     }
   }
 
-  private BulkOperation getUpdateRequest(final TasklistListViewEntity tasklistListViewEntity) {
+  private BulkOperation getUpdateRequest(
+      final ProcessInstanceListViewEntity processInstanceListViewEntity) {
 
     return new BulkOperation.Builder()
         .update(
             up ->
                 up.index(tasklistListViewTemplate.getFullQualifiedName())
-                    .id(tasklistListViewEntity.getId())
-                    .document(CommonUtils.getJsonObjectFromEntity(tasklistListViewEntity))
+                    .id(processInstanceListViewEntity.getId())
+                    .document(CommonUtils.getJsonObjectFromEntity(processInstanceListViewEntity))
                     .docAsUpsert(true)
                     .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))
         .build();

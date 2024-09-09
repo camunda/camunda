@@ -21,10 +21,11 @@ public class TasklistListViewTemplate extends AbstractTemplateDescriptor impleme
   public static final String INDEX_VERSION = "8.6.0";
 
   public static final String ID = "id";
+  public static final String USER_TASK_KEY = "key";
   public static final String TASK_ID = "taskId";
-  public static final String VARIABLE_NAME = "varName";
-  public static final String VARIABLE_VALUE = "varValue";
-  public static final String VARIABLE_FULL_VALUE = "varFullValue";
+  public static final String VARIABLE_NAME = "name";
+  public static final String VARIABLE_VALUE = "value";
+  public static final String VARIABLE_FULL_VALUE = "fullValue";
   public static final String IS_PREVIEW = "isPreview";
   public static final String TENANT_ID = "tenantId";
   public static final String FLOW_NODE_BPMN_ID = "flowNodeBpmnId";
@@ -38,16 +39,15 @@ public class TasklistListViewTemplate extends AbstractTemplateDescriptor impleme
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String ASSIGNEE = "assignee";
+  public static final String DUE_DATE = "dueDate";
   public static final String CANDIDATE_GROUPS = "candidateGroups";
   public static final String CANDIDATE_USERS = "candidateUsers";
   public static final String FORM_KEY = "formKey";
   public static final String FOLLOW_UP_DATE = "followUpDate";
-  public static final String DUE_DATE = "dueDate";
-  public static final String IMPLEMENTATION = "implementation";
   public static final String EXTERNAL_FORM_REFERENCE = "externalFormReference";
   public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
   public static final String CUSTOM_HEADERS = "customHeaders";
-  public static final String VARIABLE_SCOPE_KEY = "varScopeKey";
+  public static final String VARIABLE_SCOPE_KEY = "scopeKey";
   public static final String PRIORITY = "priority";
   public static final String DATA_TYPE = "dataType";
   public static final String JOIN_FIELD_NAME = "join";
@@ -61,13 +61,15 @@ public class TasklistListViewTemplate extends AbstractTemplateDescriptor impleme
     switch (fieldName) {
       case ("id"):
         return of(ID);
+      case ("key"):
+        return of(USER_TASK_KEY);
       case ("taskId"):
         return of(TASK_ID);
-      case ("varName"):
+      case ("name"):
         return of(VARIABLE_NAME);
-      case ("varValue"):
+      case ("value"):
         return of(VARIABLE_FULL_VALUE);
-      case ("isValueTruncated"):
+      case ("isPreview"):
         return of(IS_PREVIEW);
       case ("flowNodeBpmnId"):
         return of(FLOW_NODE_BPMN_ID);
@@ -101,8 +103,6 @@ public class TasklistListViewTemplate extends AbstractTemplateDescriptor impleme
         return of(FOLLOW_UP_DATE);
       case ("dueDate"):
         return of(DUE_DATE);
-      case ("implementation"):
-        return of(IMPLEMENTATION);
       case ("externalFormReference"):
         return of(EXTERNAL_FORM_REFERENCE);
       case ("processDefinitionVersion"):
@@ -111,7 +111,7 @@ public class TasklistListViewTemplate extends AbstractTemplateDescriptor impleme
         return of(CUSTOM_HEADERS);
       case ("priority"):
         return of(PRIORITY);
-      case ("variableScopeKey"):
+      case ("scopeKey"):
         return of(VARIABLE_SCOPE_KEY);
       case ("dataType"):
         return of(DATA_TYPE);

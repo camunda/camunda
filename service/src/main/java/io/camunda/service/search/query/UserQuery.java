@@ -10,7 +10,6 @@ package io.camunda.service.search.query;
 import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.filter.UserFilter;
 import io.camunda.service.search.page.SearchQueryPage;
-import io.camunda.service.search.query.DecisionRequirementsQuery.Builder;
 import io.camunda.service.search.sort.SortOptionBuilders;
 import io.camunda.service.search.sort.UserSort;
 import io.camunda.util.ObjectBuilder;

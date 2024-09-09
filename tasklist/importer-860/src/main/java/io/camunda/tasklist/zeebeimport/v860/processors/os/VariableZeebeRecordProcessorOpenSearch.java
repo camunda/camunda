@@ -9,9 +9,9 @@ package io.camunda.tasklist.zeebeimport.v860.processors.os;
 
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.DocumentNodeType;
-import io.camunda.tasklist.entities.TasklistListViewEntity;
 import io.camunda.tasklist.entities.VariableEntity;
+import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
+import io.camunda.tasklist.entities.listview.VariableListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.VariableIndex;
@@ -54,28 +54,7 @@ public class VariableZeebeRecordProcessorOpenSearch {
 
   private BulkOperation persistVariable(
       final Record record, final VariableRecordValueImpl recordValue) throws PersistenceException {
-
-    final VariableEntity entity = new VariableEntity();
-    entity.setId(
-        VariableEntity.getIdBy(String.valueOf(recordValue.getScopeKey()), recordValue.getName()));
-    entity.setKey(record.getKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setScopeFlowNodeId(String.valueOf(recordValue.getScopeKey()));
-    entity.setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()));
-    entity.setName(recordValue.getName());
-    entity.setTenantId(recordValue.getTenantId());
-    if (recordValue.getValue().length()
-        > tasklistProperties.getImporter().getVariableSizeThreshold()) {
-      // store preview
-      entity.setValue(
-          recordValue
-              .getValue()
-              .substring(0, tasklistProperties.getImporter().getVariableSizeThreshold()));
-      entity.setIsPreview(true);
-    } else {
-      entity.setValue(recordValue.getValue());
-    }
-    entity.setFullValue(recordValue.getValue());
+    final VariableEntity entity = getVariableEntity(record, recordValue);
     return getVariableQuery(entity);
   }
 
@@ -91,8 +70,8 @@ public class VariableZeebeRecordProcessorOpenSearch {
             up ->
                 up.index(variableIndex.getFullQualifiedName())
                     .id(entity.getId())
-                    .document(CommonUtils.getJsonObjectFromEntity(entity))
-                    .docAsUpsert(true)
+                    .document(CommonUtils.getJsonObjectFromEntity(updateFields))
+                    .upsert(CommonUtils.getJsonObjectFromEntity(entity))
                     .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))
         .build();
   }
@@ -100,54 +79,34 @@ public class VariableZeebeRecordProcessorOpenSearch {
   private BulkOperation persistVariableToListView(
       final Record record, final VariableRecordValueImpl recordValue) throws PersistenceException {
     final VariableEntity variableEntity = getVariableEntity(record, recordValue);
-    TasklistListViewEntity tasklistListViewEntity = createVariableInputToListView(variableEntity);
+    final VariableListViewEntity variableListViewEntity =
+        createVariableInputToListView(variableEntity);
 
     if (isTaskOrSubProcessVariable(variableEntity)) {
-      tasklistListViewEntity = associateVariableWithTask(tasklistListViewEntity);
-      return prepareUpdateRequest(tasklistListViewEntity, tasklistListViewEntity.getVarScopeKey());
+      variableListViewEntity.setJoin(
+          createListViewJoinRelation("taskVariable", variableListViewEntity.getScopeKey()));
     } else if (isProcessScope(variableEntity)) {
-      tasklistListViewEntity = associateVariableWithProcess(variableEntity, tasklistListViewEntity);
-      return prepareUpdateRequest(tasklistListViewEntity, variableEntity.getProcessInstanceId());
+      variableListViewEntity.setJoin(
+          createListViewJoinRelation("processVariable", variableListViewEntity.getScopeKey()));
     } else {
       throw new PersistenceException(
           String.format(
-              "Error preparing the query to upsert variable instance [%s]  for list view",
+              "Error to associate Variable with parent. Variable id: [%s]",
               variableEntity.getId()));
     }
+    return prepareUpdateRequest(variableListViewEntity);
   }
 
-  private TasklistListViewEntity createVariableInputToListView(final VariableEntity entity) {
-    final TasklistListViewEntity tasklistListView = new TasklistListViewEntity();
-    Optional.ofNullable(entity.getValue()).ifPresent(tasklistListView::setVarValue);
-    Optional.ofNullable(entity.getFullValue()).ifPresent(tasklistListView::setVarFullValue);
-    Optional.ofNullable(entity.getName()).ifPresent(tasklistListView::setVarName);
-    Optional.of(entity.getIsPreview()).ifPresent(tasklistListView::setIsPreview);
-    Optional.ofNullable(entity.getScopeFlowNodeId()).ifPresent(tasklistListView::setVarScopeKey);
-    Optional.ofNullable(entity.getId()).ifPresent(tasklistListView::setId);
-    Optional.of(entity.getPartitionId()).ifPresent(tasklistListView::setPartitionId);
-
-    return tasklistListView;
+  private VariableListViewEntity createVariableInputToListView(final VariableEntity entity) {
+    return new VariableListViewEntity(entity);
   }
 
-  private TasklistListViewEntity associateVariableWithProcess(
-      final VariableEntity entity, final TasklistListViewEntity tasklistListViewEntity) {
-    return associateVariableWithParent(
-        tasklistListViewEntity, "processVariable", entity.getProcessInstanceId());
-  }
-
-  private TasklistListViewEntity associateVariableWithTask(
-      final TasklistListViewEntity tasklistListViewEntity) {
-    return associateVariableWithParent(
-        tasklistListViewEntity, "taskVariable", tasklistListViewEntity.getVarScopeKey());
-  }
-
-  private TasklistListViewEntity associateVariableWithParent(
-      final TasklistListViewEntity snapshot, final String name, final String parentId) {
-    final Map<String, Object> joinField = new HashMap<>();
-    joinField.put("name", name);
-    joinField.put("parent", parentId);
-    snapshot.setJoin(joinField);
-    return snapshot;
+  private ListViewJoinRelation createListViewJoinRelation(
+      final String name, final String parentId) {
+    final var result = new ListViewJoinRelation();
+    result.setName(name);
+    result.setParent(Long.valueOf(parentId));
+    return result;
   }
 
   private boolean isProcessScope(final VariableEntity entity) {
@@ -184,18 +143,22 @@ public class VariableZeebeRecordProcessorOpenSearch {
     return entity;
   }
 
-  private BulkOperation prepareUpdateRequest(
-      final TasklistListViewEntity tasklistListViewEntity, final String routingKey) {
-    tasklistListViewEntity.setDataType(DocumentNodeType.VARIABLE);
+  private BulkOperation prepareUpdateRequest(final VariableListViewEntity variableListViewEntity) {
+
+    final Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(TasklistListViewTemplate.VARIABLE_VALUE, variableListViewEntity.getValue());
+    updateFields.put(
+        TasklistListViewTemplate.VARIABLE_FULL_VALUE, variableListViewEntity.getFullValue());
+    updateFields.put(TasklistListViewTemplate.IS_PREVIEW, variableListViewEntity.getIsPreview());
 
     return new BulkOperation.Builder()
         .update(
             up ->
                 up.index(tasklistListViewTemplate.getFullQualifiedName())
-                    .id(tasklistListViewEntity.getId())
-                    .document(CommonUtils.getJsonObjectFromEntity(tasklistListViewEntity))
-                    .docAsUpsert(true)
-                    .routing(routingKey)
+                    .id(variableListViewEntity.getId())
+                    .document(CommonUtils.getJsonObjectFromEntity(updateFields))
+                    .upsert(CommonUtils.getJsonObjectFromEntity(variableListViewEntity))
+                    .routing(variableListViewEntity.getScopeKey())
                     .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))
         .build();
   }

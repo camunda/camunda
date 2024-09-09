@@ -25,9 +25,9 @@ public final class DbRoutingState implements MutableRoutingState {
    */
   private static final String CURRENT_KEY = "CURRENT";
 
-  private final ColumnFamily<DbString, RoutingInfo> columnFamily;
+  private final ColumnFamily<DbString, PersistedRoutingInfo> columnFamily;
   private final DbString key = new DbString();
-  private final RoutingInfo currentRoutingInfo = new RoutingInfo();
+  private final PersistedRoutingInfo currentRoutingInfo = new PersistedRoutingInfo();
 
   public DbRoutingState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {

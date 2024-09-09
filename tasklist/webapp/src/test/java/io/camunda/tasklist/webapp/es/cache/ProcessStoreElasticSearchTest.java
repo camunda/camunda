@@ -45,6 +45,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregation;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
 import org.elasticsearch.search.aggregations.metrics.TopHits;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -296,10 +297,18 @@ class ProcessStoreElasticSearchTest {
     final var bucket = mock(CompositeAggregation.Bucket.class);
     when((List<CompositeAggregation.Bucket>) compositeAggregation.getBuckets())
         .thenReturn(List.of(bucket));
+    when(bucket.getAggregations()).thenReturn(aggregations);
+    final var termsBucket = mock(ParsedTerms.ParsedBucket.class);
+    final var maxVersionTerms = mock(ParsedTerms.class);
+    when((List<ParsedTerms.ParsedBucket>) maxVersionTerms.getBuckets())
+        .thenReturn(List.of(termsBucket));
+    when(aggregations.get("max_version_docs")).thenReturn(maxVersionTerms);
+    final var versionBucket = mock(ParsedTerms.ParsedBucket.class);
+    when((List<ParsedTerms.ParsedBucket>) maxVersionTerms.getBuckets())
+        .thenReturn(List.of(versionBucket));
+    when(versionBucket.getAggregations()).thenReturn(aggregations);
     final var topHits = mock(TopHits.class);
-    final var bucketAggregations = mock(Aggregations.class);
-    when(bucket.getAggregations()).thenReturn(bucketAggregations);
-    when(bucketAggregations.get("top_hit_doc")).thenReturn(topHits);
+    when(aggregations.get("top_hit_doc")).thenReturn(topHits);
     final var searchHits = mock(SearchHits.class);
     when(topHits.getHits()).thenReturn(searchHits);
     final var searchHit = mock(SearchHit.class);

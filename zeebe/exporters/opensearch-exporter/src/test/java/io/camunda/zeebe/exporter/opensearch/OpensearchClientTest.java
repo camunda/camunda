@@ -62,8 +62,7 @@ final class OpensearchClientTest {
           restClient,
           indexRouter,
           templateReader,
-          new OpensearchMetrics(PARTITION_ID, new SimpleMeterRegistry()),
-          new SimpleMeterRegistry());
+          new OpensearchMetrics(new SimpleMeterRegistry()));
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")

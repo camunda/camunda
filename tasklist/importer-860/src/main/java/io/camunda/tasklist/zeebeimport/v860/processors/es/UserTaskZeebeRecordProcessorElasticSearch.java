@@ -11,15 +11,14 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.DocumentNodeType;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskVariableEntity;
-import io.camunda.tasklist.entities.TasklistListViewEntity;
+import io.camunda.tasklist.entities.listview.UserTaskListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
-import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToTaskEntityMapper;
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToVariableEntityMapper;
 import io.camunda.zeebe.protocol.record.Record;
@@ -67,7 +66,7 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     final Optional<TaskEntity> taskEntity = userTaskRecordToTaskEntityMapper.map(record);
     if (taskEntity.isPresent()) {
       bulkRequest.add(getTaskQuery(taskEntity.get(), record));
-      bulkRequest.add(persistUserTaskToListView(createTaskListViewInput(taskEntity.get())));
+      bulkRequest.add(persistUserTaskToListView(taskEntity.get(), record));
       // Variables
       if (!record.getValue().getVariables().isEmpty()) {
         final List<TaskVariableEntity> variables =
@@ -136,69 +135,25 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     }
   }
 
-  private TasklistListViewEntity createTaskListViewInput(final TaskEntity taskEntity) {
-    final TasklistListViewEntity tasklistListViewEntity = new TasklistListViewEntity();
-    Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
-        .ifPresent(tasklistListViewEntity::setId); // The ID is necessary for the join
-    Optional.ofNullable(taskEntity.getFlowNodeInstanceId())
-        .ifPresent(tasklistListViewEntity::setFlowNodeInstanceId);
-    Optional.ofNullable(taskEntity.getProcessInstanceId())
-        .ifPresent(tasklistListViewEntity::setProcessInstanceId);
-    Optional.ofNullable(taskEntity.getFlowNodeBpmnId())
-        .ifPresent(tasklistListViewEntity::setTaskId);
-    Optional.ofNullable(taskEntity.getFlowNodeBpmnId())
-        .ifPresent(tasklistListViewEntity::setFlowNodeBpmnId);
-    Optional.of(taskEntity.getKey()).ifPresent(tasklistListViewEntity::setKey);
-    Optional.of(taskEntity.getPartitionId()).ifPresent(tasklistListViewEntity::setPartitionId);
-    Optional.ofNullable(taskEntity.getCompletionTime())
-        .map(Object::toString)
-        .ifPresent(tasklistListViewEntity::setCompletionTime);
-    Optional.ofNullable(taskEntity.getAssignee()).ifPresent(tasklistListViewEntity::setAssignee);
-    Optional.ofNullable(taskEntity.getCreationTime())
-        .map(Object::toString)
-        .ifPresent(tasklistListViewEntity::setCreationTime);
-    Optional.ofNullable(taskEntity.getProcessDefinitionVersion())
-        .ifPresent(tasklistListViewEntity::setProcessDefinitionVersion);
-    Optional.ofNullable(taskEntity.getPriority()).ifPresent(tasklistListViewEntity::setPriority);
-    Optional.ofNullable(taskEntity.getCandidateGroups())
-        .ifPresent(tasklistListViewEntity::setCandidateGroups);
-    Optional.ofNullable(taskEntity.getCandidateUsers())
-        .ifPresent(tasklistListViewEntity::setCandidateUsers);
-    Optional.ofNullable(taskEntity.getBpmnProcessId())
-        .ifPresent(tasklistListViewEntity::setBpmnProcessId);
-    Optional.ofNullable(taskEntity.getProcessDefinitionId())
-        .ifPresent(tasklistListViewEntity::setProcessDefinitionId);
-    Optional.ofNullable(taskEntity.getTenantId()).ifPresent(tasklistListViewEntity::setTenantId);
-    Optional.ofNullable(taskEntity.getExternalFormReference())
-        .ifPresent(tasklistListViewEntity::setExternalFormReference);
-    Optional.ofNullable(taskEntity.getCustomHeaders())
-        .ifPresent(tasklistListViewEntity::setCustomHeaders);
-    Optional.ofNullable(taskEntity.getFormKey()).ifPresent(tasklistListViewEntity::setFormKey);
-    Optional.ofNullable(taskEntity.getState()).ifPresent(tasklistListViewEntity::setState);
-
-    // Set Join Field for the parent
-    final Map<String, Object> joinField = new HashMap<>();
-    joinField.put("name", "task");
-    joinField.put("parent", taskEntity.getProcessInstanceId());
-    tasklistListViewEntity.setJoin(joinField);
-
-    tasklistListViewEntity.setDataType(
-        DocumentNodeType.valueOf(String.valueOf(DocumentNodeType.USER_TASK)));
-    return tasklistListViewEntity;
-  }
-
-  private UpdateRequest persistUserTaskToListView(final TasklistListViewEntity entity)
+  private UpdateRequest persistUserTaskToListView(final TaskEntity taskEntity, Record record)
       throws PersistenceException {
     try {
+      final UserTaskListViewEntity userTaskListViewEntity = new UserTaskListViewEntity(taskEntity);
+
+      final Map<String, Object> updateFields =
+          userTaskRecordToTaskEntityMapper.getUpdateFieldsListViewMap(
+              userTaskListViewEntity, record);
+
       final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class);
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+
       return new UpdateRequest()
           .index(tasklistListViewTemplate.getFullQualifiedName())
-          .id(entity.getId())
-          .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-          .routing(entity.getProcessInstanceId())
+          .id(userTaskListViewEntity.getId())
+          .upsert(objectMapper.writeValueAsString(userTaskListViewEntity), XContentType.JSON)
+          .routing(userTaskListViewEntity.getProcessInstanceId())
           .doc(jsonMap)
-          .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT);
+          .retryOnConflict(ElasticsearchUtil.UPDATE_RETRY_COUNT);
     } catch (final IOException e) {
       throw new PersistenceException("Error preparing the query to upsert snapshot entity", e);
     }

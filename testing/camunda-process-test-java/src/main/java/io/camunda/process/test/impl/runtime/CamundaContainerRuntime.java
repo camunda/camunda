@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.containers.TasklistContainer;
@@ -37,6 +38,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
   private static final String NETWORK_ALIAS_ELASTICSEARCH = "elasticsearch";
   private static final String NETWORK_ALIAS_OPERATE = "operate";
   private static final String NETWORK_ALIAS_TASKLIST = "tasklist";
+  private static final String NETWORK_ALIAS_CONNECTORS = "connectors";
 
   private static final String ELASTICSEARCH_URL =
       "http://" + NETWORK_ALIAS_ELASTICSEARCH + ":" + ContainerRuntimePorts.ELASTICSEARCH_REST_API;
@@ -46,6 +48,9 @@ public class CamundaContainerRuntime implements AutoCloseable {
   private static final String ZEEBE_REST_API =
       NETWORK_ALIAS_ZEEBE + ":" + ContainerRuntimePorts.ZEEBE_REST_API;
 
+  private static final String OPERATE_REST_API =
+      "http://" + NETWORK_ALIAS_OPERATE + ":" + ContainerRuntimePorts.OPERATE_REST_API;
+
   private final ContainerFactory containerFactory;
 
   private final Network network;
@@ -53,16 +58,21 @@ public class CamundaContainerRuntime implements AutoCloseable {
   private final ElasticsearchContainer elasticsearchContainer;
   private final OperateContainer operateContainer;
   private final TasklistContainer tasklistContainer;
+  private final ConnectorsContainer connectorsContainer;
+
+  private final boolean connectorsEnabled;
 
   CamundaContainerRuntime(
       final CamundaContainerRuntimeBuilder builder, final ContainerFactory containerFactory) {
     this.containerFactory = containerFactory;
+    connectorsEnabled = builder.isConnectorsEnabled();
     network = Network.newNetwork();
 
     elasticsearchContainer = createElasticsearchContainer(network, builder);
     zeebeContainer = createZeebeContainer(network, builder);
     operateContainer = createOperateContainer(network, builder);
     tasklistContainer = createTasklistContainer(network, builder);
+    connectorsContainer = createConnectorsContainer(network, builder);
   }
 
   private ElasticsearchContainer createElasticsearchContainer(
@@ -138,6 +148,25 @@ public class CamundaContainerRuntime implements AutoCloseable {
     return container;
   }
 
+  private ConnectorsContainer createConnectorsContainer(
+      final Network network, final CamundaContainerRuntimeBuilder builder) {
+    final ConnectorsContainer container =
+        containerFactory
+            .createConnectorsContainer(
+                builder.getConnectorsDockerImageName(), builder.getConnectorsDockerImageVersion())
+            .withLogConsumer(createContainerLogger(builder.getConnectorsLoggerName()))
+            .withNetwork(network)
+            .withNetworkAliases(NETWORK_ALIAS_CONNECTORS)
+            .withZeebeGrpcApi(ZEEBE_GRPC_API)
+            .withOperateApi(OPERATE_REST_API)
+            .withEnv(builder.getConnectorsSecrets())
+            .withEnv(builder.getConnectorsEnvVars());
+
+    builder.getConnectorsExposedPorts().forEach(container::addExposedPort);
+
+    return container;
+  }
+
   public void start() {
     LOGGER.info("Starting Camunda container runtime");
     final Instant startTime = Instant.now();
@@ -146,6 +175,10 @@ public class CamundaContainerRuntime implements AutoCloseable {
     Stream.of(zeebeContainer, operateContainer, tasklistContainer)
         .parallel()
         .forEach(GenericContainer::start);
+
+    if (connectorsEnabled) {
+      connectorsContainer.start();
+    }
 
     final Instant endTime = Instant.now();
     final Duration startupTime = Duration.between(startTime, endTime);
@@ -168,10 +201,18 @@ public class CamundaContainerRuntime implements AutoCloseable {
     return tasklistContainer;
   }
 
+  public ConnectorsContainer getConnectorsContainer() {
+    return connectorsContainer;
+  }
+
   @Override
   public void close() throws Exception {
     LOGGER.info("Stopping Camunda container runtime");
     final Instant startTime = Instant.now();
+
+    if (connectorsEnabled) {
+      connectorsContainer.stop();
+    }
 
     Stream.of(zeebeContainer, operateContainer, tasklistContainer)
         .parallel()

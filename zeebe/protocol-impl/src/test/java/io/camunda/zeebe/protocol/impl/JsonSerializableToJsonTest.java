@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -65,9 +66,12 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.JsonUtil;
@@ -2109,6 +2113,7 @@ final class JsonSerializableToJsonTest {
 
               return new CommandDistributionRecord()
                   .setPartitionId(1)
+                  .setQueueId("totally-random-queue-id")
                   .setValueType(ValueType.DEPLOYMENT)
                   .setIntent(DeploymentIntent.CREATE)
                   .setCommandValue(deploymentRecord);
@@ -2116,6 +2121,7 @@ final class JsonSerializableToJsonTest {
         """
         {
           "partitionId": 1,
+          "queueId": "totally-random-queue-id",
           "valueType": "DEPLOYMENT",
           "intent": "CREATE",
           "commandValue": {
@@ -2153,6 +2159,7 @@ final class JsonSerializableToJsonTest {
         """
         {
           "partitionId": 1,
+          "queueId": null,
           "valueType": "NULL_VAL",
           "intent": "UNKNOWN",
           "commandValue": null
@@ -2578,20 +2585,33 @@ final class JsonSerializableToJsonTest {
         (Supplier<AuthorizationRecord>)
             () ->
                 new AuthorizationRecord()
-                    .setAuthorizationKey(1L)
-                    .setOwnerKey(2L)
+                    .setAction(PermissionAction.ADD)
+                    .setOwnerKey(1L)
                     .setOwnerType(AuthorizationOwnerType.USER)
-                    .setResourceKey("resource")
-                    .setResourceType("type")
-                    .setPermissions(List.of("permission")),
+                    .setResourceType(AuthorizationResourceType.DEPLOYMENT)
+                    .addPermission(
+                        new Permission()
+                            .setPermissionType(PermissionType.CREATE)
+                            .addResourceId("*")
+                            .addResourceId("bpmnProcessId:foo"))
+                    .addPermission(
+                        new Permission().setPermissionType(PermissionType.READ).addResourceId("*")),
         """
         {
-          "authorizationKey": 1,
-          "ownerKey": 2,
+          "action": "ADD",
+          "ownerKey": 1,
           "ownerType": "USER",
-          "resourceKey": "resource",
-          "resourceType": "type",
-          "permissions": ["permission"]
+          "resourceType": "DEPLOYMENT",
+          "permissions": [
+            {
+              "permissionType": "CREATE",
+              "resourceIds": ["*", "bpmnProcessId:foo"]
+            },
+            {
+              "permissionType": "READ",
+              "resourceIds": ["*"]
+            }
+          ]
         }
         """
       },
@@ -2603,17 +2623,16 @@ final class JsonSerializableToJsonTest {
         (Supplier<AuthorizationRecord>)
             () ->
                 new AuthorizationRecord()
+                    .setAction(PermissionAction.ADD)
                     .setOwnerKey(1L)
                     .setOwnerType(AuthorizationOwnerType.USER)
-                    .setResourceKey("resource")
-                    .setResourceType("type"),
+                    .setResourceType(AuthorizationResourceType.DEPLOYMENT),
         """
         {
-          "authorizationKey": -1,
+          "action": "ADD",
           "ownerKey": 1,
           "ownerType": "USER",
-          "resourceKey": "resource",
-          "resourceType": "type",
+          "resourceType": "DEPLOYMENT",
           "permissions": []
         }
         """

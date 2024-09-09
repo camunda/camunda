@@ -21,8 +21,8 @@
         "value": {
           "dynamic": "strict",
           "properties": {
-            "authorizationKey": {
-              "type": "long"
+            "action": {
+              "type": "keyword"
             },
             "ownerKey": {
               "type": "keyword"
@@ -30,14 +30,18 @@
             "ownerType": {
               "type": "keyword"
             },
-            "resourceKey": {
-              "type": "keyword"
-            },
             "resourceType": {
               "type": "keyword"
             },
             "permissions": {
-              "type": "text"
+              "properties": {
+                "permissionType": {
+                  "type": "keyword"
+                },
+                "resourceIds": {
+                  "type": "keyword"
+                }
+              }
             }
           }
         }

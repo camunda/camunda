@@ -9,11 +9,14 @@ package io.camunda.zeebe.util.jar;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
@@ -67,5 +70,30 @@ final class ExternalJarRepositoryTest {
 
     // then
     assertThat(jarRepository.load(jarFile.toPath())).isEqualTo(classLoader);
+  }
+
+  @Test
+  void shouldCloseClassLoadersWithExplicitCall() throws Exception {
+    final var loadedJars = new HashMap<Path, ExternalJarClassLoader>();
+    final var externalJarClassLoaderMock = mock(ExternalJarClassLoader.class);
+    loadedJars.put(mock(Path.class), externalJarClassLoaderMock);
+    final var repo = new ExternalJarRepository(loadedJars);
+
+    repo.close();
+
+    verify(externalJarClassLoaderMock).close(false);
+  }
+
+  @Test
+  void shouldCloseClassLoadersWithTryWithResources() throws Exception {
+    final var loadedJars = new HashMap<Path, ExternalJarClassLoader>();
+    final var externalJarClassLoaderMock = mock(ExternalJarClassLoader.class);
+    loadedJars.put(mock(Path.class), externalJarClassLoaderMock);
+
+    try (final var repo = new ExternalJarRepository(loadedJars)) {
+      repo.getJars(); // no-op
+    }
+
+    verify(externalJarClassLoaderMock).close(false);
   }
 }

@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: ./.github/actions/setup-yarn-cache
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
         with:
           directory: tasklist/client
       - run: yarn install --frozen-lockfile
@@ -43,7 +43,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: ./.github/actions/setup-yarn-cache
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
         with:
           directory: tasklist/client
       - run: yarn install --frozen-lockfile
@@ -71,7 +71,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: ./.github/actions/setup-yarn-cache
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
         with:
           directory: tasklist/client
       - run: yarn install --frozen-lockfile
@@ -99,7 +99,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: ./.github/actions/setup-yarn-cache
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
         with:
           directory: tasklist/client
       - run: yarn install --frozen-lockfile
@@ -132,7 +132,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: ./.github/actions/setup-yarn-cache
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
         with:
           directory: tasklist/client
       - name: Install node dependencies
@@ -175,7 +175,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: ./.github/actions/setup-yarn-cache
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
         with:
           directory: tasklist/client
       - name: Install node dependencies

@@ -36,6 +36,7 @@ import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
@@ -63,7 +64,7 @@ public final class BpmnProcessors {
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
-      final int partitionsCount,
+      final RoutingInfo routingInfo,
       final InstantSource clock) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
@@ -105,7 +106,7 @@ public final class BpmnProcessors {
         bpmnBehaviors,
         commandDistributionBehavior,
         partitionId,
-        partitionsCount);
+        routingInfo);
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
 
     return bpmnStreamProcessor;
@@ -247,7 +248,7 @@ public final class BpmnProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
-      final int partitionsCount) {
+      final RoutingInfo routingInfo) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         ProcessInstanceMigrationIntent.MIGRATE,
@@ -257,7 +258,7 @@ public final class BpmnProcessors {
             bpmnBehaviors,
             commandDistributionBehavior,
             partitionId,
-            partitionsCount));
+            routingInfo));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(
