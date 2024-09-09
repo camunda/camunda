@@ -47,7 +47,7 @@ public class JobZeebeRecordProcessorOpenSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(JobZeebeRecordProcessorOpenSearch.class);
 
-  private final Pattern EMBEDDED_FORMS_PATTERN = Pattern.compile("^camunda-forms:bpmn:.*");
+  private static final Pattern EMBEDDED_FORMS_PATTERN = Pattern.compile("^camunda-forms:bpmn:.*");
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
