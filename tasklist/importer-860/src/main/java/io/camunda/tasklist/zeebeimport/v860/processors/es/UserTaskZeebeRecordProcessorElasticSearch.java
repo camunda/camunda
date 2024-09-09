@@ -66,7 +66,7 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     final Optional<TaskEntity> taskEntity = userTaskRecordToTaskEntityMapper.map(record);
     if (taskEntity.isPresent()) {
       bulkRequest.add(getTaskQuery(taskEntity.get(), record));
-      bulkRequest.add(persistUserTaskToListView(createTaskListViewInput(taskEntity.get())));
+      bulkRequest.add(persistUserTaskToListView(taskEntity.get(), record));
       // Variables
       if (!record.getValue().getVariables().isEmpty()) {
         final List<TaskVariableEntity> variables =
@@ -82,12 +82,21 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
   private UpdateRequest getTaskQuery(final TaskEntity entity, final Record record)
       throws PersistenceException {
     try {
-      final Map<String, Object> updateFields =
-          userTaskRecordToTaskEntityMapper.getUpdateFieldsMap(entity, record);
+      final Optional<TaskEntity> taskEntityUpdateFields =
+          userTaskRecordToTaskEntityMapper.map(record);
 
-      // format date fields properly
+      if (!taskEntityUpdateFields.isPresent()) {
+        throw new PersistenceException(
+            String.format(
+                "Error preparing the query to upsert task instance [%s]", entity.getId()));
+      }
+
+      final UserTaskListViewEntity userTaskListViewEntity =
+          new UserTaskListViewEntity(taskEntityUpdateFields.get());
+
       final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+          objectMapper.readValue(
+              objectMapper.writeValueAsString(userTaskListViewEntity), HashMap.class);
 
       return new UpdateRequest()
           .index(taskTemplate.getFullQualifiedName())
@@ -135,22 +144,25 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     }
   }
 
-  private UserTaskListViewEntity createTaskListViewInput(final TaskEntity taskEntity) {
-    return new UserTaskListViewEntity(taskEntity);
-  }
-
-  private UpdateRequest persistUserTaskToListView(
-      final UserTaskListViewEntity userTaskListViewEntity) throws PersistenceException {
+  private UpdateRequest persistUserTaskToListView(final TaskEntity taskEntity, final Record record)
+      throws PersistenceException {
     try {
+
+      final UserTaskListViewEntity userTaskListViewEntity = new UserTaskListViewEntity(taskEntity);
+
+      final Map<String, Object> updateFields =
+          userTaskRecordToTaskEntityMapper.getUpdateFieldsListViewMap(
+              userTaskListViewEntity, record);
+
       final Map<String, Object> jsonMap =
-          objectMapper.readValue(
-              objectMapper.writeValueAsString(userTaskListViewEntity), HashMap.class);
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+
       return new UpdateRequest()
           .index(tasklistListViewTemplate.getFullQualifiedName())
           .id(userTaskListViewEntity.getId())
           .upsert(objectMapper.writeValueAsString(userTaskListViewEntity), XContentType.JSON)
           .routing(userTaskListViewEntity.getProcessInstanceId())
-          .doc(jsonMap)
+          .doc(updateFields)
           .retryOnConflict(ElasticsearchUtil.UPDATE_RETRY_COUNT);
     } catch (final IOException e) {
       throw new PersistenceException("Error preparing the query to upsert snapshot entity", e);
