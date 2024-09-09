@@ -13,20 +13,29 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.TasklistListViewEntity;
+import io.camunda.tasklist.entities.listview.VariableListViewEntity;
+import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.store.ListViewStore;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.xcontent.XContentType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
@@ -46,78 +55,6 @@ public class ListViewStoreElasticSearch implements ListViewStore {
 
   @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
 
-  /**
-   * Retrieves process variables for the given task's process instance, copies them, and creates new
-   * task variables with the specified task's flow node instance ID as the parent.
-   *
-   * @param processInstanceId the ID of the process instance (parent)
-   * @param taskFlowNodeInstanceId the flow node instance ID of the task (child)
-   */
-  @Override
-  public void persistProcessVariablesToTaskVariables(
-      final String processInstanceId, final String taskFlowNodeInstanceId) {
-    try {
-      final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(tasklistListViewTemplate)
-              .source(
-                  SearchSourceBuilder.searchSource()
-                      .query(
-                          termQuery(
-                              TasklistListViewTemplate.VARIABLE_SCOPE_KEY, processInstanceId)));
-
-      final var searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final SearchHit[] hits = searchResponse.getHits().getHits();
-
-      for (final SearchHit hit : hits) {
-
-        final TasklistListViewEntity tasklistViewEntity =
-            fromSearchHit(hit.toString(), objectMapper, TasklistListViewEntity.class);
-        final Map<String, Object> sourceMap = hit.getSourceAsMap();
-
-        final Map<String, Object> updateFields = new HashMap<>(sourceMap);
-        updateFields.put(
-            TasklistListViewTemplate.JOIN_FIELD_NAME,
-            Map.of("name", "taskVariable", "parent", taskFlowNodeInstanceId));
-
-        updateFields.put(
-            TasklistListViewTemplate.ID,
-            taskFlowNodeInstanceId + "-" + tasklistViewEntity.getVarName());
-
-        updateFields.put(TasklistListViewTemplate.VARIABLE_SCOPE_KEY, taskFlowNodeInstanceId);
-
-        final Map<String, Object> jsonMap =
-            objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-
-        final UpdateRequest updateRequest =
-            new UpdateRequest()
-                .index(tasklistListViewTemplate.getFullQualifiedName())
-                .id(
-                    taskFlowNodeInstanceId
-                        + "-"
-                        + updateFields.get(TasklistListViewTemplate.VARIABLE_NAME))
-                .routing(taskFlowNodeInstanceId)
-                .upsert(jsonMap)
-                .doc(updateFields)
-                .retryOnConflict(UPDATE_RETRY_COUNT);
-
-        esClient.update(updateRequest, RequestOptions.DEFAULT);
-      }
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException(
-          String.format(
-              "Error copying process variables to task variables for task [%s]",
-              taskFlowNodeInstanceId),
-          e);
-    }
-  }
-
-  /**
-   * Remove the task variable data for the given task's flow node instance ID. This ill be used
-   * meanwhile we still support Job Workers, and to clean up the task variable data once the task is
-   * completed from a Job Worker side.
-   *
-   * @param flowNodeInstanceId the flow node ID of the task
-   */
   @Override
   public void removeVariableByFlowNodeInstanceId(final String flowNodeInstanceId) {
     try {
@@ -133,13 +70,13 @@ public class ListViewStoreElasticSearch implements ListViewStore {
       final SearchHit[] hits = searchResponse.getHits().getHits();
 
       for (final SearchHit hit : hits) {
-        final TasklistListViewEntity tasklistViewEntity =
-            fromSearchHit(hit.toString(), objectMapper, TasklistListViewEntity.class);
+        final VariableListViewEntity variableListViewEntity =
+            fromSearchHit(hit.getSourceAsString(), objectMapper, VariableListViewEntity.class);
 
         final var deleteRequest =
-            new org.elasticsearch.action.delete.DeleteRequest()
+            new DeleteRequest()
                 .index(tasklistListViewTemplate.getFullQualifiedName())
-                .id(tasklistViewEntity.getId())
+                .id(variableListViewEntity.getId())
                 .routing(flowNodeInstanceId);
 
         esClient.delete(deleteRequest, RequestOptions.DEFAULT);
@@ -149,6 +86,81 @@ public class ListViewStoreElasticSearch implements ListViewStore {
           String.format(
               "Error removing job worker variable data for flowNodeInstanceId [%s]",
               flowNodeInstanceId),
+          e);
+    }
+  }
+
+  @Override
+  public List<VariableListViewEntity> getVariablesByVariableName(final String varName) {
+    try {
+      final SearchRequest searchRequest =
+          ElasticsearchUtil.createSearchRequest(tasklistListViewTemplate)
+              .source(
+                  SearchSourceBuilder.searchSource()
+                      .query(termQuery(TasklistListViewTemplate.VARIABLE_NAME, varName)));
+
+      final var searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchHit[] hits = searchResponse.getHits().getHits();
+
+      return Arrays.stream(hits)
+          .map(
+              hit ->
+                  fromSearchHit(
+                      hit.getSourceAsString(), objectMapper, VariableListViewEntity.class))
+          .collect(Collectors.toList());
+
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(
+          String.format(
+              "Error removing job worker variable data for flowNodeInstanceId [%s]", varName),
+          e);
+    }
+  }
+
+  @Override
+  public void persistTaskVariables(final Collection<VariableListViewEntity> finalVariables) {
+    if (finalVariables.isEmpty()) {
+      return;
+    }
+
+    final BulkRequest bulkRequest = new BulkRequest();
+
+    for (final VariableListViewEntity variableEntity : finalVariables) {
+      bulkRequest.add(createUpsertRequest(variableEntity));
+    }
+    try {
+      ElasticsearchUtil.processBulkRequest(
+          esClient, bulkRequest, WriteRequest.RefreshPolicy.WAIT_UNTIL);
+    } catch (final PersistenceException ex) {
+      throw new TasklistRuntimeException(ex);
+    }
+  }
+
+  private UpdateRequest createUpsertRequest(final VariableListViewEntity variableEntity) {
+    try {
+      final Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(TasklistListViewTemplate.VARIABLE_NAME, variableEntity.getName());
+      updateFields.put(TasklistListViewTemplate.VARIABLE_VALUE, variableEntity.getValue());
+      updateFields.put(TasklistListViewTemplate.VARIABLE_FULL_VALUE, variableEntity.getFullValue());
+      updateFields.put(TasklistListViewTemplate.JOIN_FIELD_NAME, variableEntity.getJoin());
+
+      // format date fields properly
+      final Map<String, Object> jsonMap =
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+
+      return new UpdateRequest()
+          .index(tasklistListViewTemplate.getFullQualifiedName())
+          .id(variableEntity.getId())
+          .upsert(objectMapper.writeValueAsString(variableEntity), XContentType.JSON)
+          .doc(jsonMap)
+          .routing(variableEntity.getScopeKey())
+          .retryOnConflict(UPDATE_RETRY_COUNT);
+
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(
+          String.format(
+              "Error preparing the query to upsert task variable instance [%s]",
+              variableEntity.getId()),
           e);
     }
   }

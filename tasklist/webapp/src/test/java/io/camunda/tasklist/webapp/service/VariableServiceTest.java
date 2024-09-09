@@ -479,7 +479,7 @@ class VariableServiceTest {
   void persistTaskVariablesWithoutDraftVariables() {
     // given
     final String taskId = "taskId_557";
-    final String flowNodeInstanceId = "flowNodeInstanceId_456";
+    final String flowNodeInstanceId = "456";
     final TaskEntity task =
         new TaskEntity()
             .setId(taskId)
@@ -522,7 +522,7 @@ class VariableServiceTest {
   void persistTaskVariablesWithDraftVariables() {
     // given
     final String taskId = "taskId_557";
-    final String flowNodeInstanceId = "flowNodeInstanceId_456";
+    final String flowNodeInstanceId = "456";
     final TaskEntity task =
         new TaskEntity()
             .setId(taskId)

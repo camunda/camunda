@@ -7,18 +7,22 @@
  */
 package io.camunda.tasklist.store.opensearch;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static io.camunda.tasklist.util.OpenSearchUtil.UPDATE_RETRY_COUNT;
+
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.TasklistListViewEntity;
+import io.camunda.tasklist.entities.listview.VariableListViewEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.store.ListViewStore;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -42,90 +46,8 @@ public class ListViewStoreOpenSearch implements ListViewStore {
   @Qualifier("tasklistOsClient")
   private OpenSearchClient osClient;
 
-  @Autowired
-  @Qualifier("tasklistObjectMapper")
-  private ObjectMapper objectMapper;
-
   @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
 
-  /**
-   * Retrieves process variables for the given task's process instance, copies them, and creates new
-   * task variables with the specified task's flow node instance ID as the parent.
-   *
-   * @param processInstanceId the ID of the process instance (parent)
-   * @param taskFlowNodeInstanceId the flow node instance ID of the task (child)
-   */
-  @Override
-  public void persistProcessVariablesToTaskVariables(
-      final String processInstanceId, final String taskFlowNodeInstanceId) {
-    try {
-      // Create a search request to find process variables associated with the processInstanceId
-      final SearchRequest.Builder searchRequest =
-          new SearchRequest.Builder()
-              .index(tasklistListViewTemplate.getAlias())
-              .query(
-                  q ->
-                      q.term(
-                          t ->
-                              t.field(TasklistListViewTemplate.VARIABLE_SCOPE_KEY)
-                                  .value(FieldValue.of(processInstanceId))));
-
-      final SearchResponse<TasklistListViewEntity> searchResponse =
-          osClient.search(searchRequest.build(), TasklistListViewEntity.class);
-
-      final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
-      final List<BulkOperation> bulkOperations = new ArrayList<>();
-
-      for (final Hit<TasklistListViewEntity> tasklistListViewEntityHit :
-          searchResponse.hits().hits()) {
-        final TasklistListViewEntity tasklistListViewEntity = tasklistListViewEntityHit.source();
-
-        // Set Variable as a Scope Key for the task variable
-        tasklistListViewEntity.setJoin(
-            Map.of("name", "taskVariable", "parent", taskFlowNodeInstanceId));
-        tasklistListViewEntity.setId(
-            taskFlowNodeInstanceId + "-" + tasklistListViewEntity.getVarName());
-        tasklistListViewEntity.setVarScopeKey(taskFlowNodeInstanceId);
-
-        final BulkOperation bulkOperation =
-            new BulkOperation.Builder()
-                .update(
-                    UpdateOperation.of(
-                        u ->
-                            u.index(tasklistListViewTemplate.getFullQualifiedName())
-                                .id(
-                                    taskFlowNodeInstanceId
-                                        + "-"
-                                        + tasklistListViewEntity.getVarName())
-                                .docAsUpsert(true)
-                                .document(
-                                    CommonUtils.getJsonObjectFromEntity(tasklistListViewEntity))
-                                .routing(taskFlowNodeInstanceId)))
-                .build();
-
-        bulkOperations.add(bulkOperation);
-      }
-
-      // Add the operations to the bulk request and execute it
-      bulkRequest.operations(bulkOperations);
-      osClient.bulk(bulkRequest.build());
-
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException(
-          String.format(
-              "Error copying process variables to task variables for task [%s]",
-              taskFlowNodeInstanceId),
-          e);
-    }
-  }
-
-  /**
-   * Remove the task variable data for the given task's flow node instance ID. This ill be used
-   * meanwhile we still support Job Workers, and to clean up the task variable data once the task is
-   * completed from a Job Worker side.
-   *
-   * @param flowNodeInstanceId the flow node ID of the task
-   */
   @Override
   public void removeVariableByFlowNodeInstanceId(final String flowNodeInstanceId) {
     try {
@@ -139,23 +61,20 @@ public class ListViewStoreOpenSearch implements ListViewStore {
                               t.field(TasklistListViewTemplate.VARIABLE_SCOPE_KEY)
                                   .value(FieldValue.of(flowNodeInstanceId))));
 
-      final SearchResponse<TasklistListViewEntity> searchResponse =
-          osClient.search(searchRequest.build(), TasklistListViewEntity.class);
+      final SearchResponse<VariableListViewEntity> searchResponse =
+          osClient.search(searchRequest.build(), VariableListViewEntity.class);
 
       final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
       final List<BulkOperation> bulkOperations = new ArrayList<>();
 
-      for (final Hit<TasklistListViewEntity> hit : searchResponse.hits().hits()) {
-        final TasklistListViewEntity entity = hit.source();
-        LOGGER.info(
-            "Removing task variables present on tasklist-listview for flowNodeInstanceId : "
-                + entity.getVarName());
+      for (final Hit<VariableListViewEntity> hit : searchResponse.hits().hits()) {
+        final VariableListViewEntity variableListViewEntity = hit.source();
         final BulkOperation bulkOperation =
             new BulkOperation.Builder()
                 .delete(
                     d ->
                         d.index(tasklistListViewTemplate.getFullQualifiedName())
-                            .id(entity.getId())
+                            .id(variableListViewEntity.getId())
                             .routing(flowNodeInstanceId))
                 .build();
 
@@ -171,5 +90,69 @@ public class ListViewStoreOpenSearch implements ListViewStore {
               "Error deleting task variables for flowNodeInstanceId [%s]", flowNodeInstanceId),
           e);
     }
+  }
+
+  @Override
+  public List<VariableListViewEntity> getVariablesByVariableName(final String varName) {
+    try {
+      final SearchRequest.Builder searchRequest =
+          new SearchRequest.Builder()
+              .index(tasklistListViewTemplate.getAlias())
+              .query(
+                  q ->
+                      q.term(
+                          t ->
+                              t.field(TasklistListViewTemplate.VARIABLE_NAME)
+                                  .value(FieldValue.of(varName))));
+
+      final SearchResponse<VariableListViewEntity> searchResponse =
+          osClient.search(searchRequest.build(), VariableListViewEntity.class);
+
+      return searchResponse.hits().hits().stream().map(Hit::source).collect(Collectors.toList());
+
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(
+          String.format(
+              "Error removing job worker variable data for flowNodeInstanceId [%s]", varName),
+          e);
+    }
+  }
+
+  @Override
+  public void persistTaskVariables(final Collection<VariableListViewEntity> finalVariables) {
+    if (finalVariables.isEmpty()) {
+      return;
+    }
+    try {
+      final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
+
+      for (final VariableListViewEntity variableEntity : finalVariables) {
+        bulkRequest.operations(op -> op.update(createUpsertRequest(variableEntity)));
+      }
+
+      osClient.bulk(bulkRequest.build());
+
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException("Error processing bulk request for task variables", e);
+    }
+  }
+
+  private UpdateOperation<Object> createUpsertRequest(
+      final VariableListViewEntity variableListViewEntity) {
+    final Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(TasklistListViewTemplate.VARIABLE_NAME, variableListViewEntity.getName());
+    updateFields.put(TasklistListViewTemplate.VARIABLE_VALUE, variableListViewEntity.getValue());
+    updateFields.put(
+        TasklistListViewTemplate.VARIABLE_FULL_VALUE, variableListViewEntity.getFullValue());
+    updateFields.put(TasklistListViewTemplate.JOIN_FIELD_NAME, variableListViewEntity.getJoin());
+
+    return new UpdateOperation.Builder<>()
+        .index(tasklistListViewTemplate.getFullQualifiedName()) // Index name
+        .routing(variableListViewEntity.getScopeKey())
+        .id(variableListViewEntity.getId())
+        .document(CommonUtils.getJsonObjectFromEntity(updateFields))
+        .upsert(CommonUtils.getJsonObjectFromEntity(variableListViewEntity))
+        .retryOnConflict(UPDATE_RETRY_COUNT)
+        .build();
   }
 }

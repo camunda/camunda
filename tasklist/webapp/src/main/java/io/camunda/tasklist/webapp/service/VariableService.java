@@ -17,6 +17,8 @@ import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
+import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
+import io.camunda.tasklist.entities.listview.VariableListViewEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.DraftVariableStore;
@@ -150,6 +152,8 @@ public class VariableService {
       final boolean withDraftVariableValues) {
     // take current runtime variables values and
     final TaskEntity task = taskStore.getTask(taskId);
+    final String taskFlowNodeInstanceId = task.getFlowNodeInstanceId();
+
     final List<VariableEntity> taskVariables =
         getRuntimeVariablesByRequest(GetVariablesRequest.createFrom(task));
 
@@ -158,6 +162,17 @@ public class VariableService {
         variable ->
             finalVariablesMap.put(
                 variable.getName(), TaskVariableEntity.createFrom(taskId, variable)));
+
+    // Snapshot Process Variable at the moment the task was completed as a Task Variable
+    final Map<String, VariableListViewEntity> finalVariablesListViewMap = new HashMap<>();
+    taskVariables.forEach(
+        variable ->
+            finalVariablesListViewMap.put(
+                variable.getName(),
+                new VariableListViewEntity(variable)
+                    .setScopeKey(taskFlowNodeInstanceId)
+                    .setId(taskFlowNodeInstanceId + "-" + variable.getName())
+                    .setJoin(new ListViewJoinRelation("taskVariable", taskFlowNodeInstanceId))));
 
     if (withDraftVariableValues) {
       // update/append with draft variables
@@ -180,14 +195,21 @@ public class VariableService {
               var.getName(),
               var.getValue(),
               tasklistProperties.getImporter().getVariableSizeThreshold()));
-    }
-    listViewStore.persistProcessVariablesToTaskVariables(
-        task.getProcessInstanceId(), task.getFlowNodeInstanceId());
-    variableStore.persistTaskVariables(finalVariablesMap.values());
 
-    // Remove Task Variable created for Job Workers (This won't be persisted)
-    // This method will be here meanwhile we still support Job Workers
-    listViewStore.removeVariableByFlowNodeInstanceId(task.getFlowNodeInstanceId());
+      // Add Variables added to a Task as a Process Variablee
+      finalVariablesListViewMap.put(
+          var.getName(),
+          VariableListViewEntity.createFrom(
+              task.getTenantId(),
+              task.getFlowNodeInstanceId() + "-" + var.getName(),
+              var.getName(),
+              var.getValue(),
+              task.getFlowNodeInstanceId(),
+              tasklistProperties.getImporter().getVariableSizeThreshold(),
+              new ListViewJoinRelation("taskVariable", taskFlowNodeInstanceId)));
+    }
+    listViewStore.persistTaskVariables(finalVariablesListViewMap.values());
+    variableStore.persistTaskVariables(finalVariablesMap.values());
   }
 
   /** Deletes all draft variables associated with the task by {@code taskId}. */
@@ -538,5 +560,16 @@ public class VariableService {
                 }
               });
     }
+  }
+
+  /**
+   * We won't persist Job Workers Variables on List View. (But we are not able to identify in
+   * advance if a variable comes from job worker or user task) This method removes variables by
+   * flowNodeInstanceId
+   *
+   * @param flowNodeInstanceId the flow node ID of the task
+   */
+  public void removeVariableByFlowNodeInstanceId(final String flowNodeInstanceId) {
+    listViewStore.removeVariableByFlowNodeInstanceId(flowNodeInstanceId);
   }
 }

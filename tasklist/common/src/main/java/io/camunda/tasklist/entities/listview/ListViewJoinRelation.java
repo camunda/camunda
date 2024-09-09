@@ -23,6 +23,11 @@ public class ListViewJoinRelation {
     this.name = name;
   }
 
+  public ListViewJoinRelation(final String name, final String parent) {
+    this.name = name;
+    this.parent = Long.valueOf(parent);
+  }
+
   public String getName() {
     return name;
   }

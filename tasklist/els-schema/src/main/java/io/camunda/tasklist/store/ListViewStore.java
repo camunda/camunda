@@ -7,8 +7,32 @@
  */
 package io.camunda.tasklist.store;
 
-public interface ListViewStore {
-  void persistProcessVariablesToTaskVariables(final String scopeKey, final String variable);
+import io.camunda.tasklist.entities.listview.VariableListViewEntity;
+import java.util.Collection;
+import java.util.List;
 
+public interface ListViewStore {
+  /**
+   * Remove the task variable data for the given task's flow node instance ID. This ill be used
+   * meanwhile we still support Job Workers, and to clean up the task variable data once the task is
+   * completed from a Job Worker side.
+   *
+   * @param flowNodeInstanceId the flow node ID of the task
+   */
   void removeVariableByFlowNodeInstanceId(final String flowNodeInstanceId);
+
+  /**
+   * Get Task Variable by Variable Name.
+   *
+   * @param varName the flow node ID of the task
+   * @return the task variables
+   */
+  List<VariableListViewEntity> getVariablesByVariableName(final String varName);
+
+  /**
+   * Persist the task variables.
+   *
+   * @param variable the task variables
+   */
+  void persistTaskVariables(final Collection<VariableListViewEntity> variable);
 }
