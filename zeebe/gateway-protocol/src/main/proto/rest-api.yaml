@@ -1324,17 +1324,18 @@ paths:
     post:
       tags:
         - Element instance
-      summary: Updates element instance variables
+      summary: Update element instance variables
       description: |
-        Updates all the variables of a particular scope (e.g. process instance, flow element instance) with the given variable data.
+        Updates all the variables of a particular scope (for example, process instance, flow element instance) with the given variable data.
+        Specify the element instance in the `elementInstanceKey` parameter.
       parameters:
         - name: elementInstanceKey
           in: path
           required: true
           description: |
-            The key of the element instance to which to update the variables.
-            Can be the process instance key (as obtained during instance creation), or a given
-            element, such as a service task (see elementInstanceKey on the job message).
+            The key of the element instance to update the variables for.
+            This can be the process instance key (as obtained during instance creation), or a given
+            element, such as a service task (see the `elementInstanceKey` on the job message).
           schema:
             type: integer
             format: int64
@@ -2766,7 +2767,7 @@ components:
           type: object
         local:
           description: |
-            If set to true, the variables will be merged strictly into the local scope (as indicated by elementInstanceKey).
+            If set to true, the variables are merged strictly into the local scope (as specified by the `elementInstanceKey`).
             Otherwise, the variables are propagated to upper scopes and set at the outermost one.
 
             Let’s consider the following example:
@@ -2785,7 +2786,7 @@ components:
           default: false
         operationReference:
           description: >
-            A reference key chosen by the user and will be part of all records resulting from this operation.
+            A reference key chosen by the user that will be part of all records resulting from this operation.
             Must be > 0 if provided.
           type: integer
           format: int64
