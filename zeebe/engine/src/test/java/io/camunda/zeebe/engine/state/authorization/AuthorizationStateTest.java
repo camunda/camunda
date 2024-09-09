@@ -249,4 +249,34 @@ public class AuthorizationStateTest {
     // then
     assertThat(resourceIds1).isNotEqualTo(resourceIds2);
   }
+
+  @Test
+  void shouldInsertOwnerTypeByKey() {
+    // given
+    final var ownerKey = 1L;
+    final var ownerType = AuthorizationOwnerType.USER;
+
+    // when
+    authorizationState.insertOwnerTypeByKey(ownerKey, ownerType);
+
+    // then
+    final var persistedOwnerType = authorizationState.getOwnerType(ownerKey);
+    assertThat(persistedOwnerType).contains(ownerType);
+  }
+
+  @Test
+  void shouldNotInsertOwnerTypeByKeyTwice() {
+    // given
+    final var ownerKey = 1L;
+    final var ownerType = AuthorizationOwnerType.USER;
+
+    // when
+    authorizationState.insertOwnerTypeByKey(ownerKey, ownerType);
+
+    // then
+    assertThatThrownBy(() -> authorizationState.insertOwnerTypeByKey(ownerKey, ownerType))
+        .isInstanceOf(ZeebeDbInconsistentException.class)
+        .hasMessageContaining(
+            "Key DbLong{1} in ColumnFamily OWNER_TYPE_BY_OWNER_KEY already exists");
+  }
 }
