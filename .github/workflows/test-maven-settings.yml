@@ -17,13 +17,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  unit-tests:
-    name: Unit Tests
-    uses: ./.github/workflows/optimize-unit-tests.yml
-    secrets: inherit
-
   docker:
-    name: Optimize Build
+    name: Test Maven CI Optimize Build
     if: github.event_name == 'pull_request'
     uses: ./.github/workflows/optimize-ci-build-reusable.yml
     secrets: inherit
