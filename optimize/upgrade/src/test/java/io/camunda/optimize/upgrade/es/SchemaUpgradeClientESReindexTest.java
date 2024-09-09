@@ -8,7 +8,7 @@
 package io.camunda.optimize.upgrade.es;
 
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
-import static io.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
+import static io.camunda.optimize.upgrade.db.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,9 +53,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.OngoingStubbing;
 
 @ExtendWith(MockitoExtension.class)
-public class SchemaUpgradeClientReindexTest {
+public class SchemaUpgradeClientESReindexTest {
   @RegisterExtension
-  LogCapturer logCapturer = LogCapturer.create().captureForType(SchemaUpgradeClient.class);
+  LogCapturer logCapturer = LogCapturer.create().captureForType(SchemaUpgradeClientES.class);
 
   @Mock private ElasticSearchSchemaManager schemaManager;
 
@@ -66,7 +66,7 @@ public class SchemaUpgradeClientReindexTest {
   @Mock private OptimizeIndexNameService indexNameService;
   @Mock private ElasticSearchMetadataService metadataService;
   @Mock private TaskInfo taskInfo;
-  private SchemaUpgradeClient underTest;
+  private SchemaUpgradeClientES underTest;
 
   @BeforeEach
   public void init() {

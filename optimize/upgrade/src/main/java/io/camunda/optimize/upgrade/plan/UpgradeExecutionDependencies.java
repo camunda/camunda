@@ -8,14 +8,16 @@
 package io.camunda.optimize.upgrade.plan;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
+import io.camunda.optimize.service.db.DatabaseClient;
+import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.DatabaseType;
 
 public record UpgradeExecutionDependencies(
+    DatabaseType databaseType,
     ConfigurationService configurationService,
     OptimizeIndexNameService indexNameService,
-    OptimizeElasticsearchClient esClient,
+    DatabaseClient databaseClient,
     ObjectMapper objectMapper,
-    ElasticSearchMetadataService metadataService) {}
+    DatabaseMetadataService<?> metadataService) {}

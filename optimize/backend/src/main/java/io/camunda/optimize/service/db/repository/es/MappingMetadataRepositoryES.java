@@ -7,13 +7,10 @@
  */
 package io.camunda.optimize.service.db.repository.es;
 
+import io.camunda.optimize.service.db.es.MappingMetadataUtilES;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.repository.MappingMetadataRepository;
-import io.camunda.optimize.service.db.schema.IndexMappingCreator;
-import io.camunda.optimize.service.db.schema.MappingMetadataUtil;
-import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
@@ -25,11 +22,13 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class MappingMetadataRepositoryES implements MappingMetadataRepository {
   private final OptimizeElasticsearchClient esClient;
-  private final OptimizeIndexNameService indexNameService;
 
   @Override
-  public List<IndexMappingCreator<?>> getAllMappings() {
-    MappingMetadataUtil mappingUtil = new MappingMetadataUtil(esClient);
-    return mappingUtil.getAllMappings(indexNameService.getIndexPrefix());
+  public String[] getIndexAliasesWithImportIndexFlag(final boolean isImportIndex) {
+    MappingMetadataUtilES mappingUtil = new MappingMetadataUtilES(esClient);
+    return mappingUtil.getAllMappings(esClient.getIndexNameService().getIndexPrefix()).stream()
+        .filter(mapping -> isImportIndex == mapping.isImportIndex())
+        .map(esClient.getIndexNameService()::getOptimizeIndexAliasForIndex)
+        .toArray(String[]::new);
   }
 }

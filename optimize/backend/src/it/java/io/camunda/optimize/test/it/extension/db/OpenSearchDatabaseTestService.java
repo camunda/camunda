@@ -12,9 +12,11 @@ import static io.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGA
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
+import static io.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager.createIndexFromJson;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static io.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
 
 import com.google.common.collect.Iterables;
@@ -26,22 +28,28 @@ import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.service.db.DatabaseClient;
+import io.camunda.optimize.service.db.os.ExtendedOpenSearchClient;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
 import io.camunda.optimize.service.db.os.schema.OpenSearchIndexSettingsBuilder;
 import io.camunda.optimize.service.db.os.schema.OpenSearchMetadataService;
+import io.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import io.camunda.optimize.service.db.os.schema.index.ExternalProcessVariableIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.VariableUpdateInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.report.SingleProcessReportIndexOS;
 import io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil;
+import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
+import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import io.camunda.optimize.service.db.schema.IndexLookupUtil;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
+import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.DatabaseHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -65,6 +73,8 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.elasticsearch.common.Strings;
+import org.elasticsearch.xcontent.XContentBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.mockserver.integration.ClientAndServer;
 import org.opensearch.client.json.JsonData;
@@ -90,6 +100,8 @@ import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.opensearch.indices.GetAliasResponse;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
+import org.opensearch.client.opensearch.indices.GetMappingRequest;
+import org.opensearch.client.opensearch.indices.GetMappingResponse;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
@@ -106,6 +118,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   private String opensearchDatabaseVersion;
 
   private OptimizeOpenSearchClient prefixAwareOptimizeOpenSearchClient;
+  private ExtendedOpenSearchClient extendedOpenSearchClient;
 
   public OpenSearchDatabaseTestService(final String customIndexPrefix, final boolean haveToClean) {
     super(customIndexPrefix, haveToClean);
@@ -258,6 +271,12 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     }
   }
 
+  @Override
+  public void deleteAllDocumentsInIndex(String optimizeIndexAliasForIndex) {
+    getOptimizeOpenSearchClient()
+        .deleteByQuery(QueryDSL.matchAll(), true, optimizeIndexAliasForIndex);
+  }
+
   @SneakyThrows
   @Override
   public void deleteAllIndicesContainingTerm(final String indexTerm) {
@@ -276,6 +295,83 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
             QueryDSL.matchAll(),
             true,
             getIndexNameService().getOptimizeIndexAliasForIndex(new SingleProcessReportIndexOS()));
+  }
+
+  @Override
+  public void insertTestDocuments(int amount, String indexName, String jsonDocument)
+      throws IOException {
+    final List<BulkOperation> operations = new ArrayList<>();
+    for (int i = 0; i < amount; i++) {
+      final IndexOperation.Builder<Object> operation =
+          new IndexOperation.Builder<>().document(JsonData.of(String.format(jsonDocument, i)));
+      operations.add(operation.build()._toBulkOperation());
+    }
+    prefixAwareOptimizeOpenSearchClient.doBulkRequest(
+        () -> new BulkRequest.Builder().operations(operations).index(indexName),
+        operations,
+        "add documents",
+        false);
+    getOptimizeOpenSearchClient().refresh(indexName);
+  }
+
+  @Override
+  public void performLowLevelBulkRequest(String methodName, String endpoint, String bulkPayload)
+      throws IOException {
+    extendedOpenSearchClient.arbitraryRequest(methodName, endpoint, bulkPayload);
+  }
+
+  @Override
+  public void initSchema(
+      List<IndexMappingCreator<XContentBuilder>> mappingCreators,
+      DatabaseMetadataService metadataService) {
+    OpenSearchSchemaManager schemaManager =
+        new OpenSearchSchemaManager(
+            (OpenSearchMetadataService) metadataService,
+            createDefaultConfiguration(),
+            getIndexNameService(),
+            mappingCreators.stream()
+                .map(
+                    index ->
+                        (IndexMappingCreator<IndexSettings.Builder>)
+                            IndexLookupUtil.convertIndexForDatabase(index, DatabaseType.OPENSEARCH))
+                .toList());
+    schemaManager.initializeSchema(getOptimizeOpenSearchClient());
+  }
+
+  private IndexSettings createIndexSettings(
+      final IndexMappingCreator indexMappingCreator, ConfigurationService configurationService) {
+    try {
+      return OpenSearchIndexSettingsBuilder.buildAllSettings(
+          configurationService, indexMappingCreator);
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not create index settings");
+    }
+  }
+
+  @Override
+  public Map<String, ? extends Object> getMappingFields(String indexName) throws IOException {
+    GetMappingRequest.Builder mapping = new GetMappingRequest.Builder().index(indexName);
+    GetMappingResponse getMappingResponse =
+        getOptimizeOpenSearchClient().getOpenSearchClient().indices().getMapping(mapping.build());
+    return getMappingResponse.result().values().stream()
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new OptimizeRuntimeException(
+                    "There should be at least one mapping available for the index!"))
+        .mappings()
+        .properties();
+  }
+
+  @Override
+  public boolean indexExists(final String versionedIndexName, final Boolean addMappingFeatures) {
+    return false;
+  }
+
+  @Override
+  public boolean templateExists(final String optimizeIndexTemplateNameWithVersion)
+      throws IOException {
+    return false;
   }
 
   @Override
@@ -585,6 +681,41 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
+  public boolean isAliasReadOnly(String readOnlyAliasForIndex) throws IOException {
+    GetAliasResponse aliasResponse = getOptimizeOpenSearchClient().getAlias(readOnlyAliasForIndex);
+    final Map<String, IndexAliases> indexNameToAliasMap = aliasResponse.result();
+    return indexNameToAliasMap.entrySet().stream()
+        .noneMatch(
+            entry ->
+                entry.getValue().aliases().values().stream()
+                    .anyMatch(alias -> alias.isWriteIndex() != null && alias.isWriteIndex()));
+  }
+
+  @Override
+  public void createIndex(
+      String indexName, Map<String, Boolean> aliases, DefaultIndexMappingCreator indexMapping)
+      throws IOException {
+
+    final IndexSettings indexSettings =
+        createIndexSettings(indexMapping, createConfigurationService());
+
+    final HashMap<String, Alias> aliasData = new HashMap<>();
+    for (Map.Entry<String, Boolean> entry : aliases.entrySet()) {
+      aliasData.put(entry.getKey(), new Alias.Builder().isWriteIndex(entry.getValue()).build());
+    }
+
+    indexMapping.setDynamic("false");
+    final CreateIndexRequest request =
+        createIndexFromJson(
+            Strings.toString(indexMapping.getSource()), indexName, aliasData, indexSettings);
+    final boolean created =
+        getOptimizeOpenSearchClient().getRichOpenSearchClient().index().createIndex(request);
+    if (!created) {
+      throw new IOException("Could not create index " + indexName);
+    }
+  }
+
+  @Override
   public void setActivityStartDatesToNull(
       final String processDefinitionKey, final ScriptData script) {
     getOptimizeOpenSearchClient()
@@ -656,6 +787,11 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
                     .anyMatch(alias -> alias.isWriteIndex() != null && alias.isWriteIndex()))
         .map(Map.Entry::getKey)
         .toList();
+  }
+
+  @Override
+  public VariableUpdateInstanceIndex getVariableUpdateInstanceIndex() {
+    return new VariableUpdateInstanceIndexOS();
   }
 
   private OptimizeOpenSearchClient getOptimizeOpenSearchClient() {

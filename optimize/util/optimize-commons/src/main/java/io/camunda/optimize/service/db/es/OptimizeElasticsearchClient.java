@@ -237,6 +237,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     return highLevelClient.delete(deleteRequest, requestOptions());
   }
 
+  @Override
   public final List<String> getAllIndexNames() throws IOException {
     return Arrays.asList(
         highLevelClient
@@ -330,7 +331,9 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     deleteIndex(indexAlias);
   }
 
-  public void refresh(final RefreshRequest refreshRequest) {
+  @Override
+  public void refresh(final String indexPattern) {
+    final RefreshRequest refreshRequest = new RefreshRequest(indexPattern);
     applyIndexPrefixes(refreshRequest);
     try {
       highLevelClient.indices().refresh(refreshRequest, requestOptions());
@@ -574,6 +577,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
    *
    * @param indexNames plain index names to delete
    */
+  @Override
   public void deleteIndexByRawIndexNames(final String... indexNames) {
     final String indexNamesString = Arrays.toString(indexNames);
     log.debug("Deleting indices [{}].", indexNamesString);
@@ -830,7 +834,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     final SearchResponse searchResponse;
     try {
       // refresh to ensure we see the latest state
-      refresh(new RefreshRequest(indexName));
+      refresh(indexName);
       searchResponse = search(searchRequest);
     } catch (final IOException e) {
       log.error("Was not able to search for " + indexName + "!", e);

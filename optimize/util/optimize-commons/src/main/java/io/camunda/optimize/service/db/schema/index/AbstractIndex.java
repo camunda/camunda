@@ -5,11 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.exceptions;
+package io.camunda.optimize.service.db.schema.index;
 
-public class OptimizeNotSpecifiedDatabaseProfileException extends OptimizeRuntimeException {
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-  public OptimizeNotSpecifiedDatabaseProfileException(String message) {
-    super(message);
-  }
-}
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+@Target({TYPE})
+@Retention(RUNTIME)
+public @interface AbstractIndex {}

@@ -7,9 +7,13 @@
  */
 package io.camunda.optimize.upgrade.main;
 
+import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
+import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_DATABASE_PROPERTY;
 import static io.camunda.optimize.upgrade.util.UpgradeUtil.createUpgradeDependencies;
 
 import io.camunda.optimize.service.metadata.Version;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -20,6 +24,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +44,14 @@ public class UpgradeMain {
 
   public static void main(String... args) {
     try {
-      final UpgradeExecutionDependencies upgradeDependencies = createUpgradeDependencies();
+      final DatabaseType databaseType =
+          ConfigurationService.convertToDatabaseProperty(
+              Optional.ofNullable(System.getenv(CAMUNDA_OPTIMIZE_DATABASE))
+                  .orElse(ELASTICSEARCH_DATABASE_PROPERTY));
+      log.info("Identified {} Database configuration", databaseType.getId());
+
+      final UpgradeExecutionDependencies upgradeDependencies =
+          createUpgradeDependencies(databaseType);
       final UpgradeProcedure upgradeProcedure = UpgradeProcedureFactory.create(upgradeDependencies);
       final String targetVersion =
           Arrays.stream(args)

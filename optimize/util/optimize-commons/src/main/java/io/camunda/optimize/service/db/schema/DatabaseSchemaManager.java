@@ -13,15 +13,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
+@Setter
 public abstract class DatabaseSchemaManager<CLIENT extends DatabaseClient, BUILDER> {
 
-  protected final ConfigurationService configurationService;
-  protected final OptimizeIndexNameService indexNameService;
+  protected ConfigurationService configurationService;
+  protected OptimizeIndexNameService indexNameService;
 
   @Getter protected final List<IndexMappingCreator<BUILDER>> mappings;
 

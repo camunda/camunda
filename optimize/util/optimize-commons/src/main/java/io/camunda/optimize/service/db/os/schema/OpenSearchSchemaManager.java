@@ -14,6 +14,7 @@ import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.util.stream.Collectors.toSet;
 
 import com.google.common.collect.Iterables;
+import io.camunda.optimize.service.db.os.MappingMetadataUtilOS;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.schema.index.AlertIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessKeyIndexOS;
@@ -39,7 +40,6 @@ import io.camunda.optimize.service.db.os.schema.index.report.SingleDecisionRepor
 import io.camunda.optimize.service.db.os.schema.index.report.SingleProcessReportIndexOS;
 import io.camunda.optimize.service.db.schema.DatabaseSchemaManager;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
-import io.camunda.optimize.service.db.schema.MappingMetadataUtil;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -98,6 +98,15 @@ public class OpenSearchSchemaManager
       final ConfigurationService configurationService,
       final OptimizeIndexNameService indexNameService) {
     super(configurationService, indexNameService, new ArrayList<>(getAllNonDynamicMappings()));
+    this.metadataService = metadataService;
+  }
+
+  public OpenSearchSchemaManager(
+      final OpenSearchMetadataService metadataService,
+      final ConfigurationService configurationService,
+      final OptimizeIndexNameService indexNameService,
+      final List<IndexMappingCreator<IndexSettings.Builder>> mappings) {
+    super(configurationService, indexNameService, mappings);
     this.metadataService = metadataService;
   }
 
@@ -239,6 +248,30 @@ public class OpenSearchSchemaManager
     }
   }
 
+  // Needed for loading from JSON, opensearch doesn't provide something like .withJSON(...) for
+  // index creation from files
+  public static CreateIndexRequest createIndexFromJson(
+      final String jsonMappings,
+      final String indexName,
+      final Map<String, Alias> aliases,
+      final IndexSettings settings)
+      throws OptimizeRuntimeException {
+    final String jsonNew = "{\"mappings\": " + jsonMappings + "}";
+    try (final JsonParser jsonParser =
+        JsonProvider.provider().createParser(new StringReader(jsonNew))) {
+      final Supplier<CreateIndexRequest.Builder> builderSupplier =
+          () ->
+              new CreateIndexRequest.Builder().index(indexName).aliases(aliases).settings(settings);
+      final ObjectDeserializer<CreateIndexRequest.Builder> deserializer =
+          getDeserializerWithPreconfiguredBuilder(builderSupplier);
+      try {
+        return deserializer.deserialize(jsonParser, new JsonbJsonpMapper()).build();
+      } catch (final Exception e) {
+        throw new OptimizeRuntimeException("Could not load schema for " + indexName, e);
+      }
+    }
+  }
+
   private boolean indicesExistWithNames(
       final OptimizeOpenSearchClient osClient, final List<String> indexNames) {
     return StreamSupport.stream(
@@ -312,30 +345,6 @@ public class OpenSearchSchemaManager
             createAliasMap(prefixedReadOnlyAliases, defaultAliasName),
             indexSettings);
     createIndex(osClient, request, suffixedIndexName);
-  }
-
-  // Needed for loading from JSON, opensearch doesn't provide something like .withJSON(...) for
-  // index creation from files
-  private CreateIndexRequest createIndexFromJson(
-      final String jsonMappings,
-      final String indexName,
-      final Map<String, Alias> aliases,
-      final IndexSettings settings)
-      throws OptimizeRuntimeException {
-    final String jsonNew = "{\"mappings\": " + jsonMappings + "}";
-    try (final JsonParser jsonParser =
-        JsonProvider.provider().createParser(new StringReader(jsonNew))) {
-      final Supplier<CreateIndexRequest.Builder> builderSupplier =
-          () ->
-              new CreateIndexRequest.Builder().index(indexName).aliases(aliases).settings(settings);
-      final ObjectDeserializer<CreateIndexRequest.Builder> deserializer =
-          getDeserializerWithPreconfiguredBuilder(builderSupplier);
-      try {
-        return deserializer.deserialize(jsonParser, new JsonbJsonpMapper()).build();
-      } catch (final Exception e) {
-        throw new OptimizeRuntimeException("Could not load schema for " + indexName, e);
-      }
-    }
   }
 
   // Needed for loading from JSON, opensearch doesn't provide something like .withJSON(...) for
@@ -522,11 +531,11 @@ public class OpenSearchSchemaManager
     for (final IndexMappingCreator<IndexSettings.Builder> mapping : mappings) {
       updateDynamicSettingsAndMappings(osClient, mapping);
     }
-    final List<IndexMappingCreator<?>> allDynamicMappings =
-        new MappingMetadataUtil(osClient).getAllDynamicMappings(indexNameService.getIndexPrefix());
-    for (final IndexMappingCreator<?> mapping : allDynamicMappings) {
-      updateDynamicSettingsAndMappings(
-          osClient, (IndexMappingCreator<IndexSettings.Builder>) mapping);
+    final List<IndexMappingCreator<Builder>> allDynamicMappings =
+        new MappingMetadataUtilOS(osClient)
+            .getAllDynamicMappings(indexNameService.getIndexPrefix());
+    for (final IndexMappingCreator<Builder> mapping : allDynamicMappings) {
+      updateDynamicSettingsAndMappings(osClient, mapping);
     }
     log.info("Finished updating Optimize schema.");
   }

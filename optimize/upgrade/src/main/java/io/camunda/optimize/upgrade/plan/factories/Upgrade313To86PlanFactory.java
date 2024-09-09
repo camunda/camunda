@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.upgrade.plan.factories;
 
-import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.es.schema.index.SettingsIndexES;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
@@ -16,6 +16,7 @@ import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import io.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import io.camunda.optimize.upgrade.steps.schema.DeleteIndexTemplateIfExistsStep;
 import io.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -45,7 +46,7 @@ public class Upgrade313To86PlanFactory implements UpgradePlanFactory {
         .addUpgradeStep(deleteLastModifierAndTelemetryInitializedSettingFields())
         .addUpgradeSteps(
             deleteProcessInstanceArchiveIndexIfExists(
-                retrieveAllProcessInstanceArchiveIndexKeys(dependencies.esClient())))
+                retrieveAllProcessInstanceArchiveIndexKeys(dependencies.databaseClient())))
         .build();
   }
 
@@ -66,7 +67,7 @@ public class Upgrade313To86PlanFactory implements UpgradePlanFactory {
   }
 
   private List<String> retrieveAllProcessInstanceArchiveIndexKeys(
-      final OptimizeElasticsearchClient databaseClient) {
+      final DatabaseClient databaseClient) {
     try {
       return new ArrayList<>(
           databaseClient.getAllIndicesForAlias(PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX + "*").stream()
@@ -79,7 +80,7 @@ public class Upgrade313To86PlanFactory implements UpgradePlanFactory {
                           // remove the version suffix (we know its "_v8")
                           fullAliasName.length() - 3))
               .toList());
-    } catch (OptimizeRuntimeException e) {
+    } catch (OptimizeRuntimeException | IOException e) {
       log.error(
           "Unable to retrieve keys of process instance archive indices for index deletion. Returning empty instead.");
       return Collections.emptyList();

@@ -8,7 +8,7 @@
 package io.camunda.optimize.upgrade.steps.schema;
 
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
-import io.camunda.optimize.upgrade.es.SchemaUpgradeClient;
+import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
 import lombok.EqualsAndHashCode;
@@ -26,7 +26,7 @@ public class UpdateMappingIndexStep extends UpgradeStep {
   }
 
   @Override
-  public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
+  public void performUpgradeStep(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
     schemaUpgradeClient.updateIndexDynamicSettingsAndMappings(index);
   }
 }

@@ -59,6 +59,7 @@ public abstract class DecisionInstanceIndex<TBuilder> extends AbstractInstanceIn
   private final String indexName;
 
   protected DecisionInstanceIndex(final String decisionDefinitionKey) {
+    super(decisionDefinitionKey);
     indexName = constructIndexName(decisionDefinitionKey);
   }
 

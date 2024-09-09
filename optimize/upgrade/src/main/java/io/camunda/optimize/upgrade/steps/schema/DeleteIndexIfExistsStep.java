@@ -7,10 +7,8 @@
  */
 package io.camunda.optimize.upgrade.steps.schema;
 
-import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import io.camunda.optimize.upgrade.es.SchemaUpgradeClient;
-import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
+import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
 import lombok.EqualsAndHashCode;
@@ -27,18 +25,14 @@ public class DeleteIndexIfExistsStep extends UpgradeStep {
     super(null);
     this.indexName = indexName;
     this.indexVersion = indexVersion;
+    skipIndexConversion = true;
   }
 
   @Override
-  public IndexMappingCreator getIndex() {
-    throw new UpgradeRuntimeException("Index class does not exist as it is being deleted");
-  }
-
-  @Override
-  public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
+  public void performUpgradeStep(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
     final OptimizeIndexNameService indexNameService = schemaUpgradeClient.getIndexNameService();
     final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(indexName);
-    schemaUpgradeClient.getAliasMap(indexAlias).keySet().stream()
+    schemaUpgradeClient.getAliases(indexAlias).stream()
         .filter(indexName -> indexName.contains(this.indexName))
         .forEach(schemaUpgradeClient::deleteIndexIfExists);
   }

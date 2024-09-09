@@ -22,16 +22,25 @@ import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_LONG;
 import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_TEXT;
 
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import io.camunda.optimize.service.db.schema.DynamicIndexable;
 import java.io.IOException;
+import lombok.Getter;
 import org.elasticsearch.xcontent.XContentBuilder;
 
-public abstract class AbstractInstanceIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
+public abstract class AbstractInstanceIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder>
+    implements DynamicIndexable {
 
   public static final String MULTIVALUE_FIELD_DATE = "date";
   public static final String MULTIVALUE_FIELD_LONG = "long";
   public static final String MULTIVALUE_FIELD_DOUBLE = "double";
   public static final String N_GRAM_FIELD = "nGramField";
   public static final String LOWERCASE_FIELD = "lowercaseField";
+
+  protected AbstractInstanceIndex(final String key) {
+    this.key = key;
+  }
+
+  @Getter private final String key;
 
   public abstract String getDefinitionKeyFieldName();
 

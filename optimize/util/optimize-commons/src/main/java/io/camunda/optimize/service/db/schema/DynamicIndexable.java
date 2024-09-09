@@ -5,8 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.repository;
+package io.camunda.optimize.service.db.schema;
 
-public interface MappingMetadataRepository {
-  String[] getIndexAliasesWithImportIndexFlag(final boolean isImportIndex);
+public interface DynamicIndexable {
+
+  String getKey();
 }
