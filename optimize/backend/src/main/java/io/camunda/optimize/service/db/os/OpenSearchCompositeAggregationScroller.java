@@ -7,8 +7,11 @@
  */
 package io.camunda.optimize.service.db.os;
 
+import static io.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
+
 import io.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -93,25 +96,36 @@ public class OpenSearchCompositeAggregationScroller {
             .aggregations(aggregations)
             .size(requestSize);
 
-    final SearchResponse searchResponse =
-        osClient.search(searchRequestBuilder, SimpleDefinitionDto.class, errorMessage);
+    try {
+      final SearchResponse searchResponse =
+          osClient.search(searchRequestBuilder, SimpleDefinitionDto.class, errorMessage);
 
-    final CompositeAggregate compositeAggregationResult =
-        extractCompositeAggregationResult(searchResponse);
+      final CompositeAggregate compositeAggregationResult =
+          extractCompositeAggregationResult(searchResponse);
 
-    Map<String, String> convertedCompositeBucketConsumer =
-        compositeAggregationResult.afterKey().entrySet().stream()
-            // Below is a workaround for a known java issue
-            // https://bugs.openjdk.org/browse/JDK-8148463
-            .collect(
-                HashMap::new,
-                (m, v) -> m.put(v.getKey(), v.getValue().to(String.class)),
-                HashMap::putAll);
+      Map<String, String> convertedCompositeBucketConsumer =
+          compositeAggregationResult.afterKey().entrySet().stream()
+              // Below is a workaround for a known java issue
+              // https://bugs.openjdk.org/browse/JDK-8148463
+              .collect(
+                  HashMap::new,
+                  (m, v) -> m.put(v.getKey(), v.getValue().to(String.class)),
+                  HashMap::putAll);
 
-    aggregations =
-        updateAfterKeyInCompositeAggregation(convertedCompositeBucketConsumer, aggregations);
+      aggregations =
+          updateAfterKeyInCompositeAggregation(convertedCompositeBucketConsumer, aggregations);
 
-    return compositeAggregationResult.buckets().array();
+      return compositeAggregationResult.buckets().array();
+    } catch (RuntimeException e) {
+      if (isInstanceIndexNotFoundException(e)) {
+        log.info(
+            "Was not able to get next page of {} aggregation because at least one instance from {} does not exist.",
+            pathToAggregation.getLast(),
+            indices);
+        return Collections.emptyList();
+      }
+      throw e;
+    }
   }
 
   private HashMap<String, Aggregation> updateAfterKeyInCompositeAggregation(

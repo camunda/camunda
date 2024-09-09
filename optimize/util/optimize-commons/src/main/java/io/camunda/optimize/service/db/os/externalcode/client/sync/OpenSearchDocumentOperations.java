@@ -548,7 +548,17 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
         () -> openSearchClient.mget(requestBuilder.build(), responseClass), errorMessageSupplier);
   }
 
-  private MultiGetOperation getMultiGetOperation(final String index, final String id) {
+  public <T> MgetResponse<T> mget(
+      final Class<T> responseClass,
+      final Function<Exception, String> errorMessageSupplier,
+      final List<MultiGetOperation> operations) {
+
+    final MgetRequest.Builder requestBuilder = new MgetRequest.Builder().docs(operations);
+    return safe(
+        () -> openSearchClient.mget(requestBuilder.build(), responseClass), errorMessageSupplier);
+  }
+
+  public MultiGetOperation getMultiGetOperation(final String index, final String id) {
     return new MultiGetOperation.Builder().id(id).index(index).build();
   }
 

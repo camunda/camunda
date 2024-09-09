@@ -36,7 +36,6 @@ import org.opensearch.client.opensearch._types.aggregations.CompositeTermsAggreg
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -115,13 +114,6 @@ public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateG
         AggregationDSL.withSubaggregations(
             nestedAgg,
             Collections.singletonMap(COMPOSITE_AGG, assigneeCompositeAgg._toAggregation()));
-
-    final SearchRequest.Builder searchRequest =
-        new SearchRequest.Builder()
-            .query(filterQuery)
-            .aggregations(Map.of(NESTED_USER_TASKS_AGG, userTasksAgg))
-            .index(indexName)
-            .size(0);
 
     final List<String> termsBatch = new ArrayList<>();
     final OpenSearchCompositeAggregationScroller compositeAggregationScroller =
