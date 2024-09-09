@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.Optional;
 
 public class DbAuthorizationState implements AuthorizationState, MutableAuthorizationState {
   private final PersistedAuthorization persistedAuthorization = new PersistedAuthorization();
@@ -114,5 +115,17 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
             ownerKeyAndResourceTypeAndPermissionCompositeKey);
 
     return persistedPermissions == null ? null : persistedPermissions.copy();
+  }
+
+  @Override
+  public Optional<AuthorizationOwnerType> getOwnerType(final long ownerKey) {
+    this.ownerKey.wrapLong(ownerKey);
+    final var ownerType = ownerTypeByOwnerKeyColumnFamily.get(this.ownerKey);
+
+    if (ownerType == null) {
+      return Optional.empty();
+    }
+
+    return Optional.of(AuthorizationOwnerType.valueOf(ownerType.toString()));
   }
 }
