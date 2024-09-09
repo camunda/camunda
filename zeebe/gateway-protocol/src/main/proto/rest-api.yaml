@@ -565,7 +565,7 @@ paths:
                 $ref: "#/components/schemas/UserTaskSearchQueryResponse"
         "400":
           description: >
-            The user task search Query failed.
+            The user task search query failed.
             More details are provided in the response body.
           content:
             application/problem+json:
