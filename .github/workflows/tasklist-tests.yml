@@ -1,7 +1,8 @@
 name: Tasklist-tests
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
+  push:
 
 jobs:
   testing:
@@ -22,5 +23,3 @@ jobs:
     
     - name: "Checkout repo"
       uses: actions/checkout@v4
-
-    - 
