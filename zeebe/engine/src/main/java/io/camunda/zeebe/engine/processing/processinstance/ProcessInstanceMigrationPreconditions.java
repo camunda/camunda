@@ -55,7 +55,8 @@ public final class ProcessInstanceMigrationPreconditions {
           BpmnElementType.EVENT_BASED_GATEWAY,
           BpmnElementType.BUSINESS_RULE_TASK,
           BpmnElementType.SCRIPT_TASK,
-          BpmnElementType.SEND_TASK);
+          BpmnElementType.SEND_TASK,
+          BpmnElementType.MULTI_INSTANCE_BODY);
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.complementOf(SUPPORTED_ELEMENT_TYPES);
   private static final Set<BpmnEventType> SUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPES =
