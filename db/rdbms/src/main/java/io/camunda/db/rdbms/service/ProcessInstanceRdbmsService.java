@@ -7,18 +7,20 @@
  */
 package io.camunda.db.rdbms.service;
 
+import io.camunda.db.rdbms.domain.ProcessInstanceFilter;
 import io.camunda.db.rdbms.domain.ProcessInstanceModel;
 import io.camunda.db.rdbms.queue.ContextType;
 import io.camunda.db.rdbms.queue.ExecutionQueue;
 import io.camunda.db.rdbms.queue.QueueItem;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
+import java.util.List;
 
-public class ProcessRdbmsService {
+public class ProcessInstanceRdbmsService {
 
   private final ExecutionQueue executionQueue;
   private final ProcessInstanceMapper processInstanceMapper;
 
-  public ProcessRdbmsService(final ExecutionQueue executionQueue, final ProcessInstanceMapper processInstanceMapper) {
+  public ProcessInstanceRdbmsService(final ExecutionQueue executionQueue, final ProcessInstanceMapper processInstanceMapper) {
     this.executionQueue = executionQueue;
     this.processInstanceMapper = processInstanceMapper;
   }
@@ -43,6 +45,10 @@ public class ProcessRdbmsService {
 
   public ProcessInstanceModel findOne(final Long processInstanceKey) {
     return processInstanceMapper.findOne(processInstanceKey);
+  }
+
+  public List<ProcessInstanceModel> search(ProcessInstanceFilter filter) {
+    return processInstanceMapper.search(filter);
   }
 
 }
