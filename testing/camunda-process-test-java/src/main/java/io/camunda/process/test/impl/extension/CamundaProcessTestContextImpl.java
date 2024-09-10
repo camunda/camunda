@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.extension;
 
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.impl.client.ZeebeManagementClient;
+import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ZeebeContainer;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
@@ -28,12 +29,16 @@ import java.util.function.Consumer;
 public class CamundaProcessTestContextImpl implements CamundaProcessTestContext {
 
   private final ZeebeContainer zeebeContainer;
+  private final ConnectorsContainer connectorsContainer;
   private final Consumer<ZeebeClient> clientCreationCallback;
   private final ZeebeManagementClient zeebeManagementClient;
 
   public CamundaProcessTestContextImpl(
-      final ZeebeContainer zeebeContainer, final Consumer<ZeebeClient> clientCreationCallback) {
+      final ZeebeContainer zeebeContainer,
+      final ConnectorsContainer connectorsContainer,
+      final Consumer<ZeebeClient> clientCreationCallback) {
     this.zeebeContainer = zeebeContainer;
+    this.connectorsContainer = connectorsContainer;
     this.clientCreationCallback = clientCreationCallback;
 
     zeebeManagementClient = new ZeebeManagementClient(zeebeContainer.getMonitoringApiAddress());
@@ -68,6 +73,11 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public URI getZeebeRestAddress() {
     return zeebeContainer.getRestApiAddress();
+  }
+
+  @Override
+  public URI getConnectorsAddress() {
+    return connectorsContainer.getRestApiAddress();
   }
 
   @Override

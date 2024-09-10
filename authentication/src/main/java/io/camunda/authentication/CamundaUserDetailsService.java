@@ -28,8 +28,8 @@ public class CamundaUserDetailsService implements UserDetailsService {
         .map(
             candidate ->
                 User.builder()
-                    .username(candidate.value().username())
-                    .password(candidate.value().password())
+                    .username(candidate.username())
+                    .password(candidate.password())
                     .build())
         .orElseThrow(() -> new UsernameNotFoundException(username));
   }

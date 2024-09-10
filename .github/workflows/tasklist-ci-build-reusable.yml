@@ -48,7 +48,7 @@ jobs:
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@2d7d9f7ff5b310f983d059b68785b3c74d8b8edd
+        uses: actions/checkout@6d193bf28034eafb982f37bd894289fe649468fc
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags

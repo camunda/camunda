@@ -18,21 +18,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class OpensearchMetrics {
   private static final String NAMESPACE = "zeebe.opensearch.exporter";
-  private static final String PARTITION_LABEL = "partition";
 
-  private final String partitionIdLabel;
   private final MeterRegistry meterRegistry;
   private final AtomicInteger bulkMemorySize = new AtomicInteger(0);
 
-  public OpensearchMetrics(final int partitionId, final MeterRegistry meterRegistry) {
-    partitionIdLabel = String.valueOf(partitionId);
+  public OpensearchMetrics(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
   }
 
   public ResourceSample measureFlushDuration() {
     return Timer.resource(meterRegistry, meterName("flush.duration.seconds"))
         .description("Flush duration of bulk exporters in seconds")
-        .tag(PARTITION_LABEL, partitionIdLabel)
         .publishPercentileHistogram()
         .minimumExpectedValue(Duration.ofMillis(10));
   }
@@ -40,7 +36,6 @@ public class OpensearchMetrics {
   public void recordBulkSize(final int bulkSize) {
     DistributionSummary.builder(meterName("bulk.size"))
         .description("Exporter bulk size")
-        .tags(PARTITION_LABEL, partitionIdLabel)
         .serviceLevelObjectives(10, 100, 1_000, 10_000, 100_000)
         .register(meterRegistry)
         .record(bulkSize);
@@ -48,7 +43,6 @@ public class OpensearchMetrics {
 
   public void recordBulkMemorySize(final int bulkMemorySize) {
     Gauge.builder(meterName("bulk.memory.size"), this.bulkMemorySize, AtomicInteger::get)
-        .tags(PARTITION_LABEL, partitionIdLabel)
         .description("Exporter bulk memory size")
         .register(meterRegistry);
 
@@ -58,7 +52,6 @@ public class OpensearchMetrics {
   public void recordFailedFlush() {
     Counter.builder(meterName("failed.flush"))
         .description("Number of failed flush operations")
-        .tags(PARTITION_LABEL, partitionIdLabel)
         .register(meterRegistry)
         .increment();
   }

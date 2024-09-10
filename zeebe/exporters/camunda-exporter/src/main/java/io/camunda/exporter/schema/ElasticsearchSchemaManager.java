@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.schema;
 
-import io.camunda.exporter.NoopExporterConfiguration.ElasticsearchConfig;
-import io.camunda.exporter.NoopExporterConfiguration.IndexSettings;
+import io.camunda.exporter.config.ElasticsearchProperties;
+import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
 import java.util.List;
@@ -22,17 +22,17 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   private final SearchEngineClient elasticsearchClient;
   private final List<IndexDescriptor> indexDescriptors;
   private final List<IndexTemplateDescriptor> indexTemplateDescriptors;
-  private final ElasticsearchConfig elasticsearchConfig;
+  private final ElasticsearchProperties elasticsearchProperties;
 
   public ElasticsearchSchemaManager(
       final SearchEngineClient elasticsearchClient,
       final List<IndexDescriptor> indexDescriptors,
       final List<IndexTemplateDescriptor> indexTemplateDescriptors,
-      final ElasticsearchConfig elasticsearchConfig) {
+      final ElasticsearchProperties elasticsearchProperties) {
     this.elasticsearchClient = elasticsearchClient;
     this.indexDescriptors = indexDescriptors;
     this.indexTemplateDescriptors = indexTemplateDescriptors;
-    this.elasticsearchConfig = elasticsearchConfig;
+    this.elasticsearchProperties = elasticsearchProperties;
   }
 
   @Override
@@ -61,16 +61,21 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   private void createIndexTemplate(final IndexTemplateDescriptor templateDescriptor) {
     final var templateReplicas =
-        elasticsearchConfig.replicasByIndexName.getOrDefault(
-            templateDescriptor.getIndexName(),
-            elasticsearchConfig.defaultSettings.numberOfReplicas);
+        elasticsearchProperties
+            .getReplicasByIndexName()
+            .getOrDefault(
+                templateDescriptor.getIndexName(),
+                elasticsearchProperties.getDefaultSettings().getNumberOfReplicas());
     final var templateShards =
-        elasticsearchConfig.shardsByIndexName.getOrDefault(
-            templateDescriptor.getIndexName(), elasticsearchConfig.defaultSettings.numberOfShards);
+        elasticsearchProperties
+            .getShardsByIndexName()
+            .getOrDefault(
+                templateDescriptor.getIndexName(),
+                elasticsearchProperties.getDefaultSettings().getNumberOfShards());
 
     final var settings = new IndexSettings();
-    settings.numberOfShards = templateShards;
-    settings.numberOfReplicas = templateReplicas;
+    settings.setNumberOfShards(templateShards);
+    settings.setNumberOfReplicas(templateReplicas);
 
     elasticsearchClient.createIndexTemplate(templateDescriptor, settings, false);
   }

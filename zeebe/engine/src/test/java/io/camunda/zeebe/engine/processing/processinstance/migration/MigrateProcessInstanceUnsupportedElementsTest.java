@@ -15,7 +15,6 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -34,57 +33,6 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
-
-  @Test
-  public void shouldRejectMigrationForActiveSignalIntermediateCatchEvent() {
-    // given
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(SOURCE_PROCESS)
-                    .startEvent()
-                    .intermediateCatchEvent("catch1", c -> c.signal("signal1"))
-                    .endEvent()
-                    .done())
-            .withXmlResource(
-                Bpmn.createExecutableProcess(TARGET_PROCESS)
-                    .startEvent()
-                    .intermediateCatchEvent("catch2", c -> c.signal("signal1"))
-                    .endEvent()
-                    .done())
-            .deploy();
-    final long targetProcessDefinitionKey = extractTargetProcessDefinitionKey(deployment);
-
-    final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(SOURCE_PROCESS).create();
-
-    RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
-        .withCatchEventId("catch1")
-        .await();
-
-    // when
-    final var rejection =
-        ENGINE
-            .processInstance()
-            .withInstanceKey(processInstanceKey)
-            .migration()
-            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-            .addMappingInstruction("catch1", "catch2")
-            .expectRejection()
-            .migrate();
-
-    // then
-    assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
-    Assertions.assertThat(rejection.getRejectionReason())
-        .contains(
-            String.format(
-                """
-                Expected to migrate process instance '%s' \
-                but active element with id '%s' is intermediate catch event of type '%s'. \
-                Migrating active intermediate catch event of this type is not possible yet.""",
-                processInstanceKey, "catch1", "SIGNAL"));
-  }
 
   @Test
   public void shouldRejectMigrationForActiveInclusiveGateway() {

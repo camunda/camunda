@@ -71,8 +71,7 @@ final class ElasticsearchClientIT {
             RestClientFactory.of(config),
             indexRouter,
             templateReader,
-            null,
-            new SimpleMeterRegistry());
+            new ElasticsearchMetrics(new SimpleMeterRegistry()));
   }
 
   @AfterEach

@@ -49,9 +49,8 @@ public class OpensearchClient implements AutoCloseable {
   private final TemplateReader templateReader;
   private final RecordIndexRouter indexRouter;
   private final BulkIndexRequest bulkIndexRequest;
-  private final MeterRegistry meterRegistry;
 
-  private OpensearchMetrics metrics;
+  private final OpensearchMetrics metrics;
 
   OpensearchClient(
       final OpensearchExporterConfiguration configuration, final MeterRegistry meterRegistry) {
@@ -61,8 +60,20 @@ public class OpensearchClient implements AutoCloseable {
         RestClientFactory.of(configuration),
         new RecordIndexRouter(configuration.index),
         new TemplateReader(configuration.index),
-        null,
-        meterRegistry);
+        new OpensearchMetrics(meterRegistry));
+  }
+
+  OpensearchClient(
+      final OpensearchExporterConfiguration configuration,
+      final MeterRegistry meterRegistry,
+      final RestClient restClient) {
+    this(
+        configuration,
+        new BulkIndexRequest(),
+        restClient,
+        new RecordIndexRouter(configuration.index),
+        new TemplateReader(configuration.index),
+        new OpensearchMetrics(meterRegistry));
   }
 
   OpensearchClient(
@@ -71,15 +82,13 @@ public class OpensearchClient implements AutoCloseable {
       final RestClient client,
       final RecordIndexRouter indexRouter,
       final TemplateReader templateReader,
-      final OpensearchMetrics metrics,
-      final MeterRegistry meterRegistry) {
+      final OpensearchMetrics metrics) {
     this.configuration = configuration;
     this.bulkIndexRequest = bulkIndexRequest;
     this.client = client;
     this.indexRouter = indexRouter;
     this.templateReader = templateReader;
     this.metrics = metrics;
-    this.meterRegistry = meterRegistry;
   }
 
   @Override
@@ -88,10 +97,6 @@ public class OpensearchClient implements AutoCloseable {
   }
 
   public void index(final Record<?> record, final RecordSequence recordSequence) {
-    if (metrics == null) {
-      metrics = new OpensearchMetrics(record.getPartitionId(), meterRegistry);
-    }
-
     final BulkIndexAction action =
         new BulkIndexAction(
             indexRouter.indexFor(record),

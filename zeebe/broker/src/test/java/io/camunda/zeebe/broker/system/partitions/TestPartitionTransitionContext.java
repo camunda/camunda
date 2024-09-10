@@ -39,7 +39,6 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
-import io.camunda.zeebe.stream.api.ClusterContext;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
@@ -75,10 +74,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private BackupStore backupStore;
   private DynamicPartitionConfig partitionConfig;
-  private CommandApiService commandApiService;
-  private MeterRegistry meterRegistry;
   private ControllableStreamClock clock;
-  private ClusterContext clusterContext;
 
   @Override
   public int getPartitionId() {
@@ -312,9 +308,17 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public MeterRegistry getMeterRegistry() {
-    return meterRegistry;
+  public MeterRegistry getBrokerMeterRegistry() {
+    return null;
   }
+
+  @Override
+  public MeterRegistry getPartitionMeterRegistry() {
+    return null;
+  }
+
+  @Override
+  public void setPartitionMeterRegistry(final MeterRegistry partitionMeterRegistry) {}
 
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {
     this.gatewayBrokerTransport = gatewayBrokerTransport;
@@ -368,7 +372,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public CommandApiService getCommandApiService() {
-    return commandApiService;
+    return null;
   }
 
   @Override

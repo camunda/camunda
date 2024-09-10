@@ -27,4 +27,5 @@ public final class ErrorMessages {
   public static final String ERROR_MESSAGE_AT_LEAST_ONE_FIELD = "At least one of %s is required";
   public static final String ERROR_MESSAGE_INVALID_TENANT =
       "Expected to handle request %s with tenant identifier '%s', but %s";
+  public static final String ERROR_MESSAGE_ONLY_ONE_FIELD = "Only one of %s is allowed";
 }

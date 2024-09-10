@@ -39,7 +39,8 @@ public class UserQueryControllerTest extends RestControllerTest {
       """
           {
               "items": [
-                 { "username": "username1",
+                 { "key": 1,
+                   "username": "username1",
                    "name": "name1",
                    "email": "email1"
                  }
@@ -57,9 +58,7 @@ public class UserQueryControllerTest extends RestControllerTest {
   private static final SearchQueryResult<UserEntity> SEARCH_QUERY_RESULT =
       new Builder<UserEntity>()
           .total(1L)
-          .items(
-              List.of(
-                  new UserEntity(new UserEntity.User("username1", "name1", "email1", "password1"))))
+          .items(List.of(new UserEntity(1L, "username1", "name1", "email1", "password1")))
           .sortValues(new Object[] {"v"})
           .build();
 

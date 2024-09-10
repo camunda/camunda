@@ -328,6 +328,39 @@ public final class CorrelateMessageTest {
         .containsExactly("foo", "\"bar\"");
   }
 
+  @Test
+  public void shouldNotCorrelateToMessageStartAndIntermediateCatchWithSameProcessId() {
+    // given
+    final var messageName = "message";
+    final var correlationKey = "correlationKey";
+    deployAndStartProcessWithMessageStartAndMessageIntermediaryEventInSameProcess(
+        messageName, correlationKey);
+
+    // when
+    engine
+        .messageCorrelation()
+        .withName(messageName)
+        .withCorrelationKey(correlationKey)
+        .correlate();
+
+    // then
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
+                .withMessageName(messageName)
+                .withCorrelationKey(correlationKey)
+                .limit(1)
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.records()
+                .limit(record -> record.getIntent() == MessageIntent.EXPIRED)
+                .messageStartEventSubscriptionRecords()
+                .withMessageName(messageName)
+                .withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
+                .exists())
+        .isFalse();
+  }
+
   private static void assertMessageIsCorrelated(
       final Record<MessageCorrelationRecordValue> record) {
     Assertions.assertThat(record)
@@ -407,5 +440,28 @@ public final class CorrelateMessageTest {
                 .done())
         .deploy();
     return engine.processInstance().ofBpmnProcessId("process").create();
+  }
+
+  private void deployAndStartProcessWithMessageStartAndMessageIntermediaryEventInSameProcess(
+      final String messageName, final String correlationKey) {
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process")
+                .startEvent("msgStart")
+                .message(messageName)
+                .endEvent()
+                .moveToProcess("process")
+                .startEvent()
+                .intermediateCatchEvent("msgCatch")
+                .message(m -> m.name(messageName).zeebeCorrelationKeyExpression("key"))
+                .endEvent()
+                .done())
+        .deploy();
+    engine
+        .processInstance()
+        .ofBpmnProcessId("process")
+        .withVariable("key", correlationKey)
+        .create();
   }
 }

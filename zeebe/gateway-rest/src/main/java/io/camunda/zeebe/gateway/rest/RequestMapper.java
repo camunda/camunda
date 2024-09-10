@@ -10,21 +10,25 @@ package io.camunda.zeebe.gateway.rest;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationAssignRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
+import static io.camunda.zeebe.gateway.rest.validator.ElementRequestValidator.validateVariableRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MessageCorrelateValidator.validateMessageCorrelationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateAuthorization;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
+import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentMetadataModel;
+import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
@@ -33,6 +37,7 @@ import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
+import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
@@ -40,6 +45,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
@@ -267,6 +273,18 @@ public class RequestMapper {
     }
   }
 
+  public static Either<ProblemDetail, SetVariablesRequest> toVariableRequest(
+      final SetVariableRequest variableRequest, final long elementInstanceKey) {
+    return getResult(
+        validateVariableRequest(variableRequest),
+        () ->
+            new SetVariablesRequest(
+                elementInstanceKey,
+                variableRequest.getVariables(),
+                variableRequest.getLocal(),
+                variableRequest.getOperationReference()));
+  }
+
   public static Authentication getAuthentication() {
     final List<String> authorizedTenants = TenantAttributeHolder.tenantIds();
 
@@ -360,6 +378,30 @@ public class RequestMapper {
         HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), message);
   }
 
+  public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
+      final CreateProcessInstanceRequest request) {
+    return getResult(
+        validateCreateProcessInstanceRequest(request),
+        () ->
+            new ProcessInstanceCreateRequest(
+                getLongOrDefault(
+                    request, CreateProcessInstanceRequest::getProcessDefinitionKey, -1L),
+                getStringOrEmpty(request, CreateProcessInstanceRequest::getBpmnProcessId),
+                getIntOrDefault(request, CreateProcessInstanceRequest::getVersion, -1),
+                getMapOrEmpty(request, CreateProcessInstanceRequest::getVariables),
+                request.getTenantId(),
+                request.getAwaitCompletion(),
+                request.getRequestTimeout(),
+                request.getOperationReference(),
+                request.getStartInstructions().stream()
+                    .map(
+                        instruction ->
+                            new io.camunda.zeebe.protocol.impl.record.value.processinstance
+                                    .ProcessInstanceCreationStartInstruction()
+                                .setElementId(instruction.getElementId()))
+                    .toList()));
+  }
+
   private static <R> Map<String, Object> getMapOrEmpty(
       final R request, final Function<R, Map<String, Object>> mapExtractor) {
     return request == null ? Map.of() : mapExtractor.apply(request);
@@ -372,8 +414,13 @@ public class RequestMapper {
   }
 
   private static <R> long getLongOrZero(final R request, final Function<R, Long> valueExtractor) {
+    return getLongOrDefault(request, valueExtractor, 0L);
+  }
+
+  private static <R> long getLongOrDefault(
+      final R request, final Function<R, Long> valueExtractor, final Long defaultValue) {
     final Long value = request == null ? null : valueExtractor.apply(request);
-    return value == null ? 0L : value;
+    return value == null ? defaultValue : value;
   }
 
   private static <R> List<String> getStringListOrEmpty(
@@ -383,8 +430,13 @@ public class RequestMapper {
   }
 
   private static <R> int getIntOrZero(final R request, final Function<R, Integer> valueExtractor) {
+    return getIntOrDefault(request, valueExtractor, 0);
+  }
+
+  private static <R> int getIntOrDefault(
+      final R request, final Function<R, Integer> valueExtractor, final Integer defaultValue) {
     final Integer value = request == null ? null : valueExtractor.apply(request);
-    return value == null ? 0 : value;
+    return value == null ? defaultValue : value;
   }
 
   public record CompleteUserTaskRequest(

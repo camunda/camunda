@@ -7,6 +7,9 @@
  */
 package io.camunda.exporter.config;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class ElasticsearchProperties {
   private String url;
   private String username;
@@ -15,6 +18,34 @@ public class ElasticsearchProperties {
 
   private Integer socketTimeout;
   private Integer connectTimeout;
+
+  private IndexSettings defaultSettings = new IndexSettings();
+  private Map<String, Integer> replicasByIndexName = new HashMap<>();
+  private Map<String, Integer> shardsByIndexName = new HashMap<>();
+
+  public IndexSettings getDefaultSettings() {
+    return defaultSettings;
+  }
+
+  public void setDefaultSettings(final IndexSettings defaultSettings) {
+    this.defaultSettings = defaultSettings;
+  }
+
+  public Map<String, Integer> getReplicasByIndexName() {
+    return replicasByIndexName;
+  }
+
+  public void setReplicasByIndexName(final Map<String, Integer> replicasByIndexName) {
+    this.replicasByIndexName = replicasByIndexName;
+  }
+
+  public Map<String, Integer> getShardsByIndexName() {
+    return shardsByIndexName;
+  }
+
+  public void setShardsByIndexName(final Map<String, Integer> shardsByIndexName) {
+    this.shardsByIndexName = shardsByIndexName;
+  }
 
   public String getUrl() {
     return url;
@@ -58,5 +89,26 @@ public class ElasticsearchProperties {
 
   public void setConnectTimeout(final Integer connectTimeout) {
     this.connectTimeout = connectTimeout;
+  }
+
+  public static final class IndexSettings {
+    private Integer numberOfShards = 1;
+    private Integer numberOfReplicas = 0;
+
+    public Integer getNumberOfShards() {
+      return numberOfShards;
+    }
+
+    public void setNumberOfShards(final Integer numberOfShards) {
+      this.numberOfShards = numberOfShards;
+    }
+
+    public Integer getNumberOfReplicas() {
+      return numberOfReplicas;
+    }
+
+    public void setNumberOfReplicas(final Integer numberOfReplicas) {
+      this.numberOfReplicas = numberOfReplicas;
+    }
   }
 }

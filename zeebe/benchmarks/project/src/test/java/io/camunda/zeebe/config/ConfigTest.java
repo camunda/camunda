@@ -60,10 +60,12 @@ public class ConfigTest {
     assertThat(workerCfg.getCapacity()).isEqualTo(30);
     assertThat(workerCfg.getPollingDelay()).hasSeconds(1);
     assertThat(workerCfg.getCompletionDelay()).hasMillis(300);
-    assertThat(workerCfg.isCompleteJobsAsync()).isFalse();
     assertThat(workerCfg.getPayloadPath()).isEqualTo("bpmn/big_payload.json");
     assertThat(workerCfg.isStreamEnabled()).isTrue();
     assertThat(workerCfg.getTimeout()).hasSeconds(0);
+    assertThat(workerCfg.getMessageName()).isEqualTo("messageName");
+    assertThat(workerCfg.isSendMessage()).isFalse();
+    assertThat(workerCfg.getCorrelationKeyVariableName()).isEqualTo("correlationKey-var");
   }
 
   @Test
@@ -110,9 +112,11 @@ public class ConfigTest {
     assertThat(workerCfg.getCapacity()).isEqualTo(30);
     assertThat(workerCfg.getPollingDelay()).hasSeconds(1);
     assertThat(workerCfg.getCompletionDelay()).hasMillis(300);
-    assertThat(workerCfg.isCompleteJobsAsync()).isFalse();
     assertThat(workerCfg.getPayloadPath()).isEqualTo("bpmn/big_payload.json");
     assertThat(workerCfg.isStreamEnabled()).isTrue();
     assertThat(workerCfg.getTimeout()).hasSeconds(0);
+    assertThat(workerCfg.getMessageName()).isEqualTo("msg");
+    assertThat(workerCfg.isSendMessage()).isTrue();
+    assertThat(workerCfg.getCorrelationKeyVariableName()).isEqualTo("var");
   }
 }

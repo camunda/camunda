@@ -15,7 +15,7 @@ import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.json.JsonpDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.NoopExporterConfiguration.IndexSettings;
+import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
@@ -123,9 +123,9 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                           s ->
                               s.index(
                                   i ->
-                                      i.numberOfShards(String.valueOf(settings.numberOfShards))
+                                      i.numberOfShards(String.valueOf(settings.getNumberOfShards()))
                                           .numberOfReplicas(
-                                              String.valueOf(settings.numberOfReplicas)))))
+                                              String.valueOf(settings.getNumberOfReplicas())))))
           .composedOf(indexTemplateDescriptor.getComposedOf())
           .create(create)
           .build();

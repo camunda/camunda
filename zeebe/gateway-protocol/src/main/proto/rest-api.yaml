@@ -558,14 +558,14 @@ paths:
       responses:
         "200":
           description: >
-            The User Task Search successful response.
+            The user task search successful response.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserTaskSearchQueryResponse"
         "400":
           description: >
-            The User Task Search Query failed.
+            The user task search query failed.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -583,11 +583,11 @@ paths:
     put:
       tags:
         - Clock
-      summary: Pin the Zeebe engine’s internal clock to a specific time (experimental)
+      summary: Pin internal clock (experimental)
       description: |
-        Set a precise, static time for the Zeebe engine’s internal clock. When the clock is pinned,
-        it remains at the specified time and does not advance. To change the time, the clock must be
-        pinned again with a new timestamp.
+        Set a precise, static time for the Zeebe engine’s internal clock. 
+        When the clock is pinned, it remains at the specified time and does not advance. 
+        To change the time, the clock must be pinned again with a new timestamp.
 
         :::note
         This endpoint is experimental. It may undergo changes or improvements in future releases.
@@ -603,7 +603,7 @@ paths:
           description: >
             The clock was successfully pinned to the specified time in epoch milliseconds.
         "400":
-          description: The required timestamp parameter is missing.
+          description: The required timestamp parameter is missing or it is negative.
           content:
             application/problem+json:
               schema:
@@ -618,10 +618,10 @@ paths:
     post:
       tags:
         - Clock
-      summary: Reset the Zeebe engine’s internal clock to the system time (experimental)
+      summary: Reset internal clock (experimental)
       description: |
-        Resets the Zeebe engine’s internal clock to the current system time,
-        enabling it to tick in real-time. This operation is useful for returning the clock to
+        Resets the Zeebe engine’s internal clock to the current system time, enabling it to tick in real-time. 
+        This operation is useful for returning the clock to
         normal behavior after it has been pinned to a specific time.
 
         :::note
@@ -629,7 +629,7 @@ paths:
         :::
       responses:
         "204":
-          description: The clock was successfully reset to the system time
+          description: The clock was successfully reset to the system time.
         "500":
           description: An internal error occurred while processing the request.
           content:
@@ -637,10 +637,43 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
+  /process-instances:
+    post:
+      tags:
+        - Process instance
+      summary: Start process instance
+      description: |
+        Creates and starts an instance of the specified process.
+        The process definition to use to create the instance can be specified either using its unique key
+        (as returned by Deploy resources), or using the BPMN process ID and a version.
+
+        Waits for the completion of the process instance before returning a result
+        when awaitCompletion is enabled.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProcessInstanceRequest"
+      responses:
+        "200":
+          description: The process instance was created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateProcessInstanceResponse"
+        "400":
+          description: The provided data is not valid.
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /process-instances/search:
     post:
       tags:
-        - Process Instance
+        - Process instance
       summary: Query process instances (experimental)
       description: |
         Search for process instances based on given criteria.
@@ -682,7 +715,7 @@ paths:
   /decision-definitions/search:
     post:
       tags:
-        - Decision Definition
+        - Decision definition
       summary: Query decision definitions (experimental)
       description: |
         Search for decision definitions based on given criteria.
@@ -724,7 +757,7 @@ paths:
   /decision-definitions/{decisionKey}/xml:
     get:
       tags:
-        - Decision Definition
+        - Decision definition
       summary: Get decision definition XML (experimental)
       description: |
         Returns decision definition as XML.
@@ -809,8 +842,8 @@ paths:
     patch:
       tags:
         - Authorization
-      summary: Patch an authorization
-      description: Manage the permissions assigned to the authorization
+      summary: Patch authorization
+      description: Manage the permissions assigned to the authorization.
       operationId: patchAuthorization
       parameters:
         - name: ownerKey
@@ -951,7 +984,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: Internal Server Error
+          description: Internal server error
           content:
             application/problem+json:
               schema:
@@ -1212,14 +1245,14 @@ paths:
       responses:
         '200':
           description: >
-            The Incident Search successful response.
+            The incident search successful response.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/IncidentSearchQueryResponse"
         '400':
           description: >
-            The Incident Search Query failed.
+            The incident search query failed.
             More details are provided in the response body.
         "401":
           description: "Unauthorized"
@@ -1252,7 +1285,8 @@ paths:
         - Resources
       summary: Deploy resources
       description: |
-        Deploys one or more resources (e.g. processes, decision models, or forms). This is an atomic call, i.e. either all resources are deployed or none of them are.
+        Deploys one or more resources (e.g. processes, decision models, or forms). 
+        This is an atomic call, i.e. either all resources are deployed or none of them are.
       requestBody:
         required: true
         content:
@@ -1282,6 +1316,47 @@ paths:
         "400":
           description: >
             The document upload failed. More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
+  /element-instances/{elementInstanceKey}/variables:
+    post:
+      tags:
+        - Element instance
+      summary: Update element instance variables
+      description: |
+        Updates all the variables of a particular scope (for example, process instance, flow element instance) with the given variable data.
+        Specify the element instance in the `elementInstanceKey` parameter.
+      parameters:
+        - name: elementInstanceKey
+          in: path
+          required: true
+          description: |
+            The key of the element instance to update the variables for.
+            This can be the process instance key (as obtained during instance creation), or a given
+            element, such as a service task (see the `elementInstanceKey` on the job message).
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetVariableRequest"
+      responses:
+        "204":
+          description: The variables were updated.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
           content:
             application/problem+json:
               schema:
@@ -1397,6 +1472,7 @@ components:
             type: string
         priority:
           type: integer
+          description: The priority of a user task. The higher the value the higher the priority.
           minimum: 0
           maximum: 100
           default: 50
@@ -1785,6 +1861,9 @@ components:
         id:
           type: "integer"
           format: "int64"
+        key:
+          type: "integer"
+          format: "int64"
         username:
           type: "string"
         name:
@@ -1990,6 +2069,7 @@ components:
           description: The exact time in epoch milliseconds to which the clock should be pinned.
           type: integer
           format: int64
+          minimum: 0
       required:
         - timestamp
     JobActivationRequest:
@@ -2584,6 +2664,141 @@ components:
           type: string
           description: The tenant id of the deployed form.
 
+    CreateProcessInstanceRequest:
+      type: object
+      properties:
+        processDefinitionKey:
+          description: |
+            The unique key identifying the process definition, e.g. returned for a process in the
+            deploy resources endpoint. Cannot be used together with bpmnProcessId.
+          type: integer
+          format: int64
+        bpmnProcessId:
+          description: |
+            The BPMN process ID of the process definition to start an instance of.
+            Cannot be used together with processDefinitionKey.
+          type: string
+        version:
+          description: |
+            The version of the process. Only considered when a bpmnProcessId is provided.
+            By default, the latest version of the process is used.
+          type: integer
+          format: int32
+          default: -1
+        variables:
+          description: |
+            JSON object that will instantiate the variables for the root variable scope
+            of the process instance.
+          type: object
+          additionalProperties: true
+        tenantId:
+          description: The tenant ID of the process definition.
+          type: string
+        operationReference:
+          description: |
+            A reference key chosen by the user and will be part of all records resulting
+            from this operation. Must be >0 if provided.
+          type: integer
+          format: int64
+          minimum: 1
+        startInstructions:
+          description: |
+            List of start instructions. By default, the process instance will start at
+            the start event. If provided, the process instance will apply start instructions
+            after it has been created.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceCreationStartInstruction"
+        awaitCompletion:
+          description: |
+            Wait for the process instance to complete. If the process instance completion does
+            not occur within the requestTimeout, the request will be closed. Disabled by default.
+          type: boolean
+          default: false
+        requestTimeout:
+          description: |
+            Timeout (in ms) the request waits for the process to complete. By default or
+            when set to 0, the generic request timeout configured in the cluster is applied.
+          type: integer
+          format: int64
+    ProcessInstanceCreationStartInstruction:
+      type: object
+      properties:
+        elementId:
+          description: |
+            Future extensions might include:
+              - different types of start instructions
+              - ability to set local variables for different flow scopes
+
+            For now, however, the start instruction is implicitly a "startBeforeElement" instruction
+          type: string
+    CreateProcessInstanceResponse:
+      type: object
+      properties:
+        processKey:
+          description: |
+            The key of the process definition which was used to create the process instance.
+          type: integer
+          format: int64
+        bpmnProcessId:
+          description: |
+            The BPMN process ID of the process definition which was used to create the process.
+            instance
+          type: string
+        version:
+          description: |
+            The version of the process definition which was used to create the process instance.
+          type: integer
+          format: int32
+        processInstanceKey:
+          description: |
+            The unique identifier of the created process instance; to be used wherever a request
+            needs a process instance key (e.g. CancelProcessInstanceRequest).
+          type: integer
+          format: int64
+        tenantId:
+          description: The tenant ID of the created process instance.
+          type: string
+        variables:
+          additionalProperties: true
+          description: All the variables visible in the root scope.
+          type: object
+
+    SetVariableRequest:
+      type: object
+      properties:
+        variables:
+          description: JSON object representing the variables to set in the element’s scope.
+          additionalProperties: true
+          type: object
+        local:
+          description: |
+            If set to true, the variables are merged strictly into the local scope (as specified by the `elementInstanceKey`).
+            Otherwise, the variables are propagated to upper scopes and set at the outermost one.
+
+            Let’s consider the following example:
+
+            There are two scopes '1' and '2'.
+            Scope '1' is the parent scope of '2'. The effective variables of the scopes are:
+            1 => { "foo" : 2 }
+            2 => { "bar" : 1 }
+
+            An update request with elementInstanceKey as '2', variables { "foo" : 5 }, and local set
+            to true leaves scope '1' unchanged and adjusts scope '2' to { "bar" : 1, "foo" 5 }.
+
+            By default, with local set to false, scope '1' will be { "foo": 5 }
+            and scope '2' will be { "bar" : 1 }.
+          type: boolean
+          default: false
+        operationReference:
+          description: >
+            A reference key chosen by the user that will be part of all records resulting from this operation.
+            Must be > 0 if provided.
+          type: integer
+          format: int64
+          minimum: 1
+      required:
+        - variables
 
   securitySchemes:
     bearerAuth:

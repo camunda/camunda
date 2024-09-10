@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.clock;
 
 import static io.camunda.zeebe.client.util.assertions.LoggedRequestAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.params.provider.Arguments.of;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import io.camunda.zeebe.client.protocol.rest.ClockPinRequest;
@@ -25,7 +26,11 @@ import io.camunda.zeebe.client.util.RestGatewayPaths;
 import io.camunda.zeebe.client.util.RestGatewayService;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public final class PinClockTest extends ClientRestTest {
 
@@ -46,26 +51,46 @@ public final class PinClockTest extends ClientRestTest {
   }
 
   @Test
-  void shouldPinClockToInstant() {
-    // given
-    final Instant instant = Instant.now().plus(Duration.ofDays(7));
+  void shouldRaiseIllegalArgumentExceptionWhenNegativeTimestampProvided() {
+    // when / then
+    assertThatThrownBy(() -> client.newClockPinCommand().time(-1L).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("timestamp must be not negative");
+  }
 
+  static Stream<Instant> validInstantValues() {
+    return Stream.of(Instant.EPOCH, Instant.now(), Instant.now().plus(Duration.ofDays(365 * 100)));
+  }
+
+  @ParameterizedTest
+  @MethodSource("validInstantValues")
+  void shouldPinClockToInstant(Instant validInstant) {
     // when
-    client.newClockPinCommand().time(instant).send().join();
+    client.newClockPinCommand().time(validInstant).send().join();
 
     // then
     assertThat(RestGatewayService.getLastRequest())
         .hasMethod(RequestMethod.PUT)
         .hasUrl(RestGatewayPaths.getClockPinUrl())
         .extractingBody(ClockPinRequest.class)
-        .isEqualTo(new ClockPinRequest().timestamp(instant.toEpochMilli()));
+        .isEqualTo(new ClockPinRequest().timestamp(validInstant.toEpochMilli()));
   }
 
-  @Test
-  void shouldRaiseIllegalArgumentExceptionWhenNullInstantProvided() {
+  static Stream<Arguments> invalidInstantValues() {
+    return Stream.of(
+        of(null, "instant must not be null"),
+        of(
+            Instant.EPOCH.minus(Duration.ofMillis(1)),
+            "instant must be equal to or after 1970-01-01T00:00:00Z"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidInstantValues")
+  void shouldRaiseIllegalArgumentExceptionWhenInvalidInstantProvided(
+      final Instant invalidInstant, String expectedMessage) {
     // when / then
-    assertThatThrownBy(() -> client.newClockPinCommand().time(null).send().join())
+    assertThatThrownBy(() -> client.newClockPinCommand().time(invalidInstant).send().join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("instant must not be null");
+        .hasMessage(expectedMessage);
   }
 }
