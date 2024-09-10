@@ -21,7 +21,7 @@ import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.zeebe.PartitionHolder;
-import io.camunda.operate.zeebeimport.cache.FlowNodeInstanceRecord;
+import io.camunda.operate.zeebeimport.cache.FNITreePathCacheCompositeKey;
 import io.camunda.operate.zeebeimport.cache.FlowNodeInstanceTreePathCache;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -155,9 +155,9 @@ public class FlowNodeInstanceZeebeRecordProcessor {
             || ELEMENT_MIGRATED.name().equals(intent));
   }
 
-  private static FlowNodeInstanceRecord toFNIRecord(
+  private static FNITreePathCacheCompositeKey toCompositeKey(
       final Record<?> record, final ProcessInstanceRecordValue recordValue) {
-    return new FlowNodeInstanceRecord(
+    return new FNITreePathCacheCompositeKey(
         record.getPartitionId(),
         record.getKey(),
         recordValue.getFlowScopeKey(),
@@ -183,7 +183,8 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     if (entity.getTreePath() == null) {
-      final String parentTreePath = treePathCache.resolveTreePath(toFNIRecord(record, recordValue));
+      final String parentTreePath =
+          treePathCache.resolveTreePath(toCompositeKey(record, recordValue));
       entity.setTreePath(
           String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey())));
       entity.setLevel(parentTreePath.split("/").length);
