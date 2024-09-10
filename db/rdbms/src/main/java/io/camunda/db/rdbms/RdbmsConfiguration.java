@@ -9,10 +9,10 @@ package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.queue.ExecutionQueue;
 import io.camunda.db.rdbms.service.ExporterPositionRdbmsService;
+import io.camunda.db.rdbms.service.ProcessInstanceRdbmsService;
+import io.camunda.db.rdbms.service.ProcessRdbmsService;
 import io.camunda.db.rdbms.service.VariableRdbmsService;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
-import io.camunda.db.rdbms.service.ProcessDefinitionRdbmsService;
-import io.camunda.db.rdbms.service.ProcessInstanceRdbmsService;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
@@ -42,12 +42,12 @@ public class RdbmsConfiguration {
 
   @Bean
   public SqlSessionFactory sqlSessionFactory(final DataSource dataSource) throws Exception {
-    var vendorProperties = new Properties();
+    final var vendorProperties = new Properties();
     vendorProperties.put("H2", "h2");
     vendorProperties.put("PostgreSQL", "postgresql");
     vendorProperties.put("Oracle", "oracle");
     vendorProperties.put("SQL Server", "sqlserver");
-    var databaseIdProvider = new VendorDatabaseIdProvider();
+    final var databaseIdProvider = new VendorDatabaseIdProvider();
     databaseIdProvider.setProperties(vendorProperties);
 
     final SqlSessionFactoryBean factoryBean = new SqlSessionFactoryBean();
@@ -107,10 +107,10 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public ProcessDefinitionRdbmsService processDeploymentRdbmsService(
+  public ProcessRdbmsService processDeploymentRdbmsService(
       final ExecutionQueue executionQueue,
       final ProcessDefinitionMapper processDefinitionMapper) {
-    return new ProcessDefinitionRdbmsService(executionQueue, processDefinitionMapper);
+    return new ProcessRdbmsService(executionQueue, processDefinitionMapper);
   }
 
   @Bean
@@ -131,13 +131,13 @@ public class RdbmsConfiguration {
   public RdbmsService rdbmsService(final ExecutionQueue executionQueue,
       final ExporterPositionRdbmsService exporterPositionRdbmsService,
       final VariableRdbmsService variableRdbmsService,
-      final ProcessDefinitionRdbmsService processDefinitionRdbmsService,
+      final ProcessRdbmsService processRdbmsService,
       final ProcessInstanceRdbmsService processInstanceRdbmsService
   ) {
     return new RdbmsService(
         executionQueue,
         exporterPositionRdbmsService,
-        processDefinitionRdbmsService, processInstanceRdbmsService,
+        processRdbmsService, processInstanceRdbmsService,
         variableRdbmsService
     );
   }
