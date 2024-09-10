@@ -89,6 +89,54 @@ public final class DistributionStateTest {
   }
 
   @Test
+  public void shouldReturnFalseOnEmptyStateForHasPendingCheck() {
+    // when
+    final var hasPending = distributionState.hasPendingDistribution(10L);
+
+    // then
+    assertThat(hasPending).isFalse();
+  }
+
+  @Test
+  public void shouldReturnFalseOnEmptyStateForHasPendingForPartitionCheck() {
+    // when
+    final var hasPendingDistribution = distributionState.hasPendingDistribution(10L, 10);
+
+    // then
+    assertThat(hasPendingDistribution).isFalse();
+  }
+
+  @Test
+  public void shouldAddPendingDistribution() {
+    // given
+    final var distributionKey = 10L;
+    final var partition = 1;
+    distributionState.addCommandDistribution(distributionKey, createCommandDistributionRecord());
+
+    // when
+    distributionState.addPendingDistribution(distributionKey, partition);
+
+    // then
+    assertThat(distributionState.hasPendingDistribution(distributionKey)).isTrue();
+    assertThat(distributionState.hasPendingDistribution(distributionKey, partition)).isTrue();
+  }
+
+  @Test
+  public void shouldRemovePendingDistribution() {
+    // given
+    final var distributionKey = 10L;
+    final var partition = 1;
+    distributionState.addCommandDistribution(distributionKey, createCommandDistributionRecord());
+    distributionState.addPendingDistribution(distributionKey, partition);
+
+    // when
+    distributionState.removePendingDistribution(distributionKey, partition);
+
+    // then
+    assertThat(distributionState.hasPendingDistribution(distributionKey)).isFalse();
+  }
+
+  @Test
   public void shouldReturnNullOnRequestingStoredDistributionWhenNothingStored() {
     // when
     final var distributionRecord = distributionState.getCommandDistributionRecord(1, 1);
