@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
+import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
 import java.util.List;
 import java.util.Optional;
@@ -33,11 +34,26 @@ public class ProcessInstanceRequestValidator {
                 ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
                     List.of("bpmnProcessId", "processDefinitionKey")));
           }
-          if (request.getOperationReference() != null && request.getOperationReference() < 1) {
-            violations.add(
-                ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                    "operationReference", request.getOperationReference(), "> 0"));
+          validateOperationReference(request.getOperationReference(), violations);
+        });
+  }
+
+  public static Optional<ProblemDetail> validateCancelProcessInstanceRequest(
+      final CancelProcessInstanceRequest request) {
+    return validate(
+        violations -> {
+          if (request != null) {
+            validateOperationReference(request.getOperationReference(), violations);
           }
         });
+  }
+
+  private static void validateOperationReference(
+      final Long operationReference, final List<String> violations) {
+    if (operationReference != null && operationReference < 1) {
+      violations.add(
+          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+              "operationReference", operationReference, "> 0"));
+    }
   }
 }

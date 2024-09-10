@@ -585,8 +585,8 @@ paths:
         - Clock
       summary: Pin internal clock (experimental)
       description: |
-        Set a precise, static time for the Zeebe engine’s internal clock. 
-        When the clock is pinned, it remains at the specified time and does not advance. 
+        Set a precise, static time for the Zeebe engine’s internal clock.
+        When the clock is pinned, it remains at the specified time and does not advance.
         To change the time, the clock must be pinned again with a new timestamp.
 
         :::note
@@ -620,7 +620,7 @@ paths:
         - Clock
       summary: Reset internal clock (experimental)
       description: |
-        Resets the Zeebe engine’s internal clock to the current system time, enabling it to tick in real-time. 
+        Resets the Zeebe engine’s internal clock to the current system time, enabling it to tick in real-time.
         This operation is useful for returning the clock to
         normal behavior after it has been pinned to a specific time.
 
@@ -712,6 +712,49 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /process-instances/{processInstanceKey}/cancellation:
+    post:
+      tags:
+        - Process Instance
+      summary: Cancel process instance
+      description: Cancels a running process instance.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The key of the process instance to cancel.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelProcessInstanceRequest"
+      responses:
+        "204":
+          description: The process instance is canceled.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The process instance is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
+
   /decision-definitions/search:
     post:
       tags:
@@ -1322,7 +1365,7 @@ paths:
         - Resource
       summary: Deploy resources
       description: |
-        Deploys one or more resources (e.g. processes, decision models, or forms). 
+        Deploys one or more resources (e.g. processes, decision models, or forms).
         This is an atomic call, i.e. either all resources are deployed or none of them are.
       requestBody:
         required: true
@@ -1436,6 +1479,44 @@ paths:
           description: The variables were updated.
         "400":
           description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
+  /signals/broadcast:
+    post:
+      tags:
+        - Signal
+      summary: Broadcast signal
+      description: Broadcasts a signal.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignalBroadcastRequest"
+      responses:
+        "200":
+          description: The signal was broadcast.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignalBroadcastResponse"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The signal is not found.
           content:
             application/problem+json:
               schema:
@@ -1682,6 +1763,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceReferenceItem"
+    CancelProcessInstanceRequest:
+      type: object
+      nullable: true
+      properties:
+        operationReference:
+          description: |
+            A reference key chosen by the user that will be part of all records resulting from this operation.
+            Must be > 0 if provided.
+          type: integer
+          format: int64
+          minimum: 1
+
     DecisionDefinitionSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -2942,6 +3035,32 @@ components:
           type: integer
           format: int64
           minimum: 1
+
+    SignalBroadcastRequest:
+      type: object
+      properties:
+        signalName :
+          description: The name of the signal to broadcast.
+          type: string
+        variables:
+          additionalProperties: true
+          description: The signal variables as a JSON object.
+          type: object
+        tenantId:
+          description: The id of the tenant that owns the signal.
+          type: string
+      required:
+        - signalName
+    SignalBroadcastResponse:
+      type: object
+      properties:
+        key:
+          description: The unique ID of the signal that was broadcast.
+          type: integer
+          format: int64
+        tenantId:
+          description: The tenant id of the signal that was broadcast.
+          type: string
 
   securitySchemes:
     bearerAuth:
