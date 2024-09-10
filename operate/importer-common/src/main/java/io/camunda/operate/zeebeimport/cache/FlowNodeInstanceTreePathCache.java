@@ -37,9 +37,9 @@ import org.slf4j.LoggerFactory;
  * size or the flow scope haven't been seen before (due to recreation of cache, etc.).
  *
  * <p>When resolving the treePath for a given flow node instance record {@link
- * FlowNodeInstanceRecord} the treePath with the corresponding flowScopekey is stored in the cache
- * itself. Be aware that only X elements are to be guaranteed in the cache (corresponding to the
- * given cacheSize on construction).
+ * FNITreePathCacheCompositeKey} the treePath with the corresponding flowScopekey is stored in the
+ * cache itself. Be aware that only X elements are to be guaranteed in the cache (corresponding to
+ * the given cacheSize on construction).
  */
 public final class FlowNodeInstanceTreePathCache {
   private static final Logger LOGGER = LoggerFactory.getLogger(FlowNodeInstanceTreePathCache.class);
@@ -68,7 +68,7 @@ public final class FlowNodeInstanceTreePathCache {
 
   /**
    * Resolve the treePath for the given flow node instance (FNI) record {@link
-   * FlowNodeInstanceRecord}.
+   * FNITreePathCacheCompositeKey}.
    *
    * <p>When the flow scope and process instance key are equal, the value is returned as treePath,
    * as it corresponds to a FNI on root level.
@@ -78,73 +78,67 @@ public final class FlowNodeInstanceTreePathCache {
    *
    * <p>Does the resolver has also no knowledge about the treePath the process instance key is used.
    *
-   * @param flowNodeInstanceRecord record that contains information used to resolve the tree path
-   *     for the flow node instance
+   * @param compositeKey a composite key that contains information used to resolve the tree path for
+   *     the flow node instance
    * @return the treePath of the flow node instance
    * @throws IllegalArgumentException when the flow node instance record doesn't correspond to a
    *     supported partition
    */
-  public String resolveTreePath(final FlowNodeInstanceRecord flowNodeInstanceRecord) {
-    final var partitionCache = backedTreePathCache.get(flowNodeInstanceRecord.partitionId());
+  public String resolveTreePath(final FNITreePathCacheCompositeKey compositeKey) {
+    final var partitionCache = backedTreePathCache.get(compositeKey.partitionId());
     if (partitionCache == null) {
       final IllegalArgumentException illegalArgumentException =
           new IllegalArgumentException(
               String.format(
                   "Expected to find treePath cache for partitionId %d, but found nothing. Possible partition Ids are: '%s'.",
-                  flowNodeInstanceRecord.partitionId(), backedTreePathCache.keySet()));
+                  compositeKey.partitionId(), backedTreePathCache.keySet()));
 
       LOGGER.error(
           "Couldn't resolve tree path for given partition id {}",
-          flowNodeInstanceRecord.partitionId(),
+          compositeKey.partitionId(),
           illegalArgumentException);
       throw illegalArgumentException;
     }
 
-    return resolveTreePath(partitionCache, flowNodeInstanceRecord);
+    return resolveTreePath(partitionCache, compositeKey);
   }
 
   private String resolveTreePath(
-      final Map<String, String> partitionCache,
-      final FlowNodeInstanceRecord flowNodeInstanceRecord) {
+      final Map<String, String> partitionCache, final FNITreePathCacheCompositeKey compositeKey) {
     String parentTreePath;
     // if scopeKey differs from processInstanceKey, then it's inner tree level and we need to search
     // for parent 1st
-    if (flowNodeInstanceRecord.flowScopeKey() == flowNodeInstanceRecord.processInstanceKey()) {
-      parentTreePath = ConversionUtils.toStringOrNull(flowNodeInstanceRecord.processInstanceKey());
+    if (compositeKey.flowScopeKey() == compositeKey.processInstanceKey()) {
+      parentTreePath = ConversionUtils.toStringOrNull(compositeKey.processInstanceKey());
     } else {
       // find parent flow node instance
       parentTreePath =
-          partitionCache.get(ConversionUtils.toStringOrNull(flowNodeInstanceRecord.flowScopeKey()));
+          partitionCache.get(ConversionUtils.toStringOrNull(compositeKey.flowScopeKey()));
 
       // cache miss: resolve tree path
       if (parentTreePath == null) {
-        parentTreePath = treePathResolver.apply(flowNodeInstanceRecord.flowScopeKey());
+        parentTreePath = treePathResolver.apply(compositeKey.flowScopeKey());
         LOGGER.debug(
             "Cache miss: resolved treePath {} for flowScopeKey {} via given resolver.",
             parentTreePath,
-            flowNodeInstanceRecord.flowScopeKey());
+            compositeKey.flowScopeKey());
 
         // add missing treePath to cache
         if (parentTreePath != null) {
           partitionCache.put(
-              ConversionUtils.toStringOrNull(flowNodeInstanceRecord.flowScopeKey()),
-              parentTreePath);
+              ConversionUtils.toStringOrNull(compositeKey.flowScopeKey()), parentTreePath);
         } else {
           LOGGER.warn(
               "Unable to find parent tree path for flow node instance id [{}], parent flow node instance id [{}]",
-              flowNodeInstanceRecord.recordKey(),
-              flowNodeInstanceRecord.flowScopeKey());
-          parentTreePath =
-              ConversionUtils.toStringOrNull(flowNodeInstanceRecord.processInstanceKey());
+              compositeKey.recordKey(),
+              compositeKey.flowScopeKey());
+          parentTreePath = ConversionUtils.toStringOrNull(compositeKey.processInstanceKey());
         }
       }
     }
     partitionCache.put(
-        ConversionUtils.toStringOrNull(flowNodeInstanceRecord.recordKey()),
-        String.join(
-            "/",
-            parentTreePath,
-            ConversionUtils.toStringOrNull(flowNodeInstanceRecord.recordKey())));
+        ConversionUtils.toStringOrNull(compositeKey.recordKey()),
+        String.join("/", parentTreePath, ConversionUtils.toStringOrNull(compositeKey.recordKey())));
     return parentTreePath;
   }
 }

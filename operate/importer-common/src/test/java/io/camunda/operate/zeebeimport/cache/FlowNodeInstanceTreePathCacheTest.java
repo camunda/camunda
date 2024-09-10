@@ -43,7 +43,7 @@ public class FlowNodeInstanceTreePathCacheTest {
   public void shouldResolveTreePathForRootLevelFNI() {
     // given
     // flow scope key and PI key is equal - no need to resolve tree path
-    final var flowNodeInstanceRecord = new FlowNodeInstanceRecord(1, 0xCAFE, 0xABCD, 0xABCD);
+    final var flowNodeInstanceRecord = new FNITreePathCacheCompositeKey(1, 0xCAFE, 0xABCD, 0xABCD);
 
     // when
     final String treePath = treePathCache.resolveTreePath(flowNodeInstanceRecord);
@@ -58,10 +58,12 @@ public class FlowNodeInstanceTreePathCacheTest {
   public void shouldResolveTreePathFromPreviousRecord() {
     // given
     // root fni are added to the cache
-    final var rootFlowNodeInstanceRecord = new FlowNodeInstanceRecord(1, 0xCAFE, 0xABCD, 0xABCD);
+    final var rootFlowNodeInstanceRecord =
+        new FNITreePathCacheCompositeKey(1, 0xCAFE, 0xABCD, 0xABCD);
     final String firstTreePath = treePathCache.resolveTreePath(rootFlowNodeInstanceRecord);
 
-    final var leafFlowNodeInstanceRecord = new FlowNodeInstanceRecord(1, 0xFACE, 0xCAFE, 0xABCD);
+    final var leafFlowNodeInstanceRecord =
+        new FNITreePathCacheCompositeKey(1, 0xFACE, 0xCAFE, 0xABCD);
 
     // when
     // fni with flow scope key of previous root FNI
@@ -79,7 +81,7 @@ public class FlowNodeInstanceTreePathCacheTest {
   public void shouldTryToResolve() {
     // given
     // resolver can't resolve value - returned tree Path is equal to process instance key
-    final var flowNodeInstanceRecord = new FlowNodeInstanceRecord(1, 0xCAFE, 0xABCD, 0xEFDA);
+    final var flowNodeInstanceRecord = new FNITreePathCacheCompositeKey(1, 0xCAFE, 0xABCD, 0xEFDA);
 
     // when
     final String treePath = treePathCache.resolveTreePath(flowNodeInstanceRecord);
@@ -96,7 +98,7 @@ public class FlowNodeInstanceTreePathCacheTest {
     // resolver can resolve tree path
     final String expectedTreePath = String.join("/", Long.toString(0xABCD), Long.toString(0xEFDA));
     spyResolverCache.put(0xABCDL, expectedTreePath);
-    final var flowNodeInstanceRecord = new FlowNodeInstanceRecord(1, 0xCAFE, 0xABCD, 0xEFDA);
+    final var flowNodeInstanceRecord = new FNITreePathCacheCompositeKey(1, 0xCAFE, 0xABCD, 0xEFDA);
 
     // when
     final String treePath = treePathCache.resolveTreePath(flowNodeInstanceRecord);
@@ -113,7 +115,7 @@ public class FlowNodeInstanceTreePathCacheTest {
     // cache is empty and resolver can resolve tree path
     final String expectedTreePath = String.join("/", Long.toString(0xABCD), Long.toString(0xEFDA));
     spyResolverCache.put(0xABCDL, expectedTreePath);
-    final var flowNodeInstanceRecord = new FlowNodeInstanceRecord(1, 0xCAFE, 0xABCD, 0xEFDA);
+    final var flowNodeInstanceRecord = new FNITreePathCacheCompositeKey(1, 0xCAFE, 0xABCD, 0xEFDA);
     final String firstTreePath = treePathCache.resolveTreePath(flowNodeInstanceRecord);
 
     // when
@@ -129,7 +131,7 @@ public class FlowNodeInstanceTreePathCacheTest {
   public void shouldThrowErrorWhenPartitionIdDoesNotFit() {
     // given
     // partition Id doesn't correspond to expected
-    final var flowNodeInstanceRecord = new FlowNodeInstanceRecord(3, 0xCAFE, 0xABCD, 0xEFDA);
+    final var flowNodeInstanceRecord = new FNITreePathCacheCompositeKey(3, 0xCAFE, 0xABCD, 0xEFDA);
 
     // when - then
     assertThatThrownBy(() -> treePathCache.resolveTreePath(flowNodeInstanceRecord))
