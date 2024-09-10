@@ -9,9 +9,9 @@ package io.camunda.optimize.service.db.es.report.interpreter.view.process;
 
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_VARIABLE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
-import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
-import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
-import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
+import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableNameField;
+import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableTypeField;
+import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;

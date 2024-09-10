@@ -12,20 +12,16 @@ import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
-import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_RAW_DATA;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
-import static io.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
-import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
-import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
+import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableNameField;
+import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableValueField;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -35,24 +31,21 @@ import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.es.report.command.process.mapping.RawProcessDataResultDtoMapper;
-import io.camunda.optimize.service.db.reader.ProcessVariableReader;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.interpreter.view.process.AbstractProcessViewRawDataInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
-import io.camunda.optimize.service.db.report.plan.process.ProcessView;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
+import io.camunda.optimize.service.db.repository.es.VariableRepositoryES;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import io.camunda.optimize.service.export.CSVUtils;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -78,102 +71,20 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
-public class ProcessViewRawDataInterpreterES implements ProcessViewInterpreterES {
-
-  private static final String CURRENT_TIME = "currentTime";
-  private static final String PARAMS_CURRENT_TIME = "params." + CURRENT_TIME;
-  private static final String DATE_FORMAT = "dateFormat";
-  private static final String FLOWNODE_IDS_TO_DURATIONS = "flowNodeIdsToDurations";
-  private static final String NUMBER_OF_USER_TASKS = "numberOfUserTasks";
-  private static final String GET_FLOW_NODE_DURATIONS_SCRIPT =
-      """
-    def flowNodeInstanceIdToDuration = new HashMap();
-    def dateFormatter = new SimpleDateFormat(params.dateFormat);
-    for (flowNodeInstance in params._source.flowNodeInstances) {
-      if (flowNodeInstance.totalDurationInMs != null) {
-        if (flowNodeInstanceIdToDuration.containsKey(flowNodeInstance.flowNodeId)) {
-          def currentDuration = flowNodeInstanceIdToDuration.get(flowNodeInstance.flowNodeId);
-          flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, flowNodeInstance.totalDurationInMs + currentDuration)
-        } else {
-          flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, flowNodeInstance.totalDurationInMs)
-        }
-      } else {
-        if (flowNodeInstance.startDate != null) {
-          def duration = params.currentTime - dateFormatter.parse(flowNodeInstance.startDate).getTime();
-          if (flowNodeInstanceIdToDuration.containsKey(flowNodeInstance.flowNodeId)) {
-            def currentDuration = flowNodeInstanceIdToDuration.get(flowNodeInstance.flowNodeId);
-            flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, duration + currentDuration)
-          } else {
-            flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, duration)
-          }
-        }
-      }
-    }
-    return flowNodeInstanceIdToDuration;
-    """;
-  public static final String SORT_SCRIPT =
-      """
-    if (doc[params.duration].size() == 0) {
-      params.currentTime - doc[params.startDate].value.toInstant().toEpochMilli()
-    } else {
-       doc[params.duration].value
-    }
-    """;
-  public static final String NUMBER_OF_USER_TASKS_SCRIPT =
-      """
-    Optional.ofNullable(params._source.flowNodeInstances)
-      .map(list -> list.stream().filter(item -> item.flowNodeType.equals('userTask')).count())
-      .orElse(0L)
-    """;
-
+public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataInterpreter
+    implements ProcessViewInterpreterES {
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
   private final DefinitionService definitionService;
-  private final ProcessVariableReader processVariableReader;
-
-  @Override
-  public Set<ProcessView> getSupportedViews() {
-    return Set.of(PROCESS_VIEW_RAW_DATA);
-  }
+  private final VariableRepositoryES variableRepository;
 
   @Override
   public void adjustSearchRequest(
       final SearchRequest searchRequest,
       final BoolQueryBuilder baseQuery,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-
-    List<String> defKeysToTarget =
-        context.getReportData().getDefinitions().stream()
-            .map(ReportDataDefinitionDto::getKey)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
-    final BoolQueryBuilder variableQuery = boolQuery().must(baseQuery);
-    // we do not fetch the variable labels as part of the /evaluate
-    // endpoint, but the frontend will query the /variables endpoint
-    // to fetch them
-    final Set<String> allVariableNamesForMatchingInstances =
-        processVariableReader
-            .getVariableNamesForInstancesMatchingQuery(
-                defKeysToTarget, variableQuery, Collections.emptyMap())
-            .stream()
-            .map(ProcessVariableNameResponseDto::getName)
-            .collect(Collectors.toSet());
-    context.setAllVariablesNames(allVariableNamesForMatchingInstances);
-
-    final String sortByField =
-        context
-            .getReportConfiguration()
-            .getSorting()
-            .flatMap(ReportSortingDto::getBy)
-            .orElse(ProcessInstanceIndex.START_DATE);
-    final SortOrder sortOrder =
-        context
-            .getReportConfiguration()
-            .getSorting()
-            .flatMap(ReportSortingDto::getOrder)
-            .map(order -> SortOrder.valueOf(order.name()))
-            .orElse(SortOrder.DESC);
+    context.setAllVariablesNames(allVariableNamesForMatchingInstances(baseQuery, context));
 
     final SearchSourceBuilder search = searchRequest.source().fetchSource(true);
     if (!context.isJsonExport()) {
@@ -217,10 +128,10 @@ public class ProcessViewRawDataInterpreterES implements ProcessViewInterpreterES
     searchRequest
         .source()
         .scriptField(
-            FLOWNODE_IDS_TO_DURATIONS,
+            FLOW_NODE_IDS_TO_DURATIONS,
             createDefaultScriptWithSpecificDtoParams(
                 GET_FLOW_NODE_DURATIONS_SCRIPT, params, objectMapper));
-    addSorting(sortByField, sortOrder, searchRequest.source(), params);
+    addSorting(sortByField(context), sortOrder(context), searchRequest.source(), params);
   }
 
   @Override
@@ -243,7 +154,7 @@ public class ProcessViewRawDataInterpreterES implements ProcessViewInterpreterES
                 objectMapper.readValue(hit.getSourceAsString(), ProcessInstanceDto.class);
             processInstanceIdsToFlowNodeIdsAndDurations.put(
                 processInstance.getProcessInstanceId(),
-                hit.getFields().get(FLOWNODE_IDS_TO_DURATIONS).getValue());
+                hit.getFields().get(FLOW_NODE_IDS_TO_DURATIONS).getValue());
             instanceIdsToUserTaskCount.put(
                 processInstance.getProcessInstanceId(),
                 Long.valueOf(hit.getFields().get(NUMBER_OF_USER_TASKS).getValue().toString()));
@@ -305,10 +216,29 @@ public class ProcessViewRawDataInterpreterES implements ProcessViewInterpreterES
     return ViewResult.builder().rawData(rawData).build();
   }
 
-  @Override
-  public ViewResult createEmptyResult(
+  private Set<String> allVariableNamesForMatchingInstances(
+      final BoolQueryBuilder baseQuery,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    return ViewResult.builder().rawData(new ArrayList<>()).build();
+    final BoolQueryBuilder variableQuery = boolQuery().must(baseQuery);
+    // we do not fetch the variable labels as part of the /evaluate
+    // endpoint, but the frontend will query the /variables endpoint
+    // to fetch them
+    return variableRepository
+        .getVariableNamesForInstancesMatchingQuery(
+            defKeysToTarget(context.getReportData().getDefinitions()), variableQuery, Map.of())
+        .stream()
+        .map(ProcessVariableNameResponseDto::getName)
+        .collect(Collectors.toSet());
+  }
+
+  private SortOrder sortOrder(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    return context
+        .getReportConfiguration()
+        .getSorting()
+        .flatMap(ReportSortingDto::getOrder)
+        .map(order -> SortOrder.valueOf(order.name()))
+        .orElse(SortOrder.DESC);
   }
 
   private void addSorting(
@@ -347,24 +277,5 @@ public class ProcessViewRawDataInterpreterES implements ProcessViewInterpreterES
               // @formatter:on
               .unmappedType("short"));
     }
-  }
-
-  private void addNewVariablesAndDtoFieldsToTableColumnConfig(
-      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final List<RawDataProcessInstanceDto> rawData) {
-    final List<String> variableNames =
-        rawData.stream()
-            .flatMap(
-                rawDataProcessInstanceDto ->
-                    rawDataProcessInstanceDto.getVariables().keySet().stream())
-            .map(varKey -> VARIABLE_PREFIX + varKey)
-            .toList();
-
-    TableColumnDto tableColumns = context.getReportConfiguration().getTableColumns();
-    tableColumns.addCountColumns(CSVUtils.extractAllPrefixedCountKeys());
-    tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
-    tableColumns.addNewAndRemoveUnexpectedFlowNodeDurationColumns(
-        CSVUtils.extractAllPrefixedFlowNodeKeys(rawData));
-    tableColumns.addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
   }
 }

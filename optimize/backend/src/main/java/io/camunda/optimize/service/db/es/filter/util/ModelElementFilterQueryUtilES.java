@@ -10,6 +10,7 @@ package io.camunda.optimize.service.db.es.filter.util;
 import static io.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 import static io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
 import static io.camunda.optimize.service.db.es.report.command.util.DurationScriptUtilES.getDurationFilterScript;
+import static io.camunda.optimize.service.db.report.filter.util.ModelElementFilterQueryUtil.getViewLevelFiltersForInstanceMatch;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_CANCELED;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_DEFINITION_KEY;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_DEFINITION_VERSION;
@@ -79,20 +80,6 @@ import org.elasticsearch.index.query.TermsQueryBuilder;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ModelElementFilterQueryUtilES {
-
-  private static final Set<Class<? extends ProcessFilterDto<?>>> FLOW_NODE_VIEW_LEVEL_FILTERS =
-      Set.of(
-          RunningFlowNodesOnlyFilterDto.class,
-          CompletedFlowNodesOnlyFilterDto.class,
-          CompletedOrCanceledFlowNodesOnlyFilterDto.class,
-          CanceledFlowNodesOnlyFilterDto.class,
-          CandidateGroupFilterDto.class,
-          AssigneeFilterDto.class,
-          FlowNodeDurationFilterDto.class,
-          ExecutedFlowNodeFilterDto.class,
-          FlowNodeStartDateFilterDto.class,
-          FlowNodeEndDateFilterDto.class);
-
   private static final Map<
           Class<? extends ProcessFilterDto<?>>, Function<BoolQueryBuilder, QueryBuilder>>
       FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES =
@@ -126,10 +113,7 @@ public class ModelElementFilterQueryUtilES {
   public static Optional<NestedQueryBuilder> addInstanceFilterForRelevantViewLevelFilters(
       final List<ProcessFilterDto<?>> filters, final FilterContext filterContext) {
     final List<ProcessFilterDto<?>> viewLevelFiltersForInstanceMatch =
-        filters.stream()
-            .filter(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
-            .filter(filter -> FLOW_NODE_VIEW_LEVEL_FILTERS.contains(filter.getClass()))
-            .toList();
+        getViewLevelFiltersForInstanceMatch(filters);
     if (!viewLevelFiltersForInstanceMatch.isEmpty()) {
       BoolQueryBuilder viewFilterInstanceQuery =
           createFlowNodeTypeFilterQuery(filterContext.isUserTaskReport());

@@ -10,7 +10,7 @@ package io.camunda.optimize.service.db.es.report.interpreter.distributedby.proce
 import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_INSTANCE_START_DATE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.START_DATE;
 
-import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancer;
+import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.service.DateAggregationServiceES;
 import io.camunda.optimize.service.db.es.report.service.MinMaxStatsServiceES;
@@ -29,7 +29,7 @@ public class ProcessDistributedByInstanceStartDateInterpreterES
     extends AbstractProcessDistributedByInstanceDateInterpreterES {
   @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
   @Getter private final DateAggregationServiceES dateAggregationService;
-  @Getter private final ProcessQueryFilterEnhancer queryFilterEnhancer;
+  @Getter private final ProcessQueryFilterEnhancerES queryFilterEnhancer;
   @Getter private final MinMaxStatsServiceES minMaxStatsService;
 
   @Override

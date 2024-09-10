@@ -10,7 +10,7 @@ package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.dat
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_PROCESS_INSTANCE_START_DATE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.START_DATE;
 
-import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancer;
+import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.service.DateAggregationServiceES;
@@ -32,7 +32,7 @@ public class ProcessGroupByProcessInstanceStartDateInterpreterES
   @Getter private final ConfigurationService configurationService;
   @Getter private final DateAggregationServiceES dateAggregationService;
   @Getter private final MinMaxStatsServiceES minMaxStatsService;
-  @Getter private final ProcessQueryFilterEnhancer queryFilterEnhancer;
+  @Getter private final ProcessQueryFilterEnhancerES queryFilterEnhancer;
   @Getter private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
   @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
 

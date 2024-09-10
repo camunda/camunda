@@ -35,6 +35,15 @@ public class DateFilterQueryUtilOS {
   private static final DateTimeFormatter formatter =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
+  public static List<Query> filterQueries(
+      final List<DateFilterDataDto<?>> dates, final String dateField, final ZoneId timezone) {
+    return dates == null
+        ? List.of()
+        : dates.stream()
+            .flatMap(dateDto -> createRangeQuery(dateDto, dateField, timezone).stream())
+            .toList();
+  }
+
   public static List<Query> createRangeQueries(
       final List<DateFilterDataDto<?>> dates, final String dateField, final ZoneId timezone) {
     return dates == null

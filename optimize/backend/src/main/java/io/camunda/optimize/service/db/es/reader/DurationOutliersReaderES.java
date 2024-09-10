@@ -84,7 +84,7 @@ import io.camunda.optimize.dto.optimize.query.variable.ProcessToQueryDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancer;
+import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.db.reader.DurationOutliersReader;
@@ -148,7 +148,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
   private final ObjectMapper objectMapper;
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessVariableReader processVariableReader;
-  private final ProcessQueryFilterEnhancer queryFilterEnhancer;
+  private final ProcessQueryFilterEnhancerES queryFilterEnhancer;
   private final ConfigurationService configurationService;
 
   @Override

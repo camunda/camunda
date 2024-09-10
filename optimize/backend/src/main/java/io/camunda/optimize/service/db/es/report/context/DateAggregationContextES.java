@@ -8,7 +8,7 @@
 package io.camunda.optimize.service.db.es.report.context;
 
 import io.camunda.optimize.service.db.es.filter.DecisionQueryFilterEnhancerES;
-import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancer;
+import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.report.context.DateAggregationContext;
 import java.util.List;
 import lombok.Getter;
@@ -21,5 +21,5 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 public class DateAggregationContextES extends DateAggregationContext {
   @NonNull private final List<AggregationBuilder> subAggregations;
   private final DecisionQueryFilterEnhancerES decisionQueryFilterEnhancer;
-  private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
+  private final ProcessQueryFilterEnhancerES processQueryFilterEnhancer;
 }

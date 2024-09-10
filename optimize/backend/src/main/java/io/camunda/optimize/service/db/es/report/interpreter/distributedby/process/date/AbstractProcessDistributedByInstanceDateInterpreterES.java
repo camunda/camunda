@@ -15,7 +15,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDat
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.DateDistributedByValueDto;
-import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancer;
+import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.report.context.DateAggregationContextES;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.AbstractProcessDistributedByInterpreterES;
 import io.camunda.optimize.service.db.es.report.service.DateAggregationServiceES;
@@ -42,7 +42,7 @@ public abstract class AbstractProcessDistributedByInstanceDateInterpreterES
 
   protected abstract DateAggregationServiceES getDateAggregationService();
 
-  protected abstract ProcessQueryFilterEnhancer getQueryFilterEnhancer();
+  protected abstract ProcessQueryFilterEnhancerES getQueryFilterEnhancer();
 
   protected abstract MinMaxStatsServiceES getMinMaxStatsService();
 

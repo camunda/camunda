@@ -22,14 +22,14 @@ import static io.camunda.optimize.service.db.schema.index.AbstractInstanceIndex.
 import static io.camunda.optimize.service.db.schema.index.ExternalProcessVariableIndex.INGESTION_TIMESTAMP;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex.TIMESTAMP;
+import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableNameField;
+import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
 import static io.camunda.optimize.service.util.DefinitionQueryUtilES.createDefinitionQuery;
 import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
-import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static io.camunda.optimize.util.LogUtil.sanitizeLogMessage;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
@@ -58,7 +58,7 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.es.ElasticsearchCompositeAggregationScroller;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancer;
+import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
@@ -73,10 +73,10 @@ import io.camunda.optimize.service.db.repository.script.ProcessInstanceScriptFac
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
+import io.camunda.optimize.service.db.util.ProcessVariableHelper;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.DefinitionQueryUtilES;
 import io.camunda.optimize.service.util.InstanceIndexUtil;
-import io.camunda.optimize.service.util.ProcessVariableHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
@@ -136,7 +136,7 @@ public class VariableRepositoryES implements VariableRepository {
   private final ConfigurationService configurationService;
   private final DateTimeFormatter dateTimeFormatter;
   private final DecisionDefinitionReader decisionDefinitionReader;
-  private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
+  private final ProcessQueryFilterEnhancerES processQueryFilterEnhancer;
   private final ProcessDefinitionReader processDefinitionReader;
 
   @Override
