@@ -91,6 +91,10 @@ public interface AggregationDSL {
     return FieldDateMath.of(b -> b.expr(value));
   }
 
+  static Aggregation filterAggregation(final Query query) {
+    return Aggregation.of(a -> a.filter(query));
+  }
+
   static FiltersAggregation filtersAggregation(final Map<String, Query> queries) {
     return FiltersAggregation.of(a -> a.filters(Buckets.of(b -> b.keyed(queries))));
   }

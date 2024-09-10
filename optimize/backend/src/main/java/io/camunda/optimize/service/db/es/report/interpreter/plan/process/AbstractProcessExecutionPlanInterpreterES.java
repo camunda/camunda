@@ -14,11 +14,6 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.ProcessGroupByInterpreterES;
@@ -41,15 +36,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 public abstract class AbstractProcessExecutionPlanInterpreterES
     extends AbstractExecutionPlanInterpreterES<ProcessReportDataDto, ProcessExecutionPlan>
     implements ProcessExecutionPlanInterpreterES {
-  // Instance date filters should also reduce the total count (baseline) considered for report
-  // evaluation
-  private static final List<Class<? extends ProcessFilterDto<?>>> FILTERS_AFFECTING_BASELINE =
-      List.of(
-          InstanceStartDateFilterDto.class,
-          InstanceEndDateFilterDto.class,
-          FlowNodeStartDateFilterDto.class,
-          FlowNodeEndDateFilterDto.class);
-
   protected abstract ProcessDefinitionReader getProcessDefinitionReader();
 
   protected abstract ProcessQueryFilterEnhancerES getQueryFilterEnhancer();
@@ -104,18 +90,8 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
       ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     // Instance level date filters are also applied to the baseline so are included here
     final Map<String, List<ProcessFilterDto<?>>> instanceLevelDateFiltersByDefinitionKey =
-        context.getReportData().groupFiltersByDefinitionIdentifier().entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    Map.Entry::getKey,
-                    entry ->
-                        entry.getValue().stream()
-                            .filter(
-                                filter ->
-                                    filter.getFilterLevel() == FilterApplicationLevel.INSTANCE)
-                            .filter(
-                                filter -> FILTERS_AFFECTING_BASELINE.contains(filter.getClass()))
-                            .collect(Collectors.toList())));
+        getInstanceLevelDateFiltersByDefinitionKey(context);
+
     final BoolQueryBuilder multiDefinitionFilterQuery =
         buildDefinitionBaseQueryForFilters(context, instanceLevelDateFiltersByDefinitionKey);
 

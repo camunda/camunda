@@ -32,7 +32,6 @@ import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotF
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 
-import io.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -147,8 +146,8 @@ public class VariableRepositoryOS implements VariableRepository {
         processInstanceIds.stream()
             .map(
                 processInstanceId -> {
-                  final UpdateOperation<DecisionDefinitionOptimizeDto> updateOperation =
-                      new UpdateOperation.Builder<DecisionDefinitionOptimizeDto>()
+                  final UpdateOperation<Void> updateOperation =
+                      new UpdateOperation.Builder<Void>()
                           .index(
                               indexNameService.getOptimizeIndexAliasForIndex(
                                   getProcessInstanceIndexAliasName(processDefinitionKey)))

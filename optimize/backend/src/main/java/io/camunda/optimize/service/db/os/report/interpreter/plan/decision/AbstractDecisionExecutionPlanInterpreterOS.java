@@ -10,9 +10,9 @@ package io.camunda.optimize.service.db.os.report.interpreter.plan.decision;
 import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
 
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
 import io.camunda.optimize.service.db.os.report.filter.DecisionQueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.os.report.interpreter.plan.AbstractExecutionPlanInterpreterOS;
+import io.camunda.optimize.service.db.os.schema.index.DecisionInstanceIndexOS;
 import io.camunda.optimize.service.db.os.util.DefinitionQueryUtilOS;
 import io.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import io.camunda.optimize.service.db.report.ExecutionContext;
@@ -50,11 +50,13 @@ public abstract class AbstractDecisionExecutionPlanInterpreterOS
             definitionDto ->
                 definitionFilterQueryBuilder.should(
                     DefinitionQueryUtilOS.createDefinitionQuery(
-                        definitionDto.getKey(),
-                        definitionDto.getVersions(),
-                        definitionDto.getTenantIds(),
-                        new DecisionInstanceIndexES(definitionDto.getKey()),
-                        getDecisionDefinitionReader()::getLatestVersionToKey)));
+                            definitionDto.getKey(),
+                            definitionDto.getVersions(),
+                            definitionDto.getTenantIds(),
+                            new DecisionInstanceIndexOS(definitionDto.getKey()),
+                            getDecisionDefinitionReader()::getLatestVersionToKey)
+                        .build()
+                        .toQuery()));
     return definitionFilterQueryBuilder;
   }
 
