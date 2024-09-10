@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.none;
 
-import static io.camunda.optimize.service.db.es.filter.util.IncidentFilterQueryUtil.createIncidentAggregationFilter;
+import static io.camunda.optimize.service.db.es.filter.util.IncidentFilterQueryUtilES.createIncidentAggregationFilter;
 import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;

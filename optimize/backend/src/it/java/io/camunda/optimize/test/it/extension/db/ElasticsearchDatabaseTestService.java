@@ -19,8 +19,8 @@ import static io.camunda.optimize.service.db.es.schema.ElasticSearchIndexSetting
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
+import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableIdField;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;

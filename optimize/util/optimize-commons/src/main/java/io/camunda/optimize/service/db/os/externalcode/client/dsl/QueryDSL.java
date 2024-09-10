@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.externalcode.client.dsl;
 
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -58,6 +59,10 @@ public interface QueryDSL {
   }
 
   static Query and(final Query... queries) {
+    return and(Arrays.asList(queries));
+  }
+
+  static Query and(final Collection<Query> queries) {
     return BoolQuery.of(q -> q.must(nonNull(queries))).toQuery();
   }
 
@@ -137,6 +142,27 @@ public interface QueryDSL {
         .toQuery();
   }
 
+  static <A> Query terms(final String field, final Collection<A> values) {
+    Function<A, FieldValue> toFieldValue =
+        (x) -> {
+          if (x instanceof String s) {
+            return FieldValue.of(s);
+          } else if (x instanceof Integer i) {
+            return FieldValue.of(i);
+          } else if (x instanceof Long l) {
+            return FieldValue.of(l);
+          } else if (x instanceof Boolean b) {
+            return FieldValue.of(b);
+          } else {
+            throw new OptimizeRuntimeException("Unsupported terms type: " + x.getClass());
+          }
+        };
+
+    final List<FieldValue> fieldValues = values.stream().map(toFieldValue).toList();
+    return TermsQuery.of(q -> q.field(field).terms(TermsQueryField.of(f -> f.value(fieldValues))))
+        .toQuery();
+  }
+
   static <A> Query lt(final String field, final A lt) {
     return RangeQuery.of(q -> q.field(field).lte(json(lt))).toQuery();
   }
@@ -183,6 +209,10 @@ public interface QueryDSL {
   }
 
   static Query or(final Query... queries) {
+    return or(Arrays.asList(queries));
+  }
+
+  static Query or(final Collection<Query> queries) {
     return BoolQuery.of(q -> q.should(nonNull(queries))).toQuery();
   }
 

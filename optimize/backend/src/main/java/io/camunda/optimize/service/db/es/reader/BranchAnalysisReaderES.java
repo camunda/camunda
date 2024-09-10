@@ -24,7 +24,7 @@ import io.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import io.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancer;
+import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.db.reader.BranchAnalysisReader;
@@ -64,7 +64,7 @@ public class BranchAnalysisReaderES implements BranchAnalysisReader {
 
   private final OptimizeElasticsearchClient esClient;
   private final DefinitionService definitionService;
-  private final ProcessQueryFilterEnhancer queryFilterEnhancer;
+  private final ProcessQueryFilterEnhancerES queryFilterEnhancer;
   private final ProcessDefinitionReader processDefinitionReader;
 
   @Override

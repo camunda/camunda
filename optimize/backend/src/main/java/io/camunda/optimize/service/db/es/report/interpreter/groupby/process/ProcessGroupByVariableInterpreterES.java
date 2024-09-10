@@ -9,8 +9,8 @@ package io.camunda.optimize.service.db.es.report.interpreter.groupby.process;
 
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_VARIABLE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
-import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
-import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
+import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableNameField;
+import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
@@ -21,11 +21,12 @@ import io.camunda.optimize.service.db.es.report.interpreter.distributedby.proces
 import io.camunda.optimize.service.db.es.report.interpreter.groupby.AbstractGroupByVariableInterpreterES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.service.VariableAggregationServiceES;
+import io.camunda.optimize.service.db.es.util.ProcessVariableHelperES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
+import io.camunda.optimize.service.db.util.ProcessVariableHelper;
 import io.camunda.optimize.service.util.InstanceIndexUtil;
-import io.camunda.optimize.service.util.ProcessVariableHelper;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
 import lombok.Getter;
@@ -97,7 +98,7 @@ public class ProcessGroupByVariableInterpreterES
   protected BoolQueryBuilder getVariableUndefinedOrNullQuery(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final VariableGroupByValueDto variable = getVariableGroupByDto(context);
-    return ProcessVariableHelper.createFilterForUndefinedOrNullQueryBuilder(
+    return ProcessVariableHelperES.createFilterForUndefinedOrNullQueryBuilder(
         variable.getName(), variable.getType());
   }
 }

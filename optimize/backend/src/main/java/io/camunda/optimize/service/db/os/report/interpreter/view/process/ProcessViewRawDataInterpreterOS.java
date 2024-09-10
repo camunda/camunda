@@ -19,9 +19,9 @@ import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.crea
 import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
+import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableNameField;
+import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableValueField;
 import static io.camunda.optimize.service.exceptions.ExceptionHelper.safe;
-import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
-import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
 import static java.lang.String.format;
 
 import com.fasterxml.jackson.databind.ObjectMapper;

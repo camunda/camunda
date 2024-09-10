@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.flownode;
 
-import static io.camunda.optimize.service.db.es.filter.util.IncidentFilterQueryUtil.createIncidentAggregationFilter;
+import static io.camunda.optimize.service.db.es.filter.util.IncidentFilterQueryUtilES.createIncidentAggregationFilter;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_INCIDENT_FLOW_NODE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_ACTIVITY_ID;

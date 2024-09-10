@@ -16,7 +16,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.configuration.TableC
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancer;
+import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.ProcessGroupByInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
@@ -41,7 +41,7 @@ public class RawProcessInstanceDataGroupByNoneExecutionPlanInterpreterES
   @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
   @Getter private final OptimizeElasticsearchClient esClient;
   @Getter private final ProcessDefinitionReader processDefinitionReader;
-  @Getter private final ProcessQueryFilterEnhancer queryFilterEnhancer;
+  @Getter private final ProcessQueryFilterEnhancerES queryFilterEnhancer;
 
   @Override
   public Set<ProcessExecutionPlan> getSupportedExecutionPlans() {

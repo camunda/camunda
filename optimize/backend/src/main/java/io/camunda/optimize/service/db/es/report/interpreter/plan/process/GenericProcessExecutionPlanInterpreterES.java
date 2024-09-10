@@ -119,7 +119,7 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutio
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_VARIABLE_GROUP_BY_NONE;
 
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancer;
+import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.ProcessGroupByInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
@@ -140,7 +140,7 @@ public class GenericProcessExecutionPlanInterpreterES
     extends AbstractProcessExecutionPlanInterpreterES {
   @Getter private final ProcessDefinitionReader processDefinitionReader;
   @Getter private final OptimizeElasticsearchClient esClient;
-  @Getter private final ProcessQueryFilterEnhancer queryFilterEnhancer;
+  @Getter private final ProcessQueryFilterEnhancerES queryFilterEnhancer;
   @Getter private final ProcessGroupByInterpreterFacadeES groupByInterpreter;
   @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
 

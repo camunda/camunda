@@ -14,8 +14,8 @@ import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.c
 import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
-import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
-import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
+import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableNameField;
+import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableValueField;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
