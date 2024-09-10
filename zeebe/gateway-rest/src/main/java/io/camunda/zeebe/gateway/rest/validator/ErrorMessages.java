@@ -28,4 +28,5 @@ public final class ErrorMessages {
   public static final String ERROR_MESSAGE_INVALID_TENANT =
       "Expected to handle request %s with tenant identifier '%s', but %s";
   public static final String ERROR_MESSAGE_ONLY_ONE_FIELD = "Only one of %s is allowed";
+  public static final String ERROR_MESSAGE_INVALID_EMAIL = "The provided email '%s' is not valid";
 }

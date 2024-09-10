@@ -48,6 +48,7 @@
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.17.1</version.commons-codec>
     <version.commons-compress>1.27.1</version.commons-compress>
+    <version.commons-validator>1.9.0</version.commons-validator>
     <version.zstd-jni>1.5.6-5</version.zstd-jni>
     <version.commons-text>1.12.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
@@ -158,7 +159,7 @@
     <version.aws-java-sdk>1.12.771</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.20.1</version.elasticsearch-test-container>
     <version.postgres-test-container>1.20.1</version.postgres-test-container>
-    <version.elasticsearch7>7.17.23</version.elasticsearch7>
+    <version.elasticsearch7>7.17.24</version.elasticsearch7>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
@@ -1332,6 +1333,12 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-text</artifactId>
         <version>${version.commons-text}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-validator</groupId>
+        <artifactId>commons-validator</artifactId>
+        <version>${version.commons-validator}</version>
       </dependency>
 
       <dependency>
