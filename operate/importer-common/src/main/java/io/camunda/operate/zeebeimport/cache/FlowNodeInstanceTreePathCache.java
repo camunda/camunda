@@ -18,6 +18,7 @@ package io.camunda.operate.zeebeimport.cache;
 
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.SoftHashMap;
+import io.camunda.operate.zeebeimport.cache.TreePathCacheMetrics.CacheResult;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,7 @@ public final class FlowNodeInstanceTreePathCache {
   private static final Logger LOGGER = LoggerFactory.getLogger(FlowNodeInstanceTreePathCache.class);
   private final Map<Integer, Map<String, String>> backedTreePathCache;
   private final Function<Long, String> treePathResolver;
+  private final TreePathCacheMetrics treePathCacheMetrics;
 
   /**
    * Constructs the tree patch cache, backed by caches per given partitions.
@@ -59,11 +61,30 @@ public final class FlowNodeInstanceTreePathCache {
       final List<Integer> partitionIds,
       final int cacheSize,
       final Function<Long, String> treePathResolver) {
+    this(partitionIds, cacheSize, treePathResolver, new NoopCacheMetrics());
+  }
+
+  /**
+   * Constructs the tree patch cache, backed by caches per given partitions.
+   *
+   * @param partitionIds a list of partition ids the cache should cover, it might be that the
+   *     corresponding Importer is only importing a sparse of existing partition ids
+   * @param cacheSize the size of the caches assigned per partition
+   * @param treePathResolver the resolver to find corresponding treePath if not existing in the
+   *     cache
+   * @param treePathCacheMetrics metrics that are collected during cache usage
+   */
+  public FlowNodeInstanceTreePathCache(
+      final List<Integer> partitionIds,
+      final int cacheSize,
+      final Function<Long, String> treePathResolver,
+      final TreePathCacheMetrics treePathCacheMetrics) {
     backedTreePathCache = new HashMap<>();
     partitionIds.forEach(
         partitionId ->
             backedTreePathCache.computeIfAbsent(partitionId, (id) -> new SoftHashMap<>(cacheSize)));
     this.treePathResolver = treePathResolver;
+    this.treePathCacheMetrics = treePathCacheMetrics;
   }
 
   /**
@@ -97,16 +118,19 @@ public final class FlowNodeInstanceTreePathCache {
           "Couldn't resolve tree path for given partition id {}",
           flowNodeInstanceRecord.partitionId(),
           illegalArgumentException);
+      treePathCacheMetrics.observeCacheResult(CacheResult.FAILURE);
       throw illegalArgumentException;
     }
 
-    return resolveTreePath(partitionCache, flowNodeInstanceRecord);
+    return treePathCacheMetrics.observeTimeOfTreePathResolvement(
+        () -> resolveTreePath(partitionCache, flowNodeInstanceRecord));
   }
 
   private String resolveTreePath(
       final Map<String, String> partitionCache,
       final FlowNodeInstanceRecord flowNodeInstanceRecord) {
     String parentTreePath;
+    var cacheResult = CacheResult.FOUND;
     // if scopeKey differs from processInstanceKey, then it's inner tree level and we need to search
     // for parent 1st
     if (flowNodeInstanceRecord.flowScopeKey() == flowNodeInstanceRecord.processInstanceKey()) {
@@ -118,6 +142,7 @@ public final class FlowNodeInstanceTreePathCache {
 
       // cache miss: resolve tree path
       if (parentTreePath == null) {
+        cacheResult = CacheResult.MISS;
         parentTreePath = treePathResolver.apply(flowNodeInstanceRecord.flowScopeKey());
         LOGGER.debug(
             "Cache miss: resolved treePath {} for flowScopeKey {} via given resolver.",
@@ -145,6 +170,7 @@ public final class FlowNodeInstanceTreePathCache {
             "/",
             parentTreePath,
             ConversionUtils.toStringOrNull(flowNodeInstanceRecord.recordKey())));
+    treePathCacheMetrics.observeCacheResult(cacheResult);
     return parentTreePath;
   }
 }
