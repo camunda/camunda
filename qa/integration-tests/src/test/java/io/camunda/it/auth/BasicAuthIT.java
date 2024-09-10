@@ -69,12 +69,16 @@ public class BasicAuthIT {
         .thenReturn(
             new SearchQueryResult<>(
                 1,
-                List.of(new UserEntity(1L, USERNAME, "", "", passwordEncoder.encode(PASSWORD))),
+                List.of(new UserEntity(1L, USERNAME, "name", "", passwordEncoder.encode(PASSWORD))),
                 null));
 
     content =
         objectMapper.writeValueAsString(
-            new UserRequest().username("demo").password("password").email("demo@e.c"));
+            new UserRequest()
+                .username("demo")
+                .name("Demo")
+                .password("password")
+                .email("demo@email.com"));
   }
 
   @Test
