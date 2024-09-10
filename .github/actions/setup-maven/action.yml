@@ -27,7 +27,7 @@ runs:
       servers: |
         [{
           "id": "camunda-nexus",
-          "username": "${{ steps.secrets.outputs.NEXUS_USERNAME }}",
-          "password": "${{ steps.secrets.outputs.NEXUS_PASSWORD }}"
+          "username": "dummy",
+          "password": "dummy"
         }]
       mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
