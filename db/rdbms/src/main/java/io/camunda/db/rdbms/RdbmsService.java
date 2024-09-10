@@ -9,8 +9,8 @@ package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.queue.ExecutionQueue;
 import io.camunda.db.rdbms.service.ExporterPositionRdbmsService;
-import io.camunda.db.rdbms.service.ProcessDefinitionRdbmsService;
 import io.camunda.db.rdbms.service.ProcessInstanceRdbmsService;
+import io.camunda.db.rdbms.service.ProcessRdbmsService;
 import io.camunda.db.rdbms.service.VariableRdbmsService;
 
 /**
@@ -21,19 +21,19 @@ public class RdbmsService {
 
   private final ExecutionQueue executionQueue;
   private final ExporterPositionRdbmsService exporterPositionRdbmsService;
-  private final ProcessDefinitionRdbmsService processDefinitionRdbmsService;
+  private final ProcessRdbmsService processRdbmsService;
   private final ProcessInstanceRdbmsService processInstanceRdbmsService;
   private final VariableRdbmsService variableRdbmsService;
 
   public RdbmsService(final ExecutionQueue executionQueue,
       final ExporterPositionRdbmsService exporterPositionRdbmsService,
-      final ProcessDefinitionRdbmsService processDefinitionRdbmsService,
+      final ProcessRdbmsService processRdbmsService,
       final ProcessInstanceRdbmsService processInstanceRdbmsService,
       final VariableRdbmsService variableRdbmsService
   ) {
     this.executionQueue = executionQueue;
     this.exporterPositionRdbmsService = exporterPositionRdbmsService;
-    this.processDefinitionRdbmsService = processDefinitionRdbmsService;
+    this.processRdbmsService = processRdbmsService;
     this.processInstanceRdbmsService = processInstanceRdbmsService;
     this.variableRdbmsService = variableRdbmsService;
   }
@@ -42,8 +42,8 @@ public class RdbmsService {
     return exporterPositionRdbmsService;
   }
 
-  public ProcessDefinitionRdbmsService getProcessDeploymentRdbmsService() {
-    return processDefinitionRdbmsService;
+  public ProcessRdbmsService getProcessDeploymentRdbmsService() {
+    return processRdbmsService;
   }
 
   public ProcessInstanceRdbmsService getProcessInstanceRdbmsService() {
@@ -55,6 +55,6 @@ public class RdbmsService {
   }
 
   public ExecutionQueue executionQueue() {
-    return this.executionQueue;
+    return executionQueue;
   }
 }

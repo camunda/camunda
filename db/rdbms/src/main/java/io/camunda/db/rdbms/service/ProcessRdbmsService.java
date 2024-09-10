@@ -19,16 +19,16 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProcessDefinitionRdbmsService {
+public class ProcessRdbmsService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ProcessDefinitionRdbmsService.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ProcessRdbmsService.class);
 
   private final ExecutionQueue executionQueue;
   private final ProcessDefinitionMapper processDefinitionMapper;
 
   private final HashMap<Pair<Long, Long>, ProcessDefinitionModel> CACHE = new HashMap<>();
 
-  public ProcessDefinitionRdbmsService(final ExecutionQueue executionQueue, final ProcessDefinitionMapper processDefinitionMapper) {
+  public ProcessRdbmsService(final ExecutionQueue executionQueue, final ProcessDefinitionMapper processDefinitionMapper) {
     this.executionQueue = executionQueue;
     this.processDefinitionMapper = processDefinitionMapper;
   }
@@ -42,9 +42,9 @@ public class ProcessDefinitionRdbmsService {
     ));
   }
 
-  public Optional<ProcessDefinitionModel> findOne(final Long processDefinitionKey, long version) {
+  public Optional<ProcessDefinitionModel> findOne(final Long processDefinitionKey, final long version) {
     if (!CACHE.containsKey(Pair.of(processDefinitionKey, version))) {
-      var result = processDefinitionMapper.findOne(Map.of("processDefinitionKey", processDefinitionKey, "version", version));
+      final var result = processDefinitionMapper.findOne(Map.of("processDefinitionKey", processDefinitionKey, "version", version));
 
       if (result != null) {
         CACHE.put(Pair.of(processDefinitionKey, version), result);
