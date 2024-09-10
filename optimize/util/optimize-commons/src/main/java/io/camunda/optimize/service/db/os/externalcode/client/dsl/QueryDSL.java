@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
+import org.opensearch.client.opensearch._types.ScriptField;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
@@ -206,6 +207,10 @@ public interface QueryDSL {
 
   static Script script(final String script, final Map<String, Object> params) {
     return scriptFromJsonData(script, jsonParams(params));
+  }
+
+  static ScriptField scriptField(final Script script) {
+    return ScriptField.of(b -> b.script(script));
   }
 
   static Script scriptFromJsonData(final String script, final Map<String, JsonData> params) {

@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -79,6 +80,7 @@ import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryVariant;
@@ -349,6 +351,18 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   public <R> ScrollResponse<R> scroll(final ScrollRequest scrollRequest, Class<R> entityClass)
       throws IOException {
     return richOpenSearchClient.doc().scroll(scrollRequest, entityClass);
+  }
+
+  public <R> Map<String, Aggregate> scrollWith(
+      final SearchResponse<R> response,
+      final Consumer<List<Hit<R>>> hitsConsumer,
+      final Class<R> clazz,
+      final int limit) {
+    return safe(
+        () ->
+            richOpenSearchClient.doc().scrollWith(null, response, hitsConsumer, null, clazz, limit),
+        e -> format("Could not scroll through entries for class [%s].", clazz.getSimpleName()),
+        log);
   }
 
   public <T> MgetResponse<T> mget(

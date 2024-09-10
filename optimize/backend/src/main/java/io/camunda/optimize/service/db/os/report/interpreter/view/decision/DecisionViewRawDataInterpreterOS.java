@@ -120,17 +120,7 @@ public class DecisionViewRawDataInterpreterOS extends AbstractDecisionViewRawDat
     if (context.isCsvExport()) {
       final int limit = context.getPagination().orElse(new PaginationDto()).getLimit();
       final List<Hit<RawResult>> rawResult = new ArrayList<>();
-      safe(
-          () ->
-              osClient
-                  .getRichOpenSearchClient()
-                  .doc()
-                  .scrollWith(null, response, rawResult::addAll, null, RawResult.class, limit),
-          e ->
-              format(
-                  "Could not scroll through entries for class [%s].",
-                  DecisionInstanceDto.class.getSimpleName()),
-          log);
+      osClient.scrollWith(response, rawResult::addAll, RawResult.class, limit);
       hits = rawResult.subList(0, min(limit, rawResult.size()));
     }
     final List<DecisionInstanceDto> rawDataDecisionInstanceDtos = transformHits(hits);
@@ -155,8 +145,8 @@ public class DecisionViewRawDataInterpreterOS extends AbstractDecisionViewRawDat
                     e ->
                         format(
                             "While mapping search results to class {} "
-                                + "it was not possible to deserialize a hit from Elasticsearch!"
-                                + " Hit response from Elasticsearch: "
+                                + "it was not possible to deserialize a hit from OpenSearch!"
+                                + " Hit response from OpenSearch: "
                                 + hit.source()),
                     log))
         .toList();
