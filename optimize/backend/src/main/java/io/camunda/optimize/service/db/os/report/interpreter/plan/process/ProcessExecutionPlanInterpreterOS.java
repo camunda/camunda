@@ -11,8 +11,9 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepor
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.plan.process.ProcessExecutionPlanInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
-import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 
 public interface ProcessExecutionPlanInterpreterOS extends ProcessExecutionPlanInterpreter {
-  Query getBaseQuery(final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context);
+  BoolQuery.Builder baseQueryBuilder(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context);
 }

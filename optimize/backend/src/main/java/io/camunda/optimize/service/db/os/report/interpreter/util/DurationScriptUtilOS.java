@@ -62,7 +62,7 @@ public class DurationScriptUtilOS {
         result = params.currRequestDateInMs - doc[params.refDateFieldName].value.toInstant().toEpochMilli()
         } else {
         result = !doc[params.durFieldName].empty ? doc[params.durFieldName].value : null
-        } ;
+        }
         """;
   }
 }

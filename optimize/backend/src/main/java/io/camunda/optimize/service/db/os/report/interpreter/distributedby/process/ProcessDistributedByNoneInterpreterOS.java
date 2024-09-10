@@ -5,19 +5,22 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.os.report.interpreter.distributedby.decision;
+package io.camunda.optimize.service.db.os.report.interpreter.distributedby.process;
 
-import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_NONE;
+
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
-import io.camunda.optimize.service.db.os.report.interpreter.distributedby.AbstractDistributedByInterpreterOS;
-import io.camunda.optimize.service.db.os.report.interpreter.view.decision.DecisionViewInterpreterFacadeOS;
+import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
-import io.camunda.optimize.service.db.report.plan.decision.DecisionExecutionPlan;
+import io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy;
+import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -30,13 +33,18 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
-public class DecisionDistributedByNoneInterpreterOS
-    extends AbstractDistributedByInterpreterOS<DecisionReportDataDto, DecisionExecutionPlan> {
-  @Getter private final DecisionViewInterpreterFacadeOS viewInterpreter;
+public class ProcessDistributedByNoneInterpreterOS
+    extends AbstractProcessDistributedByInterpreterOS {
+  @Getter private final ProcessViewInterpreterFacadeOS viewInterpreter;
+
+  @Override
+  public Set<ProcessDistributedBy> getSupportedDistributedBys() {
+    return Set.of(PROCESS_DISTRIBUTED_BY_NONE);
+  }
 
   @Override
   public Map<String, Aggregation> createAggregations(
-      final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
       final Query baseQuery) {
     return viewInterpreter.createAggregations(context);
   }
@@ -45,14 +53,14 @@ public class DecisionDistributedByNoneInterpreterOS
   public List<DistributedByResult> retrieveResult(
       final SearchResponse<RawResult> response,
       final Map<String, Aggregate> aggregations,
-      final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final ViewResult viewResult = viewInterpreter.retrieveResult(response, aggregations, context);
     return List.of(DistributedByResult.createDistributedByNoneResult(viewResult));
   }
 
   @Override
   public List<DistributedByResult> createEmptyResult(
-      ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return List.of(
         DistributedByResult.createDistributedByNoneResult(
             viewInterpreter.createEmptyResult(context)));

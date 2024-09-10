@@ -29,7 +29,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DefinitionQueryUtilOS {
 
-  public static Query createDefinitionQuery(
+  public static BoolQuery.Builder createDefinitionQuery(
       final String definitionKey,
       final List<String> definitionVersions,
       final List<String> tenantIds,
@@ -47,7 +47,7 @@ public class DefinitionQueryUtilOS {
       // if no version is set just return empty results
       queryBuilder.mustNot(matchAll());
     }
-    return queryBuilder.build().toQuery();
+    return queryBuilder;
   }
 
   public static Query createTenantIdQuery(final String tenantField, final List<String> tenantIds) {

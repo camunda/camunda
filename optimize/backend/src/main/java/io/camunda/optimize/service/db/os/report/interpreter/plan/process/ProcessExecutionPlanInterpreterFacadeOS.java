@@ -18,7 +18,7 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -51,8 +51,8 @@ public class ProcessExecutionPlanInterpreterFacadeOS
   }
 
   @Override
-  public Query getBaseQuery(
+  public BoolQuery.Builder baseQueryBuilder(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    return interpreter(context.getPlan()).getBaseQuery(context);
+    return interpreter(context.getPlan()).baseQueryBuilder(context);
   }
 }
