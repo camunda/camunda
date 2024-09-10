@@ -30,6 +30,8 @@ public class Upgrade313To86PlanFactory implements UpgradePlanFactory {
 
   @Override
   public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies dependencies) {
+    validateOptimizeModeAndFailIfC7DataPresent(
+        dependencies.databaseClient(), dependencies.indexNameService());
     return UpgradePlanBuilder.createUpgradePlan()
         .fromVersion("3.13")
         .toVersion("8.6.0")
@@ -48,6 +50,11 @@ public class Upgrade313To86PlanFactory implements UpgradePlanFactory {
             deleteProcessInstanceArchiveIndexIfExists(
                 retrieveAllProcessInstanceArchiveIndexKeys(dependencies.databaseClient())))
         .build();
+  }
+
+  @Override
+  public void logErrorMessage(final String message) {
+    log.error(message);
   }
 
   private static UpdateIndexStep deleteLastModifierAndTelemetryInitializedSettingFields() {
