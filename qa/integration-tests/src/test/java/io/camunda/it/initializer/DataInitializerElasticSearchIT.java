@@ -101,9 +101,9 @@ public class DataInitializerElasticSearchIT {
                   .findByUsername(USERNAME_PREFIX + i)
                   .ifPresentOrElse(
                       userEntity -> {
-                        assertThat(userEntity.value()).isNotNull();
-                        assertThat(userEntity.value().email()).isEqualTo(USERNAME_PREFIX + i);
-                        assertThat(userEntity.value().name()).isEqualTo(USERNAME_PREFIX + i);
+                        assertThat(userEntity).isNotNull();
+                        assertThat(userEntity.email()).isEqualTo(USERNAME_PREFIX + i);
+                        assertThat(userEntity.name()).isEqualTo(USERNAME_PREFIX + i);
                       },
                       () -> fail(USERNAME_PREFIX + i + " does not exist"));
             });

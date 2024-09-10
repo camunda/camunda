@@ -23,6 +23,7 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.gateway.protocol.rest.UserWithPasswordRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.apache.logging.log4j.util.Base64Util;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,8 +66,7 @@ public class BasicAuthIT {
         .thenReturn(CompletableFuture.completedFuture(new UserRecord()));
     when(userService.findByUsername(any()))
         .thenReturn(
-            Optional.of(
-                new UserEntity(new User(USERNAME, "", "", passwordEncoder.encode(PASSWORD)))));
+            Optional.of(new UserEntity(1L, USERNAME, "", "", passwordEncoder.encode(PASSWORD))));
 
     content =
         objectMapper.writeValueAsString(
