@@ -1,13 +1,6 @@
 name: Test Maven CI
 on:
   pull_request:
-  workflow_dispatch:
-
-# Will limit the workflow to 1 concurrent run per ref (branch / PR)
-# If a new commits occurs, the current run will be canceled
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 # set permissions to allow to publish test results
 permissions:
