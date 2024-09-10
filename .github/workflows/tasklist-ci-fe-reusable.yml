@@ -142,7 +142,7 @@ jobs:
       - name: Start server
         run: yarn start:visual-regression &
       - name: Run Playwright tests
-        run: yarn playwright e2e/visual
+        run: yarn playwright e2e/visual e2e/form-js-integration
       - uses: actions/upload-artifact@v4
         if: always()
         with:

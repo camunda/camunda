@@ -55,7 +55,7 @@
     "playwright": "playwright test",
     "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.47.0 /bin/bash",
     "start:visual-regression": "serve build/ -p 8081 -n -s -L",
-    "build:visual-regression": "VITE_VERSION=0.0.0-SNAPSHOT yarn build"
+    "build:visual-regression": "VITE_VERSION=0.0.0-SNAPSHOT vite build --mode visual-regression"
   },
   "browserslist": [
     ">0.2%",
