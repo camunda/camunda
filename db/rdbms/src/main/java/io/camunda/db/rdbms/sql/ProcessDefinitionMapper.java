@@ -7,14 +7,12 @@
  */
 package io.camunda.db.rdbms.sql;
 
-import io.camunda.db.rdbms.domain.ProcessInstanceFilter;
-import io.camunda.db.rdbms.domain.ProcessInstanceModel;
-import java.util.List;
+import io.camunda.db.rdbms.domain.ProcessDefinitionModel;
+import java.util.Map;
 
-public interface ProcessInstanceMapper {
-  void insert(ProcessInstanceModel processInstance);
+public interface ProcessDefinitionMapper {
 
-  ProcessInstanceModel findOne(Long processInstanceKey);
+  void insert(ProcessDefinitionModel processDeployment);
 
-  List<ProcessInstanceModel> search(ProcessInstanceFilter filter);
+  ProcessDefinitionModel findOne(Map<String, Object> parameters);
 }
