@@ -25,7 +25,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -612,7 +611,6 @@ public class MigrateMessageEventSubprocessTest {
         .isNotNull();
   }
 
-  @Ignore("This rejection will be supported with #21615")
   @Test
   public void shouldRejectCommandWhenMappedCatchEventIsAttachedToDifferentElement() {
     // given
@@ -711,7 +709,6 @@ public class MigrateMessageEventSubprocessTest {
         .contains("Catch events must stay attached to the same element instance");
   }
 
-  @Ignore("This rejection will be supported with #21615")
   @Test
   public void shouldRejectCommandWhenMappedCatchEventsAreMerged() {
     // given
