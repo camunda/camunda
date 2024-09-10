@@ -867,7 +867,7 @@ public final class ProcessInstanceMigrationPreconditions {
    */
   private static void requireNoPendingMigrationDistribution(
       final DistributionState distributionState, final long distributionKey, final String message) {
-    if (distributionState.hasPendingDistribution(distributionKey)) {
+    if (distributionState.hasRetriableDistribution(distributionKey)) {
       // We can't migrate until the previous migration has completed
       throw new ProcessInstanceMigrationPreconditionFailedException(
           message, RejectionType.INVALID_STATE);

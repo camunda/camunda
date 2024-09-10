@@ -41,51 +41,51 @@ public final class DistributionStateTest {
   }
 
   @Test
-  public void shouldReturnFalseOnEmptyStateForHasPendingCheck() {
+  public void shouldReturnFalseOnEmptyStateForHasRetriableCheck() {
     // when
-    final var hasPending = distributionState.hasPendingDistribution(10L);
+    final var hasRetriable = distributionState.hasRetriableDistribution(10L);
 
     // then
-    assertThat(hasPending).isFalse();
+    assertThat(hasRetriable).isFalse();
   }
 
   @Test
-  public void shouldReturnFalseOnEmptyStateForHasPendingForPartitionCheck() {
+  public void shouldReturnFalseOnEmptyStateForHasRetriableForPartitionCheck() {
     // when
-    final var hasPending = distributionState.hasPendingDistribution(10L, 10);
+    final var hasRetriable = distributionState.hasRetriableDistribution(10L, 10);
 
     // then
-    assertThat(hasPending).isFalse();
+    assertThat(hasRetriable).isFalse();
   }
 
   @Test
-  public void shouldAddPendingDistribution() {
+  public void shouldAddRetriableDistribution() {
     // given
     final var distributionKey = 10L;
     final var partition = 1;
     distributionState.addCommandDistribution(distributionKey, createCommandDistributionRecord());
 
     // when
-    distributionState.addPendingDistribution(distributionKey, partition);
+    distributionState.addRetriableDistribution(distributionKey, partition);
 
     // then
-    assertThat(distributionState.hasPendingDistribution(distributionKey)).isTrue();
-    assertThat(distributionState.hasPendingDistribution(distributionKey, partition)).isTrue();
+    assertThat(distributionState.hasRetriableDistribution(distributionKey)).isTrue();
+    assertThat(distributionState.hasRetriableDistribution(distributionKey, partition)).isTrue();
   }
 
   @Test
-  public void shouldRemovePendingDistribution() {
+  public void shouldRemoveRetriableDistribution() {
     // given
     final var distributionKey = 10L;
     final var partition = 1;
     distributionState.addCommandDistribution(distributionKey, createCommandDistributionRecord());
-    distributionState.addPendingDistribution(distributionKey, partition);
+    distributionState.addRetriableDistribution(distributionKey, partition);
 
     // when
-    distributionState.removePendingDistribution(distributionKey, partition);
+    distributionState.removeRetriableDistribution(distributionKey, partition);
 
     // then
-    assertThat(distributionState.hasPendingDistribution(distributionKey)).isFalse();
+    assertThat(distributionState.hasRetriableDistribution(distributionKey)).isFalse();
   }
 
   @Test
@@ -158,75 +158,76 @@ public final class DistributionStateTest {
   }
 
   @Test
-  public void shouldFailToAddPendingDistributionIfNoCommandDistributionExists() {
+  public void shouldFailToAddRetriableDistributionIfNoCommandDistributionExists() {
     // given
     final long distributionKey = 1L;
     final int partition = 1;
-    final ThrowingCallable addPending =
-        () -> distributionState.addPendingDistribution(distributionKey, partition);
+    final ThrowingCallable addRetriable =
+        () -> distributionState.addRetriableDistribution(distributionKey, partition);
 
     // when then
     assertThat(distributionState.getCommandDistributionRecord(distributionKey, partition)).isNull();
-    assertThatThrownBy(addPending)
+    assertThatThrownBy(addRetriable)
         .hasStackTraceContaining(
             "Foreign key DbLong{1} does not exist in COMMAND_DISTRIBUTION_RECORD");
   }
 
   @Test
-  public void shouldIterateOverPendingDistributions() {
+  public void shouldIterateOverRetriableDistributions() {
     // given
-    final var pendingDistribution = new PendingDistribution(1L, createCommandDistributionRecord());
+    final var retriableDistribution =
+        new RetriableDistribution(1L, createCommandDistributionRecord());
     final int partitionId3 = 3;
     final int partitionId2 = 2;
-    stateHelper.addPendingDistributionForPartitions(
-        pendingDistribution, partitionId2, partitionId3);
+    stateHelper.addRetriableDistributionForPartitions(
+        retriableDistribution, partitionId2, partitionId3);
 
     // when
-    final List<PendingDistribution> visits = new ArrayList<>();
-    distributionState.foreachPendingDistribution(
+    final List<RetriableDistribution> visits = new ArrayList<>();
+    distributionState.foreachRetriableDistribution(
         (key, commandDistributionRecord) ->
-            visits.add(new PendingDistribution(key, commandDistributionRecord)));
+            visits.add(new RetriableDistribution(key, commandDistributionRecord)));
 
     // then
     assertThat(visits)
-        .allSatisfy(visited -> assertThat(visited.key()).isEqualTo(pendingDistribution.key))
+        .allSatisfy(visited -> assertThat(visited.key()).isEqualTo(retriableDistribution.key))
         .allSatisfy(
             visited ->
                 Assertions.assertThat(visited.record())
-                    .hasIntent(pendingDistribution.record.getIntent())
-                    .hasValueType(pendingDistribution.record.getValueType())
-                    .hasCommandValue(pendingDistribution.record.getCommandValue()))
-        .extracting(PendingDistribution::record)
+                    .hasIntent(retriableDistribution.record.getIntent())
+                    .hasValueType(retriableDistribution.record.getValueType())
+                    .hasCommandValue(retriableDistribution.record.getCommandValue()))
+        .extracting(RetriableDistribution::record)
         .extracting(CommandDistributionRecord::getPartitionId)
-        .describedAs("Expect that pending distributions are visited for all other partitions")
+        .describedAs("Expect that retriable distributions are visited for all other partitions")
         .containsExactly(partitionId2, partitionId3);
   }
 
   @Test
-  public void shouldIterateOverMultiplePendingDeployments() {
+  public void shouldIterateOverMultipleRetriableDeployments() {
     // given
     final var distributions = new Long2ObjectHashMap<CommandDistributionRecord>();
     final int partitionId2 = 2;
     final int partitionId3 = 3;
     for (int distributionKey = 1; distributionKey <= 5; distributionKey++) {
-      final var pendingDistribution = createCommandDistributionRecord();
-      distributions.put(distributionKey, pendingDistribution);
-      stateHelper.addPendingDistributionForPartitions(
-          new PendingDistribution(distributionKey, pendingDistribution),
+      final var retriableDistribution = createCommandDistributionRecord();
+      distributions.put(distributionKey, retriableDistribution);
+      stateHelper.addRetriableDistributionForPartitions(
+          new RetriableDistribution(distributionKey, retriableDistribution),
           partitionId2,
           partitionId3);
     }
 
     // when
-    final List<PendingDistribution> visits = new ArrayList<>();
-    distributionState.foreachPendingDistribution(
+    final List<RetriableDistribution> visits = new ArrayList<>();
+    distributionState.foreachRetriableDistribution(
         (key, commandDistributionRecord) ->
-            visits.add(new PendingDistribution(key, commandDistributionRecord)));
+            visits.add(new RetriableDistribution(key, commandDistributionRecord)));
 
     // then
     assertThat(visits)
-        .extracting(PendingDistribution::key)
-        .describedAs("Expect that all pending distribution are visited")
+        .extracting(RetriableDistribution::key)
+        .describedAs("Expect that all retriable distribution are visited")
         .containsOnly(1L, 2L, 3L, 4L, 5L);
     assertThat(visits)
         .allSatisfy(
@@ -236,9 +237,9 @@ public final class DistributionStateTest {
                     .hasValueType(distributions.get(visited.key).getValueType())
                     .hasCommandValue(distributions.get(visited.key).getCommandValue()));
     assertThat(visits)
-        .extracting(PendingDistribution::record)
+        .extracting(RetriableDistribution::record)
         .extracting(CommandDistributionRecord::getPartitionId)
-        .describedAs("Expect that pending distributions are visited for all other partitions")
+        .describedAs("Expect that retriable distributions are visited for all other partitions")
         .containsOnly(partitionId2, partitionId3);
     assertThat(visits).hasSize(10);
   }
@@ -246,18 +247,19 @@ public final class DistributionStateTest {
   @Test
   public void shouldNotFailOnMissingDeploymentInState() {
     // given
-    final var pendingDistribution = new PendingDistribution(1L, createCommandDistributionRecord());
+    final var retriableDistribution =
+        new RetriableDistribution(1L, createCommandDistributionRecord());
     final int partitionId2 = 2;
     final int partitionId3 = 3;
-    stateHelper.addPendingDistributionForPartitions(
-        pendingDistribution, partitionId2, partitionId3);
-    distributionState.removeCommandDistribution(pendingDistribution.key);
+    stateHelper.addRetriableDistributionForPartitions(
+        retriableDistribution, partitionId2, partitionId3);
+    distributionState.removeCommandDistribution(retriableDistribution.key);
 
     // when
-    final List<PendingDistribution> visits = new ArrayList<>();
-    distributionState.foreachPendingDistribution(
+    final List<RetriableDistribution> visits = new ArrayList<>();
+    distributionState.foreachRetriableDistribution(
         (key, commandDistributionRecord) ->
-            visits.add(new PendingDistribution(key, commandDistributionRecord)));
+            visits.add(new RetriableDistribution(key, commandDistributionRecord)));
 
     // then
     assertThat(visits).isEmpty();
@@ -294,17 +296,19 @@ public final class DistributionStateTest {
     return deploymentRecord;
   }
 
-  record PendingDistribution(long key, CommandDistributionRecord record) {}
+  record RetriableDistribution(long key, CommandDistributionRecord record) {}
 
   /** Little helper class, to simplify test setup of the State */
   final class StateHelper {
-    private void addPendingDistributionForPartitions(
-        final PendingDistribution pendingDistribution, final int... partitionIds) {
-      distributionState.addCommandDistribution(pendingDistribution.key, pendingDistribution.record);
+    private void addRetriableDistributionForPartitions(
+        final RetriableDistribution retriableDistribution, final int... partitionIds) {
+      distributionState.addCommandDistribution(
+          retriableDistribution.key, retriableDistribution.record);
       Arrays.stream(partitionIds)
           .forEach(
               partitionId ->
-                  distributionState.addPendingDistribution(pendingDistribution.key, partitionId));
+                  distributionState.addRetriableDistribution(
+                      retriableDistribution.key, partitionId));
     }
   }
 }

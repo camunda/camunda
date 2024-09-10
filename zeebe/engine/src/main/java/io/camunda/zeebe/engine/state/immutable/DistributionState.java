@@ -13,21 +13,21 @@ import java.util.Optional;
 public interface DistributionState {
 
   /**
-   * Returns whether there are any distributions pending for a given key.
+   * Returns whether there are any retriable distributions for a given key.
    *
    * @param distributionKey the key of the distribution
-   * @return true if there are pending distributions for the given key, otherwise false
+   * @return true if there are retriable distributions for the given key, otherwise false
    */
-  boolean hasPendingDistribution(long distributionKey);
+  boolean hasRetriableDistribution(long distributionKey);
 
   /**
-   * Returns whether a specific distribution for a specific partition is pending.
+   * Returns whether a specific distribution for a specific partition is retriable.
    *
-   * @param distributionKey the key of the distribution that may be pending
-   * @param partition the id of the partition for which the distribution might be pending
-   * @return {@code true} if the specific pending distribution exists, otherwise {@code false}.
+   * @param distributionKey the key of the distribution that may be retriable
+   * @param partition the id of the partition for which the distribution might be retriable
+   * @return {@code true} if the specific retriable distribution exists, otherwise {@code false}.
    */
-  boolean hasPendingDistribution(long distributionKey, int partition);
+  boolean hasRetriableDistribution(long distributionKey, int partition);
 
   /**
    * Returns the {@link CommandDistributionRecord} for the given distribution key. This method takes
@@ -42,15 +42,15 @@ public interface DistributionState {
   CommandDistributionRecord getCommandDistributionRecord(long distributionKey, int partition);
 
   /**
-   * Visits each persisted pending distribution, providing both the key of that distribution and the
-   * {@link CommandDistributionRecord}.
+   * Visits each persisted restriable distribution, providing both the key of that distribution and
+   * the {@link CommandDistributionRecord}.
    *
    * <p>Note that a new instance of the record is provided for each visit, so the visitor does not
    * have to make a copy when long term access is needed.
    *
-   * @param visitor Each pending distribution is visited by this visitor
+   * @param visitor Each retriable distribution is visited by this visitor
    */
-  void foreachPendingDistribution(PendingDistributionVisitor visitor);
+  void foreachRetriableDistribution(PendingDistributionVisitor visitor);
 
   /**
    * Returns the distribution key at the head of the queue for the given partition.

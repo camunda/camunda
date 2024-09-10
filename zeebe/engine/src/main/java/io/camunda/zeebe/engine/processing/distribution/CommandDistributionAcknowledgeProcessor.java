@@ -46,7 +46,7 @@ public class CommandDistributionAcknowledgeProcessor
     final var recordValue = record.getValue();
     final var partitionId = recordValue.getPartitionId();
 
-    if (!distributionState.hasPendingDistribution(distributionKey, partitionId)) {
+    if (!distributionState.hasRetriableDistribution(distributionKey, partitionId)) {
       rejectionWriter.appendRejection(
           record,
           RejectionType.NOT_FOUND,
@@ -59,7 +59,7 @@ public class CommandDistributionAcknowledgeProcessor
 
     commandDistributionBehavior.distributeNextInQueue(distributionKey, partitionId);
 
-    if (!distributionState.hasPendingDistribution(distributionKey)) {
+    if (!distributionState.hasRetriableDistribution(distributionKey)) {
       // We write an empty command here as a distribution could contain a lot of data. Because of
       // this we could exceed the max message size. As we only need the distributionKey in the
       // FINISHED event applier an empty record will suffice here.
