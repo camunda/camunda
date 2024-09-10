@@ -790,7 +790,7 @@ public class MigrateMessageEventSubprocessTest {
         .contains("active element with id '" + processId + "' has a catch event attached")
         .contains("catch event attached that is mapped to a catch event with id 'start2'")
         .contains(
-            "There are multiple mapping instructions that target this catch event: 'startA1', 'startA2'")
+            "There are multiple mapping instructions that target this catch event: 'startA1', 'startB1'")
         .contains("Catch events cannot be merged by process instance migration")
         .contains("Please ensure the mapping instructions target a catch event only once");
   }
