@@ -33,7 +33,7 @@ public class ExecutionQueue extends Actor {
     this.sessionFactory = sessionFactory;
 
     actorScheduler.submitActor(this, SchedulingHints.IO_BOUND);
-    actor.run(() -> actor.schedule(Duration.ofSeconds(30), this::flushAndReschedule)); // TODO make timeout configurable
+    actor.run(() -> actor.schedule(Duration.ofSeconds(5), this::flushAndReschedule)); // TODO make timeout configurable
   }
 
   public void executeInQueue(final QueueItem entry) {
@@ -88,7 +88,7 @@ public class ExecutionQueue extends Actor {
 
   private void checkQueueForFlush() {
     LOG.trace("Checking if queue is flushed. Queue size: {}", queue.size());
-    if (queue.size() > 100) {
+    if (queue.size() > 50) {
       flush();
     }
   }
