@@ -22,6 +22,7 @@ public class ProcessInstanceForListViewEntity
   private Long processDefinitionKey;
   private String processName;
   private Integer processVersion;
+  private String processVersionTag;
   private String bpmnProcessId;
 
   private OffsetDateTime startDate;
@@ -81,6 +82,15 @@ public class ProcessInstanceForListViewEntity
 
   public ProcessInstanceForListViewEntity setProcessVersion(final Integer processVersion) {
     this.processVersion = processVersion;
+    return this;
+  }
+
+  public String getProcessVersionTag() {
+    return processVersionTag;
+  }
+
+  public ProcessInstanceForListViewEntity setProcessVersionTag(final String processVersionTag) {
+    this.processVersionTag = processVersionTag;
     return this;
   }
 
@@ -205,6 +215,28 @@ public class ProcessInstanceForListViewEntity
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        processDefinitionKey,
+        processName,
+        processVersion,
+        processVersionTag,
+        bpmnProcessId,
+        startDate,
+        endDate,
+        state,
+        batchOperationIds,
+        parentProcessInstanceKey,
+        parentFlowNodeInstanceKey,
+        treePath,
+        incident,
+        tenantId,
+        joinRelation,
+        position);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -220,6 +252,7 @@ public class ProcessInstanceForListViewEntity
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processName, that.processName)
         && Objects.equals(processVersion, that.processVersion)
+        && Objects.equals(processVersionTag, that.processVersionTag)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(startDate, that.startDate)
         && Objects.equals(endDate, that.endDate)
@@ -231,26 +264,5 @@ public class ProcessInstanceForListViewEntity
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(joinRelation, that.joinRelation)
         && Objects.equals(position, that.position);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        processDefinitionKey,
-        processName,
-        processVersion,
-        bpmnProcessId,
-        startDate,
-        endDate,
-        state,
-        batchOperationIds,
-        parentProcessInstanceKey,
-        parentFlowNodeInstanceKey,
-        treePath,
-        incident,
-        tenantId,
-        joinRelation,
-        position);
   }
 }

@@ -65,6 +65,16 @@ public class ProcessCache {
     return processName;
   }
 
+  public String getProcessVersionTag(final Long processDefinitionKey) {
+    final ProcessEntity cachedProcessData =
+        getCachedProcessEntity(processDefinitionKey).orElse(null);
+    String processVersionTag = null;
+    if (cachedProcessData != null) {
+      processVersionTag = cachedProcessData.getVersionTag();
+    }
+    return processVersionTag;
+  }
+
   public String getFlowNodeNameOrDefaultValue(
       final Long processDefinitionKey, final String flowNodeId, final String defaultValue) {
     final ProcessEntity cachedProcessData =
