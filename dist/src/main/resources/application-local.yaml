@@ -155,7 +155,7 @@ logging:
 
 spring:
   datasource:
-    url: jdbc:h2:file:./camunda;AUTO_SERVER=TRUE
+    url: jdbc:h2:file:./camunda;AUTO_SERVER=TRUE;MODE=PostgreSQL
     username: sa
     password:
     driverClassName: org.h2.Driver
