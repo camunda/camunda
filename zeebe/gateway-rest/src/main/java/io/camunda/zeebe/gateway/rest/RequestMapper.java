@@ -20,6 +20,7 @@ import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.vali
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ResourceRequestValidator.validateResourceDeletion;
+import static io.camunda.zeebe.gateway.rest.validator.SignalRequestValidator.validateSignalBroadcastRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
@@ -52,6 +53,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
@@ -315,6 +317,15 @@ public class RequestMapper {
         () -> new ResourceDeletionRequest(resourceKey, operationReference));
   }
 
+  public static Either<ProblemDetail, BroadcastSignalRequest> toBroadcastSignalRequest(
+      final SignalBroadcastRequest request) {
+    return getResult(
+        validateSignalBroadcastRequest(request),
+        () ->
+            new BroadcastSignalRequest(
+                request.getSignalName(), request.getVariables(), request.getTenantId()));
+  }
+
   public static Authentication getAuthentication() {
     final List<String> authorizedTenants = TenantAttributeHolder.tenantIds();
 
@@ -479,4 +490,7 @@ public class RequestMapper {
   public record CompleteJobRequest(long jobKey, Map<String, Object> variables) {}
 
   public record UpdateJobRequest(long jobKey, UpdateJobChangeset changeset) {}
+
+  public record BroadcastSignalRequest(
+      String signalName, Map<String, Object> variables, String tenantId) {}
 }
