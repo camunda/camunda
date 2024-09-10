@@ -556,9 +556,10 @@
                     <OS_VERSION>${opensearch.test.version}</OS_VERSION>
                   </environmentVariables>
                   <skip>${skip.docker}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>-f</argument>
                     <argument>${docker.compose.file}</argument>
                     <argument>--profile</argument>
@@ -578,9 +579,10 @@
                 </goals>
                 <configuration>
                   <skip>${skip.docker}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>-f</argument>
                     <argument>${docker.compose.file}</argument>
                     <argument>rm</argument>
