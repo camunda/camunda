@@ -15,7 +15,7 @@ import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstructionRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceRequest;
 import java.util.List;
 import java.util.Optional;
@@ -69,7 +69,7 @@ public class ProcessInstanceRequestValidator {
   }
 
   private static void validateMappingInstructions(
-      final List<MigrateProcessInstanceMappingInstructionRequest> mappingInstructions,
+      final List<MigrateProcessInstanceMappingInstruction> mappingInstructions,
       final List<String> violations) {
     final boolean areMappingInstructionsValid =
         mappingInstructions.stream()

@@ -3045,7 +3045,7 @@ components:
         mappingInstructions:
           type: array
           items:
-            $ref: "#/components/schemas/MigrateProcessInstanceMappingInstructionRequest"
+            $ref: "#/components/schemas/MigrateProcessInstanceMappingInstruction"
         operationReference:
           description: >
             A reference key chosen by the user that will be part of all records resulting from this operation.
@@ -3056,7 +3056,7 @@ components:
       required:
         - targetProcessDefinitionKey
         - mappingInstructions
-    MigrateProcessInstanceMappingInstructionRequest:
+    MigrateProcessInstanceMappingInstruction:
       type: object
       description: |
         The mapping instructions describe how to map elements from the source process definition to the target process definition.
