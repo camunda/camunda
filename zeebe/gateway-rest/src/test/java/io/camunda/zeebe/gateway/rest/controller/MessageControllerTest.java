@@ -509,6 +509,45 @@ public class MessageControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldPublishMessageWithoutTimeToLive() {
+    // given
+    when(messageServices.publishMessage(any())).thenReturn(buildPublishResponse());
+
+    final var request =
+        """
+        {
+          "name": "messageName",
+          "messageId": "messageId",
+          "variables": {
+            "key": "value"
+          },
+          "tenantId": "<default>"
+        }""";
+
+    // when then
+    webClient
+        .post()
+        .uri(PUBLICATION_ENDPOINT)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(EXPECTED_PUBLICATION_RESPONSE);
+
+    Mockito.verify(messageServices).publishMessage(publicationRequestCaptor.capture());
+    final var capturedRequest = publicationRequestCaptor.getValue();
+    assertThat(capturedRequest.name()).isEqualTo("messageName");
+    assertThat(capturedRequest.correlationKey()).isEqualTo("");
+    assertThat(capturedRequest.timeToLive()).isEqualTo(0L);
+    assertThat(capturedRequest.messageId()).isEqualTo("messageId");
+    assertThat(capturedRequest.variables()).containsExactly(Map.entry("key", "value"));
+    assertThat(capturedRequest.tenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
   void shouldRejectPublishMessageWithoutName() {
     // given
     when(messageServices.publishMessage(any())).thenReturn(buildPublishResponse());
@@ -531,46 +570,6 @@ public class MessageControllerTest extends RestControllerTest {
             "title":"INVALID_ARGUMENT",
             "status":400,
             "detail":"No name provided.",
-            "instance":"/v2/messages/publication"
-         }""";
-
-    // when then
-    webClient
-        .post()
-        .uri(PUBLICATION_ENDPOINT)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectBody()
-        .json(expectedBody);
-  }
-
-  @Test
-  void shouldRejectPublishMessageWithoutTimeToLive() {
-    // given
-    when(messageServices.publishMessage(any())).thenReturn(buildPublishResponse());
-
-    final var request =
-        """
-        {
-          "name": "messageName",
-          "correlationKey": "correlationKey",
-          "messageId": "messageId",
-          "variables": {
-            "key": "value"
-          },
-          "tenantId": "<default>"
-        }""";
-    final var expectedBody =
-        """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"No timeToLive provided.",
             "instance":"/v2/messages/publication"
          }""";
 

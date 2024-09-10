@@ -2512,6 +2512,7 @@ components:
           description: Timespan (in ms) to buffer the message on the broker.
           type: integer
           format: int64
+          default: 0
         messageId:
           description: |
             The unique ID of the message. Only useful to ensure only one message with the given ID
@@ -2530,7 +2531,6 @@ components:
       required:
         - name
         - correlationKey
-        - timeToLive
     MessagePublicationResponse:
       description: The message key of the published message.
       type: object

@@ -34,9 +34,6 @@ public final class MessageRequestValidator {
           if (publicationRequest.getName() == null || publicationRequest.getName().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
           }
-          if (publicationRequest.getTimeToLive() == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("timeToLive"));
-          }
         });
   }
 }
