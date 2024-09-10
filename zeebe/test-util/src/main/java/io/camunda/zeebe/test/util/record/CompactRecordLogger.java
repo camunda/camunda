@@ -829,7 +829,9 @@ public class CompactRecordLogger {
         };
 
     return stringBuilder
-        .append("%s partition %d".formatted(targetPartitionWord, value.getPartitionId()))
+        .append(
+            "%s partition %d on queue %s"
+                .formatted(targetPartitionWord, value.getPartitionId(), value.getQueueId()))
         .toString();
   }
 
