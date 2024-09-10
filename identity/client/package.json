@@ -15,7 +15,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@camunda/camunda-composite-components": "0.8.1",
+    "@camunda/camunda-composite-components": "0.9.0",
     "@carbon/react": "1.65.0",
     "i18next": "23.15.0",
     "react": "18.3.1",
