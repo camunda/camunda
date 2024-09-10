@@ -37,6 +37,10 @@ public class DbDistributionState implements MutableDistributionState {
   private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbInt>, DbNil>
       pendingDistributionColumnFamily;
 
+  /** [distribution key | partition id] => [DbNil] */
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbInt>, DbNil>
+      retriableDistributionColumnFamily;
+
   /** [distribution key] => [persisted command distribution] */
   private final ColumnFamily<DbLong, PersistedCommandDistribution>
       commandDistributionRecordColumnFamily;
@@ -68,6 +72,13 @@ public class DbDistributionState implements MutableDistributionState {
     pendingDistributionColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PENDING_DISTRIBUTION,
+            transactionContext,
+            distributionPartitionKey,
+            DbNil.INSTANCE);
+
+    retriableDistributionColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.RETRIABLE_DISTRIBUTION,
             transactionContext,
             distributionPartitionKey,
             DbNil.INSTANCE);
