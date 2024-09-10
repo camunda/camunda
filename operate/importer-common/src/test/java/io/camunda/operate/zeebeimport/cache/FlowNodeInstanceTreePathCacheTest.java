@@ -30,13 +30,15 @@ import org.mockito.Mockito;
 
 public class FlowNodeInstanceTreePathCacheTest {
 
-  private HashMap<Long, String> spyResolverCache;
+  private HashMap<Long, String> spyTreePathResolver;
   private FlowNodeInstanceTreePathCache treePathCache;
 
   @BeforeEach
   void setup() {
-    spyResolverCache = spy(new HashMap<Long, String>());
-    treePathCache = new FlowNodeInstanceTreePathCache(List.of(1, 2), 10, spyResolverCache::get);
+    // treePathResolver is in this case a simple map, but in production it might be
+    // the ES flow node store to query elastic to find the treePath
+    spyTreePathResolver = spy(new HashMap<>());
+    treePathCache = new FlowNodeInstanceTreePathCache(List.of(1, 2), 10, spyTreePathResolver::get);
   }
 
   @Test
@@ -51,7 +53,7 @@ public class FlowNodeInstanceTreePathCacheTest {
     // then
     assertThat(treePath).isEqualTo(Long.toString(0xABCD));
 
-    Mockito.verifyNoInteractions(spyResolverCache);
+    Mockito.verifyNoInteractions(spyTreePathResolver);
   }
 
   @Test
@@ -74,7 +76,7 @@ public class FlowNodeInstanceTreePathCacheTest {
         .contains(firstTreePath)
         .isEqualTo(String.join("/", Long.toString(0xABCD), Long.toString(0xCAFE)));
 
-    Mockito.verifyNoInteractions(spyResolverCache);
+    Mockito.verifyNoInteractions(spyTreePathResolver);
   }
 
   @Test
@@ -89,7 +91,7 @@ public class FlowNodeInstanceTreePathCacheTest {
     // then
     assertThat(treePath).isEqualTo(Long.toString(0xEFDA));
 
-    Mockito.verify(spyResolverCache, times(1)).get(eq(0xABCDL));
+    Mockito.verify(spyTreePathResolver, times(1)).get(eq(0xABCDL));
   }
 
   @Test
@@ -97,7 +99,7 @@ public class FlowNodeInstanceTreePathCacheTest {
     // given
     // resolver can resolve tree path
     final String expectedTreePath = String.join("/", Long.toString(0xABCD), Long.toString(0xEFDA));
-    spyResolverCache.put(0xABCDL, expectedTreePath);
+    spyTreePathResolver.put(0xABCDL, expectedTreePath);
     final var flowNodeInstanceRecord = new FNITreePathCacheCompositeKey(1, 0xCAFE, 0xABCD, 0xEFDA);
 
     // when
@@ -106,7 +108,7 @@ public class FlowNodeInstanceTreePathCacheTest {
     // then
     assertThat(treePath).isEqualTo(expectedTreePath);
 
-    Mockito.verify(spyResolverCache, times(1)).get(eq(0xABCDL));
+    Mockito.verify(spyTreePathResolver, times(1)).get(eq(0xABCDL));
   }
 
   @Test
@@ -114,7 +116,7 @@ public class FlowNodeInstanceTreePathCacheTest {
     // given
     // cache is empty and resolver can resolve tree path
     final String expectedTreePath = String.join("/", Long.toString(0xABCD), Long.toString(0xEFDA));
-    spyResolverCache.put(0xABCDL, expectedTreePath);
+    spyTreePathResolver.put(0xABCDL, expectedTreePath);
     final var flowNodeInstanceRecord = new FNITreePathCacheCompositeKey(1, 0xCAFE, 0xABCD, 0xEFDA);
     final String firstTreePath = treePathCache.resolveTreePath(flowNodeInstanceRecord);
 
@@ -124,7 +126,7 @@ public class FlowNodeInstanceTreePathCacheTest {
     // then
     assertThat(firstTreePath).isEqualTo(secondTreePath).isEqualTo(expectedTreePath);
 
-    Mockito.verify(spyResolverCache, times(1)).get(eq(0xABCDL));
+    Mockito.verify(spyTreePathResolver, times(1)).get(eq(0xABCDL));
   }
 
   @Test
