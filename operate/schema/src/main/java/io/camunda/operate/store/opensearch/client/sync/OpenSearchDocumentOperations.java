@@ -111,7 +111,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       final Consumer<HitsMetadata<R>> hitsMetadataConsumer,
       final Class<R> clazz)
       throws IOException {
-    SearchResponse<R> response = openSearchClient.search(request, clazz);
+    final SearchResponse<R> response = openSearchClient.search(request, clazz);
     return scrollWith(
         request, response, hitsConsumer, hitsMetadataConsumer, clazz, Integer.MAX_VALUE);
   }
