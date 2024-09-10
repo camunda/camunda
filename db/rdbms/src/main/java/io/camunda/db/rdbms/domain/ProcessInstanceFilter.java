@@ -7,6 +7,16 @@
  */
 package io.camunda.db.rdbms.domain;
 
+import java.util.Collection;
+
 public record ProcessInstanceFilter(
-      String bpmnProcessId
-  ) {}
+      String bpmnProcessId,
+      VariableFilter variable
+  ) {
+
+  public record VariableFilter(
+      String name,
+      Collection<String> values
+  ) {
+  }
+}

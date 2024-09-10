@@ -8,34 +8,37 @@
 package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.domain.ProcessDefinitionModel;
-import io.camunda.db.rdbms.service.ProcessDefinitionRdbmsService;
+import io.camunda.db.rdbms.service.ProcessRdbmsService;
 import io.camunda.operate.entities.ProcessEntity;
+import io.camunda.operate.zeebeimport.util.XMLUtil;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
-import io.camunda.operate.zeebeimport.util.XMLUtil;
 
-public class ProcessDeploymentExportHandler implements RdbmsExportHandler<Process> {
+public class ProcessExportHandler implements RdbmsExportHandler<Process> {
 
-  private final ProcessDefinitionRdbmsService processDefinitionRdbmsService;
+  private final ProcessRdbmsService processRdbmsService;
 
-  public ProcessDeploymentExportHandler(final ProcessDefinitionRdbmsService processDefinitionRdbmsService) {
-    this.processDefinitionRdbmsService = processDefinitionRdbmsService;
+  public ProcessExportHandler(final ProcessRdbmsService processRdbmsService) {
+    this.processRdbmsService = processRdbmsService;
   }
 
   @Override
   public boolean canExport(final Record<Process> record) {
-    return record.getIntent() == ProcessIntent.CREATED;
+    // We get this Record on each partition, but just the one where the command was executed should export it!
+    final int originalPartitionId = Protocol.decodePartitionId(record.getKey());
+    return record.getIntent() == ProcessIntent.CREATED && originalPartitionId == record.getPartitionId();
   }
 
   @Override
   public void export(final Record<Process> record) {
     final Process value = record.getValue();
-    processDefinitionRdbmsService.save(map(value));
+    processRdbmsService.save(map(value));
   }
 
   private ProcessDefinitionModel map(final Process value) {
-    var xml = new XMLUtil().extractDiagramData(value.getResource(), value.getBpmnProcessId());
+    final var xml = new XMLUtil().extractDiagramData(value.getResource(), value.getBpmnProcessId());
 
     return new ProcessDefinitionModel(
         value.getProcessDefinitionKey(),
