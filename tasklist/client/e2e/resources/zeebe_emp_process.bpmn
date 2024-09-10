@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.26.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.5.0" camunda:diagramRelationId="e6607502-f557-4170-800a-86d618c05727">
+  <bpmn:process id="zeebe_emp_process" name="zeebe_emp_process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_18fqul1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_18fqul1" sourceRef="StartEvent_1" targetRef="ZeebeEmpDetails" />
+    <bpmn:sequenceFlow id="Flow_1uie9g9" sourceRef="ZeebeEmpDetails" targetRef="zeebeConfirmEmpDetails" />
+    <bpmn:endEvent id="Event_0m78y1u">
+      <bpmn:incoming>Flow_0b4z0od</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0b4z0od" sourceRef="zeebeConfirmEmpDetails" targetRef="Event_0m78y1u" />
+    <bpmn:userTask id="ZeebeEmpDetails" name="Zeebe Employee Details">
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formId="empFrom" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_18fqul1</bpmn:incoming>
+      <bpmn:outgoing>Flow_1uie9g9</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="zeebeConfirmEmpDetails" name="Confirm Zeebe Employee Details">
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formId="confirmEmpForm" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1uie9g9</bpmn:incoming>
+      <bpmn:outgoing>Flow_0b4z0od</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="zeebe_emp_process">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="150" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0m78y1u_di" bpmnElement="Event_0m78y1u">
+        <dc:Bounds x="562" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0058i0o_di" bpmnElement="ZeebeEmpDetails">
+        <dc:Bounds x="240" y="78" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_088trdq_di" bpmnElement="zeebeConfirmEmpDetails">
+        <dc:Bounds x="400" y="78" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_18fqul1_di" bpmnElement="Flow_18fqul1">
+        <di:waypoint x="186" y="118" />
+        <di:waypoint x="240" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1uie9g9_di" bpmnElement="Flow_1uie9g9">
+        <di:waypoint x="340" y="118" />
+        <di:waypoint x="400" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0b4z0od_di" bpmnElement="Flow_0b4z0od">
+        <di:waypoint x="500" y="118" />
+        <di:waypoint x="562" y="118" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

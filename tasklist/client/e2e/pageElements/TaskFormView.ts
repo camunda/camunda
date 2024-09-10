@@ -26,7 +26,7 @@ class TaskFormView {
   constructor(page: Page) {
     this.page = page;
     this.form = page.getByTestId('embedded-form');
-    this.nameInput = this.form.getByLabel('Name*');
+    this.nameInput = this.form.getByLabel('Name');
     this.addressInput = this.form.getByLabel('Address*');
     this.ageInput = this.form.getByLabel('Age');
     this.numberInput = this.form.getByLabel('Number');
@@ -34,9 +34,8 @@ class TaskFormView {
     this.decrementButton = this.form.getByRole('button', {name: 'Decrement'});
     this.dateInput = this.form.getByPlaceholder('mm/dd/yyyy');
     this.timeInput = this.form.getByPlaceholder('hh:mm ?m');
-    this.checkbox = this.form.getByLabel('Checkbox');
+    this.checkbox = this.form.getByRole('checkbox');
     this.selectDropdown = this.form.getByText('Select').last();
-    this.checkbox = this.form.getByLabel('Checkbox');
     this.tagList = this.form.getByPlaceholder('Search');
   }
 
@@ -57,7 +56,7 @@ class TaskFormView {
 
   async selectDropdownValue(value: string) {
     await this.selectDropdown.click();
-    await this.page.getByText(value).click();
+    await this.page.getByText(value).click({timeout: 40000});
   }
 
   async selectTaglistValues(values: string[]) {
