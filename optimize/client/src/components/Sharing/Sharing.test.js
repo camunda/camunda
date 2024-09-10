@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import {ReportRenderer, InstanceCount} from 'components';
@@ -198,9 +197,7 @@ it('should render an href directing to view mode ignoring /external sub url', ()
     evaluationResult: {id: 'dashboardId'},
   });
 
-  expect(node.find('.Button').prop('href')).toBe(
-    'http://example.com/subUrl/#/dashboard/dashboardId/'
-  );
+  expect(node.find('Link').prop('href')).toBe('http://example.com/subUrl/#/dashboard/dashboardId/');
 });
 
 it('should show a compact version and lock scroll when a shared report is embedded', () => {
@@ -217,7 +214,6 @@ it('should show a compact version and lock scroll when a shared report is embedd
   expect(node.find('DiagramScrollLock')).toExist();
   expect(node.find('.iconLink')).toExist();
   expect(node.find('.Sharing')).toHaveClassName('compact');
-  expect(node.find('.title-button')).toHaveClassName('small');
 });
 
 it('should add report classname to the sharing container', () => {

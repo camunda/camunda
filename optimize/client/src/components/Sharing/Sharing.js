@@ -6,9 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
+import {Component} from 'react';
 import {withRouter} from 'react-router-dom';
 import classnames from 'classnames';
+import {Launch} from '@carbon/icons-react';
+import {Link} from '@carbon/react';
 
 import {
   ReportRenderer,
@@ -31,7 +33,7 @@ import {evaluateEntity, createLoadReportCallback} from './service';
 
 import './Sharing.scss';
 
-export class Sharing extends React.Component {
+export class Sharing extends Component {
   constructor(props) {
     super(props);
 
@@ -152,18 +154,15 @@ export class Sharing extends React.Component {
                 </EntityName>
               )}
               {header !== 'titleOnly' && (
-                <a
+                <Link
                   href={this.getEntityUrl()}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={classnames('Button title-button', {
-                    main: !isEmbedded,
-                    small: isEmbedded,
-                  })}
+                  className={'title-button'}
                 >
-                  <Icon type="share" renderedIn="span" />
-                  <span>{isEmbedded ? t('common.open') : t('common.sharing.openInOptimize')}</span>
-                </a>
+                  {isEmbedded ? t('common.open') : t('common.sharing.openInOptimize')}
+                  <Launch />
+                </Link>
               )}
             </div>
             {type === 'report' && showTitle && <InstanceCount report={evaluationResult} />}
