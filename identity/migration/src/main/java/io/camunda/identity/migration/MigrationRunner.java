@@ -27,13 +27,17 @@ public class MigrationRunner implements ApplicationRunner {
 
   final AuthorizationServices<AuthorizationRecord> authorizationServices;
 
+  final AuthorizationMigrationHandler authorizationMigrationHandler;
+
   final RestTemplate restTemplate;
 
   public MigrationRunner(
       final UserServices<UserRecord> userService,
-      final AuthorizationServices<AuthorizationRecord> authorizationServices) {
+      final AuthorizationServices<AuthorizationRecord> authorizationServices,
+      final AuthorizationMigrationHandler authorizationMigrationHandler) {
     this.userService = userService;
     this.authorizationServices = authorizationServices;
+    this.authorizationMigrationHandler = authorizationMigrationHandler;
     restTemplate = new RestTemplate();
   }
 
@@ -43,6 +47,9 @@ public class MigrationRunner implements ApplicationRunner {
     final String command =
         args.containsOption("command") ? args.getOptionValues("command").getFirst() : "migrate";
     if (!asList("migrate", "status").contains(command)) {
+      if ("migrate".equals(command)) {
+        authorizationMigrationHandler.migrate();
+      }
       throw new IllegalArgumentException("Unknown command: " + command);
     }
 
