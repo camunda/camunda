@@ -7,18 +7,13 @@
  */
 package io.camunda.operate.util;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.concurrent.FutureCallback;
+import io.camunda.plugin.search.header.CustomHeader;
+import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
 
-public class NoopHTTPCallback implements FutureCallback<HttpResponse> {
-  public static final NoopHTTPCallback INSTANCE = new NoopHTTPCallback();
-
-  @Override
-  public void completed(final HttpResponse result) {}
+public class TestPlugin implements DatabaseCustomHeaderSupplier {
 
   @Override
-  public void failed(final Exception ex) {}
-
-  @Override
-  public void cancelled() {}
+  public CustomHeader getSearchDatabaseCustomHeader() {
+    return new CustomHeader("foo", "bar");
+  }
 }
