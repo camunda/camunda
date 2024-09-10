@@ -312,7 +312,7 @@ public class ResourceControllerTest extends RestControllerTest {
     Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
     final var capturedRequest = deleteRequestCaptor.getValue();
     assertThat(capturedRequest.resourceKey()).isEqualTo(1);
-    assertThat(capturedRequest.operationReference()).isEqualTo(null);
+    assertThat(capturedRequest.operationReference()).isNull();
   }
 
   @Test

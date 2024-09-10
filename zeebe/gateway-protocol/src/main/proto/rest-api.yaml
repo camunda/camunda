@@ -2937,7 +2937,7 @@ components:
       properties:
         operationReference:
           description: |
-            A reference key chosen by the user and will be part of all records resulting from this operation.
+            A reference key chosen by the user that will be part of all records resulting from this operation.
             Must be > 0 if provided.
           type: integer
           format: int64
