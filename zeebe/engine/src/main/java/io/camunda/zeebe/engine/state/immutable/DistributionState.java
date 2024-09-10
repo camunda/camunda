@@ -59,7 +59,7 @@ public interface DistributionState {
   CommandDistributionRecord getCommandDistributionRecord(long distributionKey, int partition);
 
   /**
-   * Visits each persisted restriable distribution, providing both the key of that distribution and
+   * Visits each persisted retriable distribution, providing both the key of that distribution and
    * the {@link CommandDistributionRecord}.
    *
    * <p>Note that a new instance of the record is provided for each visit, so the visitor does not
