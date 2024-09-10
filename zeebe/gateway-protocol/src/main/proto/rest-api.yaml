@@ -1490,6 +1490,44 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
+  /signals/broadcast:
+    post:
+      tags:
+        - Signal
+      summary: Broadcast signal
+      description: Broadcasts a signal.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignalBroadcastRequest"
+      responses:
+        "200":
+          description: The signal was broadcast.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignalBroadcastResponse"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The signal is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
 components:
   schemas:
     UserTaskSearchQueryRequest:
@@ -2997,6 +3035,32 @@ components:
           type: integer
           format: int64
           minimum: 1
+
+    SignalBroadcastRequest:
+      type: object
+      properties:
+        signalName :
+          description: The name of the signal to broadcast.
+          type: string
+        variables:
+          additionalProperties: true
+          description: The signal variables as a JSON object.
+          type: object
+        tenantId:
+          description: The id of the tenant that owns the signal.
+          type: string
+      required:
+        - signalName
+    SignalBroadcastResponse:
+      type: object
+      properties:
+        key:
+          description: The unique ID of the signal that was broadcast.
+          type: integer
+          format: int64
+        tenantId:
+          description: The tenant id of the signal that was broadcast.
+          type: string
 
   securitySchemes:
     bearerAuth:
