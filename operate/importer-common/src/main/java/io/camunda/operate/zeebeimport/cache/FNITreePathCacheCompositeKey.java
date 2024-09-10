@@ -17,8 +17,8 @@
 package io.camunda.operate.zeebeimport.cache;
 
 /**
- * Flow nodes instance record with the most important properties to be used by the {@link
- * FlowNodeInstanceTreePathCache}.
+ * The composite key for the tree path cache {@link FlowNodeInstanceTreePathCache} that contains the
+ * most important properties of a flow node instance to be used by the cache.
  *
  * @param partitionId the partition id where the flow node was processed
  * @param recordKey the key of the flow node
@@ -26,5 +26,5 @@ package io.camunda.operate.zeebeimport.cache;
  *     (on root)
  * @param processInstanceKey the corresponding process instance key for the flow node
  */
-public record FlowNodeInstanceRecord(
+public record FNITreePathCacheCompositeKey(
     int partitionId, long recordKey, long flowScopeKey, long processInstanceKey) {}
