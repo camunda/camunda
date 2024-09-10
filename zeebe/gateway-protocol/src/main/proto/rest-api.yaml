@@ -951,7 +951,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserWithPasswordRequest"
+              $ref: "#/components/schemas/UserRequest"
         required: true
       responses:
         "204":
@@ -2005,7 +2005,7 @@ components:
                 type: array
                 items:
                   type: string
-    UserWithPasswordRequest:
+    UserRequest:
       type: "object"
       properties:
         password:
@@ -2247,7 +2247,6 @@ components:
           description: The exact time in epoch milliseconds to which the clock should be pinned.
           type: integer
           format: int64
-          minimum: 0
       required:
         - timestamp
     JobActivationRequest:

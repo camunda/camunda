@@ -17,7 +17,7 @@ import io.camunda.service.CamundaServiceException;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.CreateUserRequest;
 import io.camunda.service.security.auth.Authentication;
-import io.camunda.zeebe.gateway.protocol.rest.UserWithPasswordRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserController;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -293,8 +293,8 @@ public class UserControllerTest extends RestControllerTest {
     return new CreateUserRequest("foo", "Foo Bar", "bar@baz.com", "zabraboof");
   }
 
-  private UserWithPasswordRequest validUserWithPasswordRequest() {
-    return new UserWithPasswordRequest()
+  private UserRequest validUserWithPasswordRequest() {
+    return new UserRequest()
         .username("foo")
         .name("Foo Bar")
         .email("bar@baz.com")
@@ -302,7 +302,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   private void assertRequestRejectedExceptionally(
-      final UserWithPasswordRequest request, final String expectedError) {
+      final UserRequest request, final String expectedError) {
     webClient
         .post()
         .uri(USER_BASE_URL)
