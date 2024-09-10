@@ -2454,6 +2454,8 @@ components:
           type: string
         eq:
           type: object
+        neq:
+          type: object
         gt:
           type: object
         gte:
