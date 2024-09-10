@@ -124,6 +124,20 @@ public class DbDistributionState implements MutableDistributionState {
   }
 
   @Override
+  public void addPendingDistribution(final long distributionKey, final int partition) {
+    this.distributionKey.wrapLong(distributionKey);
+    partitionKey.wrapInt(partition);
+    pendingDistributionColumnFamily.upsert(distributionPartitionKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void removePendingDistribution(final long distributionKey, final int partition) {
+    this.distributionKey.wrapLong(distributionKey);
+    partitionKey.wrapInt(partition);
+    pendingDistributionColumnFamily.deleteExisting(distributionPartitionKey);
+  }
+
+  @Override
   public void enqueueCommandDistribution(
       final String queue, final long distributionKey, final int partition) {
     queueId.wrapString(queue);

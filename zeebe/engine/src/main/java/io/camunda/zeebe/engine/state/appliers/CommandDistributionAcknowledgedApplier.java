@@ -30,5 +30,6 @@ public final class CommandDistributionAcknowledgedApplier
         .ifPresent(queue -> distributionState.removeQueuedDistribution(queue, partitionId, key));
 
     distributionState.removeRetriableDistribution(key, partitionId);
+    distributionState.removePendingDistribution(key, partitionId);
   }
 }

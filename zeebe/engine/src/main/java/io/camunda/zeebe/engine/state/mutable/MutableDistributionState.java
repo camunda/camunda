@@ -45,6 +45,22 @@ public interface MutableDistributionState extends DistributionState {
   void removeRetriableDistribution(final long distributionKey, final int partition);
 
   /**
+   * Adds a pending distribution to the state
+   *
+   * @param distributionKey the key of the distribution
+   * @param partition the partition for which the distribution is pending
+   */
+  void addPendingDistribution(final long distributionKey, final int partition);
+
+  /**
+   * Removes a pending distribution from the state
+   *
+   * @param distributionKey the key of the pending distribution that will be removed
+   * @param partition the partition of the pending distribution that will be removed
+   */
+  void removePendingDistribution(final long distributionKey, final int partition);
+
+  /**
    * Adds a distribution to the given queue for the given partition,
    *
    * @param queue the queue to which the distribution should be added

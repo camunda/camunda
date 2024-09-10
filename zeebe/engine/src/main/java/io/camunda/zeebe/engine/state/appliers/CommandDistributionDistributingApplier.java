@@ -23,6 +23,7 @@ public final class CommandDistributionDistributingApplier
 
   @Override
   public void applyState(final long key, final CommandDistributionRecord value) {
+    distributionState.addPendingDistribution(key, value.getPartitionId());
     distributionState.addRetriableDistribution(key, value.getPartitionId());
   }
 }
