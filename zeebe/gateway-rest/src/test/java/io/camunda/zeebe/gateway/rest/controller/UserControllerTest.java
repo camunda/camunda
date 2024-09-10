@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.service.CamundaServiceException;
 import io.camunda.service.UserServices;
+import io.camunda.service.UserServices.CreateUserRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -51,12 +52,6 @@ public class UserControllerTest extends RestControllerTest {
 
   @Test
   void createUserShouldReturnNoContent() {
-
-    final UserRequest dto = new UserRequest();
-    dto.setUsername("demo");
-    dto.setPassword("password");
-    dto.setName("Demo");
-    dto.setEmail("demo@e.c");
     // given
     final var dto = validCreateUserRequest();
 
