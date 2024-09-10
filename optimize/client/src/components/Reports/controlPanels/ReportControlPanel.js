@@ -9,11 +9,11 @@
 import React from 'react';
 import update from 'immutability-helper';
 import deepEqual from 'fast-deep-equal';
-import {Accordion, AccordionItem, Layer, Tag} from '@carbon/react';
+import {Accordion, AccordionItem, DefinitionTooltip, Layer, Tag} from '@carbon/react';
 import {Db2Database, Factor, Filter as FilterIcon} from '@carbon/icons-react';
 
 import {Filter} from 'filter';
-import {withErrorHandling} from 'HOC';
+import {withDocs, withErrorHandling} from 'HOC';
 import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables, getRandomId} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
@@ -33,450 +33,461 @@ import {isDurationHeatmap, isProcessInstanceDuration} from './service';
 
 import './ReportControlPanel.scss';
 
-export default withErrorHandling(
-  class ReportControlPanel extends React.Component {
-    constructor(props) {
-      super(props);
+export class ReportControlPanel extends React.Component {
+  constructor(props) {
+    super(props);
 
-      this.state = {
-        variables: null,
-        flowNodeNames: null,
-      };
-    }
-
-    componentDidMount() {
-      const data = this.props.report.data;
-
-      if (data?.definitions?.length) {
-        this.loadVariables(data.definitions);
-        this.loadFlowNodeNames(data.definitions[0]);
-      }
-    }
-
-    loadFlowNodeNames = ({key, versions, tenantIds}) => {
-      if (key && versions && tenantIds) {
-        return new Promise((resolve, reject) => {
-          this.props.mightFail(
-            getFlowNodeNames(key, versions[0], tenantIds[0]),
-            (flowNodeNames) => this.setState({flowNodeNames}, resolve),
-            (error) => reject(showError(error))
-          );
-        });
-      }
+    this.state = {
+      variables: null,
+      flowNodeNames: null,
     };
+  }
 
-    loadVariables = (definitions) => {
+  componentDidMount() {
+    const data = this.props.report.data;
+
+    if (data?.definitions?.length) {
+      this.loadVariables(data.definitions);
+      this.loadFlowNodeNames(data.definitions[0]);
+    }
+  }
+
+  loadFlowNodeNames = ({key, versions, tenantIds}) => {
+    if (key && versions && tenantIds) {
       return new Promise((resolve, reject) => {
         this.props.mightFail(
-          loadVariables({
-            processesToQuery: definitions.map(({key, versions, tenantIds}) => ({
-              processDefinitionKey: key,
-              processDefinitionVersions: versions,
-              tenantIds,
-            })),
-            filter: this.props.report.data.filter,
-          }),
-          (variables) => {
-            this.setState({variables}, resolve);
-            setVariables(variables);
-          },
+          getFlowNodeNames(key, versions[0], tenantIds[0]),
+          (flowNodeNames) => this.setState({flowNodeNames}, resolve),
           (error) => reject(showError(error))
         );
       });
-    };
+    }
+  };
 
-    loadXml = ({key, versions, tenantIds}) => {
-      if (key && versions?.[0] && tenantIds) {
-        return new Promise((resolve, reject) => {
-          this.props.mightFail(
-            loadProcessDefinitionXml(key, versions[0], tenantIds[0]),
-            resolve,
-            (error) => reject(showError(error))
-          );
-        });
-      }
+  loadVariables = (definitions) => {
+    return new Promise((resolve, reject) => {
+      this.props.mightFail(
+        loadVariables({
+          processesToQuery: definitions.map(({key, versions, tenantIds}) => ({
+            processDefinitionKey: key,
+            processDefinitionVersions: versions,
+            tenantIds,
+          })),
+          filter: this.props.report.data.filter,
+        }),
+        (variables) => {
+          this.setState({variables}, resolve);
+          setVariables(variables);
+        },
+        (error) => reject(showError(error))
+      );
+    });
+  };
 
-      return null;
-    };
+  loadXml = ({key, versions, tenantIds}) => {
+    if (key && versions?.[0] && tenantIds) {
+      return new Promise((resolve, reject) => {
+        this.props.mightFail(
+          loadProcessDefinitionXml(key, versions[0], tenantIds[0]),
+          resolve,
+          (error) => reject(showError(error))
+        );
+      });
+    }
 
-    variableExists = (varName) =>
-      this.state.variables.some((variable) => variable.name === varName);
+    return null;
+  };
 
-    getNewVariables = (columns) =>
-      this.state.variables
-        .map((col) => 'variable:' + col.name)
-        .filter((col) => !columns.includes(col));
+  variableExists = (varName) => this.state.variables.some((variable) => variable.name === varName);
 
-    getVariableConfig = () => {
-      const {view, groupBy, distributedBy} = this.props.report.data;
+  getNewVariables = (columns) =>
+    this.state.variables
+      .map((col) => 'variable:' + col.name)
+      .filter((col) => !columns.includes(col));
 
-      if (view?.entity === 'variable') {
-        return {
-          name: view.properties[0].name,
-          reset: (change) => {
-            change.view = {$set: null};
-            change.groupBy = {$set: null};
-            change.visualization = {$set: null};
-          },
-        };
-      } else if (groupBy?.type === 'variable') {
-        return {
-          name: groupBy.value.name,
-          reset: (change) => {
-            change.groupBy = {$set: null};
-            change.visualization = {$set: null};
-          },
-        };
-      } else if (distributedBy?.type === 'variable') {
-        return {
-          name: distributedBy.value.name,
-          reset: (change) => {
-            change.distributedBy = {$set: {type: 'none', value: null}};
-          },
-        };
-      }
-    };
+  getVariableConfig = () => {
+    const {view, groupBy, distributedBy} = this.props.report.data;
 
-    copyDefinition = async (idx) => {
-      const {data} = this.props.report;
-      const definitionToCopy = data.definitions[idx];
-      const {tenantIds, versions, name, key, displayName} = definitionToCopy;
-      const newDefinition = {
-        ...definitionToCopy,
-        tenantIds: [...tenantIds],
-        versions: [...versions],
-        displayName: (displayName || name || key) + ` (${t('common.copyLabel')})`,
-        identifier: getRandomId(),
+    if (view?.entity === 'variable') {
+      return {
+        name: view.properties[0].name,
+        reset: (change) => {
+          change.view = {$set: null};
+          change.groupBy = {$set: null};
+          change.visualization = {$set: null};
+        },
       };
-
-      const change = {
-        definitions: {$splice: [[idx, 0, newDefinition]]},
+    } else if (groupBy?.type === 'variable') {
+      return {
+        name: groupBy.value.name,
+        reset: (change) => {
+          change.groupBy = {$set: null};
+          change.visualization = {$set: null};
+        },
       };
+    } else if (distributedBy?.type === 'variable') {
+      return {
+        name: distributedBy.value.name,
+        reset: (change) => {
+          change.distributedBy = {$set: {type: 'none', value: null}};
+        },
+      };
+    }
+  };
+
+  copyDefinition = async (idx) => {
+    const {data} = this.props.report;
+    const definitionToCopy = data.definitions[idx];
+    const {tenantIds, versions, name, key, displayName} = definitionToCopy;
+    const newDefinition = {
+      ...definitionToCopy,
+      tenantIds: [...tenantIds],
+      versions: [...versions],
+      displayName: (displayName || name || key) + ` (${t('common.copyLabel')})`,
+      identifier: getRandomId(),
+    };
+
+    const change = {
+      definitions: {$splice: [[idx, 0, newDefinition]]},
+    };
+    if (data.visualization === 'heat') {
+      change.visualization = {$set: 'table'};
+    }
+
+    this.props.setLoading(true);
+    await this.props.updateReport(change, true);
+    this.props.setLoading(false);
+  };
+
+  addDefinition = async (newDefinitions) => {
+    let change = {definitions: {$push: newDefinitions}};
+
+    this.props.setLoading(true);
+    const data = this.props.report.data;
+
+    const {definitions} = update(data, change);
+    change = {...change, ...(await this.processDefinitionUpdate(definitions))};
+    change.configuration = change.configuration || {};
+    if (data.definitions.length === 1) {
+      // if we add the second definition, we need to make sure that it's not a heatmap report
       if (data.visualization === 'heat') {
         change.visualization = {$set: 'table'};
       }
+    }
 
-      this.props.setLoading(true);
-      await this.props.updateReport(change, true);
-      this.props.setLoading(false);
+    await this.props.updateReport(change, true);
+    this.props.setLoading(false);
+  };
+
+  removeDefinition = async (idx) => {
+    let change = {
+      definitions: {$splice: [[idx, 1]]},
     };
 
-    addDefinition = async (newDefinitions) => {
-      let change = {definitions: {$push: newDefinitions}};
+    this.props.setLoading(true);
+    const data = this.props.report.data;
 
-      this.props.setLoading(true);
-      const data = this.props.report.data;
+    const {definitions} = update(data, change);
+    change = {...change, ...(await this.processDefinitionUpdate(definitions))};
 
-      const {definitions} = update(data, change);
-      change = {...change, ...(await this.processDefinitionUpdate(definitions))};
-      change.configuration = change.configuration || {};
-      if (data.definitions.length === 1) {
-        // if we add the second definition, we need to make sure that it's not a heatmap report
-        if (data.visualization === 'heat') {
-          change.visualization = {$set: 'table'};
-        }
-      }
-
-      await this.props.updateReport(change, true);
-      this.props.setLoading(false);
-    };
-
-    removeDefinition = async (idx) => {
-      let change = {
-        definitions: {$splice: [[idx, 1]]},
+    if (data.definitions.length === 1) {
+      // removing the last definition will reset view and groupby options
+      change = {
+        ...change,
+        view: {$set: null},
+        groupBy: {$set: null},
+        visualization: {$set: null},
+        distributedBy: {$set: {type: 'none', value: null}},
       };
+    }
 
-      this.props.setLoading(true);
-      const data = this.props.report.data;
-
-      const {definitions} = update(data, change);
-      change = {...change, ...(await this.processDefinitionUpdate(definitions))};
-
-      if (data.definitions.length === 1) {
-        // removing the last definition will reset view and groupby options
-        change = {
-          ...change,
-          view: {$set: null},
-          groupBy: {$set: null},
-          visualization: {$set: null},
-          distributedBy: {$set: {type: 'none', value: null}},
-        };
+    if (definitions.length === 1 && data.distributedBy.type === 'process') {
+      // going back to single definition reports resets distributed by process reports
+      change.distributedBy = {$set: {type: 'none', value: null}};
+      if (data.groupBy.type === 'none') {
+        change.visualization = {$set: 'number'};
       }
+    }
 
-      if (definitions.length === 1 && data.distributedBy.type === 'process') {
-        // going back to single definition reports resets distributed by process reports
-        change.distributedBy = {$set: {type: 'none', value: null}};
-        if (data.groupBy.type === 'none') {
-          change.visualization = {$set: 'number'};
-        }
-      }
-
-      const newFilters = [];
-      const identifierOfRemovedDefinition = data.definitions[idx].identifier;
-      data.filter.forEach((filter) => {
-        if (filter.appliedTo.includes(identifierOfRemovedDefinition)) {
-          if (filter.appliedTo.length > 1) {
-            // if the filter contains at least one other definition, we remove the removed definition from the list
-            newFilters.push({
-              ...filter,
-              appliedTo: filter.appliedTo.filter(
-                (identifier) => identifier !== identifierOfRemovedDefinition
-              ),
-            });
-          }
-        } else {
-          newFilters.push(filter);
-        }
-      });
-      change.filter = {$set: newFilters};
-
-      await this.props.updateReport(change, true);
-      this.props.setLoading(false);
-    };
-
-    changeDefinition = async (changedDefinition, idx) => {
-      this.props.setLoading(true);
-
-      let change = {
-        definitions: {
-          [idx]: {$set: changedDefinition},
-        },
-      };
-
-      const {definitions} = update(this.props.report.data, change);
-      change = {...change, ...(await this.processDefinitionUpdate(definitions))};
-
-      await this.props.updateReport(change, true);
-      this.props.setLoading(false);
-    };
-
-    processDefinitionUpdate = async (newDefinitions) => {
-      if (!newDefinitions?.length) {
-        return {};
-      }
-
-      const {
-        configuration: {
-          tableColumns: {columnOrder, includedColumns, excludedColumns},
-          processPart,
-          heatmapTargetValue: {values},
-          targetValue,
-        },
-        definitions,
-      } = this.props.report.data;
-
-      const targetFlowNodes = Object.keys(values);
-      const change = {};
-
-      const [xml] = await Promise.all([
-        this.loadXml(newDefinitions[0]),
-        this.loadVariables(newDefinitions),
-        this.loadFlowNodeNames(newDefinitions[0]),
-      ]);
-
-      change.configuration = {
-        xml: {$set: xml},
-        // disable bucket size config on definition update
-        // reason: every definition has different data and needs a different bucket size
-        customBucket: {active: {$set: false}},
-        distributeByCustomBucket: {active: {$set: false}},
-      };
-
-      const variableConfig = this.getVariableConfig();
-      if (variableConfig && !this.variableExists(variableConfig.name)) {
-        variableConfig.reset(change);
-      }
-
-      if (columnOrder.length) {
-        const previousDefinitionKeys = definitions.map(({key}) => key);
-        const newDefinitionKeys = newDefinitions.map(({key}) => key);
-
-        if (!deepEqual(previousDefinitionKeys, newDefinitionKeys)) {
-          change.configuration.tableColumns = {columnOrder: {$set: []}};
-        }
-      }
-
-      if (includedColumns.length) {
-        change.configuration.tableColumns = {
-          ...change.configuration.tableColumns,
-          includedColumns: {
-            $set: includedColumns.concat(
-              this.getNewVariables(includedColumns.concat(excludedColumns))
+    const newFilters = [];
+    const identifierOfRemovedDefinition = data.definitions[idx].identifier;
+    data.filter.forEach((filter) => {
+      if (filter.appliedTo.includes(identifierOfRemovedDefinition)) {
+        if (filter.appliedTo.length > 1) {
+          // if the filter contains at least one other definition, we remove the removed definition from the list
+          newFilters.push({
+            ...filter,
+            appliedTo: filter.appliedTo.filter(
+              (identifier) => identifier !== identifierOfRemovedDefinition
             ),
-          },
-        };
+          });
+        }
+      } else {
+        newFilters.push(filter);
       }
+    });
+    change.filter = {$set: newFilters};
 
-      if (
-        processPart &&
-        !checkAllFlowNodesExist(this.state.flowNodeNames, Object.values(processPart))
-      ) {
-        change.configuration.processPart = {$set: null};
-      }
+    await this.props.updateReport(change, true);
+    this.props.setLoading(false);
+  };
 
-      if (
-        targetFlowNodes.length &&
-        !checkAllFlowNodesExist(this.state.flowNodeNames, targetFlowNodes)
-      ) {
-        change.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
-      }
+  changeDefinition = async (changedDefinition, idx) => {
+    this.props.setLoading(true);
 
-      // disable isKpi when adding more than one definition since it is not supported
-      if (newDefinitions.length > 1 && targetValue?.isKpi) {
-        change.configuration.targetValue = {isKpi: {$set: false}};
-      }
-
-      return change;
+    let change = {
+      definitions: {
+        [idx]: {$set: changedDefinition},
+      },
     };
 
-    render() {
-      const {report, updateReport} = this.props;
-      const {data, result} = this.props.report;
-      const {flowNodeNames, variables} = this.state;
+    const {definitions} = update(this.props.report.data, change);
+    change = {...change, ...(await this.processDefinitionUpdate(definitions))};
 
-      const shouldDisplayMeasure = ['frequency', 'duration', 'percentage'].includes(
-        data.view?.properties[0]
-      );
+    await this.props.updateReport(change, true);
+    this.props.setLoading(false);
+  };
 
-      return (
-        <div className="ReportControlPanel">
-          <Layer className="controlSections">
-            <Accordion>
-              <AccordionItem
-                title={
-                  <>
+  processDefinitionUpdate = async (newDefinitions) => {
+    if (!newDefinitions?.length) {
+      return {};
+    }
+
+    const {
+      configuration: {
+        tableColumns: {columnOrder, includedColumns, excludedColumns},
+        processPart,
+        heatmapTargetValue: {values},
+        targetValue,
+      },
+      definitions,
+    } = this.props.report.data;
+
+    const targetFlowNodes = Object.keys(values);
+    const change = {};
+
+    const [xml] = await Promise.all([
+      this.loadXml(newDefinitions[0]),
+      this.loadVariables(newDefinitions),
+      this.loadFlowNodeNames(newDefinitions[0]),
+    ]);
+
+    change.configuration = {
+      xml: {$set: xml},
+      // disable bucket size config on definition update
+      // reason: every definition has different data and needs a different bucket size
+      customBucket: {active: {$set: false}},
+      distributeByCustomBucket: {active: {$set: false}},
+    };
+
+    const variableConfig = this.getVariableConfig();
+    if (variableConfig && !this.variableExists(variableConfig.name)) {
+      variableConfig.reset(change);
+    }
+
+    if (columnOrder.length) {
+      const previousDefinitionKeys = definitions.map(({key}) => key);
+      const newDefinitionKeys = newDefinitions.map(({key}) => key);
+
+      if (!deepEqual(previousDefinitionKeys, newDefinitionKeys)) {
+        change.configuration.tableColumns = {columnOrder: {$set: []}};
+      }
+    }
+
+    if (includedColumns.length) {
+      change.configuration.tableColumns = {
+        ...change.configuration.tableColumns,
+        includedColumns: {
+          $set: includedColumns.concat(
+            this.getNewVariables(includedColumns.concat(excludedColumns))
+          ),
+        },
+      };
+    }
+
+    if (
+      processPart &&
+      !checkAllFlowNodesExist(this.state.flowNodeNames, Object.values(processPart))
+    ) {
+      change.configuration.processPart = {$set: null};
+    }
+
+    if (
+      targetFlowNodes.length &&
+      !checkAllFlowNodesExist(this.state.flowNodeNames, targetFlowNodes)
+    ) {
+      change.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
+    }
+
+    // disable isKpi when adding more than one definition since it is not supported
+    if (newDefinitions.length > 1 && targetValue?.isKpi) {
+      change.configuration.targetValue = {isKpi: {$set: false}};
+    }
+
+    return change;
+  };
+
+  render() {
+    const {report, updateReport} = this.props;
+    const {data, result} = this.props.report;
+    const {flowNodeNames, variables} = this.state;
+
+    const shouldDisplayMeasure = ['frequency', 'duration', 'percentage'].includes(
+      data.view?.properties[0]
+    );
+
+    return (
+      <div className="ReportControlPanel">
+        <Layer className="controlSections">
+          <Accordion>
+            <AccordionItem
+              title={
+                <>
+                  <DefinitionTooltip
+                    openOnHover
+                    definition={t('report.copyTooltip', {
+                      entity: t('common.process.label'),
+                      docsLink: this.props.generateDocsLink(
+                        'components/userguide/additional-features/process-variants-comparison/'
+                      ),
+                    })}
+                  >
                     <Db2Database />
                     {t('common.dataSource')}
-                  </>
-                }
-                open
-              >
-                <AddDefinition
-                  type="process"
-                  definitions={data.definitions}
-                  onAdd={this.addDefinition}
-                />
-                <DefinitionList
-                  filters={data.filter}
-                  type="process"
-                  definitions={data.definitions}
-                  onCopy={this.copyDefinition}
-                  onChange={this.changeDefinition}
-                  onRemove={this.removeDefinition}
-                />
-              </AccordionItem>
-              <AccordionItem
-                title={
-                  <>
-                    <Factor />
-                    {t('report.reportSetup')}
-                  </>
-                }
-                open
-              >
-                <ul className="reportSetup">
-                  <li className="select">
-                    <span className="label">{t(`report.view.label`)}</span>
-                    <View
-                      report={report.data}
-                      onChange={(change) => updateReport(change, true)}
-                      variables={variables}
-                    />
-                    {data.view?.entity === 'variable' && (
-                      <AggregationType report={data} onChange={this.props.updateReport} />
-                    )}
-                  </li>
-                  {shouldDisplayMeasure && (
-                    <Measure report={data} onChange={(change) => updateReport(change, true)} />
-                  )}
-                  <GroupBy
-                    report={report.data}
-                    onChange={(change) => updateReport(change, true)}
-                    variables={{variable: variables}}
+                  </DefinitionTooltip>
+                  <AddDefinition
+                    type="process"
+                    definitions={data.definitions}
+                    onAdd={this.addDefinition}
                   />
-                  <DistributedBy
+                </>
+              }
+              open
+            >
+              <DefinitionList
+                filters={data.filter}
+                type="process"
+                definitions={data.definitions}
+                onCopy={this.copyDefinition}
+                onChange={this.changeDefinition}
+                onRemove={this.removeDefinition}
+              />
+            </AccordionItem>
+            <AccordionItem
+              title={
+                <>
+                  <Factor />
+                  {t('report.reportSetup')}
+                </>
+              }
+              open
+            >
+              <ul className="reportSetup">
+                <li className="select">
+                  <span className="label">{t(`report.view.label`)}</span>
+                  <View
+                    type="process"
                     report={report.data}
                     onChange={(change) => updateReport(change, true)}
                     variables={variables}
                   />
-                  <Sorting report={report.data} onChange={(change) => updateReport(change, true)} />
-                  {isDurationHeatmap(data) && (
-                    <li className="select">
-                      <span className="label">{t('report.heatTarget.label')}</span>
-                      <TargetValueComparison
-                        report={this.props.report}
-                        onChange={this.props.updateReport}
-                      />
-                    </li>
+                  {data.view?.entity === 'variable' && (
+                    <AggregationType report={data} onChange={this.props.updateReport} />
                   )}
-                  {isProcessInstanceDuration(data) && data.definitions?.length <= 1 && (
-                    <li>
-                      <ProcessPart
-                        flowNodeNames={flowNodeNames}
-                        xml={data.configuration.xml}
-                        processPart={data.configuration.processPart}
-                        update={(newPart) => {
-                          const aggregations = data.configuration.aggregationTypes;
-                          const change = {configuration: {processPart: {$set: newPart}}};
-                          const isPercentile = (agg) => agg.type === 'percentile';
-                          if (aggregations.find(isPercentile)) {
-                            const newAggregations = aggregations.filter(
-                              (agg) => !isPercentile(agg)
-                            );
-                            if (newAggregations.length === 0) {
-                              newAggregations.push({type: 'avg', value: null});
-                            }
-
-                            change.configuration.aggregationTypes = {$set: newAggregations};
-                          }
-                          this.props.updateReport(change, true);
-                        }}
-                      />
-                    </li>
-                  )}
-                </ul>
-              </AccordionItem>
-              <AccordionItem
-                title={
-                  <>
-                    <FilterIcon />
-                    {t('common.filter.label')}
-                    {data.filter?.length > 0 && (
-                      <Tag type="high-contrast" className="filterCount">
-                        {data.filter.length}
-                      </Tag>
-                    )}
-                  </>
-                }
-              >
-                <Filter
-                  data={data.filter}
-                  onChange={this.props.updateReport}
-                  definitions={data.definitions}
+                </li>
+                {shouldDisplayMeasure && (
+                  <Measure report={data} onChange={(change) => updateReport(change, true)} />
+                )}
+                <GroupBy
+                  type="process"
+                  report={report.data}
+                  onChange={(change) => updateReport(change, true)}
+                  variables={{variable: variables}}
+                />
+                <DistributedBy
+                  report={report.data}
+                  onChange={(change) => updateReport(change, true)}
                   variables={variables}
                 />
-              </AccordionItem>
-            </Accordion>
-          </Layer>
-          {result && typeof result.instanceCount !== 'undefined' && (
-            <div className="instanceCount">
-              {t(
-                `report.instanceCount.process.label${
-                  result.instanceCountWithoutFilters !== 1 ? '-plural' : ''
-                }-withFilter`,
-                {
-                  count: result.instanceCount,
-                  totalCount:
-                    (haveDateFilter(data.filter) ? '*' : '') + result.instanceCountWithoutFilters,
-                }
-              )}
-            </div>
-          )}
-        </div>
-      );
-    }
+                <Sorting
+                  type="process"
+                  report={report.data}
+                  onChange={(change) => updateReport(change, true)}
+                />
+                {isDurationHeatmap(data) && (
+                  <li className="select">
+                    <span className="label">{t('report.heatTarget.label')}</span>
+                    <TargetValueComparison
+                      report={this.props.report}
+                      onChange={this.props.updateReport}
+                    />
+                  </li>
+                )}
+                {isProcessInstanceDuration(data) && data.definitions?.length <= 1 && (
+                  <li>
+                    <ProcessPart
+                      flowNodeNames={flowNodeNames}
+                      xml={data.configuration.xml}
+                      processPart={data.configuration.processPart}
+                      update={(newPart) => {
+                        const aggregations = data.configuration.aggregationTypes;
+                        const change = {configuration: {processPart: {$set: newPart}}};
+                        const isPercentile = (agg) => agg.type === 'percentile';
+                        if (aggregations.find(isPercentile)) {
+                          const newAggregations = aggregations.filter((agg) => !isPercentile(agg));
+                          if (newAggregations.length === 0) {
+                            newAggregations.push({type: 'avg', value: null});
+                          }
+
+                          change.configuration.aggregationTypes = {$set: newAggregations};
+                        }
+                        this.props.updateReport(change, true);
+                      }}
+                    />
+                  </li>
+                )}
+              </ul>
+            </AccordionItem>
+            <AccordionItem
+              title={
+                <>
+                  <FilterIcon />
+                  {t('common.filter.label')}
+                  {data.filter?.length > 0 && (
+                    <Tag type="high-contrast" className="filterCount">
+                      {data.filter.length}
+                    </Tag>
+                  )}
+                </>
+              }
+            >
+              <Filter
+                data={data.filter}
+                onChange={this.props.updateReport}
+                definitions={data.definitions}
+                variables={variables}
+              />
+            </AccordionItem>
+          </Accordion>
+        </Layer>
+        {result && typeof result.instanceCount !== 'undefined' && (
+          <div className="instanceCount">
+            {t(
+              `report.instanceCount.process.label${
+                result.instanceCountWithoutFilters !== 1 ? '-plural' : ''
+              }-withFilter`,
+              {
+                count: result.instanceCount,
+                totalCount:
+                  (haveDateFilter(data.filter) ? '*' : '') + result.instanceCountWithoutFilters,
+              }
+            )}
+          </div>
+        )}
+      </div>
+    );
   }
-);
+}
 
 function checkAllFlowNodesExist(availableFlowNodeNames, flowNodeIds) {
   if (!availableFlowNodeNames) {
@@ -489,3 +500,5 @@ function checkAllFlowNodesExist(availableFlowNodeNames, flowNodeIds) {
 function haveDateFilter(filters) {
   return filters?.some((filter) => filter.type.toLowerCase().includes('date'));
 }
+
+export default withDocs(withErrorHandling(ReportControlPanel));

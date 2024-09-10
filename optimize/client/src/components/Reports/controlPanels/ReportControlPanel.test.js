@@ -14,9 +14,7 @@ import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables} from 'service
 
 import {DefinitionList} from './DefinitionList';
 import GroupBy from './GroupBy';
-import ReportControlPanelWithErrorHandling from './ReportControlPanel';
-
-const ReportControlPanel = ReportControlPanelWithErrorHandling.WrappedComponent;
+import {ReportControlPanel} from './ReportControlPanel';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -75,6 +73,7 @@ const report = {
 const props = {
   report,
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  generateDocsLink: jest.fn().mockReturnValue('https://docs.camunda.io/optimize/'),
   setLoading: () => {},
 };
 
