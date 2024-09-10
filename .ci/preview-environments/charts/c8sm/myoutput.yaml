@@ -1,0 +1,3822 @@
+---
+# Source: preview-environments/templates/ns.yml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: my-release
+---
+# Source: preview-environments/charts/camunda-platform/charts/elasticsearch/templates/master/networkpolicy.yaml
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: my-release-elasticsearch-master
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/version: 8.15.1
+    helm.sh/chart: elasticsearch-21.3.13
+    app.kubernetes.io/component: master
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: my-release
+      app.kubernetes.io/name: elasticsearch
+      app.kubernetes.io/component: master
+  policyTypes:
+    - Ingress
+    - Egress
+  egress:
+    - {}
+  ingress:
+    - ports:
+        - port: 9200
+        - port: 9300
+---
+# Source: preview-environments/charts/camunda-platform/charts/identityKeycloak/charts/postgresql/templates/primary/networkpolicy.yaml
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: my-release-postgresql
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/version: 16.4.0
+    helm.sh/chart: postgresql-15.5.23
+    app.kubernetes.io/component: primary
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: my-release
+      app.kubernetes.io/name: postgresql
+      app.kubernetes.io/component: primary
+  policyTypes:
+    - Ingress
+    - Egress
+  egress:
+    - {}
+  ingress:
+    - ports:
+        - port: 5432
+---
+# Source: preview-environments/charts/camunda-platform/charts/identityKeycloak/templates/networkpolicy.yaml
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: my-release-keycloak
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/version: 25.0.4
+    helm.sh/chart: identityKeycloak-22.2.1
+    app.kubernetes.io/component: keycloak
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: my-release
+      app.kubernetes.io/name: keycloak
+      app.kubernetes.io/component: keycloak
+  policyTypes:
+    - Ingress
+    - Egress
+  egress:
+    - {}
+  ingress:
+    - ports:
+        - port: 7800
+        - port: 8080
+---
+# Source: preview-environments/charts/camunda-platform/charts/elasticsearch/templates/master/pdb.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: my-release-elasticsearch-master
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/version: 8.15.1
+    helm.sh/chart: elasticsearch-21.3.13
+    app.kubernetes.io/component: master
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: my-release
+      app.kubernetes.io/name: elasticsearch
+      app.kubernetes.io/component: master
+---
+# Source: preview-environments/charts/camunda-platform/charts/identityKeycloak/charts/postgresql/templates/primary/pdb.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: my-release-postgresql
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/version: 16.4.0
+    helm.sh/chart: postgresql-15.5.23
+    app.kubernetes.io/component: primary
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: my-release
+      app.kubernetes.io/name: postgresql
+      app.kubernetes.io/component: primary
+---
+# Source: preview-environments/charts/camunda-platform/charts/identityKeycloak/templates/pdb.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: my-release-keycloak
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/version: 25.0.4
+    helm.sh/chart: identityKeycloak-22.2.1
+    app.kubernetes.io/component: keycloak
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: my-release
+      app.kubernetes.io/name: keycloak
+      app.kubernetes.io/component: keycloak
+---
+# Source: preview-environments/charts/camunda-platform/charts/elasticsearch/templates/master/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-release-elasticsearch-master
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/version: 8.15.1
+    helm.sh/chart: elasticsearch-21.3.13
+    app.kubernetes.io/component: master
+automountServiceAccountToken: false
+---
+# Source: preview-environments/charts/camunda-platform/charts/identityKeycloak/charts/postgresql/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-release-postgresql
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/version: 16.4.0
+    helm.sh/chart: postgresql-15.5.23
+automountServiceAccountToken: false
+---
+# Source: preview-environments/charts/camunda-platform/charts/identityKeycloak/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-release-keycloak
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/version: 25.0.4
+    helm.sh/chart: identityKeycloak-22.2.1
+    app.kubernetes.io/component: keycloak
+automountServiceAccountToken: false
+---
+# Source: preview-environments/charts/camunda-platform/templates/connectors/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-release-connectors
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: connectors
+    app.kubernetes.io/version: "8.6.0-alpha5"
+automountServiceAccountToken: false
+---
+# Source: preview-environments/charts/camunda-platform/templates/identity/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-release-identity
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "8.6.0-alpha5"
+automountServiceAccountToken: true
+---
+# Source: preview-environments/charts/camunda-platform/templates/operate/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-release-operate
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: operate
+    app.kubernetes.io/version: "latest"
+automountServiceAccountToken: false
+---
+# Source: preview-environments/charts/camunda-platform/templates/optimize/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-release-optimize
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: optimize
+    app.kubernetes.io/version: "8.6.0-alpha5"
+automountServiceAccountToken: false
+---
+# Source: preview-environments/charts/camunda-platform/templates/tasklist/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-release-tasklist
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: tasklist
+    app.kubernetes.io/version: "latest"
+automountServiceAccountToken: false
+---
+# Source: preview-environments/charts/camunda-platform/templates/zeebe-gateway/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-release-zeebe-gateway
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: zeebe-gateway
+    app.kubernetes.io/version: "8.6.0-alpha5"
+automountServiceAccountToken: false
+---
+# Source: preview-environments/charts/camunda-platform/templates/zeebe/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-release-zeebe
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: zeebe-broker
+    app.kubernetes.io/version: "latest"
+automountServiceAccountToken: false
+---
+# Source: preview-environments/charts/camunda-platform/templates/camunda/secret-camunda-license.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-release-camunda-platform-license
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+  annotations:
+    {}
+type: Opaque
+data:
+  CAMUNDA_LICENSE_KEY: ''
+---
+# Source: preview-environments/charts/camunda-platform/templates/camunda/secret-optimize.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-release-optimize-identity-secret
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: identity
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: identity-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: identity
+type: Opaque
+data:
+  optimize-secret: "Z0xwZ25ydkp0Yw=="
+---
+# Source: preview-environments/templates/certificates.yml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: camunda-tls
+  labels: 
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+  annotations: 
+    camunda.cloud/created-by: "https://github.com/camunda/camunda.git/blob/master/.ci/preview-environments/templates/certificates.yml"
+    
+    replicator.v1.mittwald.de/replicate-from: camunda/camunda-wildcard-certificate-tls
+    # The following overwrites an "internal" annotation (one that the user
+    # should not interfere with as it is not documented in the README at
+    # https://github.com/mittwald/kubernetes-replicator/). We do this anyways to
+    # force replicator-tool to replicate the contents of this secret again.
+    # This is necessary as we have to set empty default data fields to create a
+    # valid `type: kubernetes.io/tls` secret but this will purge the previously
+    # replicated contents.
+    replicator.v1.mittwald.de/replicated-from-version: "0"
+    argocd.argoproj.io/sync-wave: "-3"
+type: kubernetes.io/tls
+data:
+  tls.key: ""
+  tls.crt: ""
+...
+---
+# Source: preview-environments/templates/secrets.yml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+type: Opaque
+data:
+  password: cHJldmlld2Vudmlyb25tZW50
+  postgres-password: cHJldmlld2Vudmlyb25tZW50
+---
+# Source: preview-environments/templates/secrets.yml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: identity-secret-for-components
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+type: Opaque
+data:
+  operate-secret: cHJldmlld2Vudmlyb25tZW50
+  tasklist-secret: cHJldmlld2Vudmlyb25tZW50
+  optimize-secret: cHJldmlld2Vudmlyb25tZW50
+  connectors-secret: cHJldmlld2Vudmlyb25tZW50
+  console-secret: cHJldmlld2Vudmlyb25tZW50
+  keycloak-secret: cHJldmlld2Vudmlyb25tZW50
+  zeebe-secret: cHJldmlld2Vudmlyb25tZW50
+---
+# Source: preview-environments/templates/secrets.yml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-admin-secret
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+type: Opaque
+data:
+  admin-password: cHJldmlld2Vudmlyb25tZW50
+---
+# Source: preview-environments/charts/camunda-platform/charts/identityKeycloak/templates/configmap-env-vars.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-release-keycloak-env-vars
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/version: 25.0.4
+    helm.sh/chart: identityKeycloak-22.2.1
+    app.kubernetes.io/component: keycloak
+data:
+  KEYCLOAK_ADMIN: "admin"
+  KEYCLOAK_HTTP_PORT: "8080"
+  KEYCLOAK_PROXY_HEADERS: xforwarded
+  KEYCLOAK_ENABLE_STATISTICS: "false"
+  KEYCLOAK_DATABASE_HOST: "my-release-postgresql"
+  KEYCLOAK_DATABASE_PORT: "5432"
+  KEYCLOAK_DATABASE_NAME: "bitnami_keycloak"
+  KEYCLOAK_DATABASE_USER: "bn_keycloak"
+  KEYCLOAK_PRODUCTION: "false"
+  KEYCLOAK_ENABLE_HTTPS: "false"
+  KEYCLOAK_CACHE_TYPE: "ispn"
+  KEYCLOAK_CACHE_STACK: "kubernetes"
+  JAVA_OPTS_APPEND: "-Djgroups.dns.query=my-release-keycloak-headless.dummy.svc.cluster.local"
+  KEYCLOAK_LOG_OUTPUT: "default"
+  KEYCLOAK_LOG_LEVEL: "INFO"
+---
+# Source: preview-environments/charts/camunda-platform/templates/camunda/configmap-identity-auth.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-release-camunda-platform-identity-env-vars
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+  annotations:
+    {}
+data:
+  CAMUNDA_IDENTITY_BASEURL: "http://my-release-identity:80/identity"
+  CAMUNDA_IDENTITY_TYPE: "KEYCLOAK"
+  CAMUNDA_IDENTITY_ISSUER: "https://test.camunda.camunda.cloud/auth/realms/camunda-platform"
+  CAMUNDA_IDENTITY_ISSUER_BACKEND_URL: "http://my-release-keycloak:80/auth/realms/camunda-platform"
+---
+# Source: preview-environments/charts/camunda-platform/templates/camunda/configmap-release.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-release-camunda-platform-release
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+  annotations:
+    {}
+data:
+  info: |-
+    - name: my-release
+      namespace: dummy
+      version: 0.0.0-snapshot-alpha
+      components:
+      - name: Keycloak
+        id: keycloak
+        version: 25.0.4
+        url: https://test.camunda.camunda.cloud/auth
+      - name: Identity
+        id: identity
+        version: 8.6.0-alpha5
+        url: https://test.camunda.camunda.cloud/identity
+        readiness: http://my-release-identity.dummy:82/actuator/health
+        metrics: http://my-release-identity.dummy:82/actuator/prometheus
+      - name: Operate
+        id: operate
+        version: latest
+        url: https://test.camunda.camunda.cloud/operate
+        readiness: http://my-release-operate.dummy:9600/operate/actuator/health/readiness
+        metrics: http://my-release-operate.dummy:9600/operate/actuator/prometheus
+      - name: Optimize
+        id: optimize
+        version: 8.6.0-alpha5
+        url: https://test.camunda.camunda.cloud/optimize
+        readiness: http://my-release-optimize.dummy:80/optimize/api/readyz
+        metrics: http://my-release-optimize.dummy:8092/actuator/prometheus
+      - name: Tasklist
+        id: tasklist
+        version: latest
+        url: https://test.camunda.camunda.cloud/tasklist
+        readiness: http://my-release-tasklist.dummy:9600/tasklist/actuator/health/readiness
+        metrics: http://my-release-tasklist.dummy:9600/tasklist/actuator/prometheus
+      - name: Zeebe Gateway
+        id: zeebeGateway
+        version: latest
+        urls:
+          grpc: http://localhost:26500
+          http: https://test.camunda.camunda.cloud/zeebe
+        readiness: http://my-release-zeebe-gateway.dummy:9600/zeebe/actuator/health/readiness
+        metrics: http://my-release-zeebe-gateway.dummy:9600/zeebe/actuator/prometheus
+      - name: Zeebe
+        id: zeebe
+        version: 8.6.0-alpha5
+        readiness: http://my-release-zeebe.dummy:9600/actuator/health/readiness
+        metrics: http://my-release-zeebe.dummy:9600/actuator/prometheus
+---
+# Source: preview-environments/charts/camunda-platform/templates/connectors/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-release-connectors-configuration
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: connectors
+    app.kubernetes.io/version: "8.6.0-alpha5"
+data:
+  application.yml: |
+    server:
+      port: 8080
+      servlet:
+        context-path: "/connectors"
+    camunda:
+      operate:
+        client:
+          url: "http://my-release-operate:80/operate"
+      identity:
+        audience: "operate-api"
+        client-id: "connectors"
+
+    zeebe:
+      client:
+        broker:
+          gateway-address: "my-release-zeebe-gateway:26500"
+        security:
+          plaintext: true
+---
+# Source: preview-environments/charts/camunda-platform/templates/identity/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-release-identity-configuration
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "8.6.0-alpha5"
+  annotations:
+    {}
+data:
+  application.yaml: |
+    identity:
+      url: "https://test.camunda.camunda.cloud/identity"
+
+      authProvider:
+        issuer-url: "https://test.camunda.camunda.cloud/auth/realms/camunda-platform"
+        backend-url: "http://my-release-keycloak:80/auth/realms/camunda-platform"
+
+      component-presets:
+        connectors:
+          applications:
+            - name: Connectors
+              id: ${CAMUNDA_CONNECTORS_CLIENT_ID:${KEYCLOAK_INIT_CONNECTORS_CLIENT_ID:connectors}}
+              type: m2m
+              secret: ${CAMUNDA_CONNECTORS_SECRET:${KEYCLOAK_INIT_CONNECTORS_SECRET:}}
+              permissions:
+                - audience: "operate-api"
+                  definition: read:*
+        console:
+          applications:
+            - name: "Console"
+              id: ${CAMUNDA_CONSOLE_CLIENT_ID:${KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
+              type: public
+              root-url: "https://test.camunda.camunda.cloud/console"
+              redirect-uris:
+                - "/"
+          apis:
+            - name: Console API
+              audience: "console-api"
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Console"
+              description: "Grants full access to Console"
+              permissions:
+                - audience: "console-api"
+                  definition: write:*
+        identity:
+          apis:
+            - name: "Camunda Identity Resource Server"
+              audience: "camunda-identity-resource-server"
+              permissions:
+                - definition: read
+                  description: "Read permission"
+                - definition: "read:users"
+                  description: "Read users permission"
+                - definition: write
+                  description: "Write permission"
+          roles:
+            - name: "Identity"
+              description: "Provides full access to Identity"
+              permissions:
+                - audience: "camunda-identity-resource-server"
+                  definition: read
+                - audience: "camunda-identity-resource-server"
+                  definition: write
+        operate:
+          applications:
+            - name: Operate
+              id: ${CAMUNDA_OPERATE_CLIENT_ID:${KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}}
+              type: confidential
+              secret: ${CAMUNDA_OPERATE_SECRET:${KEYCLOAK_INIT_OPERATE_SECRET:}}
+              root-url: "https://test.camunda.camunda.cloud/operate"
+              redirect-uris:
+                - "/identity-callback"
+          apis:
+            - name: Operate API
+              audience: "operate-api"
+              permissions:
+                - definition: read:*
+                  description: "Read permission"
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Operate"
+              description: "Grants full access to Operate"
+              permissions:
+                - audience: "operate-api"
+                  definition: read:*
+                - audience: "operate-api"
+                  definition: write:*
+        optimize:
+          applications:
+            - name: Optimize
+              id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
+              type: confidential
+              secret: ${CAMUNDA_OPTIMIZE_SECRET:${KEYCLOAK_INIT_OPTIMIZE_SECRET:}}
+              root-url: "https://test.camunda.camunda.cloud/optimize"
+              redirect-uris:
+                - "/api/authentication/callback"
+          apis:
+            - name: Optimize API
+              audience: "optimize-api"
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Optimize"
+              description: "Grants full access to Optimize"
+              permissions:
+                - audience: "optimize-api"
+                  definition: write:*
+                - audience: "camunda-identity-resource-server"
+                  definition: read:users
+        tasklist:
+          applications:
+            - name: Tasklist
+              id: ${CAMUNDA_TASKLIST_CLIENT_ID:${KEYCLOAK_INIT_TASKLIST_CLIENT_ID:tasklist}}
+              type: confidential
+              secret: ${CAMUNDA_TASKLIST_SECRET:${KEYCLOAK_INIT_TASKLIST_SECRET:}}
+              root-url: "https://test.camunda.camunda.cloud/tasklist"
+              redirect-uris:
+                - "/identity-callback"
+          apis:
+            - name: Tasklist API
+              audience: "tasklist-api"
+              permissions:
+                - definition: read:*
+                  description: "Read permission"
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Tasklist"
+              description: "Grants full access to Tasklist"
+              permissions:
+                - audience: "tasklist-api"
+                  definition: read:*
+                - audience: "tasklist-api"
+                  definition: write:*
+        webmodeler:
+          applications:
+            - name: "Web Modeler"
+              id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
+              type: public
+              root-url: "https:/test.camunda.camunda.cloud/modeler"
+              redirect-uris:
+                - "/login-callback"
+          apis:
+            - name: Web Modeler Internal API
+              audience: "web-modeler-api"
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+            - name: Web Modeler API
+              audience: "web-modeler-public-api"
+              permissions:
+                - definition: create:*
+                  description: "Allows create access for all resources"
+                - definition: read:*
+                  description: "Allows read access to all resources"
+                - definition: update:*
+                  description: "Allows update access to all resources"
+                - definition: delete:*
+                  description: "Allows delete access for all resources"
+          roles:
+            - name: "Web Modeler"
+              description: "Grants full access to Web Modeler"
+              permissions:
+                - audience: "web-modeler-api"
+                  definition: write:*
+                - audience: "camunda-identity-resource-server"
+                  definition: read:users
+        zeebe:
+          apis:
+            - name: Zeebe API
+              audience: "zeebe-api"
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Zeebe"
+              description: "Grants full access to the Zeebe API"
+              permissions:
+                - audience: "zeebe-api"
+                  definition: write:*
+    keycloak:
+      environment:
+        clients:
+          - name: Identity
+            id: "camunda-identity"
+            type: CONFIDENTIAL
+            secret: ${IDENTITY_CLIENT_SECRET:}
+            root-url: "https://test.camunda.camunda.cloud/identity"
+            redirect-uris:
+              - "/auth/login-callback"
+      # The presets key should be removed when 8.6.0 of the applications are released
+      presets:
+        tasklist:
+          clients:
+            - name: Tasklist
+              id: tasklist
+              type: confidential
+              secret: ${KEYCLOAK_INIT_TASKLIST_SECRET:}
+              root-url: "https://test.camunda.camunda.cloud/tasklist"
+              redirect-uris:
+                - "/identity-callback"
+        operate:
+          clients:
+            - name: Operate
+              id: ${KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}
+              type: confidential
+              secret: ${KEYCLOAK_INIT_OPERATE_SECRET:}
+              root-url: "https://test.camunda.camunda.cloud/operate"
+              redirect-uris:
+                - "/identity-callback"
+        optimize:
+          clients:
+            - name: Optimize
+              id: ${KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}
+              type: confidential
+              secret: ${KEYCLOAK_INIT_OPTIMIZE_SECRET:}
+              root-url: "https://test.camunda.camunda.cloud/optimize"
+              redirect-uris:
+                - "/api/authentication/callback"
+        console:
+          clients:
+            - name: "Console"
+              id: ${KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}
+              type: public
+              root-url: "https://test.camunda.camunda.cloud/console"
+              redirect-uris:
+                - "/"
+    server:
+      port: 8080
+      servlet:
+        context-path: "/identity"
+
+    spring:
+      profiles:
+        active: keycloak
+
+    camunda:
+      identity:
+        audience: "camunda-identity-resource-server"
+---
+# Source: preview-environments/charts/camunda-platform/templates/operate/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-release-operate-configuration
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: operate
+    app.kubernetes.io/version: "latest"
+data:
+  application.yaml: |
+    server:
+      servlet:
+        context-path: "/operate"
+    management:
+      server:
+        base-path: "/operate"
+    spring:
+      profiles:
+        active: "identity-auth"
+      security:
+        oauth2:
+          resourceserver:
+            jwt:
+              issuer-uri: "http://my-release-keycloak:80/auth/realms/camunda-platform"
+              jwk-set-uri: "http://my-release-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
+
+    camunda:
+      identity:
+        clientId: "operate"
+        audience: "operate-api"
+
+    # Camunda Database configuration
+    camunda.database:
+      type: elasticsearch
+      # Cluster name
+      clusterName: elasticsearch
+      # Elasticsearch full url
+      url: "http://my-release-elasticsearch:9200"
+
+    # Operate configuration file
+    camunda.operate:
+      identity:
+        redirectRootUrl: "https://test.camunda.camunda.cloud"
+    
+      # ELS instance to store Operate data
+      elasticsearch:
+        # Cluster name
+        clusterName: elasticsearch
+        # Host
+        host: my-release-elasticsearch
+        # Transport port
+        port: 9200
+        # Elasticsearch full url
+        url: "http://my-release-elasticsearch:9200"
+      # ELS instance to export Zeebe data to
+      zeebeElasticsearch:
+        # Cluster name
+        clusterName: elasticsearch
+        # Host
+        host: my-release-elasticsearch
+        # Transport port
+        port: 9200
+        # Index prefix, configured in Zeebe Elasticsearch exporter
+        prefix: zeebe-record
+        # Elasticsearch full url
+        url: "http://my-release-elasticsearch:9200"
+      # Zeebe instance
+      zeebe:
+        # Gateway address
+        gatewayAddress: "my-release-zeebe-gateway:26500"
+    logging:
+      level:
+        ROOT: INFO
+        io.camunda.operate: INFO
+    #Spring Boot Actuator endpoints to be exposed
+    management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,loggers,usage-metrics,backups
+---
+# Source: preview-environments/charts/camunda-platform/templates/optimize/configmap.yaml
+kind: ConfigMap
+metadata:
+  name: my-release-optimize-configuration
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: optimize
+    app.kubernetes.io/version: "8.6.0-alpha5"
+apiVersion: v1
+data:
+  environment-config.yaml: |
+    container:
+      contextPath: "/optimize"
+
+    zeebe:
+      enabled: true
+      partitionCount: 3
+    es:
+      connection:
+        nodes:
+          - host: "my-release-elasticsearch"
+            httpPort: 9200
+
+    spring:
+      profiles:
+        active: "ccsm"
+
+    security:
+      auth:
+        cookie:
+          same-site:
+            enabled: false
+        ccsm:
+          redirectRootUrl: "https://test.camunda.camunda.cloud/optimize"
+    api:
+      audience: "optimize-api"
+      jwtSetUri: "http://my-release-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
+  application-ccsm.yaml: |
+    camunda:
+      identity:
+        clientId: "optimize"
+        audience: "optimize-api"
+        issuer: "https://test.camunda.camunda.cloud/auth/realms/camunda-platform"
+        issuerBackendUrl: "http://my-release-keycloak:80/auth/realms/camunda-platform"
+---
+# Source: preview-environments/charts/camunda-platform/templates/tasklist/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-release-tasklist-configuration
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: tasklist
+    app.kubernetes.io/version: "latest"
+data:
+  application.yaml: |
+    server:
+      servlet:
+        contextPath: "/tasklist"
+    management:
+      server:
+        base-path: "/tasklist"
+    spring:
+      profiles:
+        active: identity-auth
+      security:
+        oauth2:
+          resourceserver:
+            jwt:
+              issuer-uri: "http://my-release-keycloak:80/auth/realms/camunda-platform"
+              jwk-set-uri: "http://my-release-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
+
+    camunda:
+      identity:
+        clientId: "tasklist"
+        audience: "tasklist-api"
+
+    # Camunda Database configuration
+    camunda.database:
+      type: elasticsearch
+      # Cluster name
+      clusterName: elasticsearch
+      # Elasticsearch full url
+      url: "http://my-release-elasticsearch:9200"
+
+    # Tasklist configuration file
+    camunda.tasklist:
+
+      identity:
+        redirectRootUrl: "https://test.camunda.camunda.cloud"
+        userAccessRestrictions:
+          enabled: "true"
+
+      # Set Tasklist username and password.
+      # If user with <username> does not exists it will be created.
+      # Default: demo/demo
+      #username:
+      #password:
+      # ELS instance to store Tasklist data
+      elasticsearch:
+        # Cluster name
+        clusterName: elasticsearch
+        # Host
+        host: my-release-elasticsearch
+        # Transport port
+        port: 9200
+        # Elasticsearch full url
+        url: "http://my-release-elasticsearch:9200"
+      # ELS instance to export Zeebe data to
+      zeebeElasticsearch:
+        # Cluster name
+        clusterName: elasticsearch
+        # Host
+        host: my-release-elasticsearch
+        # Transport port
+        port: 9200
+        # Index prefix, configured in Zeebe Elasticsearch exporter
+        prefix: zeebe-record
+        # Elasticsearch full url
+        url: "http://my-release-elasticsearch:9200"
+      # Zeebe instance
+      zeebe:
+        # Gateway address
+        gatewayAddress: "my-release-zeebe-gateway:26500"
+        restAddress: "http://my-release-zeebe-gateway:8080/zeebe"
+    #Spring Boot Actuator endpoints to be exposed
+    management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,loggers,usage-metrics,backups
+    # Enable or disable metrics
+    #management.metrics.export.prometheus.enabled: false
+---
+# Source: preview-environments/charts/camunda-platform/templates/zeebe-gateway/configmap.yaml
+kind: ConfigMap
+metadata:
+  name: my-release-zeebe-gateway-configuration
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: zeebe-gateway
+    app.kubernetes.io/version: "8.6.0-alpha5"
+apiVersion: v1
+data:
+  gateway-log4j2.xml: |
+  application.yaml: |
+    spring:
+      profiles:
+        active: "identity-auth"
+    management:
+      server:
+        base-path: "/zeebe"
+
+    # Camunda Database configuration
+    camunda.database:
+      type: elasticsearch
+      # Cluster name
+      clusterName: elasticsearch
+      # Elasticsearch full url
+      url: "http://my-release-elasticsearch:9200"
+
+    server:
+      address: "0.0.0.0"
+      port: "8080"
+      servlet:
+        context-path: "/zeebe"
+    camunda:
+      identity:
+        type: "KEYCLOAK"
+        issuerBackendUrl: "http://my-release-keycloak:80/auth/realms/camunda-platform"
+        audience: "zeebe-api"
+    zeebe:
+      gateway:
+        security:
+          authentication:
+            mode: identity
+        monitoring:
+          host: 0.0.0.0
+          port: "9600"
+        cluster:
+          clusterName: my-release-zeebe
+          port: "26502"
+        network:
+          host: 0.0.0.0
+          port: "26500"
+---
+# Source: preview-environments/charts/camunda-platform/templates/zeebe/configmap.yaml
+kind: ConfigMap
+metadata:
+  name: my-release-zeebe-configuration
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: zeebe-broker
+    app.kubernetes.io/version: "latest"
+apiVersion: v1
+data:
+  application.yaml: |
+    zeebe:
+      broker:
+        exporters:
+          elasticsearch:
+            className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+            args:
+              url: "http://my-release-elasticsearch:9200"
+              index:
+                prefix: "zeebe-record"
+        gateway:
+          enable: true
+          network:
+            port: 26500
+          security:
+            enabled: false
+            authentication:
+              mode: none
+        network:
+          host: 0.0.0.0
+          commandApi:
+            port: 26501
+          internalApi:
+            port: 26502
+          monitoringApi:
+            port: "9600"
+        cluster:
+          clusterSize: "3"
+          replicationFactor: "3"
+          partitionsCount: "3"
+          clusterName: my-release-zeebe
+        threads:
+          cpuThreadCount: "3"
+          ioThreadCount: "3"
+
+    # Camunda Database configuration
+    camunda.database:
+      type: elasticsearch
+      # Cluster name
+      clusterName: elasticsearch
+      # Elasticsearch full url
+      url: "http://my-release-elasticsearch:9200"
+
+  startup.sh: |
+    #!/usr/bin/env bash
+    set -eux -o pipefail
+    export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * 1 + 0]}
+
+    if [ "$(ls -A /exporters/)" ]; then
+      mkdir -p /usr/local/zeebe/exporters/
+      cp -a /exporters/*.jar /usr/local/zeebe/exporters/
+    else
+      echo "No exporters available."
+    fi
+    exec /usr/local/zeebe/bin/broker
+
+  broker-log4j2.xml: |
+---
+# Source: preview-environments/charts/camunda-platform/charts/elasticsearch/templates/master/svc-headless.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-release-elasticsearch-master-hl
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/version: 8.15.1
+    helm.sh/chart: elasticsearch-21.3.13
+    app.kubernetes.io/component: master
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: tcp-rest-api
+      port: 9200
+      targetPort: rest-api
+    - name: tcp-transport
+      port: 9300
+      targetPort: transport
+  selector:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/component: master
+---
+# Source: preview-environments/charts/camunda-platform/charts/elasticsearch/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-release-elasticsearch
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/version: 8.15.1
+    helm.sh/chart: elasticsearch-21.3.13
+    app.kubernetes.io/component: master
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  ports:
+    - name: tcp-rest-api
+      port: 9200
+      targetPort: rest-api
+      nodePort: null
+    - name: tcp-transport
+      port: 9300
+      nodePort: null
+  selector:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/component: master
+---
+# Source: preview-environments/charts/camunda-platform/charts/identityKeycloak/charts/postgresql/templates/primary/svc-headless.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-release-postgresql-hl
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/version: 16.4.0
+    helm.sh/chart: postgresql-15.5.23
+    app.kubernetes.io/component: primary
+  annotations:
+spec:
+  type: ClusterIP
+  clusterIP: None
+  # We want all pods in the StatefulSet to have their addresses published for
+  # the sake of the other Postgresql pods even before they're ready, since they
+  # have to be able to talk to each other in order to become ready.
+  publishNotReadyAddresses: true
+  ports:
+    - name: tcp-postgresql
+      port: 5432
+      targetPort: tcp-postgresql
+  selector:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/component: primary
+---
+# Source: preview-environments/charts/camunda-platform/charts/identityKeycloak/charts/postgresql/templates/primary/svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-release-postgresql
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/version: 16.4.0
+    helm.sh/chart: postgresql-15.5.23
+    app.kubernetes.io/component: primary
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  ports:
+    - name: tcp-postgresql
+      port: 5432
+      targetPort: tcp-postgresql
+      nodePort: null
+  selector:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/component: primary
+---
+# Source: preview-environments/charts/camunda-platform/charts/identityKeycloak/templates/headless-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-release-keycloak-headless
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/version: 25.0.4
+    helm.sh/chart: identityKeycloak-22.2.1
+    app.kubernetes.io/component: keycloak
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: http
+  publishNotReadyAddresses: true
+  selector:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/component: keycloak
+---
+# Source: preview-environments/charts/camunda-platform/charts/identityKeycloak/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-release-keycloak
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/version: 25.0.4
+    helm.sh/chart: identityKeycloak-22.2.1
+    app.kubernetes.io/component: keycloak
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+      nodePort: null
+  selector:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/component: keycloak
+---
+# Source: preview-environments/charts/camunda-platform/templates/connectors/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-release-connectors
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: connectors
+    app.kubernetes.io/version: "8.6.0-alpha5"
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: connectors
+---
+# Source: preview-environments/charts/camunda-platform/templates/identity/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-release-identity
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "8.6.0-alpha5"
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      name: http
+      targetPort: 8080
+      protocol: TCP
+    - port: 82
+      name: metrics
+      targetPort: 8082
+      protocol: TCP
+  selector:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: identity
+---
+# Source: preview-environments/charts/camunda-platform/templates/operate/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-release-operate
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: operate
+    app.kubernetes.io/version: "latest"
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      name: http
+      targetPort: 8080
+      protocol: TCP
+    - port: 9600
+      name: management
+      targetPort: 9600
+      protocol: TCP
+  selector:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: operate
+---
+# Source: preview-environments/charts/camunda-platform/templates/optimize/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-release-optimize
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: optimize
+    app.kubernetes.io/version: "8.6.0-alpha5"
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      name: http
+      targetPort: 8090
+      protocol: TCP
+    - port: 8092
+      name: management
+      targetPort: 8092
+      protocol: TCP
+  selector:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: optimize
+---
+# Source: preview-environments/charts/camunda-platform/templates/tasklist/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-release-tasklist
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: tasklist
+    app.kubernetes.io/version: "latest"
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      name: http
+      targetPort: 8080
+      protocol: TCP
+    - port: 9600
+      name: management
+      targetPort: 9600
+      protocol: TCP
+  selector:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: tasklist
+---
+# Source: preview-environments/charts/camunda-platform/templates/zeebe-gateway/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-release-zeebe-gateway
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: zeebe-gateway
+    app.kubernetes.io/version: "8.6.0-alpha5"
+  annotations:
+spec:
+  type: ClusterIP
+  selector:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: zeebe-gateway
+  ports:
+    - port: 9600
+      protocol: TCP
+      name: http
+    - port: 26500
+      protocol: TCP
+      name: gateway
+    - port: 8080
+      protocol: TCP
+      name: rest
+---
+# Source: preview-environments/charts/camunda-platform/templates/zeebe/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "my-release-zeebe"
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: zeebe-broker
+    app.kubernetes.io/version: "latest"
+  annotations:
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  type: ClusterIP
+  ports:
+    - port: 9600
+      protocol: TCP
+      name: http
+    - port: 26502
+      protocol: TCP
+      name: internal
+    - port: 26501
+      protocol: TCP
+      name: command
+  selector:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: zeebe-broker
+---
+# Source: preview-environments/charts/camunda-platform/templates/connectors/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-release-connectors
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: connectors
+    app.kubernetes.io/version: "8.6.0-alpha5"
+  annotations:
+    {}
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: camunda-camunda-cloud
+      camunda.cloud/managed-by: Helm
+      camunda.cloud/source: argocd
+      team: camunda
+      app.kubernetes.io/name: camunda-platform
+      app.kubernetes.io/instance: my-release
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: connectors
+  template:
+    metadata:
+      labels:
+        app: camunda-camunda-cloud
+        camunda.cloud/managed-by: Helm
+        camunda.cloud/source: argocd
+        team: camunda
+        app.kubernetes.io/name: camunda-platform
+        app.kubernetes.io/instance: my-release
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+        app.kubernetes.io/component: connectors
+        app.kubernetes.io/version: "8.6.0-alpha5"
+      annotations:
+        checksum/config: 24bb33d90c9321eb717c2bb0727775addec9e3e23a5136943dc747d407cecba1
+    spec:
+      imagePullSecrets:
+        []
+      initContainers:
+        []
+      containers:
+        - name: connectors
+          image: camunda/connectors-bundle:8.6.0-alpha5
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: my-release-camunda-platform-license
+                  key: CAMUNDA_LICENSE_KEY
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: identity-secret-for-components
+                  key: connectors-secret
+            - name: ZEEBE_CLIENT_ID
+              value: "zeebe"
+            - name: ZEEBE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: identity-secret-for-components
+                  key: zeebe-secret
+            - name: ZEEBE_AUTHORIZATION_SERVER_URL
+              value: "http://my-release-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
+            - name: ZEEBE_TOKEN_AUDIENCE
+              value: "zeebe-api"
+          envFrom:
+            - configMapRef:
+                name: my-release-camunda-platform-identity-env-vars
+          resources:
+            limits:
+              cpu: 2
+              memory: 2Gi
+            requests:
+              cpu: 1
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /connectors/actuator/health/readiness
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 1
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - name: config
+              mountPath: /config/application.yml
+              subPath: application.yml
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: my-release-connectors-configuration
+      serviceAccountName: my-release-connectors
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+---
+# Source: preview-environments/charts/camunda-platform/templates/identity/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-release-identity
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "8.6.0-alpha5"
+  annotations:
+    {}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-camunda-cloud
+      camunda.cloud/managed-by: Helm
+      camunda.cloud/source: argocd
+      team: camunda
+      app.kubernetes.io/name: camunda-platform
+      app.kubernetes.io/instance: my-release
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: identity
+  template:
+    metadata:
+      labels:
+        app: camunda-camunda-cloud
+        camunda.cloud/managed-by: Helm
+        camunda.cloud/source: argocd
+        team: camunda
+        app.kubernetes.io/name: camunda-platform
+        app.kubernetes.io/instance: my-release
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+        app.kubernetes.io/component: identity
+        app.kubernetes.io/version: "8.6.0-alpha5"
+      annotations:
+        checksum/config: 5b35e6ca0289132b857c100b0808ccf1f1c035ee1fcbdeb2610933f208a7b400
+    spec:
+      imagePullSecrets:
+        []
+      initContainers:
+        []
+      containers:
+        - name: camunda-platform
+          image: camunda/identity:8.6.0-alpha5
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: my-release-camunda-platform-license
+                  key: CAMUNDA_LICENSE_KEY
+            - name: KEYCLOAK_INIT_OPERATE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: identity-secret-for-components
+                  key: operate-secret
+            - name: KEYCLOAK_INIT_CONSOLE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: identity-secret-for-components
+                  key: console-secret
+            - name: KEYCLOAK_INIT_TASKLIST_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: "identity-secret-for-components"
+                  key: tasklist-secret
+            - name: KEYCLOAK_INIT_OPTIMIZE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: my-release-optimize-identity-secret
+                  key: optimize-secret
+            - name: KEYCLOAK_INIT_WEBMODELER_ROOT_URL
+              value: "https:/test.camunda.camunda.cloud/modeler"
+            - name: KEYCLOAK_INIT_ZEEBE_NAME
+              value: "Zeebe"
+            - name: KEYCLOAK_CLIENTS_0_NAME
+              value: Connectors
+            - name: KEYCLOAK_CLIENTS_0_ID
+              value: connectors
+            - name: KEYCLOAK_CLIENTS_0_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: identity-secret-for-components
+                  key: connectors-secret
+            - name: KEYCLOAK_CLIENTS_0_ROOT_URL
+              value: http://placeholder
+            - name: KEYCLOAK_CLIENTS_0_REDIRECT_URIS_0
+              value: /
+            - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID
+              value: operate-api
+            - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION
+              value: "read:*"
+            - name: KEYCLOAK_CLIENTS_1_NAME
+              value: "Zeebe"
+            - name: KEYCLOAK_CLIENTS_1_ID
+              value: "zeebe"
+            - name: KEYCLOAK_CLIENTS_1_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: identity-secret-for-components
+                  key: zeebe-secret
+            - name: KEYCLOAK_CLIENTS_1_TYPE
+              value: "M2M"
+            - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID
+              value: "zeebe-api"
+            - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
+              value: "write:*"
+            - name: KEYCLOAK_URL
+              value: "http://my-release-keycloak:80/auth"
+            - name: KEYCLOAK_SETUP_USER
+              value: "admin"
+            - name: KEYCLOAK_SETUP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-admin-secret
+                  key: admin-password
+            - name: KEYCLOAK_USERS_0_USERNAME
+              value: "demo"
+            - name: KEYCLOAK_USERS_0_PASSWORD
+              value: "demo"
+            - name: KEYCLOAK_USERS_0_EMAIL
+              value: "demo@example.org"
+            - name: KEYCLOAK_USERS_0_FIRST_NAME
+              value: "Demo"
+            - name: KEYCLOAK_USERS_0_LAST_NAME
+              value: "User"
+            - name: KEYCLOAK_USERS_0_ROLES_0
+              value: "Identity"
+            - name: KEYCLOAK_USERS_0_ROLES_1
+              value: "Operate"
+            - name: KEYCLOAK_USERS_0_ROLES_2
+              value: "Tasklist"
+            - name: KEYCLOAK_USERS_0_ROLES_3
+              value: "Optimize"
+            - name: KEYCLOAK_USERS_0_ROLES_4
+              value: "Web Modeler"
+            - name: KEYCLOAK_USERS_0_ROLES_5
+              value: "Console"
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 600m
+              memory: 400Mi
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+            - containerPort: 8082
+              name: metrics
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              scheme: HTTP
+              port: metrics
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 1
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - name: config
+              mountPath: /app/config/application.yaml
+              subPath: application.yaml
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: my-release-identity-configuration
+      serviceAccountName: my-release-identity
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+---
+# Source: preview-environments/charts/camunda-platform/templates/operate/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-release-operate
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: operate
+    app.kubernetes.io/version: "latest"
+  annotations:
+    {}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-camunda-cloud
+      camunda.cloud/managed-by: Helm
+      camunda.cloud/source: argocd
+      team: camunda
+      app.kubernetes.io/name: camunda-platform
+      app.kubernetes.io/instance: my-release
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: operate
+  template:
+    metadata:
+      labels:
+        app: camunda-camunda-cloud
+        camunda.cloud/managed-by: Helm
+        camunda.cloud/source: argocd
+        team: camunda
+        app.kubernetes.io/name: camunda-platform
+        app.kubernetes.io/instance: my-release
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+        app.kubernetes.io/component: operate
+        app.kubernetes.io/version: "latest"
+      annotations:
+        checksum/config: 6f813fe9b77daf9ec19dfc93374dd1c5dae8278edfeeed48bcf69280bf80dbc5
+    spec:
+      imagePullSecrets:
+        - name: registry-camunda-cloud
+      initContainers:
+        - name: migration
+          image: registry.camunda.cloud/team-camunda/operate:latest
+          command: ['/bin/sh', '/usr/local/operate/bin/migrate']
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 600m
+              memory: 1Gi
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/operate/config/application.yaml
+              subPath: application.yaml
+            - name: tmp
+              mountPath: /tmp
+            - name: camunda
+              mountPath: /camunda
+      containers:
+        - name: operate
+          image: registry.camunda.cloud/team-camunda/operate:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: my-release-camunda-platform-license
+                  key: CAMUNDA_LICENSE_KEY
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: identity-secret-for-components
+                  key: operate-secret
+            - name: ZEEBE_CLIENT_ID
+              value: "zeebe"
+            - name: ZEEBE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: identity-secret-for-components
+                  key: zeebe-secret
+            - name: ZEEBE_AUTHORIZATION_SERVER_URL
+              value: "http://my-release-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
+            - name: ZEEBE_TOKEN_AUDIENCE
+              value: "zeebe-api"
+            - name: ZEEBE_CLIENT_CONFIG_PATH
+              value: /tmp/zeebe_auth_cache
+            # the host name of Operate that is used when connecting with the Zeebe cluster
+            # via atomix-cluster (SWIM)
+            - name: ZEEBE_GATEWAY_CLUSTER_HOST
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            # the unique member id (in this case the pod name) that is used as identifier inside the SWIM cluster
+            - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            # the name of the atomix cluster (SWIM) to connect to (must be the same as for the Zeebe cluster)
+            - name: ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME
+              value: my-release-zeebe
+            # the port the service expects requests/messages from the atomix cluster (must be exposed internally)
+            - name: ZEEBE_GATEWAY_CLUSTER_PORT
+              value: "26502"
+            # the initial contact point to join the SWIM (atomix) cluster
+            - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
+              value: my-release-zeebe:26502
+          envFrom:
+            - configMapRef:
+                name: my-release-camunda-platform-identity-env-vars
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 600m
+              memory: 400Mi
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+            - containerPort: 9600
+              name: management
+            - containerPort: 26502
+              name: internal
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /operate/actuator/health/readiness
+              scheme: HTTP
+              port: management
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 1
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/operate/config/application.yaml
+              subPath: application.yaml
+            - name: tmp
+              mountPath: /tmp
+            - name: camunda
+              mountPath: /camunda
+      volumes:
+        - name: config
+          configMap:
+            name: my-release-operate-configuration
+            defaultMode: 484
+        - name: tmp
+          emptyDir: {}
+        - name: camunda
+          emptyDir: {}
+      serviceAccountName: my-release-operate
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+---
+# Source: preview-environments/charts/camunda-platform/templates/optimize/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-release-optimize
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: optimize
+    app.kubernetes.io/version: "8.6.0-alpha5"
+  annotations:
+    {}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-camunda-cloud
+      camunda.cloud/managed-by: Helm
+      camunda.cloud/source: argocd
+      team: camunda
+      app.kubernetes.io/name: camunda-platform
+      app.kubernetes.io/instance: my-release
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: optimize
+  template:
+    metadata:
+      labels:
+        app: camunda-camunda-cloud
+        camunda.cloud/managed-by: Helm
+        camunda.cloud/source: argocd
+        team: camunda
+        app.kubernetes.io/name: camunda-platform
+        app.kubernetes.io/instance: my-release
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+        app.kubernetes.io/component: optimize
+        app.kubernetes.io/version: "8.6.0-alpha5"
+      annotations:
+        checksum/config: 824c4f13e164db2e372c03c43cd6a0f19eea788d9154f75f10b1fef94019cf02
+    spec:
+      imagePullSecrets:
+        []
+      initContainers:
+        - name: migration
+          image: camunda/optimize:8.6.0-alpha5
+          command: ['./upgrade/upgrade.sh', '--skip-warning']
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: my-release-camunda-platform-license
+                  key: CAMUNDA_LICENSE_KEY
+            - name: OPTIMIZE_ELASTICSEARCH_HOST
+              value: "my-release-elasticsearch"
+            - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+              value: "9200"
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 600m
+              memory: 1Gi
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /camunda
+              name: camunda
+            - mountPath: /optimize/config/environment-config.yaml
+              subPath: environment-config.yaml
+              name: environment-config
+            - mountPath: /optimize/config/application-ccsm.yaml
+              subPath: application-ccsm.yaml
+              name: environment-config
+      containers:
+        - name: optimize
+          image: camunda/optimize:8.6.0-alpha5
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: my-release-camunda-platform-license
+                  key: CAMUNDA_LICENSE_KEY
+            - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
+              value: "/optimize"
+            - name: OPTIMIZE_ELASTICSEARCH_HOST
+              value: "my-release-elasticsearch"
+            - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+              value: "9200"
+            - name: SPRING_PROFILES_ACTIVE
+              value: ccsm
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: my-release-optimize-identity-secret
+                  key: optimize-secret
+          envFrom:
+            - configMapRef:
+                name: my-release-camunda-platform-identity-env-vars
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 600m
+              memory: 1Gi
+          ports:
+            - containerPort: 8090
+              name: http
+              protocol: TCP
+            - containerPort: 8092
+              name: management
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /optimize/api/readyz
+              scheme: HTTP
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 1
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /camunda
+              name: camunda
+            - mountPath: /optimize/config/environment-config.yaml
+              subPath: environment-config.yaml
+              name: environment-config
+            - mountPath: /optimize/config/application-ccsm.yaml
+              subPath: application-ccsm.yaml
+              name: environment-config
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: camunda
+          emptyDir: {}
+        - name: environment-config
+          configMap:
+            name: my-release-optimize-configuration
+            defaultMode: 492
+      serviceAccountName: my-release-optimize
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+---
+# Source: preview-environments/charts/camunda-platform/templates/tasklist/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-release-tasklist
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: tasklist
+    app.kubernetes.io/version: "latest"
+  annotations:
+    {}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-camunda-cloud
+      camunda.cloud/managed-by: Helm
+      camunda.cloud/source: argocd
+      team: camunda
+      app.kubernetes.io/name: camunda-platform
+      app.kubernetes.io/instance: my-release
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: tasklist
+  template:
+    metadata:
+      labels:
+        app: camunda-camunda-cloud
+        camunda.cloud/managed-by: Helm
+        camunda.cloud/source: argocd
+        team: camunda
+        app.kubernetes.io/name: camunda-platform
+        app.kubernetes.io/instance: my-release
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+        app.kubernetes.io/component: tasklist
+        app.kubernetes.io/version: "latest"
+      annotations:
+        checksum/config: e875f178f51ab0a9002b60517cd0c5bf55917ac0f3e80d7d5f107d445b90b937
+    spec:
+      imagePullSecrets:
+        - name: registry-camunda-cloud
+      initContainers:
+        []
+      containers:
+        - name: tasklist
+          image: registry.camunda.cloud/team-camunda/tasklist:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: my-release-camunda-platform-license
+                  key: CAMUNDA_LICENSE_KEY
+            - name: SERVER_SERVLET_CONTEXT_PATH
+              value: "/tasklist"
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: identity-secret-for-components
+                  key: tasklist-secret
+            - name: ZEEBE_CLIENT_ID
+              value: "zeebe"
+            - name: ZEEBE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: identity-secret-for-components
+                  key: zeebe-secret
+            - name: ZEEBE_AUTHORIZATION_SERVER_URL
+              value: "http://my-release-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
+            - name: ZEEBE_TOKEN_AUDIENCE
+              value: "zeebe-api"
+            - name: HOME
+              value: /parent
+            - name: ZEEBE_CLIENT_CONFIG_PATH
+              value: /tmp/zeebe_auth_cache
+            # the host name of Operate that is used when connecting with the Zeebe cluster
+            # via atomix-cluster (SWIM)
+            - name: ZEEBE_GATEWAY_CLUSTER_HOST
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            # the unique member id (in this case the pod name) that is used as identifier inside the SWIM cluster
+            - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            # the name of the atomix cluster (SWIM) to connect to (must be the same as for the Zeebe cluster)
+            - name: ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME
+              value: my-release-zeebe
+            # the port the service expects requests/messages from the atomix cluster (must be exposed internally)
+            - name: ZEEBE_GATEWAY_CLUSTER_PORT
+              value: "26502"
+            # the initial contact point to join the SWIM (atomix) cluster
+            - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
+              value: my-release-zeebe:26502
+          envFrom:
+            - configMapRef:
+                name: my-release-camunda-platform-identity-env-vars
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+            requests:
+              cpu: 400m
+              memory: 1Gi
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+            - containerPort: 9600
+              name: management
+            - containerPort: 26502
+              name: internal
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /tasklist/actuator/health/readiness
+              scheme: HTTP
+              port: management
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 1
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/tasklist/config/application.yaml
+              subPath: application.yaml
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /camunda
+              name: camunda
+      volumes:
+        - name: config
+          configMap:
+            name: my-release-tasklist-configuration
+            defaultMode: 484
+        - name: tmp
+          emptyDir: {}
+        - name: camunda
+          emptyDir: {}
+      serviceAccountName: my-release-tasklist
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+---
+# Source: preview-environments/charts/camunda-platform/templates/zeebe-gateway/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-release-zeebe-gateway
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: zeebe-gateway
+    app.kubernetes.io/version: "8.6.0-alpha5"
+  annotations:
+    {}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 2
+  selector:
+    matchLabels:
+      app: camunda-camunda-cloud
+      camunda.cloud/managed-by: Helm
+      camunda.cloud/source: argocd
+      team: camunda
+      app.kubernetes.io/name: camunda-platform
+      app.kubernetes.io/instance: my-release
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: zeebe-gateway
+  template:
+    metadata:
+      labels:
+        app: camunda-camunda-cloud
+        camunda.cloud/managed-by: Helm
+        camunda.cloud/source: argocd
+        team: camunda
+        app.kubernetes.io/name: camunda-platform
+        app.kubernetes.io/instance: my-release
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+        app.kubernetes.io/component: zeebe-gateway
+        app.kubernetes.io/version: "8.6.0-alpha5"
+      annotations:
+        checksum/config: 91679adc6ccb06f4e37f3770a0af46ba13c8f499467276c3526b10b63db74827
+    spec:
+      imagePullSecrets:
+        []
+      initContainers:
+        []
+      containers:
+        - name: zeebe-gateway
+          image: camunda/zeebe:8.6.0-alpha5
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9600
+              name: http
+            - containerPort: 26500
+              name: gateway
+            - containerPort: 26502
+              name: internal
+            - containerPort: 8080
+              name: rest
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: my-release-camunda-platform-license
+                  key: CAMUNDA_LICENSE_KEY
+            - name: ZEEBE_STANDALONE_GATEWAY
+              value: "true"
+            - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ZEEBE_LOG_LEVEL
+              value: "info"
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:+ExitOnOutOfMemoryError"
+            - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
+              value: my-release-zeebe:26502
+            - name: ZEEBE_GATEWAY_CLUSTER_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          envFrom:
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - name: config
+              mountPath: /usr/local/zeebe/config/application.yaml
+              subPath: application.yaml
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          readinessProbe:
+            httpGet:
+              path: /zeebe/actuator/health/readiness
+              scheme: HTTP
+              port: 9600
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: 400m
+              memory: 450Mi
+            requests:
+              cpu: 400m
+              memory: 450Mi
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: my-release-zeebe-gateway-configuration
+            defaultMode: 484
+      serviceAccountName: my-release-zeebe-gateway
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+  # yamllint disable
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values:
+                - zeebe-gateway
+            topologyKey: kubernetes.io/hostname
+  # yamllint enable
+---
+# Source: preview-environments/charts/camunda-platform/charts/elasticsearch/templates/master/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: my-release-elasticsearch-master
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/version: 8.15.1
+    helm.sh/chart: elasticsearch-21.3.13
+    app.kubernetes.io/component: master
+    ## Istio Labels: https://istio.io/docs/ops/deployment/requirements/
+    app: master
+spec:
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: my-release
+      app.kubernetes.io/name: elasticsearch
+      app.kubernetes.io/component: master
+  serviceName: my-release-elasticsearch-master-hl
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: my-release
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: elasticsearch
+        app.kubernetes.io/version: 8.15.1
+        helm.sh/chart: elasticsearch-21.3.13
+        app.kubernetes.io/component: master
+        ## Istio Labels: https://istio.io/docs/ops/deployment/requirements/
+        app: master
+      annotations:
+    spec:
+      serviceAccountName: my-release-elasticsearch-master
+      
+      automountServiceAccountToken: false
+      affinity:
+        podAffinity:
+          
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/instance: my-release
+                  app.kubernetes.io/name: elasticsearch
+                  app.kubernetes.io/component: master
+              topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          
+      securityContext:
+        fsGroup: 1001
+        fsGroupChangePolicy: Always
+        supplementalGroups: []
+        sysctls: []
+      initContainers:
+        ## Image that performs the sysctl operation to modify Kernel settings (needed sometimes to avoid boot errors)
+        - name: sysctl
+          image: docker.io/bitnami/os-shell:12-debian-12-r30
+          imagePullPolicy: "IfNotPresent"
+          command:
+            - /bin/bash
+            - -ec
+            - |
+              CURRENT=`sysctl -n vm.max_map_count`;
+              DESIRED="262144";
+              if [ "$DESIRED" -gt "$CURRENT" ]; then
+                  sysctl -w vm.max_map_count=262144;
+              fi;
+              CURRENT=`sysctl -n fs.file-max`;
+              DESIRED="65536";
+              if [ "$DESIRED" -gt "$CURRENT" ]; then
+                  sysctl -w fs.file-max=65536;
+              fi;
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          resources:
+            limits:
+              cpu: 150m
+              ephemeral-storage: 2Gi
+              memory: 192Mi
+            requests:
+              cpu: 100m
+              ephemeral-storage: 50Mi
+              memory: 128Mi
+        - name: copy-default-plugins
+          image: docker.io/bitnami/elasticsearch:8.15.1
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 1001
+            runAsNonRoot: true
+            runAsUser: 1001
+            seLinuxOptions: {}
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            limits:
+              cpu: 2
+              memory: 2Gi
+            requests:
+              cpu: 1
+              memory: 2Gi
+          command:
+            - /bin/bash
+          args:
+            - -ec
+            - |
+              #!/bin/bash
+
+              . /opt/bitnami/scripts/libfs.sh
+              . /opt/bitnami/scripts/elasticsearch-env.sh
+
+              if ! is_dir_empty "$DB_DEFAULT_PLUGINS_DIR"; then
+                  cp -nr "$DB_DEFAULT_PLUGINS_DIR"/* /plugins
+              fi
+          volumeMounts:
+            - name: empty-dir
+              mountPath: /tmp
+              subPath: tmp-dir
+            - name: empty-dir
+              mountPath: /plugins
+              subPath: app-plugins-dir
+      containers:
+        - name: elasticsearch
+          image: docker.io/bitnami/elasticsearch:8.15.1
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 1001
+            runAsNonRoot: true
+            runAsUser: 1001
+            seLinuxOptions: {}
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: BITNAMI_DEBUG
+              value: "false"
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ELASTICSEARCH_IS_DEDICATED_NODE
+              value: "no"
+            - name: ELASTICSEARCH_NODE_ROLES
+              value: "master"
+            - name: ELASTICSEARCH_TRANSPORT_PORT_NUMBER
+              value: "9300"
+            - name: ELASTICSEARCH_HTTP_PORT_NUMBER
+              value: "9200"
+            - name: ELASTICSEARCH_CLUSTER_NAME
+              value: "elastic"
+            
+            - name: ELASTICSEARCH_CLUSTER_HOSTS
+              value: "my-release-elasticsearch-master-hl.dummy.svc.cluster.local,"
+            - name: ELASTICSEARCH_TOTAL_NODES
+              value: "3"
+            - name: ELASTICSEARCH_CLUSTER_MASTER_HOSTS
+              value: my-release-elasticsearch-master-0 my-release-elasticsearch-master-1 my-release-elasticsearch-master-2 
+            - name: ELASTICSEARCH_MINIMUM_MASTER_NODES
+              value: "2"
+            - name: ELASTICSEARCH_ADVERTISED_HOSTNAME
+              value: "$(MY_POD_NAME).my-release-elasticsearch-master-hl.dummy.svc.cluster.local"
+            - name: ELASTICSEARCH_HEAP_SIZE
+              value: "1024m"
+            - name: ELASTICSEARCH_ENABLE_REST_TLS
+              value: "false"
+          ports:
+            - name: rest-api
+              containerPort: 9200
+            - name: transport
+              containerPort: 9300
+          livenessProbe:
+            failureThreshold: 5
+            initialDelaySeconds: 180
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+            tcpSocket:
+              port: rest-api
+          readinessProbe:
+            failureThreshold: 5
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+            exec:
+              command:
+                - /opt/bitnami/scripts/elasticsearch/healthcheck.sh
+          resources:
+            limits:
+              cpu: 2
+              memory: 2Gi
+            requests:
+              cpu: 1
+              memory: 2Gi
+          volumeMounts:
+            - name: empty-dir
+              mountPath: /tmp
+              subPath: tmp-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/elasticsearch/config
+              subPath: app-conf-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/elasticsearch/tmp
+              subPath: app-tmp-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/elasticsearch/logs
+              subPath: app-logs-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/elasticsearch/plugins
+              subPath: app-plugins-dir
+            - name: data
+              mountPath: /bitnami/elasticsearch/data
+      volumes:
+        - name: empty-dir
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: "data"
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "64Gi"
+---
+# Source: preview-environments/charts/camunda-platform/charts/identityKeycloak/charts/postgresql/templates/primary/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: my-release-postgresql
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/version: 16.4.0
+    helm.sh/chart: postgresql-15.5.23
+    app.kubernetes.io/component: primary
+spec:
+  replicas: 1
+  serviceName: my-release-postgresql-hl
+  updateStrategy:
+    rollingUpdate: {}
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: my-release
+      app.kubernetes.io/name: postgresql
+      app.kubernetes.io/component: primary
+  template:
+    metadata:
+      name: my-release-postgresql
+      labels:
+        app.kubernetes.io/instance: my-release
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: postgresql
+        app.kubernetes.io/version: 16.4.0
+        helm.sh/chart: postgresql-15.5.23
+        app.kubernetes.io/component: primary
+    spec:
+      serviceAccountName: my-release-postgresql
+      
+      automountServiceAccountToken: false
+      affinity:
+        podAffinity:
+          
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: my-release
+                    app.kubernetes.io/name: postgresql
+                    app.kubernetes.io/component: primary
+                topologyKey: kubernetes.io/hostname
+              weight: 1
+        nodeAffinity:
+          
+      securityContext:
+        fsGroup: 1001
+        fsGroupChangePolicy: Always
+        runAsNonRoot: true
+        supplementalGroups: []
+        sysctls: []
+      hostNetwork: false
+      hostIPC: false
+      containers:
+        - name: postgresql
+          image: docker.io/bitnami/postgresql:15.8.0
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 1001
+            runAsNonRoot: true
+            runAsUser: 1001
+            seLinuxOptions: {}
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: BITNAMI_DEBUG
+              value: "false"
+            - name: POSTGRESQL_PORT_NUMBER
+              value: "5432"
+            - name: POSTGRESQL_VOLUME_DIR
+              value: "/bitnami/postgresql"
+            - name: PGDATA
+              value: "/bitnami/postgresql/data"
+            # Authentication
+            - name: POSTGRES_USER
+              value: "bn_keycloak"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+            - name: POSTGRES_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: postgres-password
+            - name: POSTGRES_DATABASE
+              value: "bitnami_keycloak"
+            # LDAP
+            - name: POSTGRESQL_ENABLE_LDAP
+              value: "no"
+            # TLS
+            - name: POSTGRESQL_ENABLE_TLS
+              value: "no"
+            # Audit
+            - name: POSTGRESQL_LOG_HOSTNAME
+              value: "false"
+            - name: POSTGRESQL_LOG_CONNECTIONS
+              value: "false"
+            - name: POSTGRESQL_LOG_DISCONNECTIONS
+              value: "false"
+            - name: POSTGRESQL_PGAUDIT_LOG_CATALOG
+              value: "off"
+            # Others
+            - name: POSTGRESQL_CLIENT_MIN_MESSAGES
+              value: "error"
+            - name: POSTGRESQL_SHARED_PRELOAD_LIBRARIES
+              value: "pgaudit"
+          ports:
+            - name: tcp-postgresql
+              containerPort: 5432
+          livenessProbe:
+            failureThreshold: 6
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - exec pg_isready -U "bn_keycloak" -d "dbname=bitnami_keycloak" -h 127.0.0.1 -p 5432
+          readinessProbe:
+            failureThreshold: 6
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - -e
+                - |
+                  exec pg_isready -U "bn_keycloak" -d "dbname=bitnami_keycloak" -h 127.0.0.1 -p 5432
+                  [ -f /opt/bitnami/postgresql/tmp/.initialized ] || [ -f /bitnami/postgresql/.initialized ]
+          resources:
+            limits:
+              cpu: 150m
+              ephemeral-storage: 2Gi
+              memory: 192Mi
+            requests:
+              cpu: 100m
+              ephemeral-storage: 50Mi
+              memory: 128Mi
+          volumeMounts:
+            - name: empty-dir
+              mountPath: /tmp
+              subPath: tmp-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/postgresql/conf
+              subPath: app-conf-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/postgresql/tmp
+              subPath: app-tmp-dir
+            - name: dshm
+              mountPath: /dev/shm
+            - name: data
+              mountPath: /bitnami/postgresql
+      volumes:
+        - name: empty-dir
+          emptyDir: {}
+        - name: dshm
+          emptyDir:
+            medium: Memory
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: data
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "8Gi"
+---
+# Source: preview-environments/charts/camunda-platform/charts/identityKeycloak/templates/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: my-release-keycloak
+  namespace: "dummy"
+  labels:
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/version: 25.0.4
+    helm.sh/chart: identityKeycloak-22.2.1
+    app.kubernetes.io/component: keycloak
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  podManagementPolicy: Parallel
+  serviceName: my-release-keycloak-headless
+  updateStrategy:
+    rollingUpdate: {}
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: my-release
+      app.kubernetes.io/name: keycloak
+      app.kubernetes.io/component: keycloak
+  template:
+    metadata:
+      annotations:
+        checksum/configmap-env-vars: 3addb501cbd259e023b581e073183777ad1a4aa1c429b96de0a746c94cfcac4f
+      labels:
+        app.kubernetes.io/instance: my-release
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: keycloak
+        app.kubernetes.io/version: 25.0.4
+        helm.sh/chart: identityKeycloak-22.2.1
+        app.kubernetes.io/component: keycloak
+    spec:
+      serviceAccountName: my-release-keycloak
+      
+      automountServiceAccountToken: true
+      affinity:
+        podAffinity:
+          
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: my-release
+                    app.kubernetes.io/name: keycloak
+                topologyKey: kubernetes.io/hostname
+              weight: 1
+        nodeAffinity:
+          
+      securityContext:
+        fsGroup: 1001
+        fsGroupChangePolicy: Always
+        runAsNonRoot: true
+        supplementalGroups: []
+        sysctls: []
+      enableServiceLinks: true
+      initContainers:
+        - name: prepare-write-dirs
+          image: docker.io/camunda/keycloak:25.0.4
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+          args:
+            - -ec
+            - |
+              . /opt/bitnami/scripts/liblog.sh
+
+              info "Copying writable dirs to empty dir"
+              # In order to not break the application functionality we need to make some
+              # directories writable, so we need to copy it to an empty dir volume
+              cp -r --preserve=mode /opt/bitnami/keycloak/lib/quarkus /emptydir/app-quarkus-dir
+              cp -r --preserve=mode /opt/bitnami/keycloak/data /emptydir/app-data-dir
+              info "Copy operation completed"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 1001
+            runAsNonRoot: true
+            runAsUser: 1001
+            seLinuxOptions: {}
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            limits:
+              cpu: 750m
+              ephemeral-storage: 2Gi
+              memory: 768Mi
+            requests:
+              cpu: 500m
+              ephemeral-storage: 50Mi
+              memory: 512Mi
+          volumeMounts:
+           - name: empty-dir
+             mountPath: /emptydir
+      containers:
+        - name: keycloak
+          image: docker.io/camunda/keycloak:25.0.4
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 1001
+            runAsNonRoot: true
+            runAsUser: 1001
+            seLinuxOptions: {}
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: BITNAMI_DEBUG
+              value: "false"
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-admin-secret
+                  key: admin-password
+            - name: KEYCLOAK_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+            - name: KEYCLOAK_HTTP_RELATIVE_PATH
+              value: "/auth/"
+            - name: KC_SPI_ADMIN_REALM
+              value: "master"
+            - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
+              value: 'true'
+          envFrom:
+            - configMapRef:
+                name: my-release-keycloak-env-vars
+          resources:
+            limits:
+              cpu: 750m
+              ephemeral-storage: 2Gi
+              memory: 768Mi
+            requests:
+              cpu: 500m
+              ephemeral-storage: 50Mi
+              memory: 512Mi
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: discovery
+              containerPort: 7800
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 300
+            periodSeconds: 1
+            successThreshold: 1
+            timeoutSeconds: 5
+            tcpSocket:
+              port: http
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+            httpGet:
+              path: /auth/realms/master
+              port: http
+          volumeMounts:
+            - name: empty-dir
+              mountPath: /tmp
+              subPath: tmp-dir
+            - name: empty-dir
+              mountPath: /bitnami
+              subPath: app-volume-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/keycloak/conf
+              subPath: app-conf-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/keycloak/lib/quarkus
+              subPath: app-quarkus-dir
+            - name: empty-dir
+              mountPath: /opt/bitnami/keycloak/data
+              subPath: app-data-dir
+            - mountPath: /opt/bitnami/keycloak/data/tmp
+              name: data-tmp
+      volumes:
+        - name: empty-dir
+          emptyDir: {}
+        - emptyDir: {}
+          name: data-tmp
+---
+# Source: preview-environments/charts/camunda-platform/templates/zeebe/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: "my-release-zeebe"
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: zeebe-broker
+    app.kubernetes.io/version: "latest"
+  annotations:
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: camunda-camunda-cloud
+      camunda.cloud/managed-by: Helm
+      camunda.cloud/source: argocd
+      team: camunda
+      app.kubernetes.io/name: camunda-platform
+      app.kubernetes.io/instance: my-release
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: zeebe-broker
+  serviceName: "my-release-zeebe"
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: camunda-camunda-cloud
+        camunda.cloud/managed-by: Helm
+        camunda.cloud/source: argocd
+        team: camunda
+        app.kubernetes.io/name: camunda-platform
+        app.kubernetes.io/instance: my-release
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+        app.kubernetes.io/component: zeebe-broker
+        app.kubernetes.io/version: "latest"
+      annotations:
+        checksum/config: 3875ce01876a87210d2aea3a554efe49530f83fcf1e3e75bf7fa08ec56e89860
+    spec:
+      imagePullSecrets:
+        - name: registry-camunda-cloud
+      initContainers:
+        []
+      containers:
+        - name: zeebe
+          image: registry.camunda.cloud/team-camunda/zeebe:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: my-release-camunda-platform-license
+                  key: CAMUNDA_LICENSE_KEY
+            - name: LC_ALL
+              value: C.UTF-8
+            - name: K8S_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: K8S_SERVICE_NAME
+              value: "my-release-zeebe"
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: ZEEBE_BROKER_NETWORK_ADVERTISEDHOST
+              value: "$(K8S_NAME).$(K8S_SERVICE_NAME)"
+            - name: ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS
+              value:
+                $(K8S_SERVICE_NAME)-0.$(K8S_SERVICE_NAME):26502,
+                $(K8S_SERVICE_NAME)-1.$(K8S_SERVICE_NAME):26502,
+                $(K8S_SERVICE_NAME)-2.$(K8S_SERVICE_NAME):26502,
+            - name: ZEEBE_LOG_LEVEL
+              value: "info"
+            - name: ZEEBE_BROKER_GATEWAY_ENABLE
+              value: "false"
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
+              value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
+              value: "http://my-release-elasticsearch:9200"
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
+              value: "zeebe-record"
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/zeebe/data -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log -XX:+ExitOnOutOfMemoryError"
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ZEEBE_BROKER_DATA_SNAPSHOTPERIOD
+              value: 5m
+            - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION
+              value: 2GB
+            - name: ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING
+              value: 3GB
+          ports:
+            - containerPort: 9600
+              name: http
+            - containerPort: 26501
+              name: command
+            - containerPort: 26502
+              name: internal
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              scheme: HTTP
+              port: 9600
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: 960m
+              memory: 1920Mi
+            requests:
+              cpu: 800m
+              memory: 1200Mi
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/bin/startup.sh
+              subPath: startup.sh
+            - name: data
+              mountPath: /usr/local/zeebe/data
+            - name: exporters
+              mountPath: /exporters
+            - mountPath: /tmp
+              name: tmp
+            - name: config
+              mountPath: /usr/local/zeebe/config/application.yaml
+              subPath: application.yaml
+      volumes:
+        - name: config
+          configMap:
+            name: my-release-zeebe-configuration
+            defaultMode: 492
+        - name: exporters
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+      serviceAccountName: my-release-zeebe
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+# yamllint disable
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values:
+                - zeebe-broker
+            topologyKey: kubernetes.io/hostname
+# yamllint enable
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        annotations:
+          {}
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: "32Gi"
+---
+# Source: preview-environments/charts/camunda-platform/templates/camunda/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-release-camunda-platform
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+  annotations: 
+    ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/auth-response-headers: X-Vouch-User,X-Vouch-IdP-Claims-preferred_username
+    nginx.ingress.kubernetes.io/auth-signin: https://vouch.camunda.cloud/login?url=$scheme://$http_host$request_uri&vouch-failcount=$auth_resp_failcount&X-Vouch-Token=$auth_resp_jwt&error=$auth_resp_err
+    nginx.ingress.kubernetes.io/auth-snippet: |-
+      auth_request_set $auth_resp_jwt $upstream_http_x_vouch_jwt;
+      auth_request_set $auth_resp_err $upstream_http_x_vouch_err;
+      auth_request_set $auth_resp_failcount $upstream_http_x_vouch_failcount;
+    nginx.ingress.kubernetes.io/auth-url: https://vouch.camunda.cloud/validate
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      recursive_error_pages on;
+      error_page 400 = @error400;
+      error_page 500 501 502 503 504 = @service_unavailable;
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 128k
+    nginx.ingress.kubernetes.io/proxy-buffering: "on"
+    nginx.ingress.kubernetes.io/server-snippet: |-
+      location @error400 { return 302 https://vouch.camunda.cloud/v1/logout; }
+      location @service_unavailable {
+      ssi on;
+      return 503 '
+        <!DOCTYPE html>
+        <html lang=en-US>
+        <head>
+          <meta charset=utf-8>
+          <base target="_blank">
+          <title>Preview Environment not available</title>
+          <meta name=viewport content="width=device-width, initial-scale=1">
+          <style>
+          body {
+              font-family: IBM Plex Sans, sans-serif;
+              text-align: center;
+              padding: 50px;
+          }
+    
+          h1 {
+              color: #FC5D0D;
+          }
+    
+          mark {
+              background: #EEE;
+              padding: 2px 4px;
+              border: 1px solid #b4b4b4;
+              border-radius: 3px;
+          }
+    
+          p {
+              color: #555;
+          }
+    
+          .center-container {
+              display: inline-block;
+              text-align: left;
+              padding: 0 10%;
+          }
+    
+          #common-issues {
+              display: flex;
+              justify-content: center;
+              padding: 0 10%;
+          }
+    
+          #innerlist {
+              padding: 0;
+              text-align: left;
+          }
+    
+          li {
+              margin-bottom: 10px;
+              list-style: none;
+          }
+    
+          li:before {
+              content: "\2022";
+              display: inline-block;
+              width: 1em;
+              margin-left: -1em;
+          }
+    
+          .margin {
+              margin-top: 4px;
+          }
+    
+          a {
+              color: #0072CE;
+          }
+         </style>
+        </head>
+        <body>
+            <h1>
+             Your Preview Environment Is Currently Unavailable
+            </h1>
+            <p>
+              <b>If you just deployed your <a href="https://confluence.camunda.com/display/HAN/Preview+Environments" class="link">Preview Environment</a> a few minutes ago, it is very likely this will auto-resolve within 15 minutes.
+              <br>If it does not, here is how you can debug it.</b>
+              <br>
+              <div id="common-issues">
+                <h3>Troubleshooting:</h3>
+              </div>
+              <div class="center-container">
+               <ul id="innerlist">
+                  <li>
+                      &#128011; Check that the Docker image of the application for the Preview Environment has been created and uploaded to Harbor Docker Registry</a>.
+                      <ul>
+                          <li class="margin">How to log into Harbor: <a href="https://confluence.camunda.com/pages/viewpage.action?spaceKey=HAN&title=Harbor+Docker+Registry#HarborDockerRegistry-HowdoIandmyteamuseit?" class="link"> Guide</a>.</li>
+                      </ul>
+                   </li>
+                  <li>
+                     &#9729; Your Preview Environment is deployed in the <a href="https://confluence.camunda.com/display/HAN/Infrastructure+Platform#InfrastructurePlatform-Clusters" class="link"> camunda-ci </a> Kubernetes cluster.
+                     <ul>
+                        <li>
+                           You can check the logs of the corresponding Argo CD application, and of the application&apos;s Kubernetes pods</a>.
+                           <ul class="margin">
+                              <li>How to log into ArgoCD: click on the <mark>Log in via Okta</mark> button.</li>
+                              <li>Make sure to check the application&apos;s pod logs to ensure the application is running successfully.</li>
+                           </ul>
+                        </li>
+                        <li class="margin">
+                           You can also check the logs of the application with <mark>kubectl</mark> directly.
+                           <ul class="margin">
+                              <li>How to get access to a Kubernetes cluster: <a href="https://confluence.camunda.com/display/HAN/Accessing+Kubernetes+Clusters" class="link">Guide </a> </li>
+                              <li>How to see logs with <mark>kubectl</mark>: <a href="https://confluence.camunda.com/display/HAN/Useful+Kubernetes+Commands+and+Utilities" class="link">Guide</a> </li>
+                           </ul>
+                         </li>
+                     </ul>
+                  <li> &#128221; Check the logs of the workflows in GitHub. The workflows for building and pushing the application Docker image to Harbor and to create a Preview Environment in ArgoCD should be passing. Try re-rerunning them if they failed. </li>
+               </ul>
+              </br></br>
+              If none of these steps helped resolving the issue, feel free to ask a question in the
+              <a href="https://camunda.slack.com/archives/C5AHF1D8T" class="link">#ask-infra</a> channel.
+             </div>
+            </p>
+        </body>
+        </html>';
+      }
+    nginx.ingress.kubernetes.io/session-cookie-change-on-failure: "true"
+    nginx.ingress.kubernetes.io/session-cookie-conditional-samesite-none: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: test.camunda.camunda.cloud
+      http:
+        paths:
+          - backend:
+              service:
+                name: my-release-keycloak
+                port:
+                  number: 80
+            path: /auth/
+            pathType: ImplementationSpecific
+          - backend:
+              service:
+                name: my-release-identity
+                port:
+                  number: 80
+            path: /identity
+            pathType: Prefix
+          - backend:
+              service:
+                name: my-release-operate
+                port:
+                  number: 80
+            path: /operate
+            pathType: Prefix
+          - backend:
+              service:
+                name: my-release-optimize
+                port:
+                  number: 80
+            path: /optimize
+            pathType: Prefix
+          - backend:
+              service:
+                name: my-release-tasklist
+                port:
+                  number: 80
+            path: /tasklist
+            pathType: Prefix
+          - backend:
+              service:
+                name: my-release-connectors
+                port:
+                  number: 8080
+            path: /connectors
+            pathType: Prefix
+          - backend:
+              service:
+                name: my-release-zeebe-gateway
+                port:
+                  number: 8080
+            path: /zeebe
+            pathType: Prefix
+  tls:
+    - hosts:
+        - test.camunda.camunda.cloud
+      secretName: camunda-tls
+---
+# Source: preview-environments/templates/secrets.yml
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: registry-camunda-cloud
+spec:
+  refreshInterval: "5m"
+
+  secretStoreRef:
+    name: vault-backend
+    kind: ClusterSecretStore
+
+  target:
+    template:
+      type: kubernetes.io/dockerconfigjson
+      metadata:
+        annotations:
+          managed-by: external-secrets
+
+  data:
+  - secretKey: .dockerconfigjson
+    remoteRef:
+      key: secret/data/k8s-camunda-ci/camunda/registries
+      property: REGISTRY_CAMUNDA_CLOUD_DOCKERCONFIGJSON
+---
+# Source: preview-environments/charts/camunda-platform/templates/identity/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "my-release-identity-test-connection"
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "8.6.0-alpha5"
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args:  ['my-release-identity:80']
+  restartPolicy: Never
+---
+# Source: preview-environments/charts/camunda-platform/templates/operate/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "my-release-operate-test-connection"
+  labels:
+    app: camunda-camunda-cloud
+    camunda.cloud/managed-by: Helm
+    camunda.cloud/source: argocd
+    team: camunda
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: my-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-0.0.0-snapshot-alpha
+    app.kubernetes.io/component: operate
+    app.kubernetes.io/version: "latest"
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args:  ['my-release-operate:80']
+  restartPolicy: Never
