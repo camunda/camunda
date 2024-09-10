@@ -20,11 +20,6 @@ runs:
       shell: bash
       run: npm install -g yarn
 
-    - name: Setup NodeJS
-      uses: actions/setup-node@v4
-      with:
-        node-version: "20"
-
     - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
       with:
         directory: ${{ inputs.directory }}

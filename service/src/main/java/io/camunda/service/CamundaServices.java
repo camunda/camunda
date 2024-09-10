@@ -85,6 +85,10 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
     return new ElementInstanceServices(brokerClient, searchClient, transformers, authentication);
   }
 
+  public SignalServices signalServices() {
+    return new SignalServices(brokerClient, searchClient, transformers, authentication);
+  }
+
   @Override
   public CamundaServices withAuthentication(final Authentication authentication) {
     return new CamundaServices(brokerClient, searchClient, transformers, authentication);

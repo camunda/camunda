@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ReactNode} from 'react';
 import classnames from 'classnames';
 
 import icons from './icons';
@@ -16,32 +15,26 @@ import './Icon.scss';
 type IconProps = {
   type?: string;
   size?: number | string;
-  renderedIn?: keyof JSX.IntrinsicElements;
-  children?: ReactNode;
   className?: string;
 };
 
 export default function Icon(props: IconProps): JSX.Element {
-  const {type, size, children, renderedIn: Wrapper, ...filteredProps} = props;
+  const {type, size, ...filteredProps} = props;
 
-  if (Wrapper) {
-    return <Wrapper {...filteredProps} className={`Icon Icon--${type}`} />;
-  } else {
-    const SVG = type ? icons[type] : null;
+  const SVG = type ? icons[type] : null;
 
-    const style = size
-      ? {
-          minWidth: size,
-          minHeight: size,
-          maxWidth: size,
-          maxHeight: size,
-        }
-      : {};
+  const style = size
+    ? {
+        minWidth: size,
+        minHeight: size,
+        maxWidth: size,
+        maxHeight: size,
+      }
+    : {};
 
-    return (
-      <span {...filteredProps} className={classnames('Icon', 'IconSvg', filteredProps.className)}>
-        {SVG ? <SVG style={style} /> : children}
-      </span>
-    );
-  }
+  return (
+    <span {...filteredProps} className={classnames('Icon', filteredProps.className)}>
+      {SVG ? <SVG style={style} /> : null}
+    </span>
+  );
 }

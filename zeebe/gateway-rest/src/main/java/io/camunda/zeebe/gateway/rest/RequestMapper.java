@@ -18,9 +18,13 @@ import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.va
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessagePublicationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateAuthorization;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
+import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ResourceRequestValidator.validateResourceDeletion;
+import static io.camunda.zeebe.gateway.rest.validator.SignalRequestValidator.validateSignalBroadcastRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
+import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserCreateRequest;
 
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
@@ -30,16 +34,21 @@ import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
+import io.camunda.service.ResourceServices.ResourceDeletionRequest;
+import io.camunda.service.UserServices.CreateUserRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
+import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
@@ -49,9 +58,11 @@ import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserWithPasswordRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
@@ -248,6 +259,18 @@ public class RequestMapper {
         () -> new DocumentCreateRequest(documentId, storeId, inputStream, internalMetadata));
   }
 
+  public static Either<ProblemDetail, CreateUserRequest> toCreateUserRequest(
+      final UserWithPasswordRequest request) {
+    return getResult(
+        validateUserCreateRequest(request),
+        () ->
+            new CreateUserRequest(
+                request.getUsername(),
+                request.getName(),
+                request.getEmail(),
+                request.getPassword()));
+  }
+
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
       final Supplier<CompletableFuture<BrokerResponseT>> method,
       final Function<BrokerResponseT, ResponseEntity<Object>> result) {
@@ -301,6 +324,24 @@ public class RequestMapper {
                 getMapOrEmpty(messagePublicationRequest, MessagePublicationRequest::getVariables),
                 getStringOrEmpty(
                     messagePublicationRequest, MessagePublicationRequest::getTenantId)));
+  }
+
+  public static Either<ProblemDetail, ResourceDeletionRequest> toResourceDeletion(
+      final long resourceKey, final DeleteResourceRequest deleteRequest) {
+    final Long operationReference =
+        deleteRequest != null ? deleteRequest.getOperationReference() : null;
+    return getResult(
+        validateResourceDeletion(deleteRequest),
+        () -> new ResourceDeletionRequest(resourceKey, operationReference));
+  }
+
+  public static Either<ProblemDetail, BroadcastSignalRequest> toBroadcastSignalRequest(
+      final SignalBroadcastRequest request) {
+    return getResult(
+        validateSignalBroadcastRequest(request),
+        () ->
+            new BroadcastSignalRequest(
+                request.getSignalName(), request.getVariables(), request.getTenantId()));
   }
 
   public static Authentication getAuthentication() {
@@ -409,6 +450,14 @@ public class RequestMapper {
                     .toList()));
   }
 
+  public static Either<ProblemDetail, ProcessInstanceCancelRequest> toCancelProcessInstance(
+      final long processInstanceKey, final CancelProcessInstanceRequest request) {
+    final Long operationReference = request != null ? request.getOperationReference() : null;
+    return getResult(
+        validateCancelProcessInstanceRequest(request),
+        () -> new ProcessInstanceCancelRequest(processInstanceKey, operationReference));
+  }
+
   private static <R> Map<String, Object> getMapOrEmpty(
       final R request, final Function<R, Map<String, Object>> mapExtractor) {
     return request == null ? Map.of() : mapExtractor.apply(request);
@@ -467,4 +516,7 @@ public class RequestMapper {
   public record CompleteJobRequest(long jobKey, Map<String, Object> variables) {}
 
   public record UpdateJobRequest(long jobKey, UpdateJobChangeset changeset) {}
+
+  public record BroadcastSignalRequest(
+      String signalName, Map<String, Object> variables, String tenantId) {}
 }

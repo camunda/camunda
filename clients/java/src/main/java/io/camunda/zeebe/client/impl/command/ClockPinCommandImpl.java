@@ -65,8 +65,7 @@ public class ClockPinCommandImpl implements ClockPinCommandStep1 {
   @Override
   public ZeebeFuture<PinClockResponse> send() {
     final HttpZeebeFuture<PinClockResponse> result = new HttpZeebeFuture<>();
-    httpClient.put(
-        "/administration/clock", jsonMapper.toJson(request), httpRequestConfig.build(), result);
+    httpClient.put("/clock", jsonMapper.toJson(request), httpRequestConfig.build(), result);
     return result;
   }
 }

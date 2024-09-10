@@ -19,7 +19,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserCreateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.concurrent.CompletableFuture;
 
-public class UserServices<T> extends SearchQueryService<UserServices<T>, UserQuery, UserEntity> {
+public class UserServices extends SearchQueryService<UserServices, UserQuery, UserEntity> {
 
   public UserServices(final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
     this(brokerClient, dataStoreClient, null, null);
@@ -39,17 +39,18 @@ public class UserServices<T> extends SearchQueryService<UserServices<T>, UserQue
   }
 
   @Override
-  public UserServices<T> withAuthentication(final Authentication authentication) {
-    return new UserServices<>(brokerClient, searchClient, transformers, authentication);
+  public UserServices withAuthentication(final Authentication authentication) {
+    return new UserServices(brokerClient, searchClient, transformers, authentication);
   }
 
-  public CompletableFuture<UserRecord> createUser(
-      final String username, final String name, final String email, final String password) {
+  public CompletableFuture<UserRecord> createUser(final CreateUserRequest request) {
     return sendBrokerRequest(
         new BrokerUserCreateRequest()
-            .setUsername(username)
-            .setName(name)
-            .setEmail(email)
-            .setPassword(password));
+            .setUsername(request.username())
+            .setName(request.name())
+            .setEmail(request.email())
+            .setPassword(request.password()));
   }
+
+  public record CreateUserRequest(String username, String name, String email, String password) {}
 }
