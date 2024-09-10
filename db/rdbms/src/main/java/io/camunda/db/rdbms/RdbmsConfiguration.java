@@ -9,9 +9,11 @@ package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.queue.ExecutionQueue;
 import io.camunda.db.rdbms.service.ExporterPositionRdbmsService;
-import io.camunda.db.rdbms.service.ProcessRdbmsService;
 import io.camunda.db.rdbms.service.VariableRdbmsService;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import io.camunda.db.rdbms.service.ProcessDefinitionRdbmsService;
+import io.camunda.db.rdbms.service.ProcessInstanceRdbmsService;
+import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -66,6 +68,15 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public MapperFactoryBean<ProcessDefinitionMapper> processDeploymentMapper(
+      final SqlSessionFactory sqlSessionFactory) throws Exception {
+    final MapperFactoryBean<ProcessDefinitionMapper> factoryBean = new MapperFactoryBean<>(
+        ProcessDefinitionMapper.class);
+    factoryBean.setSqlSessionFactory(sqlSessionFactory);
+    return factoryBean;
+  }
+
+  @Bean
   public MapperFactoryBean<VariableMapper> variableMapper(
       final SqlSessionFactory sqlSessionFactory) throws Exception {
     final MapperFactoryBean<VariableMapper> factoryBean = new MapperFactoryBean<>(
@@ -96,10 +107,17 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public ProcessRdbmsService processRdbmsService(
+  public ProcessDefinitionRdbmsService processDeploymentRdbmsService(
+      final ExecutionQueue executionQueue,
+      final ProcessDefinitionMapper processDefinitionMapper) {
+    return new ProcessDefinitionRdbmsService(executionQueue, processDefinitionMapper);
+  }
+
+  @Bean
+  public ProcessInstanceRdbmsService processRdbmsService(
       final ExecutionQueue executionQueue,
       final ProcessInstanceMapper processInstanceMapper) {
-    return new ProcessRdbmsService(executionQueue, processInstanceMapper);
+    return new ProcessInstanceRdbmsService(executionQueue, processInstanceMapper);
   }
 
   @Bean
@@ -113,11 +131,13 @@ public class RdbmsConfiguration {
   public RdbmsService rdbmsService(final ExecutionQueue executionQueue,
       final ExporterPositionRdbmsService exporterPositionRdbmsService,
       final VariableRdbmsService variableRdbmsService,
-      final ProcessRdbmsService processRdbmsService) {
+      final ProcessDefinitionRdbmsService processDefinitionRdbmsService,
+      final ProcessInstanceRdbmsService processInstanceRdbmsService
+  ) {
     return new RdbmsService(
         executionQueue,
         exporterPositionRdbmsService,
-        processRdbmsService,
+        processDefinitionRdbmsService, processInstanceRdbmsService,
         variableRdbmsService
     );
   }

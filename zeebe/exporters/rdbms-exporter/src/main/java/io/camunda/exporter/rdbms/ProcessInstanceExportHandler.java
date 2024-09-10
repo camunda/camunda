@@ -8,45 +8,80 @@
 package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.domain.ProcessInstanceModel;
-import io.camunda.db.rdbms.service.ProcessRdbmsService;
+import io.camunda.db.rdbms.domain.ProcessInstanceModel.State;
+import io.camunda.db.rdbms.service.ProcessInstanceRdbmsService;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.time.Instant;
 
-public class ProcessInstanceExportHandler implements RdbmsExportHandler<ProcessInstanceRecord> {
+public class ProcessInstanceExportHandler implements RdbmsExportHandler<ProcessInstanceRecordValue> {
 
-  private final ProcessRdbmsService processRdbmsService;
+  private final ProcessInstanceRdbmsService processInstanceRdbmsService;
 
-  public ProcessInstanceExportHandler(final ProcessRdbmsService processRdbmsService) {
-    this.processRdbmsService = processRdbmsService;
+  public ProcessInstanceExportHandler(final ProcessInstanceRdbmsService processInstanceRdbmsService) {
+    this.processInstanceRdbmsService = processInstanceRdbmsService;
   }
 
   @Override
-  public boolean canExport(final Record<ProcessInstanceRecord> record) {
-    return record.getValue().getBpmnElementType() == BpmnElementType.PROCESS && record.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED;
+  public boolean canExport(final Record<ProcessInstanceRecordValue> record) {
+    return record.getValue().getBpmnElementType() == BpmnElementType.PROCESS;
   }
 
   @Override
-  public void export(final Record<ProcessInstanceRecord> record) {
-    final ProcessInstanceRecordValue value = record.getValue();
-    if (record.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED
-        && value.getBpmnElementType() == BpmnElementType.PROCESS) {
-      processRdbmsService.create(map(value));
-    } else { // TODO define other intends in can handle + here
-      // Ignore for now
-      //processRdbmsService.update(map(value));
+  public void export(final Record<ProcessInstanceRecordValue> record) {
+    if (record.getValue().getBpmnElementType() == BpmnElementType.PROCESS) {
+      exportProcessInstance(record);
     }
   }
 
-  private ProcessInstanceModel map(final ProcessInstanceRecordValue value) {
+  private void exportProcessInstance(final Record<ProcessInstanceRecordValue> record) {
+    var value = record.getValue();
+    if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_ACTIVATING)) {
+      processInstanceRdbmsService.create(map(record));
+    } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)) {
+      processInstanceRdbmsService.update(new ProcessInstanceModel(
+          value.getProcessInstanceKey(),
+          value.getBpmnProcessId(),
+          value.getProcessDefinitionKey(),
+          State.COMPLETED,
+          null,
+          DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())),
+          value.getTenantId(),
+          value.getParentProcessInstanceKey(),
+          value.getParentElementInstanceKey(),
+          value.getVersion()
+      ));
+    } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED)) {
+      processInstanceRdbmsService.update(new ProcessInstanceModel(
+          value.getProcessInstanceKey(),
+          value.getBpmnProcessId(),
+          value.getProcessDefinitionKey(),
+          State.CANCELED,
+          null,
+          DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())),
+          value.getTenantId(),
+          value.getParentProcessInstanceKey(),
+          value.getParentElementInstanceKey(),
+          value.getVersion()
+      ));
+    }
+  }
+
+  private ProcessInstanceModel map(final Record<ProcessInstanceRecordValue> record) {
+    var value = record.getValue();
     return new ProcessInstanceModel(
         value.getProcessInstanceKey(),
         value.getBpmnProcessId(),
         value.getProcessDefinitionKey(),
+        State.ACTIVE,
+        DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())),
+        null,
         value.getTenantId(),
         value.getParentProcessInstanceKey(),
+        value.getParentElementInstanceKey(),
         value.getVersion()
     );
   }

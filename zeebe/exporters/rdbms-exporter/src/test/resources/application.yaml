@@ -1,1 +1,4 @@
 spring.liquibase.enabled: false
+logging:
+  level:
+    io.camunda: debug

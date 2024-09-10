@@ -5,26 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.rdbms.domain;
+package io.camunda.exporter.rdbms;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
-public record ProcessInstanceModel(
-    Long processInstanceKey,
-    String bpmnProcessId,
-    Long processDefinitionKey,
-    State state,
-    OffsetDateTime startDate,
-    OffsetDateTime endDate,
-    String tenantId,
-    Long parentProcessInstanceKey,
-    Long parentElementInstanceKey,
-    int version
-) {
+public class DateUtil {
+  private DateUtil() {}
 
-  public enum State {
-    ACTIVE,
-    COMPLETED,
-    CANCELED
+  public static OffsetDateTime toOffsetDateTime(Instant timestamp) {
+    return OffsetDateTime.ofInstant(timestamp, ZoneOffset.UTC);
   }
 }

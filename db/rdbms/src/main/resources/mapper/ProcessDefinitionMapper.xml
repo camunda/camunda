@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.ProcessDefinitionMapper">
+  <select id="findOne" parameterType="hashMap"
+    resultType="io.camunda.db.rdbms.domain.ProcessDefinitionModel">
+    SELECT PROCESS_DEFINITION_KEY,
+           BPMN_PROCESS_ID,
+           NAME,
+           TENANT_ID,
+           VERSION_TAG,
+           VERSION
+    FROM PROCESS_DEPLOYMENT
+    WHERE PROCESS_DEFINITION_KEY = #{processDefinitionKey}
+      AND version = #{version}
+  </select>
+
+  <insert
+    id="insert"
+    parameterType="io.camunda.db.rdbms.domain.ProcessInstanceModel"
+    flushCache="true">
+    INSERT INTO PROCESS_DEPLOYMENT (PROCESS_DEFINITION_KEY, BPMN_PROCESS_ID, NAME, TENANT_ID, VERSION_TAG, VERSION)
+    VALUES (#{processDefinitionKey}, #{bpmnProcessId}, #{name}, #{tenantId}, #{versionTag}, #{version})
+  </insert>
+</mapper>

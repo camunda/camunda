@@ -33,7 +33,7 @@ public class ExecutionQueue extends Actor {
     this.sessionFactory = sessionFactory;
 
     actorScheduler.submitActor(this, SchedulingHints.IO_BOUND);
-    actor.run(() -> actor.schedule(Duration.ofSeconds(5), this::flushAndReschedule));
+    actor.run(() -> actor.schedule(Duration.ofSeconds(30), this::flushAndReschedule)); // TODO make timeout configurable
   }
 
   public void executeInQueue(final QueueItem entry) {
@@ -52,34 +52,43 @@ public class ExecutionQueue extends Actor {
 
   public void flush() {
     if (queue.isEmpty()) {
-      LOG.trace("Flushing empty execution queue");
+      LOG.trace("Skip Flushing because execution queue is empty");
       return;
     }
-    LOG.debug("Flushing execution queue with {} items", queue.size());
+    LOG.debug("[RDBMS Execution Queue] Flushing execution queue with {} items", queue.size());
     final var session = sessionFactory.openSession();
 
     try {
+      var preFlushListenersCalled = false;
       while (!queue.isEmpty()) {
         final var entry = queue.peek();
-        LOG.trace("Executing entry: {}", entry);
+        LOG.trace("[RDBMS Execution Queue] Executing entry: {}", entry);
         session.update(entry.statementId(), entry.parameter());
         queue.poll();
-      }
 
-      preFlushListeners.forEach(FlushListener::onFlushSuccess);
+        if (queue.isEmpty() && !postFlushListeners.isEmpty() && !preFlushListenersCalled) {
+          LOG.debug("[RDBMS Execution Queue] Call pre flush listeners");
+          preFlushListeners.forEach(FlushListener::onFlushSuccess);
+          preFlushListenersCalled = true;
+        }
+      }
       session.commit();
+      LOG.debug("[RDBMS Execution Queue] Commit queue with {} entries", queue.size());
     } catch (final Exception e) {
       LOG.error("Error while executing queue", e);
       session.rollback();
     } finally {
       session.close();
-      postFlushListeners.forEach(FlushListener::onFlushSuccess);
+      if (!postFlushListeners.isEmpty()) {
+        LOG.debug("[RDBMS Execution Queue] Call post flush listeners");
+        postFlushListeners.forEach(FlushListener::onFlushSuccess);
+      }
     }
   }
 
   private void checkQueueForFlush() {
     LOG.trace("Checking if queue is flushed. Queue size: {}", queue.size());
-    if (queue.size() > 5) {
+    if (queue.size() > 100) {
       flush();
     }
   }

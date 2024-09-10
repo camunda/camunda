@@ -9,7 +9,8 @@ package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.queue.ExecutionQueue;
 import io.camunda.db.rdbms.service.ExporterPositionRdbmsService;
-import io.camunda.db.rdbms.service.ProcessRdbmsService;
+import io.camunda.db.rdbms.service.ProcessDefinitionRdbmsService;
+import io.camunda.db.rdbms.service.ProcessInstanceRdbmsService;
 import io.camunda.db.rdbms.service.VariableRdbmsService;
 
 /**
@@ -20,17 +21,20 @@ public class RdbmsService {
 
   private final ExecutionQueue executionQueue;
   private final ExporterPositionRdbmsService exporterPositionRdbmsService;
-  private final ProcessRdbmsService processRdbmsService;
+  private final ProcessDefinitionRdbmsService processDefinitionRdbmsService;
+  private final ProcessInstanceRdbmsService processInstanceRdbmsService;
   private final VariableRdbmsService variableRdbmsService;
 
   public RdbmsService(final ExecutionQueue executionQueue,
       final ExporterPositionRdbmsService exporterPositionRdbmsService,
-      final ProcessRdbmsService processRdbmsService,
+      final ProcessDefinitionRdbmsService processDefinitionRdbmsService,
+      final ProcessInstanceRdbmsService processInstanceRdbmsService,
       final VariableRdbmsService variableRdbmsService
   ) {
     this.executionQueue = executionQueue;
     this.exporterPositionRdbmsService = exporterPositionRdbmsService;
-    this.processRdbmsService = processRdbmsService;
+    this.processDefinitionRdbmsService = processDefinitionRdbmsService;
+    this.processInstanceRdbmsService = processInstanceRdbmsService;
     this.variableRdbmsService = variableRdbmsService;
   }
 
@@ -38,8 +42,12 @@ public class RdbmsService {
     return exporterPositionRdbmsService;
   }
 
-  public ProcessRdbmsService getProcessRdbmsService() {
-    return processRdbmsService;
+  public ProcessDefinitionRdbmsService getProcessDeploymentRdbmsService() {
+    return processDefinitionRdbmsService;
+  }
+
+  public ProcessInstanceRdbmsService getProcessInstanceRdbmsService() {
+    return processInstanceRdbmsService;
   }
 
   public VariableRdbmsService getVariableRdbmsService() {
