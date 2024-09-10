@@ -22,6 +22,13 @@ public final class OrderedCommandDistributionMigration implements MigrationTask 
   @Override
   public boolean needsToRun(final MigrationTaskContext context) {
     final var processingState = context.processingState();
+
+    /**
+     * We need to move any pending distirbutions into the retriable distribution column family. We
+     * only need to do this if we actually have pending distributions. To make sure we don't run the
+     * migration twice we also check that the queued distribution column family is empty, and the
+     * retriable distribution column family is empty.
+     */
     return !processingState.isEmpty(ZbColumnFamilies.PENDING_DISTRIBUTION)
         && processingState.isEmpty(ZbColumnFamilies.QUEUED_DISTRIBUTION)
         && processingState.isEmpty(ZbColumnFamilies.RETRIABLE_DISTRIBUTION);
