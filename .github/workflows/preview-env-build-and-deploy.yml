@@ -144,7 +144,7 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
+            secret/data/products/camunda/ci/camunda ARGOCD_DEV_TOKEN;
 
       #########################################################################
       # Setup: checkout code. This is required because we are using
@@ -193,11 +193,11 @@ jobs:
         uses: camunda/infra-global-github-actions/preview-env/create@main
         with:
           revision: ${{ env.BRANCH_NAME }}
-          argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+          argocd_token: ${{ steps.secrets.outputs.ARGOCD_DEV_TOKEN }}
           app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
           app_url: https://${{ steps.sanitize.outputs.branch_name }}.camunda.camunda.cloud
           argocd_arguments: ${{ env.argocd_arguments }}
-          argocd_server: argocd.int.camunda.com
+          argocd_server: dev.argocd.int.camunda.com
 
   comment:
     if: always() && needs.deploy-preview.result != 'skipped' && needs.deploy-preview.result != 'cancelled'

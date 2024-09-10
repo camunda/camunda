@@ -33,7 +33,7 @@ jobs:
         roleId: ${{ secrets.VAULT_ROLE_ID }}
         secretId: ${{ secrets.VAULT_SECRET_ID }}
         secrets: |
-          secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
+          secret/data/products/camunda/ci/camunda ARGOC_DEV_TOKEN;
 
     #########################################################################
     # Setup: checkout code. This is required because we are using
@@ -47,9 +47,9 @@ jobs:
       uses: camunda/infra-global-github-actions/preview-env/destroy@main
       with:
         revision: ${{ env.BRANCH_NAME }}
-        argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+        argocd_token: ${{ steps.secrets.outputs.ARGOCD_DEV_TOKEN }}
         app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
-        argocd_server: argocd.int.camunda.com
+        argocd_server: dev.argocd.int.camunda.com
 
   clean:
     if: always() && needs.teardown-preview.result != 'skipped'
