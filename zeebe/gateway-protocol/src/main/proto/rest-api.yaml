@@ -579,7 +579,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
-  /administration/clock:
+  /clock:
     put:
       tags:
         - Clock
@@ -614,7 +614,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-  /administration/clock/reset:
+  /clock/reset:
     post:
       tags:
         - Clock
