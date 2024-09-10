@@ -6,18 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
+import {useState, useEffect, useCallback} from 'react';
 import update from 'immutability-helper';
 import deepEqual from 'fast-deep-equal';
 import {Accordion, AccordionItem, DefinitionTooltip, Layer, Tag} from '@carbon/react';
 import {Db2Database, Factor, Filter as FilterIcon} from '@carbon/icons-react';
 
 import {Filter} from 'filter';
-import {withDocs, withErrorHandling} from 'HOC';
-import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables, getRandomId} from 'services';
+import {useDocs, useErrorHandling} from 'hooks';
+import {
+  getFlowNodeNames,
+  loadProcessDefinitionXml,
+  loadVariables as loadVariablesService,
+  getRandomId,
+} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
-import {setVariables} from 'variables';
+import {setVariables as setVariablesService} from 'variables';
 
 import DistributedBy from './DistributedBy';
 import AggregationType from './AggregationType';
@@ -33,80 +38,85 @@ import {isDurationHeatmap, isProcessInstanceDuration} from './service';
 
 import './ReportControlPanel.scss';
 
-export class ReportControlPanel extends React.Component {
-  constructor(props) {
-    super(props);
+export default function ReportControlPanel({report, updateReport, setLoading}) {
+  const [variables, setVariables] = useState(null);
+  const [flowNodeNames, setFlowNodeNames] = useState(null);
+  const {mightFail} = useErrorHandling();
+  const {generateDocsLink} = useDocs();
 
-    this.state = {
-      variables: null,
-      flowNodeNames: null,
-    };
-  }
+  const loadFlowNodeNames = useCallback(
+    ({key, versions, tenantIds}) => {
+      if (key && versions && tenantIds) {
+        return new Promise((resolve, reject) => {
+          mightFail(
+            getFlowNodeNames(key, versions[0], tenantIds[0]),
+            (flowNodeNames) => {
+              setFlowNodeNames(flowNodeNames);
+              resolve();
+            },
+            (error) => reject(showError(error))
+          );
+        });
+      }
+    },
+    [mightFail]
+  );
 
-  componentDidMount() {
-    const data = this.props.report.data;
-
-    if (data?.definitions?.length) {
-      this.loadVariables(data.definitions);
-      this.loadFlowNodeNames(data.definitions[0]);
-    }
-  }
-
-  loadFlowNodeNames = ({key, versions, tenantIds}) => {
-    if (key && versions && tenantIds) {
+  const loadVariables = useCallback(
+    (definitions) => {
       return new Promise((resolve, reject) => {
-        this.props.mightFail(
-          getFlowNodeNames(key, versions[0], tenantIds[0]),
-          (flowNodeNames) => this.setState({flowNodeNames}, resolve),
+        mightFail(
+          loadVariablesService({
+            processesToQuery: definitions.map(({key, versions, tenantIds}) => ({
+              processDefinitionKey: key,
+              processDefinitionVersions: versions,
+              tenantIds,
+            })),
+            filter: report.data.filter,
+          }),
+          (variables) => {
+            setVariables(variables);
+            setVariablesService(variables);
+            resolve();
+          },
           (error) => reject(showError(error))
         );
       });
+    },
+    [report.data.filter, mightFail]
+  );
+
+  useEffect(() => {
+    const {data} = report;
+
+    if (data?.definitions?.length) {
+      loadVariables(data.definitions);
+      loadFlowNodeNames(data.definitions[0]);
     }
-  };
+  }, [report, loadFlowNodeNames, loadVariables]);
 
-  loadVariables = (definitions) => {
-    return new Promise((resolve, reject) => {
-      this.props.mightFail(
-        loadVariables({
-          processesToQuery: definitions.map(({key, versions, tenantIds}) => ({
-            processDefinitionKey: key,
-            processDefinitionVersions: versions,
-            tenantIds,
-          })),
-          filter: this.props.report.data.filter,
-        }),
-        (variables) => {
-          this.setState({variables}, resolve);
-          setVariables(variables);
-        },
-        (error) => reject(showError(error))
-      );
-    });
-  };
-
-  loadXml = ({key, versions, tenantIds}) => {
+  function loadXml({key, versions, tenantIds}) {
     if (key && versions?.[0] && tenantIds) {
       return new Promise((resolve, reject) => {
-        this.props.mightFail(
-          loadProcessDefinitionXml(key, versions[0], tenantIds[0]),
-          resolve,
-          (error) => reject(showError(error))
+        mightFail(loadProcessDefinitionXml(key, versions[0], tenantIds[0]), resolve, (error) =>
+          reject(showError(error))
         );
       });
     }
 
     return null;
-  };
+  }
 
-  variableExists = (varName) => this.state.variables.some((variable) => variable.name === varName);
+  function variableExists(varName) {
+    return variables.some((variable) => variable.name === varName);
+  }
 
-  getNewVariables = (columns) =>
-    this.state.variables
-      .map((col) => 'variable:' + col.name)
-      .filter((col) => !columns.includes(col));
+  function getNewVariables(columns) {
+    return variables.map((col) => 'variable:' + col.name).filter((col) => !columns.includes(col));
+  }
 
-  getVariableConfig = () => {
-    const {view, groupBy, distributedBy} = this.props.report.data;
+  function getVariableConfig() {
+    const {view, groupBy, distributedBy} = report.data;
 
     if (view?.entity === 'variable') {
       return {
@@ -133,10 +143,10 @@ export class ReportControlPanel extends React.Component {
         },
       };
     }
-  };
+  }
 
-  copyDefinition = async (idx) => {
-    const {data} = this.props.report;
+  async function copyDefinition(idx) {
+    const {data} = report;
     const definitionToCopy = data.definitions[idx];
     const {tenantIds, versions, name, key, displayName} = definitionToCopy;
     const newDefinition = {
@@ -154,19 +164,19 @@ export class ReportControlPanel extends React.Component {
       change.visualization = {$set: 'table'};
     }
 
-    this.props.setLoading(true);
-    await this.props.updateReport(change, true);
-    this.props.setLoading(false);
-  };
+    setLoading(true);
+    await updateReport(change, true);
+    setLoading(false);
+  }
 
-  addDefinition = async (newDefinitions) => {
+  async function addDefinition(newDefinitions) {
     let change = {definitions: {$push: newDefinitions}};
 
-    this.props.setLoading(true);
-    const data = this.props.report.data;
+    setLoading(true);
+    const data = report.data;
 
     const {definitions} = update(data, change);
-    change = {...change, ...(await this.processDefinitionUpdate(definitions))};
+    change = {...change, ...(await processDefinitionUpdate(definitions))};
     change.configuration = change.configuration || {};
     if (data.definitions.length === 1) {
       // if we add the second definition, we need to make sure that it's not a heatmap report
@@ -175,20 +185,20 @@ export class ReportControlPanel extends React.Component {
       }
     }
 
-    await this.props.updateReport(change, true);
-    this.props.setLoading(false);
-  };
+    await updateReport(change, true);
+    setLoading(false);
+  }
 
-  removeDefinition = async (idx) => {
+  async function removeDefinition(idx) {
     let change = {
       definitions: {$splice: [[idx, 1]]},
     };
 
-    this.props.setLoading(true);
-    const data = this.props.report.data;
+    setLoading(true);
+    const data = report.data;
 
     const {definitions} = update(data, change);
-    change = {...change, ...(await this.processDefinitionUpdate(definitions))};
+    change = {...change, ...(await processDefinitionUpdate(definitions))};
 
     if (data.definitions.length === 1) {
       // removing the last definition will reset view and groupby options
@@ -228,12 +238,12 @@ export class ReportControlPanel extends React.Component {
     });
     change.filter = {$set: newFilters};
 
-    await this.props.updateReport(change, true);
-    this.props.setLoading(false);
-  };
+    await updateReport(change, true);
+    setLoading(false);
+  }
 
-  changeDefinition = async (changedDefinition, idx) => {
-    this.props.setLoading(true);
+  async function changeDefinition(changedDefinition, idx) {
+    setLoading(true);
 
     let change = {
       definitions: {
@@ -241,14 +251,14 @@ export class ReportControlPanel extends React.Component {
       },
     };
 
-    const {definitions} = update(this.props.report.data, change);
-    change = {...change, ...(await this.processDefinitionUpdate(definitions))};
+    const {definitions} = update(report.data, change);
+    change = {...change, ...(await processDefinitionUpdate(definitions))};
 
-    await this.props.updateReport(change, true);
-    this.props.setLoading(false);
-  };
+    await updateReport(change, true);
+    setLoading(false);
+  }
 
-  processDefinitionUpdate = async (newDefinitions) => {
+  async function processDefinitionUpdate(newDefinitions) {
     if (!newDefinitions?.length) {
       return {};
     }
@@ -261,15 +271,15 @@ export class ReportControlPanel extends React.Component {
         targetValue,
       },
       definitions,
-    } = this.props.report.data;
+    } = report.data;
 
     const targetFlowNodes = Object.keys(values);
     const change = {};
 
     const [xml] = await Promise.all([
-      this.loadXml(newDefinitions[0]),
-      this.loadVariables(newDefinitions),
-      this.loadFlowNodeNames(newDefinitions[0]),
+      loadXml(newDefinitions[0]),
+      loadVariables(newDefinitions),
+      loadFlowNodeNames(newDefinitions[0]),
     ]);
 
     change.configuration = {
@@ -280,8 +290,8 @@ export class ReportControlPanel extends React.Component {
       distributeByCustomBucket: {active: {$set: false}},
     };
 
-    const variableConfig = this.getVariableConfig();
-    if (variableConfig && !this.variableExists(variableConfig.name)) {
+    const variableConfig = getVariableConfig();
+    if (variableConfig && !variableExists(variableConfig.name)) {
       variableConfig.reset(change);
     }
 
@@ -298,24 +308,16 @@ export class ReportControlPanel extends React.Component {
       change.configuration.tableColumns = {
         ...change.configuration.tableColumns,
         includedColumns: {
-          $set: includedColumns.concat(
-            this.getNewVariables(includedColumns.concat(excludedColumns))
-          ),
+          $set: includedColumns.concat(getNewVariables(includedColumns.concat(excludedColumns))),
         },
       };
     }
 
-    if (
-      processPart &&
-      !checkAllFlowNodesExist(this.state.flowNodeNames, Object.values(processPart))
-    ) {
+    if (processPart && !checkAllFlowNodesExist(flowNodeNames, Object.values(processPart))) {
       change.configuration.processPart = {$set: null};
     }
 
-    if (
-      targetFlowNodes.length &&
-      !checkAllFlowNodesExist(this.state.flowNodeNames, targetFlowNodes)
-    ) {
+    if (targetFlowNodes.length && !checkAllFlowNodesExist(flowNodeNames, targetFlowNodes)) {
       change.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
     }
 
@@ -325,168 +327,160 @@ export class ReportControlPanel extends React.Component {
     }
 
     return change;
-  };
+  }
 
-  render() {
-    const {report, updateReport} = this.props;
-    const {data, result} = this.props.report;
-    const {flowNodeNames, variables} = this.state;
+  const {data, result} = report;
+  const shouldDisplayMeasure = ['frequency', 'duration', 'percentage'].includes(
+    data.view?.properties[0]
+  );
 
-    const shouldDisplayMeasure = ['frequency', 'duration', 'percentage'].includes(
-      data.view?.properties[0]
-    );
-
-    return (
-      <div className="ReportControlPanel">
-        <Layer className="controlSections">
-          <Accordion>
-            <AccordionItem
-              title={
-                <>
-                  <DefinitionTooltip
-                    openOnHover
-                    definition={t('report.copyTooltip', {
-                      entity: t('common.process.label'),
-                      docsLink: this.props.generateDocsLink(
-                        'components/userguide/additional-features/process-variants-comparison/'
-                      ),
-                    })}
-                  >
-                    <Db2Database />
-                    {t('common.dataSource')}
-                  </DefinitionTooltip>
-                  <AddDefinition
-                    type="process"
-                    definitions={data.definitions}
-                    onAdd={this.addDefinition}
-                  />
-                </>
-              }
-              open
-            >
-              <DefinitionList
-                filters={data.filter}
-                type="process"
-                definitions={data.definitions}
-                onCopy={this.copyDefinition}
-                onChange={this.changeDefinition}
-                onRemove={this.removeDefinition}
-              />
-            </AccordionItem>
-            <AccordionItem
-              title={
-                <>
-                  <Factor />
-                  {t('report.reportSetup')}
-                </>
-              }
-              open
-            >
-              <ul className="reportSetup">
-                <li className="select">
-                  <span className="label">{t(`report.view.label`)}</span>
-                  <View
-                    type="process"
-                    report={report.data}
-                    onChange={(change) => updateReport(change, true)}
-                    variables={variables}
-                  />
-                  {data.view?.entity === 'variable' && (
-                    <AggregationType report={data} onChange={this.props.updateReport} />
-                  )}
-                </li>
-                {shouldDisplayMeasure && (
-                  <Measure report={data} onChange={(change) => updateReport(change, true)} />
-                )}
-                <GroupBy
+  return (
+    <div className="ReportControlPanel">
+      <Layer className="controlSections">
+        <Accordion>
+          <AccordionItem
+            title={
+              <>
+                <DefinitionTooltip
+                  openOnHover
+                  definition={t('report.copyTooltip', {
+                    entity: t('common.process.label'),
+                    docsLink: generateDocsLink(
+                      'components/userguide/additional-features/process-variants-comparison/'
+                    ),
+                  })}
+                >
+                  <Db2Database />
+                  {t('common.dataSource')}
+                </DefinitionTooltip>
+                <AddDefinition
                   type="process"
-                  report={report.data}
-                  onChange={(change) => updateReport(change, true)}
-                  variables={{variable: variables}}
+                  definitions={data.definitions}
+                  onAdd={addDefinition}
                 />
-                <DistributedBy
+              </>
+            }
+            open
+          >
+            <DefinitionList
+              filters={data.filter}
+              type="process"
+              definitions={data.definitions}
+              onCopy={copyDefinition}
+              onChange={changeDefinition}
+              onRemove={removeDefinition}
+            />
+          </AccordionItem>
+          <AccordionItem
+            title={
+              <>
+                <Factor />
+                {t('report.reportSetup')}
+              </>
+            }
+            open
+          >
+            <ul className="reportSetup">
+              <li className="select">
+                <span className="label">{t(`report.view.label`)}</span>
+                <View
+                  type="process"
                   report={report.data}
                   onChange={(change) => updateReport(change, true)}
                   variables={variables}
                 />
-                <Sorting
-                  type="process"
-                  report={report.data}
-                  onChange={(change) => updateReport(change, true)}
-                />
-                {isDurationHeatmap(data) && (
-                  <li className="select">
-                    <span className="label">{t('report.heatTarget.label')}</span>
-                    <TargetValueComparison
-                      report={this.props.report}
-                      onChange={this.props.updateReport}
-                    />
-                  </li>
+                {data.view?.entity === 'variable' && (
+                  <AggregationType report={data} onChange={updateReport} />
                 )}
-                {isProcessInstanceDuration(data) && data.definitions?.length <= 1 && (
-                  <li>
-                    <ProcessPart
-                      flowNodeNames={flowNodeNames}
-                      xml={data.configuration.xml}
-                      processPart={data.configuration.processPart}
-                      update={(newPart) => {
-                        const aggregations = data.configuration.aggregationTypes;
-                        const change = {configuration: {processPart: {$set: newPart}}};
-                        const isPercentile = (agg) => agg.type === 'percentile';
-                        if (aggregations.find(isPercentile)) {
-                          const newAggregations = aggregations.filter((agg) => !isPercentile(agg));
-                          if (newAggregations.length === 0) {
-                            newAggregations.push({type: 'avg', value: null});
-                          }
-
-                          change.configuration.aggregationTypes = {$set: newAggregations};
-                        }
-                        this.props.updateReport(change, true);
-                      }}
-                    />
-                  </li>
-                )}
-              </ul>
-            </AccordionItem>
-            <AccordionItem
-              title={
-                <>
-                  <FilterIcon />
-                  {t('common.filter.label')}
-                  {data.filter?.length > 0 && (
-                    <Tag type="high-contrast" className="filterCount">
-                      {data.filter.length}
-                    </Tag>
-                  )}
-                </>
-              }
-            >
-              <Filter
-                data={data.filter}
-                onChange={this.props.updateReport}
-                definitions={data.definitions}
+              </li>
+              {shouldDisplayMeasure && (
+                <Measure report={data} onChange={(change) => updateReport(change, true)} />
+              )}
+              <GroupBy
+                type="process"
+                report={report.data}
+                onChange={(change) => updateReport(change, true)}
+                variables={{variable: variables}}
+              />
+              <DistributedBy
+                report={report.data}
+                onChange={(change) => updateReport(change, true)}
                 variables={variables}
               />
-            </AccordionItem>
-          </Accordion>
-        </Layer>
-        {result && typeof result.instanceCount !== 'undefined' && (
-          <div className="instanceCount">
-            {t(
-              `report.instanceCount.process.label${
-                result.instanceCountWithoutFilters !== 1 ? '-plural' : ''
-              }-withFilter`,
-              {
-                count: result.instanceCount,
-                totalCount:
-                  (haveDateFilter(data.filter) ? '*' : '') + result.instanceCountWithoutFilters,
-              }
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
+              <Sorting
+                type="process"
+                report={report.data}
+                onChange={(change) => updateReport(change, true)}
+              />
+              {isDurationHeatmap(data) && (
+                <li className="select">
+                  <span className="label">{t('report.heatTarget.label')}</span>
+                  <TargetValueComparison report={report} onChange={updateReport} />
+                </li>
+              )}
+              {isProcessInstanceDuration(data) && data.definitions?.length <= 1 && (
+                <li>
+                  <ProcessPart
+                    flowNodeNames={flowNodeNames}
+                    xml={data.configuration.xml}
+                    processPart={data.configuration.processPart}
+                    update={(newPart) => {
+                      const aggregations = data.configuration.aggregationTypes;
+                      const change = {configuration: {processPart: {$set: newPart}}};
+                      const isPercentile = (agg) => agg.type === 'percentile';
+                      if (aggregations.find(isPercentile)) {
+                        const newAggregations = aggregations.filter((agg) => !isPercentile(agg));
+                        if (newAggregations.length === 0) {
+                          newAggregations.push({type: 'avg', value: null});
+                        }
+
+                        change.configuration.aggregationTypes = {$set: newAggregations};
+                      }
+                      updateReport(change, true);
+                    }}
+                  />
+                </li>
+              )}
+            </ul>
+          </AccordionItem>
+          <AccordionItem
+            title={
+              <>
+                <FilterIcon />
+                {t('common.filter.label')}
+                {data.filter?.length > 0 && (
+                  <Tag type="high-contrast" className="filterCount">
+                    {data.filter.length}
+                  </Tag>
+                )}
+              </>
+            }
+          >
+            <Filter
+              data={data.filter}
+              onChange={updateReport}
+              definitions={data.definitions}
+              variables={variables}
+            />
+          </AccordionItem>
+        </Accordion>
+      </Layer>
+      {result && typeof result.instanceCount !== 'undefined' && (
+        <div className="instanceCount">
+          {t(
+            `report.instanceCount.process.label${
+              result.instanceCountWithoutFilters !== 1 ? '-plural' : ''
+            }-withFilter`,
+            {
+              count: result.instanceCount,
+              totalCount:
+                (haveDateFilter(data.filter) ? '*' : '') + result.instanceCountWithoutFilters,
+            }
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function checkAllFlowNodesExist(availableFlowNodeNames, flowNodeIds) {
@@ -500,5 +494,3 @@ function checkAllFlowNodesExist(availableFlowNodeNames, flowNodeIds) {
 function haveDateFilter(filters) {
   return filters?.some((filter) => filter.type.toLowerCase().includes('date'));
 }
-
-export default withDocs(withErrorHandling(ReportControlPanel));

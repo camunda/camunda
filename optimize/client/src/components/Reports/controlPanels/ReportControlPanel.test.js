@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
+import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
@@ -14,7 +14,7 @@ import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables} from 'service
 
 import {DefinitionList} from './DefinitionList';
 import GroupBy from './GroupBy';
-import {ReportControlPanel} from './ReportControlPanel';
+import ReportControlPanel from './ReportControlPanel';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -24,18 +24,20 @@ jest.mock('services', () => {
     loadProcessDefinitionXml: jest.fn().mockReturnValue('I am a process definition xml'),
     loadVariables: jest.fn().mockReturnValue([]),
     reportConfig: {
-      getLabelFor: () => 'foo',
-      options: {
-        view: {foo: {data: 'foo', label: 'viewfoo'}},
-        groupBy: {
-          foo: {data: 'foo', label: 'groupbyfoo'},
-          variable: {data: {value: []}, label: 'Variables'},
+      process: {
+        getLabelFor: () => 'foo',
+        options: {
+          view: {foo: {data: 'foo', label: 'viewfoo'}},
+          groupBy: {
+            foo: {data: 'foo', label: 'groupbyfoo'},
+            variable: {data: {value: []}, label: 'Variables'},
+          },
+          visualization: {foo: {data: 'foo', label: 'visualizationfoo'}},
         },
-        visualization: {foo: {data: 'foo', label: 'visualizationfoo'}},
+        isAllowed: jest.fn().mockReturnValue(true),
+        getNext: jest.fn(),
+        update: jest.fn(),
       },
-      isAllowed: jest.fn().mockReturnValue(true),
-      getNext: jest.fn(),
-      update: jest.fn(),
     },
     getFlowNodeNames: jest.fn().mockReturnValue({
       a: 'foo',
@@ -43,6 +45,16 @@ jest.mock('services', () => {
     }),
   };
 });
+
+jest.mock('hooks', () => ({
+  useDocs: jest.fn().mockReturnValue({
+    generateDocsLink: jest.fn().mockReturnValue('https://docs.camunda.io/optimize/'),
+    getBaseDocsUrl: jest.fn().mockReturnValue('https://docs.camunda.io/'),
+  }),
+  useErrorHandling: jest.fn().mockReturnValue({
+    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  }),
+}));
 
 const report = {
   data: {
@@ -72,8 +84,6 @@ const report = {
 
 const props = {
   report,
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  generateDocsLink: jest.fn().mockReturnValue('https://docs.camunda.io/optimize/'),
   setLoading: () => {},
 };
 
@@ -93,6 +103,8 @@ it('should call the provided updateReport property function when a setting chang
 it('should load the variables of the process', () => {
   shallow(<ReportControlPanel {...props} />);
 
+  runAllEffects();
+
   expect(loadVariables).toHaveBeenCalledWith({
     processesToQuery: [
       {
@@ -109,7 +121,9 @@ it('should include variables in the groupby options', () => {
   const node = shallow(<ReportControlPanel {...props} />);
 
   const variables = [{name: 'Var1'}, {name: 'Var2'}];
-  node.setState({variables});
+  loadVariables.mockReturnValueOnce(variables);
+
+  runAllEffects();
 
   const groupbyDropdown = node.find(GroupBy);
 
@@ -134,7 +148,7 @@ it('should load the flownode names and hand them to the process part', async () 
   );
 
   await flushPromises();
-  node.update();
+  runAllEffects();
 
   expect(getFlowNodeNames).toHaveBeenCalled();
   expect(node.find('ProcessPart').prop('flowNodeNames')).toEqual(getFlowNodeNames());
@@ -272,6 +286,8 @@ it('should reset variable groupBy report when changing to a definition that does
     />
   );
 
+  runAllEffects();
+
   await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].groupBy).toEqual({$set: null});
@@ -297,6 +313,8 @@ it('should reset variable view report when changing to a definition that does no
     />
   );
 
+  runAllEffects();
+
   await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].view).toEqual({$set: null});
@@ -320,6 +338,8 @@ it('should reset distributed by variable report when changing to a definition th
     />
   );
 
+  runAllEffects();
+
   await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].distributedBy).toEqual({$set: {type: 'none', value: null}});
@@ -338,6 +358,8 @@ it('should not reset variable report when changing to a definition that has the 
       updateReport={spy}
     />
   );
+
+  runAllEffects();
 
   await node.find(DefinitionList).prop('onChange')({}, 0);
   expect(spy.mock.calls[0][0].groupBy).toEqual(undefined);
@@ -363,6 +385,8 @@ it('should reset heatmap target value on definition change if flow nodes does no
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
 
+  runAllEffects();
+
   await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].configuration.heatmapTargetValue).toBeDefined();
@@ -386,6 +410,8 @@ it('should reset process part on definition change if flow nodes does not exist'
   const node = shallow(
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
+
+  runAllEffects();
 
   await node.find(DefinitionList).prop('onChange')({}, 0);
 
@@ -412,6 +438,8 @@ it('should not reset heatmap target value on definition change if flow nodes exi
   const node = shallow(
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
+
+  runAllEffects();
 
   await node.find(DefinitionList).prop('onChange')({}, 0);
 
@@ -561,6 +589,8 @@ it('should add new variables to includedColumns when switching definition/versio
   const node = shallow(
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
+
+  runAllEffects();
 
   await node.find(DefinitionList).prop('onChange')({}, 0);
 
@@ -749,4 +779,5 @@ it('should show Sorting with proper values for reports grouped by date', () => {
   const node = shallow(<ReportControlPanel {...props} report={reportWithGRoupByDate} />);
 
   expect(node.find('Sorting').prop('report')).toBe(reportWithGRoupByDate.data);
+  expect(node.find('Sorting').prop('type')).toBe('process');
 });
