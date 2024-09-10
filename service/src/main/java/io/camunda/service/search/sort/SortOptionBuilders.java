@@ -34,6 +34,10 @@ public final class SortOptionBuilders {
     return new DecisionRequirementsSort.Builder();
   }
 
+  public static DecisionInstanceSort.Builder decisionInstance() {
+    return new DecisionInstanceSort.Builder();
+  }
+
   public static UserSort.Builder user() {
     return new UserSort.Builder();
   }
@@ -66,6 +70,11 @@ public final class SortOptionBuilders {
       final Function<DecisionRequirementsSort.Builder, ObjectBuilder<DecisionRequirementsSort>>
           fn) {
     return fn.apply(decisionRequirements()).build();
+  }
+
+  public static DecisionInstanceSort decisionInstance(
+      final Function<DecisionInstanceSort.Builder, ObjectBuilder<DecisionInstanceSort>> fn) {
+    return fn.apply(decisionInstance()).build();
   }
 
   public static UserSort user(final Function<UserSort.Builder, ObjectBuilder<UserSort>> fn) {

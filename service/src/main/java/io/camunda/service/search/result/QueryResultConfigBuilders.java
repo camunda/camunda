@@ -37,4 +37,16 @@ public final class QueryResultConfigBuilders {
           fn) {
     return fn.apply(decisionRequirements()).build();
   }
+
+  public static DecisionInstanceQueryResultConfig.Builder decisionInstance() {
+    return new DecisionInstanceQueryResultConfig.Builder();
+  }
+
+  public static DecisionInstanceQueryResultConfig decisionInstance(
+      final Function<
+              DecisionInstanceQueryResultConfig.Builder,
+              ObjectBuilder<DecisionInstanceQueryResultConfig>>
+          fn) {
+    return fn.apply(decisionInstance()).build();
+  }
 }

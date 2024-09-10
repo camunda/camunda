@@ -60,6 +60,15 @@ public final class SearchQueryBuilders {
     return fn.apply(decisionRequirementsSearchQuery()).build();
   }
 
+  public static DecisionInstanceQuery.Builder decisionInstanceSearchQuery() {
+    return new DecisionInstanceQuery.Builder();
+  }
+
+  public static DecisionInstanceQuery decisionInstanceSearchQuery(
+      final Function<DecisionInstanceQuery.Builder, ObjectBuilder<DecisionInstanceQuery>> fn) {
+    return fn.apply(decisionInstanceSearchQuery()).build();
+  }
+
   public static UserQuery.Builder userSearchQuery() {
     return new UserQuery.Builder();
   }

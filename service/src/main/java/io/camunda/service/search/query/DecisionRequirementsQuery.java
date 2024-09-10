@@ -42,7 +42,7 @@ public record DecisionRequirementsQuery(
     private static final DecisionRequirementsSort EMPTY_SORT =
         SortOptionBuilders.decisionRequirements().build();
     private static final DecisionRequirementsQueryResultConfig EXCLUDE_XML_RESULT_CONFIG =
-        QueryResultConfigBuilders.decisionRequirements().xml().exclude().build();
+        QueryResultConfigBuilders.decisionRequirements(r -> r.xml().exclude());
 
     private DecisionRequirementsFilter filter;
     private DecisionRequirementsSort sort;
