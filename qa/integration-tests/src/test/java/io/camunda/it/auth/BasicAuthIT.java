@@ -22,7 +22,7 @@ import io.camunda.service.entities.UserEntity;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
-import io.camunda.zeebe.gateway.protocol.rest.UserWithPasswordRequest;
+import io.camunda.zeebe.client.protocol.rest.UserRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -74,7 +74,7 @@ public class BasicAuthIT {
 
     content =
         objectMapper.writeValueAsString(
-            new UserWithPasswordRequest().username("demo").password("password").email("demo@e.c"));
+            new UserRequest().username("demo").password("password").email("demo@e.c"));
   }
 
   @Test
