@@ -119,7 +119,7 @@ jobs:
         needs.build-zeebe.result != 'skipped' && needs.build-zeebe.result != 'cancelled'
     needs: [ build-optimize, build-operate, build-tasklist, conflicts, build-zeebe ]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     name: Deploy Preview Environment C8SM
     env:
       BRANCH_NAME: ${{ github.head_ref }} # head_ref = branch on PR
