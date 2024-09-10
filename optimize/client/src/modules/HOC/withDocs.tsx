@@ -6,9 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createContext, ComponentType, useContext, ReactNode, useEffect, useState} from 'react';
+import {createContext, ComponentType, ReactNode, useEffect, useState} from 'react';
 
 import {getDocsVersion} from 'config';
+import {useDocs} from 'hooks';
 
 export interface WithDocsProps {
   generateDocsLink: (path: string) => string;
@@ -46,8 +47,16 @@ export function DocsProvider({children}: {children: ReactNode}): JSX.Element {
   );
 }
 
-export default function withDocs<T extends object>(Component: ComponentType<T>) {
-  return (props: Omit<T, keyof WithDocsProps>) => (
-    <Component {...useContext(DocsContext)} {...(props as T)} />
+export default function withDocs<T extends object>(
+  Component: ComponentType<T>
+): ComponentType<Omit<T, keyof WithDocsProps>> {
+  const Wrapper = (props: Omit<T, keyof WithDocsProps>) => (
+    <Component {...useDocs()} {...(props as T)} />
   );
+
+  Wrapper.displayName = `${Component.displayName || Component.name || 'Component'}DocsHandler`;
+
+  Wrapper.WrappedComponent = Component;
+
+  return Wrapper;
 }
