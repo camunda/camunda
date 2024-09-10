@@ -123,15 +123,20 @@ public final class FlowNodeInstanceTreePathCache {
             "Cache miss: resolved treePath {} for flowScopeKey {} via given resolver.",
             parentTreePath,
             flowNodeInstanceRecord.flowScopeKey());
-      }
 
-      if (parentTreePath == null) {
-        LOGGER.warn(
-            "Unable to find parent tree path for flow node instance id [{}], parent flow node instance id [{}]",
-            flowNodeInstanceRecord.recordKey(),
-            flowNodeInstanceRecord.flowScopeKey());
-        parentTreePath =
-            ConversionUtils.toStringOrNull(flowNodeInstanceRecord.processInstanceKey());
+        // add missing treePath to cache
+        if (parentTreePath != null) {
+          partitionCache.put(
+              ConversionUtils.toStringOrNull(flowNodeInstanceRecord.flowScopeKey()),
+              parentTreePath);
+        } else {
+          LOGGER.warn(
+              "Unable to find parent tree path for flow node instance id [{}], parent flow node instance id [{}]",
+              flowNodeInstanceRecord.recordKey(),
+              flowNodeInstanceRecord.flowScopeKey());
+          parentTreePath =
+              ConversionUtils.toStringOrNull(flowNodeInstanceRecord.processInstanceKey());
+        }
       }
     }
     partitionCache.put(
