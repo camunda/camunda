@@ -18,6 +18,7 @@ import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.va
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessagePublicationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateAuthorization;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
+import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ResourceRequestValidator.validateResourceDeletion;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
@@ -31,6 +32,7 @@ import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
@@ -39,6 +41,7 @@ import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
+import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
@@ -419,6 +422,14 @@ public class RequestMapper {
                                     .ProcessInstanceCreationStartInstruction()
                                 .setElementId(instruction.getElementId()))
                     .toList()));
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceCancelRequest> toCancelProcessInstance(
+      final long processInstanceKey, final CancelProcessInstanceRequest request) {
+    final Long operationReference = request != null ? request.getOperationReference() : null;
+    return getResult(
+        validateCancelProcessInstanceRequest(request),
+        () -> new ProcessInstanceCancelRequest(processInstanceKey, operationReference));
   }
 
   private static <R> Map<String, Object> getMapOrEmpty(
