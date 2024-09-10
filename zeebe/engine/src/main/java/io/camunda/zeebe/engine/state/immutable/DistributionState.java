@@ -21,6 +21,14 @@ public interface DistributionState {
   boolean hasRetriableDistribution(long distributionKey);
 
   /**
+   * Returns whether there are any pending distributions for a given key.
+   *
+   * @param distributionKey the key of the distribution
+   * @return true if there are pending distributions for the given key, otherwise false
+   */
+  boolean hasPendingDistribution(long distributionKey);
+
+  /**
    * Returns whether a specific distribution for a specific partition is retriable.
    *
    * @param distributionKey the key of the distribution that may be retriable
@@ -28,6 +36,15 @@ public interface DistributionState {
    * @return {@code true} if the specific retriable distribution exists, otherwise {@code false}.
    */
   boolean hasRetriableDistribution(long distributionKey, int partition);
+
+  /**
+   * Returns whether a specific distribution for a specific partition is pending.
+   *
+   * @param distributionKey the key of the distribution that may be pending
+   * @param partition the id of the partition for which the distribution might be pending
+   * @return {@code true} if the specific pending distribution exists, otherwise {@code false}.
+   */
+  boolean hasPendingDistribution(long distributionKey, int partition);
 
   /**
    * Returns the {@link CommandDistributionRecord} for the given distribution key. This method takes

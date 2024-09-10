@@ -171,10 +171,32 @@ public class DbDistributionState implements MutableDistributionState {
   }
 
   @Override
+  public boolean hasPendingDistribution(final long distributionKey) {
+    this.distributionKey.wrapLong(distributionKey);
+
+    final var hasPending = new MutableBoolean();
+    pendingDistributionColumnFamily.whileEqualPrefix(
+        this.distributionKey,
+        (compositeKey, dbNil) -> {
+          hasPending.set(true);
+          return false;
+        });
+
+    return hasPending.get();
+  }
+
+  @Override
   public boolean hasRetriableDistribution(final long distributionKey, final int partition) {
     this.distributionKey.wrapLong(distributionKey);
     partitionKey.wrapInt(partition);
     return retriableDistributionColumnFamily.exists(distributionPartitionKey);
+  }
+
+  @Override
+  public boolean hasPendingDistribution(final long distributionKey, final int partition) {
+    this.distributionKey.wrapLong(distributionKey);
+    partitionKey.wrapInt(partition);
+    return pendingDistributionColumnFamily.exists(distributionPartitionKey);
   }
 
   @Override
