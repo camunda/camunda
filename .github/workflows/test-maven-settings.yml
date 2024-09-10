@@ -2,6 +2,10 @@ name: Test Maven CI
 on:
   pull_request:
 
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+
 # set permissions to allow to publish test results
 permissions:
   contents: read
