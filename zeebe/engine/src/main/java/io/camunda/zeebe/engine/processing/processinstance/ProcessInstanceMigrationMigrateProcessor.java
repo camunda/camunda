@@ -205,21 +205,23 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNoEventSubprocessInSource(
         sourceProcessDefinition,
         elementInstanceRecord,
-        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER));
+        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL));
     requireNoEventSubprocessInTarget(
         targetProcessDefinition,
         targetElementId,
         elementInstanceRecord,
-        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER));
+        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL));
     requireNoBoundaryEventInSource(
         sourceProcessDefinition,
         elementInstanceRecord,
-        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL));
+        EnumSet.of(
+            BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL, BpmnEventType.ERROR));
     requireNoBoundaryEventInTarget(
         targetProcessDefinition,
         targetElementId,
         elementInstanceRecord,
-        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL));
+        EnumSet.of(
+            BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL, BpmnEventType.ERROR));
     requireMappedCatchEventsToStayAttachedToSameElement(
         processInstanceKey,
         sourceProcessDefinition,

@@ -8,6 +8,7 @@
 package io.camunda.tasklist.entities.listview;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
 import java.util.Map;
 
@@ -87,6 +88,38 @@ public class UserTaskListViewEntity {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private ListViewJoinRelation join;
+
+  public UserTaskListViewEntity(final TaskEntity taskEntity) {
+    setId(taskEntity.getFlowNodeInstanceId());
+    setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId());
+    setProcessInstanceId(taskEntity.getProcessInstanceId());
+    setTaskId(taskEntity.getFlowNodeBpmnId());
+    setFlowNodeBpmnId(taskEntity.getFlowNodeBpmnId());
+    setKey(taskEntity.getKey());
+    setPartitionId(taskEntity.getPartitionId());
+    setCompletionTime(
+        taskEntity.getCompletionTime() != null ? taskEntity.getCompletionTime().toString() : null);
+    setAssignee(taskEntity.getAssignee());
+    setCreationTime(
+        taskEntity.getCreationTime() != null ? taskEntity.getCreationTime().toString() : null);
+    setProcessDefinitionVersion(taskEntity.getProcessDefinitionVersion());
+    setPriority(taskEntity.getPriority());
+    setCandidateGroups(taskEntity.getCandidateGroups());
+    setCandidateUsers(taskEntity.getCandidateUsers());
+    setBpmnProcessId(taskEntity.getBpmnProcessId());
+    setProcessDefinitionId(taskEntity.getProcessDefinitionId());
+    setTenantId(taskEntity.getTenantId());
+    setExternalFormReference(taskEntity.getExternalFormReference());
+    setCustomHeaders(taskEntity.getCustomHeaders());
+    setFormKey(taskEntity.getFormKey());
+    setState(taskEntity.getState());
+
+    // Set the join field for the parent
+    final ListViewJoinRelation joinRelation = new ListViewJoinRelation();
+    joinRelation.setName("task");
+    joinRelation.setParent(Long.valueOf(taskEntity.getProcessInstanceId()));
+    setJoin(joinRelation);
+  }
 
   public String getId() {
     return id;

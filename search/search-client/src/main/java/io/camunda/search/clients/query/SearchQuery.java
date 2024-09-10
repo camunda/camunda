@@ -142,6 +142,16 @@ public final record SearchQuery(SearchQueryOption queryOption) {
       return wildcard(SearchQueryBuilders.wildcard(fn));
     }
 
+    public Builder hasParent(final SearchHasParentQuery query) {
+      queryOption = query;
+      return this;
+    }
+
+    public Builder hasParent(
+        final Function<SearchHasParentQuery.Builder, ObjectBuilder<SearchHasParentQuery>> fn) {
+      return hasParent(SearchQueryBuilders.hasParent(fn));
+    }
+
     @Override
     public SearchQuery build() {
       return new SearchQuery(queryOption);

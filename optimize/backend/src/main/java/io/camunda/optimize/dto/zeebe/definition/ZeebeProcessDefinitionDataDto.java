@@ -25,19 +25,10 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
   private String resourceName;
   private String bpmnProcessId;
   private String tenantId;
+  private String versionTag;
 
   @Override
   public String toJson() {
-    throw new UnsupportedOperationException("Operation not supported");
-  }
-
-  @Override
-  public long getDeploymentKey() {
-    throw new UnsupportedOperationException("Operation not supported");
-  }
-
-  @Override
-  public String getVersionTag() {
     throw new UnsupportedOperationException("Operation not supported");
   }
 
@@ -47,6 +38,12 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
     return false;
   }
 
+  @Override
+  public long getDeploymentKey() {
+    throw new UnsupportedOperationException("Operation not supported");
+  }
+
+  @Override
   public String getTenantId() {
     return StringUtils.isEmpty(tenantId) ? ZEEBE_DEFAULT_TENANT_ID : tenantId;
   }

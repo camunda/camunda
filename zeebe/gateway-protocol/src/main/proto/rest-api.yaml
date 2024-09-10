@@ -558,14 +558,14 @@ paths:
       responses:
         "200":
           description: >
-            The User Task Search successful response.
+            The user task search successful response.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserTaskSearchQueryResponse"
         "400":
           description: >
-            The User Task Search Query failed.
+            The user task search query failed.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -583,11 +583,11 @@ paths:
     put:
       tags:
         - Clock
-      summary: Pin the Zeebe engine’s internal clock to a specific time (experimental)
+      summary: Pin internal clock (experimental)
       description: |
-        Set a precise, static time for the Zeebe engine’s internal clock. When the clock is pinned,
-        it remains at the specified time and does not advance. To change the time, the clock must be
-        pinned again with a new timestamp.
+        Set a precise, static time for the Zeebe engine’s internal clock. 
+        When the clock is pinned, it remains at the specified time and does not advance. 
+        To change the time, the clock must be pinned again with a new timestamp.
 
         :::note
         This endpoint is experimental. It may undergo changes or improvements in future releases.
@@ -603,7 +603,7 @@ paths:
           description: >
             The clock was successfully pinned to the specified time in epoch milliseconds.
         "400":
-          description: The required timestamp parameter is missing.
+          description: The required timestamp parameter is missing or it is negative.
           content:
             application/problem+json:
               schema:
@@ -618,10 +618,10 @@ paths:
     post:
       tags:
         - Clock
-      summary: Reset the Zeebe engine’s internal clock to the system time (experimental)
+      summary: Reset internal clock (experimental)
       description: |
-        Resets the Zeebe engine’s internal clock to the current system time,
-        enabling it to tick in real-time. This operation is useful for returning the clock to
+        Resets the Zeebe engine’s internal clock to the current system time, enabling it to tick in real-time. 
+        This operation is useful for returning the clock to
         normal behavior after it has been pinned to a specific time.
 
         :::note
@@ -629,7 +629,7 @@ paths:
         :::
       responses:
         "204":
-          description: The clock was successfully reset to the system time
+          description: The clock was successfully reset to the system time.
         "500":
           description: An internal error occurred while processing the request.
           content:
@@ -640,7 +640,7 @@ paths:
   /process-instances:
     post:
       tags:
-        - Process Instance
+        - Process instance
       summary: Start process instance
       description: |
         Creates and starts an instance of the specified process.
@@ -673,7 +673,7 @@ paths:
   /process-instances/search:
     post:
       tags:
-        - Process Instance
+        - Process instance
       summary: Query process instances (experimental)
       description: |
         Search for process instances based on given criteria.
@@ -715,7 +715,7 @@ paths:
   /decision-definitions/search:
     post:
       tags:
-        - Decision Definition
+        - Decision definition
       summary: Query decision definitions (experimental)
       description: |
         Search for decision definitions based on given criteria.
@@ -757,7 +757,7 @@ paths:
   /decision-definitions/{decisionKey}/xml:
     get:
       tags:
-        - Decision Definition
+        - Decision definition
       summary: Get decision definition XML (experimental)
       description: |
         Returns decision definition as XML.
@@ -842,8 +842,8 @@ paths:
     patch:
       tags:
         - Authorization
-      summary: Patch an authorization
-      description: Manage the permissions assigned to the authorization
+      summary: Patch authorization
+      description: Manage the permissions assigned to the authorization.
       operationId: patchAuthorization
       parameters:
         - name: ownerKey
@@ -944,6 +944,42 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+
+  /messages/publication:
+    post:
+      tags:
+        - Message
+      summary: Publish a message
+      description: |
+        Publishes a single message.
+        Messages are published to specific partitions computed from their correlation keys.
+        The endpoint does not wait for a correlation result.
+        Use the message correlation endpoint for such use cases.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessagePublicationRequest"
+      responses:
+        "200":
+          description: The message was published.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessagePublicationResponse"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: Internal server error.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /messages/correlation:
     post:
       tags:
@@ -984,11 +1020,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: Internal Server Error
+          description: Internal server error
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+
   /documents:
     post:
       tags:
@@ -1245,14 +1282,14 @@ paths:
       responses:
         '200':
           description: >
-            The Incident Search successful response.
+            The incident search successful response.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/IncidentSearchQueryResponse"
         '400':
           description: >
-            The Incident Search Query failed.
+            The incident search query failed.
             More details are provided in the response body.
         "401":
           description: "Unauthorized"
@@ -1282,10 +1319,11 @@ paths:
   /deployments:
     post:
       tags:
-        - Resources
+        - Resource
       summary: Deploy resources
       description: |
-        Deploys one or more resources (e.g. processes, decision models, or forms). This is an atomic call, i.e. either all resources are deployed or none of them are.
+        Deploys one or more resources (e.g. processes, decision models, or forms). 
+        This is an atomic call, i.e. either all resources are deployed or none of them are.
       requestBody:
         required: true
         content:
@@ -1319,6 +1357,54 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /resources/{resourceKey}/deletion:
+    post:
+      tags:
+        - Resource
+      summary: Delete resource
+      description: |
+        Deletes a deployed resource.
+        This can be a process definition, decision requirements definition, or form definition
+        deployed using the deploy resources endpoint. Specify the resource you want to delete in the `resourceKey` parameter.
+      parameters:
+        - name: resourceKey
+          in: path
+          required: true
+          description: |
+            The key of the resource to delete.
+            This can be the key of a process definition, the key of a decision requirements
+            definition or the key of a form definition
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteResourceRequest"
+      responses:
+        "200":
+          description: The resource is deleted.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The resource is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
 
   /element-instances/{elementInstanceKey}/variables:
     post:
@@ -1471,6 +1557,7 @@ components:
             type: string
         priority:
           type: integer
+          description: The priority of a user task. The higher the value the higher the priority.
           minimum: 0
           maximum: 100
           default: 50
@@ -2067,6 +2154,7 @@ components:
           description: The exact time in epoch milliseconds to which the clock should be pinned.
           type: integer
           format: int64
+          minimum: 0
       required:
         - timestamp
     JobActivationRequest:
@@ -2426,6 +2514,7 @@ components:
           type: string
         tenantId:
           type: string
+
     MessageCorrelationRequest:
       type: object
       properties:
@@ -2463,6 +2552,51 @@ components:
           description: The key of the first process instance the message correlated with
           type: integer
           format: int64
+    MessagePublicationRequest:
+      type: object
+      properties:
+        name:
+          description: The name of the message.
+          type: string
+        correlationKey:
+          description: The correlation key of the message.
+          type: string
+          default: ""
+        timeToLive:
+          description: Timespan (in ms) to buffer the message on the broker.
+          type: integer
+          format: int64
+          default: 0
+        messageId:
+          description: |
+            The unique ID of the message. Only useful to ensure only one message with the given ID
+            will ever be published (during its lifetime).
+          type: string
+          nullable: true
+        variables:
+          description: The message variables as JSON document.
+          additionalProperties: true
+          type: object
+          nullable: true
+        tenantId:
+          description: The tenant of the message sender.
+          type: string
+          nullable: true
+      required:
+        - name
+        - correlationKey
+    MessagePublicationResponse:
+      description: The message key of the published message.
+      type: object
+      properties:
+        key:
+          description: The key of the message
+          type: integer
+          format: int64
+        tenantId:
+          description: The tenant ID of the message.
+          type: string
+
     PriorityValueFilter:
       type: object
       properties:
@@ -2693,8 +2827,8 @@ components:
           type: string
         operationReference:
           description: |
-            A reference key chosen by the user and will be part of all records resulting
-            from this operation. Must be >0 if provided.
+            A reference key chosen by the user that will be part of all records resulting from this operation.
+            Must be >0 if provided.
           type: integer
           format: int64
           minimum: 1
@@ -2796,6 +2930,18 @@ components:
           minimum: 1
       required:
         - variables
+
+    DeleteResourceRequest:
+      type: object
+      nullable: true
+      properties:
+        operationReference:
+          description: |
+            A reference key chosen by the user that will be part of all records resulting from this operation.
+            Must be > 0 if provided.
+          type: integer
+          format: int64
+          minimum: 1
 
   securitySchemes:
     bearerAuth:

@@ -14,10 +14,12 @@ import static io.camunda.zeebe.gateway.rest.validator.ElementRequestValidator.va
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
-import static io.camunda.zeebe.gateway.rest.validator.MessageCorrelateValidator.validateMessageCorrelationRequest;
+import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessageCorrelationRequest;
+import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessagePublicationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateAuthorization;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ResourceRequestValidator.validateResourceDeletion;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
@@ -28,8 +30,10 @@ import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
+import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
+import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
@@ -38,6 +42,7 @@ import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
@@ -45,6 +50,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
@@ -282,6 +288,31 @@ public class RequestMapper {
                 variableRequest.getVariables(),
                 variableRequest.getLocal(),
                 variableRequest.getOperationReference()));
+  }
+
+  public static Either<ProblemDetail, PublicationMessageRequest> toMessagePublicationRequest(
+      final MessagePublicationRequest messagePublicationRequest) {
+    return getResult(
+        validateMessagePublicationRequest(messagePublicationRequest),
+        () ->
+            new PublicationMessageRequest(
+                messagePublicationRequest.getName(),
+                messagePublicationRequest.getCorrelationKey(),
+                messagePublicationRequest.getTimeToLive(),
+                getStringOrEmpty(
+                    messagePublicationRequest, MessagePublicationRequest::getMessageId),
+                getMapOrEmpty(messagePublicationRequest, MessagePublicationRequest::getVariables),
+                getStringOrEmpty(
+                    messagePublicationRequest, MessagePublicationRequest::getTenantId)));
+  }
+
+  public static Either<ProblemDetail, ResourceDeletionRequest> toResourceDeletion(
+      final long resourceKey, final DeleteResourceRequest deleteRequest) {
+    final Long operationReference =
+        deleteRequest != null ? deleteRequest.getOperationReference() : null;
+    return getResult(
+        validateResourceDeletion(deleteRequest),
+        () -> new ResourceDeletionRequest(resourceKey, operationReference));
   }
 
   public static Authentication getAuthentication() {

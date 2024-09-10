@@ -2237,7 +2237,7 @@ __metadata:
     "@babel/preset-typescript": "npm:^7.24.1"
     "@carbon/icons-react": "npm:^11.41.0"
     "@carbon/react": "npm:^1.57.0"
-    "@chromatic-com/storybook": "npm:^1.4.0"
+    "@chromatic-com/storybook": "npm:^2.0.0"
     "@storybook/addon-essentials": "npm:^8.1.4"
     "@storybook/addon-interactions": "npm:^8.1.4"
     "@storybook/addon-links": "npm:^8.1.4"
@@ -2411,16 +2411,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@chromatic-com/storybook@npm:^1.4.0":
-  version: 1.9.0
-  resolution: "@chromatic-com/storybook@npm:1.9.0"
+"@chromatic-com/storybook@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@chromatic-com/storybook@npm:2.0.0"
   dependencies:
     chromatic: "npm:^11.4.0"
     filesize: "npm:^10.0.12"
     jsonfile: "npm:^6.1.0"
     react-confetti: "npm:^6.1.0"
     strip-ansi: "npm:^7.1.0"
-  checksum: 10c0/c4b0fbfcb3394c2814e445471b1528179c2144d70d4a13c9a70545c2f2052c6366f73893b16e1490e658d43d905fc726bbb78d7c126c839a3c7ee3d8f3ad21c2
+  peerDependencies:
+    storybook: ^8.2.0
+  checksum: 10c0/4c4df6a331c251abb827e2db500188a042ec84bc78e93172ca0101cbd8e9c5d4a3eb480c1a35e545e54cb0f12ec7e6d40419a3cf4c806b92081e201ca6914be0
   languageName: node
   linkType: hard
 
