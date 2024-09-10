@@ -40,7 +40,7 @@ public class FlowNodeInstanceTreePathCacheTest {
   }
 
   @Test
-  public void shouldShouldResolveTreePathForRootLevelFNI() {
+  public void shouldResolveTreePathForRootLevelFNI() {
     // given
     // flow scope key and PI key is equal - no need to resolve tree path
     final var flowNodeInstanceRecord = new FlowNodeInstanceRecord(1, 0xCAFE, 0xABCD, 0xABCD);
@@ -55,7 +55,7 @@ public class FlowNodeInstanceTreePathCacheTest {
   }
 
   @Test
-  public void shouldShouldResolveTreePathFromPreviousRecord() {
+  public void shouldResolveTreePathFromPreviousRecord() {
     // given
     // root fni are added to the cache
     final var rootFlowNodeInstanceRecord = new FlowNodeInstanceRecord(1, 0xCAFE, 0xABCD, 0xABCD);
@@ -76,7 +76,7 @@ public class FlowNodeInstanceTreePathCacheTest {
   }
 
   @Test
-  public void shouldShouldTryToResolve() {
+  public void shouldTryToResolve() {
     // given
     // resolver can't resolve value - returned tree Path is equal to process instance key
     final var flowNodeInstanceRecord = new FlowNodeInstanceRecord(1, 0xCAFE, 0xABCD, 0xEFDA);
@@ -91,7 +91,7 @@ public class FlowNodeInstanceTreePathCacheTest {
   }
 
   @Test
-  public void shouldShouldResolveTreePath() {
+  public void shouldResolveTreePath() {
     // given
     // resolver can resolve tree path
     final String expectedTreePath = String.join("/", Long.toString(0xABCD), Long.toString(0xEFDA));
@@ -103,6 +103,24 @@ public class FlowNodeInstanceTreePathCacheTest {
 
     // then
     assertThat(treePath).isEqualTo(expectedTreePath);
+
+    Mockito.verify(spyResolverCache, times(1)).get(eq(0xABCDL));
+  }
+
+  @Test
+  public void shouldNotResolveTreePathTwice() {
+    // given
+    // cache is empty and resolver can resolve tree path
+    final String expectedTreePath = String.join("/", Long.toString(0xABCD), Long.toString(0xEFDA));
+    spyResolverCache.put(0xABCDL, expectedTreePath);
+    final var flowNodeInstanceRecord = new FlowNodeInstanceRecord(1, 0xCAFE, 0xABCD, 0xEFDA);
+    final String firstTreePath = treePathCache.resolveTreePath(flowNodeInstanceRecord);
+
+    // when
+    final String secondTreePath = treePathCache.resolveTreePath(flowNodeInstanceRecord);
+
+    // then
+    assertThat(firstTreePath).isEqualTo(secondTreePath).isEqualTo(expectedTreePath);
 
     Mockito.verify(spyResolverCache, times(1)).get(eq(0xABCDL));
   }
