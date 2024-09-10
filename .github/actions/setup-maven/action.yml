@@ -55,3 +55,7 @@ runs:
   # workaround, maven has troubles creating a subdirectory of a non existing directory
   - shell: bash
     run: mkdir -p ${{ github.workspace }}/optimize/backend/target/classes/
+  - shell: bash
+    run: |
+      sudo rm -rf /etc/localtime
+      sudo ln -s /usr/share/zoneinfo/Europe/Berlin /etc/localtime
