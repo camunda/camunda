@@ -11,6 +11,7 @@ import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerBroadcastSignalRequest;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import java.util.Map;
@@ -31,9 +32,9 @@ public class SignalServices extends ApiServices<SignalServices> {
     return new SignalServices(brokerClient, searchClient, transformers, authentication);
   }
 
-  public CompletableFuture<SignalRecord> broadcastSignal(
+  public CompletableFuture<BrokerResponse<SignalRecord>> broadcastSignal(
       final String signalName, final Map<String, Object> variables, final String tenantId) {
-    return sendBrokerRequest(
+    return sendBrokerRequestWithFullResponse(
         new BrokerBroadcastSignalRequest(signalName)
             .setVariables(getDocumentOrEmpty(variables))
             .setTenantId(tenantId));

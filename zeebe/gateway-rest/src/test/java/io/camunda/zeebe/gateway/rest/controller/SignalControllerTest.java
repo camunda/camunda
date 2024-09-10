@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.service.SignalServices;
 import io.camunda.service.security.auth.Authentication;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -34,7 +35,7 @@ public class SignalControllerTest extends RestControllerTest {
   private static final String EXPECTED_PUBLICATION_RESPONSE =
       """
        {
-         "key": 1,
+         "key": 123,
          "tenantId": "<default>"
        }""";
 
@@ -145,11 +146,11 @@ public class SignalControllerTest extends RestControllerTest {
         .json(expectedBody);
   }
 
-  private CompletableFuture<SignalRecord> buildSignalResponse() {
+  private CompletableFuture<BrokerResponse<SignalRecord>> buildSignalResponse() {
     final var record =
         new SignalRecord()
             .setSignalName("signalName")
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    return CompletableFuture.completedFuture(record);
+    return CompletableFuture.completedFuture(new BrokerResponse<>(record, 1, 123));
   }
 }
