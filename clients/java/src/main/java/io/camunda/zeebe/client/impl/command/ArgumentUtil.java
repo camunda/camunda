@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.impl.command;
 
 import java.time.Duration;
+import java.time.Instant;
 
 public final class ArgumentUtil {
 
@@ -43,10 +44,14 @@ public final class ArgumentUtil {
     }
   }
 
-  public static void ensureNotNegative(final String property, final Duration testValue) {
-    if (testValue.isNegative()) {
+  public static void ensureNotNegative(final String property, final long testValue) {
+    if (testValue < 0) {
       throw new IllegalArgumentException(String.format("%s must be not negative", property));
     }
+  }
+
+  public static void ensureNotNegative(final String property, final Duration testValue) {
+    ensureNotNegative(property, testValue.toMillis());
   }
 
   public static void ensureNotZero(final String property, final Duration testValue) {
@@ -58,5 +63,13 @@ public final class ArgumentUtil {
   public static void ensurePositive(final String property, final Duration testValue) {
     ensureNotNegative(property, testValue);
     ensureNotZero(property, testValue);
+  }
+
+  public static void ensureNotBefore(
+      final String property, final Instant testValue, final Instant otherInstant) {
+    if (testValue.isBefore(otherInstant)) {
+      throw new IllegalArgumentException(
+          String.format("%s must be equal to or after %s", property, otherInstant));
+    }
   }
 }
