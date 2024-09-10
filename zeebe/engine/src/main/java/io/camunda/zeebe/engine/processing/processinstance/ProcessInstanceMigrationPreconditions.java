@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -452,20 +453,37 @@ public final class ProcessInstanceMigrationPreconditions {
       final String targetElementId,
       final ProcessInstanceRecord elementInstanceRecord,
       final long processInstanceKey) {
-    final BpmnElementType targetElementType =
+    BpmnElementType targetElementType =
         targetProcessDefinition.getProcess().getElementById(targetElementId).getElementType();
-    if (elementInstanceRecord.getBpmnElementType() != targetElementType) {
-      final String reason =
-          String.format(
-              ERROR_ELEMENT_TYPE_CHANGED,
-              processInstanceKey,
-              elementInstanceRecord.getElementId(),
-              elementInstanceRecord.getBpmnElementType(),
-              targetElementId,
-              targetElementType);
-      throw new ProcessInstanceMigrationPreconditionFailedException(
-          reason, RejectionType.INVALID_STATE);
+
+    if (elementInstanceRecord.getBpmnElementType() == targetElementType) {
+      return;
     }
+
+    // if target element is a multi instance body, we should check the inner activity element type
+    // because the inner activity of the multi instance body can still match the source element's
+    // type
+    if (targetElementType == BpmnElementType.MULTI_INSTANCE_BODY) {
+      final ExecutableMultiInstanceBody targetElement =
+          targetProcessDefinition
+              .getProcess()
+              .getElementById(targetElementId, ExecutableMultiInstanceBody.class);
+      targetElementType = targetElement.getInnerActivity().getElementType();
+      if (elementInstanceRecord.getBpmnElementType() == targetElementType) {
+        return;
+      }
+    }
+
+    final String reason =
+        String.format(
+            ERROR_ELEMENT_TYPE_CHANGED,
+            processInstanceKey,
+            elementInstanceRecord.getElementId(),
+            elementInstanceRecord.getBpmnElementType(),
+            targetElementId,
+            targetElementType);
+    throw new ProcessInstanceMigrationPreconditionFailedException(
+        reason, RejectionType.INVALID_STATE);
   }
 
   /**
@@ -541,24 +559,38 @@ public final class ProcessInstanceMigrationPreconditions {
     if (sourceFlowScopeElement != null) {
       final DirectBuffer expectedFlowScopeId =
           sourceFlowScopeElement.getValue().getElementIdBuffer();
-      final DirectBuffer actualFlowScopeId =
-          targetProcessDefinition
-              .getProcess()
-              .getElementById(targetElementId)
-              .getFlowScope()
-              .getId();
+      final AbstractFlowElement targetFlowElement =
+          targetProcessDefinition.getProcess().getElementById(targetElementId);
+      DirectBuffer actualFlowScopeId = targetFlowElement.getFlowScope().getId();
 
-      if (!expectedFlowScopeId.equals(actualFlowScopeId)) {
-        final String reason =
-            String.format(
-                ERROR_MESSAGE_ELEMENT_FLOW_SCOPE_CHANGED,
-                elementInstanceRecord.getProcessInstanceKey(),
-                elementInstanceRecord.getElementId(),
-                BufferUtil.bufferAsString(expectedFlowScopeId),
-                BufferUtil.bufferAsString(actualFlowScopeId));
-        throw new ProcessInstanceMigrationPreconditionFailedException(
-            reason, RejectionType.INVALID_STATE);
+      if (expectedFlowScopeId.equals(actualFlowScopeId)) {
+        return;
       }
+
+      // if target element is a multi instance body, we should check the inner activity flow scope
+      // because the inner activity of the multi instance body can still match the source element's
+      // flow scope
+      if (targetFlowElement.getElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
+        final ExecutableMultiInstanceBody targetElement =
+            targetProcessDefinition
+                .getProcess()
+                .getElementById(targetElementId, ExecutableMultiInstanceBody.class);
+
+        actualFlowScopeId = targetElement.getInnerActivity().getFlowScope().getId();
+        if (expectedFlowScopeId.equals(actualFlowScopeId)) {
+          return;
+        }
+      }
+
+      final String reason =
+          String.format(
+              ERROR_MESSAGE_ELEMENT_FLOW_SCOPE_CHANGED,
+              elementInstanceRecord.getProcessInstanceKey(),
+              elementInstanceRecord.getElementId(),
+              BufferUtil.bufferAsString(expectedFlowScopeId),
+              BufferUtil.bufferAsString(actualFlowScopeId));
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_STATE);
     }
   }
 
