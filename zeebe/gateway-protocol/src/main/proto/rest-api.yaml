@@ -585,8 +585,8 @@ paths:
         - Clock
       summary: Pin internal clock (experimental)
       description: |
-        Set a precise, static time for the Zeebe engine’s internal clock. 
-        When the clock is pinned, it remains at the specified time and does not advance. 
+        Set a precise, static time for the Zeebe engine’s internal clock.
+        When the clock is pinned, it remains at the specified time and does not advance.
         To change the time, the clock must be pinned again with a new timestamp.
 
         :::note
@@ -620,7 +620,7 @@ paths:
         - Clock
       summary: Reset internal clock (experimental)
       description: |
-        Resets the Zeebe engine’s internal clock to the current system time, enabling it to tick in real-time. 
+        Resets the Zeebe engine’s internal clock to the current system time, enabling it to tick in real-time.
         This operation is useful for returning the clock to
         normal behavior after it has been pinned to a specific time.
 
@@ -1365,7 +1365,7 @@ paths:
         - Resources
       summary: Deploy resources
       description: |
-        Deploys one or more resources (e.g. processes, decision models, or forms). 
+        Deploys one or more resources (e.g. processes, decision models, or forms).
         This is an atomic call, i.e. either all resources are deployed or none of them are.
       requestBody:
         required: true
@@ -2834,7 +2834,7 @@ components:
           type: string
         operationReference:
           description: |
-            A refereA reference key chosen by the user that will be part of all records resulting from this operation.
+            A reference key chosen by the user that will be part of all records resulting from this operation.
             Must be >0 if provided.
           type: integer
           format: int64

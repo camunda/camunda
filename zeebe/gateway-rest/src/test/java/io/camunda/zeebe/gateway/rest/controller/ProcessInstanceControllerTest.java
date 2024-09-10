@@ -45,7 +45,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";
   static final String CANCEL_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/cancellation";
 
-  @Captor ArgumentCaptor<ProcessInstanceCreateRequest> requestCaptor;
+  @Captor ArgumentCaptor<ProcessInstanceCreateRequest> createRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceCancelRequest> cancelRequestCaptor;
   @MockBean ProcessInstanceServices processInstanceServices;
 
@@ -89,8 +89,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE);
 
-    verify(processInstanceServices).createProcessInstance(requestCaptor.capture());
-    final var capturedRequest = requestCaptor.getValue();
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
   }
 
@@ -129,8 +129,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE);
 
-    verify(processInstanceServices).createProcessInstance(requestCaptor.capture());
-    final var capturedRequest = requestCaptor.getValue();
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
     assertThat(capturedRequest.version()).isEqualTo(1);
   }
@@ -169,8 +169,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE);
 
-    verify(processInstanceServices).createProcessInstance(requestCaptor.capture());
-    final var capturedRequest = requestCaptor.getValue();
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
     assertThat(capturedRequest.version()).isEqualTo(-1);
   }
@@ -211,8 +211,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE);
 
-    verify(processInstanceServices).createProcessInstanceWithResult(requestCaptor.capture());
-    final var capturedRequest = requestCaptor.getValue();
+    verify(processInstanceServices).createProcessInstanceWithResult(createRequestCaptor.capture());
+    final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.awaitCompletion()).isTrue();
   }
@@ -254,8 +254,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE);
 
-    verify(processInstanceServices).createProcessInstanceWithResult(requestCaptor.capture());
-    final var capturedRequest = requestCaptor.getValue();
+    verify(processInstanceServices).createProcessInstanceWithResult(createRequestCaptor.capture());
+    final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
     assertThat(capturedRequest.version()).isEqualTo(1);
   }
@@ -296,8 +296,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE);
 
-    verify(processInstanceServices).createProcessInstanceWithResult(requestCaptor.capture());
-    final var capturedRequest = requestCaptor.getValue();
+    verify(processInstanceServices).createProcessInstanceWithResult(createRequestCaptor.capture());
+    final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
     assertThat(capturedRequest.version()).isEqualTo(-1);
   }
@@ -486,7 +486,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     Mockito.verify(processInstanceServices).cancelProcessInstance(cancelRequestCaptor.capture());
     final var capturedRequest = cancelRequestCaptor.getValue();
     assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
-    assertThat(capturedRequest.operationReference()).isEqualTo(null);
+    assertThat(capturedRequest.operationReference()).isNull();
   }
 
   @Test
