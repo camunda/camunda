@@ -173,7 +173,6 @@ jobs:
             --helm-set global.identity.auth.connectors.redirectUrl=https://${app_url}/connectors \
             --helm-set camunda-platform.identity.fullURL=https://${app_url}/identity \
             --helm-set camunda-platform.operate.image.tag=${docker_tag} \
-            --helm-set camunda-platform.optimize.image.tag=${docker_tag} \
             --helm-set camunda-platform.tasklist.image.tag=${docker_tag} \
             --helm-set camunda-platform.zeebe.image.tag=${docker_tag} \
             --name ${app_name} \
