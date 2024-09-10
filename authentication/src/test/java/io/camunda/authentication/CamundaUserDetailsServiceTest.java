@@ -13,7 +13,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.service.UserServices;
 import io.camunda.service.entities.UserEntity;
-import io.camunda.service.entities.UserEntity.User;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,7 +23,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 public class CamundaUserDetailsServiceTest {
 
-  private static final String TEST_USER_ID = "username1";
+  private static final long TEST_USER_ID = 1;
+  private static final String TEST_USER_NAME = "username1";
 
   @Mock private UserServices userService;
   private CamundaUserDetailsService userDetailsService;
@@ -38,22 +38,22 @@ public class CamundaUserDetailsServiceTest {
   @Test
   public void testUserDetailsIsLoaded() {
     // given
-    when(userService.findByUsername(TEST_USER_ID))
-        .thenReturn(Optional.of(new UserEntity(new User(TEST_USER_ID, "", "", "password1"))));
+    when(userService.findByUsername(TEST_USER_NAME))
+        .thenReturn(Optional.of(new UserEntity(TEST_USER_ID, TEST_USER_NAME, "", "", "password1")));
     // when
-    final UserDetails user = userDetailsService.loadUserByUsername(TEST_USER_ID);
+    final UserDetails user = userDetailsService.loadUserByUsername(TEST_USER_NAME);
 
     // then
-    assertThat(user.getUsername()).isEqualTo(TEST_USER_ID);
+    assertThat(user.getUsername()).isEqualTo(TEST_USER_NAME);
     assertThat(user.getPassword()).isEqualTo("password1");
   }
 
   @Test
   public void testUserDetailsNotFound() {
     // given
-    when(userService.findByUsername(TEST_USER_ID)).thenReturn(Optional.empty());
+    when(userService.findByUsername(TEST_USER_NAME)).thenReturn(Optional.empty());
     // when/then
-    assertThatThrownBy(() -> userDetailsService.loadUserByUsername(TEST_USER_ID))
+    assertThatThrownBy(() -> userDetailsService.loadUserByUsername(TEST_USER_NAME))
         .isInstanceOf(UsernameNotFoundException.class);
   }
 }

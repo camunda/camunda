@@ -18,7 +18,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.application.commons.configuration.DataInitializationConfiguration.InitDataProperties;
 import io.camunda.service.UserServices;
 import io.camunda.service.entities.UserEntity;
-import io.camunda.service.entities.UserEntity.User;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -98,7 +97,7 @@ class DataInitializerTest {
                 new UserWithPasswordRequest().username("username1").password("password"),
                 new UserWithPasswordRequest().username("username2").password("password")));
     when(userServices.findByUsername("username1"))
-        .thenReturn(Optional.of(new UserEntity(new User("username1", "", "", ""))));
+        .thenReturn(Optional.of(new UserEntity(1L, "username1", "", "", "")));
     dataInitializer.initialize();
     verify(initDataProperties, times(2)).getUsers();
     verify(userServices, times(3)).findByUsername(any());
