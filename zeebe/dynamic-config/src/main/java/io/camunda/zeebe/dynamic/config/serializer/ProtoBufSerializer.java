@@ -306,6 +306,8 @@ public class ProtoBufSerializer
       case JOINING -> MemberState.State.JOINING;
       case LEAVING -> MemberState.State.LEAVING;
       case LEFT -> MemberState.State.LEFT;
+      case BOOTSTRAPPING ->
+          throw new IllegalStateException("Member cannot be in BOOTSTRAPPING state");
     };
   }
 
@@ -315,6 +317,7 @@ public class ProtoBufSerializer
       case ACTIVE -> PartitionState.State.ACTIVE;
       case JOINING -> PartitionState.State.JOINING;
       case LEAVING -> PartitionState.State.LEAVING;
+      case BOOTSTRAPPING -> PartitionState.State.BOOTSTRAPPING;
     };
   }
 
@@ -324,6 +327,7 @@ public class ProtoBufSerializer
       case ACTIVE -> Topology.State.ACTIVE;
       case JOINING -> Topology.State.JOINING;
       case LEAVING -> Topology.State.LEAVING;
+      case BOOTSTRAPPING -> Topology.State.BOOTSTRAPPING;
     };
   }
 
@@ -417,6 +421,7 @@ public class ProtoBufSerializer
           builder.setPartitionBootstrap(
               Topology.PartitionBootstrapOperation.newBuilder()
                   .setPartitionId(bootstrapOperation.partitionId())
+                  .setPriority(bootstrapOperation.priority())
                   .build());
       default ->
           throw new IllegalArgumentException(
@@ -567,7 +572,8 @@ public class ProtoBufSerializer
     } else if (topologyChangeOperation.hasPartitionBootstrap()) {
       return new PartitionBootstrapOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),
-          topologyChangeOperation.getPartitionBootstrap().getPartitionId());
+          topologyChangeOperation.getPartitionBootstrap().getPartitionId(),
+          topologyChangeOperation.getPartitionBootstrap().getPriority());
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any

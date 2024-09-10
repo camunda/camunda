@@ -44,6 +44,8 @@ public class OpensearchProperties {
 
   private int bulkRequestMaxSizeInBytes = BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT;
 
+  private boolean awsEnabled = false;
+
   @NestedConfigurationProperty private SslProperties ssl;
 
   @NestedConfigurationProperty private Map<String, InterceptorPluginProperty> interceptorPlugins;
@@ -160,6 +162,15 @@ public class OpensearchProperties {
 
   public void setConnectTimeout(final Integer connectTimeout) {
     this.connectTimeout = connectTimeout;
+  }
+
+  public boolean isAwsEnabled() {
+    return awsEnabled;
+  }
+
+  public OpensearchProperties setAwsEnabled(final boolean awsEnabled) {
+    this.awsEnabled = awsEnabled;
+    return this;
   }
 
   public SslProperties getSsl() {

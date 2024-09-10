@@ -24,7 +24,7 @@ export const isExpired = (token: string): boolean => {
     const expiration = getExpiration(token);
     const now = new Date().getTime() / 1000;
     return expiration < now;
-  } catch (e) {
+  } catch {
     return true;
   }
 };

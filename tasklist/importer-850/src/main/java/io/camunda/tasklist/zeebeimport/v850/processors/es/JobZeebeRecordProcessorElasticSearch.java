@@ -30,6 +30,7 @@ import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
@@ -47,6 +48,8 @@ public class JobZeebeRecordProcessorElasticSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(JobZeebeRecordProcessorElasticSearch.class);
 
+  private static final Pattern EMBEDDED_FORMS_PATTERN = Pattern.compile("^camunda-forms:bpmn:.*");
+
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
@@ -55,7 +58,8 @@ public class JobZeebeRecordProcessorElasticSearch {
 
   @Autowired private FormStore formStore;
 
-  public void processJobRecord(Record<JobRecordValueImpl> record, BulkRequest bulkRequest)
+  public void processJobRecord(
+      final Record<JobRecordValueImpl> record, final BulkRequest bulkRequest)
       throws PersistenceException {
     final JobRecordValueImpl recordValue = record.getValue();
 
@@ -69,7 +73,7 @@ public class JobZeebeRecordProcessorElasticSearch {
   }
 
   private UpdateRequest persistTask(
-      Record<JobRecordValueImpl> record, JobRecordValueImpl recordValue)
+      final Record<JobRecordValueImpl> record, final JobRecordValueImpl recordValue)
       throws PersistenceException {
     final String processDefinitionId = String.valueOf(recordValue.getProcessDefinitionKey());
     final TaskEntity entity =
@@ -116,7 +120,8 @@ public class JobZeebeRecordProcessorElasticSearch {
               entity.setIsFormEmbedded(false);
             },
             () -> {
-              entity.setIsFormEmbedded(formKey != null ? true : null);
+              entity.setIsFormEmbedded(
+                  formKey != null && EMBEDDED_FORMS_PATTERN.matcher(formKey).matches());
               entity.setFormVersion(null);
               entity.setFormId(null);
             });
@@ -132,7 +137,7 @@ public class JobZeebeRecordProcessorElasticSearch {
     if (candidateGroups != null) {
       try {
         entity.setCandidateGroups(objectMapper.readValue(candidateGroups, String[].class));
-      } catch (JsonProcessingException e) {
+      } catch (final JsonProcessingException e) {
         LOGGER.warn(
             String.format(
                 "Candidate groups can't be parsed from %s: %s", candidateGroups, e.getMessage()),
@@ -146,7 +151,7 @@ public class JobZeebeRecordProcessorElasticSearch {
     if (candidateUsers != null) {
       try {
         entity.setCandidateUsers(objectMapper.readValue(candidateUsers, String[].class));
-      } catch (JsonProcessingException e) {
+      } catch (final JsonProcessingException e) {
         LOGGER.warn(
             String.format(
                 "Candidate users can't be parsed from %s: %s", candidateUsers, e.getMessage()),
@@ -190,7 +195,8 @@ public class JobZeebeRecordProcessorElasticSearch {
     return getTaskQuery(entity, intent);
   }
 
-  private UpdateRequest getTaskQuery(TaskEntity entity, Intent intent) throws PersistenceException {
+  private UpdateRequest getTaskQuery(final TaskEntity entity, final Intent intent)
+      throws PersistenceException {
     try {
       final Map<String, Object> updateFields = new HashMap<>();
       LOGGER.debug("Task instance: id {}", entity.getId());
@@ -214,7 +220,7 @@ public class JobZeebeRecordProcessorElasticSearch {
           .doc(jsonMap)
           .retryOnConflict(UPDATE_RETRY_COUNT);
 
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new PersistenceException(
           String.format("Error preparing the query to upsert task instance [%s]", entity.getId()),
           e);

@@ -6,8 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import fetch from 'node-fetch';
-
 import config from './config';
 
 export async function cleanEntities({ctx}) {

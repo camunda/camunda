@@ -15,14 +15,14 @@
  */
 package io.camunda.zeebe.client.impl.http;
 
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.json.async.NonBlockingByteBufferJsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.util.TokenBuffer;
+import io.camunda.zeebe.client.impl.http.TypedApiEntityConsumer.JsonApiEntityConsumer;
+import io.camunda.zeebe.client.impl.http.TypedApiEntityConsumer.RawApiEntityConsumer;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.List;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.nio.entity.AbstractBinAsyncEntityConsumer;
 
@@ -34,6 +34,7 @@ import org.apache.hc.core5.http.nio.entity.AbstractBinAsyncEntityConsumer;
  * <ul>
  *   <li>application/json: the body type is expected to be {@link T}
  *   <li>application/problem+json: the body type is expected to be {@link ProblemDetail}
+ *   <li>text/xml: the body is handled as a raw string.
  * </ul>
  *
  * Anything else will cause an error to be propagated to the response consumer.
@@ -47,16 +48,13 @@ import org.apache.hc.core5.http.nio.entity.AbstractBinAsyncEntityConsumer;
  * @param <T> the type of the successful response body
  */
 final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntity<T>> {
+  private static final List<ContentType> SUPPORTED_TEXT_CONTENT_TYPES =
+      Arrays.asList(ContentType.TEXT_XML);
   private final ObjectMapper json;
   private final Class<T> type;
   private final int maxCapacity;
 
-  private NonBlockingByteBufferJsonParser parser;
-  private TokenBuffer buffer;
-  private int bufferedBytes;
-  private boolean isResponse;
-  private boolean isUnknownContentType;
-  private byte[] nonJsonBody;
+  private TypedApiEntityConsumer<T> entityConsumer;
 
   ApiEntityConsumer(final ObjectMapper json, final Class<T> type, final int maxCapacity) {
     this.json = json;
@@ -67,95 +65,36 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
   @Override
   protected void streamStart(final ContentType contentType) throws IOException {
     if (ContentType.APPLICATION_JSON.isSameMimeType(contentType)) {
-      isResponse = true;
+      entityConsumer = new JsonApiEntityConsumer<>(json, type, true);
     } else if (ContentType.APPLICATION_PROBLEM_JSON.isSameMimeType(contentType)) {
-      isResponse = false;
+      entityConsumer = new JsonApiEntityConsumer<>(json, type, false);
     } else {
-      isUnknownContentType = true;
-      nonJsonBody = new byte[1024];
-      return;
+      final boolean isResponse =
+          String.class.equals(type)
+              && SUPPORTED_TEXT_CONTENT_TYPES.stream().anyMatch(t -> t.isSameMimeType(contentType));
+      entityConsumer = new RawApiEntityConsumer<>(isResponse);
     }
-
-    parser =
-        (NonBlockingByteBufferJsonParser) json.getFactory().createNonBlockingByteBufferParser();
-    buffer = new TokenBuffer(parser, json.getDeserializationContext());
   }
 
   @Override
   protected ApiEntity<T> generateContent() throws IOException {
-    if (parser == null || buffer == null) {
-      if (nonJsonBody == null || bufferedBytes == 0) {
-        return null;
-      }
-
-      return ApiEntity.of(ByteBuffer.wrap(nonJsonBody, 0, bufferedBytes));
-    }
-
-    buffer.asParserOnFirstToken();
-
-    if (isResponse) {
-      return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
-    }
-
-    return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), ProblemDetail.class));
+    return entityConsumer.generateContent();
   }
 
   @Override
   protected int capacityIncrement() {
-    return maxCapacity - bufferedBytes;
+    return maxCapacity - entityConsumer.getBufferedBytes();
   }
 
   @Override
   protected void data(final ByteBuffer src, final boolean endOfStream) throws IOException {
-    final int offset = bufferedBytes;
-    bufferedBytes += src.remaining();
-
-    if (isUnknownContentType) {
-      consumeNonJsonBody(src, offset);
-    } else {
-      consumeJsonBody(src, endOfStream);
-    }
+    entityConsumer.consumeData(src, endOfStream);
   }
 
   @Override
   public void releaseResources() {
-    if (parser != null) {
-      try {
-        parser.close();
-      } catch (final Exception e) {
-        // log but otherwise ignore
-      }
-    }
-
-    if (buffer != null) {
-      try {
-        buffer.close();
-      } catch (final IOException e) {
-        // log but otherwise ignore
-      }
-    }
-
-    bufferedBytes = 0;
-  }
-
-  private void consumeNonJsonBody(final ByteBuffer src, final int offset) {
-    if (nonJsonBody.length < bufferedBytes) {
-      nonJsonBody = Arrays.copyOf(nonJsonBody, nonJsonBody.length + 1024);
-    }
-
-    src.get(nonJsonBody, offset, src.remaining());
-  }
-
-  private void consumeJsonBody(final ByteBuffer src, final boolean endOfStream) throws IOException {
-    parser.feedInput(src);
-    JsonToken jsonToken = parser.nextToken();
-    while (jsonToken != null && jsonToken != JsonToken.NOT_AVAILABLE) {
-      buffer.copyCurrentEvent(parser);
-      jsonToken = parser.nextToken();
-    }
-
-    if (endOfStream) {
-      parser.endOfInput();
+    if (entityConsumer != null) {
+      entityConsumer.releaseResources();
     }
   }
 }

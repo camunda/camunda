@@ -7,101 +7,72 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.authorization;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
-import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-import org.agrona.DirectBuffer;
 
 public final class AuthorizationRecord extends UnifiedRecordValue
     implements AuthorizationRecordValue {
-  private final LongProperty authorizationKeyProp = new LongProperty("authorizationKey", -1L);
+  private final EnumProperty<PermissionAction> actionProp =
+      new EnumProperty<>("action", PermissionAction.class);
+  private final LongProperty ownerKeyProp = new LongProperty("ownerKey");
   private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
       new EnumProperty<>("ownerType", AuthorizationOwnerType.class);
-  private final StringProperty ownerKeyProp = new StringProperty("ownerKey");
-  private final StringProperty resourceKeyProp = new StringProperty("resourceKey");
-  private final StringProperty resourceTypeProp = new StringProperty("resourceType");
-  private final ArrayProperty<StringValue> permissionsProp =
-      new ArrayProperty<>("permissions", StringValue::new);
+  private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
+      new EnumProperty<>("resourceType", AuthorizationResourceType.class);
+  private final ArrayProperty<Permission> permissionsProp =
+      new ArrayProperty<>("permissions", Permission::new);
 
   public AuthorizationRecord() {
-    super(6);
-    declareProperty(authorizationKeyProp)
+    super(5);
+    declareProperty(actionProp)
         .declareProperty(ownerTypeProp)
         .declareProperty(ownerKeyProp)
-        .declareProperty(resourceKeyProp)
         .declareProperty(resourceTypeProp)
         .declareProperty(permissionsProp);
   }
 
   public void wrap(final AuthorizationRecord record) {
-    authorizationKeyProp.setValue(record.getAuthorizationKey());
+    actionProp.setValue(record.getAction());
     ownerTypeProp.setValue(record.getOwnerType());
-    ownerKeyProp.setValue(record.getOwnerKeyBuffer());
-    resourceKeyProp.setValue(record.getResourceKeyBuffer());
-    resourceTypeProp.setValue(record.getResourceTypeBuffer());
-    setPermissions(record.getPermissions());
+    ownerKeyProp.setValue(record.getOwnerKey());
+    resourceTypeProp.setValue(record.getResourceType());
+    record.getPermissions().forEach(this::addPermission);
   }
 
   public AuthorizationRecord copy() {
     final AuthorizationRecord copy = new AuthorizationRecord();
-    copy.ownerKeyProp.setValue(BufferUtil.cloneBuffer(getOwnerKeyBuffer()));
+    copy.actionProp.setValue(getAction());
+    copy.ownerKeyProp.setValue(getOwnerKey());
     copy.ownerTypeProp.setValue(getOwnerType());
-    copy.resourceKeyProp.setValue(BufferUtil.cloneBuffer(getResourceKeyBuffer()));
-    copy.resourceTypeProp.setValue(BufferUtil.cloneBuffer(getResourceTypeBuffer()));
-    copy.authorizationKeyProp.setValue(getAuthorizationKey());
-    copy.setPermissions(getPermissions());
+    copy.resourceTypeProp.setValue(getResourceType());
+    getPermissions().forEach(copy::addPermission);
     return copy;
   }
 
-  @JsonIgnore
-  public DirectBuffer getOwnerKeyBuffer() {
+  @Override
+  public PermissionAction getAction() {
+    return actionProp.getValue();
+  }
+
+  public AuthorizationRecord setAction(final PermissionAction action) {
+    actionProp.setValue(action);
+    return this;
+  }
+
+  @Override
+  public Long getOwnerKey() {
     return ownerKeyProp.getValue();
   }
 
-  @JsonIgnore
-  public DirectBuffer getResourceKeyBuffer() {
-    return resourceKeyProp.getValue();
-  }
-
-  @JsonIgnore
-  public DirectBuffer getResourceTypeBuffer() {
-    return resourceTypeProp.getValue();
-  }
-
-  @Override
-  public Long getAuthorizationKey() {
-    return authorizationKeyProp.getValue();
-  }
-
-  public AuthorizationRecord setAuthorizationKey(final long authorizationKey) {
-    authorizationKeyProp.setValue(authorizationKey);
-    return this;
-  }
-
-  @Override
-  public String getOwnerKey() {
-    return bufferAsString(getOwnerKeyBuffer());
-  }
-
-  public AuthorizationRecord setOwnerKey(final DirectBuffer username) {
-    ownerKeyProp.setValue(username);
-    return this;
-  }
-
-  public AuthorizationRecord setOwnerKey(final String username) {
-    ownerKeyProp.setValue(username);
+  public AuthorizationRecord setOwnerKey(final Long ownerKey) {
+    ownerKeyProp.setValue(ownerKey);
     return this;
   }
 
@@ -116,47 +87,28 @@ public final class AuthorizationRecord extends UnifiedRecordValue
   }
 
   @Override
-  public String getResourceKey() {
-    return bufferAsString(resourceKeyProp.getValue());
-  }
-
-  public AuthorizationRecord setResourceKey(final String resourceKey) {
-    resourceKeyProp.setValue(resourceKey);
-    return this;
-  }
-
-  public AuthorizationRecord setResourceKey(final DirectBuffer resourceKey) {
-    resourceKeyProp.setValue(resourceKey);
-    return this;
+  public AuthorizationResourceType getResourceType() {
+    return resourceTypeProp.getValue();
   }
 
   @Override
-  public String getResourceType() {
-    return bufferAsString(resourceTypeProp.getValue());
+  public List<PermissionValue> getPermissions() {
+    return permissionsProp.stream()
+        .map(
+            permission -> {
+              final var copy = new Permission().copy(permission);
+              return (PermissionValue) copy;
+            })
+        .toList();
   }
 
-  public AuthorizationRecord setResourceType(final String resourceType) {
+  public AuthorizationRecord setResourceType(final AuthorizationResourceType resourceType) {
     resourceTypeProp.setValue(resourceType);
     return this;
   }
 
-  public AuthorizationRecord setResourceType(final DirectBuffer resourceType) {
-    resourceTypeProp.setValue(resourceType);
-    return this;
-  }
-
-  @Override
-  public List<String> getPermissions() {
-    return StreamSupport.stream(permissionsProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .collect(Collectors.toList());
-  }
-
-  public AuthorizationRecord setPermissions(final List<String> permissions) {
-    permissionsProp.reset();
-    permissions.forEach(
-        permission -> permissionsProp.add().wrap(BufferUtil.wrapString(permission)));
+  public AuthorizationRecord addPermission(final PermissionValue permission) {
+    permissionsProp.add().copy(permission);
     return this;
   }
 }

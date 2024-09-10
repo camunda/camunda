@@ -10,18 +10,37 @@ package io.camunda.zeebe.gateway.rest;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceResponse;
+import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecision;
+import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirements;
+import io.camunda.zeebe.gateway.protocol.rest.DeploymentForm;
+import io.camunda.zeebe.gateway.protocol.rest.DeploymentMetadata;
+import io.camunda.zeebe.gateway.protocol.rest.DeploymentProcess;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.ResourceResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.FormMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -93,6 +112,138 @@ public final class ResponseMapper {
             .storeId(response.storeId())
             .metadata(externalMetadata);
     return new ResponseEntity<>(reference, HttpStatus.CREATED);
+  }
+
+  public static ResponseEntity<Object> toDeployResourceResponse(
+      final DeploymentRecord brokerResponse) {
+    final var response =
+        new ResourceResponse()
+            .key(brokerResponse.getDeploymentKey())
+            .tenantId(brokerResponse.getTenantId());
+    addDeployedProcess(response, brokerResponse.getProcessesMetadata());
+    addDeployedDecision(response, brokerResponse.decisionsMetadata());
+    addDeployedDecisionRequirements(response, brokerResponse.decisionRequirementsMetadata());
+    addDeployedForm(response, brokerResponse.formMetadata());
+    return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
+  public static ResponseEntity<Object> toMessagePublicationResponse(
+      final BrokerResponse<MessageRecord> brokerResponse) {
+
+    final var response =
+        new MessagePublicationResponse()
+            .key(brokerResponse.getKey())
+            .tenantId(brokerResponse.getResponse().getTenantId());
+    return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
+  private static void addDeployedForm(
+      final ResourceResponse response, final ValueArray<FormMetadataRecord> formMetadataRecords) {
+    formMetadataRecords.stream()
+        .map(
+            form ->
+                new DeploymentForm()
+                    .formId(form.getFormId())
+                    .version(form.getVersion())
+                    .formKey(form.getFormKey())
+                    .resourceName(form.getResourceName())
+                    .tenantId(form.getTenantId()))
+        .map(deploymentForm -> new DeploymentMetadata().form(deploymentForm))
+        .forEach(response::addDeploymentsItem);
+  }
+
+  private static void addDeployedDecisionRequirements(
+      final ResourceResponse response,
+      final ValueArray<DecisionRequirementsMetadataRecord> decisionRequirementsMetadataRecords) {
+    decisionRequirementsMetadataRecords.stream()
+        .map(
+            decisionRequirement ->
+                new DeploymentDecisionRequirements()
+                    .dmnDecisionRequirementsId(decisionRequirement.getDecisionRequirementsId())
+                    .version(decisionRequirement.getDecisionRequirementsVersion())
+                    .dmnDecisionRequirementsName(decisionRequirement.getDecisionRequirementsName())
+                    .tenantId(decisionRequirement.getTenantId())
+                    .dmnDecisionRequirementsKey(decisionRequirement.getDecisionRequirementsKey())
+                    .resourceName(decisionRequirement.getResourceName()))
+        .map(
+            deploymentDecisionRequirement ->
+                new DeploymentMetadata().decisionRequirements(deploymentDecisionRequirement))
+        .forEach(response::addDeploymentsItem);
+  }
+
+  private static void addDeployedDecision(
+      final ResourceResponse response, final ValueArray<DecisionRecord> decisionRecords) {
+    decisionRecords.stream()
+        .map(
+            decision ->
+                new DeploymentDecision()
+                    .dmnDecisionId(decision.getDecisionId())
+                    .version(decision.getVersion())
+                    .decisionKey(decision.getDecisionKey())
+                    .dmnDecisionName(decision.getDecisionName())
+                    .tenantId(decision.getTenantId())
+                    .dmnDecisionRequirementsId(decision.getDecisionRequirementsId())
+                    .dmnDecisionRequirementsKey(decision.getDecisionRequirementsKey()))
+        .map(deploymentDecision -> new DeploymentMetadata().decision(deploymentDecision))
+        .forEach(response::addDeploymentsItem);
+  }
+
+  private static void addDeployedProcess(
+      final ResourceResponse response, final List<ProcessMetadataValue> processesMetadata) {
+    processesMetadata.stream()
+        .map(
+            process ->
+                new DeploymentProcess()
+                    .bpmnProcessId(process.getBpmnProcessId())
+                    .version(process.getVersion())
+                    .processDefinitionKey(process.getProcessDefinitionKey())
+                    .tenantId(process.getTenantId())
+                    .resourceName(process.getResourceName()))
+        .map(deploymentProcess -> new DeploymentMetadata().process(deploymentProcess))
+        .forEach(response::addDeploymentsItem);
+  }
+
+  public static ResponseEntity<Object> toCreateProcessInstanceResponse(
+      final ProcessInstanceCreationRecord brokerResponse) {
+    return buildCreateProcessInstanceResponse(
+        brokerResponse.getProcessDefinitionKey(),
+        brokerResponse.getBpmnProcessId(),
+        brokerResponse.getVersion(),
+        brokerResponse.getProcessInstanceKey(),
+        brokerResponse.getTenantId(),
+        null);
+  }
+
+  public static ResponseEntity<Object> toCreateProcessInstanceWithResultResponse(
+      final ProcessInstanceResultRecord brokerResponse) {
+    return buildCreateProcessInstanceResponse(
+        brokerResponse.getProcessDefinitionKey(),
+        brokerResponse.getBpmnProcessId(),
+        brokerResponse.getVersion(),
+        brokerResponse.getProcessInstanceKey(),
+        brokerResponse.getTenantId(),
+        brokerResponse.getVariables());
+  }
+
+  private static ResponseEntity<Object> buildCreateProcessInstanceResponse(
+      final Long processDefinitionKey,
+      final String bpmnProcessId,
+      final Integer version,
+      final Long processInstanceKey,
+      final String tenantId,
+      final Map<String, Object> variables) {
+    final var response =
+        new CreateProcessInstanceResponse()
+            .processKey(processDefinitionKey)
+            .bpmnProcessId(bpmnProcessId)
+            .version(version)
+            .processInstanceKey(processInstanceKey)
+            .tenantId(tenantId);
+    if (variables != null) {
+      response.variables(variables);
+    }
+
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   static class RestJobActivationResult implements JobActivationResult<JobActivationResponse> {

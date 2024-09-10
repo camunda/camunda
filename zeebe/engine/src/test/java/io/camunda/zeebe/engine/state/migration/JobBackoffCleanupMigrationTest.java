@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,7 +73,8 @@ public class JobBackoffCleanupMigrationTest {
     jobsColumnFamily.deleteExisting(jobKey);
 
     // when
-    jobBackoffCleanupMigration.runMigration(processingState);
+    jobBackoffCleanupMigration.runMigration(
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isTrue();
@@ -88,7 +90,8 @@ public class JobBackoffCleanupMigrationTest {
     jobState.fail(jobKey.getValue(), record);
 
     // when
-    jobBackoffCleanupMigration.runMigration(processingState);
+    jobBackoffCleanupMigration.runMigration(
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
@@ -108,7 +111,8 @@ public class JobBackoffCleanupMigrationTest {
     jobState.fail(jobKey.getValue(), record);
 
     // when
-    jobBackoffCleanupMigration.runMigration(processingState);
+    jobBackoffCleanupMigration.runMigration(
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();

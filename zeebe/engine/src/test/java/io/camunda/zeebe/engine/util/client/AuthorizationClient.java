@@ -8,12 +8,15 @@
 package io.camunda.zeebe.engine.util.client;
 
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import java.util.List;
 import java.util.function.Function;
 
 public final class AuthorizationClient {
@@ -52,8 +55,13 @@ public final class AuthorizationClient {
       authorizationCreationRecord = new AuthorizationRecord();
     }
 
-    public AuthorizationCreationClient withOwnerKey(final String ownerKey) {
+    public AuthorizationCreationClient withOwnerKey(final Long ownerKey) {
       authorizationCreationRecord.setOwnerKey(ownerKey);
+      return this;
+    }
+
+    public AuthorizationCreationClient withAction(final PermissionAction action) {
+      authorizationCreationRecord.setAction(action);
       return this;
     }
 
@@ -62,18 +70,21 @@ public final class AuthorizationClient {
       return this;
     }
 
-    public AuthorizationCreationClient withResourceKey(final String resourceKey) {
-      authorizationCreationRecord.setResourceKey(resourceKey);
-      return this;
-    }
-
-    public AuthorizationCreationClient withResourceType(final String resourceType) {
+    public AuthorizationCreationClient withResourceType(
+        final AuthorizationResourceType resourceType) {
       authorizationCreationRecord.setResourceType(resourceType);
       return this;
     }
 
-    public AuthorizationCreationClient withPermissions(final List<String> permissions) {
-      authorizationCreationRecord.setPermissions(permissions);
+    public AuthorizationCreationClient withPermission(
+        final PermissionType permissionType, final String resourceId) {
+      authorizationCreationRecord.addPermission(
+          new Permission().setPermissionType(permissionType).addResourceId(resourceId));
+      return this;
+    }
+
+    public AuthorizationCreationClient withPermission(final Permission permission) {
+      authorizationCreationRecord.addPermission(permission);
       return this;
     }
 

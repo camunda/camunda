@@ -1,10 +1,10 @@
 name: Assign new issues to the default projects
 on:
   issues:
-    types: [ opened, reopened, transferred ]
+    types: [ opened, reopened, transferred, labeled ]
 jobs:
   add-to-projects:
-    name: Add issue to ZDP/ZPA project if no project set yet
+    name: Add issue to team projects if no project assigned and by corresponding component label
     runs-on: ubuntu-latest
     steps:
       - id: get_project_count
@@ -36,17 +36,15 @@ jobs:
         with:
           project-url: https://github.com/orgs/camunda/projects/92
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
-          labeled: kind/task
-          label-operator: NOT
-      - id: add-to-zda
+          labeled: component/zeebe
+      - id: add-to-zpa
         name: Add to ZPA project
         uses: actions/add-to-project@v1.0.2
         if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/29
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
-          labeled: kind/task
-          label-operator: NOT
+          labeled: component/zeebe
       - id: add-to-operate
         name: Add to Operate project
         uses: actions/add-to-project@v1.0.2

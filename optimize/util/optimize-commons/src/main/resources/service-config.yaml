@@ -335,6 +335,8 @@ import:
 # a connection to it.
 opensearch:
   connection:
+    # Use AWS credentials for authentication
+    awsEnabled: ${CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED:false}
     # Maximum time without connection to Opensearch, Optimize should
     # wait until a timeout triggers.
     timeout: 10000

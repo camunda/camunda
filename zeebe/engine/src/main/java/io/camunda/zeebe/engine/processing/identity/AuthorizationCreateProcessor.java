@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -48,17 +49,16 @@ public class AuthorizationCreateProcessor
     final var authorizationToCreate = command.getValue();
 
     final var authorization =
-        authorizationState.getPermissions(
+        authorizationState.getResourceIdentifiers(
             authorizationToCreate.getOwnerKey(),
             authorizationToCreate.getOwnerType(),
-            authorizationToCreate.getResourceKey(),
-            authorizationToCreate.getResourceType());
+            authorizationToCreate.getResourceType(),
+            PermissionType.CREATE);
 
     if (authorization != null) {
       final var rejectionMessage =
-          "Expected to create authorization with owner key: %s and resource key %s, but an authorization with these values already exists"
-              .formatted(
-                  authorizationToCreate.getOwnerKey(), authorizationToCreate.getResourceKey());
+          "Expected to create authorization with owner key: %s, but an authorization with these values already exists"
+              .formatted(authorizationToCreate.getOwnerKey());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionMessage);
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.ALREADY_EXISTS, rejectionMessage);
@@ -67,10 +67,8 @@ public class AuthorizationCreateProcessor
 
     final var key = keyGenerator.nextKey();
 
-    authorizationToCreate.setAuthorizationKey(key);
-
     stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, authorizationToCreate);
-    distributionBehavior.distributeCommand(key, command);
+    distributionBehavior.withKey(key).distribute(command);
     responseWriter.writeEventOnCommand(
         key, AuthorizationIntent.CREATED, authorizationToCreate, command);
   }

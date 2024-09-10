@@ -1,6 +1,6 @@
 # hadolint global ignore=DL3006
-ARG BASE_IMAGE="alpine:3.20.2"
-ARG BASE_DIGEST="sha256:0a4eaa0eecf5f8c050e5bba433f58c052be7587ee8af3e8b3910ef9ab5fbe9f5"
+ARG BASE_IMAGE="alpine:3.20.3"
+ARG BASE_DIGEST="sha256:beefdbd8a1da6d2915566fde36db9db0b524eb737fc57cd1367effd16dc0d06d"
 
 # Prepare tasklist Distribution
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS prepare

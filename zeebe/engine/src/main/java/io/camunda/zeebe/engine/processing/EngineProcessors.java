@@ -45,6 +45,7 @@ import io.camunda.zeebe.engine.processing.usertask.UserTaskEventProcessors;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
@@ -72,11 +73,14 @@ public final class EngineProcessors {
       final JobStreamer jobStreamer) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
+    final var keyGenerator = processingState.getKeyGenerator();
+    final var routingInfo =
+        RoutingInfo.dynamic(
+            processingState.getRoutingState(), RoutingInfo.forStaticPartitions(partitionsCount));
     final var scheduledTaskStateFactory =
         typedRecordProcessorContext.getScheduledTaskStateFactory();
     final var writers = typedRecordProcessorContext.getWriters();
-    final TypedRecordProcessors typedRecordProcessors =
-        TypedRecordProcessors.processors(processingState.getKeyGenerator(), writers);
+    final var typedRecordProcessors = TypedRecordProcessors.processors(keyGenerator, writers);
 
     typedRecordProcessors.withListener(processingState);
 
@@ -101,7 +105,7 @@ public final class EngineProcessors {
             processingState,
             writers,
             subscriptionCommandSender,
-            partitionsCount,
+            routingInfo,
             timerChecker,
             jobStreamer,
             jobMetrics,
@@ -110,9 +114,10 @@ public final class EngineProcessors {
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
+            processingState.getDistributionState(),
             writers,
             typedRecordProcessorContext.getPartitionId(),
-            partitionsCount,
+            routingInfo,
             interPartitionCommandSender);
 
     final var deploymentDistributionCommandSender =
@@ -125,7 +130,7 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers,
         deploymentDistributionCommandSender,
-        processingState.getKeyGenerator(),
+        keyGenerator,
         featureFlags,
         commandDistributionBehavior,
         config,
@@ -153,7 +158,7 @@ public final class EngineProcessors {
             timerChecker,
             commandDistributionBehavior,
             partitionId,
-            partitionsCount,
+            routingInfo,
             clock);
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
@@ -187,6 +192,7 @@ public final class EngineProcessors {
         processingState,
         commandDistributionBehavior);
     addCommandDistributionProcessors(
+        commandDistributionBehavior,
         typedRecordProcessors,
         writers,
         processingState,
@@ -197,25 +203,13 @@ public final class EngineProcessors {
         typedRecordProcessors, processingState, bpmnBehaviors, writers);
 
     UserEventProcessors.addUserProcessors(
-        processingState.getKeyGenerator(),
-        typedRecordProcessors,
-        processingState,
-        writers,
-        commandDistributionBehavior);
+        keyGenerator, typedRecordProcessors, processingState, writers, commandDistributionBehavior);
 
     ClockProcessors.addClockProcessors(
-        typedRecordProcessors,
-        writers,
-        processingState.getKeyGenerator(),
-        clock,
-        commandDistributionBehavior);
+        typedRecordProcessors, writers, keyGenerator, clock, commandDistributionBehavior);
 
     AuthorizationEventProcessors.addAuthorizationProcessors(
-        processingState.getKeyGenerator(),
-        typedRecordProcessors,
-        processingState,
-        writers,
-        commandDistributionBehavior);
+        keyGenerator, typedRecordProcessors, processingState, writers, commandDistributionBehavior);
 
     return typedRecordProcessors;
   }
@@ -224,7 +218,7 @@ public final class EngineProcessors {
       final MutableProcessingState processingState,
       final Writers writers,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final int partitionsCount,
+      final RoutingInfo routingInfo,
       final DueDateTimerChecker timerChecker,
       final JobStreamer jobStreamer,
       final JobMetrics jobMetrics,
@@ -236,7 +230,7 @@ public final class EngineProcessors {
         jobMetrics,
         decisionBehavior,
         subscriptionCommandSender,
-        partitionsCount,
+        routingInfo,
         timerChecker,
         jobStreamer,
         clock);
@@ -252,7 +246,7 @@ public final class EngineProcessors {
       final DueDateTimerChecker timerChecker,
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
-      final int partitionsCount,
+      final RoutingInfo routingInfo,
       final InstantSource clock) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
@@ -264,7 +258,7 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior,
         partitionId,
-        partitionsCount,
+        routingInfo,
         clock);
   }
 
@@ -407,6 +401,7 @@ public final class EngineProcessors {
   }
 
   private static void addCommandDistributionProcessors(
+      final CommandDistributionBehavior commandDistributionBehavior,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final ProcessingState processingState,
@@ -420,7 +415,7 @@ public final class EngineProcessors {
 
     final var commandDistributionAcknowledgeProcessor =
         new CommandDistributionAcknowledgeProcessor(
-            processingState.getDistributionState(), writers);
+            commandDistributionBehavior, processingState.getDistributionState(), writers);
     typedRecordProcessors.onCommand(
         ValueType.COMMAND_DISTRIBUTION,
         CommandDistributionIntent.ACKNOWLEDGE,

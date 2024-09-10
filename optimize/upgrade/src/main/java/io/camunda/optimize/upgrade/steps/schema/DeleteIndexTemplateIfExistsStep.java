@@ -32,23 +32,24 @@ public class DeleteIndexTemplateIfExistsStep extends UpgradeStep {
   }
 
   @Override
-  public UpgradeStepType getType() {
-    return SCHEMA_DELETE_TEMPLATE;
-  }
-
-  @Override
   public IndexMappingCreator getIndex() {
     throw new UpgradeRuntimeException(
         "Index class does not exist as its template is being deleted");
   }
 
   @Override
+  public UpgradeStepType getType() {
+    return SCHEMA_DELETE_TEMPLATE;
+  }
+
+  @Override
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
-    final String indexAlias =
-        schemaUpgradeClient.getIndexNameService().getOptimizeIndexAliasForIndex(templateName);
-    schemaUpgradeClient.getAliasMap(indexAlias).keySet().stream()
-        .filter(templateName -> templateName.contains(this.templateName))
-        .forEach(schemaUpgradeClient::deleteTemplateIfExists);
+    final String fullTemplateName =
+        schemaUpgradeClient
+            .getIndexNameService()
+            .getOptimizeIndexOrTemplateNameForAliasAndVersionWithPrefix(
+                templateName, String.valueOf(templateVersion));
+    schemaUpgradeClient.deleteTemplateIfExists(fullTemplateName);
   }
 
   public String getVersionedTemplateNameWithTemplateSuffix() {

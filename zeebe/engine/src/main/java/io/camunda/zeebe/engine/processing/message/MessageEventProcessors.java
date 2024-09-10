@@ -107,7 +107,8 @@ public final class MessageEventProcessors {
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.MIGRATE,
-            new MessageSubscriptionMigrateProcessor(writers, commandDistributionBehavior))
+            new MessageSubscriptionMigrateProcessor(
+                subscriptionState, writers, commandDistributionBehavior))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.REJECT,

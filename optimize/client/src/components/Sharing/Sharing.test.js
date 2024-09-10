@@ -6,13 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
+import {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
+import {useLocation, useParams} from 'react-router';
 
 import {ReportRenderer, InstanceCount} from 'components';
+import {useErrorHandling} from 'hooks';
 
 import {Sharing} from './Sharing';
 import {evaluateEntity} from './service';
+
+jest.mock('react-router', () => ({
+  ...jest.requireActual('react-router'),
+  useParams: jest.fn().mockReturnValue({type: 'report', id: 123}),
+  useLocation: jest.fn().mockReturnValue({search: ''}),
+}));
 
 jest.mock('./service', () => {
   return {
@@ -21,98 +29,102 @@ jest.mock('./service', () => {
   };
 });
 
-const props = {
-  match: {
-    params: {
-      id: 123,
-      type: 'dashboard',
-    },
-  },
-  location: {search: ''},
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-};
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn(() => ({
+    mightFail: jest.fn().mockImplementation((data, cb, err, final) => {
+      try {
+        cb(data);
+      } catch (e) {
+        err(e);
+      }
+      final();
+    }),
+  })),
+}));
 
 it('should render without crashing', () => {
-  shallow(<Sharing {...props} />);
+  shallow(<Sharing />);
 });
 
 it('should initially load data', () => {
-  shallow(<Sharing {...props} />);
+  shallow(<Sharing />);
+
+  runLastEffect();
 
   expect(evaluateEntity).toHaveBeenCalled();
 });
 
 it('should display a loading indicator', () => {
-  const node = shallow(<Sharing {...props} mightFail={() => {}} />);
+  const node = shallow(<Sharing mightFail={() => {}} />);
 
   expect(node.find('LoadingIndicator')).toExist();
 });
 
 it('should display an error message if evaluation was unsuccessful', () => {
-  props.match.params.type = 'report';
-  const node = shallow(<Sharing {...props} />);
+  const node = shallow(<Sharing />);
 
-  node.setState({
-    loading: false,
-    evaluationResult: null,
-  });
+  evaluateEntity.mockReturnValueOnce(null);
+
+  runLastEffect();
 
   expect(node.find('ErrorPage')).toExist();
 });
 
 it('should pass the error to reportRenderer if evaluation fails', async () => {
-  props.match.params.type = 'report';
+  useParams.mockReturnValueOnce({type: 'report'});
   const testError = {status: 400, message: 'testError', reportDefinition: {}};
   const mightFail = (promise, cb, err, final) => {
     err(testError);
     final();
   };
 
-  const node = await shallow(<Sharing {...props} mightFail={mightFail} />);
+  useErrorHandling.mockImplementationOnce(() => ({mightFail}));
+
+  const node = await shallow(<Sharing />);
+
   await flushPromises();
+  runLastEffect();
 
   expect(node.find(ReportRenderer).prop('error')).toEqual(testError);
 });
 
-it('should display an error message if type is invalid', () => {
-  props.match.params.type = 'foo';
-  const node = shallow(<Sharing {...props} />);
+it('should display an error message if type is invalid', async () => {
+  useParams.mockReturnValue({type: 'foo'});
+  const node = shallow(<Sharing />);
 
-  node.setState({
-    loading: false,
-    evaluationResult: {name: 'foo'},
-  });
+  await flushPromises();
+  runLastEffect();
 
   expect(node.find('ErrorPage')).toExist();
 });
 
 it('should have report if everything is fine', () => {
-  props.match.params.type = 'report';
-  const node = shallow(<Sharing {...props} />);
+  useParams.mockReturnValue({type: 'report'});
+  const node = shallow(<Sharing />);
 
-  node.setState({
-    loading: false,
-    evaluationResult: {name: 'foo'},
-  });
+  evaluateEntity.mockReturnValueOnce({name: 'foo'});
+
+  runLastEffect();
 
   expect(node.find(ReportRenderer)).toExist();
 });
 
 it('should retrieve report for the given id', () => {
-  props.match.params.type = 'report';
-  shallow(<Sharing {...props} />);
+  useParams.mockReturnValue({type: 'report', id: 123});
+  shallow(<Sharing />);
+
+  runLastEffect();
 
   expect(evaluateEntity).toHaveBeenCalledWith(123, 'report', undefined);
 });
 
 it('should display the report name and include report details', () => {
-  props.match.params.type = 'report';
-  const node = shallow(<Sharing {...props} />);
+  useParams.mockReturnValueOnce({type: 'report'});
+  const node = shallow(<Sharing />);
 
-  node.setState({
-    loading: false,
-    evaluationResult: {name: 'My report name'},
-  });
+  evaluateEntity.mockReturnValueOnce({name: 'My report name'});
+
+  runLastEffect();
 
   expect(node.find('EntityName')).toExist();
   expect(node.find('EntityName').prop('children')).toBe('My report name');
@@ -120,45 +132,38 @@ it('should display the report name and include report details', () => {
 });
 
 it('should include the InstanceCount for reports', () => {
-  props.match.params.type = 'report';
-  const node = shallow(<Sharing {...props} />);
+  useParams.mockReturnValueOnce({type: 'report'});
+  const node = shallow(<Sharing />);
 
-  node.setState({
-    loading: false,
-    evaluationResult: {name: 'My report name'},
-  });
+  evaluateEntity.mockReturnValueOnce({name: 'My report name'});
+
+  runLastEffect();
 
   expect(node.find(InstanceCount)).toExist();
   expect(node.find(InstanceCount).prop('report')).toEqual({name: 'My report name'});
 });
 
 it('should have dashboard if everything is fine', () => {
-  props.match.params.type = 'dashboard';
-  const node = shallow(<Sharing {...props} />);
+  useParams.mockReturnValue({type: 'dashboard', id: 123});
+  const node = shallow(<Sharing />);
 
-  node.setState({
-    loading: false,
-    evaluationResult: {reportShares: 'foo'},
-  });
+  evaluateEntity.mockReturnValueOnce({reportShares: 'foo'});
+
+  runLastEffect();
 
   expect(node.find('DashboardRenderer')).toExist();
 });
 
 it('should include filters on a dashboard', () => {
-  props.match.params.type = 'dashboard';
-  const node = shallow(
-    <Sharing
-      {...props}
-      location={{
-        search: '?filter=%5B%7B%22type%22%3A%22runningInstancesOnly%22%2C%22data%22%3Anull%7D%5D',
-      }}
-    />
-  );
-
-  node.setState({
-    loading: false,
-    evaluationResult: {reportShares: 'foo'},
+  useParams.mockReturnValue({type: 'dashboard', id: 123});
+  useLocation.mockReturnValue({
+    search: '?filter=%5B%7B%22type%22%3A%22runningInstancesOnly%22%2C%22data%22%3Anull%7D%5D',
   });
+  const node = shallow(<Sharing />);
+
+  evaluateEntity.mockReturnValueOnce({reportShares: 'foo'});
+
+  runLastEffect();
 
   expect(node.find('DashboardRenderer').prop('filter')).toEqual([
     {data: null, type: 'runningInstancesOnly'},
@@ -166,20 +171,21 @@ it('should include filters on a dashboard', () => {
 });
 
 it('should retrieve dashboard for the given id', () => {
-  props.match.params.type = 'dashboard';
-  shallow(<Sharing {...props} />);
+  useParams.mockReturnValue({type: 'dashboard', id: 123});
+  shallow(<Sharing />);
+
+  runLastEffect();
 
   expect(evaluateEntity).toHaveBeenCalledWith(123, 'dashboard', undefined);
 });
 
 it('should display the dashboard name and last modification info', () => {
-  props.match.params.type = 'dashboard';
-  const node = shallow(<Sharing {...props} />);
+  useParams.mockReturnValue({type: 'dashboard', id: 123});
+  const node = shallow(<Sharing />);
 
-  node.setState({
-    loading: false,
-    evaluationResult: {name: 'My dashboard name'},
-  });
+  evaluateEntity.mockReturnValueOnce({name: 'My dashboard name'});
+
+  runLastEffect();
 
   expect(node.find('EntityName')).toExist();
   expect(node.find('EntityName').prop('children')).toBe('My dashboard name');
@@ -187,60 +193,54 @@ it('should display the dashboard name and last modification info', () => {
 });
 
 it('should render an href directing to view mode ignoring /external sub url', () => {
-  props.match.params.type = 'dashboard';
+  useParams.mockReturnValue({type: 'dashboard', id: 123});
   delete window.location;
   window.location = new URL('http://example.com/subUrl/external/#/share/dashboard/shareId');
 
-  const node = shallow(<Sharing {...props} />);
+  const node = shallow(<Sharing />);
 
-  node.setState({
-    loading: false,
-    evaluationResult: {id: 'dashboardId'},
-  });
+  evaluateEntity.mockReturnValueOnce({id: 'dashboardId'});
 
-  expect(node.find('.Button').prop('href')).toBe(
-    'http://example.com/subUrl/#/dashboard/dashboardId/'
-  );
+  runLastEffect();
+
+  expect(node.find('Link').prop('href')).toBe('http://example.com/subUrl/#/dashboard/dashboardId/');
 });
 
 it('should show a compact version and lock scroll when a shared report is embedded', () => {
-  props.match.params.type = 'report';
-  props.location.search = '?mode=embed';
+  useParams.mockReturnValue({type: 'report', id: 123});
+  useLocation.mockReturnValue({search: '?mode=embed'});
 
-  const node = shallow(<Sharing {...props} />);
+  const node = shallow(<Sharing />);
 
-  node.setState({
-    loading: false,
-    evaluationResult: {name: 'My report name'},
-  });
+  evaluateEntity.mockReturnValueOnce({name: 'My report name'});
+
+  runLastEffect();
 
   expect(node.find('DiagramScrollLock')).toExist();
   expect(node.find('.iconLink')).toExist();
   expect(node.find('.Sharing')).toHaveClassName('compact');
-  expect(node.find('.title-button')).toHaveClassName('small');
 });
 
 it('should add report classname to the sharing container', () => {
-  props.match.params.type = 'report';
-  props.location.search = '?header=hidden';
+  useParams.mockReturnValue({type: 'report', id: 123});
+  useLocation.mockReturnValue({search: '?header=hidden'});
 
-  const node = shallow(<Sharing {...props} />);
-  node.setState({
-    loading: false,
-    evaluationResult: {name: 'My report name', id: 'aReportId'},
-  });
+  const node = shallow(<Sharing />);
+
+  evaluateEntity.mockReturnValueOnce({name: 'My report name', id: 'aReportId'});
+
+  runLastEffect();
 
   expect(node.find('.Sharing')).toHaveClassName('report');
 });
 
 it('should only show the title and hide the link to Optimize', () => {
-  props.location.search = '?header=titleOnly';
+  useLocation.mockReturnValue({search: '?header=titleOnly'});
+  evaluateEntity.mockReturnValueOnce({name: 'My report name', id: 'aReportId'});
 
-  const node = shallow(<Sharing {...props} />);
-  node.setState({
-    loading: false,
-    evaluationResult: {name: 'My report name', id: 'aReportId'},
-  });
+  const node = shallow(<Sharing />);
+
+  runLastEffect();
 
   expect(node.find(InstanceCount)).toExist();
   expect(node.find('EntityName')).toExist();
@@ -248,27 +248,23 @@ it('should only show the title and hide the link to Optimize', () => {
 });
 
 it('should only show the link to Optimize and hide the title', () => {
-  props.location.search = '?header=linkOnly';
+  useLocation.mockReturnValue({search: '?header=linkOnly'});
+  evaluateEntity.mockReturnValueOnce({name: 'My report name', id: 'aReportId'});
 
-  const node = shallow(<Sharing {...props} />);
-  node.setState({
-    loading: false,
-    evaluationResult: {name: 'My report name', id: 'aReportId'},
-  });
+  const node = shallow(<Sharing />);
+
+  runLastEffect();
 
   expect(node.find('.title-button')).toExist();
   expect(node.find('EntityName')).not.toExist();
 });
 
 it('should hide the whole header if specified', () => {
-  props.match.params.type = 'report';
-  props.location.search = '?header=hidden';
+  useParams.mockReturnValueOnce({type: 'report', id: 123});
+  useLocation.mockReturnValueOnce({search: '?header=hidden'});
+  evaluateEntity.mockReturnValueOnce({name: 'My report name', id: 'aReportId'});
 
-  const node = shallow(<Sharing {...props} />);
-  node.setState({
-    loading: false,
-    evaluationResult: {name: 'My report name', id: 'aReportId'},
-  });
+  const node = shallow(<Sharing />);
 
   expect(node.find('.cds--header')).not.toExist();
 });

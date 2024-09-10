@@ -38,6 +38,7 @@ jobs:
       zeebe-changes: ${{ steps.filter.outputs.zeebe-changes }}
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
+      protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -427,7 +428,7 @@ jobs:
       LIMITS_CPU: 4
     steps:
       - name: Checkout repository
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: "Parse pom.xml for versions"
         id: "pom_info"
         uses: YunaBraska/java-info-action@main
@@ -443,7 +444,7 @@ jobs:
         run: yarn test:ci
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
         with:
           name: unit-tests-frontend-junit
           path: |
@@ -469,7 +470,7 @@ jobs:
       LIMITS_CPU: 4
     steps:
       - name: Checkout repository
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
@@ -478,16 +479,66 @@ jobs:
         uses: ./.github/actions/run-maven
         with:
           parameters: -f optimize/pom.xml test -Dskip.fe.build -Dskip.docker
-          threads: 1C
+          threads: .5C
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
         with:
           name: unit-tests-backend-junit
           path: |
             **/surefire-reports/**/*.xml
           retention-days: 7
           if-no-files-found: ignore
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  protobuf-checks:
+    name: "Protobuf Backwards Compatibility"
+    timeout-minutes: 10
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    env:
+      # set the comparison based on the type of workflow trigger:
+      #   - for PRs, we use the last commit of the base
+      #   - for merge queues, we use the last commit of the target merge queue
+      #   - for a push, we use the last commit before the push
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+    if: |
+      needs.detect-changes.outputs.protobuf-changes == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - id: pr-body
+        name: Fetch latest PR body
+        if: github.event_name == 'pull_request'
+        run: |
+          {
+            echo 'result<<EOF'
+            gh pr view ${{ github.event.pull_request.number }} --json body | jq '.body'
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # by the default the action will compare against the base branch, or if on push, against the
+        # previous commit
+      - uses: bufbuild/buf-action@v1
+        if: |
+          !(contains(steps.pr-body.outputs.result, 'BREAKING CHANGE:') ||
+            contains(github.event.merge_group.head_commit.message, 'BREAKING CHANGE:') ||
+            contains(github.event.push.commits.*.message, 'BREAKING CHANGE:'))
+        with:
+          format: false
+          lint: false
+          push: false
+          archive: false
+          breaking: true
+          breaking_against: '${{ github.event.repository.clone_url }}#format=git,commit=${{ env.BASE_SHA }}'
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -515,6 +566,7 @@ jobs:
       - zeebe-ci
       - optimize-frontend-unit-tests
       - optimize-backend-unit-tests
+      - protobuf-checks
     steps:
       - uses: actions/checkout@v4
       - name: Check for aborted jobs
@@ -546,7 +598,7 @@ jobs:
           secrets: |
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-      - uses: actions/setup-java@v4.2.2
+      - uses: actions/setup-java@v4.3.0
         with:
           distribution: 'temurin'
           java-version: '21'

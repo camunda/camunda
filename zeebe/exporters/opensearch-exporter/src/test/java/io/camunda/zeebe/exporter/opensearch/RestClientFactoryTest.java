@@ -84,6 +84,26 @@ final class RestClientFactoryTest {
     assertThat(credentialsProvider.getCredentials(AuthScope.ANY)).isNull();
   }
 
+  @Test
+  void shouldApplyRequestInterceptorsInOrder() throws Exception {
+    // given
+    final var context = new BasicHttpContext();
+    try (final var client =
+        RestClientFactory.of(
+            config,
+            (req, ctx) -> ctx.setAttribute("foo", "bar"),
+            (req, ctx) -> ctx.setAttribute("foo", "baz"))) {
+
+      // when
+      getHttpClient(client)
+          .execute(
+              HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
+    }
+
+    // then
+    assertThat(context.getAttribute("foo")).isEqualTo("baz");
+  }
+
   private static HttpAsyncClient getHttpClient(final RestClient client) throws Exception {
     final var field = client.getClass().getDeclaredField("client");
     field.setAccessible(true);

@@ -9,27 +9,9 @@ package io.camunda.zeebe.gateway.rest;
 
 import static java.util.Optional.ofNullable;
 
-import io.camunda.service.entities.DecisionDefinitionEntity;
-import io.camunda.service.entities.DecisionRequirementsEntity;
-import io.camunda.service.entities.IncidentEntity;
-import io.camunda.service.entities.ProcessInstanceEntity;
-import io.camunda.service.entities.UserEntity;
-import io.camunda.service.entities.UserTaskEntity;
+import io.camunda.service.entities.*;
 import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsItem;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.ProblemDetail;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
-import io.camunda.zeebe.gateway.protocol.rest.UserResponse;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.util.Either;
 import java.util.Arrays;
 import java.util.Collections;
@@ -131,14 +113,54 @@ public final class SearchQueryResponseMapper {
 
   private static ProcessInstanceItem toProcessInstance(final ProcessInstanceEntity p) {
     return new ProcessInstanceItem()
-        .tenantId(p.tenantId())
         .key(p.key())
+        .processName(p.processName())
         .processVersion(p.processVersion())
         .bpmnProcessId(p.bpmnProcessId())
-        .parentKey(p.parentKey())
+        .parentKey(p.parentProcessInstanceKey())
         .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())
         .startDate(p.startDate())
-        .endDate(p.endDate());
+        .endDate(p.endDate())
+        .state((p.state() == null) ? null : ProcessInstanceItem.StateEnum.fromValue(p.state()))
+        .incident(p.incident())
+        .hasActiveOperation(p.hasActiveOperation())
+        .processDefinitionKey(p.processDefinitionKey())
+        .tenantId(p.tenantId())
+        .rootInstanceId(p.rootInstanceId())
+        .operations(toOperations(p.operations()))
+        .callHierarchy(toCallHierarchy(p.callHierarchy()));
+  }
+
+  private static List<OperationItem> toOperations(final List<OperationEntity> instances) {
+    if (instances == null) {
+      return null;
+    }
+    return instances.stream().map(SearchQueryResponseMapper::toOperation).toList();
+  }
+
+  private static OperationItem toOperation(final OperationEntity o) {
+    return new OperationItem()
+        .id(o.id())
+        .batchOperationId(o.batchOperationId())
+        .type((o.type() == null) ? null : (OperationItem.TypeEnum.fromValue(o.type())))
+        .state((o.state() == null) ? null : (OperationItem.StateEnum.fromValue(o.state())))
+        .errorMessage(o.errorMessage())
+        .completedDate(o.completedDate());
+  }
+
+  private static List<ProcessInstanceReferenceItem> toCallHierarchy(
+      final List<ProcessInstanceReference> instances) {
+    if (instances == null) {
+      return null;
+    }
+    return instances.stream().map(SearchQueryResponseMapper::toCallHierarchy).toList();
+  }
+
+  private static ProcessInstanceReferenceItem toCallHierarchy(final ProcessInstanceReference p) {
+    return new ProcessInstanceReferenceItem()
+        .instanceId(p.instanceId())
+        .processDefinitionId(p.processDefinitionId())
+        .processDefinitionName(p.processDefinitionName());
   }
 
   private static List<DecisionDefinitionItem> toDecisionDefinitions(
@@ -231,8 +253,9 @@ public final class SearchQueryResponseMapper {
   public static Either<ProblemDetail, UserResponse> toUser(final UserEntity user) {
     return Either.right(
         new UserResponse()
-            .username(user.value().username())
-            .email(user.value().email())
-            .name(user.value().name()));
+            .key(user.key())
+            .username(user.username())
+            .email(user.email())
+            .name(user.name()));
   }
 }

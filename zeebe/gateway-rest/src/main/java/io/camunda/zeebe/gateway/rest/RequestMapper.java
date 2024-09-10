@@ -10,27 +10,39 @@ package io.camunda.zeebe.gateway.rest;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationAssignRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
+import static io.camunda.zeebe.gateway.rest.validator.ElementRequestValidator.validateVariableRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
-import static io.camunda.zeebe.gateway.rest.validator.MessageCorrelateValidator.validateMessageCorrelationRequest;
+import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessageCorrelationRequest;
+import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessagePublicationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateAuthorization;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
+import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ResourceRequestValidator.validateResourceDeletion;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
+import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentMetadataModel;
+import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
+import io.camunda.service.MessageServices.PublicationMessageRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
+import io.camunda.service.ResourceServices.DeployResourcesRequest;
+import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationAssignRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
+import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
@@ -38,14 +50,20 @@ import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -192,11 +210,27 @@ public class RequestMapper {
                     updateRequest.getChangeset().getTimeout())));
   }
 
-  public static Either<ProblemDetail, AuthorizationAssignRequest> toAuthorizationAssignRequest(
-      final AuthorizationAssignRequest authorizationAssignRequest) {
+  public static Either<ProblemDetail, PatchAuthorizationRequest> toAuthorizationAssignRequest(
+      final long ownerKey, final AuthorizationPatchRequest authorizationPatchRequest) {
     return getResult(
-        validateAuthorizationAssignRequest(authorizationAssignRequest),
-        () -> authorizationAssignRequest);
+        validateAuthorizationAssignRequest(authorizationPatchRequest),
+        () -> {
+          final Map<PermissionType, List<String>> permissions = new HashMap<>();
+          authorizationPatchRequest
+              .getPermissions()
+              .forEach(
+                  permission -> {
+                    permissions.put(
+                        PermissionType.valueOf(permission.getPermissionType().name()),
+                        permission.getResourceIds());
+                  });
+
+          return new PatchAuthorizationRequest(
+              ownerKey,
+              PermissionAction.valueOf(authorizationPatchRequest.getAction().name()),
+              AuthorizationResourceType.valueOf(authorizationPatchRequest.getResourceType().name()),
+              permissions);
+        });
   }
 
   public static Either<ProblemDetail, DocumentCreateRequest> toDocumentCreateRequest(
@@ -207,10 +241,8 @@ public class RequestMapper {
     final InputStream inputStream;
     try {
       inputStream = file.getInputStream();
-    } catch (IOException e) {
-      return Either.left(
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), "Failed to read document content"));
+    } catch (final IOException e) {
+      return Either.left(createInternalErrorProblemDetail(e, "Failed to read document content"));
     }
     final var validationResponse = validateDocumentMetadata(metadata);
     final var internalMetadata = toInternalDocumentMetadata(metadata, file);
@@ -235,6 +267,52 @@ public class RequestMapper {
           final Supplier<CompletableFuture<BrokerResponseT>> method) {
     return RequestMapper.executeServiceMethod(
         method, ignored -> ResponseEntity.noContent().build());
+  }
+
+  public static Either<ProblemDetail, DeployResourcesRequest> toDeployResourceRequest(
+      final List<MultipartFile> resources, final String tenantId) {
+    try {
+      return Either.right(createDeployResourceRequest(resources, tenantId));
+    } catch (final IOException e) {
+      return Either.left(createInternalErrorProblemDetail(e, "Failed to read resources content"));
+    }
+  }
+
+  public static Either<ProblemDetail, SetVariablesRequest> toVariableRequest(
+      final SetVariableRequest variableRequest, final long elementInstanceKey) {
+    return getResult(
+        validateVariableRequest(variableRequest),
+        () ->
+            new SetVariablesRequest(
+                elementInstanceKey,
+                variableRequest.getVariables(),
+                variableRequest.getLocal(),
+                variableRequest.getOperationReference()));
+  }
+
+  public static Either<ProblemDetail, PublicationMessageRequest> toMessagePublicationRequest(
+      final MessagePublicationRequest messagePublicationRequest) {
+    return getResult(
+        validateMessagePublicationRequest(messagePublicationRequest),
+        () ->
+            new PublicationMessageRequest(
+                messagePublicationRequest.getName(),
+                messagePublicationRequest.getCorrelationKey(),
+                messagePublicationRequest.getTimeToLive(),
+                getStringOrEmpty(
+                    messagePublicationRequest, MessagePublicationRequest::getMessageId),
+                getMapOrEmpty(messagePublicationRequest, MessagePublicationRequest::getVariables),
+                getStringOrEmpty(
+                    messagePublicationRequest, MessagePublicationRequest::getTenantId)));
+  }
+
+  public static Either<ProblemDetail, ResourceDeletionRequest> toResourceDeletion(
+      final long resourceKey, final DeleteResourceRequest deleteRequest) {
+    final Long operationReference =
+        deleteRequest != null ? deleteRequest.getOperationReference() : null;
+    return getResult(
+        validateResourceDeletion(deleteRequest),
+        () -> new ResourceDeletionRequest(resourceKey, operationReference));
   }
 
   public static Authentication getAuthentication() {
@@ -283,7 +361,7 @@ public class RequestMapper {
   }
 
   private static DocumentMetadataModel toInternalDocumentMetadata(
-      DocumentMetadata metadata, MultipartFile file) {
+      final DocumentMetadata metadata, final MultipartFile file) {
 
     if (metadata == null) {
       return new DocumentMetadataModel(
@@ -304,6 +382,45 @@ public class RequestMapper {
         contentType, fileName, expiresAt, metadata.getAdditionalProperties());
   }
 
+  private static DeployResourcesRequest createDeployResourceRequest(
+      final List<MultipartFile> resources, final String tenantId) throws IOException {
+    final Map<String, byte[]> resourceMap = new HashMap<>();
+    for (final MultipartFile resource : resources) {
+      resourceMap.put(resource.getOriginalFilename(), resource.getBytes());
+    }
+    return new DeployResourcesRequest(resourceMap, tenantId);
+  }
+
+  private static ProblemDetail createInternalErrorProblemDetail(
+      final IOException e, final String message) {
+    return RestErrorMapper.createProblemDetail(
+        HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), message);
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
+      final CreateProcessInstanceRequest request) {
+    return getResult(
+        validateCreateProcessInstanceRequest(request),
+        () ->
+            new ProcessInstanceCreateRequest(
+                getLongOrDefault(
+                    request, CreateProcessInstanceRequest::getProcessDefinitionKey, -1L),
+                getStringOrEmpty(request, CreateProcessInstanceRequest::getBpmnProcessId),
+                getIntOrDefault(request, CreateProcessInstanceRequest::getVersion, -1),
+                getMapOrEmpty(request, CreateProcessInstanceRequest::getVariables),
+                request.getTenantId(),
+                request.getAwaitCompletion(),
+                request.getRequestTimeout(),
+                request.getOperationReference(),
+                request.getStartInstructions().stream()
+                    .map(
+                        instruction ->
+                            new io.camunda.zeebe.protocol.impl.record.value.processinstance
+                                    .ProcessInstanceCreationStartInstruction()
+                                .setElementId(instruction.getElementId()))
+                    .toList()));
+  }
+
   private static <R> Map<String, Object> getMapOrEmpty(
       final R request, final Function<R, Map<String, Object>> mapExtractor) {
     return request == null ? Map.of() : mapExtractor.apply(request);
@@ -316,8 +433,13 @@ public class RequestMapper {
   }
 
   private static <R> long getLongOrZero(final R request, final Function<R, Long> valueExtractor) {
+    return getLongOrDefault(request, valueExtractor, 0L);
+  }
+
+  private static <R> long getLongOrDefault(
+      final R request, final Function<R, Long> valueExtractor, final Long defaultValue) {
     final Long value = request == null ? null : valueExtractor.apply(request);
-    return value == null ? 0L : value;
+    return value == null ? defaultValue : value;
   }
 
   private static <R> List<String> getStringListOrEmpty(
@@ -327,8 +449,13 @@ public class RequestMapper {
   }
 
   private static <R> int getIntOrZero(final R request, final Function<R, Integer> valueExtractor) {
+    return getIntOrDefault(request, valueExtractor, 0);
+  }
+
+  private static <R> int getIntOrDefault(
+      final R request, final Function<R, Integer> valueExtractor, final Integer defaultValue) {
     final Integer value = request == null ? null : valueExtractor.apply(request);
-    return value == null ? 0 : value;
+    return value == null ? defaultValue : value;
   }
 
   public record CompleteUserTaskRequest(

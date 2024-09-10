@@ -51,7 +51,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.Buckets;
 import org.opensearch.client.opensearch._types.aggregations.CompositeBucket;
+import org.opensearch.client.opensearch._types.aggregations.LongTermsAggregate;
+import org.opensearch.client.opensearch._types.aggregations.LongTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregate;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -294,15 +297,24 @@ class ProcessStoreOpenSearchTest {
         .thenReturn(Map.of("bpmnProcessId_tenantId_buckets", aggregations));
     final var bucket = mock(CompositeBucket.class);
     when(aggregations.composite().buckets().array()).thenReturn(List.of(bucket));
+
+    final var maxVersionAggregate = mock(Aggregate.class, RETURNS_DEEP_STUBS);
+    when(bucket.aggregations()).thenReturn(Map.of("max_version_docs", maxVersionAggregate));
+    final var termsAggregate = mock(LongTermsAggregate.class);
+    when(maxVersionAggregate._get()).thenReturn(termsAggregate);
+    final var termsBucket = mock(Buckets.class);
+    when(termsAggregate.buckets()).thenReturn(termsBucket);
+    final var longTermsBucket = mock(LongTermsBucket.class);
+    when(termsBucket.array()).thenReturn(List.of(longTermsBucket));
     final var topHitsAggregate = mock(Aggregate.class);
+    when(longTermsBucket.aggregations()).thenReturn(Map.of("top_hit_doc", topHitsAggregate));
     final var topHits = mock(TopHitsAggregate.class, RETURNS_DEEP_STUBS);
-    when(topHitsAggregate.topHits()).thenReturn(topHits);
+    when(topHitsAggregate._get()).thenReturn(topHits);
     final Hit hit = mock(Hit.class);
     when(topHits.hits().hits()).thenReturn(List.of(hit));
     when(hit.source()).thenReturn("some-json");
     when(objectMapper.readValue("some-json", ProcessEntity.class))
         .thenReturn(mock(ProcessEntity.class));
-    when(bucket.aggregations()).thenReturn(Map.of("top_hit_doc", topHitsAggregate));
   }
 
   private void mockOpenSearchNotFound() throws IOException {

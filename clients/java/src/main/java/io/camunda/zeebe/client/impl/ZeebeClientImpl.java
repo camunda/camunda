@@ -27,6 +27,8 @@ import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.ClockPinCommandStep1;
+import io.camunda.zeebe.client.api.command.ClockResetCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
@@ -50,6 +52,7 @@ import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionRequirementsQuery;
@@ -61,6 +64,8 @@ import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
+import io.camunda.zeebe.client.impl.command.ClockPinCommandImpl;
+import io.camunda.zeebe.client.impl.command.ClockResetCommandImpl;
 import io.camunda.zeebe.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.CorrelateMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
@@ -81,6 +86,7 @@ import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
 import io.camunda.zeebe.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateUserTaskCommandImpl;
+import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpClientFactory;
 import io.camunda.zeebe.client.impl.search.query.DecisionDefinitionQueryImpl;
@@ -509,6 +515,16 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
+  public ClockPinCommandStep1 newClockPinCommand() {
+    return new ClockPinCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public ClockResetCommandStep1 newClockResetCommand() {
+    return new ClockResetCommandImpl(httpClient);
+  }
+
+  @Override
   public ProcessInstanceQuery newProcessInstanceQuery() {
     return new ProcessInstanceQueryImpl(httpClient, jsonMapper);
   }
@@ -526,6 +542,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public DecisionDefinitionQuery newDecisionDefinitionQuery() {
     return new DecisionDefinitionQueryImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public DecisionDefinitionGetXmlRequest newDecisionDefinitionGetXmlRequest(
+      final long decisionKey) {
+    return new DecisionDefinitionGetXmlRequestImpl(httpClient, decisionKey);
   }
 
   @Override

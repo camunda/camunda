@@ -101,7 +101,7 @@ public class OpenSearchClientBuilder {
 
   private static OpenSearchTransport getAwsTransport(final ConfigurationService osConfig) {
     final String region = new DefaultAwsRegionProviderChain().getRegion();
-    SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder().build();
+    final SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder().build();
     return new AwsSdk2Transport(
         httpClient,
         osConfig.getOpenSearchConfiguration().getFirstConnectionNode().getHost(),
@@ -111,21 +111,25 @@ public class OpenSearchClientBuilder {
             .build());
   }
 
-  private static boolean isAws() {
-    AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
-    try {
-      credentialsProvider.resolveCredentials();
-      log.info("AWS Credentials can be resolved. Use AWS OpenSearch");
-      return true;
-    } catch (Exception e) {
-      log.info("Use standard OpenSearch since AWS not configured ({}) ", e.getMessage());
-      return false;
+  private static boolean useAwsCredentials(final ConfigurationService configurationService) {
+    if (configurationService.getOpenSearchConfiguration().getConnection().getAwsEnabled()) {
+      final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
+      try {
+        credentialsProvider.resolveCredentials();
+        log.info("AWS Credentials can be resolved. Use AWS OpenSearch");
+        return true;
+      } catch (final Exception e) {
+        log.info("Use standard OpenSearch since AWS not configured ({}) ", e.getMessage());
+        return false;
+      }
     }
+    log.info("AWS Credentials are disabled. Using basic auth.");
+    return false;
   }
 
   private static OpenSearchTransport buildOpenSearchTransport(
       final ConfigurationService configurationService) {
-    if (isAws()) {
+    if (useAwsCredentials(configurationService)) {
       return getAwsTransport(configurationService);
     }
     final HttpHost[] hosts = buildOpenSearchConnectionNodes(configurationService);

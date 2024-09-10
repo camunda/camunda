@@ -11,20 +11,22 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
-import java.util.UUID;
 import org.assertj.core.api.Assertions;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.jupiter.api.DisplayName;
 
 public class CreateAuthorizationTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -35,28 +37,32 @@ public class CreateAuthorizationTest {
   @Test
   public void shouldCreateAuthorization() {
     // when
-    final var owner = "owner" + UUID.randomUUID();
-    final var permissions = List.of("write:*");
+    final var ownerKey = 1L;
+    final var action = PermissionAction.ADD;
+    final var ownerType = AuthorizationOwnerType.USER;
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permission =
+        new Permission().setPermissionType(PermissionType.CREATE).addResourceId("*");
     final var createdAuthorizationRecord =
-        ENGINE
+        engine
             .authorization()
             .newAuthorization()
-            .withOwnerKey(owner)
-            .withOwnerType(AuthorizationOwnerType.USER)
-            .withResourceKey("resource")
-            .withResourceType("bpmn-id")
-            .withPermissions(permissions)
+            .withOwnerKey(ownerKey)
+            .withAction(action)
+            .withOwnerType(ownerType)
+            .withResourceType(resourceType)
+            .withPermission(permission)
             .create();
 
     // then
     final var createdAuthorization = createdAuthorizationRecord.getValue();
     Assertions.assertThat(createdAuthorization)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("ownerKey", owner)
-        .hasFieldOrPropertyWithValue("ownerType", AuthorizationOwnerType.USER)
-        .hasFieldOrPropertyWithValue("resourceKey", "resource")
-        .hasFieldOrPropertyWithValue("resourceType", "bpmn-id")
-        .hasFieldOrPropertyWithValue("permissions", permissions);
+        .hasFieldOrPropertyWithValue("action", action)
+        .hasFieldOrPropertyWithValue("ownerKey", ownerKey)
+        .hasFieldOrPropertyWithValue("ownerType", ownerType)
+        .hasFieldOrPropertyWithValue("resourceType", resourceType)
+        .hasFieldOrPropertyWithValue("permissions", List.of(permission));
   }
 
   @DisplayName(
@@ -64,40 +70,39 @@ public class CreateAuthorizationTest {
   @Test
   public void shouldNotDuplicate() {
     // given
-    final var owner = "owner" + UUID.randomUUID();
-    final var permissions = List.of("write:*");
+    final var ownerKey = 1L;
     final var createdAuthorizationRecord =
-        ENGINE
+        engine
             .authorization()
             .newAuthorization()
-            .withOwnerKey(owner)
+            .withOwnerKey(1L)
+            .withAction(PermissionAction.ADD)
             .withOwnerType(AuthorizationOwnerType.USER)
-            .withResourceKey("resource")
-            .withResourceType("bpmn-id")
-            .withPermissions(permissions)
+            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withPermission(PermissionType.CREATE, "*")
             .create();
     // when
     final var duplicatedAuthorizationRecord =
-        ENGINE
+        engine
             .authorization()
             .newAuthorization()
-            .withOwnerKey(owner)
+            .withOwnerKey(ownerKey)
+            .withAction(PermissionAction.ADD)
             .withOwnerType(AuthorizationOwnerType.USER)
-            .withResourceKey("resource")
-            .withResourceType("bpmn-id")
-            .withPermissions(permissions)
+            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withPermission(PermissionType.CREATE, "*")
             .expectRejection()
             .create();
 
     final var createdAuthorization = createdAuthorizationRecord.getValue();
     Assertions.assertThat(createdAuthorization)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("ownerKey", owner);
+        .hasFieldOrPropertyWithValue("ownerKey", ownerKey);
 
     assertThat(duplicatedAuthorizationRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to create authorization with owner key: %s and resource key %s, but an authorization with these values already exists"
-                .formatted(owner, "resource"));
+            "Expected to create authorization with owner key: %s, but an authorization with these values already exists"
+                .formatted(ownerKey));
   }
 }

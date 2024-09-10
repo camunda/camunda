@@ -6,19 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const {spawn} = require('child_process');
-const path = require('path');
-const os = require('os');
-const fetch = require('node-fetch');
-const fs = require('fs');
-const xml2js = require('xml2js');
+import {spawn} from 'child_process';
+import {resolve as _resolve, dirname} from 'path';
+import {platform} from 'os';
+import {readFile} from 'fs';
+import {parseString} from 'xml2js';
+import {fileURLToPath} from 'url';
+import {config} from 'dotenv';
 
-const createServer = require('./managementServer/server.js');
+import createServer from './managementServer/server.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // argument to determine if we are in CI mode
 const ciMode = process.argv.indexOf('ci') > -1;
 if (!ciMode) {
-  require('dotenv').config();
+  config();
 }
 
 let mode = 'self-managed';
@@ -88,7 +91,7 @@ setVersionInfo().then(setupEnvironment).then(startBackend);
 
 function startBackend() {
   return new Promise((resolve, reject) => {
-    const pathSep = os.platform() === 'win32' ? ';' : ':';
+    const pathSep = platform() === 'win32' ? ';' : ':';
     const classPaths = [
       '../src/main/resources/',
       './lib/*',
@@ -104,7 +107,7 @@ function startBackend() {
     backendProcess = spawnWithArgs(
       `java -cp ${classPaths}  -Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m -Dfile.encoding=UTF-8 io.camunda.optimize.Main`,
       {
-        cwd: path.resolve(__dirname, '..', '..', 'backend', 'target'),
+        cwd: _resolve(__dirname, '..', '..', 'backend', 'target'),
         shell: true,
         env: {
           ...process.env,
@@ -156,9 +159,9 @@ async function setupEnvironment() {
 function buildBackend() {
   return new Promise((resolve, reject) => {
     buildBackendProcess = spawnWithArgs(
-      'mvn clean install -DskipTests -Dskip.docker -Dskip.fe.build -pl optimize/backend -am',
+      'mvn clean install -DskipTests -Dskip.docker -Dskip.fe.build -pl optimize/backend -am -T1C',
       {
-        cwd: path.resolve(__dirname, '..', '..', '..'),
+        cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,
       }
     );
@@ -183,7 +186,7 @@ function startDocker() {
 
   return new Promise((resolve) => {
     dockerProcess = spawnWithArgs('docker-compose up --force-recreate --no-color', {
-      cwd: path.resolve(__dirname, '..'),
+      cwd: _resolve(__dirname, '..'),
       shell: true,
       env: {
         ...process.env, // https://github.com/nodejs/node/issues/12986#issuecomment-301101354
@@ -207,8 +210,8 @@ function startDocker() {
 
 function setVersionInfo() {
   return new Promise((resolve) => {
-    fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) => {
-      xml2js.parseString(data, {explicitArray: false}, (err, data) => {
+    readFile(_resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) => {
+      parseString(data, {explicitArray: false}, (err, data) => {
         if (err) {
           return console.error(err);
         }
@@ -226,7 +229,7 @@ function setVersionInfo() {
 
 function stopDocker() {
   const dockerStopProcess = spawnWithArgs('docker-compose rm -sfv', {
-    cwd: path.resolve(__dirname, '..'),
+    cwd: _resolve(__dirname, '..'),
     shell: true,
   });
 

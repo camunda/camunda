@@ -32,7 +32,11 @@ const processInstancesVersionTagHandler = [
       (processDefinition: any) => {
         const processesWithVersionTag = processDefinition.processes.map(
           (process: any) => {
-            return {...process, versionTag: 'myVersionTag'};
+            if (process.bpmnProcessId === 'complexProcess') {
+              return {...process, versionTag: 'myVersionTag'};
+            } else {
+              return {...process, versionTag: null};
+            }
           },
         );
         return {...processDefinition, processes: processesWithVersionTag};

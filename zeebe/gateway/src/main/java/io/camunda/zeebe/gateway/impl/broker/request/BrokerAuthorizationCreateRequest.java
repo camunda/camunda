@@ -9,9 +9,12 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
@@ -22,28 +25,26 @@ public class BrokerAuthorizationCreateRequest extends BrokerExecuteCommand<Autho
     super(ValueType.AUTHORIZATION, AuthorizationIntent.CREATE);
   }
 
-  public BrokerAuthorizationCreateRequest setOwnerKey(final String ownerKey) {
+  public BrokerAuthorizationCreateRequest setOwnerKey(final Long ownerKey) {
     requestDto.setOwnerKey(ownerKey);
     return this;
   }
 
-  public BrokerAuthorizationCreateRequest setOwnerType(final AuthorizationOwnerType ownerType) {
-    requestDto.setOwnerType(ownerType);
+  public BrokerAuthorizationCreateRequest setAction(final PermissionAction action) {
+    requestDto.setAction(action);
     return this;
   }
 
-  public BrokerAuthorizationCreateRequest setResourceKey(final String resourceKey) {
-    requestDto.setResourceKey(resourceKey);
-    return this;
-  }
-
-  public BrokerAuthorizationCreateRequest setResourceType(final String resourceType) {
+  public BrokerAuthorizationCreateRequest setResourceType(
+      final AuthorizationResourceType resourceType) {
     requestDto.setResourceType(resourceType);
     return this;
   }
 
-  public BrokerAuthorizationCreateRequest setPermissions(final List<String> permissions) {
-    requestDto.setPermissions(permissions);
+  public BrokerAuthorizationCreateRequest addPermissions(
+      final PermissionType permissionType, final List<String> resourceIds) {
+    requestDto.addPermission(
+        new Permission().setPermissionType(permissionType).addResourceIds(resourceIds));
     return this;
   }
 

@@ -8,16 +8,24 @@
 package io.camunda.service;
 
 import io.camunda.search.clients.CamundaSearchClient;
+import io.camunda.service.entities.AuthorizationEntity;
+import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.search.query.AuthorizationQuery;
+import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationCreateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public class AuthorizationServices<T> extends ApiServices<AuthorizationServices<T>> {
+public class AuthorizationServices<T>
+    extends SearchQueryService<AuthorizationServices<T>, AuthorizationQuery, AuthorizationEntity> {
 
   public AuthorizationServices(
       final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
@@ -37,18 +45,25 @@ public class AuthorizationServices<T> extends ApiServices<AuthorizationServices<
     return new AuthorizationServices<>(brokerClient, searchClient, transformers, authentication);
   }
 
-  public CompletableFuture<AuthorizationRecord> createAuthorization(
-      final String ownerKey,
-      final AuthorizationOwnerType ownerType,
-      final String resourceKey,
-      final String resourceType,
-      final List<String> permissions) {
-    return sendBrokerRequest(
-        new BrokerAuthorizationCreateRequest()
-            .setOwnerKey(ownerKey)
-            .setOwnerType(ownerType)
-            .setResourceKey(resourceKey)
-            .setResourceType(resourceType)
-            .setPermissions(permissions));
+  @Override
+  public SearchQueryResult<AuthorizationEntity> search(final AuthorizationQuery query) {
+    return executor.search(query, AuthorizationEntity.class);
   }
+
+  public CompletableFuture<AuthorizationRecord> createAuthorization(
+      final PatchAuthorizationRequest request) {
+    final var brokerRequest =
+        new BrokerAuthorizationCreateRequest()
+            .setOwnerKey(request.ownerKey())
+            .setAction(request.action())
+            .setResourceType(request.resourceType());
+    request.permissions().forEach(brokerRequest::addPermissions);
+    return sendBrokerRequest(brokerRequest);
+  }
+
+  public record PatchAuthorizationRequest(
+      long ownerKey,
+      PermissionAction action,
+      AuthorizationResourceType resourceType,
+      Map<PermissionType, List<String>> permissions) {}
 }

@@ -405,7 +405,7 @@ class ProcessingScheduleServiceTest {
                 commandCache,
                 actorScheduler.getClock(),
                 Duration.ofSeconds(1),
-                ScheduledTaskMetrics.of(registry, 1)));
+                ScheduledTaskMetrics.of(registry)));
 
     // when
     actorScheduler.submitActor(scheduleService);
@@ -413,20 +413,8 @@ class ProcessingScheduleServiceTest {
 
     // then
     assertThat(registry.getMeters()).isNotEmpty();
-    assertThat(
-            registry
-                .get("zeebe.processing.scheduling.tasks")
-                .tags("partition", "1")
-                .gauge()
-                .value())
-        .isEqualTo(0);
-    assertThat(
-            registry
-                .get("zeebe.processing.scheduling.delay")
-                .tags("partition", "1")
-                .timer()
-                .count())
-        .isEqualTo(0);
+    assertThat(registry.get("zeebe.processing.scheduling.tasks").gauge().value()).isEqualTo(0);
+    assertThat(registry.get("zeebe.processing.scheduling.delay").timer().count()).isEqualTo(0);
   }
 
   @Test
@@ -442,7 +430,7 @@ class ProcessingScheduleServiceTest {
                 commandCache,
                 actorScheduler.getClock(),
                 Duration.ofSeconds(1),
-                ScheduledTaskMetrics.of(registry, 1)));
+                ScheduledTaskMetrics.of(registry)));
     actorScheduler.submitActor(scheduleService);
     actorScheduler.workUntilDone();
 
@@ -467,7 +455,7 @@ class ProcessingScheduleServiceTest {
                 commandCache,
                 actorScheduler.getClock(),
                 Duration.ofSeconds(1),
-                ScheduledTaskMetrics.of(registry, 1)));
+                ScheduledTaskMetrics.of(registry)));
     actorScheduler.submitActor(scheduleService);
     actorScheduler.workUntilDone();
 

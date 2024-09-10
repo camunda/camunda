@@ -1,14 +1,32 @@
 {
-  "plugins": ["prettier", "testcafe"],
+  "root": true,
+  "env": {
+    "browser": true,
+    "node": true,
+    "jest": true
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "sourceType": "module"
+  },
+  "plugins": ["testcafe", "react-refresh", "license-header"],
   "rules": {
-    "license-header/header": [ "error", "./resources/license-header.js" ],
-    "prettier/prettier": ["warn", {
-      "endOfLine": "auto"
-    }],
+    "license-header/header": ["error", "./resources/license-header.js"],
+    "prettier/prettier": [
+      "warn",
+      {
+        "endOfLine": "auto"
+      }
+    ],
     "curly": "error"
   },
   "globals": {
     "flushPromises": "readonly"
   },
-  "extends": ["react-app", "plugin:camunda-licensed/commercial", "plugin:testcafe/recommended"]
+  "extends": [
+    "plugin:react-hooks/recommended",
+    "plugin:prettier/recommended",
+    "plugin:testcafe/recommended"
+  ],
+  "ignorePatterns": ["dist/**", "**/__mocks__/**"]
 }
