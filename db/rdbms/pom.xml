@@ -35,6 +35,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.mybatis.caches</groupId>
+      <artifactId>mybatis-ehcache</artifactId>
+      <version>1.2.3</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.liquibase</groupId>
       <artifactId>liquibase-core</artifactId>
       <!-- TODO version to dependency management-->

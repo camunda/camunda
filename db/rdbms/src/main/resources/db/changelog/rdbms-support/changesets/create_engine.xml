@@ -16,6 +16,19 @@
         http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
         http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd">
 
+  <changeSet id="create_process_deployment_table" author="cthiel">
+    <createTable tableName="PROCESS_DEPLOYMENT">
+      <column name="PROCESS_DEFINITION_KEY" type="NUMBER">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="BPMN_PROCESS_ID" type="VARCHAR(200)" />
+      <column name="NAME" type="VARCHAR(200)" />
+      <column name="TENANT_ID" type="VARCHAR(200)" />
+      <column name="VERSION" type="NUMBER" />
+      <column name="VERSION_TAG" type="VARCHAR(200)" />
+    </createTable>
+  </changeSet>
+
   <changeSet id="create_process_instance_table" author="cthiel">
     <createTable tableName="PROCESS_INSTANCE">
       <column name="PROCESS_INSTANCE_KEY" type="NUMBER">
@@ -23,8 +36,12 @@
       </column>
       <column name="BPMN_PROCESS_ID" type="VARCHAR(200)" />
       <column name="PROCESS_DEFINITION_KEY" type="NUMBER" />
+      <column name="STATE" type="VARCHAR(20)" />
+      <column name="START_DATE" type="TIMESTAMP" />
+      <column name="END_DATE" type="TIMESTAMP" />
       <column name="TENANT_ID" type="VARCHAR(200)" />
       <column name="PARENT_PROCESS_INSTANCE_KEY" type="NUMBER" />
+      <column name="PARENT_ELEMENT_INSTANCE_KEY" type="NUMBER" />
       <column name="VERSION" type="NUMBER" />
     </createTable>
   </changeSet>
