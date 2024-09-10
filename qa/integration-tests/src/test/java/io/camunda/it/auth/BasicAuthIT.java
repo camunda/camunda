@@ -74,7 +74,11 @@ public class BasicAuthIT {
 
     content =
         objectMapper.writeValueAsString(
-            new UserWithPasswordRequest().username("demo").password("password").email("demo@e.c"));
+            new UserWithPasswordRequest()
+                .username("demo")
+                .name("foo")
+                .password("password")
+                .email("demo@demo.com"));
   }
 
   @Test
