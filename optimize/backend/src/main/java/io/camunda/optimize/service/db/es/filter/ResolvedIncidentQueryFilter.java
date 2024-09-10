@@ -12,6 +12,7 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.I
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ResolvedIncidentFilterDataDto;
+import io.camunda.optimize.service.db.filter.FilterContext;
 import java.util.List;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.search.join.ScoreMode;
@@ -20,7 +21,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ResolvedIncidentQueryFilter implements QueryFilter<ResolvedIncidentFilterDataDto> {
+public class ResolvedIncidentQueryFilter implements QueryFilterES<ResolvedIncidentFilterDataDto> {
 
   @Override
   public void addFilters(

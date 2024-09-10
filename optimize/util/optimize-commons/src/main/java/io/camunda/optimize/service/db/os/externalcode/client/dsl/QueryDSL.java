@@ -60,6 +60,10 @@ public interface QueryDSL {
     return BoolQuery.of(q -> q.must(nonNull(queries))).toQuery();
   }
 
+  static <C extends Collection<Boolean>> Query boolTerms(final String field, final C values) {
+    return terms(field, values, FieldValue::of);
+  }
+
   static Query constantScore(final Query query) {
     return ConstantScoreQuery.of(q -> q.filter(query)).toQuery();
   }
@@ -68,8 +72,20 @@ public interface QueryDSL {
     return ExistsQuery.of(q -> q.field(field)).toQuery();
   }
 
+  static Query filter(final List<Query> queries) {
+    return BoolQuery.of(q -> q.filter(nonNull(queries))).toQuery();
+  }
+
+  static Query filter(final Query... queries) {
+    return filter(Arrays.asList(queries));
+  }
+
   static <A> Query gt(final String field, final A gt) {
     return RangeQuery.of(q -> q.field(field).gt(json(gt))).toQuery();
+  }
+
+  static <A> Query gte(final String field, final A gte) {
+    return RangeQuery.of(q -> q.field(field).gte(json(gte))).toQuery();
   }
 
   static <A> Query gteLte(final String field, final A gte, final A lte) {
@@ -181,6 +197,11 @@ public interface QueryDSL {
 
   static SortOrder reverseOrder(final SortOrder sortOrder) {
     return sortOrder == SortOrder.Asc ? SortOrder.Desc : SortOrder.Asc;
+  }
+
+  static SortOrder transformSortOrder(
+      final io.camunda.optimize.dto.optimize.query.sorting.SortOrder sortOrder) {
+    return sortOrder == sortOrder.ASC ? SortOrder.Asc : SortOrder.Desc;
   }
 
   static Script script(final String script, final Map<String, Object> params) {

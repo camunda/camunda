@@ -15,6 +15,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
+import io.camunda.optimize.service.db.filter.FilterContext;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
@@ -28,7 +29,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNodeFilterDataDto> {
+public class ExecutedFlowNodeQueryFilter implements QueryFilterES<ExecutedFlowNodeFilterDataDto> {
 
   @Override
   public void addFilters(

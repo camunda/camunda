@@ -1,0 +1,214 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.date;
+
+import static io.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtilES.unwrapFilterLimitedAggregations;
+import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
+
+import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
+import io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import io.camunda.optimize.service.db.es.report.context.DateAggregationContextES;
+import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterES;
+import io.camunda.optimize.service.db.es.report.service.DateAggregationServiceES;
+import io.camunda.optimize.service.db.es.report.service.MinMaxStatsServiceES;
+import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.MinMaxStatDto;
+import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
+import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.nested.Nested;
+import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+
+@Slf4j
+@RequiredArgsConstructor
+public abstract class AbstractProcessGroupByModelElementDateInterpreterES
+    extends AbstractProcessGroupByInterpreterES {
+  private static final String ELEMENT_AGGREGATION = "elementAggregation";
+  private static final String FILTERED_ELEMENTS_AGGREGATION = "filteredElements";
+  private static final String MODEL_ELEMENT_TYPE_FILTER_AGGREGATION = "filteredElementsByType";
+
+  protected abstract DateAggregationServiceES getDateAggregationService();
+
+  protected abstract MinMaxStatsServiceES getMinMaxStatsService();
+
+  @Override
+  public Optional<MinMaxStatDto> getMinMaxStats(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
+      final BoolQueryBuilder baseQuery) {
+    if (context.getReportData().getGroupBy().getValue() instanceof DateGroupByValueDto) {
+      final AggregateByDateUnit groupByDateUnit = getGroupByDateUnit(context.getReportData());
+      if (AggregateByDateUnit.AUTOMATIC.equals(groupByDateUnit)) {
+        return Optional.of(
+            getMinMaxStatsService()
+                .getMinMaxDateRangeForNestedField(
+                    context,
+                    baseQuery,
+                    getIndexNames(context),
+                    getDateField(),
+                    getPathToElementField(),
+                    getFilterQuery(context)));
+      }
+    }
+    return Optional.empty();
+  }
+
+  protected abstract String getPathToElementField();
+
+  @Override
+  public List<AggregationBuilder> createAggregation(
+      final SearchSourceBuilder searchSourceBuilder,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    final AggregateByDateUnit unit = getGroupByDateUnit(context.getReportData());
+    final MinMaxStatDto stats =
+        getMinMaxStatsService()
+            .getMinMaxDateRangeForNestedField(
+                context,
+                searchSourceBuilder.query(),
+                getIndexNames(context),
+                getDateField(),
+                getPathToElementField(),
+                getFilterQuery(context));
+
+    final DateAggregationContextES dateAggContext =
+        DateAggregationContextES.builder()
+            .aggregateByDateUnit(unit)
+            .dateField(getDateField())
+            .minMaxStats(stats)
+            .timezone(context.getTimezone())
+            .subAggregations(
+                getDistributedByInterpreter()
+                    .createAggregations(context, searchSourceBuilder.query()))
+            .filterContext(context.getFilterContext())
+            .build();
+
+    final Optional<AggregationBuilder> bucketLimitedHistogramAggregation =
+        getDateAggregationService().createModelElementDateAggregation(dateAggContext);
+
+    if (bucketLimitedHistogramAggregation.isPresent()) {
+      final NestedAggregationBuilder groupByFlowNodeDateAggregation =
+          wrapInNestedElementAggregation(
+              context,
+              bucketLimitedHistogramAggregation.get(),
+              getDistributedByInterpreter()
+                  .createAggregations(context, searchSourceBuilder.query()));
+      return Collections.singletonList(groupByFlowNodeDateAggregation);
+    }
+
+    return Collections.emptyList();
+  }
+
+  private NestedAggregationBuilder wrapInNestedElementAggregation(
+      final ExecutionContext<ProcessReportDataDto, ?> context,
+      final AggregationBuilder aggregationToWrap,
+      final List<AggregationBuilder> distributedBySubAggregations) {
+    final FilterAggregationBuilder filteredElementsAggregation =
+        filter(MODEL_ELEMENT_TYPE_FILTER_AGGREGATION, getModelElementTypeFilterQuery())
+            .subAggregation(
+                filter(FILTERED_ELEMENTS_AGGREGATION, getFilterQuery(context))
+                    .subAggregation(aggregationToWrap));
+
+    // sibling aggregation next to filtered userTask agg for distributedByPart for retrieval of all
+    // keys that
+    // should be present in distributedBy result via enrichContextWithAllExpectedDistributedByKeys
+    distributedBySubAggregations.forEach(filteredElementsAggregation::subAggregation);
+
+    return nested(ELEMENT_AGGREGATION, getPathToElementField())
+        .subAggregation(filteredElementsAggregation);
+  }
+
+  @Override
+  public void addQueryResult(
+      final CompositeCommandResult result,
+      final SearchResponse response,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    result.setGroups(processAggregations(response, context));
+    result.setGroupBySorting(
+        context
+            .getReportConfiguration()
+            .getSorting()
+            .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC)));
+  }
+
+  private List<GroupByResult> processAggregations(
+      final SearchResponse response,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    final Aggregations aggregations = response.getAggregations();
+
+    if (aggregations == null) {
+      // aggregations are null when there are no instances in the report
+      return Collections.emptyList();
+    }
+
+    final Nested flowNodes = aggregations.get(ELEMENT_AGGREGATION);
+    final Filter filteredFlowNodesByType =
+        flowNodes.getAggregations().get(MODEL_ELEMENT_TYPE_FILTER_AGGREGATION);
+    final Filter filteredFlowNodes =
+        filteredFlowNodesByType.getAggregations().get(FILTERED_ELEMENTS_AGGREGATION);
+    final Optional<Aggregations> unwrappedLimitedAggregations =
+        unwrapFilterLimitedAggregations(filteredFlowNodes.getAggregations());
+
+    getDistributedByInterpreter()
+        .enrichContextWithAllExpectedDistributedByKeys(
+            context, filteredFlowNodesByType.getAggregations());
+
+    Map<String, Aggregations> keyToAggregationMap;
+    if (unwrappedLimitedAggregations.isPresent()) {
+      keyToAggregationMap =
+          getDateAggregationService()
+              .mapDateAggregationsToKeyAggregationMap(
+                  unwrappedLimitedAggregations.get(), context.getTimezone());
+    } else {
+      return Collections.emptyList();
+    }
+    return mapKeyToAggMapToGroupByResults(keyToAggregationMap, response, context);
+  }
+
+  private List<GroupByResult> mapKeyToAggMapToGroupByResults(
+      final Map<String, Aggregations> keyToAggregationMap,
+      final SearchResponse response,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    return keyToAggregationMap.entrySet().stream()
+        .map(
+            stringBucketEntry ->
+                GroupByResult.createGroupByResult(
+                    stringBucketEntry.getKey(),
+                    getDistributedByInterpreter()
+                        .retrieveResult(response, stringBucketEntry.getValue(), context)))
+        .collect(Collectors.toList());
+  }
+
+  private AggregateByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {
+    return ((DateGroupByValueDto) processReportData.getGroupBy().getValue()).getUnit();
+  }
+
+  protected abstract String getDateField();
+
+  protected abstract QueryBuilder getFilterQuery(
+      final ExecutionContext<ProcessReportDataDto, ?> context);
+
+  protected abstract QueryBuilder getModelElementTypeFilterQuery();
+}

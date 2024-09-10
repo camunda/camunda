@@ -17,8 +17,8 @@ import io.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResul
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
-import io.camunda.optimize.service.db.es.report.AuthorizationCheckReportEvaluationHandler;
 import io.camunda.optimize.service.db.es.report.result.RawDataCommandResult;
+import io.camunda.optimize.service.db.report.AuthorizationCheckReportEvaluationHandler;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.util.FileReaderUtil;
 import java.time.ZoneId;

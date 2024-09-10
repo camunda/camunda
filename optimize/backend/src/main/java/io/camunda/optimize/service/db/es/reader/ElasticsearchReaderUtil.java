@@ -9,7 +9,6 @@ package io.camunda.optimize.service.db.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.PageResultDto;
-import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.io.IOException;
@@ -67,7 +66,7 @@ public class ElasticsearchReaderUtil {
       final SearchResponse initialScrollResponse,
       final Class<T> itemClass,
       final ObjectMapper objectMapper,
-      final DatabaseClient databaseClient,
+      final OptimizeElasticsearchClient esClient,
       final Integer scrollingTimeoutInSeconds,
       final Integer limit) {
     Function<SearchHit, T> mappingFunction =
@@ -89,7 +88,7 @@ public class ElasticsearchReaderUtil {
         initialScrollResponse,
         itemClass,
         mappingFunction,
-        databaseClient,
+        esClient,
         scrollingTimeoutInSeconds,
         limit);
   }
@@ -157,7 +156,7 @@ public class ElasticsearchReaderUtil {
       final SearchResponse initialScrollResponse,
       final Class<T> itemClass,
       final Function<SearchHit, T> mappingFunction,
-      final DatabaseClient databaseClient,
+      final OptimizeElasticsearchClient esClient,
       final Integer scrollingTimeoutInSeconds,
       final Integer limit) {
     final List<T> results = new ArrayList<>();
@@ -173,7 +172,7 @@ public class ElasticsearchReaderUtil {
             new SearchScrollRequest(currentScrollResp.getScrollId());
         scrollRequest.scroll(TimeValue.timeValueSeconds(scrollingTimeoutInSeconds));
         try {
-          currentScrollResp = databaseClient.scroll(scrollRequest);
+          currentScrollResp = esClient.scroll(scrollRequest);
           hits = currentScrollResp.getHits();
         } catch (IOException e) {
           String reason =
@@ -186,17 +185,17 @@ public class ElasticsearchReaderUtil {
         hits = null;
       }
     }
-    clearScroll(itemClass, databaseClient, currentScrollResp.getScrollId());
+    clearScroll(itemClass, esClient, currentScrollResp.getScrollId());
 
     return results;
   }
 
   private static <T> void clearScroll(
-      final Class<T> itemClass, final DatabaseClient databaseClient, final String scrollId) {
+      final Class<T> itemClass, final OptimizeElasticsearchClient esClient, final String scrollId) {
     try {
       ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
       clearScrollRequest.addScrollId(scrollId);
-      ClearScrollResponse clearScrollResponse = databaseClient.clearScroll(clearScrollRequest);
+      ClearScrollResponse clearScrollResponse = esClient.clearScroll(clearScrollRequest);
       boolean succeeded = clearScrollResponse.isSucceeded();
       if (!succeeded) {
         String reason =

@@ -22,11 +22,6 @@ import java.util.Objects;
 import java.util.Set;
 import lombok.Getter;
 import org.apache.tika.utils.StringUtils;
-import org.elasticsearch.action.search.ClearScrollRequest;
-import org.elasticsearch.action.search.ClearScrollResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
 
 public abstract class DatabaseClient implements ConfigurationReloadable {
 
@@ -57,16 +52,6 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
   public abstract <T> long count(final String[] indexNames, final T query) throws IOException;
 
   public abstract List<String> getAllIndexNames() throws IOException;
-
-  // todo will be handled with the OPT-7469
-  public abstract SearchResponse scroll(final SearchScrollRequest scrollRequest) throws IOException;
-
-  // todo will be handled with the OPT-7469
-  public abstract SearchResponse search(final SearchRequest searchRequest) throws IOException;
-
-  // todo will be handled with the OPT-7469
-  public abstract ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest)
-      throws IOException;
 
   public abstract String getDatabaseVersion() throws IOException;
 

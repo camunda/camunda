@@ -9,6 +9,7 @@ package io.camunda.optimize.service.util.configuration;
 
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
+import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Locale;
@@ -19,6 +20,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum OptimizeProfile {
   CCSM(CCSM_PROFILE),
+  PLATFORM(PLATFORM_PROFILE),
   CLOUD(CLOUD_PROFILE);
 
   private final String id;

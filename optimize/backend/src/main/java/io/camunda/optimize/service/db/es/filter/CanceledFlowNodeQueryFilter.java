@@ -16,6 +16,7 @@ import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CanceledFlowNodeFilterDataDto;
+import io.camunda.optimize.service.db.filter.FilterContext;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
@@ -25,7 +26,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class CanceledFlowNodeQueryFilter implements QueryFilter<CanceledFlowNodeFilterDataDto> {
+public class CanceledFlowNodeQueryFilter implements QueryFilterES<CanceledFlowNodeFilterDataDto> {
 
   @Override
   public void addFilters(

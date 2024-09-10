@@ -147,7 +147,11 @@ public interface RequestDSL {
   }
 
   static ScrollRequest scrollRequest(String scrollId, String time) {
-    return new ScrollRequest.Builder().scrollId(scrollId).scroll(time(time)).build();
+    return scrollRequest(scrollId, time(time));
+  }
+
+  static ScrollRequest scrollRequest(String scrollId, Time time) {
+    return new ScrollRequest.Builder().scrollId(scrollId).scroll(time).build();
   }
 
   static ScrollRequest scrollRequest(String scrollId) {

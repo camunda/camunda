@@ -7,11 +7,12 @@
  */
 package io.camunda.optimize.service.db.es.filter;
 
-import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createFlowNodeStartDateFilterQuery;
+import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES.createFlowNodeStartDateFilterQuery;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.flownode.FlowNodeDateFilterDataDto;
+import io.camunda.optimize.service.db.filter.FilterContext;
 import java.util.List;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -19,7 +20,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class FlowNodeStartDateQueryFilter implements QueryFilter<FlowNodeDateFilterDataDto<?>> {
+public class FlowNodeStartDateQueryFilter implements QueryFilterES<FlowNodeDateFilterDataDto<?>> {
 
   @Override
   public void addFilters(

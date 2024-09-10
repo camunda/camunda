@@ -22,9 +22,9 @@ import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseD
 import io.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.service.dashboard.DashboardService;
-import io.camunda.optimize.service.db.es.report.PlainReportEvaluationHandler;
-import io.camunda.optimize.service.db.es.report.ReportEvaluationInfo;
 import io.camunda.optimize.service.db.reader.SharingReader;
+import io.camunda.optimize.service.db.report.PlainReportEvaluationHandler;
+import io.camunda.optimize.service.db.report.ReportEvaluationInfo;
 import io.camunda.optimize.service.db.writer.SharingWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;

@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.os;
 
-import static io.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
+import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 
 import io.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import java.util.Arrays;

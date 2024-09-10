@@ -111,10 +111,23 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       final Consumer<HitsMetadata<R>> hitsMetadataConsumer,
       final Class<R> clazz)
       throws IOException {
+    SearchResponse<R> response = openSearchClient.search(request, clazz);
+    return scrollWith(
+        request, response, hitsConsumer, hitsMetadataConsumer, clazz, Integer.MAX_VALUE);
+  }
+
+  public <R> Map<String, Aggregate> scrollWith(
+      final SearchRequest request,
+      SearchResponse<R> response,
+      final Consumer<List<Hit<R>>> hitsConsumer,
+      final Consumer<HitsMetadata<R>> hitsMetadataConsumer,
+      final Class<R> clazz,
+      final int limit)
+      throws IOException {
     String scrollId = null;
+    int count = 0;
 
     try {
-      SearchResponse<R> response = openSearchClient.search(request, clazz);
       final var aggregates = response.aggregations();
 
       if (hitsMetadataConsumer != null) {
@@ -124,7 +137,8 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       scrollId = response.scrollId();
       List<Hit<R>> hits = response.hits().hits();
 
-      while (!hits.isEmpty() && scrollId != null) {
+      while (!hits.isEmpty() && scrollId != null && count < limit) {
+        count += response.hits().hits().size();
         checkFailedShards(request, response);
 
         if (hitsConsumer != null) {

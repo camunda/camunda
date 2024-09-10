@@ -12,7 +12,7 @@
 // import static
 // io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 // import static
-// io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
+// io.camunda.optimize.service.db.report.interpreter.util.AggregateByDateUnitMapper.mapToChronoUnit;
 // import static io.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 // import static io.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 // import static io.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;

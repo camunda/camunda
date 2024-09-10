@@ -41,7 +41,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.Suspe
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.UserTaskFlowNodesOnlyFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import io.camunda.optimize.service.db.es.filter.util.IncidentFilterQueryUtil;
-import io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil;
+import io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES;
+import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -56,7 +57,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFilterDto<?>> {
+public class ProcessQueryFilterEnhancer implements QueryFilterEnhancerES<ProcessFilterDto<?>> {
 
   private final ConfigurationService configurationService;
   private final Environment environment;
@@ -67,7 +68,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final ExecutedFlowNodeQueryFilter executedFlowNodeQueryFilter;
   private final ExecutingFlowNodeQueryFilter executingFlowNodeQueryFilter;
   private final CanceledFlowNodeQueryFilter canceledFlowNodeQueryFilter;
-  private final DurationQueryFilter durationQueryFilter;
+  private final DurationQueryFilterES durationQueryFilter;
   private final RunningInstancesOnlyQueryFilter runningInstancesOnlyQueryFilter;
   private final CompletedInstancesOnlyQueryFilter completedInstancesOnlyQueryFilter;
   private final CanceledInstancesOnlyQueryFilter canceledInstancesOnlyQueryFilter;
@@ -194,7 +195,8 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
       final BoolQueryBuilder query,
       final List<ProcessFilterDto<?>> filters,
       final FilterContext filterContext) {
-    ModelElementFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters, filterContext)
+    ModelElementFilterQueryUtilES.addInstanceFilterForRelevantViewLevelFilters(
+            filters, filterContext)
         .ifPresent(query::filter);
     IncidentFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters)
         .ifPresent(query::filter);

@@ -734,7 +734,6 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     }
   }
 
-  @Override
   public final SearchResponse scroll(final SearchScrollRequest searchScrollRequest)
       throws IOException {
     // nothing to modify here, still exposing to not force usage of highLevelClient for this common
@@ -742,13 +741,11 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     return highLevelClient.scroll(searchScrollRequest, requestOptions());
   }
 
-  @Override
   public final SearchResponse search(final SearchRequest searchRequest) throws IOException {
     applyIndexPrefixes(searchRequest);
     return highLevelClient.search(searchRequest, requestOptions());
   }
 
-  @Override
   public final ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest)
       throws IOException {
     // nothing to modify here, still exposing to not force usage of highLevelClient for this common
