@@ -29,6 +29,7 @@ import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
+import io.camunda.operate.util.SoftHashMap;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -73,7 +74,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
             partitionId ->
                 partitionToTreePathCache.put(
                     partitionId,
-                    new HashMap<>(operateProperties.getImporter().getFlowNodeTreeCacheSize())));
+                    new SoftHashMap<>(operateProperties.getImporter().getFlowNodeTreeCacheSize())));
   }
 
   public void processIncidentRecord(final Record record, final BatchRequest batchRequest)
