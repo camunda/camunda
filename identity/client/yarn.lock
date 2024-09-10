@@ -300,9 +300,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@camunda/camunda-composite-components@npm:0.8.1":
-  version: 0.8.1
-  resolution: "@camunda/camunda-composite-components@npm:0.8.1"
+"@camunda/camunda-composite-components@npm:0.9.0":
+  version: 0.9.0
+  resolution: "@camunda/camunda-composite-components@npm:0.9.0"
   dependencies:
     jwt-decode: "npm:4.0.0"
     react-error-boundary: "npm:4.0.13"
@@ -313,7 +313,7 @@ __metadata:
     react: 18.x
     react-dom: 18.x
     styled-components: 5.x || 6.x
-  checksum: 10c0/d42aff4c2b0bfa3f3b481827416e0d6dec7d0daf52da6b07e86508e818dc97e547d8d1636b860f76eda269cebe9693d92f9abe7130e26459b4e04881ffc95e8a
+  checksum: 10c0/5d69267344e0c75a5979fe69aaa75888f75add2d81947a0aa6752c67be21d250806262e69de8b464b114d67ed10c30a8e3431621a92a4eb7af70b15a1113a095
   languageName: node
   linkType: hard
 
@@ -2477,7 +2477,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "identity-frontend@workspace:."
   dependencies:
-    "@camunda/camunda-composite-components": "npm:0.8.1"
+    "@camunda/camunda-composite-components": "npm:0.9.0"
     "@carbon/react": "npm:1.65.0"
     "@types/event-source-polyfill": "npm:1.0.5"
     "@types/node": "npm:20.16.5"
