@@ -167,6 +167,10 @@
       <artifactId>zeebe-protocol-test-util</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-importer-common</artifactId>
+    </dependency>
 
   </dependencies>
 
