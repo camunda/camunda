@@ -15,9 +15,11 @@ import static org.mockito.Mockito.when;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import java.util.concurrent.CompletableFuture;
@@ -44,9 +46,11 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
       }""";
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";
   static final String CANCEL_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/cancellation";
+  static final String MIGRATE_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/migration";
 
   @Captor ArgumentCaptor<ProcessInstanceCreateRequest> createRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceCancelRequest> cancelRequestCaptor;
+  @Captor ArgumentCaptor<ProcessInstanceMigrateRequest> migrateRequestCaptor;
   @MockBean ProcessInstanceServices processInstanceServices;
 
   @BeforeEach
@@ -512,6 +516,258 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     webClient
         .post()
         .uri(CANCEL_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldMigrateProcessInstance() {
+    // given
+    when(processInstanceServices.migrateProcessInstance(any(ProcessInstanceMigrateRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceMigrationRecord()));
+
+    final var request =
+        """
+        {
+          "targetProcessDefinitionKey": 123456,
+          "mappingInstructions": [
+            {
+              "sourceElementId": "sourceElementId1",
+              "targetElementId": "targetElementId1"
+            },
+            {
+              "sourceElementId": "sourceElementId2",
+              "targetElementId": "targetElementId2"
+            }
+          ],
+          "operationReference": 123
+        }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(MIGRATE_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(processInstanceServices).migrateProcessInstance(migrateRequestCaptor.capture());
+    final var capturedRequest = migrateRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.targetProcessDefinitionKey()).isEqualTo(123456);
+    assertThat(capturedRequest.mappingInstructions()).isNotEmpty();
+    assertThat(capturedRequest.mappingInstructions().size()).isEqualTo(2);
+    assertThat(capturedRequest.operationReference()).isEqualTo(123L);
+  }
+
+  @Test
+  void shouldRejectMigrateProcessInstanceWithTargetProcessDefinitionKey() {
+    // given
+    final var request =
+        """
+        {
+          "mappingInstructions": [
+            {
+              "sourceElementId": "sourceElementId1",
+              "targetElementId": "targetElementId1"
+            },
+            {
+              "sourceElementId": "sourceElementId2",
+              "targetElementId": "targetElementId2"
+            }
+          ],
+          "operationReference": 123
+        }""";
+
+    final var expectedBody =
+        """
+        {
+            "type":"about:blank",
+            "title":"INVALID_ARGUMENT",
+            "status":400,
+            "detail":"No targetProcessDefinitionKey provided.",
+            "instance":"/v2/process-instances/1/migration"
+         }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(MIGRATE_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldRejectMigrateProcessInstanceWithMappingInstructionsNull() {
+    // given
+    final var request =
+        """
+        {
+          "targetProcessDefinitionKey": 123456,
+          "operationReference": 123
+        }""";
+
+    final var expectedBody =
+        """
+        {
+            "type":"about:blank",
+            "title":"INVALID_ARGUMENT",
+            "status":400,
+            "detail":"No mappingInstructions provided.",
+            "instance":"/v2/process-instances/1/migration"
+         }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(MIGRATE_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldRejectMigrateProcessInstanceWithMappingInstructionsEmpty() {
+    // given
+    final var request =
+        """
+        {
+          "targetProcessDefinitionKey": 123456,
+          "mappingInstructions": [],
+          "operationReference": 123
+        }""";
+
+    final var expectedBody =
+        """
+        {
+            "type":"about:blank",
+            "title":"INVALID_ARGUMENT",
+            "status":400,
+            "detail":"No mappingInstructions provided.",
+            "instance":"/v2/process-instances/1/migration"
+         }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(MIGRATE_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldRejectMigrateProcessInstanceWithMappingInstructionsNotValid() {
+    // given
+    final var request =
+        """
+        {
+          "targetProcessDefinitionKey": 123456,
+          "mappingInstructions": [
+            {
+              "sourceElementId": "sourceElementId1",
+              "targetElementId": "targetElementId1"
+            },
+            {
+              "sourceElementId": "sourceElementId2"
+            }
+          ],
+          "operationReference": 123
+        }""";
+
+    final var expectedBody =
+        """
+        {
+            "type":"about:blank",
+            "title":"INVALID_ARGUMENT",
+            "status":400,
+            "detail":"At least one of [sourceElementId, targetElementId] is required.",
+            "instance":"/v2/process-instances/1/migration"
+         }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(MIGRATE_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldRejectMigrateProcessInstanceWithOperationReferenceNotValid() {
+    // given
+    final var request =
+        """
+        {
+          "targetProcessDefinitionKey": 123456,
+          "mappingInstructions": [
+            {
+              "sourceElementId": "sourceElementId1",
+              "targetElementId": "targetElementId1"
+            },
+            {
+              "sourceElementId": "sourceElementId2",
+              "targetElementId": "targetElementId2"
+            }
+          ],
+          "operationReference": -123
+        }""";
+
+    final var expectedBody =
+        """
+        {
+            "type":"about:blank",
+            "title":"INVALID_ARGUMENT",
+            "status":400,
+            "detail":"The value for operationReference is '-123' but must be > 0.",
+            "instance":"/v2/process-instances/1/migration"
+         }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(MIGRATE_PROCESS_URL.formatted("1"))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
