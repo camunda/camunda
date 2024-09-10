@@ -356,6 +356,11 @@
     </dependency>
 
     <dependency>
+      <groupId>com.nimbusds</groupId>
+      <artifactId>nimbus-jose-jwt</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>com.github.spotbugs</groupId>
       <artifactId>spotbugs-annotations</artifactId>
       <scope>provided</scope>
@@ -431,7 +436,6 @@
           <ignoredUnusedDeclaredDependencies>
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
             <dep>jakarta.annotation:jakarta.annotation-api</dep>
-            <dep>com.nimbusds:nimbus-jose-jwt</dep>
             <dep>com.github.spotbugs:spotbugs-annotations</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
