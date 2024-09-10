@@ -9,7 +9,10 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
+import io.camunda.service.UserServices.CreateUserRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserWithPasswordRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
@@ -35,15 +38,12 @@ public class UserController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> createUser(
       @RequestBody final UserRequest userRequest) {
+    return RequestMapper.toCreateUserRequest(userRequest)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
+  }
 
+  private CompletableFuture<ResponseEntity<Object>> createUser(final CreateUserRequest request) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
-        () ->
-            userServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .createUser(
-                    userRequest.getUsername(),
-                    userRequest.getName(),
-                    userRequest.getEmail(),
-                    passwordEncoder.encode(userRequest.getPassword())));
+        () -> userServices.withAuthentication(RequestMapper.getAuthentication()).createUser(request));
   }
 }

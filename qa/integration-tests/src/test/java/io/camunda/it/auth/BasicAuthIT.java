@@ -63,7 +63,7 @@ public class BasicAuthIT {
   @BeforeEach
   void setUp() throws JsonProcessingException {
     when(userService.withAuthentication(any(Authentication.class))).thenReturn(userService);
-    when(userService.createUser(any(), any(), any(), any()))
+    when(userService.createUser(any()))
         .thenReturn(CompletableFuture.completedFuture(new UserRecord()));
     when(userService.search(any()))
         .thenReturn(
