@@ -118,8 +118,8 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutio
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE_BY_TASK;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_VARIABLE_GROUP_BY_NONE;
 
-import java.util.Set;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
+import java.util.Set;
 
 public interface GenericProcessExecutionPlanInterpreter extends ProcessExecutionPlanInterpreter {
   default Set<ProcessExecutionPlan> getSupportedExecutionPlans() {
