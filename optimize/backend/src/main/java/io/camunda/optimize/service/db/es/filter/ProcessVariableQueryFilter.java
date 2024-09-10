@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.db.es.filter;
 
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
+import io.camunda.optimize.service.db.filter.FilterContext;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class ProcessVariableQueryFilter extends AbstractProcessVariableQueryFilter
-    implements QueryFilter<VariableFilterDataDto<?>> {
+    implements QueryFilterES<VariableFilterDataDto<?>> {
 
   @Override
   public void addFilters(

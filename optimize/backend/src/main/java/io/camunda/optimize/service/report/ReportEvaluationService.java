@@ -11,8 +11,8 @@ import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEval
 import io.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
-import io.camunda.optimize.service.db.es.report.AuthorizationCheckReportEvaluationHandler;
-import io.camunda.optimize.service.db.es.report.ReportEvaluationInfo;
+import io.camunda.optimize.service.db.report.AuthorizationCheckReportEvaluationHandler;
+import io.camunda.optimize.service.db.report.ReportEvaluationInfo;
 import java.time.ZoneId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

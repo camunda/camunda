@@ -34,7 +34,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import io.camunda.optimize.service.db.es.filter.util.DateFilterQueryUtil;
+import io.camunda.optimize.service.db.es.filter.util.DateFilterQueryUtilES;
+import io.camunda.optimize.service.db.filter.util.OperatorMultipleValuesVariableFilterDataDtoUtil;
 import io.camunda.optimize.service.util.ProcessVariableHelper;
 import io.camunda.optimize.service.util.ValidationHelper;
 import java.time.ZoneId;
@@ -53,7 +54,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Slf4j
 @Component
-public abstract class AbstractProcessVariableQueryFilter extends AbstractVariableQueryFilter {
+public abstract class AbstractProcessVariableQueryFilter extends AbstractVariableQueryFilterES {
 
   protected QueryBuilder createFilterQueryBuilder(
       final VariableFilterDataDto<?> dto, final ZoneId timezone) {
@@ -206,7 +207,7 @@ public abstract class AbstractProcessVariableQueryFilter extends AbstractVariabl
   @Override
   protected QueryBuilder createNumericQueryBuilder(
       OperatorMultipleValuesVariableFilterDataDto dto) {
-    validateMultipleValuesFilterDataDto(dto);
+    OperatorMultipleValuesVariableFilterDataDtoUtil.validateMultipleValuesFilterDataDto(dto);
 
     String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
     final OperatorMultipleValuesFilterDataDto data = dto.getData();
@@ -216,7 +217,7 @@ public abstract class AbstractProcessVariableQueryFilter extends AbstractVariabl
             .must(termQuery(getNestedVariableTypeField(), dto.getType().getId()));
 
     QueryBuilder resultQuery = nestedQuery(VARIABLES, boolQueryBuilder, ScoreMode.None);
-    Object value = retrieveValue(dto);
+    Object value = OperatorMultipleValuesVariableFilterDataDtoUtil.retrieveValue(dto);
     switch (data.getOperator()) {
       case IN:
       case NOT_IN:
@@ -260,7 +261,7 @@ public abstract class AbstractProcessVariableQueryFilter extends AbstractVariabl
         boolQuery()
             .must(termsQuery(getNestedVariableNameField(), dto.getName()))
             .must(termQuery(getNestedVariableTypeField(), dto.getType().getId()));
-    DateFilterQueryUtil.addFilters(
+    DateFilterQueryUtilES.addFilters(
         dateValueFilterQuery,
         Collections.singletonList(dto.getData()),
         getVariableValueFieldForType(dto.getType()),

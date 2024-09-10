@@ -12,6 +12,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.RunningInstancesOnlyFilterDataDto;
+import io.camunda.optimize.service.db.filter.FilterContext;
 import java.util.List;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class RunningInstancesOnlyQueryFilter
-    implements QueryFilter<RunningInstancesOnlyFilterDataDto> {
+    implements QueryFilterES<RunningInstancesOnlyFilterDataDto> {
 
   @Override
   public void addFilters(

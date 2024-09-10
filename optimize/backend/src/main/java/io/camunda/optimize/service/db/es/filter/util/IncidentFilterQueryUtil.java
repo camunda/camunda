@@ -8,7 +8,7 @@
 package io.camunda.optimize.service.db.es.filter.util;
 
 import static io.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
-import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createExecutedFlowNodeFilterQuery;
+import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES.createExecutedFlowNodeFilterQuery;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_DEFINITION_KEY;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_DEFINITION_VERSION;
@@ -28,7 +28,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.OpenI
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ResolvedIncidentFilterDto;
 import io.camunda.optimize.service.DefinitionService;
-import io.camunda.optimize.service.util.NestedDefinitionQueryBuilder;
+import io.camunda.optimize.service.util.NestedDefinitionQueryBuilderES;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -46,8 +46,8 @@ import org.elasticsearch.index.query.QueryBuilder;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class IncidentFilterQueryUtil {
 
-  private static final NestedDefinitionQueryBuilder NESTED_DEFINITION_QUERY_BUILDER =
-      new NestedDefinitionQueryBuilder(
+  private static final NestedDefinitionQueryBuilderES NESTED_DEFINITION_QUERY_BUILDER =
+      new NestedDefinitionQueryBuilderES(
           INCIDENTS, INCIDENT_DEFINITION_KEY, INCIDENT_DEFINITION_VERSION, INCIDENT_TENANT_ID);
 
   private static Map<Class<? extends ProcessFilterDto<?>>, Function<BoolQueryBuilder, QueryBuilder>>

@@ -16,8 +16,8 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.E
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_ID;
+import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static io.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;

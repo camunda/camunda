@@ -16,6 +16,7 @@ import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutingFlowNodeFilterDataDto;
+import io.camunda.optimize.service.db.filter.FilterContext;
 import java.util.List;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -23,7 +24,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ExecutingFlowNodeQueryFilter implements QueryFilter<ExecutingFlowNodeFilterDataDto> {
+public class ExecutingFlowNodeQueryFilter implements QueryFilterES<ExecutingFlowNodeFilterDataDto> {
 
   @Override
   public void addFilters(

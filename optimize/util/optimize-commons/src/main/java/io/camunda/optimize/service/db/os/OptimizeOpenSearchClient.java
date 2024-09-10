@@ -45,9 +45,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.search.ClearScrollRequest;
-import org.elasticsearch.action.search.ClearScrollResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.DoubleTerms;
@@ -71,11 +68,8 @@ import org.elasticsearch.search.aggregations.metrics.SumAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.TopHitsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.ValueCountAggregationBuilder;
 import org.elasticsearch.xcontent.ContextParser;
-import org.elasticsearch.xcontent.DeprecationHandler;
 import org.elasticsearch.xcontent.NamedXContentRegistry;
 import org.elasticsearch.xcontent.ParseField;
-import org.elasticsearch.xcontent.XContentParser;
-import org.elasticsearch.xcontent.json.JsonXContent;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -99,6 +93,7 @@ import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.MgetResponse;
+import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.ScrollResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -351,11 +346,9 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         indexNames, query, "Could not execute count request for " + Arrays.toString(indexNames));
   }
 
-  @Override
-  public org.elasticsearch.action.search.SearchResponse scroll(
-      final SearchScrollRequest scrollRequest) throws IOException {
-    // todo will be handle in the OPT-7469
-    return new org.elasticsearch.action.search.SearchResponse(null);
+  public <R> ScrollResponse<R> scroll(final ScrollRequest scrollRequest, Class<R> entityClass)
+      throws IOException {
+    return richOpenSearchClient.doc().scroll(scrollRequest, entityClass);
   }
 
   public <T> MgetResponse<T> mget(
@@ -363,31 +356,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final String errorMessage,
       final List<MultiGetOperation> operations) {
     return richOpenSearchClient.doc().mget(responseType, e -> errorMessage, operations);
-  }
-
-  @Override
-  public org.elasticsearch.action.search.SearchResponse search(
-      final org.elasticsearch.action.search.SearchRequest searchRequest) throws IOException {
-    // TODO this is a temporary implementation, here we are extracting the json query from the
-    // search request and performing a low-level request to OpenSearch
-    final String jsonQuery = searchRequest.source().toString();
-    final String[] indicesToQuery = searchRequest.indices();
-    final String response =
-        getOpenSearchClient()
-            .arbitraryRequestAsString(
-                "POST",
-                "/"
-                    + indexNameService.getOptimizeIndexAliasForIndex(indicesToQuery[0])
-                    + "/_search",
-                jsonQuery);
-    return getSearchResponseFromJson(response);
-  }
-
-  @Override
-  public ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest)
-      throws IOException {
-    // todo will be handle in the OPT-7469
-    return new ClearScrollResponse(null);
   }
 
   @Override
@@ -552,7 +520,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
   public <R> ScrollResponse<R> scroll(
       final String scrollId, final String timeout, final Class<R> entityClass) throws IOException {
-    return richOpenSearchClient.doc().scroll(scrollRequest(scrollId, timeout), entityClass);
+    return scroll(scrollRequest(scrollId, timeout), entityClass);
   }
 
   public <T> MgetResponse<T> mget(
@@ -567,6 +535,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final Class<T> responseType,
       final String errorMessage) {
     return richOpenSearchClient.doc().search(requestBuilder, responseType, e -> errorMessage);
+  }
+
+  public <T> SearchResponse<T> searchUnsafe(
+      final SearchRequest request, final Class<T> responseType) throws IOException {
+    return richOpenSearchClient.doc().unsafeSearch(request, responseType);
   }
 
   public <R> List<R> searchValues(
@@ -954,19 +927,5 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
                     new NamedXContentRegistry.Entry(
                         Aggregation.class, new ParseField(entry.getKey()), entry.getValue()))
             .toList();
-  }
-
-  private org.elasticsearch.action.search.SearchResponse getSearchResponseFromJson(
-      final String jsonResponse) {
-    try {
-      final NamedXContentRegistry registry = new NamedXContentRegistry(defaultNamedXContents);
-      final DeprecationHandler deprecationHandler = DeprecationHandler.THROW_UNSUPPORTED_OPERATION;
-      final XContentParser parser =
-          JsonXContent.jsonXContent.createParser(registry, deprecationHandler, jsonResponse);
-      return org.elasticsearch.action.search.SearchResponse.fromXContent(parser);
-    } catch (final Exception e) {
-      log.warn("exception while de-serializing response " + e.getMessage());
-      return null;
-    }
   }
 }

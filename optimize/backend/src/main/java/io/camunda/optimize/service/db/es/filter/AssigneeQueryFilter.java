@@ -7,11 +7,12 @@
  */
 package io.camunda.optimize.service.db.es.filter;
 
-import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createAssigneeFilterQuery;
+import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES.createAssigneeFilterQuery;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.IdentityLinkFilterDataDto;
+import io.camunda.optimize.service.db.filter.FilterContext;
 import java.util.List;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.search.join.ScoreMode;
@@ -20,7 +21,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AssigneeQueryFilter implements QueryFilter<IdentityLinkFilterDataDto> {
+public class AssigneeQueryFilter implements QueryFilterES<IdentityLinkFilterDataDto> {
 
   @Override
   public void addFilters(

@@ -26,9 +26,9 @@ import static io.camunda.optimize.service.db.schema.index.VariableUpdateInstance
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
 import static io.camunda.optimize.service.util.DefinitionQueryUtilOS.createDefinitionQuery;
+import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static io.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
 

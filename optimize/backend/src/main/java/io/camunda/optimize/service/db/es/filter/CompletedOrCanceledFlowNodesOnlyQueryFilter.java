@@ -7,12 +7,13 @@
  */
 package io.camunda.optimize.service.db.es.filter;
 
-import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createCompletedOrCanceledFlowNodesOnlyFilterQuery;
+import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES.createCompletedOrCanceledFlowNodesOnlyFilterQuery;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CompletedOrCanceledFlowNodesOnlyFilterDataDto;
+import io.camunda.optimize.service.db.filter.FilterContext;
 import java.util.List;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.search.join.ScoreMode;
@@ -22,7 +23,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class CompletedOrCanceledFlowNodesOnlyQueryFilter
-    implements QueryFilter<CompletedOrCanceledFlowNodesOnlyFilterDataDto> {
+    implements QueryFilterES<CompletedOrCanceledFlowNodesOnlyFilterDataDto> {
 
   @Override
   public void addFilters(

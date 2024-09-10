@@ -13,10 +13,6 @@ import static io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.
 import static io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.VARIABLE_CLAUSE_ID;
 import static io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.VARIABLE_VALUE;
 import static io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.VARIABLE_VALUE_TYPE;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import java.util.Arrays;
@@ -25,8 +21,6 @@ import java.util.List;
 import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.apache.lucene.search.join.ScoreMode;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DecisionVariableHelper {
@@ -74,33 +68,5 @@ public class DecisionVariableHelper {
 
   public static String getVariableTypeField(final String variablePath) {
     return variablePath + "." + VARIABLE_VALUE_TYPE;
-  }
-
-  public static BoolQueryBuilder getVariableUndefinedOrNullQuery(
-      final String clauseId, final String variablePath, final VariableType variableType) {
-    final String variableTypeId = variableType.getId();
-    return boolQuery()
-        .should(
-            // undefined
-            boolQuery()
-                .mustNot(
-                    nestedQuery(
-                        variablePath,
-                        boolQuery()
-                            .must(termQuery(getVariableClauseIdField(variablePath), clauseId))
-                            .must(termQuery(getVariableTypeField(variablePath), variableTypeId)),
-                        ScoreMode.None)))
-        .should(
-            // or null value
-            boolQuery()
-                .must(
-                    nestedQuery(
-                        variablePath,
-                        boolQuery()
-                            .must(termQuery(getVariableClauseIdField(variablePath), clauseId))
-                            .must(termQuery(getVariableTypeField(variablePath), variableTypeId))
-                            .mustNot(existsQuery(getVariableValueField(variablePath))),
-                        ScoreMode.None)))
-        .minimumShouldMatch(1);
   }
 }

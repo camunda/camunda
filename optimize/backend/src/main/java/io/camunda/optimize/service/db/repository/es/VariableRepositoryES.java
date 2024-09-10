@@ -25,9 +25,9 @@ import static io.camunda.optimize.service.db.schema.index.VariableUpdateInstance
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
 import static io.camunda.optimize.service.util.DefinitionQueryUtilES.createDefinitionQuery;
+import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static io.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static io.camunda.optimize.util.LogUtil.sanitizeLogMessage;
@@ -58,7 +58,6 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.es.ElasticsearchCompositeAggregationScroller;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import io.camunda.optimize.service.db.es.filter.FilterContext;
 import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancer;
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
@@ -66,6 +65,7 @@ import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableInd
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
 import io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
+import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.repository.VariableRepository;

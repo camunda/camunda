@@ -7,11 +7,12 @@
  */
 package io.camunda.optimize.service.db.es.filter;
 
-import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
+import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES.createUserTaskFlowNodeTypeFilter;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.InstancesContainingUserTasksFilterDataDto;
+import io.camunda.optimize.service.db.filter.FilterContext;
 import java.util.List;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.search.join.ScoreMode;
@@ -21,7 +22,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class InstancesContainingUserTasksFilter
-    implements QueryFilter<InstancesContainingUserTasksFilterDataDto> {
+    implements QueryFilterES<InstancesContainingUserTasksFilterDataDto> {
 
   @Override
   public void addFilters(

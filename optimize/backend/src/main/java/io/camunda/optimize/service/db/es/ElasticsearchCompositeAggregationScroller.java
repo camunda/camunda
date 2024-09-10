@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.es;
 
-import static io.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
+import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.io.IOException;

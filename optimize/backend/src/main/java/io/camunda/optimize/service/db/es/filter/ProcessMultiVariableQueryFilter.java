@@ -10,6 +10,7 @@ package io.camunda.optimize.service.db.es.filter;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.MultipleVariableFilterDataDto;
+import io.camunda.optimize.service.db.filter.FilterContext;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class ProcessMultiVariableQueryFilter extends AbstractProcessVariableQueryFilter
-    implements QueryFilter<MultipleVariableFilterDataDto> {
+    implements QueryFilterES<MultipleVariableFilterDataDto> {
 
   @Override
   public void addFilters(

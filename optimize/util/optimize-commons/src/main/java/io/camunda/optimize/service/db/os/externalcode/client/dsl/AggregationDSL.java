@@ -24,6 +24,7 @@ import org.opensearch.client.opensearch._types.aggregations.ChildrenAggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregationSource;
 import org.opensearch.client.opensearch._types.aggregations.CompositeTermsAggregationSource;
 import org.opensearch.client.opensearch._types.aggregations.DateHistogramAggregation;
+import org.opensearch.client.opensearch._types.aggregations.FieldDateMath;
 import org.opensearch.client.opensearch._types.aggregations.FiltersAggregation;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
 import org.opensearch.client.opensearch._types.aggregations.ParentAggregation;
@@ -80,6 +81,14 @@ public interface AggregationDSL {
                 .calendarInterval(calendarIntervalByAlias(calendarIntervalAlias))
                 .format(format)
                 .keyed(keyed));
+  }
+
+  static FieldDateMath fieldDateMath(double value) {
+    return FieldDateMath.of(b -> b.value(value));
+  }
+
+  static FieldDateMath fieldDateMath(String value) {
+    return FieldDateMath.of(b -> b.expr(value));
   }
 
   static FiltersAggregation filtersAggregation(final Map<String, Query> queries) {
