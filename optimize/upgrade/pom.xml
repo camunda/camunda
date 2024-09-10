@@ -78,9 +78,10 @@
             </goals>
             <configuration>
               <skip>${skip.docker}</skip>
-              <executable>docker-compose</executable>
+              <executable>docker</executable>
               <workingDirectory>..</workingDirectory>
               <arguments>
+                <argument>compose</argument>
                 <argument>up</argument>
                 <argument>-d</argument>
                 <argument>--force-recreate</argument>
@@ -97,9 +98,10 @@
             </goals>
             <configuration>
               <skip>${skip.docker}</skip>
-              <executable>docker-compose</executable>
+              <executable>docker</executable>
               <workingDirectory>..</workingDirectory>
               <arguments>
+                <argument>compose</argument>
                 <argument>rm</argument>
                 <argument>-sfv</argument>
               </arguments>
