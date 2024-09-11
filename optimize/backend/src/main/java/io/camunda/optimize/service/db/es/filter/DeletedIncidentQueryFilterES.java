@@ -9,16 +9,14 @@ package io.camunda.optimize.service.db.es.filter;
 
 import static io.camunda.optimize.service.db.es.filter.util.IncidentFilterQueryUtilES.createDeletedIncidentTermQuery;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DeletedIncidentFilterDataDto;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.lucene.search.join.ScoreMode;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -28,12 +26,17 @@ public class DeletedIncidentQueryFilterES implements QueryFilterES<DeletedIncide
 
   @Override
   public void addFilters(
-      final BoolQueryBuilder query,
+      final BoolQuery.Builder query,
       final List<DeletedIncidentFilterDataDto> filter,
       final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(filter)) {
-      List<QueryBuilder> filters = query.filter();
-      filters.add(nestedQuery(INCIDENTS, createDeletedIncidentTermQuery(), ScoreMode.None));
+      query.filter(
+          f ->
+              f.nested(
+                  n ->
+                      n.path(INCIDENTS)
+                          .query(q -> q.bool(createDeletedIncidentTermQuery().build()))
+                          .scoreMode(ChildScoreMode.None)));
     }
   }
 }

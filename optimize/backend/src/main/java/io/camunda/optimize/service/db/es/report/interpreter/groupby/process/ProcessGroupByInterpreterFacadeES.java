@@ -7,6 +7,11 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.groupby.process;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
@@ -16,13 +21,9 @@ import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -43,32 +44,31 @@ public class ProcessGroupByInterpreterFacadeES
 
   @Override
   public void adjustSearchRequest(
-      SearchRequest searchRequest,
-      BoolQueryBuilder baseQuery,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final SearchRequest.Builder searchRequestBuilder,
+      final BoolQuery.Builder baseQueryBuilder,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     interpreter(context.getPlan().getGroupBy())
-        .adjustSearchRequest(searchRequest, baseQuery, context);
+        .adjustSearchRequest(searchRequestBuilder, baseQueryBuilder, context);
   }
 
   @Override
-  public List<AggregationBuilder> createAggregation(
-      SearchSourceBuilder searchSourceBuilder,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    return interpreter(context.getPlan().getGroupBy())
-        .createAggregation(searchSourceBuilder, context);
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
+      final BoolQuery boolQuery,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    return interpreter(context.getPlan().getGroupBy()).createAggregation(boolQuery, context);
   }
 
   @Override
   public CompositeCommandResult retrieveQueryResult(
-      SearchResponse response,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final ResponseBody<?> response,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return interpreter(context.getPlan().getGroupBy()).retrieveQueryResult(response, context);
   }
 
   @Override
   public Optional<MinMaxStatDto> getMinMaxStats(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final BoolQueryBuilder baseQuery) {
+      final Query baseQuery) {
     return interpreter(context.getPlan().getGroupBy()).getMinMaxStats(context, baseQuery);
   }
 }

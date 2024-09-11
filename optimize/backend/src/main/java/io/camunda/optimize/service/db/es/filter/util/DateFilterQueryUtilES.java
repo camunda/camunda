@@ -10,6 +10,9 @@ package io.camunda.optimize.service.db.es.filter.util;
 import static io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit.QUARTERS;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
+import co.elastic.clients.json.JsonData;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
@@ -25,9 +28,6 @@ import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -36,18 +36,19 @@ public class DateFilterQueryUtilES {
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
   public static void addFilters(
-      final BoolQueryBuilder query,
+      final BoolQuery.Builder query,
       final List<DateFilterDataDto<?>> dates,
       final String dateField,
       final ZoneId timezone) {
     if (dates != null) {
       for (DateFilterDataDto<?> dateDto : dates) {
-        createRangeQuery(dateDto, dateField, timezone).ifPresent(query::filter);
+        createRangeQuery(dateDto, dateField, timezone)
+            .ifPresent(r -> query.filter(f -> f.range(r)));
       }
     }
   }
 
-  public static Optional<RangeQueryBuilder> createRangeQuery(
+  public static Optional<RangeQuery> createRangeQuery(
       final DateFilterDataDto<?> dateFilterDto, final String dateField, final ZoneId timezone) {
     switch (dateFilterDto.getType()) {
       case FIXED:
@@ -55,17 +56,19 @@ public class DateFilterQueryUtilES {
             (OffsetDateTime) dateFilterDto.getStart(), dateFilterDto.getEnd(), dateField, timezone);
       case ROLLING:
         return createRollingDateFilter(
-            (RollingDateFilterStartDto) dateFilterDto.getStart(), dateField, timezone);
+                (RollingDateFilterStartDto) dateFilterDto.getStart(), dateField, timezone)
+            .map(RangeQuery.Builder::build);
       case RELATIVE:
         return createRelativeDateFilter(
-            (RelativeDateFilterStartDto) dateFilterDto.getStart(), dateField, timezone);
+                (RelativeDateFilterStartDto) dateFilterDto.getStart(), dateField, timezone)
+            .map(RangeQuery.Builder::build);
       default:
         log.warn("Cannot execute date filter. Unknown type [{}]", dateFilterDto.getType());
         return Optional.empty();
     }
   }
 
-  private static Optional<RangeQueryBuilder> createFixedDateFilter(
+  private static Optional<RangeQuery> createFixedDateFilter(
       final OffsetDateTime start,
       final OffsetDateTime end,
       final String dateField,
@@ -74,30 +77,32 @@ public class DateFilterQueryUtilES {
       return Optional.empty();
     }
 
-    final RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(dateField);
+    final RangeQuery.Builder builder = new RangeQuery.Builder();
+    builder.field(dateField);
     if (end != null) {
       final OffsetDateTime endDateWithCorrectTimezone =
           end.atZoneSameInstant(timezone).toOffsetDateTime();
-      queryDate.lte(formatter.format(endDateWithCorrectTimezone));
+      builder.lte(JsonData.of(formatter.format(endDateWithCorrectTimezone)));
     }
     if (start != null) {
       final OffsetDateTime startDateWithCorrectTimezone =
           start.atZoneSameInstant(timezone).toOffsetDateTime();
-      queryDate.gte(formatter.format(startDateWithCorrectTimezone));
+      builder.gte(JsonData.of(formatter.format(startDateWithCorrectTimezone)));
     }
-    queryDate.format(OPTIMIZE_DATE_FORMAT);
-    return Optional.of(queryDate);
+    builder.format(OPTIMIZE_DATE_FORMAT);
+    return Optional.of(builder.build());
   }
 
-  private static Optional<RangeQueryBuilder> createRollingDateFilter(
+  private static Optional<RangeQuery.Builder> createRollingDateFilter(
       final RollingDateFilterStartDto startDto, final String dateField, final ZoneId timezone) {
     if (startDto == null || startDto.getUnit() == null || startDto.getValue() == null) {
       return Optional.empty();
     }
 
-    final RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(dateField);
+    final RangeQuery.Builder queryDate = new RangeQuery.Builder();
+    queryDate.field(dateField);
     final OffsetDateTime now = LocalDateUtil.getCurrentTimeWithTimezone(timezone);
-    queryDate.lte(formatter.format(now));
+    queryDate.lte(JsonData.of(formatter.format(now)));
 
     if (QUARTERS.equals(startDto.getUnit())) {
       log.warn(
@@ -110,31 +115,33 @@ public class DateFilterQueryUtilES {
     final OffsetDateTime dateBeforeGivenFilter =
         now.minus(
             startDto.getValue(), ChronoUnit.valueOf(startDto.getUnit().getId().toUpperCase()));
-    queryDate.gte(formatter.format(dateBeforeGivenFilter));
+    queryDate.gte(JsonData.of(formatter.format(dateBeforeGivenFilter)));
     queryDate.format(OPTIMIZE_DATE_FORMAT);
     return Optional.of(queryDate);
   }
 
-  private static Optional<RangeQueryBuilder> createRelativeDateFilter(
+  private static Optional<RangeQuery.Builder> createRelativeDateFilter(
       final RelativeDateFilterStartDto startDto, final String dateField, final ZoneId timezone) {
     if (startDto == null || startDto.getUnit() == null || startDto.getValue() == null) {
       return Optional.empty();
     }
 
-    final RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(dateField);
+    final RangeQuery.Builder queryDate = new RangeQuery.Builder();
+    queryDate.field(dateField);
     final OffsetDateTime now = LocalDateUtil.getCurrentTimeWithTimezone(timezone);
     if (startDto.getValue() == 0) {
-      queryDate.lte(formatter.format(now));
+      queryDate.lte(JsonData.of(formatter.format(now)));
       queryDate.gte(
-          formatter.format(DateFilterUtil.getStartOfCurrentInterval(now, startDto.getUnit())));
+          JsonData.of(
+              formatter.format(DateFilterUtil.getStartOfCurrentInterval(now, startDto.getUnit()))));
     } else {
       final OffsetDateTime startOfCurrentInterval =
           DateFilterUtil.getStartOfCurrentInterval(now, startDto.getUnit());
       final OffsetDateTime startOfPreviousInterval =
           DateFilterUtil.getStartOfPreviousInterval(
               startOfCurrentInterval, startDto.getUnit(), startDto.getValue());
-      queryDate.lt(formatter.format(startOfCurrentInterval));
-      queryDate.gte(formatter.format(startOfPreviousInterval));
+      queryDate.lt(JsonData.of(formatter.format(startOfCurrentInterval)));
+      queryDate.gte(JsonData.of(formatter.format(startOfPreviousInterval)));
     }
     queryDate.format(OPTIMIZE_DATE_FORMAT);
     return Optional.of(queryDate);

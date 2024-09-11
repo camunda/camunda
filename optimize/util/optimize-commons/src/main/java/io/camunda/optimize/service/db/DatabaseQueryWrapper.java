@@ -7,8 +7,8 @@
  */
 package io.camunda.optimize.service.db;
 
-import org.elasticsearch.index.query.AbstractQueryBuilder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 // TODO this should eventully be non-nullable fields to guarantee that we always have both queries
-public record DatabaseQueryWrapper(AbstractQueryBuilder<?> esQuery, Query osQuery) {}
+public record DatabaseQueryWrapper(
+    co.elastic.clients.elasticsearch._types.query_dsl.Query esQuery, Query osQuery) {}

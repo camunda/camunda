@@ -7,20 +7,22 @@
  */
 package io.camunda.optimize.service.db.es.schema;
 
+import co.elastic.clients.transport.DefaultTransportOptions;
+import co.elastic.clients.transport.TransportOptions;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.Optional;
 import org.elasticsearch.client.HttpAsyncResponseConsumerFactory;
 import org.elasticsearch.client.RequestOptions;
 
-public class RequestOptionsProvider {
+public class TransportOptionsProvider {
 
   private final ConfigurationService configurationService;
 
-  public RequestOptionsProvider() {
+  public TransportOptionsProvider() {
     this(null);
   }
 
-  public RequestOptionsProvider(final ConfigurationService configurationService) {
+  public TransportOptionsProvider(final ConfigurationService configurationService) {
     this.configurationService = configurationService;
   }
 
@@ -32,6 +34,18 @@ public class RequestOptionsProvider {
                 optionsBuilder.setHttpAsyncResponseConsumerFactory(
                     new HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory(
                         getElasticsearchResponseConsumerBufferLimitInBytes())));
+    return optionsBuilder.build();
+  }
+
+  public TransportOptions getTransportOptions() {
+    final DefaultTransportOptions.Builder optionsBuilder = new DefaultTransportOptions.Builder();
+    //    if (!customHeaderSuppliers.isEmpty()) {
+    //      customHeaderSuppliers.forEach(
+    //          headerFunction -> {
+    //            final CustomHeader customHeader = headerFunction.get();
+    //            optionsBuilder.addHeader(customHeader.getHeader(), customHeader.getValue());
+    //          });
+    //    }
     return optionsBuilder.build();
   }
 

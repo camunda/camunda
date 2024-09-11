@@ -7,15 +7,15 @@
  */
 package io.camunda.optimize.service.db.es.schema.index;
 
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import io.camunda.optimize.service.db.schema.index.CollectionIndex;
 import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
-public class CollectionIndexES extends CollectionIndex<XContentBuilder> {
+public class CollectionIndexES extends CollectionIndex<IndexSettings.Builder> {
 
   @Override
-  public XContentBuilder addStaticSetting(
-      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
-    return contentBuilder.field(key, value);
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder builder) throws IOException {
+    return builder.numberOfShards(Integer.toString(value));
   }
 }

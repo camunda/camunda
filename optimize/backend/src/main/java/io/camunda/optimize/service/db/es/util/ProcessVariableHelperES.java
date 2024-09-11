@@ -11,59 +11,124 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.V
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableNameField;
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableValueField;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.apache.lucene.search.join.ScoreMode;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessVariableHelperES {
 
-  public static BoolQueryBuilder createFilterForUndefinedOrNullQueryBuilder(
+  public static BoolQuery.Builder createFilterForUndefinedOrNullQueryBuilder(
       final String variableName, final VariableType variableType) {
     final String variableTypeId = variableType.getId();
-    return boolQuery()
+
+    BoolQuery.Builder builder = new BoolQuery.Builder();
+    builder
         .should(
-            // undefined
-            boolQuery()
-                .mustNot(
-                    nestedQuery(
-                        VARIABLES,
-                        boolQuery()
-                            .must(termQuery(getNestedVariableNameField(), variableName))
-                            .must(termQuery(getNestedVariableTypeField(), variableTypeId)),
-                        ScoreMode.None)))
+            s ->
+                s.bool(
+                    b ->
+                        b.mustNot(
+                            m ->
+                                m.nested(
+                                    n ->
+                                        n.path(VARIABLES)
+                                            .scoreMode(ChildScoreMode.None)
+                                            .query(
+                                                q ->
+                                                    q.bool(
+                                                        bb ->
+                                                            bb.must(
+                                                                    mm ->
+                                                                        mm.term(
+                                                                            t ->
+                                                                                t.field(
+                                                                                        getNestedVariableNameField())
+                                                                                    .value(
+                                                                                        variableName)))
+                                                                .must(
+                                                                    mm ->
+                                                                        mm.term(
+                                                                            t ->
+                                                                                t.field(
+                                                                                        getNestedVariableTypeField())
+                                                                                    .value(
+                                                                                        variableTypeId)))))))))
         .should(
-            // or null value
-            boolQuery()
-                .must(
-                    nestedQuery(
-                        VARIABLES,
-                        boolQuery()
-                            .must(termQuery(getNestedVariableNameField(), variableName))
-                            .must(termQuery(getNestedVariableTypeField(), variableTypeId))
-                            .mustNot(existsQuery(getNestedVariableValueField())),
-                        ScoreMode.None)))
-        .minimumShouldMatch(1);
+            s ->
+                s.bool(
+                    b ->
+                        b.must(
+                            m ->
+                                m.nested(
+                                    n ->
+                                        n.path(VARIABLES)
+                                            .scoreMode(ChildScoreMode.None)
+                                            .query(
+                                                q ->
+                                                    q.bool(
+                                                        bb ->
+                                                            bb.must(
+                                                                    mm ->
+                                                                        mm.term(
+                                                                            t ->
+                                                                                t.field(
+                                                                                        getNestedVariableNameField())
+                                                                                    .value(
+                                                                                        variableName)))
+                                                                .must(
+                                                                    mm ->
+                                                                        mm.term(
+                                                                            t ->
+                                                                                t.field(
+                                                                                        getNestedVariableTypeField())
+                                                                                    .value(
+                                                                                        variableTypeId)))
+                                                                .mustNot(
+                                                                    mm ->
+                                                                        mm.exists(
+                                                                            e ->
+                                                                                e.field(
+                                                                                    getNestedVariableValueField())))))))))
+        .minimumShouldMatch("1");
+    return builder;
   }
 
-  public static BoolQueryBuilder createExcludeUndefinedOrNullQueryFilterBuilder(
+  public static BoolQuery.Builder createExcludeUndefinedOrNullQueryFilterBuilder(
       final String variableName, final VariableType variableType) {
     final String variableTypeId = variableType.getId();
-    return boolQuery()
-        .must(
-            nestedQuery(
-                VARIABLES,
-                boolQuery()
-                    .must(termQuery(getNestedVariableNameField(), variableName))
-                    .must(termQuery(getNestedVariableTypeField(), variableTypeId))
-                    .must(existsQuery(getNestedVariableValueField())),
-                ScoreMode.None));
+    BoolQuery.Builder builder = new BoolQuery.Builder();
+    builder.must(
+        m ->
+            m.nested(
+                n ->
+                    n.path(VARIABLES)
+                        .scoreMode(ChildScoreMode.None)
+                        .query(
+                            q ->
+                                q.bool(
+                                    bb ->
+                                        bb.must(
+                                                mm ->
+                                                    mm.term(
+                                                        t ->
+                                                            t.field(getNestedVariableNameField())
+                                                                .value(variableName)))
+                                            .must(
+                                                mm ->
+                                                    mm.term(
+                                                        t ->
+                                                            t.field(getNestedVariableTypeField())
+                                                                .value(variableTypeId)))
+                                            .must(
+                                                mm ->
+                                                    mm.exists(
+                                                        e ->
+                                                            e.field(
+                                                                getNestedVariableValueField())))))));
+    return builder;
   }
 }

@@ -9,30 +9,31 @@ package io.camunda.optimize.service.db.es;
 
 import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Buckets;
+import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.CompositeBucket;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
-import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.composite.ParsedComposite;
 
 @Slf4j
 public class ElasticsearchCompositeAggregationScroller {
 
   private OptimizeElasticsearchClient esClient;
   private SearchRequest searchRequest;
-  private Consumer<ParsedComposite.ParsedBucket> compositeBucketConsumer;
+  private Consumer<CompositeBucket> compositeBucketConsumer;
+  private Function<Map<String, FieldValue>, SearchRequest> searchRequestProvider;
   private LinkedList<String> pathToAggregation;
 
   public static ElasticsearchCompositeAggregationScroller create() {
@@ -52,79 +53,45 @@ public class ElasticsearchCompositeAggregationScroller {
    * @return {@code true} if a page was present, {@code false} else
    */
   public boolean consumePage() {
-    final List<ParsedComposite.ParsedBucket> currentPage = getNextPage();
-    currentPage.forEach(compositeBucketConsumer);
-    return !currentPage.isEmpty();
+    final Buckets<CompositeBucket> currentPage = getNextPage();
+    currentPage.array().forEach(compositeBucketConsumer);
+    return !currentPage.array().isEmpty();
   }
 
-  private List<ParsedComposite.ParsedBucket> getNextPage() {
+  private Buckets<CompositeBucket> getNextPage() {
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest);
-      final ParsedComposite compositeAggregationResult =
-          extractCompositeAggregationResult(searchResponse);
-
+      SearchResponse<?> searchResponse = esClient.search(searchRequest, Object.class);
+      CompositeAggregate compositeAggregate = extractCompositeAggregationResult(searchResponse);
       // find aggregation and adjust after key for next invocation
-      getCompositeAggregationBuilder().aggregateAfter(compositeAggregationResult.afterKey());
-
-      return compositeAggregationResult.getBuckets();
+      searchRequest = searchRequestProvider.apply(compositeAggregate.afterKey());
+      return compositeAggregate.buckets();
     } catch (IOException e) {
       final String reason =
           String.format(
               "Was not able to get next page of %s aggregation.", pathToAggregation.getLast());
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(e)) {
         log.info(
             "Was not able to get next page of {} aggregation because at least one instance from {} does not exist.",
             pathToAggregation.getLast(),
-            Arrays.toString(searchRequest.indices()));
-        return Collections.emptyList();
+            searchRequest.index());
+        return Buckets.of(b -> b.array(List.of()));
       }
       throw e;
     }
   }
 
-  private ParsedComposite extractCompositeAggregationResult(final SearchResponse searchResponse) {
-    final ParsedComposite compositeAggregationResult;
-    Aggregations aggregations = searchResponse.getAggregations();
-
+  private CompositeAggregate extractCompositeAggregationResult(
+      final SearchResponse<?> searchResponse) {
+    Map<String, Aggregate> aggregations = searchResponse.aggregations();
     // find aggregation response
     for (int i = 0; i < pathToAggregation.size() - 1; i++) {
-      SingleBucketAggregation agg = aggregations.get(pathToAggregation.get(i));
-      aggregations = agg.getAggregations();
+      Aggregate agg = aggregations.get(pathToAggregation.get(i));
+      aggregations = agg.nested().aggregations();
     }
-    compositeAggregationResult = aggregations.get(pathToAggregation.getLast());
-    return compositeAggregationResult;
-  }
-
-  private CompositeAggregationBuilder getCompositeAggregationBuilder() {
-    Collection<AggregationBuilder> aggCol =
-        searchRequest.source().aggregations().getAggregatorFactories();
-    for (int i = 0; i < pathToAggregation.size() - 1; i++) {
-      final int currentIndex = i;
-      final AggregationBuilder currentAggregationFromPath =
-          aggCol.stream()
-              .filter(agg -> agg.getName().equals(pathToAggregation.get(currentIndex)))
-              .findFirst()
-              .orElseThrow(
-                  () ->
-                      new OptimizeRuntimeException(
-                          String.format(
-                              "Could not find aggregation [%s] in aggregation path.",
-                              pathToAggregation.get(currentIndex))));
-      aggCol = currentAggregationFromPath.getSubAggregations();
-    }
-    return (CompositeAggregationBuilder)
-        aggCol.stream()
-            .filter(agg -> agg.getName().equals(pathToAggregation.getLast()))
-            .findFirst()
-            .orElseThrow(
-                () ->
-                    new OptimizeRuntimeException(
-                        String.format(
-                            "Could not find composite aggregation [%s] in aggregation path.",
-                            pathToAggregation.getLast())));
+    return aggregations.get(pathToAggregation.getLast()).composite();
   }
 
   public ElasticsearchCompositeAggregationScroller setSearchRequest(
@@ -140,8 +107,14 @@ public class ElasticsearchCompositeAggregationScroller {
   }
 
   public ElasticsearchCompositeAggregationScroller setCompositeBucketConsumer(
-      final Consumer<ParsedComposite.ParsedBucket> compositeBucketConsumer) {
+      final Consumer<CompositeBucket> compositeBucketConsumer) {
     this.compositeBucketConsumer = compositeBucketConsumer;
+    return this;
+  }
+
+  public ElasticsearchCompositeAggregationScroller setFunction(
+      final Function<Map<String, FieldValue>, SearchRequest> generateSR) {
+    this.searchRequestProvider = generateSR;
     return this;
   }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.rest.providers;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import jakarta.ws.rs.core.Context;
@@ -15,23 +16,20 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.ElasticsearchStatusException;
 
 @Provider
 @Slf4j
-public class ElasticsearchStatusExceptionMapper
-    implements ExceptionMapper<ElasticsearchStatusException> {
+public class ElasticsearchExceptionMapper implements ExceptionMapper<ElasticsearchException> {
   private static final String ELASTICSEARCH_ERROR_CODE = "elasticsearchError";
 
   private final LocalizationService localizationService;
 
-  public ElasticsearchStatusExceptionMapper(
-      @Context final LocalizationService localizationService) {
+  public ElasticsearchExceptionMapper(@Context final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 
   @Override
-  public Response toResponse(final ElasticsearchStatusException esStatusException) {
+  public Response toResponse(final ElasticsearchException esStatusException) {
     log.error("Mapping ElasticsearchStatusException", esStatusException);
 
     return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -41,7 +39,7 @@ public class ElasticsearchStatusExceptionMapper
   }
 
   private ErrorResponseDto mapToEvaluationErrorResponseDto(
-      final ElasticsearchStatusException esStatusException) {
+      final ElasticsearchException esStatusException) {
     final String errorMessage =
         localizationService.getDefaultLocaleMessageForApiErrorCode(ELASTICSEARCH_ERROR_CODE);
     final String detailedErrorMessage = esStatusException.getMessage();

@@ -5,32 +5,48 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.command.aggregations;
+package io.camunda.optimize.service.db.es.report.aggregations;
 
-import static io.camunda.optimize.service.db.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.sum;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
 
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder.ContainerBuilder;
+import co.elastic.clients.elasticsearch._types.aggregations.SumAggregate;
+import co.elastic.clients.util.Pair;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.metrics.Sum;
-import org.elasticsearch.search.aggregations.metrics.SumAggregationBuilder;
-import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
+import java.util.Map;
 
-public class SumAggregation extends AggregationStrategy<SumAggregationBuilder> {
+public class SumAggregation
+    extends AggregationStrategy<
+        co.elastic.clients.elasticsearch._types.aggregations.SumAggregation.Builder> {
 
   private static final String SUM_AGGREGATION = "sumAggregation";
 
   @Override
-  public Double getValueForAggregation(final String customIdentifier, final Aggregations aggs) {
-    final Sum aggregation = aggs.get(createAggregationName(customIdentifier, SUM_AGGREGATION));
-    return mapToDoubleOrNull(aggregation.getValue());
+  public Double getValueForAggregation(
+      final String customIdentifier, final Map<String, Aggregate> aggs) {
+    final SumAggregate aggregation =
+        aggs.get(createAggregationName(customIdentifier, SUM_AGGREGATION)).sum();
+    return mapToDoubleOrNull(aggregation.value());
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<SumAggregationBuilder>
-      createAggregationBuilderForAggregation(final String customIdentifier) {
-    return sum(createAggregationName(customIdentifier, SUM_AGGREGATION));
+  public Pair<String, ContainerBuilder> createAggregationBuilderForAggregation(
+      final String customIdentifier, Script script, String... field) {
+    Aggregation.Builder builder = new Aggregation.Builder();
+    return Pair.of(
+        createAggregationName(customIdentifier, SUM_AGGREGATION),
+        builder.sum(
+            a -> {
+              a.script(script);
+              if (field != null && field.length != 0) {
+                a.field(field[0]);
+              }
+              return a;
+            }));
   }
 
   @Override

@@ -7,13 +7,13 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.plan.process;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.plan.process.ProcessExecutionPlanInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 
 public interface ProcessExecutionPlanInterpreterES extends ProcessExecutionPlanInterpreter {
-  BoolQueryBuilder getBaseQuery(
+  BoolQuery.Builder getBaseQueryBuilder(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context);
 }

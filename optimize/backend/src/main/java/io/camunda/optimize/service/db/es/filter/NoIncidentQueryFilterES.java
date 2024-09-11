@@ -8,18 +8,14 @@
 package io.camunda.optimize.service.db.es.filter;
 
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.NoIncidentFilterDataDto;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.lucene.search.join.ScoreMode;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -29,14 +25,21 @@ public class NoIncidentQueryFilterES implements QueryFilterES<NoIncidentFilterDa
 
   @Override
   public void addFilters(
-      final BoolQueryBuilder query,
+      final BoolQuery.Builder query,
       final List<NoIncidentFilterDataDto> noIncidentFilterData,
       final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(noIncidentFilterData)) {
-      List<QueryBuilder> filters = query.filter();
-      final BoolQueryBuilder instancesWithNoIncidentFilter =
-          boolQuery().mustNot(nestedQuery(INCIDENTS, existsQuery(INCIDENTS), ScoreMode.None));
-      filters.add(instancesWithNoIncidentFilter);
+      query.filter(
+          f ->
+              f.bool(
+                  b ->
+                      b.mustNot(
+                          m ->
+                              m.nested(
+                                  n ->
+                                      n.path(INCIDENTS)
+                                          .query(q -> q.exists(e -> e.field(INCIDENTS)))
+                                          .scoreMode(ChildScoreMode.None)))));
     }
   }
 }

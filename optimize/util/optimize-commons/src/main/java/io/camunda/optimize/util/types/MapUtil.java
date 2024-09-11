@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package org.camunda.optimize.util.types;
+package io.camunda.optimize.util.types;
 
 import java.util.Map;
 import java.util.Map.Entry;

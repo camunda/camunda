@@ -8,6 +8,9 @@
 
 package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.none;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.DistributedByInterpreterES;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
@@ -18,18 +21,12 @@ import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -47,25 +44,22 @@ public class ProcessGroupByNoneInterpreterES extends AbstractProcessGroupByInter
   }
 
   @Override
-  public List<AggregationBuilder> createAggregation(
-      final SearchSourceBuilder searchSourceBuilder,
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
+      final BoolQuery boolQuery,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     // nothing to do here, since we don't group so just pass the view part on
-    return distributedByInterpreter
-        .createAggregations(context, searchSourceBuilder.query())
-        .stream()
-        .filter(Objects::nonNull)
-        .collect(Collectors.toList());
+    return getDistributedByInterpreter().createAggregations(context, boolQuery);
   }
 
   @Override
   public void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
-      final SearchResponse response,
+      final ResponseBody<?> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final List<DistributedByResult> distributions =
-        distributedByInterpreter.retrieveResult(response, response.getAggregations(), context);
-    GroupByResult groupByResult = GroupByResult.createGroupByNone(distributions);
+    final List<CompositeCommandResult.DistributedByResult> distributions =
+        distributedByInterpreter.retrieveResult(response, response.aggregations(), context);
+    CompositeCommandResult.GroupByResult groupByResult =
+        CompositeCommandResult.GroupByResult.createGroupByNone(distributions);
     compositeCommandResult.setGroup(groupByResult);
   }
 

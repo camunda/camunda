@@ -7,6 +7,10 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.distributedby.decision;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.AbstractDistributedByInterpreterES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.decision.DecisionViewInterpreterFacadeES;
@@ -16,12 +20,9 @@ import io.camunda.optimize.service.db.report.result.CompositeCommandResult.Distr
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -33,16 +34,16 @@ public class DecisionDistributedByNoneInterpreterES
   @Getter private final DecisionViewInterpreterFacadeES viewInterpreter;
 
   @Override
-  public List<AggregationBuilder> createAggregations(
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context,
-      final QueryBuilder baseQueryBuilder) {
+      final BoolQuery baseQuery) {
     return viewInterpreter.createAggregations(context);
   }
 
   @Override
   public List<DistributedByResult> retrieveResult(
-      SearchResponse response,
-      Aggregations aggregations,
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggregations,
       ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     final ViewResult viewResult = viewInterpreter.retrieveResult(response, aggregations, context);
     return List.of(DistributedByResult.createDistributedByNoneResult(viewResult));

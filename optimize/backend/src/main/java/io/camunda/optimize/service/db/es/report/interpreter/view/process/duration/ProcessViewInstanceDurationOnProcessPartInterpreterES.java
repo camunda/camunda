@@ -7,14 +7,19 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.view.process.duration;
 
-import static io.camunda.optimize.service.db.es.report.command.process.processinstance.duration.ProcessPartQueryUtil.addProcessPartQuery;
-import static io.camunda.optimize.service.db.es.report.command.process.processinstance.duration.ProcessPartQueryUtil.createProcessPartAggregation;
-import static io.camunda.optimize.service.db.es.report.command.process.processinstance.duration.ProcessPartQueryUtil.getProcessPartAggregationResult;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.ProcessPartQueryUtil.addProcessPartQuery;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.ProcessPartQueryUtil.createProcessPartAggregation;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.ProcessPartQueryUtil.getProcessPartAggregationResult;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_INSTANCE_DURATION_PROCESS_PART;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.service.db.es.report.command.aggregations.AggregationStrategy;
+import io.camunda.optimize.service.db.es.report.aggregations.AggregationStrategy;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessView;
@@ -22,16 +27,10 @@ import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import java.util.Collections;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.math3.util.Precision;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -46,26 +45,25 @@ public class ProcessViewInstanceDurationOnProcessPartInterpreterES
   }
 
   @Override
-  public List<AggregationBuilder> createAggregations(
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     ProcessPartDto processPart =
         context
             .getReportConfiguration()
             .getProcessPart()
             .orElseThrow(() -> new OptimizeRuntimeException("Missing ProcessPart"));
-    return Collections.singletonList(
-        createProcessPartAggregation(
-            processPart.getStart(),
-            processPart.getEnd(),
-            getAggregationStrategies(context.getReportData()).stream()
-                .map(AggregationStrategy::getAggregationType)
-                .collect(Collectors.toList())));
+    return createProcessPartAggregation(
+        processPart.getStart(),
+        processPart.getEnd(),
+        getAggregationStrategies(context.getReportData()).stream()
+            .map(AggregationStrategy::getAggregationType)
+            .collect(Collectors.toList()));
   }
 
   @Override
   public ViewResult retrieveResult(
-      final SearchResponse response,
-      final Aggregations aggs,
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggs,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final ViewResult.ViewResultBuilder viewResultBuilder = ViewResult.builder();
     getAggregationStrategies(context.getReportData())
@@ -89,15 +87,15 @@ public class ProcessViewInstanceDurationOnProcessPartInterpreterES
 
   @Override
   public void adjustSearchRequest(
-      final SearchRequest searchRequest,
-      final BoolQueryBuilder baseQuery,
+      final SearchRequest.Builder searchRequestBuilder,
+      final BoolQuery.Builder baseQueryBuilder,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    super.adjustSearchRequest(searchRequest, baseQuery, context);
+    super.adjustSearchRequest(searchRequestBuilder, baseQueryBuilder, context);
     ProcessPartDto processPart =
         context
             .getReportConfiguration()
             .getProcessPart()
             .orElseThrow(() -> new OptimizeRuntimeException("Missing ProcessPart"));
-    addProcessPartQuery(baseQuery, processPart.getStart(), processPart.getEnd());
+    addProcessPartQuery(baseQueryBuilder, processPart.getStart(), processPart.getEnd());
   }
 }

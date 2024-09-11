@@ -7,16 +7,12 @@
  */
 package io.camunda.optimize.service.db.schema.index.report;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.DYNAMIC_PROPERTY_TYPE;
-import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
-import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_OBJECT;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_TEXT;
 
+import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
+import co.elastic.clients.elasticsearch._types.mapping.Property;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class SingleDecisionReportIndex<TBuilder> extends AbstractReportIndex<TBuilder> {
 
@@ -33,43 +29,49 @@ public abstract class SingleDecisionReportIndex<TBuilder> extends AbstractReport
   }
 
   @Override
-  protected XContentBuilder addReportTypeSpecificFields(XContentBuilder xContentBuilder)
-      throws IOException {
-    // @formatter:off
-    return xContentBuilder
-        .startObject(DATA)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-        .field(DYNAMIC_PROPERTY_TYPE, true)
-        .startObject("properties")
-        .startObject(DecisionReportDataDto.Fields.view)
-        .field(MAPPING_ENABLED_SETTING, false)
-        .endObject()
-        .startObject(DecisionReportDataDto.Fields.groupBy)
-        .field(MAPPING_ENABLED_SETTING, false)
-        .endObject()
-        .startObject(DecisionReportDataDto.Fields.distributedBy)
-        .field(MAPPING_ENABLED_SETTING, false)
-        .endObject()
-        .startObject(DecisionReportDataDto.Fields.filter)
-        .field(MAPPING_ENABLED_SETTING, false)
-        .endObject()
-        .startObject(CONFIGURATION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-        .field(DYNAMIC_PROPERTY_TYPE, true)
-        .startObject("properties")
-        .startObject(XML)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
-        .field("index", true)
-        .field("analyzer", "is_present_analyzer")
-        .endObject()
-        .startObject(AGGREGATION_TYPES)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-        .field(DYNAMIC_PROPERTY_TYPE, true)
-        .endObject()
-        .endObject()
-        .endObject()
-        .endObject()
-        .endObject();
-    // @formatter:on
+  protected TypeMapping.Builder addReportTypeSpecificFields(TypeMapping.Builder xContentBuilder) {
+    return xContentBuilder.properties(
+        DATA,
+        p ->
+            p.object(
+                o ->
+                    o.dynamic(DynamicMapping.True)
+                        .properties(
+                            DecisionReportDataDto.Fields.view,
+                            Property.of(q -> q.object(k -> k.enabled(false))))
+                        .properties(
+                            DecisionReportDataDto.Fields.groupBy,
+                            Property.of(q -> q.object(k -> k.enabled(false))))
+                        .properties(
+                            DecisionReportDataDto.Fields.distributedBy,
+                            Property.of(q -> q.object(k -> k.enabled(false))))
+                        .properties(
+                            DecisionReportDataDto.Fields.filter,
+                            Property.of(q -> q.object(k -> k.enabled(false))))
+                        .properties(
+                            CONFIGURATION,
+                            Property.of(
+                                q ->
+                                    q.object(
+                                        k ->
+                                            k.dynamic(DynamicMapping.True)
+                                                .properties(
+                                                    XML,
+                                                    Property.of(
+                                                        v ->
+                                                            v.text(
+                                                                t ->
+                                                                    t.index(Boolean.TRUE)
+                                                                        .analyzer(
+                                                                            "is_present_analyzer"))))
+                                                .properties(
+                                                    AGGREGATION_TYPES,
+                                                    Property.of(
+                                                        v ->
+                                                            v.object(
+                                                                t ->
+                                                                    t.dynamic(
+                                                                        DynamicMapping
+                                                                            .True)))))))));
   }
 }

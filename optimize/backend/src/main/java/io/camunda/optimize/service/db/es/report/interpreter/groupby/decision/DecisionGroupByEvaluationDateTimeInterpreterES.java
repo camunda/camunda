@@ -7,10 +7,15 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.groupby.decision;
 
-import static io.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtilES.unwrapFilterLimitedAggregations;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.FilterLimitedAggregationUtilES.unwrapFilterLimitedAggregations;
 import static io.camunda.optimize.service.db.report.plan.decision.DecisionGroupBy.DECISION_GROUP_BY_EVALUATION_DATE_TIME;
 import static io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.EVALUATION_DATE_TIME;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByEvaluationDateTimeDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByEvaluationDateTimeValueDto;
@@ -28,7 +33,6 @@ import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.report.plan.decision.DecisionExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.decision.DecisionGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Collections;
 import java.util.List;
@@ -38,10 +42,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -57,25 +57,23 @@ public class DecisionGroupByEvaluationDateTimeInterpreterES
   @Getter private final DecisionViewInterpreterFacadeES viewInterpreter;
 
   @Override
-  public Set<DecisionGroupBy> getSupportedGroupBys() {
-    return Set.of(DECISION_GROUP_BY_EVALUATION_DATE_TIME);
-  }
-
-  @Override
-  public List<AggregationBuilder> createAggregation(
-      final SearchSourceBuilder searchSourceBuilder,
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
+      final BoolQuery boolQuery,
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     final AggregateByDateUnit unit = getGroupBy(context.getReportData()).getUnit();
-    return createAggregation(searchSourceBuilder, context, unit);
+    return createAggregation(boolQuery, context, unit);
   }
 
-  private List<AggregationBuilder> createAggregation(
-      final SearchSourceBuilder searchSourceBuilder,
+  private Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
+      final BoolQuery boolQuery,
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context,
       final AggregateByDateUnit unit) {
     final MinMaxStatDto stats =
         minMaxStatsService.getMinMaxDateRange(
-            context, searchSourceBuilder.query(), getIndexNames(context), EVALUATION_DATE_TIME);
+            context,
+            Query.of(q -> q.bool(boolQuery)),
+            getIndexNames(context),
+            EVALUATION_DATE_TIME);
 
     final DateAggregationContextES dateAggContext =
         DateAggregationContextES.builder()
@@ -83,8 +81,7 @@ public class DecisionGroupByEvaluationDateTimeInterpreterES
             .dateField(EVALUATION_DATE_TIME)
             .minMaxStats(stats)
             .timezone(context.getTimezone())
-            .subAggregations(
-                distributedByInterpreter.createAggregations(context, searchSourceBuilder.query()))
+            .subAggregations(getDistributedByInterpreter().createAggregations(context, boolQuery))
             .decisionFilters(context.getReportData().getFilter())
             .decisionQueryFilterEnhancer(queryFilterEnhancer)
             .filterContext(context.getFilterContext())
@@ -92,14 +89,13 @@ public class DecisionGroupByEvaluationDateTimeInterpreterES
 
     return dateAggregationService
         .createDecisionEvaluationDateAggregation(dateAggContext)
-        .map(Collections::singletonList)
-        .orElse(Collections.emptyList());
+        .orElse(Map.of());
   }
 
   @Override
   public void addQueryResult(
       final CompositeCommandResult result,
-      final SearchResponse response,
+      final ResponseBody<?> response,
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     result.setGroups(processAggregations(response, context));
     result.setGroupBySorting(
@@ -114,19 +110,19 @@ public class DecisionGroupByEvaluationDateTimeInterpreterES
     return ((DecisionGroupByEvaluationDateTimeDto) reportData.getGroupBy()).getValue();
   }
 
-  private List<GroupByResult> processAggregations(
-      final SearchResponse response,
+  private List<CompositeCommandResult.GroupByResult> processAggregations(
+      final ResponseBody<?> response,
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
-    final Aggregations aggregations = response.getAggregations();
+    final Map<String, Aggregate> aggregations = response.aggregations();
 
     if (aggregations == null) {
       // aggregations are null when there are no instances in the report
       return Collections.emptyList();
     }
 
-    final Optional<Aggregations> unwrappedLimitedAggregations =
+    final Optional<Map<String, Aggregate>> unwrappedLimitedAggregations =
         unwrapFilterLimitedAggregations(aggregations);
-    Map<String, Aggregations> keyToAggregationMap;
+    Map<String, Map<String, Aggregate>> keyToAggregationMap;
     if (unwrappedLimitedAggregations.isPresent()) {
       keyToAggregationMap =
           dateAggregationService.mapDateAggregationsToKeyAggregationMap(
@@ -137,17 +133,22 @@ public class DecisionGroupByEvaluationDateTimeInterpreterES
     return mapKeyToAggMapToGroupByResults(keyToAggregationMap, response, context);
   }
 
-  private List<GroupByResult> mapKeyToAggMapToGroupByResults(
-      final Map<String, Aggregations> keyToAggregationMap,
-      final SearchResponse response,
+  private List<CompositeCommandResult.GroupByResult> mapKeyToAggMapToGroupByResults(
+      final Map<String, Map<String, Aggregate>> keyToAggregationMap,
+      final ResponseBody<?> response,
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     return keyToAggregationMap.entrySet().stream()
         .map(
             stringBucketEntry ->
-                GroupByResult.createGroupByResult(
+                CompositeCommandResult.GroupByResult.createGroupByResult(
                     stringBucketEntry.getKey(),
-                    distributedByInterpreter.retrieveResult(
-                        response, stringBucketEntry.getValue(), context)))
+                    getDistributedByInterpreter()
+                        .retrieveResult(response, stringBucketEntry.getValue(), context)))
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public Set<DecisionGroupBy> getSupportedGroupBys() {
+    return Set.of(DECISION_GROUP_BY_EVALUATION_DATE_TIME);
   }
 }

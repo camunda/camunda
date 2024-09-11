@@ -7,28 +7,27 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.view.process.duration;
 
-import static io.camunda.optimize.service.db.es.report.command.util.DurationScriptUtilES.getUserTaskDurationScript;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.DurationScriptUtilES.getUserTaskDurationScript;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_USER_TASK_DURATION;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
+import co.elastic.clients.util.Pair;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.AbstractProcessViewMultiAggregationInterpreterES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessView;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewMeasure;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult.ViewResultBuilder;
+import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.math3.util.Precision;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
@@ -46,7 +45,7 @@ public class ProcessViewUserTaskDurationInterpreterES
   }
 
   @Override
-  public List<AggregationBuilder> createAggregations(
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return context.getReportData().getConfiguration().getUserTaskDurationTimes().stream()
         .flatMap(
@@ -54,18 +53,19 @@ public class ProcessViewUserTaskDurationInterpreterES
                 getAggregationStrategies(context.getReportData()).stream()
                     .map(
                         strategy ->
-                            strategy
-                                .createAggregationBuilder(userTaskDurationTime.getId())
-                                .script(getScriptedAggregationField(userTaskDurationTime))))
-        .collect(Collectors.toList());
+                            strategy.createAggregationBuilder(
+                                userTaskDurationTime.getId(),
+                                getScriptedAggregationField(userTaskDurationTime))))
+        .collect(Collectors.toMap(Pair::key, Pair::value));
   }
 
   @Override
-  public ViewResult retrieveResult(
-      final SearchResponse response,
-      final Aggregations aggs,
+  public CompositeCommandResult.ViewResult retrieveResult(
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggs,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final ViewResultBuilder viewResultBuilder = ViewResult.builder();
+    final CompositeCommandResult.ViewResult.ViewResultBuilder viewResultBuilder =
+        CompositeCommandResult.ViewResult.builder();
     context
         .getReportData()
         .getConfiguration()
@@ -83,7 +83,7 @@ public class ProcessViewUserTaskDurationInterpreterES
                             measureResult = Precision.round(measureResult, 0);
                           }
                           viewResultBuilder.viewMeasure(
-                              ViewMeasure.builder()
+                              CompositeCommandResult.ViewMeasure.builder()
                                   .aggregationType(aggregationStrategy.getAggregationType())
                                   .userTaskDurationTime(userTaskDurationTime)
                                   .value(measureResult)
@@ -93,9 +93,10 @@ public class ProcessViewUserTaskDurationInterpreterES
   }
 
   @Override
-  public ViewResult createEmptyResult(
+  public CompositeCommandResult.ViewResult createEmptyResult(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final ViewResultBuilder viewResultBuilder = ViewResult.builder();
+    final CompositeCommandResult.ViewResult.ViewResultBuilder viewResultBuilder =
+        CompositeCommandResult.ViewResult.builder();
     context
         .getReportData()
         .getConfiguration()
@@ -106,7 +107,7 @@ public class ProcessViewUserTaskDurationInterpreterES
                     .forEach(
                         aggregationStrategy ->
                             viewResultBuilder.viewMeasure(
-                                ViewMeasure.builder()
+                                CompositeCommandResult.ViewMeasure.builder()
                                     .aggregationType(aggregationStrategy.getAggregationType())
                                     .userTaskDurationTime(userTaskDurationTime)
                                     .value(null)

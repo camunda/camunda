@@ -8,15 +8,12 @@
 package io.camunda.optimize.service.db.es.filter;
 
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CompletedInstancesOnlyFilterDataDto;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -27,15 +24,11 @@ public class CompletedInstancesOnlyQueryFilterES
 
   @Override
   public void addFilters(
-      final BoolQueryBuilder query,
+      final BoolQuery.Builder query,
       final List<CompletedInstancesOnlyFilterDataDto> completedInstancesData,
       final FilterContext filterContext) {
     if (completedInstancesData != null && !completedInstancesData.isEmpty()) {
-      final List<QueryBuilder> filters = query.filter();
-
-      final BoolQueryBuilder onlyCompletedQuery = boolQuery().must(existsQuery(END_DATE));
-
-      filters.add(onlyCompletedQuery);
+      query.filter(f -> f.bool(b -> b.must(m -> m.exists(e -> e.field(END_DATE)))));
     }
   }
 }

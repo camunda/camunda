@@ -9,12 +9,20 @@ package io.camunda.optimize.service.db.repository.es;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_OVERVIEW_INDEX_NAME;
-import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
+import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.ScriptLanguage;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.UpdateRequest;
+import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import io.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeDeleteRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeUpdateOperationBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessOverviewIndexES;
 import io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import io.camunda.optimize.service.db.repository.ProcessOverviewRepository;
@@ -27,11 +35,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -47,24 +50,31 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
   public void updateProcessConfiguration(
       final String processDefinitionKey, final ProcessOverviewDto overviewDto) {
     try {
-      final Map<String, Object> paramMap = new HashMap<>();
-      paramMap.put("owner", overviewDto.getOwner());
-      paramMap.put("processDefinitionKey", overviewDto.getProcessDefinitionKey());
-      paramMap.put("digestEnabled", overviewDto.getDigest().isEnabled());
-      final UpdateRequest updateRequest =
-          new UpdateRequest()
-              .index(PROCESS_OVERVIEW_INDEX_NAME)
-              .id(processDefinitionKey)
-              .script(
-                  new Script(
-                      ScriptType.INLINE,
-                      Script.DEFAULT_SCRIPT_LANG,
-                      ProcessOverviewScriptFactory.createUpdateOverviewScript(),
-                      paramMap))
-              .upsert(objectMapper.convertValue(overviewDto, Map.class))
-              .setRefreshPolicy(IMMEDIATE)
-              .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-      esClient.update(updateRequest);
+      final Map<String, JsonData> paramMap = new HashMap<>();
+      if (overviewDto.getOwner() != null) {
+        paramMap.put("owner", JsonData.of(overviewDto.getOwner()));
+      }
+      paramMap.put("processDefinitionKey", JsonData.of(overviewDto.getProcessDefinitionKey()));
+      paramMap.put("digestEnabled", JsonData.of(overviewDto.getDigest().isEnabled()));
+      final UpdateRequest<ProcessOverviewDto, ?> updateRequest =
+          OptimizeUpdateRequestBuilderES.of(
+              u ->
+                  u.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME)
+                      .id(processDefinitionKey)
+                      .script(
+                          Script.of(
+                              s ->
+                                  s.inline(
+                                      i ->
+                                          i.lang(ScriptLanguage.Painless)
+                                              .source(
+                                                  ProcessOverviewScriptFactory
+                                                      .createUpdateOverviewScript())
+                                              .params(paramMap))))
+                      .upsert(overviewDto)
+                      .refresh(Refresh.True)
+                      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
+      esClient.update(updateRequest, ProcessOverviewDto.class);
     } catch (Exception e) {
       final String errorMessage =
           String.format("There was a problem while updating the process: [%s].", overviewDto);
@@ -77,19 +87,29 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
   public void updateProcessDigestResults(
       final String processDefKey, final ProcessDigestDto processDigestDto) {
     try {
-      final UpdateRequest updateRequest =
-          new UpdateRequest()
-              .index(PROCESS_OVERVIEW_INDEX_NAME)
-              .id(processDefKey)
-              .script(
-                  new Script(
-                      ScriptType.INLINE,
-                      Script.DEFAULT_SCRIPT_LANG,
-                      ProcessOverviewScriptFactory.createUpdateProcessDigestScript(),
-                      Map.of("kpiReportResults", processDigestDto.getKpiReportResults())))
-              .setRefreshPolicy(IMMEDIATE)
-              .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-      esClient.update(updateRequest);
+      final UpdateRequest<ProcessDigestDto, ?> updateRequest =
+          OptimizeUpdateRequestBuilderES.of(
+              u ->
+                  u.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME)
+                      .id(processDefKey)
+                      .script(
+                          Script.of(
+                              s ->
+                                  s.inline(
+                                      i ->
+                                          i.lang(ScriptLanguage.Painless)
+                                              .source(
+                                                  ProcessOverviewScriptFactory
+                                                      .createUpdateProcessDigestScript())
+                                              .params(
+                                                  Map.of(
+                                                      "kpiReportResults",
+                                                      JsonData.of(
+                                                          processDigestDto
+                                                              .getKpiReportResults()))))))
+                      .refresh(Refresh.True)
+                      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
+      esClient.update(updateRequest, ProcessDigestDto.class);
     } catch (Exception e) {
       final String errorMessage =
           String.format(
@@ -106,18 +126,20 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
       final String ownerId,
       final ProcessOverviewDto processOverviewDto) {
     try {
-      final UpdateRequest updateRequest =
-          new UpdateRequest()
-              .index(PROCESS_OVERVIEW_INDEX_NAME)
-              .id(processDefinitionKey)
-              .script(
-                  ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-                      ProcessOverviewScriptFactory.createUpdateOwnerIfNotSetScript(),
-                      Map.of("owner", ownerId, "processDefinitionKey", processDefinitionKey)))
-              .upsert(objectMapper.convertValue(processOverviewDto, Map.class))
-              .setRefreshPolicy(IMMEDIATE)
-              .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-      esClient.update(updateRequest);
+      final UpdateRequest<ProcessOverviewDto, ?> updateRequestBuilder =
+          OptimizeUpdateRequestBuilderES.of(
+              b ->
+                  b.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME)
+                      .id(processDefinitionKey)
+                      .script(
+                          ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+                              ProcessOverviewScriptFactory.createUpdateOwnerIfNotSetScript(),
+                              Map.of(
+                                  "owner", ownerId, "processDefinitionKey", processDefinitionKey)))
+                      .upsert(processOverviewDto)
+                      .refresh(Refresh.True)
+                      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
+      esClient.update(updateRequestBuilder, ProcessOverviewDto.class);
     } catch (Exception e) {
       final String errorMessage =
           String.format(
@@ -130,21 +152,36 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
 
   @Override
   public void updateKpisForProcessDefinitions(List<ProcessOverviewDto> processOverviewDtos) {
-    final BulkRequest bulkRequest = new BulkRequest();
-    processOverviewDtos.forEach(
-        processOverviewDto ->
-            bulkRequest.add(
-                new UpdateRequest()
-                    .index(PROCESS_OVERVIEW_INDEX_NAME)
-                    .id(processOverviewDto.getProcessDefinitionKey())
-                    .upsert(objectMapper.convertValue(processOverviewDto, Map.class))
-                    .script(
-                        ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-                            ProcessOverviewScriptFactory.createUpdateKpisScript(),
-                            Map.of(
-                                "lastKpiEvaluationResults",
-                                processOverviewDto.getLastKpiEvaluationResults())))
-                    .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)));
+    final BulkRequest bulkRequest =
+        processOverviewDtos.isEmpty()
+            ? null
+            : BulkRequest.of(
+                b -> {
+                  processOverviewDtos.forEach(
+                      processOverviewDto ->
+                          b.operations(
+                              o ->
+                                  o.update(
+                                      OptimizeUpdateOperationBuilderES.of(
+                                          u ->
+                                              u.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME)
+                                                  .id(processOverviewDto.getProcessDefinitionKey())
+                                                  .action(
+                                                      a ->
+                                                          a.upsert(processOverviewDto)
+                                                              .script(
+                                                                  ElasticsearchWriterUtil
+                                                                      .createDefaultScriptWithPrimitiveParams(
+                                                                          ProcessOverviewScriptFactory
+                                                                              .createUpdateKpisScript(),
+                                                                          Map.of(
+                                                                              "lastKpiEvaluationResults",
+                                                                              processOverviewDto
+                                                                                  .getLastKpiEvaluationResults()))))
+                                                  .retryOnConflict(
+                                                      NUMBER_OF_RETRIES_ON_CONFLICT)))));
+                  return b;
+                });
 
     esClient.doBulkRequest(bulkRequest, new ProcessOverviewIndexES().getIndexName(), false);
   }
@@ -152,9 +189,10 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
   @Override
   public void deleteProcessOwnerEntry(final String processDefinitionKey) {
     try {
-      final DeleteRequest deleteRequest =
-          new DeleteRequest().index(PROCESS_OVERVIEW_INDEX_NAME).id(processDefinitionKey);
-      esClient.delete(deleteRequest);
+      esClient.delete(
+          OptimizeDeleteRequestBuilderES.of(
+              d ->
+                  d.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME).id(processDefinitionKey)));
     } catch (IOException e) {
       final String errorMessage =
           String.format(

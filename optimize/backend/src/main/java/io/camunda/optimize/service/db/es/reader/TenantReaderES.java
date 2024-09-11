@@ -9,11 +9,12 @@ package io.camunda.optimize.service.db.es.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
-import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.TenantDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
 import io.camunda.optimize.service.db.reader.TenantReader;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -23,10 +24,6 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -44,20 +41,23 @@ public class TenantReaderES implements TenantReader {
   public Set<TenantDto> getTenants() {
     log.debug("Fetching all available tenants");
 
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder().query(QueryBuilders.matchAllQuery()).size(LIST_FETCH_LIMIT);
-    final SearchRequest searchRequest =
-        new SearchRequest(TENANT_INDEX_NAME)
-            .source(searchSourceBuilder)
-            .scroll(
-                timeValueSeconds(
-                    configurationService
-                        .getElasticSearchConfiguration()
-                        .getScrollTimeoutInSeconds()));
-
-    SearchResponse scrollResp;
+    SearchResponse<TenantDto> scrollResp;
     try {
-      scrollResp = esClient.search(searchRequest);
+      scrollResp =
+          esClient.search(
+              OptimizeSearchRequestBuilderES.of(
+                  s ->
+                      s.optimizeIndex(esClient, TENANT_INDEX_NAME)
+                          .query(q -> q.matchAll(m -> m))
+                          .size(LIST_FETCH_LIMIT)
+                          .scroll(
+                              ss ->
+                                  ss.time(
+                                      configurationService
+                                              .getElasticSearchConfiguration()
+                                              .getScrollTimeoutInSeconds()
+                                          + "s"))),
+              TenantDto.class);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Was not able to retrieve tenants!", e);
     }

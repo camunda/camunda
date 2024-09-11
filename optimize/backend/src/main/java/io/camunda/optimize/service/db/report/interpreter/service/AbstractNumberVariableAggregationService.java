@@ -27,8 +27,7 @@ public class AbstractNumberVariableAggregationService {
       intervalSize =
           Math.abs(maxVariableValue - baseline)
               / (NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION
-                  - 1); // -1 because the end of the loop is
-      // inclusive and would otherwise create 81 buckets
+                  - 1); // -1 because the end of the loop is inclusive
       intervalSize = intervalSize == 0 ? 1 : roundUpToNearestPowerOfTen(intervalSize);
     }
     if (!VariableType.DOUBLE.equals(context.getVariableType())) {

@@ -18,6 +18,7 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.U
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_USER_TASK;
 
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -58,7 +59,6 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
-import org.elasticsearch.xcontent.XContentBuilder;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
@@ -307,7 +307,7 @@ public abstract class DatabaseTestService {
       String methodName, String endpoint, String bulkPayload) throws IOException;
 
   public abstract void initSchema(
-      List<IndexMappingCreator<XContentBuilder>> mappingCreators,
+      List<IndexMappingCreator<IndexSettings.Builder>> mappingCreators,
       DatabaseMetadataService metadataService);
 
   public abstract Map<String, ? extends Object> getMappingFields(final String indexName)

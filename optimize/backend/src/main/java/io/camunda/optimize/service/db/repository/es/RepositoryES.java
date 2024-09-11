@@ -9,8 +9,6 @@ package io.camunda.optimize.service.db.repository.es;
 
 import io.camunda.optimize.service.db.repository.Repository;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import org.elasticsearch.index.reindex.DeleteByQueryAction;
-import org.elasticsearch.index.reindex.UpdateByQueryAction;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -19,11 +17,11 @@ import org.springframework.stereotype.Component;
 public class RepositoryES implements Repository {
   @Override
   public String getDeleteByQueryActionName() {
-    return DeleteByQueryAction.NAME;
+    return "indices:data/write/delete/byquery";
   }
 
   @Override
   public String getUpdateByQueryActionName() {
-    return UpdateByQueryAction.NAME;
+    return "indices:data/write/update/byquery";
   }
 }

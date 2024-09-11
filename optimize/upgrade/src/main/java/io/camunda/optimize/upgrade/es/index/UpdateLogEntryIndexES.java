@@ -7,17 +7,17 @@
  */
 package io.camunda.optimize.upgrade.es.index;
 
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
 public class UpdateLogEntryIndexES
-    extends io.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex<XContentBuilder> {
+    extends io.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex<IndexSettings.Builder> {
 
   @Override
-  public XContentBuilder addStaticSetting(
-      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
-    return contentBuilder.field(key, value);
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder builder) throws IOException {
+    return builder.numberOfShards(Integer.toString(value));
   }
 }

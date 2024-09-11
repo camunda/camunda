@@ -8,11 +8,14 @@
 package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.none;
 
 import static io.camunda.optimize.service.db.es.filter.util.IncidentFilterQueryUtilES.createIncidentAggregationFilter;
-import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.FilterAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.NestedAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.SingleBucketAggregateBase;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
@@ -23,23 +26,13 @@ import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.nested.Nested;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -61,47 +54,56 @@ public class ProcessIncidentGroupByNoneInterpreterES extends AbstractProcessGrou
   }
 
   @Override
-  public List<AggregationBuilder> createAggregation(
-      final SearchSourceBuilder searchSourceBuilder,
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
+      final BoolQuery boolQuery,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final FilterAggregationBuilder filteredIncidentsAggregation =
-        filter(
-            FILTERED_INCIDENT_AGGREGATION,
-            createIncidentAggregationFilter(context.getReportData(), definitionService));
-    distributedByInterpreter
-        .createAggregations(context, searchSourceBuilder.query())
-        .forEach(filteredIncidentsAggregation::subAggregation);
-    return Stream.of(
-            nested(NESTED_INCIDENT_AGGREGATION, INCIDENTS)
-                .subAggregation(filteredIncidentsAggregation))
-        .filter(Objects::nonNull)
-        .collect(Collectors.toList());
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder().nested(n -> n.path(INCIDENTS));
+    builder.aggregations(
+        FILTERED_INCIDENT_AGGREGATION,
+        Aggregation.of(
+            a -> {
+              Aggregation.Builder.ContainerBuilder filter =
+                  a.filter(
+                      f ->
+                          f.bool(
+                              createIncidentAggregationFilter(
+                                      context.getReportData(), definitionService)
+                                  .build()));
+              getDistributedByInterpreter()
+                  .createAggregations(context, boolQuery)
+                  .forEach((k, v) -> filter.aggregations(k, v.build()));
+              return filter;
+            }));
+    return Map.of(NESTED_INCIDENT_AGGREGATION, builder);
   }
 
   @Override
   public void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
-      final SearchResponse response,
+      final ResponseBody<?> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     getNestedIncidentsAggregation(response)
         .ifPresent(
             nestedIncidents -> {
-              final List<DistributedByResult> distributions =
-                  distributedByInterpreter.retrieveResult(
-                      response, nestedIncidents.getAggregations(), context);
-              GroupByResult groupByResult = GroupByResult.createGroupByNone(distributions);
+              final List<CompositeCommandResult.DistributedByResult> distributions =
+                  getDistributedByInterpreter()
+                      .retrieveResult(response, nestedIncidents.aggregations(), context);
+              CompositeCommandResult.GroupByResult groupByResult =
+                  CompositeCommandResult.GroupByResult.createGroupByNone(distributions);
               compositeCommandResult.setGroup(groupByResult);
             });
   }
 
-  private Optional<Filter> getNestedIncidentsAggregation(final SearchResponse response) {
+  private Optional<FilterAggregate> getNestedIncidentsAggregation(final ResponseBody<?> response) {
     return getFilteredIncidentsAggregation(response)
-        .map(SingleBucketAggregation::getAggregations)
-        .map(aggs -> aggs.get(FILTERED_INCIDENT_AGGREGATION));
+        .map(SingleBucketAggregateBase::aggregations)
+        .map(aggs -> aggs.get(FILTERED_INCIDENT_AGGREGATION).filter());
   }
 
-  private Optional<Nested> getFilteredIncidentsAggregation(final SearchResponse response) {
-    return Optional.ofNullable(response.getAggregations())
-        .map(aggs -> aggs.get(NESTED_INCIDENT_AGGREGATION));
+  private Optional<NestedAggregate> getFilteredIncidentsAggregation(
+      final ResponseBody<?> response) {
+    return Optional.ofNullable(response.aggregations())
+        .map(aggs -> aggs.get(NESTED_INCIDENT_AGGREGATION).nested());
   }
 }

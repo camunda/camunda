@@ -12,6 +12,14 @@ import static io.camunda.optimize.service.db.report.result.CompositeCommandResul
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_USER_TASK;
 import static java.util.stream.Collectors.toSet;
 
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
+import co.elastic.clients.util.NamedValue;
 import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
@@ -24,25 +32,15 @@ import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.AbstractProcessDistributedByInterpreterES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
+import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.BucketOrder;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 
 public abstract class AbstractProcessDistributedByModelElementInterpreterES
     extends AbstractProcessDistributedByInterpreterES {
@@ -53,37 +51,41 @@ public abstract class AbstractProcessDistributedByModelElementInterpreterES
   protected abstract DefinitionService getDefinitionService();
 
   @Override
-  public List<AggregationBuilder> createAggregations(
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final QueryBuilder baseQueryBuilder) {
-    final TermsAggregationBuilder modelElementTermsAggregation =
-        AggregationBuilders.terms(MODEL_ELEMENT_ID_TERMS_AGGREGATION)
-            .size(
-                getConfigurationService()
-                    .getElasticSearchConfiguration()
-                    .getAggregationBucketLimit())
-            .order(BucketOrder.key(true))
-            .field(getModelElementIdPath());
+      BoolQuery baseQueryBuilder) {
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder()
+            .terms(
+                t ->
+                    t.size(
+                            getConfigurationService()
+                                .getElasticSearchConfiguration()
+                                .getAggregationBucketLimit())
+                        .order(NamedValue.of("_key", SortOrder.Asc))
+                        .field(getModelElementIdPath()));
+
     getViewInterpreter()
         .createAggregations(context)
-        .forEach(modelElementTermsAggregation::subAggregation);
-    return Collections.singletonList(modelElementTermsAggregation);
+        .forEach((k, v) -> builder.aggregations(k, v.build()));
+    return Map.of(MODEL_ELEMENT_ID_TERMS_AGGREGATION, builder);
   }
 
   @Override
-  public List<DistributedByResult> retrieveResult(
-      final SearchResponse response,
-      final Aggregations aggregations,
+  public List<CompositeCommandResult.DistributedByResult> retrieveResult(
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggregations,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final Terms byModelElementAggregation = aggregations.get(MODEL_ELEMENT_ID_TERMS_AGGREGATION);
+    final StringTermsAggregate byModelElementAggregation =
+        aggregations.get(MODEL_ELEMENT_ID_TERMS_AGGREGATION).sterms();
     final Map<String, FlowNodeDataDto> modelElementData =
         getModelElementData(context.getReportData());
-    final List<DistributedByResult> distributedByModelElements = new ArrayList<>();
-    for (Terms.Bucket modelElementBucket : byModelElementAggregation.getBuckets()) {
-      final ViewResult viewResult =
-          getViewInterpreter()
-              .retrieveResult(response, modelElementBucket.getAggregations(), context);
-      final String modelElementKey = modelElementBucket.getKeyAsString();
+    final List<CompositeCommandResult.DistributedByResult> distributedByModelElements =
+        new ArrayList<>();
+    for (StringTermsBucket modelElementBucket : byModelElementAggregation.buckets().array()) {
+      final CompositeCommandResult.ViewResult viewResult =
+          getViewInterpreter().retrieveResult(response, modelElementBucket.aggregations(), context);
+      final String modelElementKey = modelElementBucket.key().stringValue();
       if (modelElementData.containsKey(modelElementKey)) {
         String label = modelElementData.get(modelElementKey).getName();
         distributedByModelElements.add(
@@ -102,7 +104,7 @@ public abstract class AbstractProcessDistributedByModelElementInterpreterES
 
   private void addMissingDistributions(
       final Map<String, FlowNodeDataDto> modelElementNames,
-      final List<DistributedByResult> distributedByModelElements,
+      final List<CompositeCommandResult.DistributedByResult> distributedByModelElements,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final Set<String> excludedFlowNodes =
         getExcludedFlowNodes(context.getReportData(), modelElementNames);
@@ -113,7 +115,7 @@ public abstract class AbstractProcessDistributedByModelElementInterpreterES
         .forEach(
             key ->
                 distributedByModelElements.add(
-                    DistributedByResult.createDistributedByResult(
+                    CompositeCommandResult.DistributedByResult.createDistributedByResult(
                         key,
                         modelElementNames.get(key).getName(),
                         getViewInterpreter().createEmptyResult(context))));

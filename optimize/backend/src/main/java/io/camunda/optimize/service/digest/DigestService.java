@@ -10,6 +10,7 @@ package io.camunda.optimize.service.digest;
 import static io.camunda.optimize.dto.optimize.query.processoverview.KpiType.QUALITY;
 import static io.camunda.optimize.dto.optimize.query.processoverview.KpiType.TIME;
 
+import co.elastic.clients.util.Pair;
 import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.UserDto;
@@ -47,7 +48,6 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.core.Tuple;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
@@ -210,21 +210,22 @@ public class DigestService implements ConfigurationReloadable {
       final List<KpiResultDto> currentKpiReportResults,
       final Map<String, String> previousKpiReportResults) {
     return Map.of(
-        "ownerName", ownerName,
-        "processName", processDefinitionName,
+        "ownerName",
+        ownerName,
+        "processName",
+        processDefinitionName,
         "hasTimeKpis",
-            currentKpiReportResults.stream()
-                .anyMatch(kpiResult -> TIME.equals(kpiResult.getType())),
+        currentKpiReportResults.stream().anyMatch(kpiResult -> TIME.equals(kpiResult.getType())),
         "hasQualityKpis",
-            currentKpiReportResults.stream()
-                .anyMatch(kpiResult -> QUALITY.equals(kpiResult.getType())),
-        "successfulTimeKPIPercent", calculateSuccessfulKpiInPercent(TIME, currentKpiReportResults),
+        currentKpiReportResults.stream().anyMatch(kpiResult -> QUALITY.equals(kpiResult.getType())),
+        "successfulTimeKPIPercent",
+        calculateSuccessfulKpiInPercent(TIME, currentKpiReportResults),
         "successfulQualityKPIPercent",
-            calculateSuccessfulKpiInPercent(QUALITY, currentKpiReportResults),
+        calculateSuccessfulKpiInPercent(QUALITY, currentKpiReportResults),
         "kpiResults",
-            getKpiSummaryDtos(
-                processDefinitionName, currentKpiReportResults, previousKpiReportResults),
-        "optimizeHomePageLink", getOptimizeHomePageLink());
+        getKpiSummaryDtos(processDefinitionName, currentKpiReportResults, previousKpiReportResults),
+        "optimizeHomePageLink",
+        getOptimizeHomePageLink());
   }
 
   private int calculateSuccessfulKpiInPercent(
@@ -289,20 +290,20 @@ public class DigestService implements ConfigurationReloadable {
                     kpiResult.getReportId(),
                     processDefinitionName);
               }
-              return Tuple.tuple(reportDefinition, kpiResult);
+              return Pair.of(reportDefinition, kpiResult);
             })
-        .filter(kpiReportResultTuple -> kpiReportResultTuple.v1().isPresent())
+        .filter(kpiReportResultTuple -> kpiReportResultTuple.key().isPresent())
         .map(
             kpiReportResultTuple ->
                 new DigestTemplateKpiSummaryDto(
-                    kpiReportResultTuple.v1().get().getName(),
+                    kpiReportResultTuple.key().get().getName(),
                     getReportViewLink(
-                        kpiReportResultTuple.v2().getReportId(),
-                        kpiReportResultTuple.v1().get().getCollectionId()),
-                    kpiReportResultTuple.v2(),
+                        kpiReportResultTuple.value().getReportId(),
+                        kpiReportResultTuple.key().get().getCollectionId()),
+                    kpiReportResultTuple.value(),
                     Optional.ofNullable(previousKpiReportResults)
                         .orElse(Collections.emptyMap())
-                        .get(kpiReportResultTuple.v2().getReportId())))
+                        .get(kpiReportResultTuple.value().getReportId())))
         .toList();
   }
 

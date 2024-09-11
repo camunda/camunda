@@ -10,8 +10,12 @@ package io.camunda.optimize.service.db.es.filter.util;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.report.filter.util.DateHistogramFilterUtil.getMaxDateFilterOffsetDateTime;
 import static io.camunda.optimize.service.db.report.filter.util.DateHistogramFilterUtil.getMinDateFilterOffsetDateTime;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
+import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramAggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.ExtendedBounds;
+import co.elastic.clients.elasticsearch._types.aggregations.FieldDateMath;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.json.JsonData;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
@@ -27,30 +31,27 @@ import java.util.List;
 import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.histogram.LongBounds;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DateHistogramFilterUtilES {
 
-  public static BoolQueryBuilder createModelElementDateHistogramLimitingFilterFor(
+  public static BoolQuery.Builder createModelElementDateHistogramLimitingFilterFor(
       final DateAggregationContextES context, final DateTimeFormatter dateTimeFormatter) {
 
-    RangeQueryBuilder queryDate =
-        QueryBuilders.rangeQuery(context.getDateField())
-            .gte(dateTimeFormatter.format(context.getEarliestDate()))
-            .lte(dateTimeFormatter.format(context.getLatestDate()))
-            .format(OPTIMIZE_DATE_FORMAT);
-    final BoolQueryBuilder limitFilterQuery = boolQuery();
-    limitFilterQuery.filter().add(queryDate);
-    return limitFilterQuery;
+    BoolQuery.Builder queryDate = new BoolQuery.Builder();
+    queryDate.filter(
+        f ->
+            f.range(
+                r ->
+                    r.field(context.getDateField())
+                        .gte(JsonData.of(dateTimeFormatter.format(context.getEarliestDate())))
+                        .lte(JsonData.of(dateTimeFormatter.format(context.getLatestDate())))
+                        .format(OPTIMIZE_DATE_FORMAT)));
+    return queryDate;
   }
 
-  public static BoolQueryBuilder extendBoundsAndCreateDecisionDateHistogramLimitingFilterFor(
-      final DateHistogramAggregationBuilder dateHistogramAggregation,
+  public static BoolQuery.Builder extendBoundsAndCreateDecisionDateHistogramLimitingFilterFor(
+      final DateHistogramAggregation.Builder dateHistogramAggregation,
       final DateAggregationContextES context,
       final DateTimeFormatter dateFormatter) {
 
@@ -60,7 +61,7 @@ public class DateHistogramFilterUtilES {
         queryFilterEnhancer.extractFilters(
             context.getDecisionFilters(), EvaluationDateFilterDto.class);
 
-    final BoolQueryBuilder limitFilterQuery =
+    final BoolQuery.Builder limitFilterQuery =
         createFilterBoolQueryBuilder(
             evaluationDateFilter,
             queryFilterEnhancer.getEvaluationDateQueryFilter(),
@@ -73,8 +74,8 @@ public class DateHistogramFilterUtilES {
     return limitFilterQuery;
   }
 
-  public static BoolQueryBuilder extendBoundsAndCreateProcessDateHistogramLimitingFilterFor(
-      final DateHistogramAggregationBuilder dateHistogramAggregation,
+  public static BoolQuery.Builder extendBoundsAndCreateProcessDateHistogramLimitingFilterFor(
+      final DateHistogramAggregation.Builder dateHistogramAggregation,
       final DateAggregationContextES context,
       final DateTimeFormatter dateTimeFormatter) {
     if (context.isStartDateAggregation()) {
@@ -86,8 +87,8 @@ public class DateHistogramFilterUtilES {
     }
   }
 
-  private static BoolQueryBuilder extendBoundsAndCreateProcessStartDateHistogramLimitingFilterFor(
-      final DateHistogramAggregationBuilder dateHistogramAggregation,
+  private static BoolQuery.Builder extendBoundsAndCreateProcessStartDateHistogramLimitingFilterFor(
+      final DateHistogramAggregation.Builder dateHistogramAggregation,
       final DateAggregationContextES context,
       final DateTimeFormatter dateTimeFormatter) {
 
@@ -102,7 +103,7 @@ public class DateHistogramFilterUtilES {
             context.getProcessFilters(), InstanceEndDateFilterDto.class);
 
     // if custom end filters and no startDateFilters are present, limit based on them
-    final BoolQueryBuilder limitFilterQuery;
+    final BoolQuery.Builder limitFilterQuery;
     if (!endDateFilters.isEmpty() && startDateFilters.isEmpty()) {
       limitFilterQuery =
           createFilterBoolQueryBuilder(
@@ -123,8 +124,8 @@ public class DateHistogramFilterUtilES {
     return limitFilterQuery;
   }
 
-  private static BoolQueryBuilder extendBoundsAndCreateProcessEndDateHistogramLimitingFilterFor(
-      final DateHistogramAggregationBuilder dateHistogramAggregation,
+  private static BoolQuery.Builder extendBoundsAndCreateProcessEndDateHistogramLimitingFilterFor(
+      final DateHistogramAggregation.Builder dateHistogramAggregation,
       final DateAggregationContextES context,
       final DateTimeFormatter dateTimeFormatter) {
 
@@ -139,7 +140,7 @@ public class DateHistogramFilterUtilES {
             context.getProcessFilters(), InstanceEndDateFilterDto.class);
 
     // if custom start filters and no endDateFilters are present, limit based on them
-    final BoolQueryBuilder limitFilterQuery;
+    final BoolQuery.Builder limitFilterQuery;
     if (endDateFilters.isEmpty() && !startDateFilters.isEmpty()) {
       limitFilterQuery =
           createFilterBoolQueryBuilder(
@@ -163,16 +164,16 @@ public class DateHistogramFilterUtilES {
     return limitFilterQuery;
   }
 
-  public static BoolQueryBuilder createFilterBoolQueryBuilder(
+  public static BoolQuery.Builder createFilterBoolQueryBuilder(
       final List<DateFilterDataDto<?>> filters,
       final QueryFilterES<DateFilterDataDto<?>> queryFilter,
       final FilterContext filterContext) {
-    final BoolQueryBuilder limitFilterQuery = boolQuery();
+    final BoolQuery.Builder limitFilterQuery = new BoolQuery.Builder();
     queryFilter.addFilters(limitFilterQuery, filters, filterContext);
     return limitFilterQuery;
   }
 
-  private static Optional<LongBounds> getExtendedBoundsFromDateFilters(
+  private static Optional<ExtendedBounds<FieldDateMath>> getExtendedBoundsFromDateFilters(
       final List<DateFilterDataDto<?>> dateFilters,
       final DateTimeFormatter dateFormatter,
       final DateAggregationContextES context) {
@@ -181,8 +182,25 @@ public class DateHistogramFilterUtilES {
     final OffsetDateTime filterEnd = getMaxDateFilterOffsetDateTime(dateFilters);
     return filterStart.map(
         start ->
-            new LongBounds(
-                dateFormatter.format(start.atZoneSameInstant(context.getTimezone())),
-                dateFormatter.format(filterEnd.atZoneSameInstant(context.getTimezone()))));
+            ExtendedBounds.of(
+                e ->
+                    e.min(
+                            FieldDateMath.of(
+                                f ->
+                                    f.value(
+                                        (double)
+                                            start
+                                                .atZoneSameInstant(context.getTimezone())
+                                                .toInstant()
+                                                .toEpochMilli())))
+                        .max(
+                            FieldDateMath.of(
+                                f ->
+                                    f.value(
+                                        (double)
+                                            filterEnd
+                                                .atZoneSameInstant(context.getTimezone())
+                                                .toInstant()
+                                                .toEpochMilli())))));
   }
 }

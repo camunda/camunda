@@ -7,16 +7,11 @@
  */
 package io.camunda.optimize.upgrade.es.index;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_DATE;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_LONG;
 import static io.camunda.optimize.service.db.DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME;
 
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import io.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -35,24 +30,12 @@ public abstract class UpdateLogEntryIndex<TBuilder> extends DefaultIndexMappingC
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return xContentBuilder
-        .startObject(UpgradeStepLogEntryDto.Fields.indexName)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(UpgradeStepLogEntryDto.Fields.optimizeVersion)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(UpgradeStepLogEntryDto.Fields.stepType)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(UpgradeStepLogEntryDto.Fields.stepNumber)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
-        .endObject()
-        .startObject(UpgradeStepLogEntryDto.Fields.appliedDate)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .endObject();
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+    return builder
+        .properties(UpgradeStepLogEntryDto.Fields.indexName, p -> p.keyword(k -> k))
+        .properties(UpgradeStepLogEntryDto.Fields.optimizeVersion, p -> p.keyword(k -> k))
+        .properties(UpgradeStepLogEntryDto.Fields.stepType, p -> p.keyword(k -> k))
+        .properties(UpgradeStepLogEntryDto.Fields.stepNumber, p -> p.long_(k -> k))
+        .properties(UpgradeStepLogEntryDto.Fields.appliedDate, p -> p.date(k -> k));
   }
 }

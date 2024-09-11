@@ -9,23 +9,26 @@ package io.camunda.optimize.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.ErrorCause;
+import co.elastic.clients.elasticsearch._types.ErrorResponse;
+import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
+import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import io.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -36,7 +39,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class OptimizeElasticsearchClientTest {
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Mock.Strictness.LENIENT)
-  private RestHighLevelClient highLevelRestClient;
+  private ElasticsearchClient elasticsearchClient;
+
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Mock.Strictness.LENIENT)
+  private ElasticsearchIndicesClient elasticsearchIndicesClient;
+
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Mock.Strictness.LENIENT)
+  private RestClient restClient;
 
   @Mock private OptimizeIndexNameService indexNameService;
   @Mock private ObjectMapper objectMapper;
@@ -46,20 +55,19 @@ public class OptimizeElasticsearchClientTest {
   @Test
   public void indexDeleteIsRetriedOnPendingSnapshot() throws IOException, InterruptedException {
     // given
-    RequestOptionsProvider requestOptionsProvider = new RequestOptionsProvider();
     underTest =
-        new OptimizeElasticsearchClient(
-            highLevelRestClient, indexNameService, requestOptionsProvider, objectMapper);
+        spy(
+            new OptimizeElasticsearchClient(
+                restClient, objectMapper, elasticsearchClient, indexNameService));
     underTest.setSnapshotInProgressRetryDelaySeconds(1);
-    given(
-            highLevelRestClient
-                .indices()
-                .delete(
-                    any(DeleteIndexRequest.class), eq(requestOptionsProvider.getRequestOptions())))
+    when(underTest.esWithTransportOptions()).thenReturn(elasticsearchClient);
+    when(elasticsearchClient.indices()).thenReturn(elasticsearchIndicesClient);
+    given(elasticsearchClient.indices().delete(any(DeleteIndexRequest.class)))
         .willAnswer(
             invocation -> {
-              throw new ElasticsearchStatusException(
-                  "snapshot_in_progress_exception", RestStatus.BAD_REQUEST);
+              throw new ElasticsearchException(
+                  "snapshot_in_progress_exception",
+                  ErrorResponse.of(e -> e.error(ErrorCause.of(c -> c.reason("test"))).status(400)));
             });
 
     // when the delete operation is executed
@@ -67,21 +75,16 @@ public class OptimizeElasticsearchClientTest {
     deleteIndexTask.execute(() -> underTest.deleteIndexByRawIndexNames("index1"));
 
     // and hit the client which failed
-    verify(highLevelRestClient.indices(), timeout(100).atLeastOnce())
-        .delete(any(DeleteIndexRequest.class), eq(requestOptionsProvider.getRequestOptions()));
+    verify(elasticsearchClient.indices(), timeout(100).atLeastOnce())
+        .delete(any(DeleteIndexRequest.class));
     // then the delete operation is not completed
     assertThat(deleteIndexTask.isTerminated()).isFalse();
 
     // then it is retried and completes eventually
-    given(
-            highLevelRestClient
-                .indices()
-                .delete(
-                    any(DeleteIndexRequest.class), eq(requestOptionsProvider.getRequestOptions())))
-        .willReturn(null);
+    given(elasticsearchClient.indices().delete(any(DeleteIndexRequest.class))).willReturn(null);
 
-    verify(highLevelRestClient.indices(), timeout(2000).atLeast(2))
-        .delete(any(DeleteIndexRequest.class), eq(requestOptionsProvider.getRequestOptions()));
+    verify(elasticsearchClient.indices(), timeout(2000).atLeast(2))
+        .delete(any(DeleteIndexRequest.class));
 
     // then the delete operation is completed
     deleteIndexTask.shutdown();

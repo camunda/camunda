@@ -7,16 +7,14 @@
  */
 package io.camunda.optimize.service.db.es.filter;
 
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.MultipleVariableFilterDataDto;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -29,27 +27,36 @@ public class ProcessMultiVariableQueryFilterES extends AbstractProcessVariableQu
 
   @Override
   public void addFilters(
-      final BoolQueryBuilder query,
+      final BoolQuery.Builder query,
       final List<MultipleVariableFilterDataDto> multiVariableFilters,
       final FilterContext filterContext) {
     if (multiVariableFilters != null) {
-      List<QueryBuilder> filters = query.filter();
-      for (MultipleVariableFilterDataDto multiVariableFilter : multiVariableFilters) {
-        filters.add(buildMultiVariableFilterQuery(multiVariableFilter, filterContext));
-      }
+      query.filter(
+          multiVariableFilters.stream()
+              .map(
+                  multiVariableFilter ->
+                      buildMultiVariableFilterQuery(multiVariableFilter, filterContext).build())
+              .toList());
     }
   }
 
-  private QueryBuilder buildMultiVariableFilterQuery(
+  private Query.Builder buildMultiVariableFilterQuery(
       final MultipleVariableFilterDataDto multipleVariableFilter,
       final FilterContext filterContext) {
-    final BoolQueryBuilder variableFilterBuilder = boolQuery();
-    multipleVariableFilter
-        .getData()
-        .forEach(
-            variableFilter ->
-                variableFilterBuilder.should(
-                    createFilterQueryBuilder(variableFilter, filterContext.getTimezone())));
+    Query.Builder variableFilterBuilder = new Query.Builder();
+
+    variableFilterBuilder.bool(
+        b -> {
+          multipleVariableFilter
+              .getData()
+              .forEach(
+                  variableFilter ->
+                      b.should(
+                          createFilterQueryBuilder(variableFilter, filterContext.getTimezone())
+                              .build()));
+          return b;
+        });
+
     return variableFilterBuilder;
   }
 }

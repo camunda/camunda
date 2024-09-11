@@ -8,7 +8,7 @@
 package io.camunda.optimize.service.db.es.report.interpreter.distributedby.process;
 
 import static io.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
-import static io.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtilES.FILTER_LIMITED_AGGREGATION;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.FilterLimitedAggregationUtilES.FILTER_LIMITED_AGGREGATION;
 import static io.camunda.optimize.service.db.es.report.service.VariableAggregationServiceES.FILTERED_INSTANCE_COUNT_AGGREGATION;
 import static io.camunda.optimize.service.db.es.report.service.VariableAggregationServiceES.FILTERED_VARIABLES_AGGREGATION;
 import static io.camunda.optimize.service.db.es.report.service.VariableAggregationServiceES.MISSING_VARIABLES_AGGREGATION;
@@ -25,14 +25,16 @@ import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNeste
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasNames;
 import static java.util.stream.Collectors.toSet;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.reverseNested;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.FilterAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketAggregateBase;
+import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
+import co.elastic.clients.elasticsearch._types.aggregations.NestedAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.VariableDistributedByDto;
@@ -46,7 +48,6 @@ import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,20 +57,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
-import org.elasticsearch.search.aggregations.bucket.nested.Nested;
-import org.elasticsearch.search.aggregations.bucket.nested.ParsedNested;
-import org.elasticsearch.search.aggregations.bucket.nested.ReverseNestedAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -96,14 +86,15 @@ public class ProcessDistributedByVariableInterpreterES
   }
 
   @Override
-  public List<AggregationBuilder> createAggregations(
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final QueryBuilder baseQueryBuilder) {
-    final ReverseNestedAggregationBuilder reverseNestedInstanceAggregation =
-        reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION);
-    viewInterpreter
+      BoolQuery baseQueryBuilder) {
+    Aggregation.Builder.ContainerBuilder rnBuilder =
+        new Aggregation.Builder().reverseNested(r -> r);
+
+    getViewInterpreter()
         .createAggregations(context)
-        .forEach(reverseNestedInstanceAggregation::subAggregation);
+        .forEach((k, v) -> rnBuilder.aggregations(k, v.build()));
     final VariableAggregationContextES varAggContext =
         VariableAggregationContextES.builder()
             .variableName(getVariableName(context))
@@ -118,83 +109,140 @@ public class ProcessDistributedByVariableInterpreterES
                 context.getReportData().getConfiguration().getDistributeByCustomBucket())
             .dateUnit(getDistributeByDateUnit(context))
             .baseQueryForMinMaxStats(baseQueryBuilder)
-            .subAggregations(List.of(reverseNestedInstanceAggregation))
+            .subAggregations(Map.of(VARIABLES_INSTANCE_COUNT_AGGREGATION, rnBuilder))
             .combinedRangeMinMaxStats(context.getCombinedRangeMinMaxStats().orElse(null))
             .filterContext(context.getFilterContext())
             .build();
 
-    final Optional<AggregationBuilder> variableSubAggregation =
+    final Optional<Map<String, Aggregation.Builder.ContainerBuilder>> variableSubAggregation =
         variableAggregationService.createVariableSubAggregation(varAggContext);
 
     if (variableSubAggregation.isEmpty()) {
       // if the report contains no instances and is distributed by date variable, this agg will not
       // be present
       // as it is based on instance data
-      return viewInterpreter.createAggregations(context);
+      return getViewInterpreter().createAggregations(context);
     }
 
     // Add a parent match all filter agg to be able to retrieve all undefined/null variables as a
     // sibling aggregation
     // to the nested existing variable filter
-    return List.of(
-        filter(PARENT_FILTER_AGGREGATION, matchAllQuery())
-            .subAggregation(createUndefinedOrNullVariableAggregation(context))
-            .subAggregation(
-                nested(NESTED_VARIABLE_AGGREGATION, VARIABLES)
-                    .subAggregation(
-                        filter(
-                                FILTERED_VARIABLES_AGGREGATION,
-                                boolQuery()
-                                    .must(
-                                        termQuery(
-                                            getNestedVariableNameField(), getVariableName(context)))
-                                    .must(
-                                        termQuery(
-                                            getNestedVariableTypeField(),
-                                            getVariableType(context).getId()))
-                                    .must(
-                                        existsQuery(
-                                            getNestedVariableValueFieldLabel(VariableType.STRING))))
-                            .subAggregation(variableSubAggregation.get())
-                            .subAggregation(reverseNested(FILTERED_INSTANCE_COUNT_AGGREGATION)))));
+
+    Map<String, Aggregation.Builder.ContainerBuilder> undefinedOrNullVariableAggregation =
+        createUndefinedOrNullVariableAggregation(context);
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder().filter(f -> f.matchAll(m -> m));
+    undefinedOrNullVariableAggregation.forEach((k, v) -> builder.aggregations(k, v.build()));
+    builder.aggregations(
+        NESTED_VARIABLE_AGGREGATION,
+        Aggregation.of(
+            a ->
+                a.nested(n -> n.path(VARIABLES))
+                    .aggregations(
+                        FILTERED_VARIABLES_AGGREGATION,
+                        Aggregation.of(
+                            aa ->
+                                aa.filter(
+                                        f ->
+                                            f.bool(
+                                                b ->
+                                                    b.must(
+                                                            m ->
+                                                                m.term(
+                                                                    t ->
+                                                                        t.field(
+                                                                                getNestedVariableNameField())
+                                                                            .value(
+                                                                                getVariableName(
+                                                                                    context))))
+                                                        .must(
+                                                            m ->
+                                                                m.term(
+                                                                    t ->
+                                                                        t.field(
+                                                                                getNestedVariableTypeField())
+                                                                            .value(
+                                                                                getVariableType(
+                                                                                        context)
+                                                                                    .getId())))
+                                                        .must(
+                                                            m ->
+                                                                m.exists(
+                                                                    e ->
+                                                                        e.field(
+                                                                            getNestedVariableValueFieldLabel(
+                                                                                VariableType
+                                                                                    .STRING))))))
+                                    .aggregations(
+                                        variableSubAggregation.get().entrySet().stream()
+                                            .collect(
+                                                Collectors.toMap(
+                                                    Map.Entry::getKey, e -> e.getValue().build())))
+                                    .aggregations(
+                                        FILTERED_INSTANCE_COUNT_AGGREGATION,
+                                        Aggregation.of(aaa -> aaa.reverseNested(r -> r)))))));
+    return Map.of(PARENT_FILTER_AGGREGATION, builder);
+  }
+
+  private Map<String, Aggregation.Builder.ContainerBuilder>
+      createUndefinedOrNullVariableAggregation(
+          final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder()
+            .filter(
+                f ->
+                    f.bool(
+                        createFilterForUndefinedOrNullQueryBuilder(
+                                getVariableName(context), getVariableType(context))
+                            .build()));
+    getViewInterpreter()
+        .createAggregations(context)
+        .forEach((k, v) -> builder.aggregations(k, v.build()));
+    return Map.of(MISSING_VARIABLES_AGGREGATION, builder);
   }
 
   @Override
-  public List<DistributedByResult> retrieveResult(
-      SearchResponse response,
-      Aggregations aggregations,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final ParsedFilter parentFilterAgg = aggregations.get(PARENT_FILTER_AGGREGATION);
+  public List<CompositeCommandResult.DistributedByResult> retrieveResult(
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggregations,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    final Aggregate parentFilterAgg = aggregations.get(PARENT_FILTER_AGGREGATION);
     if (parentFilterAgg == null) {
       // could not create aggregations, e.g. because baseline is invalid
       return Collections.emptyList();
     }
 
-    final Nested nested = parentFilterAgg.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
-    final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
-    Filter filteredParentAgg = filteredVariables.getAggregations().get(FILTER_LIMITED_AGGREGATION);
+    final NestedAggregate nested =
+        parentFilterAgg.filter().aggregations().get(NESTED_VARIABLE_AGGREGATION).nested();
+    final FilterAggregate filteredVariables =
+        nested.aggregations().get(FILTERED_VARIABLES_AGGREGATION).filter();
+    Aggregate filteredParentAgg = filteredVariables.aggregations().get(FILTER_LIMITED_AGGREGATION);
     if (filteredParentAgg == null) {
-      filteredParentAgg = filteredVariables;
+      filteredParentAgg = nested.aggregations().get(FILTERED_VARIABLES_AGGREGATION);
     }
-    MultiBucketsAggregation variableTerms =
-        filteredParentAgg.getAggregations().get(VARIABLES_AGGREGATION);
+    Aggregate variableTerms = filteredParentAgg.filter().aggregations().get(VARIABLES_AGGREGATION);
     if (variableTerms == null) {
-      variableTerms = filteredParentAgg.getAggregations().get(VARIABLE_HISTOGRAM_AGGREGATION);
+      variableTerms = filteredParentAgg.filter().aggregations().get(VARIABLE_HISTOGRAM_AGGREGATION);
     }
 
-    Map<String, Aggregations> bucketAggregations =
+    Map<String, Map<String, Aggregate>> bucketAggregations =
         variableAggregationService.retrieveResultBucketMap(
-            filteredParentAgg, variableTerms, getVariableType(context), context.getTimezone());
+            filteredParentAgg.filter(),
+            variableTerms,
+            getVariableType(context),
+            context.getTimezone());
 
     List<CompositeCommandResult.DistributedByResult> distributedByResults = new ArrayList<>();
 
-    for (Map.Entry<String, Aggregations> keyToAggregationEntry : bucketAggregations.entrySet()) {
+    for (Map.Entry<String, Map<String, Aggregate>> keyToAggregationEntry :
+        bucketAggregations.entrySet()) {
       final CompositeCommandResult.ViewResult viewResult =
-          viewInterpreter.retrieveResult(
-              response,
-              variableAggregationService.retrieveSubAggregationFromBucketMapEntry(
-                  keyToAggregationEntry),
-              context);
+          getViewInterpreter()
+              .retrieveResult(
+                  response,
+                  variableAggregationService.retrieveSubAggregationFromBucketMapEntry(
+                      keyToAggregationEntry),
+                  context);
       distributedByResults.add(
           createDistributedByResult(keyToAggregationEntry.getKey(), null, viewResult));
     }
@@ -208,8 +256,8 @@ public class ProcessDistributedByVariableInterpreterES
   @Override
   public void enrichContextWithAllExpectedDistributedByKeys(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final Aggregations aggregations) {
-    final ParsedFilter parentFilterAgg = aggregations.get(PARENT_FILTER_AGGREGATION);
+      final Map<String, Aggregate> aggregations) {
+    final Aggregate parentFilterAgg = aggregations.get(PARENT_FILTER_AGGREGATION);
     if (parentFilterAgg == null) {
       // there are no distributedBy keys
       context.setAllDistributedByKeysAndLabels(new HashMap<>());
@@ -220,51 +268,42 @@ public class ProcessDistributedByVariableInterpreterES
     final VariableType type = getVariableType(context);
     if (!VariableType.getNumericTypes().contains(type)) {
       // missing distrBy keys evaluation only required if it's not a range (number var) aggregation
-      final ParsedNested nestedAgg =
-          parentFilterAgg.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
-      final ParsedFilter filteredVarAgg =
-          nestedAgg.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
+      final NestedAggregate nestedAgg =
+          parentFilterAgg.filter().aggregations().get(NESTED_VARIABLE_AGGREGATION).nested();
+      final FilterAggregate filteredVarAgg =
+          nestedAgg.aggregations().get(FILTERED_VARIABLES_AGGREGATION).filter();
       if (VariableType.DATE.equals(type)) {
-        final ParsedFilter filterLimitedAgg =
-            filteredVarAgg.getAggregations().get(FILTER_LIMITED_AGGREGATION);
+        final Aggregate filterLimitedAgg =
+            filteredVarAgg.aggregations().get(FILTER_LIMITED_AGGREGATION);
         allDistributedByKeys =
             dateAggregationService
                 .mapDateAggregationsToKeyAggregationMap(
-                    filterLimitedAgg == null
-                        ? filteredVarAgg.getAggregations()
-                        : filterLimitedAgg.getAggregations(),
-                    context.getTimezone(),
-                    VARIABLES_AGGREGATION)
+                    (MultiBucketAggregateBase<? extends MultiBucketBase>)
+                        (filterLimitedAgg == null
+                            ? filteredVarAgg.aggregations().get(VARIABLES_AGGREGATION)._get()
+                            : filterLimitedAgg
+                                .filter()
+                                .aggregations()
+                                .get(VARIABLES_AGGREGATION)
+                                ._get()),
+                    context.getTimezone())
                 .keySet();
       } else {
-        final ParsedStringTerms varNamesAgg =
-            filteredVarAgg.getAggregations().get(VARIABLES_AGGREGATION);
+        final StringTermsAggregate varNamesAgg =
+            filteredVarAgg.aggregations().get(VARIABLES_AGGREGATION).sterms();
         allDistributedByKeys =
-            varNamesAgg.getBuckets().stream()
-                .map(MultiBucketsAggregation.Bucket::getKeyAsString)
-                .collect(toSet());
+            varNamesAgg.buckets().array().stream().map(b -> b.key().stringValue()).collect(toSet());
       }
     }
 
-    final Filter missingVarAgg =
-        parentFilterAgg.getAggregations().get(MISSING_VARIABLES_AGGREGATION);
-    if (missingVarAgg.getDocCount() > 0) {
+    final FilterAggregate missingVarAgg =
+        parentFilterAgg.filter().aggregations().get(MISSING_VARIABLES_AGGREGATION).filter();
+    if (missingVarAgg.docCount() > 0) {
       // instances with missing value for the variable exist, so add an extra bucket for those
       allDistributedByKeys.add(MISSING_VARIABLE_KEY);
     }
 
     context.setAllDistributedByKeys(allDistributedByKeys);
-  }
-
-  private AggregationBuilder createUndefinedOrNullVariableAggregation(
-      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final FilterAggregationBuilder filterAggregationBuilder =
-        filter(
-            MISSING_VARIABLES_AGGREGATION,
-            createFilterForUndefinedOrNullQueryBuilder(
-                getVariableName(context), getVariableType(context)));
-    viewInterpreter.createAggregations(context).forEach(filterAggregationBuilder::subAggregation);
-    return filterAggregationBuilder;
   }
 
   private void addEmptyMissingDistributedByResults(
@@ -279,31 +318,35 @@ public class ProcessDistributedByVariableInterpreterES
         .map(
             entry ->
                 createDistributedByResult(
-                    entry.getKey(), entry.getValue(), viewInterpreter.createEmptyResult(context)))
+                    entry.getKey(),
+                    entry.getValue(),
+                    getViewInterpreter().createEmptyResult(context)))
         .forEach(distributedByResults::add);
   }
 
   private void addMissingVariableBuckets(
       final List<CompositeCommandResult.DistributedByResult> distributedByResults,
-      final SearchResponse response,
-      final Aggregations aggregations,
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggregations,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final ParsedFilter parentFilterAgg = aggregations.get(PARENT_FILTER_AGGREGATION);
-    final Filter missingVarAgg =
-        parentFilterAgg.getAggregations().get(MISSING_VARIABLES_AGGREGATION);
+    final FilterAggregate parentFilterAgg = aggregations.get(PARENT_FILTER_AGGREGATION).filter();
+    final FilterAggregate missingVarAgg =
+        parentFilterAgg.aggregations().get(MISSING_VARIABLES_AGGREGATION).filter();
 
-    if (missingVarAgg.getDocCount() > 0) {
+    if (missingVarAgg.docCount() > 0) {
       final CompositeCommandResult.ViewResult viewResult =
-          viewInterpreter.retrieveResult(response, missingVarAgg.getAggregations(), context);
+          getViewInterpreter().retrieveResult(response, missingVarAgg.aggregations(), context);
       distributedByResults.add(createDistributedByResult(MISSING_VARIABLE_KEY, null, viewResult));
     }
   }
 
-  private String getVariableName(final ExecutionContext<ProcessReportDataDto, ?> context) {
+  private String getVariableName(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return getVariableDistributedByValueDto(context).getName();
   }
 
-  private VariableType getVariableType(final ExecutionContext<ProcessReportDataDto, ?> context) {
+  private VariableType getVariableType(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return getVariableDistributedByValueDto(context).getType();
   }
 
@@ -312,12 +355,12 @@ public class ProcessDistributedByVariableInterpreterES
   }
 
   private VariableDistributedByValueDto getVariableDistributedByValueDto(
-      final ExecutionContext<ProcessReportDataDto, ?> context) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return ((VariableDistributedByDto) context.getReportData().getDistributedBy()).getValue();
   }
 
   private AggregateByDateUnit getDistributeByDateUnit(
-      final ExecutionContext<ProcessReportDataDto, ?> context) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return context.getReportData().getConfiguration().getDistributeByDateVariableUnit();
   }
 }

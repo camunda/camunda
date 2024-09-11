@@ -10,6 +10,9 @@ package io.camunda.optimize.service.db.es.report.interpreter.groupby.decision;
 import static io.camunda.optimize.service.db.report.plan.decision.DecisionGroupBy.DECISION_GROUP_BY_NONE;
 import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.decision.DecisionDistributedByNoneInterpreterES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.decision.DecisionViewInterpreterFacadeES;
@@ -20,14 +23,12 @@ import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -39,24 +40,22 @@ public class DecisionGroupByNoneInterpreterES extends AbstractDecisionGroupByInt
   @Getter private final DecisionViewInterpreterFacadeES viewInterpreter;
 
   @Override
-  public List<AggregationBuilder> createAggregation(
-      final SearchSourceBuilder searchSourceBuilder,
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
+      final BoolQuery boolQuery,
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     // nothing to do here, since we don't group so just pass the view part on
-    return distributedByInterpreter
-        .createAggregations(context, searchSourceBuilder.query())
-        .stream()
-        .filter(Objects::nonNull)
-        .collect(Collectors.toList());
+    return distributedByInterpreter.createAggregations(context, boolQuery).entrySet().stream()
+        .filter(e -> Objects.nonNull(e.getValue()))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   @Override
   public void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
-      final SearchResponse response,
+      final ResponseBody<?> response,
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     final List<DistributedByResult> distributions =
-        distributedByInterpreter.retrieveResult(response, response.getAggregations(), context);
+        distributedByInterpreter.retrieveResult(response, response.aggregations(), context);
     GroupByResult groupByResult = GroupByResult.createGroupByNone(distributions);
     compositeCommandResult.setGroup(groupByResult);
   }

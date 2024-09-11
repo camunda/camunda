@@ -8,13 +8,11 @@
 package io.camunda.optimize.service.schema.type;
 
 import static io.camunda.optimize.service.db.schema.index.MetadataIndex.SCHEMA_VERSION;
-import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
-import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 @Slf4j
 public abstract class MyUpdatedEventIndex<TBuilder> implements IndexMappingCreator<TBuilder> {
@@ -32,28 +30,10 @@ public abstract class MyUpdatedEventIndex<TBuilder> implements IndexMappingCreat
   }
 
   @Override
-  public XContentBuilder getSource() {
-    XContentBuilder source = null;
-    try {
-      // @formatter:off
-      XContentBuilder content =
-          jsonBuilder()
-              .startObject()
-              .startObject("properties")
-              .startObject(SCHEMA_VERSION)
-              .field("type", "keyword")
-              .endObject()
-              .startObject(MY_NEW_FIELD)
-              .field("type", "keyword")
-              .endObject()
-              .endObject()
-              .endObject();
-      source = content;
-      // @formatter:on
-    } catch (IOException e) {
-      String message = "Could not add mapping for type '" + getIndexName() + "'!";
-      log.error(message, e);
-    }
-    return source;
+  public TypeMapping getSource() {
+    return TypeMapping.of(
+        t ->
+            t.properties(SCHEMA_VERSION, p -> p.keyword(k -> k))
+                .properties(MY_NEW_FIELD, p -> p.keyword(k -> k)));
   }
 }

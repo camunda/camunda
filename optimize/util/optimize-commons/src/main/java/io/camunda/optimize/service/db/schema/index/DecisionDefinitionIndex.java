@@ -7,11 +7,8 @@
  */
 package io.camunda.optimize.service.db.schema.index;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
-
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.service.db.DatabaseConstants;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class DecisionDefinitionIndex<TBuilder> extends AbstractDefinitionIndex<TBuilder> {
 
@@ -38,20 +35,12 @@ public abstract class DecisionDefinitionIndex<TBuilder> extends AbstractDefiniti
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return super.addProperties(xContentBuilder)
-        .startObject(INPUT_VARIABLE_NAMES)
-        .field(MAPPING_ENABLED_SETTING, "false")
-        .endObject()
-        .startObject(OUTPUT_VARIABLE_NAMES)
-        .field(MAPPING_ENABLED_SETTING, "false")
-        .endObject()
-        .startObject(DECISION_DEFINITION_XML)
-        .field("type", "text")
-        .field("index", true)
-        .field("analyzer", "is_present_analyzer")
-        .endObject();
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+    return super.addProperties(builder)
+        .properties(INPUT_VARIABLE_NAMES, p -> p.object(o -> o.enabled(false)))
+        .properties(OUTPUT_VARIABLE_NAMES, p -> p.object(o -> o.enabled(false)))
+        .properties(
+            DECISION_DEFINITION_XML,
+            p -> p.text(o -> o.index(true).analyzer("is_present_analyzer")));
   }
 }

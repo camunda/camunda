@@ -7,10 +7,9 @@
  */
 package io.camunda.optimize.service.db.schema.index;
 
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class ReportShareIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -33,35 +32,16 @@ public abstract class ReportShareIndex<TBuilder> extends DefaultIndexMappingCrea
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    XContentBuilder newBuilder =
-        xContentBuilder
-            .startObject(ID)
-            .field("type", "keyword")
-            .endObject()
-            .startObject(POSITION)
-            .field("type", "nested")
-            .startObject("properties");
-    addNestedPositionField(newBuilder)
-        .endObject()
-        .endObject()
-        .startObject(REPORT_ID)
-        .field("type", "keyword")
-        .endObject();
-    // @formatter:on
-    return newBuilder;
-  }
-
-  private XContentBuilder addNestedPositionField(XContentBuilder builder) throws IOException {
-    // @formatter:off
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
     return builder
-        .startObject(X_POSITION)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(Y_POSITION)
-        .field("type", "keyword")
-        .endObject();
-    // @formatter:on
+        .properties(ID, p -> p.keyword(k -> k))
+        .properties(
+            POSITION,
+            p ->
+                p.nested(
+                    n ->
+                        n.properties(X_POSITION, p2 -> p2.keyword(k -> k))
+                            .properties(Y_POSITION, p2 -> p2.keyword(k -> k))))
+        .properties(REPORT_ID, p -> p.keyword(k -> k));
   }
 }

@@ -9,10 +9,9 @@ package io.camunda.optimize.service.db.schema.index;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class TerminatedUserSessionIndex<TBuilder>
     extends DefaultIndexMappingCreator<TBuilder> {
@@ -23,17 +22,11 @@ public abstract class TerminatedUserSessionIndex<TBuilder>
   public static final String TERMINATION_TIMESTAMP = "terminationTimestamp";
 
   @Override
-  public XContentBuilder addProperties(final XContentBuilder builder) throws IOException {
-    // @formatter:off
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+
     return builder
-        .startObject(ID)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(TERMINATION_TIMESTAMP)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-        .endObject();
-    // @formatter:on
+        .properties(ID, p -> p.keyword(k -> k))
+        .properties(TERMINATION_TIMESTAMP, p -> p.date(d -> d.format(OPTIMIZE_DATE_FORMAT)));
   }
 
   @Override

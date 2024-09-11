@@ -9,12 +9,12 @@ package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.dat
 
 import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES.createModelElementAggregationFilter;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.report.ExecutionContext;
-import org.elasticsearch.index.query.QueryBuilder;
 
 public abstract class AbstractProcessGroupByFlowNodeDateInterpreterES
     extends AbstractProcessGroupByModelElementDateInterpreterES {
@@ -22,14 +22,15 @@ public abstract class AbstractProcessGroupByFlowNodeDateInterpreterES
   protected abstract DefinitionService getDefinitionService();
 
   @Override
-  protected QueryBuilder getFilterQuery(final ExecutionContext<ProcessReportDataDto, ?> context) {
+  protected BoolQuery.Builder getFilterBoolQueryBuilder(
+      final ExecutionContext<ProcessReportDataDto, ?> context) {
     return createModelElementAggregationFilter(
         context.getReportData(), context.getFilterContext(), getDefinitionService());
   }
 
   @Override
-  protected QueryBuilder getModelElementTypeFilterQuery() {
-    return matchAllQuery();
+  protected Query getModelElementTypeFilterQuery() {
+    return Query.of(q -> q.matchAll(m -> m));
   }
 
   @Override

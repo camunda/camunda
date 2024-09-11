@@ -9,8 +9,11 @@ package io.camunda.optimize.service.db.es.report.interpreter.view.decision;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
 import static io.camunda.optimize.service.db.report.plan.decision.DecisionView.DECISION_VIEW_INSTANCE_FREQUENCY;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.FilterAggregate;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.decision.DecisionExecutionPlan;
@@ -18,14 +21,8 @@ import io.camunda.optimize.service.db.report.plan.decision.DecisionView;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import java.util.Collections;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -38,18 +35,19 @@ public class DecisionViewInstanceFrequencyInterpreterES implements DecisionViewI
   }
 
   @Override
-  public List<AggregationBuilder> createAggregations(
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
-    return Collections.singletonList(filter(FREQUENCY_AGGREGATION, QueryBuilders.matchAllQuery()));
+    Aggregation.Builder builder = new Aggregation.Builder();
+    return Map.of(FREQUENCY_AGGREGATION, builder.filter(f -> f.matchAll(m -> m)));
   }
 
   @Override
   public ViewResult retrieveResult(
-      final SearchResponse response,
-      final Aggregations aggs,
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggs,
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
-    final Filter count = aggs.get(FREQUENCY_AGGREGATION);
-    return createViewResult(count.getDocCount());
+    final FilterAggregate count = aggs.get(FREQUENCY_AGGREGATION).filter();
+    return createViewResult(count.docCount());
   }
 
   @Override

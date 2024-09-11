@@ -7,33 +7,34 @@
  */
 package io.camunda.optimize.service.db.es.reader;
 
+import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
+import co.elastic.clients.elasticsearch.core.ClearScrollResponse;
+import co.elastic.clients.elasticsearch.core.MgetResponse;
+import co.elastic.clients.elasticsearch.core.ScrollRequest;
+import co.elastic.clients.elasticsearch.core.ScrollResponse;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.PageResultDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.get.MultiGetResponse;
-import org.elasticsearch.action.search.ClearScrollRequest;
-import org.elasticsearch.action.search.ClearScrollResponse;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.core.TimeValue;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ElasticsearchReaderUtil {
 
   public static <T> List<T> retrieveAllScrollResults(
-      final SearchResponse initialScrollResponse,
+      final SearchResponse<T> initialScrollResponse,
       final Class<T> itemClass,
       final ObjectMapper objectMapper,
       final OptimizeElasticsearchClient esClient,
@@ -48,9 +49,9 @@ public class ElasticsearchReaderUtil {
   }
 
   public static <T> List<T> retrieveAllScrollResults(
-      final SearchResponse initialScrollResponse,
+      final SearchResponse<?> initialScrollResponse,
       final Class<T> itemClass,
-      final Function<SearchHit, T> mappingFunction,
+      final Function<Hit<?>, T> mappingFunction,
       final OptimizeElasticsearchClient esClient,
       final Integer scrollingTimeoutInSeconds) {
     return retrieveScrollResultsTillLimit(
@@ -63,31 +64,44 @@ public class ElasticsearchReaderUtil {
   }
 
   public static <T> List<T> retrieveScrollResultsTillLimit(
-      final SearchResponse initialScrollResponse,
+      final ResponseBody<?> initialScrollResponse,
       final Class<T> itemClass,
       final ObjectMapper objectMapper,
       final OptimizeElasticsearchClient esClient,
       final Integer scrollingTimeoutInSeconds,
       final Integer limit) {
-    Function<SearchHit, T> mappingFunction =
-        hit -> {
-          final String sourceAsString = hit.getSourceAsString();
-          try {
-            return objectMapper.readValue(sourceAsString, itemClass);
-          } catch (IOException e) {
-            final String reason =
-                "While mapping search results to class {} "
-                    + "it was not possible to deserialize a hit from Elasticsearch!"
-                    + " Hit response from Elasticsearch: "
-                    + sourceAsString;
-            log.error(reason, itemClass.getSimpleName(), e);
-            throw new OptimizeRuntimeException(reason);
-          }
-        };
     return retrieveScrollResultsTillLimit(
         initialScrollResponse,
         itemClass,
-        mappingFunction,
+        objectMapper,
+        esClient,
+        scrollingTimeoutInSeconds,
+        limit,
+        false);
+  }
+
+  public static <T> List<T> retrieveScrollResultsTillLimit(
+      final ResponseBody<?> initialScrollResponse,
+      final Class<T> itemClass,
+      final ObjectMapper objectMapper,
+      final OptimizeElasticsearchClient esClient,
+      final Integer scrollingTimeoutInSeconds,
+      final Integer limit,
+      final boolean agg) {
+    return retrieveScrollResultsTillLimit(
+        initialScrollResponse,
+        itemClass,
+        h -> {
+          if (agg) {
+            try {
+              return objectMapper.readValue(h.source().toString(), itemClass);
+            } catch (JsonProcessingException e) {
+              throw new RuntimeException(e);
+            }
+          } else {
+            return objectMapper.convertValue(h.source(), itemClass);
+          }
+        },
         esClient,
         scrollingTimeoutInSeconds,
         limit);
@@ -96,20 +110,20 @@ public class ElasticsearchReaderUtil {
   public static <T> PageResultDto<T> retrieveNextScrollResultsPage(
       final String scrollId,
       final Class<T> itemClass,
-      final Function<SearchHit, T> mappingFunction,
+      final Function<Hit<?>, T> mappingFunction,
       final OptimizeElasticsearchClient esClient,
       final Integer scrollingTimeoutInSeconds,
       final Integer limit) {
     final PageResultDto<T> pageResult = new PageResultDto<>(limit);
 
     String currentScrollId = scrollId;
-    SearchHits currentHits;
+    HitsMetadata<?> currentHits;
     do {
       if (pageResult.getEntities().size() < limit) {
-        final SearchResponse currentScrollResp =
+        final ScrollResponse<?> currentScrollResp =
             getScrollResponse(esClient, scrollingTimeoutInSeconds, currentScrollId);
-        currentScrollId = currentScrollResp.getScrollId();
-        currentHits = currentScrollResp.getHits();
+        currentScrollId = currentScrollResp.scrollId();
+        currentHits = currentScrollResp.hits();
         pageResult
             .getEntities()
             .addAll(
@@ -122,7 +136,7 @@ public class ElasticsearchReaderUtil {
       } else {
         currentHits = null;
       }
-    } while (currentHits != null && currentHits.getHits().length > 0);
+    } while (currentHits != null && !currentHits.hits().isEmpty());
 
     if (pageResult.getEntities().isEmpty() || pageResult.getEntities().size() < limit) {
       clearScroll(itemClass, esClient, currentScrollId);
@@ -132,16 +146,16 @@ public class ElasticsearchReaderUtil {
     return pageResult;
   }
 
-  private static SearchResponse getScrollResponse(
+  private static ScrollResponse<?> getScrollResponse(
       final OptimizeElasticsearchClient esClient,
       final Integer scrollingTimeoutInSeconds,
       final String scrollId) {
-    final SearchResponse currentScrollResp;
-    final SearchScrollRequest scrollRequest =
-        new SearchScrollRequest(scrollId)
-            .scroll(TimeValue.timeValueSeconds(scrollingTimeoutInSeconds));
+    final ScrollResponse<?> currentScrollResp;
+    final ScrollRequest scrollRequest =
+        ScrollRequest.of(
+            b -> b.scrollId(scrollId).scroll(s -> s.time(scrollingTimeoutInSeconds + "s")));
     try {
-      currentScrollResp = esClient.scroll(scrollRequest);
+      currentScrollResp = esClient.scroll(scrollRequest, Object.class);
     } catch (IOException e) {
       String reason =
           String.format(
@@ -153,27 +167,31 @@ public class ElasticsearchReaderUtil {
   }
 
   public static <T> List<T> retrieveScrollResultsTillLimit(
-      final SearchResponse initialScrollResponse,
+      final ResponseBody<?> initialScrollResponse,
       final Class<T> itemClass,
-      final Function<SearchHit, T> mappingFunction,
+      final Function<Hit<?>, T> mappingFunction,
       final OptimizeElasticsearchClient esClient,
       final Integer scrollingTimeoutInSeconds,
       final Integer limit) {
     final List<T> results = new ArrayList<>();
 
-    SearchResponse currentScrollResp = initialScrollResponse;
-    SearchHits hits = currentScrollResp.getHits();
+    ResponseBody<?> currentScrollResp = initialScrollResponse;
+    HitsMetadata<?> hits = currentScrollResp.hits();
 
-    while (hits != null && hits.getHits().length > 0) {
+    while (hits != null && !hits.hits().isEmpty()) {
       results.addAll(mapHits(hits, limit - results.size(), itemClass, mappingFunction));
 
       if (results.size() < limit) {
-        final SearchScrollRequest scrollRequest =
-            new SearchScrollRequest(currentScrollResp.getScrollId());
-        scrollRequest.scroll(TimeValue.timeValueSeconds(scrollingTimeoutInSeconds));
         try {
-          currentScrollResp = esClient.scroll(scrollRequest);
-          hits = currentScrollResp.getHits();
+          ResponseBody<?> finalCurrentScrollResp = currentScrollResp;
+          currentScrollResp =
+              esClient.scroll(
+                  ScrollRequest.of(
+                      s ->
+                          s.scrollId(finalCurrentScrollResp.scrollId())
+                              .scroll(o -> o.time(scrollingTimeoutInSeconds + "s"))),
+                  itemClass);
+          hits = currentScrollResp.hits();
         } catch (IOException e) {
           String reason =
               String.format(
@@ -185,60 +203,63 @@ public class ElasticsearchReaderUtil {
         hits = null;
       }
     }
-    clearScroll(itemClass, esClient, currentScrollResp.getScrollId());
+    clearScroll(itemClass, esClient, currentScrollResp.scrollId());
 
     return results;
   }
 
   private static <T> void clearScroll(
       final Class<T> itemClass, final OptimizeElasticsearchClient esClient, final String scrollId) {
-    try {
-      ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
-      clearScrollRequest.addScrollId(scrollId);
-      ClearScrollResponse clearScrollResponse = esClient.clearScroll(clearScrollRequest);
-      boolean succeeded = clearScrollResponse.isSucceeded();
-      if (!succeeded) {
-        String reason =
-            String.format(
-                "Could not clear scroll for class [%s], since Elasticsearch was unable to perform the action!",
-                itemClass.getSimpleName());
-        log.error(reason);
-      }
-    } catch (IOException e) {
+    ClearScrollResponse clearScrollResponse =
+        esClient.clearScroll(ClearScrollRequest.of(b -> b.scrollId(scrollId)));
+    boolean succeeded = clearScrollResponse.succeeded();
+    if (!succeeded) {
       String reason =
-          String.format("Could not close scroll for class [%s].", itemClass.getSimpleName());
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
+          String.format(
+              "Could not clear scroll for class [%s], since Elasticsearch was unable to perform the action!",
+              itemClass.getSimpleName());
+      log.error(reason);
     }
   }
 
   public static <T> List<T> mapHits(
-      final SearchHits searchHits, final Class<T> itemClass, final ObjectMapper objectMapper) {
-    Function<SearchHit, T> mappingFunction =
-        hit -> {
-          final String sourceAsString = hit.getSourceAsString();
-          try {
-            return objectMapper.readValue(sourceAsString, itemClass);
-          } catch (IOException e) {
-            final String reason =
-                "While mapping search results to class {} "
-                    + "it was not possible to deserialize a hit from Elasticsearch!"
-                    + " Hit response from Elasticsearch: "
-                    + sourceAsString;
-            log.error(reason, itemClass.getSimpleName(), e);
-            throw new OptimizeRuntimeException(reason);
-          }
-        };
-    return mapHits(searchHits, Integer.MAX_VALUE, itemClass, mappingFunction);
+      final HitsMetadata<?> searchHits, final Class<T> itemClass, final ObjectMapper objectMapper) {
+    return mapHits(searchHits, itemClass, objectMapper, false);
   }
 
   public static <T> List<T> mapHits(
-      final SearchHits searchHits,
+      final HitsMetadata<?> searchHits,
+      final Class<T> itemClass,
+      final ObjectMapper objectMapper,
+      boolean agg) {
+    return mapHits(
+        searchHits,
+        Integer.MAX_VALUE,
+        itemClass,
+        h -> {
+          if (itemClass.isInstance(h.source())) {
+            return itemClass.cast(h.source());
+          } else {
+            if (agg) {
+              try {
+                return objectMapper.readValue(h.source().toString(), itemClass);
+              } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+              }
+            } else {
+              return objectMapper.convertValue(h.source(), itemClass);
+            }
+          }
+        });
+  }
+
+  public static <T> List<T> mapHits(
+      final HitsMetadata<?> searchHits,
       final Integer resultLimit,
       final Class<T> itemClass,
-      final Function<SearchHit, T> mappingFunction) {
+      final Function<Hit<?>, T> mappingFunction) {
     final List<T> results = new ArrayList<>();
-    for (SearchHit hit : searchHits) {
+    for (Hit<?> hit : searchHits.hits()) {
       if (results.size() >= resultLimit) {
         break;
       }
@@ -257,8 +278,8 @@ public class ElasticsearchReaderUtil {
     return results;
   }
 
-  public static boolean atLeastOneResponseExistsForMultiGet(MultiGetResponse multiGetResponse) {
-    return Arrays.stream(multiGetResponse.getResponses())
-        .anyMatch(multiGetItemResponse -> multiGetItemResponse.getResponse().isExists());
+  public static <T> boolean atLeastOneResponseExistsForMultiGet(MgetResponse<T> multiGetResponse) {
+    return multiGetResponse.docs().stream()
+        .anyMatch(multiGetItemResponse -> multiGetItemResponse.result().found());
   }
 }

@@ -10,15 +10,14 @@ package io.camunda.optimize.service.db.es.writer;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeUpdateOperationBuilderES;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import java.util.Map;
 import lombok.AllArgsConstructor;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.script.Script;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
@@ -34,17 +33,17 @@ public abstract class AbstractProcessDefinitionWriterES {
   abstract Script createUpdateScript(ProcessDefinitionOptimizeDto processDefinitionDtos);
 
   public void addImportProcessDefinitionToRequest(
-      final BulkRequest bulkRequest, final ProcessDefinitionOptimizeDto processDefinitionDto) {
-    final Script updateScript = createUpdateScript(processDefinitionDto);
-
-    final UpdateRequest updateRequest =
-        new UpdateRequest()
-            .index(PROCESS_DEFINITION_INDEX_NAME)
-            .id(processDefinitionDto.getId())
-            .script(updateScript)
-            .upsert(objectMapper.convertValue(processDefinitionDto, Map.class))
-            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-    bulkRequest.add(updateRequest);
+      final BulkRequest.Builder bulkRequestBuilder,
+      final ProcessDefinitionOptimizeDto processDefinitionDto) {
+    Script updateScript = createUpdateScript(processDefinitionDto);
+    bulkRequestBuilder.operations(
+        b ->
+            b.update(
+                OptimizeUpdateOperationBuilderES.of(
+                    u ->
+                        u.optimizeIndex(esClient, PROCESS_DEFINITION_INDEX_NAME)
+                            .id(processDefinitionDto.getId())
+                            .action(a -> a.script(updateScript).upsert(processDefinitionDto))
+                            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT))));
   }
 }

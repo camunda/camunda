@@ -9,17 +9,14 @@ package io.camunda.optimize.service.db.es.filter;
 
 import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES.createCanceledFlowNodesOnlyFilterQuery;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CanceledFlowNodesOnlyFilterDataDto;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.lucene.search.join.ScoreMode;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -30,16 +27,22 @@ public class CanceledFlowNodesOnlyQueryFilterES
 
   @Override
   public void addFilters(
-      final BoolQueryBuilder query,
+      final BoolQuery.Builder query,
       final List<CanceledFlowNodesOnlyFilterDataDto> canceledFlowNodesFilterData,
       final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(canceledFlowNodesFilterData)) {
-      List<QueryBuilder> filters = query.filter();
-      filters.add(
-          nestedQuery(
-              FLOW_NODE_INSTANCES,
-              createCanceledFlowNodesOnlyFilterQuery(boolQuery()),
-              ScoreMode.None));
+      query.filter(
+          f ->
+              f.nested(
+                  n ->
+                      n.path(FLOW_NODE_INSTANCES)
+                          .query(
+                              q ->
+                                  q.bool(
+                                      createCanceledFlowNodesOnlyFilterQuery(
+                                              new BoolQuery.Builder())
+                                          .build()))
+                          .scoreMode(ChildScoreMode.None)));
     }
   }
 }

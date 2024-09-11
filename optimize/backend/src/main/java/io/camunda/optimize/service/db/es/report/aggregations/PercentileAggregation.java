@@ -5,45 +5,56 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.command.aggregations;
+package io.camunda.optimize.service.db.es.report.aggregations;
 
-import static org.elasticsearch.search.aggregations.AggregationBuilders.percentiles;
-
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.PercentilesAggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.TDigestPercentilesAggregate;
+import co.elastic.clients.util.Pair;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import io.camunda.optimize.service.db.es.report.command.util.ElasticsearchAggregationResultMappingUtil;
+import io.camunda.optimize.service.db.es.report.interpreter.util.ElasticsearchAggregationResultMappingUtil;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.metrics.ParsedTDigestPercentiles;
-import org.elasticsearch.search.aggregations.metrics.PercentilesAggregationBuilder;
-import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 
 @AllArgsConstructor
 @NoArgsConstructor
-public class PercentileAggregation extends AggregationStrategy<PercentilesAggregationBuilder> {
+public class PercentileAggregation extends AggregationStrategy<PercentilesAggregation.Builder> {
 
   private static final String PERCENTILE_AGGREGATION = "percentileAggregation";
 
   private Double percentileValue;
 
   @Override
-  public Double getValueForAggregation(final String customIdentifier, final Aggregations aggs) {
-    final ParsedTDigestPercentiles percentiles =
+  public Double getValueForAggregation(
+      final String customIdentifier, final Map<String, Aggregate> aggs) {
+    final TDigestPercentilesAggregate percentiles =
         aggs.get(
-            createAggregationName(
-                customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION));
+                createAggregationName(
+                    customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION))
+            .tdigestPercentiles();
     return ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull(
         percentiles, percentileValue);
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<PercentilesAggregationBuilder>
-      createAggregationBuilderForAggregation(final String customIdentifier) {
-    return percentiles(
-            createAggregationName(
-                customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION))
-        .percentiles(percentileValue);
+  public Pair<String, Aggregation.Builder.ContainerBuilder> createAggregationBuilderForAggregation(
+      final String customIdentifier, Script script, String... field) {
+    Aggregation.Builder builder = new Aggregation.Builder();
+    return Pair.of(
+        createAggregationName(
+            customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION),
+        builder.percentiles(
+            a -> {
+              a.script(script).percents(percentileValue);
+              if (field != null && field.length != 0) {
+                a.field(field[0]);
+              }
+              return a;
+            }));
   }
 
   @Override

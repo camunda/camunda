@@ -30,40 +30,14 @@ public class DatabaseConstants {
 
   public static final String OPTIMIZE_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 
-  public static final String NUMBER_OF_REPLICAS_SETTING = "number_of_replicas";
   public static final String NUMBER_OF_SHARDS_SETTING = "number_of_shards";
-  public static final String REFRESH_INTERVAL_SETTING = "refresh_interval";
-  public static final String MAPPING_NESTED_OBJECTS_LIMIT = "mapping.nested_objects.limit";
-  public static final String IGNORE_ABOVE_SETTING = "ignore_above";
-  public static final String IGNORE_MALFORMED = "ignore_malformed";
-  public static final String ANALYSIS_SETTING = "analysis";
-  public static final String SORT_SETTING = "sort";
-  public static final String SORT_FIELD_SETTING = "field";
-  public static final String SORT_ORDER_SETTING = "order";
   public static final String SORT_NULLS_FIRST = "_first";
   public static final String SORT_NULLS_LAST = "_last";
-  public static final String FIELDS = "fields";
   public static final String LOWERCASE_NGRAM = "lowercase_ngram";
   public static final String LOWERCASE_NORMALIZER = "lowercase_normalizer";
-  public static final String MAPPING_ENABLED_SETTING = "enabled";
   public static final String NGRAM_TOKENIZER = "ngram_tokenizer";
   public static final String IS_PRESENT_FILTER = "is_present_filter";
   public static final String IS_PRESENT_ANALYZER = "is_present_analyzer";
-  public static final String MAX_NGRAM_DIFF = "max_ngram_diff";
-
-  public static final String MAPPING_PROPERTY_TYPE = "type";
-  public static final String PROPERTIES_PROPERTY_TYPE = "properties";
-  public static final String FORMAT_PROPERTY_TYPE = "format";
-  public static final String DYNAMIC_PROPERTY_TYPE = "dynamic";
-
-  public static final String TYPE_KEYWORD = "keyword";
-  public static final String TYPE_LONG = "long";
-  public static final String TYPE_DOUBLE = "double";
-  public static final String TYPE_DATE = "date";
-  public static final String TYPE_BOOLEAN = "boolean";
-  public static final String TYPE_OBJECT = "object";
-  public static final String TYPE_TEXT = "text";
-  public static final String TYPE_NESTED = "nested";
 
   public static final String DECISION_DEFINITION_INDEX_NAME = "decision-definition";
   public static final String DECISION_INSTANCE_MULTI_ALIAS = "decision-instance";

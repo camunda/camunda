@@ -7,10 +7,8 @@
  */
 package io.camunda.optimize.service.db.es.schema;
 
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 
 public interface PropertiesAppender {
-
-  XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException;
+  TypeMapping.Builder addProperties(final TypeMapping.Builder builder);
 }

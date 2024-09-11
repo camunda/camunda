@@ -7,14 +7,13 @@
  */
 package io.camunda.optimize.service.db.es.filter;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -27,14 +26,14 @@ public class ProcessVariableQueryFilterES extends AbstractProcessVariableQueryFi
 
   @Override
   public void addFilters(
-      final BoolQueryBuilder query,
+      final BoolQuery.Builder query,
       final List<VariableFilterDataDto<?>> variables,
       final FilterContext filterContext) {
     if (variables != null) {
-      List<QueryBuilder> filters = query.filter();
-      for (VariableFilterDataDto<?> variable : variables) {
-        filters.add(createFilterQueryBuilder(variable, filterContext.getTimezone()));
-      }
+      query.filter(
+          variables.stream()
+              .map(v -> createFilterQueryBuilder(v, filterContext.getTimezone()).build())
+              .toList());
     }
   }
 }

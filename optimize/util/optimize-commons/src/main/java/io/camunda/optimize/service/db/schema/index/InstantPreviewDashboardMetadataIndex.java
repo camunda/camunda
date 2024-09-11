@@ -8,14 +8,10 @@
 package io.camunda.optimize.service.db.schema.index;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.INSTANT_DASHBOARD_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_LONG;
 
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class InstantPreviewDashboardMetadataIndex<TBuilder>
     extends DefaultIndexMappingCreator<TBuilder> {
@@ -40,24 +36,13 @@ public abstract class InstantPreviewDashboardMetadataIndex<TBuilder>
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return xContentBuilder
-        .startObject(ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(DASHBOARD_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(PROCESS_DEFINITION_KEY)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(TEMPLATE_NAME)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(TEMPLATE_HASH)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
-        .endObject();
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+
+    return builder
+        .properties(ID, p -> p.keyword(k -> k))
+        .properties(DASHBOARD_ID, p -> p.keyword(k -> k))
+        .properties(PROCESS_DEFINITION_KEY, p -> p.keyword(k -> k))
+        .properties(TEMPLATE_NAME, p -> p.keyword(k -> k))
+        .properties(TEMPLATE_HASH, p -> p.long_(k -> k));
   }
 }

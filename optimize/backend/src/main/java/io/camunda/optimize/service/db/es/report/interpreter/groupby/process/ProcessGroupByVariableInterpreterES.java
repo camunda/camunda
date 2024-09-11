@@ -12,6 +12,7 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.V
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableNameField;
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
@@ -31,7 +32,6 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -95,7 +95,7 @@ public class ProcessGroupByVariableInterpreterES
   }
 
   @Override
-  protected BoolQueryBuilder getVariableUndefinedOrNullQuery(
+  protected BoolQuery.Builder getVariableUndefinedOrNullQuery(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final VariableGroupByValueDto variable = getVariableGroupByDto(context);
     return ProcessVariableHelperES.createFilterForUndefinedOrNullQueryBuilder(

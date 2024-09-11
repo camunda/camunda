@@ -9,11 +9,16 @@ package io.camunda.optimize.service.db.es.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch.core.GetRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeGetRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
 import io.camunda.optimize.service.db.reader.CollectionReader;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -23,13 +28,6 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -46,31 +44,14 @@ public class CollectionReaderES implements CollectionReader {
   @Override
   public Optional<CollectionDefinitionDto> getCollection(String collectionId) {
     log.debug("Fetching collection with id [{}]", collectionId);
-    GetRequest getRequest = new GetRequest(COLLECTION_INDEX_NAME).id(collectionId);
-
-    GetResponse getResponse;
+    GetRequest getRequest =
+        OptimizeGetRequestBuilderES.of(
+            b -> b.optimizeIndex(esClient, COLLECTION_INDEX_NAME).id(collectionId));
     try {
-      getResponse = esClient.get(getRequest);
+      return Optional.ofNullable(esClient.get(getRequest, CollectionDefinitionDto.class).source());
     } catch (IOException e) {
       String reason = String.format("Could not fetch collection with id [%s]", collectionId);
       log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    if (!getResponse.isExists()) {
-      return Optional.empty();
-    }
-
-    String responseAsString = getResponse.getSourceAsString();
-    try {
-      return Optional.ofNullable(
-          objectMapper.readValue(responseAsString, CollectionDefinitionDto.class));
-    } catch (IOException e) {
-      String reason = "Could not deserialize collection information for collection " + collectionId;
-      log.error(
-          "Was not able to retrieve collection with id [{}] from Elasticsearch. Reason: {}",
-          collectionId,
-          reason);
       throw new OptimizeRuntimeException(reason, e);
     }
   }
@@ -79,23 +60,29 @@ public class CollectionReaderES implements CollectionReader {
   public List<CollectionDefinitionDto> getAllCollections() {
     log.debug("Fetching all available collections");
 
-    SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
-            .query(QueryBuilders.matchAllQuery())
-            .sort(CollectionDefinitionDto.Fields.name.name(), SortOrder.ASC)
-            .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest =
-        new SearchRequest(COLLECTION_INDEX_NAME)
-            .source(searchSourceBuilder)
-            .scroll(
-                timeValueSeconds(
-                    configurationService
-                        .getElasticSearchConfiguration()
-                        .getScrollTimeoutInSeconds()));
+        OptimizeSearchRequestBuilderES.of(
+            b ->
+                b.optimizeIndex(esClient, COLLECTION_INDEX_NAME)
+                    .query(q -> q.matchAll(m -> m))
+                    .sort(
+                        s ->
+                            s.field(
+                                f ->
+                                    f.field(CollectionDefinitionDto.Fields.name.name())
+                                        .order(SortOrder.Asc)))
+                    .size(LIST_FETCH_LIMIT)
+                    .scroll(
+                        s ->
+                            s.time(
+                                configurationService
+                                        .getElasticSearchConfiguration()
+                                        .getScrollTimeoutInSeconds()
+                                    + "s")));
 
-    SearchResponse scrollResp;
+    SearchResponse<CollectionDefinitionDto> scrollResp;
     try {
-      scrollResp = esClient.search(searchRequest);
+      scrollResp = esClient.search(searchRequest, CollectionDefinitionDto.class);
     } catch (IOException e) {
       log.error("Was not able to retrieve collections!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve collections!", e);

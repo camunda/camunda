@@ -8,12 +8,15 @@
 package io.camunda.optimize.service.db.es.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 
+import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
 import io.camunda.optimize.service.db.reader.BusinessKeyReader;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -24,10 +27,6 @@ import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -49,22 +48,24 @@ public class BusinessKeyReaderES implements BusinessKeyReader {
       return Collections.emptyList();
     }
 
-    SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
-            .query(QueryBuilders.idsQuery().addIds(processInstanceIds.toArray(new String[0])))
-            .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest =
-        new SearchRequest(DatabaseConstants.BUSINESS_KEY_INDEX_NAME)
-            .source(searchSourceBuilder)
-            .scroll(
-                timeValueSeconds(
-                    configurationService
-                        .getElasticSearchConfiguration()
-                        .getScrollTimeoutInSeconds()));
+        OptimizeSearchRequestBuilderES.of(
+            b ->
+                b.optimizeIndex(esClient, DatabaseConstants.BUSINESS_KEY_INDEX_NAME)
+                    .query(q -> q.ids(i -> i.values(processInstanceIds.stream().toList())))
+                    .size(LIST_FETCH_LIMIT)
+                    .scroll(
+                        Time.of(
+                            t ->
+                                t.time(
+                                    configurationService
+                                            .getElasticSearchConfiguration()
+                                            .getScrollTimeoutInSeconds()
+                                        + "s"))));
 
-    SearchResponse searchResponse;
+    SearchResponse<BusinessKeyDto> searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest);
+      searchResponse = esClient.search(searchRequest, BusinessKeyDto.class);
     } catch (IOException e) {
       log.error("Was not able to retrieve business keys!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve event business keys!", e);

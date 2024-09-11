@@ -9,11 +9,19 @@ package io.camunda.optimize.service.db.es.report.interpreter.plan;
 
 import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.ScrollRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
+import co.elastic.clients.elasticsearch.core.search.TrackHits;
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
 import io.camunda.optimize.service.db.es.report.interpreter.groupby.GroupByInterpreterES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.ViewInterpreterES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
@@ -24,25 +32,21 @@ import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.core.TimeValue;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 @Slf4j
 public abstract class AbstractExecutionPlanInterpreterES<
         DATA extends SingleReportDataDto, PLAN extends ExecutionPlan>
     implements ExecutionPlanInterpreter<DATA, PLAN> {
 
+  @Override
   public CommandEvaluationResult<Object> interpret(ExecutionContext<DATA, PLAN> executionContext) {
-    SearchRequest searchRequest = createBaseQuerySearchRequest(executionContext);
-    SearchResponse response;
+    OptimizeSearchRequestBuilderES searchRequest =
+        createBaseQuerySearchRequest(executionContext, getIndexNames(executionContext));
+    ResponseBody<?> response;
     try {
       response = executeRequests(executionContext, searchRequest, false);
     } catch (RuntimeException e) {
@@ -56,7 +60,11 @@ public abstract class AbstractExecutionPlanInterpreterES<
               Arrays.asList(getIndexNames(executionContext)));
 
           try {
-            response = executeRequests(executionContext, searchRequest, true);
+            response =
+                executeRequests(
+                    executionContext,
+                    createBaseQuerySearchRequest(executionContext, getMultiIndexAlias()),
+                    true);
           } catch (RuntimeException ex) {
             if (isInstanceIndexNotFoundException(e)) {
               return returnEmptyResult(executionContext);
@@ -89,85 +97,93 @@ public abstract class AbstractExecutionPlanInterpreterES<
 
   protected abstract OptimizeElasticsearchClient getEsClient();
 
-  protected abstract BoolQueryBuilder getBaseQuery(final ExecutionContext<DATA, PLAN> context);
+  protected abstract BoolQuery.Builder getBaseQueryBuilder(
+      final ExecutionContext<DATA, PLAN> context);
 
   protected abstract String[] getIndexNames(final ExecutionContext<DATA, PLAN> context);
 
   protected abstract String[] getMultiIndexAlias();
 
-  protected abstract BoolQueryBuilder setupUnfilteredBaseQuery(
+  protected abstract BoolQuery.Builder setupUnfilteredBaseQueryBuilder(
       final ExecutionContext<DATA, PLAN> reportData);
 
-  private SearchRequest createBaseQuerySearchRequest(
-      final ExecutionContext<DATA, PLAN> executionContext) {
-    final BoolQueryBuilder baseQuery = getBaseQuery(executionContext);
-    SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder().query(baseQuery).trackTotalHits(true).fetchSource(false);
+  private OptimizeSearchRequestBuilderES createBaseQuerySearchRequest(
+      final ExecutionContext<DATA, PLAN> executionContext, String... indexes) {
+    final Supplier<BoolQuery.Builder> baseQueryBuilderSupplier =
+        () -> getBaseQueryBuilder(executionContext);
+    OptimizeSearchRequestBuilderES searchBuilder = new OptimizeSearchRequestBuilderES();
     // The null checks below are essential to prevent NPEs in integration tests
     executionContext
         .getPagination()
         .ifPresent(
             pagination -> {
-              Optional.ofNullable(pagination.getOffset()).ifPresent(searchSourceBuilder::from);
-              Optional.ofNullable(pagination.getLimit()).ifPresent(searchSourceBuilder::size);
+              Optional.ofNullable(pagination.getOffset()).ifPresent(searchBuilder::from);
+              Optional.ofNullable(pagination.getLimit()).ifPresent(searchBuilder::size);
             });
-    addAggregation(searchSourceBuilder, executionContext);
 
-    SearchRequest searchRequest =
-        new SearchRequest(getIndexNames(executionContext)).source(searchSourceBuilder);
-    getGroupByInterpreter().adjustSearchRequest(searchRequest, baseQuery, executionContext);
-    return searchRequest;
+    addAggregation(baseQueryBuilderSupplier.get().build(), searchBuilder, executionContext);
+
+    BoolQuery.Builder builder = baseQueryBuilderSupplier.get();
+    searchBuilder
+        .optimizeIndex(getEsClient(), indexes)
+        .source(s -> s.fetch(false))
+        .trackTotalHits(TrackHits.of(t -> t.enabled(true)));
+    getGroupByInterpreter().adjustSearchRequest(searchBuilder, builder, executionContext);
+    searchBuilder.query(Query.of(q -> q.bool(builder.build())));
+    return searchBuilder;
   }
 
   private void addAggregation(
-      final SearchSourceBuilder searchSourceBuilder,
+      final BoolQuery builder,
+      final SearchRequest.Builder searchRequestBuilder,
       final ExecutionContext<DATA, PLAN> executionContext) {
-    final List<AggregationBuilder> aggregations =
-        getGroupByInterpreter().createAggregation(searchSourceBuilder, executionContext);
-    aggregations.forEach(searchSourceBuilder::aggregation);
+    final Map<String, Aggregation.Builder.ContainerBuilder> aggregations =
+        getGroupByInterpreter().createAggregation(builder, executionContext);
+    aggregations.forEach((k, v) -> searchRequestBuilder.aggregations(k, v.build()));
   }
 
-  private SearchResponse executeRequests(
+  private ResponseBody<?> executeRequests(
       final ExecutionContext<DATA, PLAN> executionContext,
-      final SearchRequest searchRequest,
+      final OptimizeSearchRequestBuilderES searchRequest,
       final boolean useMultiInstanceIndexAlias)
       throws IOException {
 
     String[] indices;
     if (useMultiInstanceIndexAlias) {
       indices = getMultiIndexAlias();
-      searchRequest.indices(indices);
     } else {
       indices = getIndexNames(executionContext);
     }
-
-    SearchResponse response = executeElasticSearchCommand(executionContext, searchRequest);
-    BoolQueryBuilder countQuery = setupUnfilteredBaseQuery(executionContext);
-    executionContext.setUnfilteredTotalInstanceCount(getEsClient().count(indices, countQuery));
+    ResponseBody<?> response;
+    response = executeElasticSearchCommand(executionContext, searchRequest);
+    BoolQuery.Builder countQueryBuilder = setupUnfilteredBaseQueryBuilder(executionContext);
+    executionContext.setUnfilteredTotalInstanceCount(
+        getEsClient().count(indices, countQueryBuilder));
     return response;
   }
 
-  private SearchResponse executeElasticSearchCommand(
-      final ExecutionContext<DATA, PLAN> executionContext, final SearchRequest searchRequest)
+  private ResponseBody<?> executeElasticSearchCommand(
+      ExecutionContext<DATA, PLAN> executionContext,
+      final SearchRequest.Builder searchRequestBuilder)
       throws IOException {
-    SearchResponse response;
-    SearchScrollRequest scrollRequest = null;
+    ResponseBody<?> response;
+    ScrollRequest scrollRequest = null;
     PaginationDto paginationInfo = executionContext.getPagination().orElse(new PaginationDto());
     if (paginationInfo instanceof PaginationScrollableDto scrollableDto) {
       String scrollId = scrollableDto.getScrollId();
       Integer timeout = scrollableDto.getScrollTimeout();
       if (scrollId != null && !scrollId.isEmpty()) {
-        scrollRequest = new SearchScrollRequest(scrollId);
-        scrollRequest.scroll(TimeValue.timeValueSeconds(timeout));
+        scrollRequest =
+            ScrollRequest.of(s -> s.scroll(l -> l.time(timeout + "s")).scrollId(scrollId));
       } else {
-        searchRequest.scroll(TimeValue.timeValueSeconds(timeout));
+        searchRequestBuilder.scroll(l -> l.time(timeout + "s"));
       }
       response =
           scrollRequest != null
-              ? getEsClient().scroll(scrollRequest)
-              : getEsClient().search(searchRequest);
+              ? getEsClient().scroll(scrollRequest, Object.class)
+              : getEsClient().search(searchRequestBuilder.build(), Object.class);
     } else {
-      response = getEsClient().search(searchRequest);
+      response = getEsClient().search(searchRequestBuilder.build());
     }
     return response;
   }
@@ -191,12 +207,12 @@ public abstract class AbstractExecutionPlanInterpreterES<
   }
 
   private CommandEvaluationResult<Object> retrieveQueryResult(
-      final SearchResponse response, final ExecutionContext<DATA, PLAN> executionContext) {
+      final ResponseBody<?> response, final ExecutionContext<DATA, PLAN> executionContext) {
     final CompositeCommandResult result =
         getGroupByInterpreter().retrieveQueryResult(response, executionContext);
     final CommandEvaluationResult<Object> reportResult =
         ResultInterpreter.interpret(executionContext, result);
-    reportResult.setInstanceCount(response.getHits().getTotalHits().value);
+    reportResult.setInstanceCount(response.hits().total().value());
     reportResult.setInstanceCountWithoutFilters(executionContext.getUnfilteredTotalInstanceCount());
     executionContext
         .getPagination()
@@ -204,7 +220,7 @@ public abstract class AbstractExecutionPlanInterpreterES<
             plainPagination -> {
               PaginationScrollableDto scrollablePagination =
                   PaginationScrollableDto.fromPaginationDto(plainPagination);
-              scrollablePagination.setScrollId(response.getScrollId());
+              scrollablePagination.setScrollId(response.scrollId());
               reportResult.setPagination(scrollablePagination);
             });
     return reportResult;

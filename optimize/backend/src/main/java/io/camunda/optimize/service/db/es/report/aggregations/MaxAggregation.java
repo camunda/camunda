@@ -5,32 +5,48 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.command.aggregations;
+package io.camunda.optimize.service.db.es.report.aggregations;
 
-import static io.camunda.optimize.service.db.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.max;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
 
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder.ContainerBuilder;
+import co.elastic.clients.elasticsearch._types.aggregations.MaxAggregate;
+import co.elastic.clients.util.Pair;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.metrics.Max;
-import org.elasticsearch.search.aggregations.metrics.MaxAggregationBuilder;
-import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
+import java.util.Map;
 
-public class MaxAggregation extends AggregationStrategy<MaxAggregationBuilder> {
+public class MaxAggregation
+    extends AggregationStrategy<
+        co.elastic.clients.elasticsearch._types.aggregations.MaxAggregation.Builder> {
 
   private static final String MAX_AGGREGATION = "maxAggregation";
 
   @Override
-  public Double getValueForAggregation(final String customIdentifier, final Aggregations aggs) {
-    final Max aggregation = aggs.get(createAggregationName(customIdentifier, MAX_AGGREGATION));
-    return mapToDoubleOrNull(aggregation.getValue());
+  public Double getValueForAggregation(
+      final String customIdentifier, final Map<String, Aggregate> aggs) {
+    final MaxAggregate aggregation =
+        aggs.get(createAggregationName(customIdentifier, MAX_AGGREGATION)).max();
+    return mapToDoubleOrNull(aggregation.value());
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<MaxAggregationBuilder>
-      createAggregationBuilderForAggregation(final String customIdentifier) {
-    return max(createAggregationName(customIdentifier, MAX_AGGREGATION));
+  public Pair<String, ContainerBuilder> createAggregationBuilderForAggregation(
+      final String customIdentifier, Script script, String... field) {
+    Aggregation.Builder builder = new Aggregation.Builder();
+    return Pair.of(
+        createAggregationName(customIdentifier, MAX_AGGREGATION),
+        builder.max(
+            a -> {
+              a.script(script);
+              if (field != null && field.length != 0) {
+                a.field(field[0]);
+              }
+              return a;
+            }));
   }
 
   @Override

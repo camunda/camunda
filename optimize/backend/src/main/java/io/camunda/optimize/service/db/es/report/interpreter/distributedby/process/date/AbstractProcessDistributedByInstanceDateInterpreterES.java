@@ -7,10 +7,15 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.date;
 
-import static io.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtilES.unwrapFilterLimitedAggregations;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.FilterLimitedAggregationUtilES.unwrapFilterLimitedAggregations;
 import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasNames;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
@@ -24,16 +29,11 @@ import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.report.interpreter.distributedby.process.date.ProcessDistributedByInstanceDateInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
 
 public abstract class AbstractProcessDistributedByInstanceDateInterpreterES
     extends AbstractProcessDistributedByInterpreterES
@@ -48,13 +48,13 @@ public abstract class AbstractProcessDistributedByInstanceDateInterpreterES
   protected abstract MinMaxStatsServiceES getMinMaxStatsService();
 
   @Override
-  public List<AggregationBuilder> createAggregations(
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final QueryBuilder baseQueryBuilder) {
+      final BoolQuery baseQuery) {
     final AggregateByDateUnit unit = getDistributedByDateUnit(context.getReportData());
     final ProcessReportDistributedByDto<?> distributedByDto =
         context.getPlan().getDistributedBy().getDto();
-    final MinMaxStatDto stats = getMinMaxStats(context, baseQueryBuilder);
+    final MinMaxStatDto stats = getMinMaxStats(context, baseQuery);
 
     final DateAggregationContextES dateAggContext =
         DateAggregationContextES.builder()
@@ -72,23 +72,22 @@ public abstract class AbstractProcessDistributedByInstanceDateInterpreterES
 
     return getDateAggregationService()
         .createProcessInstanceDateAggregation(dateAggContext)
-        .map(Collections::singletonList)
         .orElse(getViewInterpreter().createAggregations(context));
   }
 
   @Override
-  public List<DistributedByResult> retrieveResult(
-      SearchResponse response,
-      Aggregations aggregations,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+  public List<CompositeCommandResult.DistributedByResult> retrieveResult(
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggregations,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     if (aggregations == null) {
       // aggregations are null when there are no instances in the report
       return Collections.emptyList();
     }
 
-    final Optional<Aggregations> unwrappedLimitedAggregations =
+    final Optional<Map<String, Aggregate>> unwrappedLimitedAggregations =
         unwrapFilterLimitedAggregations(aggregations);
-    Map<String, Aggregations> keyToAggregationMap;
+    Map<String, Map<String, Aggregate>> keyToAggregationMap;
     if (unwrappedLimitedAggregations.isPresent()) {
       keyToAggregationMap =
           getDateAggregationService()
@@ -99,7 +98,8 @@ public abstract class AbstractProcessDistributedByInstanceDateInterpreterES
     }
 
     List<CompositeCommandResult.DistributedByResult> distributedByResults = new ArrayList<>();
-    for (Map.Entry<String, Aggregations> keyToAggregationEntry : keyToAggregationMap.entrySet()) {
+    for (Map.Entry<String, Map<String, Aggregate>> keyToAggregationEntry :
+        keyToAggregationMap.entrySet()) {
       final CompositeCommandResult.ViewResult viewResult =
           getViewInterpreter().retrieveResult(response, keyToAggregationEntry.getValue(), context);
       distributedByResults.add(
@@ -110,12 +110,11 @@ public abstract class AbstractProcessDistributedByInstanceDateInterpreterES
   }
 
   private MinMaxStatDto getMinMaxStats(
-      final ExecutionContext<ProcessReportDataDto, ?> context,
-      final QueryBuilder baseQueryBuilder) {
+      final ExecutionContext<ProcessReportDataDto, ?> context, final BoolQuery baseQuery) {
     return getMinMaxStatsService()
         .getMinMaxDateRange(
             context,
-            baseQueryBuilder,
+            Query.of(q -> q.bool(baseQuery)),
             getProcessInstanceIndexAliasNames(context.getReportData()),
             getDateField());
   }

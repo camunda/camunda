@@ -7,12 +7,9 @@
  */
 package io.camunda.optimize.service.db.schema.index;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
-
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class ProcessDefinitionIndex<TBuilder> extends AbstractDefinitionIndex<TBuilder> {
 
@@ -40,25 +37,13 @@ public abstract class ProcessDefinitionIndex<TBuilder> extends AbstractDefinitio
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return super.addProperties(xContentBuilder)
-        .startObject(FLOW_NODE_DATA)
-        .field("type", DatabaseConstants.TYPE_OBJECT)
-        .field(MAPPING_ENABLED_SETTING, "false")
-        .endObject()
-        .startObject(USER_TASK_NAMES)
-        .field("type", DatabaseConstants.TYPE_OBJECT)
-        .field(MAPPING_ENABLED_SETTING, "false")
-        .endObject()
-        .startObject(PROCESS_DEFINITION_XML)
-        .field("type", DatabaseConstants.TYPE_TEXT)
-        .field("index", true)
-        .field("analyzer", "is_present_analyzer")
-        .endObject()
-        .startObject(ONBOARDED)
-        .field("type", DatabaseConstants.TYPE_BOOLEAN)
-        .endObject();
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+
+    return super.addProperties(builder)
+        .properties(FLOW_NODE_DATA, p -> p.object(o -> o.enabled(false)))
+        .properties(USER_TASK_NAMES, p -> p.object(o -> o.enabled(false)))
+        .properties(
+            PROCESS_DEFINITION_XML, p -> p.text(o -> o.index(true).analyzer("is_present_analyzer")))
+        .properties(ONBOARDED, p -> p.boolean_(b -> b));
   }
 }

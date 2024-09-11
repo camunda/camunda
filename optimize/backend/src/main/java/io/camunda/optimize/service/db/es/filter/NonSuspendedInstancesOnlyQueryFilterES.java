@@ -9,15 +9,12 @@ package io.camunda.optimize.service.db.es.filter;
 
 import static io.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.STATE;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.NonSuspendedInstancesOnlyFilterDataDto;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -28,16 +25,12 @@ public class NonSuspendedInstancesOnlyQueryFilterES
 
   @Override
   public void addFilters(
-      final BoolQueryBuilder query,
+      final BoolQuery.Builder query,
       final List<NonSuspendedInstancesOnlyFilterDataDto> nonSuspendedInstancesOnlyFilters,
       final FilterContext filterContext) {
     if (nonSuspendedInstancesOnlyFilters != null && !nonSuspendedInstancesOnlyFilters.isEmpty()) {
-      List<QueryBuilder> filters = query.filter();
-
-      BoolQueryBuilder onlyNonSuspendedInstancesQuery =
-          boolQuery().mustNot(termQuery(STATE, SUSPENDED_STATE));
-
-      filters.add(onlyNonSuspendedInstancesQuery);
+      query.filter(
+          f -> f.bool(b -> b.mustNot(m -> m.term(t -> t.field(STATE).value(SUSPENDED_STATE)))));
     }
   }
 }

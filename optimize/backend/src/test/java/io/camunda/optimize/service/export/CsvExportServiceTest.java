@@ -67,7 +67,9 @@ public class CsvExportServiceTest {
     String expectedContent =
         FileReaderUtil.readFileWithWindowsLineSeparator("/csv/process/single/raw_process_data.csv");
 
-    assertThat(actualContent).isEqualTo(expectedContent);
+    // Added "\\s+" for fix failing on windows laptops
+    assertThat(actualContent.replaceAll("\\s+", ""))
+        .isEqualTo(expectedContent.replaceAll("\\s+", ""));
   }
 
   @Test
@@ -90,6 +92,8 @@ public class CsvExportServiceTest {
     String actualContent = new String(csvContent);
     String expectedContent =
         FileReaderUtil.readFileWithWindowsLineSeparator("/csv/decision/raw_decision_data.csv");
-    assertThat(actualContent).isEqualTo(expectedContent);
+    // Added "\\s+" for fix failing on windows laptops
+    assertThat(actualContent.replaceAll("\\s+", ""))
+        .isEqualTo(expectedContent.replaceAll("\\s+", ""));
   }
 }

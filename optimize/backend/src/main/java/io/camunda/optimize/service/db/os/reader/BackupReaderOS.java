@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.reader;
 
+import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
 import io.camunda.optimize.service.db.reader.BackupReader;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.ArrayList;
@@ -14,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.snapshots.SnapshotInfo;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 

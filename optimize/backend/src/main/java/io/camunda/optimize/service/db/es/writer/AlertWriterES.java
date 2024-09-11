@@ -7,37 +7,37 @@
  */
 package io.camunda.optimize.service.db.es.writer;
 
+import static co.elastic.clients.elasticsearch._types.Result.Created;
+import static co.elastic.clients.elasticsearch._types.Result.Deleted;
 import static io.camunda.optimize.service.db.DatabaseConstants.ALERT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
+import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.DeleteResponse;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
+import co.elastic.clients.elasticsearch.core.UpdateResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeDeleteRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeIndexRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES;
 import io.camunda.optimize.service.db.schema.index.AlertIndex;
 import io.camunda.optimize.service.db.writer.AlertWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
 import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.DocWriteResponse;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.delete.DeleteResponse;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.index.engine.DocumentMissingException;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.xcontent.XContentBuilder;
-import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -57,15 +57,16 @@ public class AlertWriterES implements AlertWriter {
     final String id = IdGenerator.getNextId();
     alertDefinitionDto.setId(id);
     try {
-      final IndexRequest request =
-          new IndexRequest(ALERT_INDEX_NAME)
-              .id(id)
-              .source(objectMapper.writeValueAsString(alertDefinitionDto), XContentType.JSON)
-              .setRefreshPolicy(IMMEDIATE);
+      final IndexResponse indexResponse =
+          esClient.index(
+              OptimizeIndexRequestBuilderES.of(
+                  i ->
+                      i.optimizeIndex(esClient, ALERT_INDEX_NAME)
+                          .id(id)
+                          .document(alertDefinitionDto)
+                          .refresh(Refresh.True)));
 
-      final IndexResponse indexResponse = esClient.index(request);
-
-      if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED)) {
+      if (!indexResponse.result().equals(Created)) {
         final String message =
             "Could not write alert to Elasticsearch. "
                 + "Maybe the connection to Elasticsearch got lost?";
@@ -86,17 +87,19 @@ public class AlertWriterES implements AlertWriter {
   public void updateAlert(final AlertDefinitionDto alertUpdate) {
     log.debug("Updating alert with id [{}] in Elasticsearch", alertUpdate.getId());
     try {
-      final UpdateRequest request =
-          new UpdateRequest()
-              .index(ALERT_INDEX_NAME)
-              .id(alertUpdate.getId())
-              .doc(objectMapper.writeValueAsString(alertUpdate), XContentType.JSON)
-              .setRefreshPolicy(IMMEDIATE)
-              .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-      final UpdateResponse updateResponse = esClient.update(request);
+      final UpdateResponse<AlertDefinitionDto> updateResponse =
+          esClient.update(
+              new OptimizeUpdateRequestBuilderES<AlertDefinitionDto, AlertDefinitionDto>()
+                  .optimizeIndex(esClient, ALERT_INDEX_NAME)
+                  .id(alertUpdate.getId())
+                  .doc(alertUpdate)
+                  .refresh(Refresh.True)
+                  .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+                  .build(),
+              AlertDefinitionDto.class);
 
-      if (updateResponse.getShardInfo().getFailed() > 0) {
+      if (!updateResponse.shards().failures().isEmpty()) {
         final String errorMessage =
             String.format(
                 "Was not able to update alert with id [%s] and name [%s]. "
@@ -112,25 +115,32 @@ public class AlertWriterES implements AlertWriter {
               alertUpdate.getId(), alertUpdate.getName());
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
-    } catch (final DocumentMissingException e) {
-      final String errorMessage =
-          String.format(
-              "Was not able to update alert with id [%s] and name [%s]. Alert does not exist!",
-              alertUpdate.getId(), alertUpdate.getName());
-      log.error(errorMessage, e);
-      throw new NotFoundException(errorMessage, e);
+    } catch (final ElasticsearchException e) {
+      if (e.response().status() == BAD_REQUEST.code()) {
+        final String errorMessage =
+            String.format(
+                "Was not able to update alert with id [%s] and name [%s]. Alert does not exist!",
+                alertUpdate.getId(), alertUpdate.getName());
+        log.error(errorMessage, e);
+        throw new NotFoundException(errorMessage, e);
+      } else {
+        throw e;
+      }
     }
   }
 
   @Override
   public void deleteAlert(final String alertId) {
     log.debug("Deleting alert with id [{}]", alertId);
-    final DeleteRequest request =
-        new DeleteRequest(ALERT_INDEX_NAME).id(alertId).setRefreshPolicy(IMMEDIATE);
-
     final DeleteResponse deleteResponse;
     try {
-      deleteResponse = esClient.delete(request);
+      deleteResponse =
+          esClient.delete(
+              OptimizeDeleteRequestBuilderES.of(
+                  d ->
+                      d.optimizeIndex(esClient, ALERT_INDEX_NAME)
+                          .id(alertId)
+                          .refresh(Refresh.True)));
     } catch (final IOException e) {
       final String reason =
           String.format(
@@ -141,7 +151,7 @@ public class AlertWriterES implements AlertWriter {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (!deleteResponse.getResult().equals(DocWriteResponse.Result.DELETED)) {
+    if (!deleteResponse.result().equals(Deleted)) {
       final String message =
           String.format(
               "Could not delete alert with id [%s]. Alert does not exist. "
@@ -157,7 +167,21 @@ public class AlertWriterES implements AlertWriter {
     log.debug("Deleting alerts with ids: {}", alertIds);
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
         esClient,
-        boolQuery().must(termsQuery(AlertIndex.ID, alertIds)),
+        Query.of(
+            q ->
+                q.bool(
+                    b ->
+                        b.must(
+                            m ->
+                                m.terms(
+                                    t ->
+                                        t.field(AlertIndex.ID)
+                                            .terms(
+                                                tt ->
+                                                    tt.value(
+                                                        alertIds.stream()
+                                                            .map(FieldValue::of)
+                                                            .toList())))))),
         "alerts with Ids" + alertIds,
         true,
         ALERT_INDEX_NAME);
@@ -167,17 +191,15 @@ public class AlertWriterES implements AlertWriter {
   public void writeAlertTriggeredStatus(final boolean alertStatus, final String alertId) {
     log.debug("Writing alert status for alert with id [{}] to Elasticsearch", alertId);
     try {
-      final XContentBuilder docFieldToUpdate =
-          jsonBuilder().startObject().field(AlertIndex.TRIGGERED, alertStatus).endObject();
-      final UpdateRequest request =
-          new UpdateRequest()
-              .index(ALERT_INDEX_NAME)
+      esClient.update(
+          new OptimizeUpdateRequestBuilderES<JsonObject, JsonObject>()
+              .optimizeIndex(esClient, ALERT_INDEX_NAME)
               .id(alertId)
-              .doc(docFieldToUpdate)
-              .setRefreshPolicy(IMMEDIATE)
-              .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-      esClient.update(request);
+              .doc(Json.createObjectBuilder().add(AlertIndex.TRIGGERED, alertStatus).build())
+              .refresh(Refresh.True)
+              .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+              .build(),
+          JsonObject.class);
     } catch (final Exception e) {
       log.error("Can't update status of alert [{}]", alertId, e);
     }
@@ -188,7 +210,7 @@ public class AlertWriterES implements AlertWriter {
   public void deleteAlertsForReport(final String reportId) {
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
         esClient,
-        QueryBuilders.termQuery(AlertIndex.REPORT_ID, reportId),
+        Query.of(q -> q.term(t -> t.field(AlertIndex.REPORT_ID).value(reportId))),
         String.format("all alerts for report with ID [%s]", reportId),
         true,
         ALERT_INDEX_NAME);

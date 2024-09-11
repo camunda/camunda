@@ -7,20 +7,13 @@
  */
 package io.camunda.optimize.service.db.schema.index;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.DYNAMIC_PROPERTY_TYPE;
-import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
-import static io.camunda.optimize.service.db.DatabaseConstants.PROPERTIES_PROPERTY_TYPE;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_BOOLEAN;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_OBJECT;
-
+import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import io.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestResponseDto;
 import io.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class ProcessOverviewIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
   public static final int VERSION = 2;
@@ -45,31 +38,20 @@ public abstract class ProcessOverviewIndex<TBuilder> extends DefaultIndexMapping
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return xContentBuilder
-        .startObject(PROCESS_DEFINITION_KEY)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(OWNER)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(LAST_KPI_EVALUATION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-        .field(DYNAMIC_PROPERTY_TYPE, true)
-        .endObject()
-        .startObject(DIGEST)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-        .startObject(PROPERTIES_PROPERTY_TYPE)
-        .startObject(ENABLED)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
-        .endObject()
-        .startObject(KPI_REPORT_RESULTS)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-        .field(DYNAMIC_PROPERTY_TYPE, true)
-        .endObject()
-        .endObject()
-        .endObject();
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+
+    return builder
+        .properties(PROCESS_DEFINITION_KEY, p -> p.keyword(k -> k))
+        .properties(OWNER, p -> p.keyword(k -> k))
+        .properties(LAST_KPI_EVALUATION, p -> p.object(o -> o.dynamic(DynamicMapping.True)))
+        .properties(
+            DIGEST,
+            p ->
+                p.object(
+                    o ->
+                        o.properties(ENABLED, p2 -> p2.boolean_(b -> b))
+                            .properties(
+                                KPI_REPORT_RESULTS,
+                                p2 -> p2.object(b -> b.dynamic(DynamicMapping.True)))));
   }
 }

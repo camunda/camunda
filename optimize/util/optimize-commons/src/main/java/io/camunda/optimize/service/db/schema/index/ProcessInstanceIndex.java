@@ -7,30 +7,19 @@
  */
 package io.camunda.optimize.service.db.schema.index;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.FIELDS;
-import static io.camunda.optimize.service.db.DatabaseConstants.FORMAT_PROPERTY_TYPE;
 import static io.camunda.optimize.service.db.DatabaseConstants.IGNORE_ABOVE_CHAR_LIMIT;
-import static io.camunda.optimize.service.db.DatabaseConstants.IGNORE_ABOVE_SETTING;
-import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_BOOLEAN;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_DATE;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_LONG;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_NESTED;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_OBJECT;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_TEXT;
 
+import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import io.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import io.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
-import java.io.IOException;
 import java.util.Locale;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceIndex<TBuilder> {
 
@@ -158,260 +147,130 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
   }
 
   @Override
-  public XContentBuilder addProperties(final XContentBuilder builder) throws IOException {
-    // @formatter:off
-    final XContentBuilder newBuilder =
-        builder
-            .startObject(PROCESS_DEFINITION_KEY)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(PROCESS_DEFINITION_VERSION)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(PROCESS_DEFINITION_ID)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(PROCESS_INSTANCE_ID)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(BUSINESS_KEY)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(START_DATE)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-            .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
-            .endObject()
-            .startObject(END_DATE)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-            .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
-            .endObject()
-            .startObject(DURATION)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
-            .endObject()
-            .startObject(DATA_SOURCE)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-            .field("dynamic", true)
-            .endObject()
-            .startObject(TENANT_ID)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(STATE)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(FLOW_NODE_INSTANCES)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
-            .startObject("properties");
-
-    addNestedFlowNodeInstancesField(newBuilder)
-        .endObject()
-        .endObject()
-        .startObject(VARIABLES)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
-        .startObject("properties");
-
-    addNestedVariableField(newBuilder)
-        .endObject()
-        .endObject()
-        .startObject(INCIDENTS)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
-        .startObject("properties");
-
-    addNestedIncidentField(newBuilder).endObject().endObject();
-    return newBuilder;
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+    return builder
+        .properties(PROCESS_DEFINITION_KEY, p -> p.keyword(k -> k))
+        .properties(PROCESS_DEFINITION_VERSION, p -> p.keyword(k -> k))
+        .properties(PROCESS_DEFINITION_ID, p -> p.keyword(k -> k))
+        .properties(PROCESS_INSTANCE_ID, p -> p.keyword(k -> k))
+        .properties(BUSINESS_KEY, p -> p.keyword(k -> k))
+        .properties(START_DATE, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
+        .properties(END_DATE, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
+        .properties(DURATION, p -> p.long_(k -> k))
+        .properties(DATA_SOURCE, p -> p.object(k -> k.dynamic(DynamicMapping.True)))
+        .properties(TENANT_ID, p -> p.keyword(k -> k))
+        .properties(STATE, p -> p.keyword(k -> k))
+        .properties(
+            FLOW_NODE_INSTANCES,
+            p ->
+                p.nested(
+                    k ->
+                        k.properties(FLOW_NODE_INSTANCE_ID, pp -> pp.keyword(kk -> kk))
+                            .properties(FLOW_NODE_ID, pp -> pp.keyword(kk -> kk))
+                            .properties(
+                                PROCESS_INSTANCE_ID_FOR_ACTIVITY, pp -> pp.keyword(kk -> kk))
+                            .properties(FLOW_NODE_TYPE, pp -> pp.keyword(kk -> kk))
+                            .properties(FLOW_NODE_TOTAL_DURATION, pp -> pp.long_(kk -> kk))
+                            .properties(
+                                FLOW_NODE_START_DATE,
+                                pp -> pp.date(kk -> kk.format(OPTIMIZE_DATE_FORMAT)))
+                            .properties(
+                                FLOW_NODE_END_DATE,
+                                pp -> pp.date(kk -> kk.format(OPTIMIZE_DATE_FORMAT)))
+                            .properties(FLOW_NODE_CANCELED, pp -> pp.boolean_(kk -> kk))
+                            .properties(FLOW_NODE_DEFINITION_KEY, pp -> pp.keyword(kk -> kk))
+                            .properties(FLOW_NODE_DEFINITION_VERSION, pp -> pp.keyword(kk -> kk))
+                            .properties(FLOW_NODE_TENANT_ID, pp -> pp.keyword(kk -> kk))
+                            .properties(USER_TASK_INSTANCE_ID, pp -> pp.keyword(kk -> kk))
+                            .properties(USER_TASK_IDLE_DURATION, pp -> pp.long_(kk -> kk))
+                            .properties(USER_TASK_WORK_DURATION, pp -> pp.long_(kk -> kk))
+                            .properties(
+                                USER_TASK_DUE_DATE,
+                                pp -> pp.date(kk -> kk.format(OPTIMIZE_DATE_FORMAT)))
+                            .properties(USER_TASK_DELETE_REASON, pp -> pp.keyword(kk -> kk))
+                            .properties(USER_TASK_ASSIGNEE, pp -> pp.keyword(kk -> kk))
+                            .properties(USER_TASK_CANDIDATE_GROUPS, pp -> pp.keyword(kk -> kk))
+                            .properties(
+                                USER_TASK_ASSIGNEE_OPERATIONS,
+                                pp ->
+                                    pp.object(
+                                        kk ->
+                                            kk.properties(
+                                                    ASSIGNEE_OPERATION_ID,
+                                                    p2 -> p2.keyword(k2 -> k2))
+                                                .properties(
+                                                    ASSIGNEE_OPERATION_USER_ID,
+                                                    p2 -> p2.keyword(k2 -> k2))
+                                                .properties(
+                                                    ASSIGNEE_OPERATION_TYPE,
+                                                    p2 -> p2.keyword(k2 -> k2))
+                                                .properties(
+                                                    ASSIGNEE_OPERATION_TIMESTAMP,
+                                                    p2 ->
+                                                        p2.date(
+                                                            k2 ->
+                                                                k2.format(OPTIMIZE_DATE_FORMAT)))))
+                            .properties(
+                                USER_TASK_CANDIDATE_GROUP_OPERATIONS,
+                                pp ->
+                                    pp.object(
+                                        kk ->
+                                            kk.properties(
+                                                    CANDIDATE_GROUP_OPERATION_ID,
+                                                    p2 -> p2.keyword(k2 -> k2))
+                                                .properties(
+                                                    CANDIDATE_GROUP_OPERATION_GROUP_ID,
+                                                    p2 -> p2.keyword(k2 -> k2))
+                                                .properties(
+                                                    CANDIDATE_GROUP_OPERATION_TYPE,
+                                                    p2 -> p2.keyword(k2 -> k2))
+                                                .properties(
+                                                    CANDIDATE_GROUP_OPERATION_TIMESTAMP,
+                                                    p2 ->
+                                                        p2.date(
+                                                            k2 ->
+                                                                k2.format(
+                                                                    OPTIMIZE_DATE_FORMAT)))))))
+        .properties(
+            VARIABLES,
+            p ->
+                p.nested(
+                    n ->
+                        n.properties(VARIABLE_ID, np -> np.keyword(k -> k))
+                            .properties(VARIABLE_NAME, np -> np.keyword(k -> k))
+                            .properties(VARIABLE_TYPE, np -> np.keyword(k -> k))
+                            .properties(
+                                VARIABLE_VALUE,
+                                np ->
+                                    np.keyword(
+                                        k ->
+                                            addValueMultifields(
+                                                k.ignoreAbove(IGNORE_ABOVE_CHAR_LIMIT))))
+                            .properties(VARIABLE_VERSION, np -> np.long_(l -> l))))
+        .properties(
+            INCIDENTS,
+            p ->
+                p.nested(
+                    n ->
+                        n.properties(INCIDENT_ID, np -> np.keyword(k -> k))
+                            .properties(
+                                INCIDENT_CREATE_TIME,
+                                np -> np.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
+                            .properties(
+                                INCIDENT_END_TIME,
+                                np -> np.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
+                            .properties(INCIDENT_DURATION_IN_MS, np -> np.long_(k -> k))
+                            .properties(INCIDENT_INCIDENT_TYPE, np -> np.keyword(k -> k))
+                            .properties(INCIDENT_ACTIVITY_ID, np -> np.keyword(k -> k))
+                            .properties(INCIDENT_FAILED_ACTIVITY_ID, np -> np.keyword(k -> k))
+                            .properties(INCIDENT_MESSAGE, np -> np.text(k -> k.index(true)))
+                            .properties(INCIDENT_STATUS, np -> np.keyword(k -> k))
+                            .properties(INCIDENT_DEFINITION_KEY, np -> np.keyword(k -> k))
+                            .properties(INCIDENT_DEFINITION_VERSION, np -> np.keyword(k -> k))
+                            .properties(INCIDENT_TENANT_ID, np -> np.keyword(k -> k))));
   }
 
   protected String getIndexPrefix() {
     return PROCESS_INSTANCE_INDEX_PREFIX;
-  }
-
-  private XContentBuilder addNestedFlowNodeInstancesField(final XContentBuilder builder)
-      throws IOException {
-    // @formatter:off
-    builder
-        .startObject(FLOW_NODE_INSTANCE_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(FLOW_NODE_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(PROCESS_INSTANCE_ID_FOR_ACTIVITY)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(FLOW_NODE_TYPE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(FLOW_NODE_TOTAL_DURATION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
-        .endObject()
-        .startObject(FLOW_NODE_START_DATE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
-        .endObject()
-        .startObject(FLOW_NODE_END_DATE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
-        .endObject()
-        .startObject(FLOW_NODE_CANCELED)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
-        .endObject()
-        .startObject(FLOW_NODE_DEFINITION_KEY)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(FLOW_NODE_DEFINITION_VERSION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(FLOW_NODE_TENANT_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(USER_TASK_INSTANCE_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(USER_TASK_IDLE_DURATION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
-        .endObject()
-        .startObject(USER_TASK_WORK_DURATION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
-        .endObject()
-        .startObject(USER_TASK_DUE_DATE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
-        .endObject()
-        .startObject(USER_TASK_DELETE_REASON)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(USER_TASK_ASSIGNEE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(USER_TASK_CANDIDATE_GROUPS)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(USER_TASK_ASSIGNEE_OPERATIONS)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-        .startObject("properties");
-
-    addAssigneeOperationProperties(builder)
-        .endObject()
-        .endObject()
-        .startObject(USER_TASK_CANDIDATE_GROUP_OPERATIONS)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-        .startObject("properties");
-
-    addCandidateGroupOperationProperties(builder).endObject().endObject();
-    // @formatter:on
-    return builder;
-  }
-
-  private XContentBuilder addNestedVariableField(final XContentBuilder builder) throws IOException {
-    // @formatter:off
-    builder
-        .startObject(VARIABLE_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(VARIABLE_NAME)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(VARIABLE_TYPE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(VARIABLE_VALUE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .field(IGNORE_ABOVE_SETTING, IGNORE_ABOVE_CHAR_LIMIT)
-        .startObject(FIELDS);
-    addValueMultifields(builder)
-        .endObject()
-        .endObject()
-        .startObject(VARIABLE_VERSION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
-        .endObject();
-    return builder;
-    // @formatter:on
-  }
-
-  private XContentBuilder addAssigneeOperationProperties(final XContentBuilder builder)
-      throws IOException {
-    // @formatter:off
-    builder
-        .startObject(ASSIGNEE_OPERATION_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(ASSIGNEE_OPERATION_USER_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(ASSIGNEE_OPERATION_TYPE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(ASSIGNEE_OPERATION_TIMESTAMP)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
-        .endObject();
-    return builder;
-    // @formatter:on
-  }
-
-  private XContentBuilder addCandidateGroupOperationProperties(final XContentBuilder builder)
-      throws IOException {
-    // @formatter:off
-    builder
-        .startObject(CANDIDATE_GROUP_OPERATION_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(CANDIDATE_GROUP_OPERATION_GROUP_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(CANDIDATE_GROUP_OPERATION_TYPE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(CANDIDATE_GROUP_OPERATION_TIMESTAMP)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
-        .endObject();
-    return builder;
-    // @formatter:on
-  }
-
-  private XContentBuilder addNestedIncidentField(final XContentBuilder builder) throws IOException {
-    // @formatter:off
-    return builder
-        .startObject(INCIDENT_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(INCIDENT_CREATE_TIME)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
-        .endObject()
-        .startObject(INCIDENT_END_TIME)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
-        .endObject()
-        .startObject(INCIDENT_DURATION_IN_MS)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
-        .endObject()
-        .startObject(INCIDENT_INCIDENT_TYPE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(INCIDENT_ACTIVITY_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(INCIDENT_FAILED_ACTIVITY_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(INCIDENT_MESSAGE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
-        .field("index", true)
-        .endObject()
-        .startObject(INCIDENT_STATUS)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(INCIDENT_DEFINITION_KEY)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(INCIDENT_DEFINITION_VERSION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(INCIDENT_TENANT_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject();
-    // @formatter:on
   }
 }

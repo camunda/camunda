@@ -9,9 +9,16 @@ package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.ide
 
 import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES.createUserTaskFlowNodeTypeFilter;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.FilterAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.NestedAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
+import co.elastic.clients.util.NamedValue;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.IdentityType;
 import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
@@ -35,21 +42,10 @@ import io.camunda.optimize.service.db.report.result.CompositeCommandResult.Group
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.BucketOrder;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.nested.Nested;
-import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 public abstract class AbstractProcessGroupByIdentityInterpreterES
     extends AbstractProcessGroupByInterpreterES {
@@ -70,55 +66,80 @@ public abstract class AbstractProcessGroupByIdentityInterpreterES
   protected abstract AssigneeCandidateGroupService getAssigneeCandidateGroupService();
 
   @Override
-  public List<AggregationBuilder> createAggregation(
-      final SearchSourceBuilder searchSourceBuilder,
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
+      final BoolQuery boolQuery,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final TermsAggregationBuilder identityTermsAggregation =
-        AggregationBuilders.terms(GROUP_BY_IDENTITY_TERMS_AGGREGATION)
-            .size(
-                getConfigurationService()
-                    .getElasticSearchConfiguration()
-                    .getAggregationBucketLimit())
-            .order(BucketOrder.key(true))
-            .field(FLOW_NODE_INSTANCES + "." + getIdentityField())
-            .missing(GROUP_BY_IDENTITY_MISSING_KEY);
-    getDistributedByInterpreter()
-        .createAggregations(context, searchSourceBuilder.query())
-        .forEach(identityTermsAggregation::subAggregation);
-    final NestedAggregationBuilder groupByIdentityAggregation =
-        nested(FLOW_NODES_AGGREGATION, FLOW_NODE_INSTANCES)
-            .subAggregation(
-                filter(USER_TASKS_AGGREGATION, createUserTaskFlowNodeTypeFilter())
-                    .subAggregation(
-                        filter(
-                                // it's possible to do report evaluations over several definitions
-                                // versions. However, only the most recent
-                                // one is used to decide which user tasks should be taken into
-                                // account. To make sure that we only fetch
-                                // assignees related to this definition version we filter for
-                                // userTasks that only occur in the latest
-                                // version.
-                                FILTERED_USER_TASKS_AGGREGATION,
-                                ModelElementFilterQueryUtilES.createInclusiveFlowNodeIdFilterQuery(
-                                    context.getReportData(),
-                                    getUserTaskIds(context.getReportData()),
-                                    context.getFilterContext(),
-                                    getDefinitionService()))
-                            .subAggregation(identityTermsAggregation)));
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder().nested(n -> n.path(FLOW_NODE_INSTANCES));
+    builder.aggregations(
+        USER_TASKS_AGGREGATION,
+        Aggregation.of(
+            a ->
+                a.filter(f -> f.bool(createUserTaskFlowNodeTypeFilter().build()))
+                    .aggregations(
+                        // it's possible to do report evaluations over several definitions
+                        // versions. However, only the most recent
+                        // one is used to decide which user tasks should be taken into
+                        // account. To make sure that we only fetch
+                        // assignees related to this definition version we filter for
+                        // userTasks that only occur in the latest
+                        // version.
+                        FILTERED_USER_TASKS_AGGREGATION,
+                        Aggregation.of(
+                            aa ->
+                                aa.filter(
+                                        f ->
+                                            f.bool(
+                                                ModelElementFilterQueryUtilES
+                                                    .createInclusiveFlowNodeIdFilterQuery(
+                                                        context.getReportData(),
+                                                        getUserTaskIds(context.getReportData()),
+                                                        context.getFilterContext(),
+                                                        getDefinitionService())
+                                                    .build()))
+                                    .aggregations(
+                                        GROUP_BY_IDENTITY_TERMS_AGGREGATION,
+                                        Aggregation.of(
+                                            aaa -> {
+                                              Aggregation.Builder.ContainerBuilder terms =
+                                                  aaa.terms(
+                                                      t ->
+                                                          t.size(
+                                                                  getConfigurationService()
+                                                                      .getElasticSearchConfiguration()
+                                                                      .getAggregationBucketLimit())
+                                                              .field(
+                                                                  FLOW_NODE_INSTANCES
+                                                                      + "."
+                                                                      + getIdentityField())
+                                                              .order(
+                                                                  NamedValue.of(
+                                                                      "_key",
+                                                                      co.elastic.clients
+                                                                          .elasticsearch._types
+                                                                          .SortOrder.Asc))
+                                                              .missing(
+                                                                  GROUP_BY_IDENTITY_MISSING_KEY));
+                                              getDistributedByInterpreter()
+                                                  .createAggregations(context, boolQuery)
+                                                  .forEach(
+                                                      (k, v) -> terms.aggregations(k, v.build()));
+                                              return terms;
+                                            }))))));
 
-    return Collections.singletonList(groupByIdentityAggregation);
+    return Map.of(FLOW_NODES_AGGREGATION, builder);
   }
 
   @Override
   public void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
-      final SearchResponse response,
+      final ResponseBody<?> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final Aggregations aggregations = response.getAggregations();
-    final Nested flowNodes = aggregations.get(FLOW_NODES_AGGREGATION);
-    final Filter userTasks = flowNodes.getAggregations().get(USER_TASKS_AGGREGATION);
-    final Filter filteredUserTasks =
-        userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
+    final Map<String, Aggregate> aggregations = response.aggregations();
+    final NestedAggregate flowNodes = aggregations.get(FLOW_NODES_AGGREGATION).nested();
+    final FilterAggregate userTasks = flowNodes.aggregations().get(USER_TASKS_AGGREGATION).filter();
+    final FilterAggregate filteredUserTasks =
+        userTasks.aggregations().get(FILTERED_USER_TASKS_AGGREGATION).filter();
     final List<GroupByResult> groupedData =
         getByIdentityAggregationResults(response, filteredUserTasks, context);
 
@@ -154,17 +175,17 @@ public abstract class AbstractProcessGroupByIdentityInterpreterES
   }
 
   private List<GroupByResult> getByIdentityAggregationResults(
-      final SearchResponse response,
-      final Filter filteredUserTasks,
+      final ResponseBody<?> response,
+      final FilterAggregate filteredUserTasks,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final Terms byIdentityAggregation =
-        filteredUserTasks.getAggregations().get(GROUP_BY_IDENTITY_TERMS_AGGREGATION);
+    final StringTermsAggregate byIdentityAggregation =
+        filteredUserTasks.aggregations().get(GROUP_BY_IDENTITY_TERMS_AGGREGATION).sterms();
     final List<GroupByResult> groupedData = new ArrayList<>();
-    for (final Terms.Bucket identityBucket : byIdentityAggregation.getBuckets()) {
-      final String key = identityBucket.getKeyAsString();
+    for (final StringTermsBucket identityBucket : byIdentityAggregation.buckets().array()) {
+      final String key = identityBucket.key().stringValue();
       final List<DistributedByResult> distributedByResults =
           getDistributedByInterpreter()
-              .retrieveResult(response, identityBucket.getAggregations(), context);
+              .retrieveResult(response, identityBucket.aggregations(), context);
 
       if (GROUP_BY_IDENTITY_MISSING_KEY.equals(key)) {
         distributedByResults.forEach(

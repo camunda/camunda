@@ -10,24 +10,20 @@ package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.use
 import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES.createModelElementAggregationFilter;
 import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES.createUserTaskFlowNodeTypeFilter;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder.ContainerBuilder;
+import co.elastic.clients.elasticsearch._types.aggregations.FilterAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.SingleBucketAggregateBase;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
+import java.util.Map;
 import java.util.Optional;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
-import org.elasticsearch.search.aggregations.bucket.nested.Nested;
-import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 
 public abstract class AbstractGroupByUserTaskInterpreterES
     extends AbstractProcessGroupByInterpreterES {
@@ -37,41 +33,55 @@ public abstract class AbstractGroupByUserTaskInterpreterES
 
   protected abstract DefinitionService getDefinitionService();
 
-  protected NestedAggregationBuilder createFilteredUserTaskAggregation(
+  protected Map<String, ContainerBuilder> createFilteredUserTaskAggregation(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final QueryBuilder baseQueryBuilder,
-      final AggregationBuilder subAggregation) {
-    final FilterAggregationBuilder filteredUserTaskAggregation =
-        filter(USER_TASKS_AGGREGATION, createUserTaskFlowNodeTypeFilter())
-            .subAggregation(
-                filter(
-                        FILTERED_USER_TASKS_AGGREGATION,
-                        createModelElementAggregationFilter(
-                            context.getReportData(),
-                            context.getFilterContext(),
-                            getDefinitionService()))
-                    .subAggregation(subAggregation));
-
+      final BoolQuery baseQuery,
+      final String name,
+      final Aggregation subAggregation) {
     // sibling aggregation next to filtered userTask agg for distributedByPart for retrieval of all
     // keys that
     // should be present in distributedBy result via enrichContextWithAllExpectedDistributedByKeys
-    getDistributedByInterpreter()
-        .createAggregations(context, baseQueryBuilder)
-        .forEach(filteredUserTaskAggregation::subAggregation);
 
-    return nested(FLOW_NODE_AGGREGATION, FLOW_NODE_INSTANCES)
-        .subAggregation(filteredUserTaskAggregation);
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder().nested(n -> n.path(FLOW_NODE_INSTANCES));
+    builder.aggregations(
+        USER_TASKS_AGGREGATION,
+        Aggregation.of(
+            a -> {
+              Aggregation.Builder.ContainerBuilder aggregations =
+                  a.filter(f -> f.bool(createUserTaskFlowNodeTypeFilter().build()))
+                      .aggregations(
+                          FILTERED_USER_TASKS_AGGREGATION,
+                          Aggregation.of(
+                              aa ->
+                                  aa.filter(
+                                          f ->
+                                              f.bool(
+                                                  createModelElementAggregationFilter(
+                                                          context.getReportData(),
+                                                          context.getFilterContext(),
+                                                          getDefinitionService())
+                                                      .build()))
+                                      .aggregations(name, subAggregation)));
+              getDistributedByInterpreter()
+                  .createAggregations(context, baseQuery)
+                  .forEach((k, v) -> aggregations.aggregations(k, v.build()));
+              return aggregations;
+            }));
+    return Map.of(FLOW_NODE_AGGREGATION, builder);
   }
 
-  protected Optional<Filter> getFilteredUserTaskAggregation(final SearchResponse response) {
+  protected Optional<FilterAggregate> getFilteredUserTaskAggregation(
+      final ResponseBody<?> response) {
     return getUserTasksAggregation(response)
-        .map(SingleBucketAggregation::getAggregations)
-        .map(aggs -> aggs.get(FILTERED_USER_TASKS_AGGREGATION));
+        .map(SingleBucketAggregateBase::aggregations)
+        .map(aggs -> aggs.get(FILTERED_USER_TASKS_AGGREGATION).filter());
   }
 
-  protected Optional<ParsedFilter> getUserTasksAggregation(final SearchResponse response) {
-    return Optional.ofNullable(response.getAggregations())
-        .map(aggs -> aggs.get(FLOW_NODE_AGGREGATION))
-        .map(flowNodeAgg -> ((Nested) flowNodeAgg).getAggregations().get(USER_TASKS_AGGREGATION));
+  protected Optional<FilterAggregate> getUserTasksAggregation(final ResponseBody<?> response) {
+    return Optional.ofNullable(response.aggregations())
+        .filter(f -> !f.isEmpty())
+        .map(aggs -> aggs.get(FLOW_NODE_AGGREGATION).nested())
+        .map(flowNodeAgg -> flowNodeAgg.aggregations().get(USER_TASKS_AGGREGATION).filter());
   }
 }
