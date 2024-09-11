@@ -1838,20 +1838,27 @@ components:
         decisionKey:
           type: integer
           format: int64
+          description: The assigned key, which acts as a unique identifier for this decision definition.
         dmnDecisionId:
           type: string
+          description: The DMN id of the decision definition.
         dmnDecisionName:
           type: string
+          description: The DMN name of the decision definition.
         version:
           type: integer
           format: int32
+          description: The assigned version of the decision definition.
         dmnDecisionRequirementsId:
           type: string
+          description: the DMN id of the decision requirements graph that the decision definition is part of.
         decisionRequirementsKey:
           type: integer
           format: int64
+          description: The assigned key of the decision requirements graph that the decision definition is part of.
         tenantId:
           type: string
+          description: The tenant id of the decision definition.
     IncidentSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -2001,20 +2008,27 @@ components:
         decisionKey:
           type: integer
           format: int64
+          description: The assigned key, which acts as a unique identifier for this decision definition.
         dmnDecisionId:
           type: string
+          description: The DMN id of the decision definition.
         dmnDecisionName:
           type: string
+          description: The DMN name of the decision definition.
         version:
           type: integer
           format: int32
+          description: The assigned version of the decision definition.
         dmnDecisionRequirementsId:
           type: string
+          description: the DMN id of the decision requirements graph that the decision definition is part of.
         decisionRequirementsKey:
           type: integer
           format: int64
+          description: The assigned key of the decision requirements graph that the decision definition is part of.
         tenantId:
           type: string
+          description: The tenant id of the decision definition.
     AuthorizationPatchRequest:
       type: object
       properties:
@@ -2620,15 +2634,20 @@ components:
         decisionRequirementsKey:
           type: integer
           format: int64
+          description: The assigned key, which acts as a unique identifier for this decision requirements.
         dmnDecisionRequirementsName:
           type: string
+          description: The DMN name of the decision requirements.
         version:
           type: integer
           format: int32
+          description: The assigned version of the decision requirements.
         dmnDecisionRequirementsId:
           type: string
+          description: the DMN id of the decision requirements.
         tenantId:
           type: string
+          description: The tenant id of the decision requirements.
     DecisionRequirementsSearchQueryResponse:
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -2644,17 +2663,23 @@ components:
         decisionRequirementsKey:
           type: integer
           format: int64
+          description: The assigned key, which acts as a unique identifier for this decision requirements.
         dmnDecisionRequirementsName:
           type: string
+          description: The DMN name of the decision requirements.
         version:
           type: integer
           format: int32
+          description: The assigned version of the decision requirements.
         dmnDecisionRequirementsId:
           type: string
+          description: the DMN id of the decision requirements.
         resourceName:
           type: string
+          description: The name of the resource from which this decision requirements was parsed.
         tenantId:
           type: string
+          description: The tenant id of the decision requirements.
 
     MessageCorrelationRequest:
       type: object
@@ -3122,7 +3147,7 @@ components:
     SignalBroadcastRequest:
       type: object
       properties:
-        signalName :
+        signalName:
           description: The name of the signal to broadcast.
           type: string
         variables:
