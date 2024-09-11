@@ -7,8 +7,9 @@
  */
 package io.camunda.operate.webapp.elasticsearch.backup;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.atLeast;
@@ -70,7 +71,7 @@ public class ElasticsearchBackupRepositoryTest {
     final boolean finished =
         backupRepository.waitForFinishedSnapshotWithTimeout(repositoryName, snapshotName);
 
-    assertThat(finished).isFalse();
+    assertFalse(finished);
     verify(backupRepository, atLeast(5)).findSnapshots(repositoryName, backupId);
   }
 
@@ -91,7 +92,7 @@ public class ElasticsearchBackupRepositoryTest {
     final boolean finished =
         backupRepository.waitForFinishedSnapshotWithTimeout(repositoryName, snapshotName);
 
-    assertThat(finished).isTrue();
+    assertTrue(finished);
     verify(backupRepository, times(3)).findSnapshots(repositoryName, backupId);
   }
 
