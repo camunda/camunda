@@ -10,9 +10,11 @@ package io.camunda.zeebe.protocol.impl.record.value.user;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
@@ -24,13 +26,17 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   private final StringProperty emailProp = new StringProperty("email", "");
   private final StringProperty passwordProp = new StringProperty("password", "");
 
+  private final EnumProperty<AuthorizationOwnerType> userTypeProp =
+      new EnumProperty<>("userType", AuthorizationOwnerType.class, AuthorizationOwnerType.USER);
+
   public UserRecord() {
-    super(5);
+    super(6);
     declareProperty(userKeyProp)
         .declareProperty(usernameProp)
         .declareProperty(nameProp)
         .declareProperty(emailProp)
-        .declareProperty(passwordProp);
+        .declareProperty(passwordProp)
+        .declareProperty(userTypeProp);
   }
 
   public void wrap(final UserRecord record) {
@@ -108,6 +114,16 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   @Override
   public String getPassword() {
     return bufferAsString(passwordProp.getValue());
+  }
+
+  @Override
+  public AuthorizationOwnerType getUserType() {
+    return userTypeProp.getValue();
+  }
+
+  public UserRecord setUserType(final AuthorizationOwnerType userType) {
+    userTypeProp.setValue(userType);
+    return this;
   }
 
   public UserRecord setPassword(final String password) {

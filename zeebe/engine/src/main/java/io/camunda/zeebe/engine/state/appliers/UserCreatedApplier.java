@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 
 public class UserCreatedApplier implements TypedEventApplier<UserIntent, UserRecord> {
 
@@ -28,6 +27,6 @@ public class UserCreatedApplier implements TypedEventApplier<UserIntent, UserRec
   @Override
   public void applyState(final long key, final UserRecord value) {
     userState.create(key, value);
-    authorizationState.insertOwnerTypeByKey(key, AuthorizationOwnerType.USER);
+    authorizationState.insertOwnerTypeByKey(key, value.getUserType());
   }
 }

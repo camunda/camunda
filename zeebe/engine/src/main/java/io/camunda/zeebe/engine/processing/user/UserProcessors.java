@@ -30,5 +30,7 @@ public class UserProcessors {
         ValueType.USER,
         UserIntent.UPDATE,
         new UserUpdateProcessor(keyGenerator, processingState, writers, distributionBehavior));
+    typedRecordProcessors.withListener(
+        new DefaultUserCreator(keyGenerator, processingState, writers));
   }
 }

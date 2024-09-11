@@ -32,4 +32,6 @@ public interface UserRecordValue extends RecordValue {
   String getEmail();
 
   String getPassword();
+
+  AuthorizationOwnerType getUserType();
 }
