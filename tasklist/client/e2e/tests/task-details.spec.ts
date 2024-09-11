@@ -162,14 +162,9 @@ test.describe('task details page', () => {
       value: '{"Name":"John","Age":20}',
     });
     await tasksPage.completeTaskButton.click();
-    await expect(tasksPage.taskCompletionNotification).toBeVisible({
-      timeout: 60000,
-    });
+    await expect(tasksPage.taskCompletionNotification).toBeVisible();
 
     await tasksPage.openTask('JobWorker_user_task');
-    if (!(await page.isVisible('text=zeebeVar'))) {
-      page.reload();
-    }
     await expect(tasksPage.completeTaskButton).toBeDisabled();
     await tasksPage.assignToMeButton.click();
     await expect(tasksPage.completeTaskButton).toBeEnabled();
