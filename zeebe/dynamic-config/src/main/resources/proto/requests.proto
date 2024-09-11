@@ -34,6 +34,26 @@ message BrokerScaleRequest {
   optional uint32 newReplicationFactor = 3;
 }
 
+message ClusterScaleRequest {
+  optional uint32 newClusterSize = 1;
+  optional uint32 newPartitionCount = 2;
+  optional uint32 newReplicationFactor = 3;
+  bool dryRun = 4;
+}
+
+message ClusterPatchRequest {
+  repeated string membersToAdd = 1;
+  repeated string membersToRemove = 2;
+  optional uint32 newPartitionCount = 3;
+  optional uint32 newReplicationFactor = 4;
+  bool dryRun = 5;
+}
+
+message ForceRemoveBrokersRequest {
+  repeated string membersToRemove = 1;
+  bool dryRun = 2;
+}
+
 message ReassignAllPartitionsRequest {
   // The ids of the brokers to which all partitions should be re-distributed
   repeated string memberIds = 1;

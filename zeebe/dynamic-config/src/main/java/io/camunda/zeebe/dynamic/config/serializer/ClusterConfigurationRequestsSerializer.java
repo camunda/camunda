@@ -39,6 +39,15 @@ public interface ClusterConfigurationRequestsSerializer {
   byte[] encodeExporterEnableRequest(
       ClusterConfigurationManagementRequest.ExporterEnableRequest exporterEnableRequest);
 
+  byte[] encodeClusterScaleRequest(
+      ClusterConfigurationManagementRequest.ClusterScaleRequest clusterScaleRequest);
+
+  byte[] encodeClusterPatchRequest(
+      ClusterConfigurationManagementRequest.ClusterPatchRequest clusterPatchRequest);
+
+  byte[] encodeForceRemoveBrokersRequest(
+      ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest forceRemoveBrokersRequest);
+
   ClusterConfigurationManagementRequest.AddMembersRequest decodeAddMembersRequest(
       byte[] encodedState);
 
@@ -63,6 +72,15 @@ public interface ClusterConfigurationRequestsSerializer {
       byte[] encodedRequest);
 
   ClusterConfigurationManagementRequest.ExporterEnableRequest decodeExporterEnableRequest(
+      byte[] encodedRequest);
+
+  ClusterConfigurationManagementRequest.ClusterScaleRequest decodeClusterScaleRequest(
+      byte[] encodedRequest);
+
+  ClusterConfigurationManagementRequest.ClusterPatchRequest decodeClusterPatchRequest(
+      byte[] encodedRequest);
+
+  ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest decodeForceRemoveBrokersRequest(
       byte[] encodedRequest);
 
   byte[] encodeResponse(ClusterConfigurationChangeResponse response);

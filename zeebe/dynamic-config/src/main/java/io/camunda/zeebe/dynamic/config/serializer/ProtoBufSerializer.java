@@ -14,8 +14,11 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
@@ -682,6 +685,44 @@ public class ProtoBufSerializer
   }
 
   @Override
+  public byte[] encodeClusterScaleRequest(final ClusterScaleRequest clusterScaleRequest) {
+    final var builder =
+        Requests.ClusterScaleRequest.newBuilder().setDryRun(clusterScaleRequest.dryRun());
+
+    clusterScaleRequest.newClusterSize().ifPresent(builder::setNewClusterSize);
+    clusterScaleRequest.newReplicationFactor().ifPresent(builder::setNewReplicationFactor);
+    clusterScaleRequest.newPartitionCount().ifPresent(builder::setNewPartitionCount);
+
+    return builder.build().toByteArray();
+  }
+
+  @Override
+  public byte[] encodeClusterPatchRequest(final ClusterPatchRequest clusterPatchRequest) {
+    final var builder =
+        Requests.ClusterPatchRequest.newBuilder().setDryRun(clusterPatchRequest.dryRun());
+
+    clusterPatchRequest.newPartitionCount().ifPresent(builder::setNewPartitionCount);
+    clusterPatchRequest.newReplicationFactor().ifPresent(builder::setNewReplicationFactor);
+    clusterPatchRequest.membersToAdd().stream()
+        .forEach(memberId -> builder.addMembersToAdd(memberId.id()));
+    clusterPatchRequest.membersToRemove().stream()
+        .forEach(memberId -> builder.addMembersToRemove(memberId.id()));
+
+    return builder.build().toByteArray();
+  }
+
+  @Override
+  public byte[] encodeForceRemoveBrokersRequest(
+      final ForceRemoveBrokersRequest forceRemoveBrokersRequest) {
+    return Requests.ForceRemoveBrokersRequest.newBuilder()
+        .addAllMembersToRemove(
+            forceRemoveBrokersRequest.membersToRemove().stream().map(MemberId::id).toList())
+        .setDryRun(forceRemoveBrokersRequest.dryRun())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
   public AddMembersRequest decodeAddMembersRequest(final byte[] encodedState) {
     try {
       final var addMemberRequest = Requests.AddMembersRequest.parseFrom(encodedState);
@@ -799,6 +840,71 @@ public class ProtoBufSerializer
               : Optional.empty();
       return new ExporterEnableRequest(
           exporterEnableRequest.getExporterId(), initializeFrom, exporterEnableRequest.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public ClusterScaleRequest decodeClusterScaleRequest(final byte[] encodedRequest) {
+    try {
+      final var clusterScaleRequest = Requests.ClusterScaleRequest.parseFrom(encodedRequest);
+      final Optional<Integer> newClusterSize =
+          clusterScaleRequest.hasNewClusterSize()
+              ? Optional.of(clusterScaleRequest.getNewClusterSize())
+              : Optional.empty();
+      final Optional<Integer> newReplicationFactor =
+          clusterScaleRequest.hasNewReplicationFactor()
+              ? Optional.of(clusterScaleRequest.getNewReplicationFactor())
+              : Optional.empty();
+      final Optional<Integer> newPartitionCount =
+          clusterScaleRequest.hasNewPartitionCount()
+              ? Optional.of(clusterScaleRequest.getNewPartitionCount())
+              : Optional.empty();
+      return new ClusterScaleRequest(
+          newClusterSize, newPartitionCount, newReplicationFactor, clusterScaleRequest.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public ClusterPatchRequest decodeClusterPatchRequest(final byte[] encodedRequest) {
+    try {
+      final var clusterPatchRequest = Requests.ClusterPatchRequest.parseFrom(encodedRequest);
+      final Optional<Integer> newPartitionCount =
+          clusterPatchRequest.hasNewPartitionCount()
+              ? Optional.of(clusterPatchRequest.getNewPartitionCount())
+              : Optional.empty();
+      final Optional<Integer> newReplicationFactor =
+          clusterPatchRequest.hasNewReplicationFactor()
+              ? Optional.of(clusterPatchRequest.getNewReplicationFactor())
+              : Optional.empty();
+      return new ClusterPatchRequest(
+          clusterPatchRequest.getMembersToAddList().stream()
+              .map(MemberId::from)
+              .collect(Collectors.toSet()),
+          clusterPatchRequest.getMembersToRemoveList().stream()
+              .map(MemberId::from)
+              .collect(Collectors.toSet()),
+          newPartitionCount,
+          newReplicationFactor,
+          clusterPatchRequest.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public ForceRemoveBrokersRequest decodeForceRemoveBrokersRequest(final byte[] encodedRequest) {
+    try {
+      final var forceRemoveBrokersRequest =
+          Requests.ForceRemoveBrokersRequest.parseFrom(encodedRequest);
+      return new ForceRemoveBrokersRequest(
+          forceRemoveBrokersRequest.getMembersToRemoveList().stream()
+              .map(MemberId::from)
+              .collect(Collectors.toSet()),
+          forceRemoveBrokersRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
