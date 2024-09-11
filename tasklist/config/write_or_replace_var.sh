@@ -12,4 +12,8 @@ VAR=$1
 VALUE=$2
 FILE=$3
 
-grep -q "^$VAR=" $FILE || echo "$VAR=$VALUE" >> $FILE && sed -i "s|^$VAR=.*|$VAR=$VALUE|g" $FILE
+if ! grep -q "^$VAR=" $FILE; then
+  echo "$VAR=$VALUE" >> $FILE
+else
+  sed -i "s|^$VAR=.*|$VAR=$VALUE|g" $FILE
+fi

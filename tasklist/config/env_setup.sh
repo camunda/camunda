@@ -20,9 +20,9 @@ MAVEN_CONTEXT=/tmp/.env.maven-context.tmp
 ## Dump configuration to temporary file to source during Maven execution
 {
   grep -v '^#' "$DATABASE_CONFIG"
-  [ "$WITH_IDENTITY" = "true" ] && grep -v '^#' $IDENTITY_CONFIG || true
-  [ "$WITH_OAUTH" = "true" ] && grep -v '^#' $IDENTITY_OAUTH_CONFIG || true
-  [ "$WITH_MULTI_TENANCY" = "true" ] && grep -v '^#' $MULTI_TENANCY_CONFIG || true
+  [ "$WITH_IDENTITY" = "true" ] && grep -v '^#' "$IDENTITY_CONFIG" || true
+  [ "$WITH_OAUTH" = "true" ] && grep -v '^#' "$IDENTITY_OAUTH_CONFIG" || true
+  [ "$WITH_MULTI_TENANCY" = "true" ] && grep -v '^#' "$MULTI_TENANCY_CONFIG" || true
 } > $MAVEN_CONTEXT
 
 # Source the MAVEN_CONTEXT file
@@ -43,4 +43,8 @@ eval CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=\${EXT_CAMUNDA_TASKLIST_ZEEBE_RESTADDRES
 ./config/write_or_replace_var.sh "CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS" "$CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS" $MAVEN_CONTEXT
 
 # Cleanup temporary files
-#rm -rf $IDENTITY_CONFIG $IDENTITY_OAUTH_CONFIG $DATABASE_CONFIG $MULTI_TENANCY_CONFIG
+for file in $IDENTITY_CONFIG $IDENTITY_OAUTH_CONFIG $DATABASE_CONFIG $MULTI_TENANCY_CONFIG; do
+  if [ -e "$file" ]; then
+    rm -rf "$file"
+  fi
+done

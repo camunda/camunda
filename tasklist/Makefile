@@ -18,7 +18,7 @@ env-up: $(DATABASE) setup-maven-context
 
 # Set the env var ZEEBE_TASKLIST_AUTH0_CLIENTSECRET in your shell please, eg: export ZEEBE_TASKLIST_AUTH0_CLIENTSECRET=<client-secret>
 .PHONY: env-sso-up
-env-sso-up: elasticsearch setup-maven-context
+env-sso-up: $(DATABASE) setup-maven-context
 	$(eval SERVICES := zeebe)
 	$(eval SPRING_PROFILES_ACTIVE = dev,dev-data,sso-auth)
 	@set -o allexport && source $(MAVEN_CONTEXT) set +o allexport && \
@@ -157,12 +157,12 @@ endef
 
 .PHONY: setup-maven-context
 setup-maven-context:
-	DATABASE_CAPS=$(DATABASE_CAPS) ./config/env_setup.sh $(WITH_IDENTITY) $(WITH_OAUTH) $(WITH_MULTI_TENANCY)
+	DATABASE=$(DATABASE) DATABASE_CAPS=$(DATABASE_CAPS) ./config/env_setup.sh $(WITH_IDENTITY) $(WITH_OAUTH) $(WITH_MULTI_TENANCY)
 
 define run-env
 	@DATABASE=$(DATABASE) docker compose -f $(COMPOSE_FILE) up -d $(SERVICES)
 	@mvn clean install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
-	@set -o allexport && source $(MAVEN_CONTEXT) && set +o allexport && \
+	@set -o allexport && source $(MAVEN_CONTEXT) && set +o allexport && rm -rf $(MAVEN_CONTEXT) && \
      	mvn -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneTasklist" -Dspring.profiles.active=$(SPRING_PROFILES_ACTIVE)
 endef
 
