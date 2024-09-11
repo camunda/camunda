@@ -2049,9 +2049,11 @@ components:
             - ROLE
         permissions:
           type: array
+          description: The permissions to add/remove.
           items:
             properties:
               permissionType:
+                description: Specifies the type of permissions.
                 enum:
                   - CREATE
                   - READ
@@ -2059,6 +2061,7 @@ components:
                   - DELETE
               resourceIds:
                 type: array
+                description: A list of resource IDs the permission relates to.
                 items:
                   type: string
     UserRequest:
