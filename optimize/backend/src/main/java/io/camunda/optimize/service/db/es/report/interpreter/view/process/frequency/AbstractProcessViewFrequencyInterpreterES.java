@@ -13,8 +13,8 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.interpreter.view.process.frequency.ProcessViewFrequencyInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
 import java.util.Collections;
 import java.util.List;
@@ -25,7 +25,7 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 
 public abstract class AbstractProcessViewFrequencyInterpreterES
-    implements ProcessViewInterpreterES {
+    implements ProcessViewInterpreterES, ProcessViewFrequencyInterpreter {
 
   @Override
   public ViewResult createEmptyResult(
@@ -46,11 +46,5 @@ public abstract class AbstractProcessViewFrequencyInterpreterES
       ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final Filter count = aggregations.get(FREQUENCY_AGGREGATION);
     return createViewResult((double) count.getDocCount());
-  }
-
-  public ViewResult createViewResult(final Double value) {
-    return ViewResult.builder()
-        .viewMeasure(CompositeCommandResult.ViewMeasure.builder().value(value).build())
-        .build();
   }
 }
