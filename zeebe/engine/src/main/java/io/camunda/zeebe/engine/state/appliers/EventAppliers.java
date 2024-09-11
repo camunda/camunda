@@ -423,6 +423,9 @@ public final class EventAppliers implements EventApplier {
     register(
         CommandDistributionIntent.CONTINUATION_REQUESTED,
         new CommandDistributionContinuationRequestedApplier(distributionState));
+    register(
+        CommandDistributionIntent.CONTINUATION_COMPLETED,
+        new CommandDistributionContinuationCompletedApplier(distributionState));
   }
 
   private void registerAuthorizationAppliers(final MutableProcessingState state) {

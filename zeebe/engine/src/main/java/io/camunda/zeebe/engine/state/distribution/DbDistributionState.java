@@ -179,6 +179,14 @@ public class DbDistributionState implements MutableDistributionState {
   }
 
   @Override
+  public void removeContinuationCommand(final long key, final String queue) {
+    queueId.wrapString(queue);
+    distributionKey.wrapLong(key);
+
+    continuationCommandColumnFamily.deleteExisting(continuationCommandKey);
+  }
+
+  @Override
   public boolean hasRetriableDistribution(final long distributionKey) {
     this.distributionKey.wrapLong(distributionKey);
 

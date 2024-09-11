@@ -75,4 +75,6 @@ public interface MutableDistributionState extends DistributionState {
 
   void addContinuationCommand(
       final long key, final CommandDistributionRecord commandDistributionRecord);
+
+  void removeContinuationCommand(long key, String queue);
 }
