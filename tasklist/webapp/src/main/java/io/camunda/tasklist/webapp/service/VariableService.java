@@ -172,7 +172,9 @@ public class VariableService {
                 new VariableListViewEntity(variable)
                     .setScopeKey(taskFlowNodeInstanceId)
                     .setId(taskFlowNodeInstanceId + "-" + variable.getName())
-                    .setJoin(new ListViewJoinRelation("taskVariable", taskFlowNodeInstanceId))));
+                    .setJoin(
+                        new ListViewJoinRelation(
+                            "taskVariable", Long.valueOf(taskFlowNodeInstanceId)))));
 
     if (withDraftVariableValues) {
       // update/append with draft variables
@@ -206,7 +208,7 @@ public class VariableService {
               var.getValue(),
               task.getFlowNodeInstanceId(),
               tasklistProperties.getImporter().getVariableSizeThreshold(),
-              new ListViewJoinRelation("taskVariable", taskFlowNodeInstanceId)));
+              new ListViewJoinRelation("taskVariable", Long.valueOf(taskFlowNodeInstanceId))));
     }
     listViewStore.persistTaskVariables(finalVariablesListViewMap.values());
     variableStore.persistTaskVariables(finalVariablesMap.values());

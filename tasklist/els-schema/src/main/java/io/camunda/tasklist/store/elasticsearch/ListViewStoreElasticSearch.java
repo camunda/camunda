@@ -66,26 +66,36 @@ public class ListViewStoreElasticSearch implements ListViewStore {
                           termQuery(
                               TasklistListViewTemplate.VARIABLE_SCOPE_KEY, flowNodeInstanceId)));
 
-      final var searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final SearchHit[] hits = searchResponse.getHits().getHits();
+      ElasticsearchUtil.scrollWith(
+          searchRequest,
+          esClient,
+          hits -> {
+            for (final SearchHit hit : hits.getHits()) {
+              final VariableListViewEntity variableListViewEntity =
+                  ElasticsearchUtil.fromSearchHit(
+                      hit.getSourceAsString(), objectMapper, VariableListViewEntity.class);
 
-      for (final SearchHit hit : hits) {
-        final VariableListViewEntity variableListViewEntity =
-            fromSearchHit(hit.getSourceAsString(), objectMapper, VariableListViewEntity.class);
-
-        final var deleteRequest =
-            new DeleteRequest()
-                .index(tasklistListViewTemplate.getFullQualifiedName())
-                .id(variableListViewEntity.getId())
-                .routing(flowNodeInstanceId);
-
-        esClient.delete(deleteRequest, RequestOptions.DEFAULT);
-      }
+              final var deleteRequest =
+                  new DeleteRequest()
+                      .index(tasklistListViewTemplate.getFullQualifiedName())
+                      .id(variableListViewEntity.getId())
+                      .routing(flowNodeInstanceId);
+              try {
+                esClient.delete(deleteRequest, RequestOptions.DEFAULT);
+              } catch (final IOException e) {
+                throw new TasklistRuntimeException(
+                    String.format("Error removing variable [%s]", variableListViewEntity.getName()),
+                    e);
+              }
+            }
+          },
+          null, // No need for an aggregation processor
+          null // No need for processing first response metadata
+          );
     } catch (final IOException e) {
       throw new TasklistRuntimeException(
           String.format(
-              "Error removing job worker variable data for flowNodeInstanceId [%s]",
-              flowNodeInstanceId),
+              "Error to retrieve variable for the flowNodeInstanceId [%s]", flowNodeInstanceId),
           e);
     }
   }

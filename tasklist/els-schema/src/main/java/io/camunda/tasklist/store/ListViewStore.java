@@ -13,7 +13,7 @@ import java.util.List;
 
 public interface ListViewStore {
   /**
-   * Remove the task variable data for the given task's flow node instance ID. This ill be used
+   * Remove the task variable data for the given task's flow node instance ID. This will be used
    * meanwhile we still support Job Workers, and to clean up the task variable data once the task is
    * completed from a Job Worker side.
    *

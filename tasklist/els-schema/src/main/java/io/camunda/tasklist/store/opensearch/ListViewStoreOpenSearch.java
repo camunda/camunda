@@ -12,9 +12,11 @@ import static io.camunda.tasklist.util.OpenSearchUtil.UPDATE_RETRY_COUNT;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.listview.VariableListViewEntity;
+import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.store.ListViewStore;
+import io.camunda.tasklist.util.OpenSearchUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,8 +54,7 @@ public class ListViewStoreOpenSearch implements ListViewStore {
   public void removeVariableByFlowNodeInstanceId(final String flowNodeInstanceId) {
     try {
       final SearchRequest.Builder searchRequest =
-          new SearchRequest.Builder()
-              .index(tasklistListViewTemplate.getAlias())
+          OpenSearchUtil.createSearchRequest(tasklistListViewTemplate)
               .query(
                   q ->
                       q.term(
@@ -61,28 +62,42 @@ public class ListViewStoreOpenSearch implements ListViewStore {
                               t.field(TasklistListViewTemplate.VARIABLE_SCOPE_KEY)
                                   .value(FieldValue.of(flowNodeInstanceId))));
 
-      final SearchResponse<VariableListViewEntity> searchResponse =
-          osClient.search(searchRequest.build(), VariableListViewEntity.class);
+      OpenSearchUtil.scrollWith(
+          searchRequest,
+          osClient,
+          hits -> {
+            final List<BulkOperation> bulkOperations = new ArrayList<>();
+            for (final Hit hit : hits) {
+              final VariableListViewEntity variableListViewEntity =
+                  (VariableListViewEntity) hit.source();
+              final BulkOperation bulkOperation =
+                  new BulkOperation.Builder()
+                      .delete(
+                          d ->
+                              d.index(tasklistListViewTemplate.getFullQualifiedName())
+                                  .id(variableListViewEntity.getId())
+                                  .routing(flowNodeInstanceId))
+                      .build();
+              bulkOperations.add(bulkOperation);
+            }
 
-      final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
-      final List<BulkOperation> bulkOperations = new ArrayList<>();
-
-      for (final Hit<VariableListViewEntity> hit : searchResponse.hits().hits()) {
-        final VariableListViewEntity variableListViewEntity = hit.source();
-        final BulkOperation bulkOperation =
-            new BulkOperation.Builder()
-                .delete(
-                    d ->
-                        d.index(tasklistListViewTemplate.getFullQualifiedName())
-                            .id(variableListViewEntity.getId())
-                            .routing(flowNodeInstanceId))
-                .build();
-
-        bulkOperations.add(bulkOperation);
-      }
-
-      bulkRequest.operations(bulkOperations);
-      osClient.bulk(bulkRequest.build());
+            if (!bulkOperations.isEmpty()) {
+              final BulkRequest.Builder bulkRequest =
+                  new BulkRequest.Builder().operations(bulkOperations);
+              try {
+                OpenSearchUtil.processBulkRequest(osClient, bulkRequest.build());
+              } catch (final PersistenceException e) {
+                throw new TasklistRuntimeException(
+                    String.format(
+                        "Error removing set of variables for flowNodeInstanceId [%s]",
+                        flowNodeInstanceId),
+                    e);
+              }
+            }
+          },
+          null, // No need for an aggregation processor
+          null // No need for processing first response metadata
+          );
 
     } catch (final IOException e) {
       throw new TasklistRuntimeException(
