@@ -113,12 +113,11 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     this.resourceType.wrapString(resourceType.name());
     this.permissionType.wrapString(permissionType.name());
 
-    var identifiers =
-        resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.get(
-            ownerKeyAndResourceTypeAndPermissionCompositeKey);
-    if (identifiers == null) {
-      identifiers = new ResourceIdentifiers();
-    }
+    final var identifiers =
+        Optional.ofNullable(
+                resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.get(
+                    ownerKeyAndResourceTypeAndPermissionCompositeKey))
+            .orElse(new ResourceIdentifiers());
 
     identifiers.addResourceIdentifiers(resourceIds);
     resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.upsert(
