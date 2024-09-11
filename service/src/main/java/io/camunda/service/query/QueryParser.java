@@ -33,8 +33,7 @@ public class QueryParser {
       try {
         final Object value = field.get(request);
         if (value != null) {
-          if (value instanceof String) {
-            final String valueStr = (String) value;
+          if (value instanceof final String valueStr) {
 
             // Try to match the filter pattern (e.g., {$eq:CREATED}, {$in:[CREATED,COMPLETED]})
             final Matcher matcher = FILTER_PATTERN.matcher(valueStr);
