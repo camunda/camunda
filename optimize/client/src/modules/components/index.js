@@ -7,9 +7,7 @@
  */
 
 export {Table} from './Table';
-export {Button} from './Button';
 export {Modal} from './Modal';
-export {Dropdown} from './Dropdown';
 export {Deleter} from './Deleter';
 export {Input} from './Input';
 export {Select} from './Select';

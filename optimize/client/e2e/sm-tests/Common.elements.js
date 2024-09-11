@@ -83,3 +83,4 @@ export const kpiFilterButton = Selector('.filterTile .actions > button');
 export const kpiTemplateSelection = Selector('input#KpiSelectionComboBox');
 export const emptyStateAdd = Selector('.EmptyState .cds--btn--primary');
 export const processItem = listItemLink('process', true);
+export const templateOption = (text) => Selector('.Modal .templateContainer button').withText(text);

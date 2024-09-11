@@ -5,11 +5,11 @@ exports[`should show an error message when it is not possible to initilize the t
   noLink={true}
   text="Optimize could not be loaded, please make sure the server is running"
 >
-  <ForwardRef(Button)
-    link={true}
+  <Button
+    kind="ghost"
     onClick={[Function]}
   >
     Reload
-  </ForwardRef(Button)>
+  </Button>
 </ErrorPage>
 `;

@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {runAllEffects} from 'react';
+import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
-import {OverflowMenuItem} from '@carbon/react';
+import {OverflowMenu, OverflowMenuItem} from '@carbon/react';
 
-import {AlertModal, Dropdown, Deleter} from 'components';
+import {AlertModal, Deleter} from 'components';
 import {loadReports, loadAlerts, editAlert, addAlert, removeAlert, getCollection} from 'services';
 import {getWebhooks} from 'config';
 
@@ -110,7 +110,7 @@ it('should only show the dropdown inside a collection', () => {
 
   runAllEffects();
 
-  expect(node.find(Dropdown)).not.toExist();
+  expect(node.find(OverflowMenu)).not.toExist();
   expect(loadAlerts).not.toHaveBeenCalled();
 });
 

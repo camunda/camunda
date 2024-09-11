@@ -37,7 +37,7 @@ test('create a dashboard and reports from a template', async (t) => {
 
   await t.click(Common.templateModalProcessField);
   await t.click(Common.carbonOption('Order process'));
-  await t.click(e.templateOption('Improve productivity'));
+  await t.click(Common.templateOption('Improve productivity'));
 
   await t.takeScreenshot('img/dashboardTemplate.png', {fullPage: true});
   await t.resizeWindow(1200, 700);
@@ -162,7 +162,7 @@ test('sharing', async (t) => {
   await t.click(Common.createNewButton);
   await t.click(Common.menuOption('Dashboard'));
 
-  await t.click(e.templateOption('Improve productivity'));
+  await t.click(Common.templateOption('Improve productivity'));
 
   await t.click(Common.templateModalProcessField);
   await t.click(Common.carbonOption('Order process'));
@@ -622,7 +622,7 @@ test('copy dashboard tiles', async (t) => {
 
   await t.click(Common.templateModalProcessField);
   await t.click(Common.carbonOption('Order process'));
-  await t.click(e.templateOption('Improve productivity'));
+  await t.click(Common.templateOption('Improve productivity'));
   await t.click(Common.modalConfirmButton);
 
   // Text tile

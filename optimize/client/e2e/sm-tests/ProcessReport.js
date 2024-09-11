@@ -30,7 +30,7 @@ test('create a report from a template', async (t) => {
   await t.click(Common.templateModalProcessField);
   await t.click(Common.carbonOption('Order process'));
 
-  await t.click(e.templateOption('Analyze shares as pie chart'));
+  await t.click(Common.templateOption('Analyze shares as pie chart'));
 
   await t.takeScreenshot('img/reportTemplate.png', {fullPage: true});
   await t.maximizeWindow();

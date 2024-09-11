@@ -52,7 +52,7 @@ export function getUser(t, userHandle) {
 export async function createNewReport(t) {
   await t.click(Common.createNewButton);
   await t.click(Common.menuOption('Report'));
-  await t.click(Selector('.Button').withText('Blank report'));
+  await t.click(Selector('button').withText('Blank report'));
   await t.click(Selector(Common.modalConfirmButton));
   await toggleReportAutoPreviewUpdate(t);
 }
