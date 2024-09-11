@@ -129,4 +129,8 @@ public class Metrics {
   public Timer getTimer(final String name, final String... tags) {
     return registry.timer(name, tags);
   }
+
+  public Timer getHistogram(final String name, final String... tags) {
+    return Timer.builder(name).publishPercentileHistogram().tags(tags).register(registry);
+  }
 }
