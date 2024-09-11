@@ -30,7 +30,7 @@ public class IncidentServices
       final CamundaSearchClient searchClient,
       final ServiceTransformers transformers,
       final Authentication authentication) {
-    super(brokerClient, searchClient, transformers, authentication);
+    super(brokerClient, searchClient, transformers, authentication, true);
   }
 
   public SearchQueryResult<IncidentEntity> search(

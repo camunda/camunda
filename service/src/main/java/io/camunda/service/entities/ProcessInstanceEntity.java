@@ -8,6 +8,7 @@
 package io.camunda.service.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.service.security.auth.ResourceAuthorizationKey;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -15,7 +16,7 @@ public record ProcessInstanceEntity(
     Long key,
     String processName,
     Integer processVersion,
-    String bpmnProcessId,
+    @ResourceAuthorizationKey(forResourceType = "process-definition") String bpmnProcessId,
     Long parentProcessInstanceKey,
     Long parentFlowNodeInstanceKey,
     String startDate,
