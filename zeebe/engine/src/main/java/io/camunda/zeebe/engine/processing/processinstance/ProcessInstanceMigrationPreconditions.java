@@ -162,6 +162,13 @@ public final class ProcessInstanceMigrationPreconditions {
       but a concurrent command was executed on the process instance. \
       Please retry the migration.""";
 
+  private static final String ERROR_UPDATED_LOOP_CHARACTERISTICS =
+      """
+      Expected to migrate process instance '%s' \
+      but active element with id '%s' has a different loop characteristics \
+      than the target element with id '%s'. \
+      Both elements must have either sequential or parallel loop characteristics.""";
+
   private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
   private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
 
@@ -445,7 +452,7 @@ public final class ProcessInstanceMigrationPreconditions {
    *
    * @param targetProcessDefinition target process definition to retrieve the target element type
    * @param targetElementId target element id
-   * @param elementInstanceRecord element instance to do the check
+   * @param elementInstance element instance to do the check
    * @param processInstanceKey process instance key to be logged
    */
   public static void requireSameElementType(
@@ -471,6 +478,7 @@ public final class ProcessInstanceMigrationPreconditions {
           targetProcessDefinition
               .getProcess()
               .getElementById(targetElementId, ExecutableMultiInstanceBody.class);
+
       targetElementType = targetElement.getInnerActivity().getElementType();
       if (elementInstanceRecord.getBpmnElementType() == targetElementType) {
         return;
@@ -926,6 +934,41 @@ public final class ProcessInstanceMigrationPreconditions {
     final String message =
         ERROR_PENDING_DISTRIBUTION.formatted(processInstanceKey, elementId, eventElementId);
     requireNoPendingMigrationDistribution(distributionState, distributionKey, message);
+  }
+
+  public static void requireSameMultiInstanceLoopCharacteristics(
+      final DeployedProcess sourceProcessDefinition,
+      final String sourceElementId,
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final long processInstanceKey) {
+    final BpmnElementType targetElementType =
+        targetProcessDefinition.getProcess().getElementById(targetElementId).getElementType();
+    final BpmnElementType sourceElementType =
+        sourceProcessDefinition.getProcess().getElementById(sourceElementId).getElementType();
+    if (sourceElementType == BpmnElementType.MULTI_INSTANCE_BODY
+        && targetElementType == BpmnElementType.MULTI_INSTANCE_BODY) {
+      final var targetElement =
+          targetProcessDefinition
+              .getProcess()
+              .getElementById(targetElementId, ExecutableMultiInstanceBody.class);
+      final var sourceElement =
+          sourceProcessDefinition
+              .getProcess()
+              .getElementById(sourceElementId, ExecutableMultiInstanceBody.class);
+
+      if (targetElement.getLoopCharacteristics().isSequential()
+          != sourceElement.getLoopCharacteristics().isSequential()) {
+        final String reason =
+            String.format(
+                ERROR_UPDATED_LOOP_CHARACTERISTICS,
+                processInstanceKey,
+                sourceElementId,
+                targetElementId);
+        throw new ProcessInstanceMigrationPreconditionFailedException(
+            reason, RejectionType.INVALID_STATE);
+      }
+    }
   }
 
   /**

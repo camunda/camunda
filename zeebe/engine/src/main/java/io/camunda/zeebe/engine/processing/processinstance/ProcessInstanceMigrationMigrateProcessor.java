@@ -239,6 +239,12 @@ public class ProcessInstanceMigrationMigrateProcessor
         sourceProcessDefinition,
         targetProcessDefinition,
         elementId);
+    requireSameMultiInstanceLoopCharacteristics(
+        sourceProcessDefinition,
+        elementId,
+        targetProcessDefinition,
+        targetElementId,
+        processInstanceKey);
     requireNoConcurrentCommand(eventScopeInstanceState, elementInstance, processInstanceKey);
 
     stateWriter.appendFollowUpEvent(
