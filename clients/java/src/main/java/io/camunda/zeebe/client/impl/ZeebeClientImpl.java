@@ -33,6 +33,7 @@ import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
@@ -68,6 +69,7 @@ import io.camunda.zeebe.client.impl.command.ClockResetCommandImpl;
 import io.camunda.zeebe.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.CorrelateMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
+import io.camunda.zeebe.client.impl.command.CreateUserCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployResourceCommandImpl;
@@ -551,6 +553,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public IncidentQuery newIncidentQuery() {
     return new IncidentQueryImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public CreateUserCommandStep1 newUserCreateCommand() {
+    return new CreateUserCommandImpl(httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {

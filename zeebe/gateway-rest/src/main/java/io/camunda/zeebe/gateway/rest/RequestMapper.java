@@ -20,10 +20,12 @@ import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.vali
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ResourceRequestValidator.validateResourceDeletion;
 import static io.camunda.zeebe.gateway.rest.validator.SignalRequestValidator.validateSignalBroadcastRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
+import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserCreateRequest;
 
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
@@ -35,8 +37,10 @@ import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
+import io.camunda.service.UserServices.CreateUserRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
@@ -55,11 +59,14 @@ import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
@@ -256,6 +263,18 @@ public class RequestMapper {
         () -> new DocumentCreateRequest(documentId, storeId, inputStream, internalMetadata));
   }
 
+  public static Either<ProblemDetail, CreateUserRequest> toCreateUserRequest(
+      final UserRequest request) {
+    return getResult(
+        validateUserCreateRequest(request),
+        () ->
+            new CreateUserRequest(
+                request.getUsername(),
+                request.getName(),
+                request.getEmail(),
+                request.getPassword()));
+  }
+
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
       final Supplier<CompletableFuture<BrokerResponseT>> method,
       final Function<BrokerResponseT, ResponseEntity<Object>> result) {
@@ -441,6 +460,24 @@ public class RequestMapper {
     return getResult(
         validateCancelProcessInstanceRequest(request),
         () -> new ProcessInstanceCancelRequest(processInstanceKey, operationReference));
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceMigrateRequest> toMigrateProcessInstance(
+      final long processInstanceKey, final MigrateProcessInstanceRequest request) {
+    return getResult(
+        validateMigrateProcessInstanceRequest(request),
+        () ->
+            new ProcessInstanceMigrateRequest(
+                processInstanceKey,
+                request.getTargetProcessDefinitionKey(),
+                request.getMappingInstructions().stream()
+                    .map(
+                        instruction ->
+                            new ProcessInstanceMigrationMappingInstruction()
+                                .setSourceElementId(instruction.getSourceElementId())
+                                .setTargetElementId(instruction.getTargetElementId()))
+                    .toList(),
+                request.getOperationReference()));
   }
 
   private static <R> Map<String, Object> getMapOrEmpty(

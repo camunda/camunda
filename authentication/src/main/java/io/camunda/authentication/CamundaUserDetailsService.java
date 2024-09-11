@@ -9,7 +9,6 @@ package io.camunda.authentication;
 
 import io.camunda.service.UserServices;
 import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.Objects;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,9 +16,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 public class CamundaUserDetailsService implements UserDetailsService {
-  private final UserServices<UserRecord> userServices;
+  private final UserServices userServices;
 
-  public CamundaUserDetailsService(final UserServices<UserRecord> userServices) {
+  public CamundaUserDetailsService(final UserServices userServices) {
     this.userServices = userServices;
   }
 

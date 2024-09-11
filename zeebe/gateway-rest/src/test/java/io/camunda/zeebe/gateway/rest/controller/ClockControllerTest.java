@@ -32,10 +32,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 
-@WebMvcTest(AdministrationController.class)
-public class AdministrationControllerTest extends RestControllerTest {
+@WebMvcTest(ClockController.class)
+public class ClockControllerTest extends RestControllerTest {
 
-  private static final String CLOCK_URL = "/v2/administration/clock";
+  private static final String CLOCK_URL = "/v2/clock";
   private static final String RESET_CLOCK_URL = CLOCK_URL.concat("/reset");
 
   @MockBean private ClockServices clockServices;

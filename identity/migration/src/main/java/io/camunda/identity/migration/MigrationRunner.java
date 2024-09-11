@@ -23,7 +23,7 @@ import org.springframework.web.client.RestTemplate;
 @Profile("identity-migration")
 public class MigrationRunner implements ApplicationRunner {
 
-  final UserServices<UserRecord> userService;
+  final UserServices userService;
 
   final AuthorizationServices<AuthorizationRecord> authorizationServices;
 
@@ -33,8 +33,7 @@ public class MigrationRunner implements ApplicationRunner {
 
   public MigrationRunner(
       final UserServices<UserRecord> userService,
-      final AuthorizationServices<AuthorizationRecord> authorizationServices,
-      final AuthorizationMigrationHandler authorizationMigrationHandler) {
+      final AuthorizationServices<AuthorizationRecord> authorizationServices) {
     this.userService = userService;
     this.authorizationServices = authorizationServices;
     this.authorizationMigrationHandler = authorizationMigrationHandler;

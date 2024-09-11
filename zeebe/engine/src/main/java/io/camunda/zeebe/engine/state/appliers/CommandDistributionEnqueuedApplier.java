@@ -23,6 +23,7 @@ public class CommandDistributionEnqueuedApplier
 
   @Override
   public void applyState(final long key, final CommandDistributionRecord value) {
+    distributionState.addPendingDistribution(key, value.getPartitionId());
     distributionState.enqueueCommandDistribution(value.getQueueId(), key, value.getPartitionId());
   }
 }
