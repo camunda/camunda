@@ -49,7 +49,9 @@
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules && patch-package",
     "start-backend": "node scripts/start-backend",
+    "start-backend:opensearch": "node scripts/start-backend opensearch",
     "start-backend-cloud": "node scripts/start-backend cloud",
+    "start-backend-cloud:opensearch": "node scripts/start-backend cloud opensearch",
     "restart-backend": "curl http://localhost:8100/api/restartBackend",
     "dependencies": "node scripts/dependencies.js",
     "prepare": "cd .. && husky client/.husky"
