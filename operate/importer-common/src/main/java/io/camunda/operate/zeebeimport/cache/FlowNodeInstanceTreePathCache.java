@@ -124,7 +124,7 @@ public final class FlowNodeInstanceTreePathCache {
 
     final var treePath =
         treePathCacheMetrics.recordTimeOfTreePathResolvement(
-            () -> resolveTreePath(partitionCache, compositeKey));
+            partitionId, () -> resolveTreePath(partitionCache, compositeKey));
     treePathCacheMetrics.reportCacheSize(partitionId, partitionCache.size());
     return treePath;
   }

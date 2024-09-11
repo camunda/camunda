@@ -16,46 +16,46 @@
  */
 package io.camunda.operate.zeebeimport.cache;
 
+import io.camunda.operate.Metrics;
+import io.camunda.operate.zeebeimport.cache.TreePathCacheMetrics.CacheResult;
+import io.micrometer.core.instrument.Tag;
 import java.util.function.Supplier;
 
-/** Metrics interface to observer the {@link FlowNodeInstanceTreePathCache} access and results. */
-public interface TreePathCacheMetrics {
+public class TreePathCacheMetricsImpl implements TreePathCacheMetrics {
 
-  /**
-   * Report the cache access and the corresponding result, whether it was a {@link CacheResult#HIT}
-   * or {@link CacheResult#MISS}.
-   *
-   * @param partitionId the corresponding partition the cache belongs to
-   * @param result the cache access result
-   */
-  void reportCacheResult(int partitionId, CacheResult result);
+  private final Metrics metrics;
 
-  /**
-   * Record the cache resolution, implementations can track the time that is elapsed during the
-   * call.
-   *
-   * @param resolving the method to resolve the searched value either by look up in the cache or
-   *     using any other resolution strategy
-   * @return the result of the resolution
-   */
-  default String recordTimeOfTreePathResolvement(
-      final int partitionId, final Supplier<String> resolving) {
-    return resolving.get();
+  public TreePathCacheMetricsImpl(final Metrics metrics) {
+    this.metrics = metrics;
   }
 
-  /**
-   * Report the cache size for a specific partition, to indicate how many key-value pairs are
-   * currently stored.
-   *
-   * @param partitionId the partition to which the cache size corresponds
-   * @param size the reported cache size
-   */
-  void reportCacheSize(int partitionId, int size);
+  @Override
+  public void reportCacheResult(final int partitionId, final CacheResult result) {
+    metrics.recordCounts(
+        Metrics.COUNTER_NAME_FNI_TREE_PATH_CACHE_RESULT,
+        1,
+        Metrics.TAG_KEY_PARTITION,
+        Integer.toString(partitionId),
+        "cache.result",
+        result.toString());
+  }
 
-  enum CacheResult {
-    /** Entry was found in the cache */
-    HIT,
-    /** Entry was not found in the cache */
-    MISS
+  @Override
+  public String recordTimeOfTreePathResolvement(
+      final int partitionId, final Supplier<String> resolving) {
+    return metrics
+        .getTimer(
+            Metrics.TIMER_NAME_FNI_CACHE_ACCESS,
+            Metrics.TAG_KEY_PARTITION,
+            Integer.toString(partitionId))
+        .record(resolving);
+  }
+
+  @Override
+  public void reportCacheSize(final int partitionId, final int size) {
+    metrics.registerGauge(
+        Metrics.GAUGE_NAME_FNI_TREE_PATH_CACHE_SIZE,
+        size,
+        Tag.of(Metrics.TAG_KEY_PARTITION, Integer.toString(partitionId)));
   }
 }
