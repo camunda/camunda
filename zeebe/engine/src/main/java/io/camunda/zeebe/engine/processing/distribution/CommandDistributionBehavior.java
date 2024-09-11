@@ -172,19 +172,40 @@ public final class CommandDistributionBehavior {
         commandDistributionEnqueued.setQueueId(queue).setPartitionId(partition));
   }
 
+  void advanceQueue(final String queueId, final int partition) {
+    distributeNextInQueue(queueId, partition);
+    continueAfterQueue(queueId);
+  }
+
   /**
    * If the given distribution was part of a queue, the next distribution from the queue is started.
    */
-  void distributeNextInQueue(final long finishedDistributionKey, final int partition) {
+  private void distributeNextInQueue(final String queue, final int partition) {
     distributionState
-        .getQueueIdForDistribution(finishedDistributionKey)
-        .flatMap(queue -> distributionState.getNextQueuedDistributionKey(queue, partition))
+        .getNextQueuedDistributionKey(queue, partition)
         .ifPresent(
             nextDistributionKey ->
                 startDistributing(
                     partition,
                     distributionState.getCommandDistributionRecord(nextDistributionKey, partition),
                     nextDistributionKey));
+  }
+
+  private void continueAfterQueue(final String queue) {
+    if (distributionState.hasQueuedDistributions(queue)) {
+      return;
+    }
+    distributionState.forEachContinuationCommand(queue, this::handleContinuationCommand);
+  }
+
+  private void handleContinuationCommand(final long key, final CommandDistributionRecord record) {
+    final var intent = record.getIntent();
+    final var value = record.getCommandValue();
+
+    commandWriter.appendFollowUpCommand(key, intent, value);
+
+    record.setPartitionId(currentPartitionId);
+    stateWriter.appendFollowUpEvent(key, CommandDistributionIntent.CONTINUATION_COMPLETED, record);
   }
 
   private void startDistributing(

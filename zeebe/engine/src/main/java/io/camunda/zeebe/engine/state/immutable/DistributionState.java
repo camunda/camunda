@@ -93,6 +93,9 @@ public interface DistributionState {
    */
   boolean hasQueuedDistributions(String queue);
 
+  /** Visits each continuation command registered for the given queue. */
+  void forEachContinuationCommand(String queue, ContinuationCommandVisitor consumer);
+
   /** This visitor can visit pending distributions of {@link CommandDistributionRecord}. */
   @FunctionalInterface
   interface PendingDistributionVisitor {
@@ -104,5 +107,11 @@ public interface DistributionState {
      * @param pendingDistribution The pending distribution itself as command distribution record
      */
     void visit(final long distributionKey, final CommandDistributionRecord pendingDistribution);
+  }
+
+  @FunctionalInterface
+  interface ContinuationCommandVisitor {
+    /** Visits a registered continuation command. */
+    void visit(final long key, final CommandDistributionRecord continuationCommand);
   }
 }

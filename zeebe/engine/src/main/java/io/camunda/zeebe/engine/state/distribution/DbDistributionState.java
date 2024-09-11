@@ -307,4 +307,21 @@ public class DbDistributionState implements MutableDistributionState {
         });
     return hasQueuedDistributions.get();
   }
+
+  @Override
+  public void forEachContinuationCommand(
+      final String queue, final ContinuationCommandVisitor consumer) {
+    queueId.wrapString(queue);
+    continuationCommandColumnFamily.whileEqualPrefix(
+        queueId,
+        (key, value) -> {
+          final var commandDistributionRecord = new CommandDistributionRecord();
+          commandDistributionRecord.setQueueId(queue);
+          commandDistributionRecord.setValueType(value.getValueType());
+          commandDistributionRecord.setIntent(value.getIntent());
+          commandDistributionRecord.setCommandValue(value.getCommandValue());
+          consumer.visit(key.second().getValue(), commandDistributionRecord);
+          return true;
+        });
+  }
 }

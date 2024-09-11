@@ -57,7 +57,9 @@ public class CommandDistributionAcknowledgeProcessor
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.ACKNOWLEDGED, recordValue);
 
-    commandDistributionBehavior.distributeNextInQueue(distributionKey, partitionId);
+    distributionState
+        .getQueueIdForDistribution(distributionKey)
+        .ifPresent(queueId -> commandDistributionBehavior.advanceQueue(queueId, partitionId));
 
     if (!distributionState.hasPendingDistribution(distributionKey)) {
       // We write an empty command here as a distribution could contain a lot of data. Because of
