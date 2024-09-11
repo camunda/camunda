@@ -44,7 +44,7 @@ public class TreePathCacheMetricsImpl implements TreePathCacheMetrics {
   public String recordTimeOfTreePathResolvement(
       final int partitionId, final Supplier<String> resolving) {
     return metrics
-        .getTimer(
+        .getHistogram(
             Metrics.TIMER_NAME_FNI_CACHE_ACCESS,
             Metrics.TAG_KEY_PARTITION,
             Integer.toString(partitionId))
