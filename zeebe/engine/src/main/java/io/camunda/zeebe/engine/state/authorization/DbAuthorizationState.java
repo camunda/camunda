@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
@@ -20,6 +21,8 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.List;
+import java.util.Optional;
 
 public class DbAuthorizationState implements AuthorizationState, MutableAuthorizationState {
   private final PersistedAuthorization persistedAuthorization = new PersistedAuthorization();
@@ -38,12 +41,13 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
       resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily;
 
   private final DbString resourceId;
-  private final DbCompositeKey<DbString, DbLong> resourceIdAndOwnerKeyCompositeKey;
-  // resource id + owner key -> owner key + resource type + permission type
+  private final DbCompositeKey<DbString, DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>>>
+      resourceIdAndOwnerKeyAndResourceTypeAndPermissionTypeCompositeKey;
+  // resource id + owner key + resource type + permission type -> DbNil
   private final ColumnFamily<
-          DbCompositeKey<DbString, DbLong>,
-          DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>>>
-      authorizationKeyByResourceIdAndOwnerKeyColumnFamily;
+          DbCompositeKey<DbString, DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>>>,
+          DbNil>
+      authorizationKeyByResourceIdColumnFamily;
 
   private final DbString ownerType;
   // owner key -> owner type
@@ -66,13 +70,14 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
             resourceIdentifiers);
 
     resourceId = new DbString();
-    resourceIdAndOwnerKeyCompositeKey = new DbCompositeKey<>(resourceId, ownerKey);
-    authorizationKeyByResourceIdAndOwnerKeyColumnFamily =
+    resourceIdAndOwnerKeyAndResourceTypeAndPermissionTypeCompositeKey =
+        new DbCompositeKey<>(resourceId, ownerKeyAndResourceTypeAndPermissionCompositeKey);
+    authorizationKeyByResourceIdColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.AUTHORIZATION_KEY_BY_RESOURCE_ID_AND_OWNER_KEY,
+            ZbColumnFamilies.AUTHORIZATION_KEY_BY_RESOURCE_ID,
             transactionContext,
-            resourceIdAndOwnerKeyCompositeKey,
-            ownerKeyAndResourceTypeAndPermissionCompositeKey);
+            resourceIdAndOwnerKeyAndResourceTypeAndPermissionTypeCompositeKey,
+            DbNil.INSTANCE);
 
     ownerType = new DbString();
     ownerTypeByOwnerKeyColumnFamily =
@@ -99,13 +104,46 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   }
 
   @Override
+  public void createOrAddPermission(
+      final long ownerKey,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType,
+      final List<String> resourceIds) {
+    this.ownerKey.wrapLong(ownerKey);
+    this.resourceType.wrapString(resourceType.name());
+    this.permissionType.wrapString(permissionType.name());
+
+    final var identifiers =
+        Optional.ofNullable(
+                resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.get(
+                    ownerKeyAndResourceTypeAndPermissionCompositeKey))
+            .orElse(new ResourceIdentifiers());
+
+    identifiers.addResourceIdentifiers(resourceIds);
+    resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.upsert(
+        ownerKeyAndResourceTypeAndPermissionCompositeKey, identifiers);
+
+    resourceIds.forEach(
+        resourceId -> {
+          this.resourceId.wrapString(resourceId);
+          authorizationKeyByResourceIdColumnFamily.insert(
+              resourceIdAndOwnerKeyAndResourceTypeAndPermissionTypeCompositeKey, DbNil.INSTANCE);
+        });
+  }
+
+  @Override
+  public void insertOwnerTypeByKey(final long ownerKey, final AuthorizationOwnerType ownerType) {
+    this.ownerKey.wrapLong(ownerKey);
+    this.ownerType.wrapString(ownerType.name());
+    ownerTypeByOwnerKeyColumnFamily.insert(this.ownerKey, this.ownerType);
+  }
+
+  @Override
   public ResourceIdentifiers getResourceIdentifiers(
       final Long ownerKey,
-      final AuthorizationOwnerType ownerType,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
     this.ownerKey.wrapLong(ownerKey);
-    this.ownerType.wrapString(ownerType.name());
     this.resourceType.wrapString(resourceType.name());
     this.permissionType.wrapString(permissionType.name());
 
@@ -114,5 +152,17 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
             ownerKeyAndResourceTypeAndPermissionCompositeKey);
 
     return persistedPermissions == null ? null : persistedPermissions.copy();
+  }
+
+  @Override
+  public Optional<AuthorizationOwnerType> getOwnerType(final long ownerKey) {
+    this.ownerKey.wrapLong(ownerKey);
+    final var ownerType = ownerTypeByOwnerKeyColumnFamily.get(this.ownerKey);
+
+    if (ownerType == null) {
+      return Optional.empty();
+    }
+
+    return Optional.of(AuthorizationOwnerType.valueOf(ownerType.toString()));
   }
 }
