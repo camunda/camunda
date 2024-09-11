@@ -11,7 +11,6 @@ import static io.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGA
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.filterAggregation;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
 
-import java.util.Map;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
 import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterOS;
@@ -19,6 +18,7 @@ import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.view.process.frequency.ProcessViewFrequencyInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
+import java.util.Map;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;

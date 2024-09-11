@@ -11,9 +11,9 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PRO
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_INCIDENT_FREQUENCY;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_USER_TASK_FREQUENCY;
 
-import java.util.Set;
 import io.camunda.optimize.service.db.report.plan.process.ProcessView;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import java.util.Set;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 

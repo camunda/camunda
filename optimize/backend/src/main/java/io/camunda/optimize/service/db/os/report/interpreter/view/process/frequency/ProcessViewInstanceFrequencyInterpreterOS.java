@@ -9,13 +9,13 @@ package io.camunda.optimize.service.db.os.report.interpreter.view.process.freque
 
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_INSTANCE_FREQUENCY;
 
-import java.util.Set;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessView;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import java.util.Set;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
