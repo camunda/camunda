@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.impl.command;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 
 public final class ArgumentUtil {
 
@@ -71,5 +72,16 @@ public final class ArgumentUtil {
       throw new IllegalArgumentException(
           String.format("%s must be equal to or after %s", property, otherInstant));
     }
+  }
+
+  public static void ensureNotEmpty(final String property, final List<?> value) {
+    if (value.isEmpty()) {
+      throw new IllegalArgumentException(property + " must not be empty");
+    }
+  }
+
+  public static void ensureNotNullOrEmpty(final String property, final List<?> value) {
+    ensureNotNull(property, value);
+    ensureNotEmpty(property, value);
   }
 }
