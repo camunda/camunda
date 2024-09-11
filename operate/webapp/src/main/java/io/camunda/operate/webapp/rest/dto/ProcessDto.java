@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.rest.dto;
 
 import io.camunda.operate.entities.ProcessEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.Objects;
 
 @Schema(name = "Process object")
 public class ProcessDto implements CreatableFromEntity<ProcessDto, ProcessEntity> {
@@ -21,6 +22,7 @@ public class ProcessDto implements CreatableFromEntity<ProcessDto, ProcessEntity
   private String name;
   private int version;
   private String bpmnProcessId;
+  private String versionTag;
 
   public String getId() {
     return id;
@@ -58,46 +60,43 @@ public class ProcessDto implements CreatableFromEntity<ProcessDto, ProcessEntity
     return this;
   }
 
+  public String getVersionTag() {
+    return versionTag;
+  }
+
+  public ProcessDto setVersionTag(final String versionTag) {
+    this.versionTag = versionTag;
+    return this;
+  }
+
   @Override
   public ProcessDto fillFrom(final ProcessEntity processEntity) {
-    this.setId(processEntity.getId())
+    setId(processEntity.getId())
         .setBpmnProcessId(processEntity.getBpmnProcessId())
         .setName(processEntity.getName())
-        .setVersion(processEntity.getVersion());
+        .setVersion(processEntity.getVersion())
+        .setVersionTag(processEntity.getVersionTag());
     return this;
   }
 
   @Override
   public int hashCode() {
-    int result = id != null ? id.hashCode() : 0;
-    result = 31 * result + (name != null ? name.hashCode() : 0);
-    result = 31 * result + version;
-    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
-    return result;
+    return Objects.hash(id, name, version, bpmnProcessId, versionTag);
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-
     final ProcessDto that = (ProcessDto) o;
-
-    if (version != that.version) {
-      return false;
-    }
-    if (id != null ? !id.equals(that.id) : that.id != null) {
-      return false;
-    }
-    if (name != null ? !name.equals(that.name) : that.name != null) {
-      return false;
-    }
-    return bpmnProcessId != null
-        ? bpmnProcessId.equals(that.bpmnProcessId)
-        : that.bpmnProcessId == null;
+    return version == that.version
+        && Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(versionTag, that.versionTag);
   }
 }

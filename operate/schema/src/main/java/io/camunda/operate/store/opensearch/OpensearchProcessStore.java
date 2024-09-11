@@ -131,6 +131,7 @@ public class OpensearchProcessStore implements ProcessStore {
             ProcessIndex.ID,
             ProcessIndex.NAME,
             ProcessIndex.VERSION,
+            ProcessIndex.VERSION_TAG,
             ProcessIndex.BPMN_PROCESS_ID,
             ProcessIndex.TENANT_ID);
     final Query query =
