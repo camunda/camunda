@@ -641,7 +641,7 @@ paths:
     post:
       tags:
         - Process instance
-      summary: Start process instance
+      summary: Create process instance
       description: |
         Creates and starts an instance of the specified process.
         The process definition to use to create the instance can be specified either using its unique key
@@ -754,6 +754,55 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
+
+  /process-instances/{processInstanceKey}/migration:
+    post:
+      tags:
+        - Process instance
+      summary: Migrate process instance
+      description: |
+        Migrates a process instance to a new process definition.
+        This request can contain multiple mapping instructions to define mapping between the active
+        process instance's elements and target process definition elements.
+
+        Use this to upgrade a process instance to a new version of a process or to
+        a different process definition, e.g. to keep your running instances up-to-date with the
+        latest process improvements.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The key of the process instance that should be modified.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MigrateProcessInstanceRequest"
+      responses:
+        "204":
+          description: The process instance is modified.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The process instance is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
   /decision-definitions/search:
     post:
@@ -951,7 +1000,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserWithPasswordRequest"
+              $ref: "#/components/schemas/UserRequest"
         required: true
       responses:
         "204":
@@ -2005,7 +2054,7 @@ components:
                 type: array
                 items:
                   type: string
-    UserWithPasswordRequest:
+    UserRequest:
       type: "object"
       properties:
         password:
@@ -2247,7 +2296,6 @@ components:
           description: The exact time in epoch milliseconds to which the clock should be pinned.
           type: integer
           format: int64
-          minimum: 0
       required:
         - timestamp
     JobActivationRequest:
@@ -2362,7 +2410,7 @@ components:
           type: object
           additionalProperties: true
         tenantId:
-          description: the id of the tenant that owns the job
+          description: The ID of the tenant that owns the job
           type: string
     JobFailRequest:
       type: object
@@ -2807,7 +2855,7 @@ components:
           description: The resource name from which this process was parsed.
         tenantId:
           type: string
-          description: The tenant id of the deployed process.
+          description: The tenant ID of the deployed process.
     DeploymentDecision:
       type: object
       properties:
@@ -2830,7 +2878,7 @@ components:
           description: The DMN name of the decision, as parsed during deployment.
         tenantId:
           type: string
-          description: The tenant id of the deployed decision.
+          description: The tenant ID of the deployed decision.
         dmnDecisionRequirementsId:
           type: string
           description: |
@@ -2856,7 +2904,7 @@ components:
           description: The DMN name of the decision requirements, as parsed during deployment.
         tenantId:
           type: string
-          description: The tenant id of the deployed decision requirements.
+          description: The tenant ID of the deployed decision requirements.
         dmnDecisionRequirementsKey:
           type: integer
           format: int64
@@ -2886,7 +2934,7 @@ components:
           description: The resource name from which this form was parsed.
         tenantId:
           type: string
-          description: The tenant id of the deployed form.
+          description: The tenant ID of the deployed form.
 
     CreateProcessInstanceRequest:
       type: object
@@ -2987,6 +3035,41 @@ components:
           additionalProperties: true
           description: All the variables visible in the root scope.
           type: object
+    MigrateProcessInstanceRequest:
+      type: object
+      properties:
+        targetProcessDefinitionKey:
+          description: The key of process definition to migrate the process instance to.
+          type: integer
+          format: int64
+        mappingInstructions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MigrateProcessInstanceMappingInstruction"
+        operationReference:
+          description: >
+            A reference key chosen by the user that will be part of all records resulting from this operation.
+            Must be > 0 if provided.
+          type: integer
+          format: int64
+          minimum: 1
+      required:
+        - targetProcessDefinitionKey
+        - mappingInstructions
+    MigrateProcessInstanceMappingInstruction:
+      type: object
+      description: |
+        The mapping instructions describe how to map elements from the source process definition to the target process definition.
+      properties:
+        sourceElementId:
+          description: The element ID to migrate from.
+          type: string
+        targetElementId:
+          description: The element ID to migrate into.
+          type: string
+      required:
+        - sourceElementId
+        - targetElementId
 
     SetVariableRequest:
       type: object
@@ -3047,7 +3130,7 @@ components:
           description: The signal variables as a JSON object.
           type: object
         tenantId:
-          description: The id of the tenant that owns the signal.
+          description: The ID of the tenant that owns the signal.
           type: string
       required:
         - signalName
@@ -3059,7 +3142,7 @@ components:
           type: integer
           format: int64
         tenantId:
-          description: The tenant id of the signal that was broadcast.
+          description: The tenant ID of the signal that was broadcast.
           type: string
 
   securitySchemes:
