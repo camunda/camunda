@@ -104,7 +104,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   }
 
   @Override
-  public void createOrAddPermissions(
+  public void createOrAddPermission(
       final long ownerKey,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,

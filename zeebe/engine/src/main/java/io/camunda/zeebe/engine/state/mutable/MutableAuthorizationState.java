@@ -19,9 +19,9 @@ public interface MutableAuthorizationState extends AuthorizationState {
   void createAuthorization(final AuthorizationRecord authorizationRecord);
 
   /**
-   * Checks if an Authorization exists for the provided ownerKey, resourceType and permissionType.
-   * If it does, adds the permissions to this entry. If it does not, creates a new entry with the
-   * provided permissions.
+   * Checks if a Permission exists for the provided ownerKey, resourceType and permissionType. If it
+   * does, adds the resourceIds to this entry. If it does not, creates a new Permission with the
+   * provided resourceIds.
    *
    * @param ownerKey the key of the owner of the permissions. This could be a userKey, a roleKey or
    *     a groupKey
@@ -30,7 +30,7 @@ public interface MutableAuthorizationState extends AuthorizationState {
    * @param resourceIds A list of resourceIds the permissions are granted for (Eg.
    *     bpmnProcessId:foo, *)
    */
-  void createOrAddPermissions(
+  void createOrAddPermission(
       long ownerKey,
       AuthorizationResourceType resourceType,
       PermissionType permissionType,

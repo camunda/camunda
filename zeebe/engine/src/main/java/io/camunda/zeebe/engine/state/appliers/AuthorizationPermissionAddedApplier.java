@@ -30,7 +30,7 @@ public final class AuthorizationPermissionAddedApplier
 
     permissions.forEach(
         permission ->
-            authorizationState.createOrAddPermissions(
+            authorizationState.createOrAddPermission(
                 ownerKey,
                 resourceType,
                 permission.getPermissionType(),

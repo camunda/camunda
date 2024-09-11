@@ -153,7 +153,7 @@ public class AuthorizationStateTest {
     final var resourceIds = List.of("foo", "bar");
 
     // when
-    authorizationState.createOrAddPermissions(ownerKey, resourceType, permissionType, resourceIds);
+    authorizationState.createOrAddPermission(ownerKey, resourceType, permissionType, resourceIds);
 
     // then
     final var resourceIdentifiers =
@@ -170,10 +170,10 @@ public class AuthorizationStateTest {
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType = PermissionType.CREATE;
     final var resourceIds = List.of("foo", "bar");
-    authorizationState.createOrAddPermissions(ownerKey, resourceType, permissionType, resourceIds);
+    authorizationState.createOrAddPermission(ownerKey, resourceType, permissionType, resourceIds);
 
     // when
-    authorizationState.createOrAddPermissions(
+    authorizationState.createOrAddPermission(
         ownerKey, resourceType, permissionType, List.of("baz"));
 
     // then
@@ -191,9 +191,9 @@ public class AuthorizationStateTest {
     final var ownerKey2 = 2L;
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType = PermissionType.CREATE;
-    authorizationState.createOrAddPermissions(
+    authorizationState.createOrAddPermission(
         ownerKey1, resourceType, permissionType, List.of("foo"));
-    authorizationState.createOrAddPermissions(
+    authorizationState.createOrAddPermission(
         ownerKey2, resourceType, permissionType, List.of("bar"));
 
     // when
@@ -213,9 +213,9 @@ public class AuthorizationStateTest {
     final var resourceType1 = AuthorizationResourceType.DEPLOYMENT;
     final var resourceType2 = AuthorizationResourceType.JOB;
     final var permissionType = PermissionType.CREATE;
-    authorizationState.createOrAddPermissions(
+    authorizationState.createOrAddPermission(
         ownerKey, resourceType1, permissionType, List.of("foo"));
-    authorizationState.createOrAddPermissions(
+    authorizationState.createOrAddPermission(
         ownerKey, resourceType2, permissionType, List.of("bar"));
 
     // when
@@ -235,9 +235,9 @@ public class AuthorizationStateTest {
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType1 = PermissionType.CREATE;
     final var permissionType2 = PermissionType.UPDATE;
-    authorizationState.createOrAddPermissions(
+    authorizationState.createOrAddPermission(
         ownerKey, resourceType, permissionType1, List.of("foo"));
-    authorizationState.createOrAddPermissions(
+    authorizationState.createOrAddPermission(
         ownerKey, resourceType, permissionType2, List.of("bar"));
 
     // when
