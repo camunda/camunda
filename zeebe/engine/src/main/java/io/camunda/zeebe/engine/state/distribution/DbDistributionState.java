@@ -55,11 +55,12 @@ public class DbDistributionState implements MutableDistributionState {
   private final DbCompositeKey<DbString, DbCompositeKey<DbInt, DbForeignKey<DbLong>>>
       queuedDistributionKey;
 
-  /** [queue id | key] => persisted continuation command */
+  /** [queue id | continuation key] => persisted continuation command */
   private final ColumnFamily<DbCompositeKey<DbString, DbLong>, PersistedCommandDistribution>
       continuationCommandColumnFamily;
 
-  private final DbCompositeKey<DbString, DbLong> continuationCommandKey;
+  private final DbLong continuationKey;
+  private final DbCompositeKey<DbString, DbLong> continuationByQueueKey;
 
   public DbDistributionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -100,12 +101,13 @@ public class DbDistributionState implements MutableDistributionState {
             queuedDistributionKey,
             DbNil.INSTANCE);
 
-    continuationCommandKey = new DbCompositeKey<>(queueId, distributionKey);
+    continuationKey = new DbLong();
+    continuationByQueueKey = new DbCompositeKey<>(queueId, continuationKey);
     continuationCommandColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DISTRIBUTION_CONTINUATION,
             transactionContext,
-            continuationCommandKey,
+            continuationByQueueKey,
             new PersistedCommandDistribution());
   }
 
@@ -170,20 +172,21 @@ public class DbDistributionState implements MutableDistributionState {
   }
 
   @Override
-  public void addContinuationCommand(final long key, final CommandDistributionRecord record) {
+  public void addContinuationCommand(
+      final long continuationKey, final CommandDistributionRecord record) {
     queueId.wrapString(record.getQueueId());
-    distributionKey.wrapLong(key);
+    this.continuationKey.wrapLong(continuationKey);
 
     continuationCommandColumnFamily.insert(
-        continuationCommandKey, new PersistedCommandDistribution().wrap(record));
+        continuationByQueueKey, new PersistedCommandDistribution().wrap(record));
   }
 
   @Override
-  public void removeContinuationCommand(final long key, final String queue) {
+  public void removeContinuationCommand(final long continuationKey, final String queue) {
     queueId.wrapString(queue);
-    distributionKey.wrapLong(key);
+    this.continuationKey.wrapLong(continuationKey);
 
-    continuationCommandColumnFamily.deleteExisting(continuationCommandKey);
+    continuationCommandColumnFamily.deleteExisting(continuationByQueueKey);
   }
 
   @Override
@@ -323,12 +326,15 @@ public class DbDistributionState implements MutableDistributionState {
     continuationCommandColumnFamily.whileEqualPrefix(
         queueId,
         (key, value) -> {
+          final var continuationKey = key.second().getValue();
+
           final var commandDistributionRecord = new CommandDistributionRecord();
           commandDistributionRecord.setQueueId(queue);
           commandDistributionRecord.setValueType(value.getValueType());
           commandDistributionRecord.setIntent(value.getIntent());
           commandDistributionRecord.setCommandValue(value.getCommandValue());
-          consumer.visit(key.second().getValue(), commandDistributionRecord);
+
+          consumer.visit(continuationKey, commandDistributionRecord);
           return true;
         });
   }
