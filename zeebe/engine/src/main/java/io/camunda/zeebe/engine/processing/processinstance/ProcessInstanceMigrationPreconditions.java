@@ -451,8 +451,9 @@ public final class ProcessInstanceMigrationPreconditions {
   public static void requireSameElementType(
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
-      final ProcessInstanceRecord elementInstanceRecord,
+      final ElementInstance elementInstance,
       final long processInstanceKey) {
+    final ProcessInstanceRecord elementInstanceRecord = elementInstance.getValue();
     BpmnElementType targetElementType =
         targetProcessDefinition.getProcess().getElementById(targetElementId).getElementType();
 
@@ -462,8 +463,10 @@ public final class ProcessInstanceMigrationPreconditions {
 
     // if target element is a multi instance body, we should check the inner activity element type
     // because the inner activity of the multi instance body can still match the source element's
-    // type
-    if (targetElementType == BpmnElementType.MULTI_INSTANCE_BODY) {
+    // type. Also, multi instance loop counter indicates that the element instance is inside a multi
+    // instance body.
+    if (elementInstance.getMultiInstanceLoopCounter() > 0
+        && targetElementType == BpmnElementType.MULTI_INSTANCE_BODY) {
       final ExecutableMultiInstanceBody targetElement =
           targetProcessDefinition
               .getProcess()
