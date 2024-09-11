@@ -13,13 +13,20 @@ import static io.camunda.optimize.service.db.os.externalcode.client.dsl.Aggregat
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.filter;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
 import static io.camunda.optimize.service.db.os.report.filter.util.DateHistogramFilterUtilOS.createDecisionDateHistogramLimitingFilter;
+import static io.camunda.optimize.service.db.os.report.filter.util.DateHistogramFilterUtilOS.createFilterBoolQueryBuilder;
 import static io.camunda.optimize.service.db.os.report.filter.util.DateHistogramFilterUtilOS.extendBounds;
+import static io.camunda.optimize.service.db.os.report.filter.util.DateHistogramFilterUtilOS.getExtendedBoundsFromDateFilters;
 import static io.camunda.optimize.service.db.os.report.interpreter.util.AggregateByDateUnitMapperOS.mapToCalendarInterval;
 import static io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS.wrapWithFilterLimitedParentAggregation;
 import static io.camunda.optimize.service.db.report.service.DateAggregationService.getDateHistogramIntervalDurationFromMinMax;
 
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import io.camunda.optimize.service.db.os.report.context.DateAggregationContextOS;
+import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
+import io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -57,6 +64,21 @@ public class DateAggregationServiceOS {
   private static final String DATE_AGGREGATION = "dateAggregation";
 
   private final DateTimeFormatter dateTimeFormatter;
+
+  public Optional<Pair<String, Aggregation>> createProcessInstanceDateAggregation(
+      final DateAggregationContextOS context) {
+    if (context.getMinMaxStats().isEmpty()) {
+      // no instances present
+      return Optional.empty();
+    }
+
+    if (AggregateByDateUnit.AUTOMATIC.equals(context.getAggregateByDateUnit())) {
+      return Optional.of(
+          createAutomaticIntervalAggregationOrFallbackToMonth(
+              context, this::createFilterLimitedProcessDateHistogramWithSubAggregation));
+    }
+    return Optional.of(createFilterLimitedProcessDateHistogramWithSubAggregation(context));
+  }
 
   public Optional<Pair<String, Aggregation>> createDateVariableAggregation(
       final DateAggregationContextOS context) {
@@ -253,5 +275,69 @@ public class DateAggregationServiceOS {
     final List<Query> limitFilterQuery = createDecisionDateHistogramLimitingFilter(context);
     return wrapWithFilterLimitedParentAggregation(
         filter(limitFilterQuery), dateHistogramAggregation);
+  }
+
+  private Pair<String, Aggregation> createFilterLimitedProcessDateHistogramWithSubAggregation(
+      final DateAggregationContextOS context) {
+    final Pair<String, Aggregation> dateHistogramAggregation =
+        createDateHistogramAggregation(context, extendBoundsConsumer(context));
+    final Query limitFilterQuery = createProcessDateHistogramLimitingFilterQuery(context);
+    return FilterLimitedAggregationUtilOS.wrapWithFilterLimitedParentAggregation(
+        limitFilterQuery, dateHistogramAggregation);
+  }
+
+  private Consumer<DateHistogramAggregation.Builder> extendBoundsConsumer(
+      final DateAggregationContextOS context) {
+    return (DateHistogramAggregation.Builder builder) -> {
+      final ProcessQueryFilterEnhancerOS queryFilterEnhancer =
+          context.getProcessQueryFilterEnhancer();
+      final List<DateFilterDataDto<?>> dateFilters =
+          context.isStartDateAggregation()
+              ? queryFilterEnhancer.extractInstanceFilters(
+                  context.getProcessFilters(), InstanceStartDateFilterDto.class)
+              : queryFilterEnhancer.extractInstanceFilters(
+                  context.getProcessFilters(), InstanceEndDateFilterDto.class);
+      if (!dateFilters.isEmpty()) {
+        getExtendedBoundsFromDateFilters(dateFilters, dateTimeFormatter, context)
+            .ifPresent(builder::extendedBounds);
+      }
+    };
+  }
+
+  private static Query createProcessDateHistogramLimitingFilterQuery(
+      final DateAggregationContextOS context) {
+    final ProcessQueryFilterEnhancerOS queryFilterEnhancer =
+        context.getProcessQueryFilterEnhancer();
+    final List<DateFilterDataDto<?>> startDateFilters =
+        queryFilterEnhancer.extractInstanceFilters(
+            context.getProcessFilters(), InstanceStartDateFilterDto.class);
+    final List<DateFilterDataDto<?>> endDateFilters =
+        queryFilterEnhancer.extractInstanceFilters(
+            context.getProcessFilters(), InstanceEndDateFilterDto.class);
+    final List<Query> limitFilterQueries =
+        context.isStartDateAggregation()
+            ?
+            // if custom end filters and no startDateFilters are present, limit based on them
+            !endDateFilters.isEmpty() && startDateFilters.isEmpty()
+                ? createFilterBoolQueryBuilder(
+                    endDateFilters,
+                    queryFilterEnhancer.getInstanceEndDateQueryFilter(),
+                    context.getFilterContext())
+                : createFilterBoolQueryBuilder(
+                    startDateFilters,
+                    queryFilterEnhancer.getInstanceStartDateQueryFilter(),
+                    context.getFilterContext())
+            :
+            // if custom start filters and no endDateFilters are present, limit based on them
+            endDateFilters.isEmpty() && !startDateFilters.isEmpty()
+                ? createFilterBoolQueryBuilder(
+                    startDateFilters,
+                    queryFilterEnhancer.getInstanceStartDateQueryFilter(),
+                    context.getFilterContext())
+                : createFilterBoolQueryBuilder(
+                    endDateFilters,
+                    queryFilterEnhancer.getInstanceEndDateQueryFilter(),
+                    context.getFilterContext());
+    return filter(limitFilterQueries);
   }
 }

@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.db.os.report.context;
 
 import io.camunda.optimize.service.db.os.report.filter.DecisionQueryFilterEnhancerOS;
+import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.report.context.DateAggregationContext;
 import java.util.Map;
 import lombok.Getter;
@@ -20,4 +21,5 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 public class DateAggregationContextOS extends DateAggregationContext {
   @NonNull private final Map<String, Aggregation> subAggregations;
   private final DecisionQueryFilterEnhancerOS decisionQueryFilterEnhancer;
+  private final ProcessQueryFilterEnhancerOS processQueryFilterEnhancer;
 }
