@@ -22,7 +22,7 @@ public class FlownodeInstanceFilterTransformer
   @Override
   public SearchQuery toSearchQuery(final FlowNodeInstanceFilter filter) {
     return and(
-        getKeysQuery(filter.keys()),
+        longTerms("key", filter.flowNodeInstanceKeys()),
         longTerms("processInstanceKey", filter.processInstanceKeys()),
         longTerms("processDefinitionKey", filter.processDefinitionKeys()),
         stringTerms("state", filter.states()),
@@ -38,9 +38,5 @@ public class FlownodeInstanceFilterTransformer
   @Override
   public List<String> toIndices(final FlowNodeInstanceFilter filter) {
     return List.of("operate-flownode-instance-8.3.1_alias");
-  }
-
-  private SearchQuery getKeysQuery(final List<Long> keys) {
-    return longTerms("key", keys);
   }
 }

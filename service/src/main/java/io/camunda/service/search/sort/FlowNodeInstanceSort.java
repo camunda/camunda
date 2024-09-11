@@ -26,7 +26,7 @@ public record FlowNodeInstanceSort(List<FieldSorting> orderings) implements Sort
   public static final class Builder extends AbstractBuilder<Builder>
       implements ObjectBuilder<FlowNodeInstanceSort> {
 
-    public Builder key() {
+    public Builder flowNodeInstanceKey() {
       currentOrdering = new FieldSorting("key", null);
       return this;
     }

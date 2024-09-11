@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Objects;
 
 public record FlowNodeInstanceFilter(
-    List<Long> keys,
+    List<Long> flowNodeInstanceKeys,
     List<Long> processInstanceKeys,
     List<Long> processDefinitionKeys,
     List<String> states,
@@ -31,7 +31,7 @@ public record FlowNodeInstanceFilter(
 
   public static final class Builder implements ObjectBuilder<FlowNodeInstanceFilter> {
 
-    private List<Long> keys;
+    private List<Long> flowNodeInstanceKeys;
     private List<Long> processInstanceKeys;
     private List<Long> processDefinitionKeys;
     private List<String> states;
@@ -43,13 +43,13 @@ public record FlowNodeInstanceFilter(
     private List<Long> incidentKeys;
     private List<String> tenantIds;
 
-    public FlowNodeInstanceFilter.Builder keys(final List<Long> values) {
-      keys = addValuesToList(keys, values);
+    public FlowNodeInstanceFilter.Builder flowNodeInstanceKeys(final List<Long> values) {
+      flowNodeInstanceKeys = addValuesToList(flowNodeInstanceKeys, values);
       return this;
     }
 
     public FlowNodeInstanceFilter.Builder keys(final Long... values) {
-      return keys(collectValuesAsList(values));
+      return flowNodeInstanceKeys(collectValuesAsList(values));
     }
 
     public FlowNodeInstanceFilter.Builder processInstanceKeys(final List<Long> values) {
@@ -141,7 +141,7 @@ public record FlowNodeInstanceFilter(
     @Override
     public FlowNodeInstanceFilter build() {
       return new FlowNodeInstanceFilter(
-          Objects.requireNonNullElse(keys, Collections.emptyList()),
+          Objects.requireNonNullElse(flowNodeInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(states, Collections.emptyList()),
