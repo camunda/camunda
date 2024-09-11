@@ -51,16 +51,25 @@ public class Metrics {
       OPERATE_NAMESPACE + "archiver.reindex.query";
   public static final String TIMER_NAME_ARCHIVER_DELETE_QUERY =
       OPERATE_NAMESPACE + "archiver.delete.query";
+  public static final String TIMER_NAME_IMPORT_FNI_TREE_PATH_CACHE_ACCESS =
+      OPERATE_NAMESPACE + "import.fni.tree.path.cache.access";
   // Counters:
   public static final String COUNTER_NAME_EVENTS_PROCESSED = "events.processed";
   public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI =
       "events.processed.finished.process.instances";
   public static final String COUNTER_NAME_COMMANDS = "commands";
   public static final String COUNTER_NAME_ARCHIVED = "archived.process.instances";
+  public static final String COUNTER_NAME_IMPORT_FNI_TREE_PATH_CACHE_RESULT =
+      "import.fni.tree.path.cache.result";
+
   // Gauges:
-  public static final String GAUGE_IMPORT_QUEUE_SIZE = "import.queue.size";
+  public static final String GAUGE_IMPORT_QUEUE_SIZE = OPERATE_NAMESPACE + "import.queue.size";
   public static final String GAUGE_BPMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.bpmn.count";
   public static final String GAUGE_DMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.dmn.count";
+
+  public static final String GAUGE_NAME_IMPORT_FNI_TREE_PATH_CACHE_SIZE =
+      OPERATE_NAMESPACE + "import.fni.tree.path.cache.size";
+
   // Tags
   // -----
   //  Keys:
@@ -88,26 +97,33 @@ public class Metrics {
    * @param count - Number to count
    * @param tags - key value pairs of tags as Strings - The size of tags varargs must be even.
    */
-  public void recordCounts(String name, long count, String... tags) {
+  public void recordCounts(final String name, final long count, final String... tags) {
     registry.counter(OPERATE_NAMESPACE + name, tags).increment(count);
   }
 
   public <T> void registerGauge(
-      String name, T stateObject, ToDoubleFunction<T> valueFunction, String... tags) {
-    Gauge.builder(OPERATE_NAMESPACE + name, stateObject, valueFunction)
-        .tags(tags)
-        .register(registry);
+      final String name,
+      final T stateObject,
+      final ToDoubleFunction<T> valueFunction,
+      final String... tags) {
+    Gauge.builder(name, stateObject, valueFunction).tags(tags).register(registry);
   }
 
-  public void registerGaugeSupplier(String name, Supplier<Number> gaugeSupplier, String... tags) {
+  public void registerGaugeSupplier(
+      final String name, final Supplier<Number> gaugeSupplier, final String... tags) {
     Gauge.builder(name, gaugeSupplier).tags(tags).register(registry);
   }
 
-  public <E> void registerGaugeQueueSize(String name, Queue<E> queue, String... tags) {
+  public <E> void registerGaugeQueueSize(
+      final String name, final Queue<E> queue, final String... tags) {
     registerGauge(name, queue, q -> q.size(), tags);
   }
 
-  public Timer getTimer(String name, String... tags) {
+  public Timer getTimer(final String name, final String... tags) {
     return registry.timer(name, tags);
+  }
+
+  public Timer getHistogram(final String name, final String... tags) {
+    return Timer.builder(name).publishPercentileHistogram().tags(tags).register(registry);
   }
 }
