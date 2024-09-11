@@ -12,6 +12,7 @@ import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
@@ -19,7 +20,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
 import io.camunda.zeebe.dynamic.config.protocol.Requests;
@@ -641,9 +641,9 @@ public class ProtoBufSerializer
   }
 
   @Override
-  public byte[] encodeScaleRequest(final ScaleRequest scaleRequest) {
+  public byte[] encodeScaleRequest(final BrokerScaleRequest scaleRequest) {
     final var builder =
-        Requests.ScaleRequest.newBuilder()
+        Requests.BrokerScaleRequest.newBuilder()
             .addAllMemberIds(scaleRequest.members().stream().map(MemberId::id).toList())
             .setDryRun(scaleRequest.dryRun());
 
@@ -752,14 +752,14 @@ public class ProtoBufSerializer
   }
 
   @Override
-  public ScaleRequest decodeScaleRequest(final byte[] encodedState) {
+  public BrokerScaleRequest decodeScaleRequest(final byte[] encodedState) {
     try {
-      final var scaleRequest = Requests.ScaleRequest.parseFrom(encodedState);
+      final var scaleRequest = Requests.BrokerScaleRequest.parseFrom(encodedState);
       final Optional<Integer> newReplicationFactor =
           scaleRequest.hasNewReplicationFactor()
               ? Optional.of(scaleRequest.getNewReplicationFactor())
               : Optional.empty();
-      return new ScaleRequest(
+      return new BrokerScaleRequest(
           scaleRequest.getMemberIdsList().stream().map(MemberId::from).collect(Collectors.toSet()),
           newReplicationFactor,
           scaleRequest.getDryRun());

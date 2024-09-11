@@ -15,6 +15,7 @@ import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier.ClusterClusterConfigurationAwareCoordinatorSupplier;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -216,8 +217,7 @@ final class ClusterConfigurationManagementApiTest {
   @Test
   void shouldScaleBrokers() {
     // given
-    final var request =
-        new ClusterConfigurationManagementRequest.ScaleRequest(Set.of(id0, id1), false);
+    final var request = new BrokerScaleRequest(Set.of(id0, id1), false);
     final ClusterConfiguration currentTopology =
         initialTopology
             .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
@@ -239,9 +239,7 @@ final class ClusterConfigurationManagementApiTest {
   @Test
   void shouldScaleBrokersWithNewReplicationFactor() {
     // given
-    final var request =
-        new ClusterConfigurationManagementRequest.ScaleRequest(
-            Set.of(id0, id1), Optional.of(2), false);
+    final var request = new BrokerScaleRequest(Set.of(id0, id1), Optional.of(2), false);
     final ClusterConfiguration currentTopology =
         initialTopology
             .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
@@ -265,9 +263,7 @@ final class ClusterConfigurationManagementApiTest {
   @Test
   void shouldRejectScaleRequestWithInvalidReplicationFactor() {
     // given
-    final var request =
-        new ClusterConfigurationManagementRequest.ScaleRequest(
-            Set.of(id0, id1), Optional.of(0), false);
+    final var request = new BrokerScaleRequest(Set.of(id0, id1), Optional.of(0), false);
     final ClusterConfiguration currentTopology =
         initialTopology
             .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
@@ -289,9 +285,7 @@ final class ClusterConfigurationManagementApiTest {
   @Test
   void shouldReduceReplicationFactorWithoutScalingDown() {
     // given
-    final var request =
-        new ClusterConfigurationManagementRequest.ScaleRequest(
-            Set.of(id0, id1), Optional.of(1), false);
+    final var request = new BrokerScaleRequest(Set.of(id0, id1), Optional.of(1), false);
     final ClusterConfiguration currentTopology =
         initialTopology
             .updateMember(id0, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
@@ -317,8 +311,7 @@ final class ClusterConfigurationManagementApiTest {
   @Test
   void shouldForceScaleDown() {
     // given
-    final var request =
-        new ClusterConfigurationManagementRequest.ScaleRequest(Set.of(id0, id2), false);
+    final var request = new BrokerScaleRequest(Set.of(id0, id2), false);
     final ClusterConfiguration currentTopology =
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()))
@@ -394,9 +387,7 @@ final class ClusterConfigurationManagementApiTest {
   @Test
   void shouldReturnInvalidErrorForInvalidRequests() {
     // given
-    final var request =
-        new ClusterConfigurationManagementRequest.ScaleRequest(
-            Set.of(), false); // invalid request when no brokers
+    final var request = new BrokerScaleRequest(Set.of(), false); // invalid request when no brokers
     recordingCoordinator.setCurrentTopology(initialTopology);
 
     // when

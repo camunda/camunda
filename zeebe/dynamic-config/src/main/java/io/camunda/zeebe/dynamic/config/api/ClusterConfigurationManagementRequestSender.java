@@ -9,13 +9,13 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ScaleRequest;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationRequestsSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.util.Either;
@@ -95,7 +95,7 @@ public final class ClusterConfigurationManagementRequestSender {
   }
 
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> scaleMembers(
-      final ScaleRequest scaleRequest) {
+      final BrokerScaleRequest scaleRequest) {
     return communicationService.send(
         ClusterConfigurationRequestTopics.SCALE_MEMBERS.topic(),
         scaleRequest,
@@ -106,7 +106,7 @@ public final class ClusterConfigurationManagementRequestSender {
   }
 
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
-      forceScaleDown(final ScaleRequest forceScaleDownRequest) {
+      forceScaleDown(final BrokerScaleRequest forceScaleDownRequest) {
     return communicationService.send(
         ClusterConfigurationRequestTopics.FORCE_SCALE_DOWN.topic(),
         forceScaleDownRequest,

@@ -28,7 +28,7 @@ message LeavePartitionRequest {
   bool dryRun = 3;
 }
 
-message ScaleRequest {
+message BrokerScaleRequest {
   repeated string memberIds = 1;
   bool dryRun = 2;
   optional uint32 newReplicationFactor = 3;
