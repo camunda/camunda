@@ -47,7 +47,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   private final ColumnFamily<
           DbCompositeKey<DbString, DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>>>,
           DbNil>
-      authorizationKeyByResourceIdAndOwnerKeyColumnFamily;
+      authorizationKeyByResourceIdColumnFamily;
 
   private final DbString ownerType;
   // owner key -> owner type
@@ -72,9 +72,9 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     resourceId = new DbString();
     resourceIdAndOwnerKeyAndResourceTypeAndPermissionTypeCompositeKey =
         new DbCompositeKey<>(resourceId, ownerKeyAndResourceTypeAndPermissionCompositeKey);
-    authorizationKeyByResourceIdAndOwnerKeyColumnFamily =
+    authorizationKeyByResourceIdColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.AUTHORIZATION_KEY_BY_RESOURCE_ID_AND_OWNER_KEY,
+            ZbColumnFamilies.AUTHORIZATION_KEY_BY_RESOURCE_ID,
             transactionContext,
             resourceIdAndOwnerKeyAndResourceTypeAndPermissionTypeCompositeKey,
             DbNil.INSTANCE);
@@ -127,7 +127,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     resourceIds.forEach(
         resourceId -> {
           this.resourceId.wrapString(resourceId);
-          authorizationKeyByResourceIdAndOwnerKeyColumnFamily.insert(
+          authorizationKeyByResourceIdColumnFamily.insert(
               resourceIdAndOwnerKeyAndResourceTypeAndPermissionTypeCompositeKey, DbNil.INSTANCE);
         });
   }
