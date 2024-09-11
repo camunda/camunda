@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.distribution;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
@@ -39,6 +40,7 @@ import java.util.Set;
 public final class CommandDistributionBehavior {
 
   private final DistributionState distributionState;
+  private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
   private final RoutingInfo routingInfo;
@@ -63,6 +65,7 @@ public final class CommandDistributionBehavior {
       final RoutingInfo routingInfo,
       final InterPartitionCommandSender partitionCommandSender) {
     this.distributionState = distributionState;
+    commandWriter = writers.command();
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
     this.routingInfo = routingInfo;
@@ -248,6 +251,32 @@ public final class CommandDistributionBehavior {
         });
   }
 
+  private <T extends UnifiedRecordValue> void requestContinuation(
+      final String queue,
+      final long key,
+      final boolean awaitNonEmptyQueue,
+      final ValueType valueType,
+      final Intent intent,
+      final T value) {
+    final var writeImmediately =
+        !awaitNonEmptyQueue && !distributionState.hasQueuedDistributions(queue);
+
+    if (writeImmediately) {
+      commandWriter.appendFollowUpCommand(key, intent, value);
+      return;
+    }
+
+    final var distributionRecord = new CommandDistributionRecord();
+    distributionRecord.setQueueId(queue);
+    distributionRecord.setPartitionId(currentPartitionId);
+    distributionRecord.setValueType(valueType);
+    distributionRecord.setIntent(intent);
+    distributionRecord.setCommandValue(value);
+
+    stateWriter.appendFollowUpEvent(
+        key, CommandDistributionIntent.CONTINUATION_REQUESTED, distributionRecord);
+  }
+
   public interface RequestBuilder {
     DistributionRequestBuilder unordered();
 
@@ -368,13 +397,19 @@ public final class CommandDistributionBehavior {
 
     @Override
     public <T extends UnifiedRecordValue> void continueWith(final TypedRecord<T> command) {
-      throw new UnsupportedOperationException("Not implemented yet");
+      requestContinuation(
+          queue,
+          distributionKey,
+          awaitNonEmptyQueue,
+          command.getValueType(),
+          command.getIntent(),
+          command.getValue());
     }
 
     @Override
     public <T extends UnifiedRecordValue> void continueWith(
         final ValueType valueType, final Intent intent, final T value) {
-      throw new UnsupportedOperationException("Not implemented yet");
+      requestContinuation(queue, distributionKey, awaitNonEmptyQueue, valueType, intent, value);
     }
   }
 }

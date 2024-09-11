@@ -21,7 +21,8 @@ public enum CommandDistributionIntent implements Intent {
   ACKNOWLEDGE(2),
   ACKNOWLEDGED(3),
   FINISHED(4),
-  ENQUEUED(5);
+  ENQUEUED(5),
+  CONTINUATION_REQUESTED(6);
 
   private final short value;
 
@@ -42,6 +43,7 @@ public enum CommandDistributionIntent implements Intent {
       case ACKNOWLEDGED:
       case FINISHED:
       case ENQUEUED:
+      case CONTINUATION_REQUESTED:
         return true;
       default:
         return false;
@@ -62,6 +64,8 @@ public enum CommandDistributionIntent implements Intent {
         return FINISHED;
       case 5:
         return ENQUEUED;
+      case 6:
+        return CONTINUATION_REQUESTED;
       default:
         return Intent.UNKNOWN;
     }
