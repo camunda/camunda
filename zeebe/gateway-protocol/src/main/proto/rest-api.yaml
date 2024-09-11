@@ -623,10 +623,10 @@ paths:
   /flownode-instances/search:
     post:
       tags:
-        - Flownode Instance
-      summary: Query flownode instances (experimental)
+        - Flow node Instance
+      summary: Query flow node instances (experimental)
       description: |
-        Search for flownode instances based on given criteria.
+        Search for flow node instances based on given criteria.
 
         :::note
         This endpoint is experimental and not enabled on Camunda clusters out of the box.
@@ -638,18 +638,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/FlownodeInstanceSearchQueryRequest"
+              $ref: "#/components/schemas/FlowNodeInstanceSearchQueryRequest"
       responses:
         "200":
           description: >
-            The Flownode Instance Search successful response.
+            The Flow node instance search successful response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FlownodeInstanceSearchQueryResponse"
+                $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResponse"
         "400":
           description: >
-            The Flownode Instance Search Query failed.
+            The Flow node instance Search Query failed.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -1284,18 +1284,18 @@ components:
         endDate:
           type: string
           format: date-time
-    FlownodeInstanceSearchQueryRequest:
+    FlowNodeInstanceSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
       properties:
         filter:
           allOf:
-            - $ref: "#/components/schemas/FlownodeInstanceFilterRequest"
-    FlownodeInstanceFilterRequest:
+            - $ref: "#/components/schemas/FlowNodeInstanceFilterRequest"
+    FlowNodeInstanceFilterRequest:
       type: object
       properties:
-        key:
+        flowNodeInstanceKey:
           type: integer
           format: int64
         processInstanceKey:
@@ -1321,7 +1321,7 @@ components:
           format: int64
         tenantId:
           type: string
-    FlownodeInstanceSearchQueryResponse:
+    FlowNodeInstanceSearchQueryResponse:
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
       type: object
@@ -1329,11 +1329,11 @@ components:
         items:
           type: array
           items:
-            $ref: "#/components/schemas/FlownodeInstanceItem"
-    FlownodeInstanceItem:
+            $ref: "#/components/schemas/FlowNodeInstanceItem"
+    FlowNodeInstanceItem:
       type: object
       properties:
-        key:
+        flowNodeInstanceKey:
           type: integer
           format: int64
         processInstanceKey:

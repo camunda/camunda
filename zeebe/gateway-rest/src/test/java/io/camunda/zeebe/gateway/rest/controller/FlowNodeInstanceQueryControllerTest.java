@@ -11,9 +11,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.service.FlownodeInstanceServices;
-import io.camunda.service.entities.FlownodeInstanceEntity;
-import io.camunda.service.search.query.FlownodeInstanceQuery;
+import io.camunda.service.FlowNodeInstanceServices;
+import io.camunda.service.entities.FlowNodeInstanceEntity;
+import io.camunda.service.search.query.FlowNodeInstanceQuery;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.SearchQueryResult.Builder;
 import io.camunda.service.security.auth.Authentication;
@@ -26,9 +26,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
 @WebMvcTest(
-    value = FlownodeInstanceQueryController.class,
+    value = FlowNodeInstanceQueryController.class,
     properties = "camunda.rest.query.enabled=true")
-public class FlownodeInstanceQueryControllerTest extends RestControllerTest {
+public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
       """
@@ -45,27 +45,42 @@ public class FlownodeInstanceQueryControllerTest extends RestControllerTest {
           }
       }""";
 
-  static final SearchQueryResult<FlownodeInstanceEntity> SEARCH_QUERY_RESULT =
-      new Builder<FlownodeInstanceEntity>()
+  static final SearchQueryResult<FlowNodeInstanceEntity> SEARCH_QUERY_RESULT =
+      new Builder<FlowNodeInstanceEntity>()
           .total(1L)
-          .items(List.of(new FlownodeInstanceEntity()))
+          .items(
+              List.of(
+                  new FlowNodeInstanceEntity(
+                      1L,
+                      2L,
+                      3L,
+                      "2023-05-17",
+                      "2023-05-23",
+                      "flowNodeId",
+                      "flowNodeName",
+                      "processInstanceKey/flowNodeId",
+                      "SERVICE_TASK",
+                      "COMPLETED",
+                      false,
+                      null,
+                      "<default>")))
           .sortValues(new Object[] {"v"})
           .build();
 
   static final String FLOWNODE_INSTANCES_SEARCH_URL = "/v2/flownode-instances/search";
 
-  @MockBean FlownodeInstanceServices flownodeInstanceServices;
+  @MockBean FlowNodeInstanceServices flowNodeInstanceServices;
 
   @BeforeEach
   void setupServices() {
-    when(flownodeInstanceServices.withAuthentication(any(Authentication.class)))
-        .thenReturn(flownodeInstanceServices);
+    when(flowNodeInstanceServices.withAuthentication(any(Authentication.class)))
+        .thenReturn(flowNodeInstanceServices);
   }
 
   @Test
   void shouldSearchFlownodeInstancesDecisionWithEmptyBody() {
     // given
-    when(flownodeInstanceServices.search(any(FlownodeInstanceQuery.class)))
+    when(flowNodeInstanceServices.search(any(FlowNodeInstanceQuery.class)))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     webClient
@@ -79,6 +94,6 @@ public class FlownodeInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
 
-    verify(flownodeInstanceServices).search(new FlownodeInstanceQuery.Builder().build());
+    verify(flowNodeInstanceServices).search(new FlowNodeInstanceQuery.Builder().build());
   }
 }

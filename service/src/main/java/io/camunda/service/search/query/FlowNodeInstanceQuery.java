@@ -8,27 +8,27 @@
 package io.camunda.service.search.query;
 
 import io.camunda.service.search.filter.FilterBuilders;
-import io.camunda.service.search.filter.FlownodeInstanceFilter;
+import io.camunda.service.search.filter.FlowNodeInstanceFilter;
 import io.camunda.service.search.page.SearchQueryPage;
-import io.camunda.service.search.sort.FlownodeInstanceSort;
+import io.camunda.service.search.sort.FlowNodeInstanceSort;
 import io.camunda.service.search.sort.SortOptionBuilders;
 import java.util.Objects;
 
-public record FlownodeInstanceQuery(
-    FlownodeInstanceFilter filter, FlownodeInstanceSort sort, SearchQueryPage page)
-    implements TypedSearchQuery<FlownodeInstanceFilter, FlownodeInstanceSort> {
+public record FlowNodeInstanceQuery(
+    FlowNodeInstanceFilter filter, FlowNodeInstanceSort sort, SearchQueryPage page)
+    implements TypedSearchQuery<FlowNodeInstanceFilter, FlowNodeInstanceSort> {
 
   public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<Builder>
       implements TypedSearchQueryBuilder<
-          FlownodeInstanceQuery, Builder, FlownodeInstanceFilter, FlownodeInstanceSort> {
+          FlowNodeInstanceQuery, Builder, FlowNodeInstanceFilter, FlowNodeInstanceSort> {
 
-    private static final FlownodeInstanceFilter EMPTY_FILTER =
+    private static final FlowNodeInstanceFilter EMPTY_FILTER =
         FilterBuilders.flownodeInstance().build();
-    private static final FlownodeInstanceSort EMPTY_SORT =
+    private static final FlowNodeInstanceSort EMPTY_SORT =
         SortOptionBuilders.flownodeInstance().build();
 
-    private FlownodeInstanceFilter filter;
-    private FlownodeInstanceSort sort;
+    private FlowNodeInstanceFilter filter;
+    private FlowNodeInstanceSort sort;
 
     @Override
     protected Builder self() {
@@ -36,22 +36,22 @@ public record FlownodeInstanceQuery(
     }
 
     @Override
-    public Builder filter(final FlownodeInstanceFilter value) {
+    public Builder filter(final FlowNodeInstanceFilter value) {
       filter = value;
       return this;
     }
 
     @Override
-    public Builder sort(final FlownodeInstanceSort value) {
+    public Builder sort(final FlowNodeInstanceSort value) {
       sort = value;
       return this;
     }
 
     @Override
-    public FlownodeInstanceQuery build() {
+    public FlowNodeInstanceQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, EMPTY_SORT);
-      return new FlownodeInstanceQuery(filter, sort, page());
+      return new FlowNodeInstanceQuery(filter, sort, page());
     }
   }
 }
