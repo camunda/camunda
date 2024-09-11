@@ -11,7 +11,9 @@ import java.util.Collection;
 
 public record ProcessInstanceFilter(
       String bpmnProcessId,
-      VariableFilter variable
+      VariableFilter variable,
+      Integer limit,
+      Integer offset
   ) {
 
   public record VariableFilter(
