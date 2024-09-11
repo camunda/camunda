@@ -56,7 +56,7 @@ public class DateHistogramFilterUtilOS {
   }
 
   //
-  private static Optional<ExtendedBounds<FieldDateMath>> getExtendedBoundsFromDateFilters(
+  public static Optional<ExtendedBounds<FieldDateMath>> getExtendedBoundsFromDateFilters(
       final List<DateFilterDataDto<?>> dateFilters,
       final DateTimeFormatter dateFormatter,
       final DateAggregationContextOS context) {

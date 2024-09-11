@@ -5,59 +5,58 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.date;
+package io.camunda.optimize.service.db.os.report.interpreter.distributedby.process.date;
 
-import static io.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtilES.unwrapFilterLimitedAggregations;
+import static io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS.unwrapFilterLimitedAggregations;
 import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasNames;
 
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
-import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
-import io.camunda.optimize.service.db.es.report.context.DateAggregationContextES;
-import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.AbstractProcessDistributedByInterpreterES;
-import io.camunda.optimize.service.db.es.report.service.DateAggregationServiceES;
-import io.camunda.optimize.service.db.es.report.service.MinMaxStatsServiceES;
+import io.camunda.optimize.service.db.os.report.context.DateAggregationContextOS;
+import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
+import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
+import io.camunda.optimize.service.db.os.report.interpreter.distributedby.process.AbstractProcessDistributedByInterpreterOS;
+import io.camunda.optimize.service.db.os.report.service.DateAggregationServiceOS;
+import io.camunda.optimize.service.db.os.report.service.MinMaxStatsServiceOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.report.interpreter.distributedby.process.date.ProcessDistributedByInstanceDateInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.SearchResponse;
 
-public abstract class AbstractProcessDistributedByInstanceDateInterpreterES
-    extends AbstractProcessDistributedByInterpreterES
+public abstract class AbstractProcessDistributedByInstanceDateInterpreterOS
+    extends AbstractProcessDistributedByInterpreterOS
     implements ProcessDistributedByInstanceDateInterpreter {
 
   public abstract String getDateField();
 
-  protected abstract DateAggregationServiceES getDateAggregationService();
+  protected abstract DateAggregationServiceOS getDateAggregationService();
 
-  protected abstract ProcessQueryFilterEnhancerES getQueryFilterEnhancer();
+  protected abstract ProcessQueryFilterEnhancerOS getQueryFilterEnhancer();
 
-  protected abstract MinMaxStatsServiceES getMinMaxStatsService();
+  protected abstract MinMaxStatsServiceOS getMinMaxStatsService();
 
   @Override
-  public List<AggregationBuilder> createAggregations(
+  public Map<String, Aggregation> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final QueryBuilder baseQueryBuilder) {
+      final Query baseQuery) {
     final AggregateByDateUnit unit = getDistributedByDateUnit(context.getReportData());
     final ProcessReportDistributedByDto<?> distributedByDto =
         context.getPlan().getDistributedBy().getDto();
-    final MinMaxStatDto stats = getMinMaxStats(context, baseQueryBuilder);
+    final MinMaxStatDto stats = getMinMaxStats(context, baseQuery);
 
-    final DateAggregationContextES dateAggContext =
-        DateAggregationContextES.builder()
+    final DateAggregationContextOS dateAggContext =
+        DateAggregationContextOS.builder()
             .aggregateByDateUnit(unit)
             .dateField(getDateField())
             .minMaxStats(stats)
@@ -72,23 +71,23 @@ public abstract class AbstractProcessDistributedByInstanceDateInterpreterES
 
     return getDateAggregationService()
         .createProcessInstanceDateAggregation(dateAggContext)
-        .map(Collections::singletonList)
+        .map(pair -> Map.of(pair.getKey(), pair.getValue()))
         .orElse(getViewInterpreter().createAggregations(context));
   }
 
   @Override
   public List<DistributedByResult> retrieveResult(
-      SearchResponse response,
-      Aggregations aggregations,
+      SearchResponse<RawResult> response,
+      Map<String, Aggregate> aggregations,
       ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     if (aggregations == null) {
       // aggregations are null when there are no instances in the report
-      return Collections.emptyList();
+      return List.of();
     }
 
-    final Optional<Aggregations> unwrappedLimitedAggregations =
+    final Optional<Map<String, Aggregate>> unwrappedLimitedAggregations =
         unwrapFilterLimitedAggregations(aggregations);
-    Map<String, Aggregations> keyToAggregationMap;
+    Map<String, Map<String, Aggregate>> keyToAggregationMap;
     if (unwrappedLimitedAggregations.isPresent()) {
       keyToAggregationMap =
           getDateAggregationService()
@@ -98,24 +97,23 @@ public abstract class AbstractProcessDistributedByInstanceDateInterpreterES
       return Collections.emptyList();
     }
 
-    List<CompositeCommandResult.DistributedByResult> distributedByResults = new ArrayList<>();
-    for (Map.Entry<String, Aggregations> keyToAggregationEntry : keyToAggregationMap.entrySet()) {
-      final CompositeCommandResult.ViewResult viewResult =
-          getViewInterpreter().retrieveResult(response, keyToAggregationEntry.getValue(), context);
-      distributedByResults.add(
-          createDistributedByResult(keyToAggregationEntry.getKey(), null, viewResult));
-    }
-
-    return distributedByResults;
+    return keyToAggregationMap.entrySet().stream()
+        .map(
+            keyToAggregationEntry ->
+                createDistributedByResult(
+                    keyToAggregationEntry.getKey(),
+                    null,
+                    getViewInterpreter()
+                        .retrieveResult(response, keyToAggregationEntry.getValue(), context)))
+        .toList();
   }
 
   private MinMaxStatDto getMinMaxStats(
-      final ExecutionContext<ProcessReportDataDto, ?> context,
-      final QueryBuilder baseQueryBuilder) {
+      final ExecutionContext<ProcessReportDataDto, ?> context, final Query baseQuery) {
     return getMinMaxStatsService()
         .getMinMaxDateRange(
             context,
-            baseQueryBuilder,
+            baseQuery,
             getProcessInstanceIndexAliasNames(context.getReportData()),
             getDateField());
   }
