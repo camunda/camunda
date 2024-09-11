@@ -856,20 +856,20 @@ public class CompactRecordLogger {
 
   private String summarizeClock(final Record<?> record) {
     final var value = (ClockRecordValue) record.getValue();
-    final var intent = record.getIntent();
 
     final var clockValue =
-        switch (intent) {
-          case ClockIntent.PIN, ClockIntent.PINNED -> {
-            final long time = value.getTime();
-            final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault());
-            yield String.format("%s (timestamp: %d)", shortenDateTime(dateTime), time);
-          }
+        switch (record.getIntent()) {
+          case ClockIntent.PIN, ClockIntent.PINNED -> formatPinnedTime(value.getTime());
           case ClockIntent.RESET, ClockIntent.RESETTED -> "system time";
           default -> value.getTime();
         };
 
-    return String.format("%s clock to %s", intent.name().toLowerCase(), clockValue);
+    return "to %s".formatted(clockValue);
+  }
+
+  private String formatPinnedTime(final long time) {
+    final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault());
+    return "%s (timestamp: %d)".formatted(shortenDateTime(dateTime), time);
   }
 
   /**
