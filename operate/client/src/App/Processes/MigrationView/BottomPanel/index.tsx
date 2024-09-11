@@ -137,6 +137,22 @@ const BottomPanel: React.FC = observer(() => {
                       })
                     ) {
                       return (
+                        sourceFlowNode.$type === flowNode.$type &&
+                        getEventType(sourceFlowNode) === getEventType(flowNode)
+                      );
+                    }
+
+                    /**
+                     * For intermediate catch events allow only target flow nodes with the same event type
+                     */
+                    if (
+                      hasType({
+                        businessObject: sourceFlowNode,
+                        types: ['bpmn:IntermediateCatchEvent'],
+                      })
+                    ) {
+                      return (
+                        sourceFlowNode.$type === flowNode.$type &&
                         getEventType(sourceFlowNode) === getEventType(flowNode)
                       );
                     }
