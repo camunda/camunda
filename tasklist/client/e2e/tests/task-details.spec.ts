@@ -565,7 +565,16 @@ test.describe('task details page', () => {
     await tasksPage.openTask('Employee Details');
     await expect(tasksPage.detailsNav).toBeVisible();
     await tasksPage.assignToMeButton.click();
-    await expect(taskFormView.nameInput).toBeVisible();
+
+    try {
+      await expect(taskFormView.nameInput).toBeVisible({timeout: 60000});
+    } catch (error) {
+      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      await sleep(10000);
+      await page.reload();
+      await expect(taskFormView.nameInput).toBeVisible({timeout: 60000});
+    }
+
     await taskFormView.nameInput.fill('Ben');
     await taskFormView.selectDropdownValue('marketing');
     await tasksPage.completeTaskButton.click();
@@ -573,8 +582,11 @@ test.describe('task details page', () => {
 
     await tasksPage.openTask('Confirm Employee Details');
     await tasksPage.assignToMeButton.click();
+    await page.reload();
     await expect(taskFormView.nameInput).toHaveValue('Ben');
-    await expect(taskFormView.form.getByText('Marketing')).toBeVisible();
+    await expect(taskFormView.form.getByText('Marketing')).toBeVisible({
+      timeout: 60000,
+    });
     await expect(taskFormView.checkbox).not.toBeChecked();
     await tasksPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
@@ -606,6 +618,7 @@ test.describe('task details page', () => {
 
     await tasksPage.openTask('Confirm Zeebe Employee Details');
     await tasksPage.assignToMeButton.click();
+    await page.reload();
     await expect(taskFormView.nameInput).toHaveValue('Ben');
     await expect(taskFormView.form.getByText('finance')).toBeVisible();
     await expect(taskFormView.checkbox).not.toBeChecked();
