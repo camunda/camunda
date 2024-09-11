@@ -96,7 +96,7 @@
     "eslint-plugin-testing-library": "6.3.0",
     "jsdom": "25.0.0",
     "monaco-editor": "0.51.0",
-    "msw": "2.4.4",
+    "msw": "2.4.5",
     "prettier": "3.3.3",
     "serve": "14.2.3",
     "source-map-explorer": "2.5.3",
