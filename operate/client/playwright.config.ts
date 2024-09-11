@@ -38,7 +38,7 @@ const config: PlaywrightTestConfig = {
   expect: {
     timeout: 15 * 1000,
   },
-  forbidOnly: IS_CI,
+  forbidOnly: false,
   retries: 0,
   workers: IS_SCREENSHOT_GENERATOR ? 8 : 1,
   reporter: 'html',

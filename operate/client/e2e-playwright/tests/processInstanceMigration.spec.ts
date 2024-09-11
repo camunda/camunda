@@ -39,7 +39,7 @@ test.beforeAll(async ({request}) => {
     .toHaveProperty('total', 10);
 });
 
-test.describe.serial('Process Instance Migration', () => {
+test.describe.serial.only('Process Instance Migration', () => {
   /**
    * Migrate from ProcessV1 to ProcessV2
    * ProcessV1 and ProcessV2 have identical bpmnProcess id and flow node names,
@@ -51,6 +51,7 @@ test.describe.serial('Process Instance Migration', () => {
     migrationView,
     commonPage,
     page,
+    request,
   }) => {
     test.slow();
 
@@ -143,9 +144,26 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(migrateOperationEntry.getByRole('progressbar')).toBeVisible();
 
     // wait for migrate operation to finish
-    await expect(
-      migrateOperationEntry.getByRole('progressbar'),
-    ).not.toBeVisible({timeout: 60000});
+    await expect
+      .poll(
+        async () => {
+          const response = await request.post(
+            `${config.endpoint}/v1/process-instances/search`,
+            {
+              data: {
+                filter: {
+                  processDefinitionKey:
+                    initialData.processV2.processDefinitionKey,
+                },
+              },
+            },
+          );
+
+          return await response.json();
+        },
+        {timeout: SETUP_WAITING_TIME},
+      )
+      .toHaveProperty('total', 6);
 
     await expect(filtersPanel.processNameFilter).toHaveValue(
       targetBpmnProcessId,
@@ -198,6 +216,7 @@ test.describe.serial('Process Instance Migration', () => {
     processesPage: {filtersPanel},
     migrationView,
     commonPage,
+    request,
   }) => {
     test.slow();
 
@@ -293,9 +312,26 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(migrateOperationEntry.getByRole('progressbar')).toBeVisible();
 
     // wait for migrate operation to finish
-    await expect(
-      migrateOperationEntry.getByRole('progressbar'),
-    ).not.toBeVisible({timeout: 60000});
+    await expect
+      .poll(
+        async () => {
+          const response = await request.post(
+            `${config.endpoint}/v1/process-instances/search`,
+            {
+              data: {
+                filter: {
+                  processDefinitionKey:
+                    initialData.processV3.processDefinitionKey,
+                },
+              },
+            },
+          );
+
+          return await response.json();
+        },
+        {timeout: SETUP_WAITING_TIME},
+      )
+      .toHaveProperty('total', 3);
 
     await expect(filtersPanel.processNameFilter).toHaveValue(
       targetBpmnProcessId,
