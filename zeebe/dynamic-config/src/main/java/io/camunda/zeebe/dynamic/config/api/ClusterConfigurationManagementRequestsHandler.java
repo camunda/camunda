@@ -11,8 +11,11 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
@@ -126,6 +129,38 @@ public final class ClusterConfigurationManagementRequestsHandler
     return handleRequest(
         forceScaleDownRequest.dryRun(),
         new ForceScaleDownRequestTransformer(forceScaleDownRequest.members(), localMemberId));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> scaleCluster(
+      final ClusterScaleRequest clusterScaleRequest) {
+    return handleRequest(
+        clusterScaleRequest.dryRun(),
+        new ClusterScaleRequestTransformer(
+            clusterScaleRequest.newClusterSize(),
+            clusterScaleRequest.newPartitionCount(),
+            clusterScaleRequest.newReplicationFactor()));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> patchCluster(
+      final ClusterPatchRequest clusterPatchRequest) {
+    return handleRequest(
+        clusterPatchRequest.dryRun(),
+        new ClusterPatchRequestTransformer(
+            clusterPatchRequest.membersToAdd(),
+            clusterPatchRequest.membersToRemove(),
+            clusterPatchRequest.newPartitionCount(),
+            clusterPatchRequest.newReplicationFactor()));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> forceRemoveBrokers(
+      final ForceRemoveBrokersRequest forceRemoveBrokersRequest) {
+    return handleRequest(
+        forceRemoveBrokersRequest.dryRun(),
+        new ForceRemoveBrokersRequestTransformer(
+            forceRemoveBrokersRequest.membersToRemove(), localMemberId));
   }
 
   @Override
