@@ -13,70 +13,85 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class AuthorizationCreateProcessor
+public final class AuthorizationAddPermissionProcessor
     implements DistributedTypedRecordProcessor<AuthorizationRecord> {
-  private final AuthorizationState authorizationState;
-  private final StateWriter stateWriter;
-  private final KeyGenerator keyGenerator;
-  private final TypedRejectionWriter rejectionWriter;
-  private final TypedResponseWriter responseWriter;
-  private final CommandDistributionBehavior distributionBehavior;
 
-  public AuthorizationCreateProcessor(
+  private final KeyGenerator keyGenerator;
+  private final AuthorizationState authorizationState;
+  private final CommandDistributionBehavior distributionBehavior;
+  private final StateWriter stateWriter;
+  private final TypedResponseWriter responseWriter;
+  private final TypedRejectionWriter rejectionWriter;
+
+  public AuthorizationAddPermissionProcessor(
+      final Writers writers,
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
-      final Writers writers,
       final CommandDistributionBehavior distributionBehavior) {
-    authorizationState = processingState.getAuthorizationState();
-    stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
-    rejectionWriter = writers.rejection();
-    responseWriter = writers.response();
+    authorizationState = processingState.getAuthorizationState();
     this.distributionBehavior = distributionBehavior;
+    stateWriter = writers.state();
+    responseWriter = writers.response();
+    rejectionWriter = writers.rejection();
   }
 
   @Override
   public void processNewCommand(final TypedRecord<AuthorizationRecord> command) {
-    final var authorizationToCreate = command.getValue();
+    final var authorizationRecord = command.getValue();
 
-    final var authorization =
-        authorizationState.getResourceIdentifiers(
-            authorizationToCreate.getOwnerKey(),
-            authorizationToCreate.getResourceType(),
-            PermissionType.CREATE);
+    final var ownerType =
+        authorizationState
+            .getOwnerType(authorizationRecord.getOwnerKey())
+            .orElseThrow(() -> new OwnerNotFoundException(authorizationRecord.getOwnerKey()));
+    authorizationRecord.setOwnerType(ownerType);
 
-    if (authorization != null) {
-      final var rejectionMessage =
-          "Expected to create authorization with owner key: %s, but an authorization with these values already exists"
-              .formatted(authorizationToCreate.getOwnerKey());
-      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionMessage);
-      responseWriter.writeRejectionOnCommand(
-          command, RejectionType.ALREADY_EXISTS, rejectionMessage);
-      return;
-    }
-
-    final var key = keyGenerator.nextKey();
-
-    stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, authorizationToCreate);
-    distributionBehavior.withKey(key).distribute(command);
+    final long key = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(key, AuthorizationIntent.PERMISSION_ADDED, authorizationRecord);
+    distributionBehavior
+        .withKey(key)
+        .inQueue(DistributionQueue.IDENTITY.getQueueId())
+        .distribute(command);
     responseWriter.writeEventOnCommand(
-        key, AuthorizationIntent.CREATED, authorizationToCreate, command);
+        key, AuthorizationIntent.PERMISSION_ADDED, authorizationRecord, command);
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
     stateWriter.appendFollowUpEvent(
-        command.getKey(), AuthorizationIntent.CREATED, command.getValue());
-
+        command.getKey(), AuthorizationIntent.PERMISSION_ADDED, command.getValue());
     distributionBehavior.acknowledgeCommand(command);
+  }
+
+  @Override
+  public ProcessingError tryHandleError(
+      final TypedRecord<AuthorizationRecord> command, final Throwable error) {
+    if (error instanceof final OwnerNotFoundException exception) {
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, exception.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.NOT_FOUND, exception.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
+
+    return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  private static final class OwnerNotFoundException extends RuntimeException {
+
+    public static final String OWNER_NOT_FOUND_MESSAGE =
+        "Expected to find owner with key: '%d', but not found";
+
+    public OwnerNotFoundException(final long ownerKey) {
+      super(OWNER_NOT_FOUND_MESSAGE.formatted(ownerKey));
+    }
   }
 }
