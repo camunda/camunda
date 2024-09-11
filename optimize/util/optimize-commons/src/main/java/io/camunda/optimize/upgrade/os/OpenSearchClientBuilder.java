@@ -38,6 +38,7 @@ import io.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import io.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import io.camunda.optimize.service.util.mapper.CustomReportDefinitionDeserializer;
 import io.camunda.optimize.service.util.mapper.ObjectMapperFactory;
+import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -64,6 +65,7 @@ import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.HttpRequestInterceptor;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.util.Timeout;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
@@ -91,12 +93,16 @@ public class OpenSearchClientBuilder {
 
   public static ExtendedOpenSearchClient buildOpenSearchClientFromConfig(
       final ConfigurationService configurationService) {
-    return new ExtendedOpenSearchClient(buildOpenSearchTransport(configurationService));
+    final var pluginRepo = new PluginRepository();
+    pluginRepo.load(configurationService.getOpenSearchConfiguration().getInterceptorPlugins());
+    return new ExtendedOpenSearchClient(buildOpenSearchTransport(configurationService, pluginRepo));
   }
 
   public static OpenSearchAsyncClient buildOpenSearchAsyncClientFromConfig(
       final ConfigurationService configurationService) {
-    return new OpenSearchAsyncClient(buildOpenSearchTransport(configurationService));
+    final var pluginRepo = new PluginRepository();
+    pluginRepo.load(configurationService.getOpenSearchConfiguration().getInterceptorPlugins());
+    return new OpenSearchAsyncClient(buildOpenSearchTransport(configurationService, pluginRepo));
   }
 
   private static OpenSearchTransport getAwsTransport(final ConfigurationService osConfig) {
@@ -128,7 +134,7 @@ public class OpenSearchClientBuilder {
   }
 
   private static OpenSearchTransport buildOpenSearchTransport(
-      final ConfigurationService configurationService) {
+      final ConfigurationService configurationService, final PluginRepository pluginRepository) {
     if (useAwsCredentials(configurationService)) {
       return getAwsTransport(configurationService);
     }
@@ -138,7 +144,8 @@ public class OpenSearchClientBuilder {
 
     builder.setHttpClientConfigCallback(
         httpClientBuilder -> {
-          configureHttpClient(httpClientBuilder, configurationService);
+          configureHttpClient(
+              httpClientBuilder, configurationService, pluginRepository.asRequestInterceptor());
           return httpClientBuilder;
         });
 
@@ -356,8 +363,14 @@ public class OpenSearchClientBuilder {
 
   private static HttpAsyncClientBuilder configureHttpClient(
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
-      final ConfigurationService configurationService) {
+      final ConfigurationService configurationService,
+      final HttpRequestInterceptor... requestInterceptors) {
     setupAuthentication(httpAsyncClientBuilder, configurationService);
+
+    for (final HttpRequestInterceptor interceptor : requestInterceptors) {
+      httpAsyncClientBuilder.addRequestInterceptorLast(interceptor);
+    }
+
     if (Boolean.TRUE.equals(
         configurationService.getOpenSearchConfiguration().getSecuritySSLEnabled())) {
       setupSSLContext(httpAsyncClientBuilder, configurationService);

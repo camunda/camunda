@@ -13,6 +13,26 @@
 
   <dependencies>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-connect</artifactId>
+      <!--          <version>8.6.0-SNAPSHOT</version>-->
+    </dependency>
+
+    <!--    <dependency>-->
+    <!--      <groupId>io.camunda</groupId>-->
+    <!--      <artifactId>camunda-search-client-plugin</artifactId>-->
+    <!--      <version>8.6.0-SNAPSHOT</version>-->
+    <!--      <scope>test</scope>-->
+    <!--    </dependency>-->
+
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <!--          <version>${lombok.version}</version>-->
+      <scope>provided</scope>
+    </dependency>
+
     <!-- REST -->
     <dependency>
       <groupId>jakarta.validation</groupId>
@@ -39,8 +59,8 @@
       <version>${elasticsearch.client.version}</version>
       <exclusions>
         <exclusion>
-          <artifactId>commons-codec</artifactId>
           <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId>
         </exclusion>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -67,34 +87,34 @@
       <artifactId>json-path</artifactId>
       <version>${jsonpath.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.yaml</groupId>
-      <artifactId>snakeyaml</artifactId>
-      <version>2.3</version>
-    </dependency>
+    <!--    <dependency>-->
+    <!--      <groupId>org.yaml</groupId>-->
+    <!--      <artifactId>snakeyaml</artifactId>-->
+    <!--      <version>2.3</version>-->
+    <!--    </dependency>-->
 
     <!-- ClassGraph  -->
-    <dependency>
-      <groupId>io.github.classgraph</groupId>
-      <artifactId>classgraph</artifactId>
-      <version>4.8.175</version>
-    </dependency>
+    <!--    <dependency>-->
+    <!--      <groupId>io.github.classgraph</groupId>-->
+    <!--      <artifactId>classgraph</artifactId>-->
+    <!--      <version>4.8.175</version>-->
+    <!--    </dependency>-->
 
     <!-- Logging -->
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jul-to-slf4j</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
+    <!--    <dependency>-->
+    <!--      <groupId>org.slf4j</groupId>-->
+    <!--      <artifactId>jul-to-slf4j</artifactId>-->
+    <!--      <version>${slf4j.version}</version>-->
+    <!--    </dependency>-->
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
+      <!--          <version>${logback.version}</version>-->
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>${logback.version}</version>
+      <!--          <version>${logback.version}</version>-->
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -102,11 +122,11 @@
       <version>${slf4j.version}</version>
     </dependency>
     <!-- needed for elasticsearch logs to be available over slf4j -->
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-to-slf4j</artifactId>
-      <version>${elasticsearch.log4j.version}</version>
-    </dependency>
+    <!--    <dependency>-->
+    <!--      <groupId>org.apache.logging.log4j</groupId>-->
+    <!--      <artifactId>log4j-to-slf4j</artifactId>-->
+    <!--      <version>${elasticsearch.log4j.version}</version>-->
+    <!--    </dependency>-->
 
     <!-- Utilities -->
     <dependency>
@@ -124,22 +144,22 @@
       <artifactId>commons-lang3</artifactId>
       <version>3.17.0</version>
     </dependency>
-    <dependency>
-      <groupId>com.ethlo.time</groupId>
-      <artifactId>itu</artifactId>
-      <version>1.10.2</version>
-    </dependency>
+    <!--    <dependency>-->
+    <!--      <groupId>com.ethlo.time</groupId>-->
+    <!--      <artifactId>itu</artifactId>-->
+    <!--      <version>1.10.2</version>-->
+    <!--    </dependency>-->
     <dependency>
       <groupId>net.jodah</groupId>
       <artifactId>failsafe</artifactId>
       <version>2.4.4</version>
     </dependency>
-    <dependency>
-      <groupId>jakarta.annotation</groupId>
-      <artifactId>jakarta.annotation-api</artifactId>
-      <version>3.0.0</version>
-      <scope>compile</scope>
-    </dependency>
+    <!--    <dependency>-->
+    <!--      <groupId>jakarta.annotation</groupId>-->
+    <!--      <artifactId>jakarta.annotation-api</artifactId>-->
+    <!--      <version>3.0.0</version>-->
+    <!--      <scope>compile</scope>-->
+    <!--    </dependency>-->
     <dependency>
       <groupId>com.vdurmont</groupId>
       <artifactId>semver4j</artifactId>
@@ -153,16 +173,16 @@
       <version>${apache.http5-core.version}</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.apache.httpcomponents.core5</groupId>
-      <artifactId>httpcore5-h2</artifactId>
-      <version>${apache.http5-core.version}</version>
-    </dependency>
+    <!--    <dependency>-->
+    <!--      <groupId>org.apache.httpcomponents.core5</groupId>-->
+    <!--      <artifactId>httpcore5-h2</artifactId>-->
+    <!--      <version>${apache.http5-core.version}</version>-->
+    <!--    </dependency>-->
 
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
-      <version>${opensearch.client.version}</version>
+      <!--          <version>${opensearch.client.version}</version>-->
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -183,22 +203,22 @@
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jdk8</artifactId>
     </dependency>
-    <dependency>
-      <groupId>com.amazonaws</groupId>
-      <artifactId>aws-java-sdk-core</artifactId>
-      <version>1.12.772</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>software.amazon.awssdk</groupId>
-      <artifactId>sdk-core</artifactId>
-      <version>${awssdk.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>software.amazon.awssdk</groupId>
-      <artifactId>sts</artifactId>
-      <version>${awssdk.version}</version>
-    </dependency>
+    <!--    <dependency>-->
+    <!--      <groupId>com.amazonaws</groupId>-->
+    <!--      <artifactId>aws-java-sdk-core</artifactId>-->
+    <!--      <version>1.12.772</version>-->
+    <!--      <scope>compile</scope>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>software.amazon.awssdk</groupId>-->
+    <!--      <artifactId>sdk-core</artifactId>-->
+    <!--      <version>${awssdk.version}</version>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>software.amazon.awssdk</groupId>-->
+    <!--      <artifactId>sts</artifactId>-->
+    <!--      <version>${awssdk.version}</version>-->
+    <!--    </dependency>-->
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>netty-nio-client</artifactId>
@@ -217,6 +237,214 @@
     <dependency>
       <groupId>jakarta.ws.rs</groupId>
       <artifactId>jakarta.ws.rs-api</artifactId>
+    </dependency>
+
+    <!--    <dependency>-->
+    <!--      <groupId>org.junit.jupiter</groupId>-->
+    <!--      <artifactId>junit-jupiter-api</artifactId>-->
+    <!--      &lt;!&ndash;          <version>${junit.jupiter.version}</version>&ndash;&gt;-->
+    <!--      <scope>test</scope>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.junit.platform</groupId>-->
+    <!--      <artifactId>junit-platform-launcher</artifactId>-->
+    <!--      &lt;!&ndash;          <version>${junit.platform.version}</version>&ndash;&gt;-->
+    <!--      <scope>test</scope>-->
+    <!--    </dependency>-->
+
+    <!--    <dependency>-->
+    <!--      <groupId>org.junit.jupiter</groupId>-->
+    <!--      <artifactId>junit-jupiter-params</artifactId>-->
+    <!--      &lt;!&ndash;          <version>${junit.jupiter.version}</version>&ndash;&gt;-->
+    <!--      <scope>test</scope>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.junit.platform</groupId>-->
+    <!--      <artifactId>junit-platform-commons</artifactId>-->
+    <!--      &lt;!&ndash;          <version>${junit.platform.version}</version>&ndash;&gt;-->
+    <!--      <scope>test</scope>-->
+    <!--    </dependency>-->
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <!--          <version>${assertj.version}</version>-->
+      <scope>test</scope>
+    </dependency>
+    <!--    <dependency>-->
+    <!--      <groupId>org.mockito</groupId>-->
+    <!--      <artifactId>mockito-inline</artifactId>-->
+    <!--      <version>${mockito-inline.version}</version>-->
+    <!--      <scope>test</scope>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.mockito</groupId>-->
+    <!--      <artifactId>mockito-junit-jupiter</artifactId>-->
+    <!--      &lt;!&ndash;          <version>${mockito.version}</version>&ndash;&gt;-->
+    <!--      <scope>test</scope>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.mock-server</groupId>-->
+    <!--      <artifactId>mockserver-junit-jupiter</artifactId>-->
+    <!--      <version>${mockserver.version}</version>-->
+    <!--      <scope>test</scope>-->
+    <!--      <exclusions>-->
+    <!--        <exclusion>-->
+    <!--          <groupId>commons-logging</groupId>-->
+    <!--          <artifactId>commons-logging</artifactId>-->
+    <!--        </exclusion>-->
+    <!--      </exclusions>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>io.github.netmikey.logunit</groupId>-->
+    <!--      <artifactId>logunit-core</artifactId>-->
+    <!--      <version>2.0.0</version>-->
+    <!--      <scope>test</scope>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>io.github.netmikey.logunit</groupId>-->
+    <!--      <artifactId>logunit-logback</artifactId>-->
+    <!--      <version>2.0.0</version>-->
+    <!--      <scope>test</scope>-->
+    <!--      <exclusions>-->
+    <!--        <exclusion>-->
+    <!--          <groupId>ch.qos.logback</groupId>-->
+    <!--          <artifactId>logback-classic</artifactId>-->
+    <!--        </exclusion>-->
+    <!--      </exclusions>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.apache.httpcomponents</groupId>-->
+    <!--      <artifactId>httpmime</artifactId>-->
+    <!--      <version>${httpclient.version}</version>-->
+    <!--      <scope>test</scope>-->
+    <!--      <exclusions>-->
+    <!--        <exclusion>-->
+    <!--          <groupId>commons-codec</groupId>-->
+    <!--          <artifactId>commons-codec</artifactId>-->
+    <!--        </exclusion>-->
+    <!--        <exclusion>-->
+    <!--          <groupId>commons-logging</groupId>-->
+    <!--          <artifactId>commons-logging</artifactId>-->
+    <!--        </exclusion>-->
+    <!--      </exclusions>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>org.awaitility</groupId>-->
+    <!--      <artifactId>awaitility</artifactId>-->
+    <!--      &lt;!&ndash;          <version>4.2.2</version>&ndash;&gt;-->
+    <!--      <scope>test</scope>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>io.netty</groupId>-->
+    <!--      <artifactId>netty-codec-http</artifactId>-->
+    <!--      <version>${netty.version}</version>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>io.netty</groupId>-->
+    <!--      <artifactId>netty-codec-http2</artifactId>-->
+    <!--      <version>${netty.version}</version>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>io.netty</groupId>-->
+    <!--      <artifactId>netty-handler</artifactId>-->
+    <!--      <version>${netty.version}</version>-->
+    <!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>io.netty</groupId>-->
+    <!--      <artifactId>netty-handler-proxy</artifactId>-->
+    <!--      <version>${netty.version}</version>-->
+    <!--    </dependency>-->
+
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-client</artifactId>
+      <version>8.13.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>6.1.12</version>
+    </dependency>
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch</artifactId>
+      <version>7.17.24</version>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>5.11.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+      <version>4.4.16</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>2.17.2</version>
+    </dependency>
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>http-client-spi</artifactId>
+      <version>2.27.23</version>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-core</artifactId>
+      <version>1.12.772</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+      <version>6.1.12</version>
+    </dependency>
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch-x-content</artifactId>
+      <version>7.17.24</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.5.14</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-join</artifactId>
+      <version>8.11.3</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <version>2.17.2</version>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.json</groupId>
+      <artifactId>jakarta.json-api</artifactId>
+      <version>2.1.3</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpasyncclient</artifactId>
+      <version>4.1.5</version>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
     </dependency>
 
   </dependencies>

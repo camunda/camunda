@@ -16,26 +16,128 @@
   </properties>
 
   <dependencies>
-
-    <!-- Optimize dependencies -->
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.github.netmikey.logunit</groupId>
+      <artifactId>logunit-core</artifactId>
+      <version>2.0.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda.optimize</groupId>
+      <artifactId>optimize-commons</artifactId>
+      <version>8.6.0-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-high-level-client</artifactId>
+      <version>7.17.24</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.17.2</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-client</artifactId>
+      <version>8.13.4</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+      <version>6.1.12</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch</artifactId>
+      <version>7.17.24</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.18.34</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+      <version>4.4.16</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>33.3.0-jre</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>2.0.16</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch-x-content</artifactId>
+      <version>7.17.24</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <version>2.17.2</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.vdurmont</groupId>
+      <artifactId>semver4j</artifactId>
+      <version>3.1.0</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>5.10.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.github.classgraph</groupId>
+      <artifactId>classgraph</artifactId>
+      <version>4.8.175</version>
+      <scope>provided</scope>
+    </dependency>
     <dependency>
       <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
-      <version>${project.version}</version>
+      <version>8.6.0-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
 
-    <!-- Test dependencies -->
-    <dependency>
-      <groupId>io.camunda.optimize</groupId>
-      <artifactId>optimize-backend</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
+    <finalName>upgrade-optimize-from-${project.previousVersion}-to-${project.version}</finalName>
     <plugins>
 
       <plugin>
@@ -72,10 +174,10 @@
         <executions>
           <execution>
             <id>docker-start</id>
-            <phase>pre-integration-test</phase>
             <goals>
               <goal>exec</goal>
             </goals>
+            <phase>pre-integration-test</phase>
             <configuration>
               <skip>${skip.docker}</skip>
               <executable>docker-compose</executable>
@@ -91,10 +193,10 @@
           </execution>
           <execution>
             <id>docker-stop</id>
-            <phase>post-integration-test</phase>
             <goals>
               <goal>exec</goal>
             </goals>
+            <phase>post-integration-test</phase>
             <configuration>
               <skip>${skip.docker}</skip>
               <executable>docker-compose</executable>
@@ -113,24 +215,24 @@
         <executions>
           <execution>
             <id>check-es-is-up</id>
-            <phase>pre-integration-test</phase>
-            <configuration>
-              <skip>${skip.docker}</skip>
-              <target name="check-es-is-up" description="Check whether ES is running">
-                <echo message="Check ES is running..." />
-                <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <socket server="localhost" port="9200" />
-                </waitfor>
-                <echo message="ES http socket is open. Checking for ES cluster state..." />
-                <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <http url="http://localhost:9200/_cluster/state" />
-                </waitfor>
-                <echo message="ES is running." />
-              </target>
-            </configuration>
             <goals>
               <goal>run</goal>
             </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <skip>${skip.docker}</skip>
+              <target description="Check whether ES is running" name="check-es-is-up">
+                <echo message="Check ES is running..."></echo>
+                <waitfor checkevery="1" checkeveryunit="second" maxwait="30" maxwaitunit="second">
+                  <socket port="9200" server="localhost"></socket>
+                </waitfor>
+                <echo message="ES http socket is open. Checking for ES cluster state..."></echo>
+                <waitfor checkevery="1" checkeveryunit="second" maxwait="30" maxwaitunit="second">
+                  <http url="http://localhost:9200/_cluster/state"></http>
+                </waitfor>
+                <echo message="ES is running."></echo>
+              </target>
+            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -147,7 +249,6 @@
         </executions>
       </plugin>
     </plugins>
-    <finalName>upgrade-optimize-from-${project.previousVersion}-to-${project.version}</finalName>
   </build>
 
 </project>

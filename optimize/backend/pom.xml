@@ -15,35 +15,23 @@
     <jersey.version>3.1.3</jersey.version>
     <spring.security.version>6.3.3</spring.security.version>
     <nimbus.jose.jwt.version>9.41</nimbus.jose.jwt.version>
-    <it.test.excludedGroups />
-    <it.test.includedGroups />
-    <test.forkCount />
+    <it.test.excludedGroups></it.test.excludedGroups>
+    <it.test.includedGroups></it.test.includedGroups>
+    <test.forkCount></test.forkCount>
   </properties>
 
   <dependencies>
-    <!-- Logging dependencies -->
-    <dependency>
-      <groupId>net.logstash.logback</groupId>
-      <artifactId>logstash-logback-encoder</artifactId>
-      <version>8.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.codehaus.janino</groupId>
-      <artifactId>janino</artifactId>
-      <version>3.1.12</version>
-    </dependency>
 
-    <!-- Optimize dependencies -->
-    <dependency>
-      <groupId>io.camunda.optimize</groupId>
-      <artifactId>client</artifactId>
-      <version>${project.version}</version>
-      <type>pom</type>
-    </dependency>
     <dependency>
       <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-commons</artifactId>
       <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.ow2.asm</groupId>
+          <artifactId>asm</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- Camunda dependencies -->
@@ -55,7 +43,6 @@
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-dmn-model</artifactId>
-      <version>${camunda.maven.artifacts.version}</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm</groupId>
@@ -77,12 +64,10 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
-      <version>${zeebe.version}</version>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
-      <version>${zeebe.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -97,23 +82,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-java-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-java-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-servlet</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-servlets</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -128,117 +101,44 @@
       <artifactId>jakarta.ws.rs-api</artifactId>
     </dependency>
 
-    <!-- IDENTITY-->
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>identity-spring-boot-starter</artifactId>
-      <version>${identity.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.logging.log4j</groupId>
-          <artifactId>log4j-slf4j2-impl</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
     <!-- Spring -->
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-context-support</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-tx</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
-      <version>${spring.boot.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-starter-tomcat</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-jetty</artifactId>
-      <version>${spring.boot.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot</artifactId>
-      <version>${spring.boot.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-jersey</artifactId>
-      <version>${spring.boot.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-starter-tomcat</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-actuator</artifactId>
-      <version>${spring.boot.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-web</artifactId>
-      <version>${spring.security.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-config</artifactId>
-      <version>${spring.security.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-client</artifactId>
-      <version>${spring.security.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-jose</artifactId>
-      <version>${spring.security.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-resource-server</artifactId>
-      <version>${spring.security.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.nimbusds</groupId>
-      <artifactId>nimbus-jose-jwt</artifactId>
-      <version>${nimbus.jose.jwt.version}</version>
     </dependency>
 
     <!-- Authentication -->
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-      <version>4.4.0</version>
       <exclusions>
         <exclusion>
-          <artifactId>jackson-databind</artifactId>
           <groupId>com.fasterxml.jackson.core</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <!-- Jackson/JSON -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.jaxrs</groupId>
-      <artifactId>jackson-jaxrs-json-provider</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>com.fasterxml.jackson.module</groupId>
-          <artifactId>jackson-module-jaxb-annotations</artifactId>
+          <artifactId>jackson-databind</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -247,31 +147,17 @@
     <dependency>
       <groupId>org.quartz-scheduler</groupId>
       <artifactId>quartz</artifactId>
-      <version>${quartz.version}</version>
       <exclusions>
         <exclusion>
-          <artifactId>slf4j-api</artifactId>
           <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
-
-    <!-- Email framework -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-mail</artifactId>
-      <version>${spring.boot.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.mail</groupId>
-      <artifactId>jakarta.mail-api</artifactId>
-      <version>2.1.3</version>
     </dependency>
 
     <dependency>
       <groupId>org.freemarker</groupId>
       <artifactId>freemarker</artifactId>
-      <version>2.3.33</version>
     </dependency>
 
     <!-- CSV -->
@@ -291,12 +177,10 @@
     <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>
-      <version>3.1.8</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-math3</artifactId>
-      <version>3.6.1</version>
     </dependency>
     <dependency>
       <groupId>com.github.sisyphsu</groupId>
@@ -306,21 +190,13 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>${commons.io.version}</version>
-    </dependency>
-
-    <!-- Micrometer Prometheus registry  -->
-    <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-registry-prometheus</artifactId>
-      <version>1.13.4</version>
+      <scope>test</scope>
     </dependency>
 
     <!--Test dependencies-->
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-test-container</artifactId>
-      <version>3.6.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -335,12 +211,12 @@
       <scope>test</scope>
       <exclusions>
         <exclusion>
-          <artifactId>slf4j-api</artifactId>
           <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
         </exclusion>
         <exclusion>
-          <artifactId>junit</artifactId>
           <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -349,36 +225,10 @@
       <artifactId>json-flattener</artifactId>
       <version>0.16.6</version>
     </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <version>${spring.boot.version}</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>junit</groupId>
-          <artifactId>junit</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <!-- Opensearch  -->
-    <dependency>
-      <groupId>org.apache.httpcomponents.core5</groupId>
-      <artifactId>httpcore5</artifactId>
-      <version>${apache.http5-core.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents.core5</groupId>
-      <artifactId>httpcore5-h2</artifactId>
-      <version>${apache.http5-core.version}</version>
-    </dependency>
 
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
-      <version>${opensearch.client.version}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -390,12 +240,349 @@
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-license-check</artifactId>
-      <version>2.9.0</version>
     </dependency>
+    <dependency>
+      <groupId>io.github.classgraph</groupId>
+      <artifactId>classgraph</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.github.netmikey.logunit</groupId>
+      <artifactId>logunit-core</artifactId>
+      <version>2.0.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-collections</groupId>
+      <artifactId>commons-collections</artifactId>
+      <version>3.2.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mock-server</groupId>
+      <artifactId>mockserver-netty</artifactId>
+      <version>5.15.0</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.mock-server</groupId>
+      <artifactId>mockserver-core</artifactId>
+      <version>5.15.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jdk8</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-oauth2-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.media</groupId>
+      <artifactId>jersey-media-json-jackson</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.json</groupId>
+      <artifactId>jakarta.json-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>net.minidev</groupId>
+      <artifactId>json-smart</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.validation</groupId>
+      <artifactId>jakarta.validation-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-sdk</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-join</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.vdurmont</groupId>
+      <artifactId>semver4j</artifactId>
+      <version>3.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-text</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-high-level-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-commons</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.xml.bind</groupId>
+      <artifactId>jakarta.xml.bind-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-xml-model</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.tdunning</groupId>
+      <artifactId>t-digest</artifactId>
+      <version>3.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-bpmn-model</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch-x-content</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains</groupId>
+      <artifactId>annotations</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mock-server</groupId>
+      <artifactId>mockserver-client-java</artifactId>
+      <version>5.15.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.wnameless.json</groupId>
+      <artifactId>json-base</artifactId>
+      <version>2.4.3</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.17.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-collections4</artifactId>
+      <version>4.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tika</groupId>
+      <artifactId>tika-core</artifactId>
+      <version>2.9.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-http</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>jakarta.mail</artifactId>
+      <version>2.0.1</version>
+    </dependency>
+
   </dependencies>
 
   <build>
     <finalName>optimize-backend-${project.version}</finalName>
+    <resources>
+      <resource>
+        <targetPath>webapp</targetPath>
+        <directory>../client/dist</directory>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <resource>
+        <directory>src/main/ssl</directory>
+      </resource>
+    </resources>
+    <testResources>
+      <testResource>
+        <targetPath>webapp</targetPath>
+        <directory>src/it/webapp</directory>
+      </testResource>
+      <testResource>
+        <filtering>true</filtering>
+        <directory>src/it/resources</directory>
+        <includes>
+          <include>**/*.properties</include>
+        </includes>
+      </testResource>
+      <testResource>
+        <filtering>false</filtering>
+        <directory>src/it/resources</directory>
+        <includes>
+          <include>**/*</include>
+        </includes>
+      </testResource>
+      <testResource>
+        <directory>src/test/resources</directory>
+      </testResource>
+    </testResources>
 
     <plugins>
       <plugin>
@@ -404,10 +591,10 @@
         <executions>
           <execution>
             <id>add-it-source</id>
-            <phase>generate-test-sources</phase>
             <goals>
               <goal>add-test-source</goal>
             </goals>
+            <phase>generate-test-sources</phase>
             <configuration>
               <sources>
                 <source>src/it/java</source>
@@ -450,10 +637,10 @@
         <executions>
           <execution>
             <id>copy-dependencies-to-lib-folder</id>
-            <phase>package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
+            <phase>package</phase>
             <configuration>
               <outputDirectory>${project.build.directory}/lib</outputDirectory>
               <includeScope>runtime</includeScope>
@@ -462,41 +649,6 @@
         </executions>
       </plugin>
     </plugins>
-    <resources>
-      <resource>
-        <directory>../client/dist</directory>
-        <targetPath>webapp</targetPath>
-      </resource>
-      <resource>
-        <directory>src/main/resources</directory>
-      </resource>
-      <resource>
-        <directory>src/main/ssl</directory>
-      </resource>
-    </resources>
-    <testResources>
-      <testResource>
-        <directory>src/it/webapp</directory>
-        <targetPath>webapp</targetPath>
-      </testResource>
-      <testResource>
-        <directory>src/it/resources</directory>
-        <filtering>true</filtering>
-        <includes>
-          <include>**/*.properties</include>
-        </includes>
-      </testResource>
-      <testResource>
-        <directory>src/it/resources</directory>
-        <filtering>false</filtering>
-        <includes>
-          <include>**/*</include>
-        </includes>
-      </testResource>
-      <testResource>
-        <directory>src/test/resources</directory>
-      </testResource>
-    </testResources>
   </build>
 
   <profiles>
@@ -543,13 +695,16 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
+            <configuration>
+              <skip>${skipTests}</skip>
+            </configuration>
             <executions>
               <execution>
                 <id>docker-start</id>
-                <phase>pre-integration-test</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
+                <phase>pre-integration-test</phase>
                 <configuration>
                   <environmentVariables>
                     <ES_VERSION>${elasticsearch.test.version}</ES_VERSION>
@@ -572,10 +727,10 @@
               </execution>
               <execution>
                 <id>docker-remove</id>
-                <phase>post-integration-test</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
+                <phase>post-integration-test</phase>
                 <configuration>
                   <skip>${skip.docker}</skip>
                   <executable>docker-compose</executable>
@@ -589,9 +744,6 @@
                 </configuration>
               </execution>
             </executions>
-            <configuration>
-              <skip>${skipTests}</skip>
-            </configuration>
           </plugin>
         </plugins>
       </build>
