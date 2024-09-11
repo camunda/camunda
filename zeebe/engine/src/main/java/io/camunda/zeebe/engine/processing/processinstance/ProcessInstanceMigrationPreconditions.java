@@ -789,7 +789,6 @@ public final class ProcessInstanceMigrationPreconditions {
                 Expected to migrate process instance '%s' but active element with id '%s' \
                 has a catch event with id '%s' that is mapped to a catch event with id '%s'. \
                 These catch events have different event types: '%s' and '%s'. \
-                Catch events cannot change their event type during process instance migration. \
                 The event type of a catch event cannot be changed by process instance migration. \
                 Please ensure the event type of the catch event remains the same \
                 or remove the mapping instruction for these catch events.""",
