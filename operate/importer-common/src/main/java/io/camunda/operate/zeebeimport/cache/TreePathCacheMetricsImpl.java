@@ -17,16 +17,32 @@
 package io.camunda.operate.zeebeimport.cache;
 
 import io.camunda.operate.Metrics;
-import io.camunda.operate.zeebeimport.cache.TreePathCacheMetrics.CacheResult;
-import io.micrometer.core.instrument.Tag;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 public class TreePathCacheMetricsImpl implements TreePathCacheMetrics {
 
   private final Metrics metrics;
+  private final Map<Integer, AtomicInteger> cacheSizes;
 
-  public TreePathCacheMetricsImpl(final Metrics metrics) {
+  public TreePathCacheMetricsImpl(final List<Integer> partitionIds, final Metrics metrics) {
     this.metrics = metrics;
+    cacheSizes = new HashMap<>();
+    partitionIds.forEach(
+        partitionId -> {
+          final AtomicInteger cacheSizeRecorder = new AtomicInteger(0);
+          cacheSizes.put(partitionId, cacheSizeRecorder);
+          // gauges are registered once
+          metrics.registerGauge(
+              Metrics.GAUGE_NAME_FNI_TREE_PATH_CACHE_SIZE,
+              cacheSizeRecorder,
+              Number::doubleValue,
+              Metrics.TAG_KEY_PARTITION,
+              Integer.toString(partitionId));
+        });
   }
 
   @Override
@@ -53,9 +69,6 @@ public class TreePathCacheMetricsImpl implements TreePathCacheMetrics {
 
   @Override
   public void reportCacheSize(final int partitionId, final int size) {
-    metrics.registerGauge(
-        Metrics.GAUGE_NAME_FNI_TREE_PATH_CACHE_SIZE,
-        size,
-        Tag.of(Metrics.TAG_KEY_PARTITION, Integer.toString(partitionId)));
+    cacheSizes.get(partitionId).set(size);
   }
 }
