@@ -14,8 +14,10 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import org.apache.commons.lang3.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +47,6 @@ public class RdbmsExporter implements Exporter {
     partitionId = context.getPartitionId();
 
           registerHandler();
-
 
 
     LOG.info("[RDBMS Exporter] RDBMS Exporter configured!");
@@ -131,7 +132,18 @@ public class RdbmsExporter implements Exporter {
   }
 
   private void initializeRdbmsPosition() {
-    exporterRdbmsPosition = rdbmsService.getExporterPositionRdbmsService().findOne(partitionId);
+
+    // TODO ... DIRTY we need to find a way that exports get opened AFTER the application is ready
+    while (true) {
+      try {
+        exporterRdbmsPosition = rdbmsService.getExporterPositionRdbmsService().findOne(partitionId);
+        break;
+      } catch (final Exception e) {
+        LOG.warn("[RDBMS Exporter] Failed to initialize exporter position because Database is not ready, retrying ... {}", e.getMessage());
+        ThreadUtils.sleepQuietly(Duration.ofMillis(1000));
+      }
+    }
+
     if (exporterRdbmsPosition == null) {
       exporterRdbmsPosition = new ExporterPositionModel(
           partitionId,
