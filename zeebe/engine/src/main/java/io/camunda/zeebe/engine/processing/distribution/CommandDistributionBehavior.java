@@ -83,7 +83,7 @@ public final class CommandDistributionBehavior {
    *     completed. Additionally, the key determines the order in which the commands are distributed
    *     if they are distributed ordered, i.e. a queue is specified.
    */
-  public CommandDistributionRequestBuilder withKey(final long distributionKey) {
+  public RequestBuilder withKey(final long distributionKey) {
     return new DistributionRequest(distributionKey);
   }
 
@@ -248,32 +248,21 @@ public final class CommandDistributionBehavior {
         });
   }
 
-  public interface CommandDistributionRequestBuilder {
-    /**
-     * Distributes the command in an unordered way. This means that the command is sent to the
-     * receiving partitions without any guarantee of order.
-     *
-     * @return the builder
-     */
-    CommandDistributionRequestBuilder unordered();
+  public interface RequestBuilder {
+    DistributionRequestBuilder unordered();
 
-    /**
-     * Appends this command to the specified queue to be distributed in the natural sort order of
-     * the distribution key. Ordering is maintained separately for each partition the command is
-     * distributed to.
-     *
-     * @param queue the queue to append the command to.
-     */
-    CommandDistributionRequestBuilder inQueue(String queue);
+    DistributionRequestBuilder inQueue(String queue);
+  }
 
+  public interface DistributionRequestBuilder {
     /** Specifies the single partition that this command will be distributed to. */
-    CommandDistributionRequestBuilder forPartition(int partition);
+    DistributionRequestBuilder forPartition(int partition);
 
     /** Specifies the partitions that this command will be distributed to. */
-    CommandDistributionRequestBuilder forPartitions(Set<Integer> partitions);
+    DistributionRequestBuilder forPartitions(Set<Integer> partitions);
 
     /** Specifies that this command will be distributed to all partitions except the local one. */
-    CommandDistributionRequestBuilder forOtherPartitions();
+    DistributionRequestBuilder forOtherPartitions();
 
     /** Distributes the command as specified. */
     <T extends UnifiedRecordValue> void distribute(TypedRecord<T> command);
@@ -283,7 +272,7 @@ public final class CommandDistributionBehavior {
         final ValueType valueType, final Intent intent, final T value);
   }
 
-  private class DistributionRequest implements CommandDistributionRequestBuilder {
+  private class DistributionRequest implements RequestBuilder, DistributionRequestBuilder {
     final long distributionKey;
     String queue;
     Set<Integer> partitions = routingInfo.partitions();
@@ -293,31 +282,31 @@ public final class CommandDistributionBehavior {
     }
 
     @Override
-    public CommandDistributionRequestBuilder unordered() {
+    public DistributionRequest unordered() {
       queue = null;
       return this;
     }
 
     @Override
-    public CommandDistributionRequestBuilder inQueue(final String queue) {
+    public DistributionRequest inQueue(final String queue) {
       this.queue = Objects.requireNonNull(queue);
       return this;
     }
 
     @Override
-    public CommandDistributionRequestBuilder forPartition(final int partition) {
+    public DistributionRequestBuilder forPartition(final int partition) {
       partitions = Set.of(partition);
       return this;
     }
 
     @Override
-    public CommandDistributionRequestBuilder forPartitions(final Set<Integer> partitions) {
+    public DistributionRequestBuilder forPartitions(final Set<Integer> partitions) {
       this.partitions = Objects.requireNonNull(partitions);
       return this;
     }
 
     @Override
-    public CommandDistributionRequestBuilder forOtherPartitions() {
+    public DistributionRequestBuilder forOtherPartitions() {
       partitions = routingInfo.partitions();
       return this;
     }
