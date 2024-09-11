@@ -192,6 +192,9 @@ camunda-platform:
       contextPath: "/identity"
       # will be replaced by the preview-env-deploy workflow
       fullURL: "https://test.camunda.camunda.cloud/identity"
+      readinessProbe:
+        ## @param identity.readinessProbe.enabled if true, the readiness probe is enabled in app container
+        enabled: false
 
     operate:
       contextPath: "/operate"
