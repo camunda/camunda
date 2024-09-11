@@ -37,7 +37,7 @@ public class TreePathCacheMetricsImpl implements TreePathCacheMetrics {
           cacheSizes.put(partitionId, cacheSizeRecorder);
           // gauges are registered once
           metrics.registerGauge(
-              Metrics.GAUGE_NAME_FNI_TREE_PATH_CACHE_SIZE,
+              Metrics.GAUGE_NAME_IMPORT_FNI_TREE_PATH_CACHE_SIZE,
               cacheSizeRecorder,
               Number::doubleValue,
               Metrics.TAG_KEY_PARTITION,
@@ -48,7 +48,7 @@ public class TreePathCacheMetricsImpl implements TreePathCacheMetrics {
   @Override
   public void reportCacheResult(final int partitionId, final CacheResult result) {
     metrics.recordCounts(
-        Metrics.COUNTER_NAME_FNI_TREE_PATH_CACHE_RESULT,
+        Metrics.COUNTER_NAME_IMPORT_FNI_TREE_PATH_CACHE_RESULT,
         1,
         Metrics.TAG_KEY_PARTITION,
         Integer.toString(partitionId),
@@ -61,7 +61,7 @@ public class TreePathCacheMetricsImpl implements TreePathCacheMetrics {
       final int partitionId, final Supplier<String> resolving) {
     return metrics
         .getHistogram(
-            Metrics.TIMER_NAME_FNI_CACHE_ACCESS,
+            Metrics.TIMER_NAME_IMPORT_FNI_TREE_PATH_CACHE_ACCESS,
             Metrics.TAG_KEY_PARTITION,
             Integer.toString(partitionId))
         .record(resolving);

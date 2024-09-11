@@ -18,9 +18,7 @@ package io.camunda.operate;
 
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
-import java.util.Arrays;
 import java.util.Queue;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
@@ -53,7 +51,7 @@ public class Metrics {
       OPERATE_NAMESPACE + "archiver.reindex.query";
   public static final String TIMER_NAME_ARCHIVER_DELETE_QUERY =
       OPERATE_NAMESPACE + "archiver.delete.query";
-  public static final String TIMER_NAME_FNI_CACHE_ACCESS =
+  public static final String TIMER_NAME_IMPORT_FNI_TREE_PATH_CACHE_ACCESS =
       OPERATE_NAMESPACE + "fni.tree.path.cache.access";
   // Counters:
   public static final String COUNTER_NAME_EVENTS_PROCESSED = "events.processed";
@@ -61,15 +59,16 @@ public class Metrics {
       "events.processed.finished.process.instances";
   public static final String COUNTER_NAME_COMMANDS = "commands";
   public static final String COUNTER_NAME_ARCHIVED = "archived.process.instances";
-  public static final String COUNTER_NAME_FNI_TREE_PATH_CACHE_RESULT =
-      OPERATE_NAMESPACE + "fni.tree.path.cache.result";
+  public static final String COUNTER_NAME_IMPORT_FNI_TREE_PATH_CACHE_RESULT =
+      "import.fni.tree.path.cache.result";
+
   // Gauges:
-  public static final String GAUGE_IMPORT_QUEUE_SIZE = "import.queue.size";
+  public static final String GAUGE_IMPORT_QUEUE_SIZE = OPERATE_NAMESPACE + "import.queue.size";
   public static final String GAUGE_BPMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.bpmn.count";
   public static final String GAUGE_DMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.dmn.count";
 
-  public static final String GAUGE_NAME_FNI_TREE_PATH_CACHE_SIZE =
-      OPERATE_NAMESPACE + "fni.tree.path.cache.size";
+  public static final String GAUGE_NAME_IMPORT_FNI_TREE_PATH_CACHE_SIZE =
+      OPERATE_NAMESPACE + "import.fni.tree.path.cache.size";
 
   // Tags
   // -----
@@ -107,13 +106,7 @@ public class Metrics {
       final T stateObject,
       final ToDoubleFunction<T> valueFunction,
       final String... tags) {
-    Gauge.builder(OPERATE_NAMESPACE + name, stateObject, valueFunction)
-        .tags(tags)
-        .register(registry);
-  }
-
-  public void registerGauge(final String name, final long size, final Tag... tags) {
-    registry.gauge(name, Arrays.asList(tags), size);
+    Gauge.builder(name, stateObject, valueFunction).tags(tags).register(registry);
   }
 
   public void registerGaugeSupplier(
