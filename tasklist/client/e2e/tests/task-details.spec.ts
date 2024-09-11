@@ -569,6 +569,7 @@ test.describe('task details page', () => {
     try {
       await expect(taskFormView.nameInput).toBeVisible({timeout: 60000});
     } catch (error) {
+      console.error('Form not loaded error:', error);
       const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
       await sleep(10000);
       await page.reload();
