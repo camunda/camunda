@@ -70,7 +70,7 @@ public class MigrateMultiInstanceBodyTest {
                                     b ->
                                         b.zeebeInputCollectionExpression("jobTypes")
                                             .zeebeInputElement("jobType")))
-                    .endEvent()
+                    .endEvent("multi_instance_target_process_end")
                     .done())
             .deploy();
 
@@ -153,14 +153,16 @@ public class MigrateMultiInstanceBodyTest {
             tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "c"));
 
     engine.job().ofInstance(processInstanceKey).withType("a").complete();
+    engine.job().ofInstance(processInstanceKey).withType("b").complete();
+    engine.job().ofInstance(processInstanceKey).withType("c").complete();
 
     assertThat(
-            RecordingExporter.jobRecords(JobIntent.COMPLETED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withType("a")
-                .withElementId("serviceTask2")
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessDefinitionKey(targetProcessDefinitionKey)
+                .withElementType(BpmnElementType.END_EVENT)
+                .withElementId("multi_instance_target_process_end")
                 .findAny())
-        .describedAs("Expect that one of the service tasks in the multi-instance body is completed")
+        .describedAs("Expect that the process instance is continued in the target process")
         .isPresent();
   }
 
@@ -205,7 +207,7 @@ public class MigrateMultiInstanceBodyTest {
                                     b ->
                                         b.zeebeInputCollectionExpression("keys")
                                             .zeebeInputElement("key")))
-                    .endEvent()
+                    .endEvent("multi_instance_target_process_end")
                     .done())
             .deploy();
 
@@ -294,30 +296,17 @@ public class MigrateMultiInstanceBodyTest {
             tuple(targetProcessId, "a"), tuple(targetProcessId, "b"), tuple(targetProcessId, "c"));
 
     engine.message().withName(sourceMessageName).withCorrelationKey("a").publish();
+    engine.message().withName(sourceMessageName).withCorrelationKey("b").publish();
+    engine.message().withName(sourceMessageName).withCorrelationKey("c").publish();
 
-    Assertions.assertThat(
-            RecordingExporter.processMessageSubscriptionRecords(
-                    ProcessMessageSubscriptionIntent.CORRELATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withMessageName(sourceMessageName)
-                .getFirst()
-                .getValue())
-        .describedAs("Expect that the process definition is updated")
-        .hasBpmnProcessId(targetProcessId)
-        .hasElementId("receive2")
-        .describedAs("Expect that the correlation key is not re-evaluated")
-        .hasCorrelationKey("a");
-
-    Assertions.assertThat(
-            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withMessageName(sourceMessageName)
-                .getFirst()
-                .getValue())
-        .describedAs("Expect that the process definition is updated")
-        .hasBpmnProcessId(targetProcessId)
-        .describedAs("Expect that the correlation key is not re-evaluated")
-        .hasCorrelationKey("a");
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessDefinitionKey(targetProcessDefinitionKey)
+                .withElementType(BpmnElementType.END_EVENT)
+                .withElementId("multi_instance_target_process_end")
+                .findAny())
+        .describedAs("Expect that the process instance is continued in the target process")
+        .isPresent();
   }
 
   @Test
@@ -359,9 +348,9 @@ public class MigrateMultiInstanceBodyTest {
                     .embeddedSubProcess()
                     .startEvent()
                     .serviceTask("B", t -> t.zeebeJobType("B"))
-                    .endEvent("multi_instance_child_process_end")
-                    .subProcessDone()
                     .endEvent()
+                    .subProcessDone()
+                    .endEvent("multi_instance_target_process_end")
                     .done())
             .deploy();
 
@@ -437,13 +426,20 @@ public class MigrateMultiInstanceBodyTest {
             tuple(targetProcessDefinitionKey, targetProcessId, "B", "A"),
             tuple(targetProcessDefinitionKey, targetProcessId, "B", "A"));
 
-    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+    final var jobs =
+        RecordingExporter.jobRecords(JobIntent.MIGRATED)
+            .withType("A")
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(3)
+            .toList();
+
+    jobs.forEach(job -> engine.job().withKey(job.getKey()).complete());
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withProcessInstanceKey(processInstanceKey)
+                .withProcessDefinitionKey(targetProcessDefinitionKey)
                 .withElementType(BpmnElementType.END_EVENT)
-                .withElementId("multi_instance_child_process_end")
+                .withElementId("multi_instance_target_process_end")
                 .findAny())
         .describedAs("Expect that the process instance is continued in the target process")
         .isPresent();
@@ -483,13 +479,13 @@ public class MigrateMultiInstanceBodyTest {
                                     b ->
                                         b.zeebeInputCollectionExpression("[1,2,3]")
                                             .zeebeInputElement("index")))
-                    .endEvent()
+                    .endEvent("multi_instance_target_process_end")
                     .done())
             .withXmlResource(
                 Bpmn.createExecutableProcess(childProcessId)
                     .startEvent()
                     .serviceTask("A", t -> t.zeebeJobType("A"))
-                    .endEvent("multi_instance_child_process_end")
+                    .endEvent()
                     .done())
             .deploy();
 
@@ -505,12 +501,11 @@ public class MigrateMultiInstanceBodyTest {
         .describedAs("Wait until all service tasks have activated")
         .hasSize(3);
 
-    final var childProcessInstanceKey =
+    final var childProcessInstances =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementId("A")
-            .getFirst()
-            .getValue()
-            .getProcessInstanceKey();
+            .limit(3)
+            .toList();
 
     // when
     engine
@@ -554,13 +549,19 @@ public class MigrateMultiInstanceBodyTest {
             tuple(targetProcessDefinitionKey, targetProcessId, "callActivity2", 1),
             tuple(targetProcessDefinitionKey, targetProcessId, "callActivity2", 1));
 
-    engine.job().ofInstance(childProcessInstanceKey).withType("A").complete();
+    childProcessInstances.forEach(
+        instance ->
+            engine
+                .job()
+                .ofInstance(instance.getValue().getProcessInstanceKey())
+                .withType("A")
+                .complete());
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withProcessInstanceKey(childProcessInstanceKey)
+                .withProcessDefinitionKey(targetProcessDefinitionKey)
                 .withElementType(BpmnElementType.END_EVENT)
-                .withElementId("multi_instance_child_process_end")
+                .withElementId("multi_instance_target_process_end")
                 .findAny())
         .describedAs("Expect that the process instance is continued in the target process")
         .isPresent();
@@ -599,7 +600,7 @@ public class MigrateMultiInstanceBodyTest {
                                     b ->
                                         b.zeebeInputCollectionExpression("jobTypes")
                                             .zeebeInputElement("jobType")))
-                    .endEvent()
+                    .endEvent("multi_instance_target_process_end")
                     .done())
             .deploy();
 
@@ -691,14 +692,15 @@ public class MigrateMultiInstanceBodyTest {
             tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "c"));
 
     engine.job().ofInstance(processInstanceKey).withType("b").complete();
+    engine.job().ofInstance(processInstanceKey).withType("c").complete();
 
     assertThat(
-            RecordingExporter.jobRecords(JobIntent.COMPLETED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withType("b")
-                .withElementId("serviceTask2")
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessDefinitionKey(targetProcessDefinitionKey)
+                .withElementType(BpmnElementType.END_EVENT)
+                .withElementId("multi_instance_target_process_end")
                 .findAny())
-        .describedAs("Expect that one of the service tasks in the multi-instance body is completed")
+        .describedAs("Expect that the process instance is continued in the target process")
         .isPresent();
   }
 }
