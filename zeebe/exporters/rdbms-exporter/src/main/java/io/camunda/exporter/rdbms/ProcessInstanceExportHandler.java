@@ -10,8 +10,8 @@ package io.camunda.exporter.rdbms;
 import io.camunda.db.rdbms.domain.ProcessInstanceModel;
 import io.camunda.db.rdbms.domain.ProcessInstanceModel.State;
 import io.camunda.db.rdbms.service.ProcessInstanceRdbmsService;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -27,13 +27,15 @@ public class ProcessInstanceExportHandler implements RdbmsExportHandler<ProcessI
 
   @Override
   public boolean canExport(final Record<ProcessInstanceRecordValue> record) {
-    return record.getValue().getBpmnElementType() == BpmnElementType.PROCESS;
+    return record.getValueType() == ValueType.PROCESS_INSTANCE;
   }
 
   @Override
   public void export(final Record<ProcessInstanceRecordValue> record) {
     if (record.getValue().getBpmnElementType() == BpmnElementType.PROCESS) {
       exportProcessInstance(record);
+    } else {
+      exportFlowNode(record);
     }
   }
 
@@ -52,6 +54,7 @@ public class ProcessInstanceExportHandler implements RdbmsExportHandler<ProcessI
           value.getTenantId(),
           value.getParentProcessInstanceKey(),
           value.getParentElementInstanceKey(),
+          null,
           value.getVersion()
       ));
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED)) {
@@ -65,8 +68,16 @@ public class ProcessInstanceExportHandler implements RdbmsExportHandler<ProcessI
           value.getTenantId(),
           value.getParentProcessInstanceKey(),
           value.getParentElementInstanceKey(),
+          null,
           value.getVersion()
       ));
+    }
+  }
+
+  private void exportFlowNode(final Record<ProcessInstanceRecordValue> record) {
+    var value = record.getValue();
+    if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)) {
+      processInstanceRdbmsService.updateCurrentElementId(value.getProcessInstanceKey(), value.getElementId());
     }
   }
 
@@ -82,6 +93,7 @@ public class ProcessInstanceExportHandler implements RdbmsExportHandler<ProcessI
         value.getTenantId(),
         value.getParentProcessInstanceKey(),
         value.getParentElementInstanceKey(),
+        null,
         value.getVersion()
     );
   }
