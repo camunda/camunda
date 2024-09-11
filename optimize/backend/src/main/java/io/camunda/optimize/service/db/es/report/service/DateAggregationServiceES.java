@@ -22,6 +22,7 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.service.db.es.report.context.DateAggregationContextES;
 import io.camunda.optimize.service.db.report.service.DateAggregationService;
+import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -49,10 +50,12 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggre
 import org.elasticsearch.search.aggregations.bucket.histogram.LongBounds;
 import org.elasticsearch.search.aggregations.bucket.range.DateRangeAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregator;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
 @Component
+@Conditional(ElasticSearchCondition.class)
 public class DateAggregationServiceES extends DateAggregationService {
 
   private static final String DATE_AGGREGATION = "dateAggregation";

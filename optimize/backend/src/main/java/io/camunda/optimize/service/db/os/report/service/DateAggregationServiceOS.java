@@ -38,6 +38,7 @@ import io.camunda.optimize.service.db.os.report.context.DateAggregationContextOS
 import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS;
 import io.camunda.optimize.service.db.report.service.DateAggregationService;
+import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -67,10 +68,12 @@ import org.opensearch.client.opensearch._types.aggregations.HistogramOrder;
 import org.opensearch.client.opensearch._types.aggregations.MultiBucketBase;
 import org.opensearch.client.opensearch._types.aggregations.RangeBucket;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
 @Component
+@Conditional(OpenSearchCondition.class)
 public class DateAggregationServiceOS extends DateAggregationService {
 
   private static final String DATE_AGGREGATION = "dateAggregation";
