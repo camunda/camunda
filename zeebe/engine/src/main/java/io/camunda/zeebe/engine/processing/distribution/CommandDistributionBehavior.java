@@ -252,6 +252,8 @@ public final class CommandDistributionBehavior {
     DistributionRequestBuilder unordered();
 
     DistributionRequestBuilder inQueue(String queue);
+
+    ContinuationRequestBuilder afterQueue(String queue);
   }
 
   public interface DistributionRequestBuilder {
@@ -272,10 +274,28 @@ public final class CommandDistributionBehavior {
         final ValueType valueType, final Intent intent, final T value);
   }
 
-  private class DistributionRequest implements RequestBuilder, DistributionRequestBuilder {
+  public interface ContinuationRequestBuilder {
+    /**
+     * Specifies whether to wait for the queue to be non-empty before writing the continuation
+     * command. If set to false, the continuation command will be written immediately if the queue
+     * is currently empty.
+     */
+    ContinuationRequestBuilder awaitNonEmptyQueue(boolean awaitNonEmptyQueue);
+
+    /** Write this command once the queue is empty. */
+    <T extends UnifiedRecordValue> void continueWith(TypedRecord<T> command);
+
+    /** Write this command once the queue is empty. */
+    <T extends UnifiedRecordValue> void continueWith(
+        final ValueType valueType, final Intent intent, final T value);
+  }
+
+  private class DistributionRequest
+      implements RequestBuilder, DistributionRequestBuilder, ContinuationRequestBuilder {
     final long distributionKey;
     String queue;
     Set<Integer> partitions = routingInfo.partitions();
+    private boolean awaitNonEmptyQueue;
 
     public DistributionRequest(final long distributionKey) {
       this.distributionKey = distributionKey;
@@ -289,6 +309,12 @@ public final class CommandDistributionBehavior {
 
     @Override
     public DistributionRequest inQueue(final String queue) {
+      this.queue = Objects.requireNonNull(queue);
+      return this;
+    }
+
+    @Override
+    public ContinuationRequestBuilder afterQueue(final String queue) {
       this.queue = Objects.requireNonNull(queue);
       return this;
     }
@@ -332,6 +358,23 @@ public final class CommandDistributionBehavior {
           Objects.requireNonNull(intent),
           Objects.requireNonNull(value),
           partitions);
+    }
+
+    @Override
+    public ContinuationRequestBuilder awaitNonEmptyQueue(final boolean awaitNonEmptyQueue) {
+      this.awaitNonEmptyQueue = awaitNonEmptyQueue;
+      return this;
+    }
+
+    @Override
+    public <T extends UnifiedRecordValue> void continueWith(final TypedRecord<T> command) {
+      throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public <T extends UnifiedRecordValue> void continueWith(
+        final ValueType valueType, final Intent intent, final T value) {
+      throw new UnsupportedOperationException("Not implemented yet");
     }
   }
 }
