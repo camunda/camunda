@@ -21,18 +21,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequestMapping("/v2/administration")
-public class AdministrationController {
+@RequestMapping("/v2/clock")
+public class ClockController {
 
   private final ClockServices clockServices;
 
   @Autowired
-  public AdministrationController(final ClockServices clockServices) {
+  public ClockController(final ClockServices clockServices) {
     this.clockServices = clockServices;
   }
 
   @PutMapping(
-      path = "/clock",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> pinClock(
@@ -43,9 +42,8 @@ public class AdministrationController {
   }
 
   @PostMapping(
-      path = "/clock/reset",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+      path = "/reset",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public CompletableFuture<ResponseEntity<Object>> resetClock() {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () -> clockServices.withAuthentication(RequestMapper.getAuthentication()).resetClock());

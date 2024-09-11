@@ -165,7 +165,8 @@ public class ElasticsearchConnector {
     // some weird error when ELS sets available processors number for Netty - see
     // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
     System.setProperty("es.set.netty.runtime.available.processors", "false");
-    zeebeEsClientRepository.load(tasklistProperties.getElasticsearch().getInterceptorPlugins());
+    zeebeEsClientRepository.load(
+        tasklistProperties.getZeebeElasticsearch().getInterceptorPlugins());
     return createEsClient(tasklistProperties.getZeebeElasticsearch(), zeebeEsClientRepository);
   }
 

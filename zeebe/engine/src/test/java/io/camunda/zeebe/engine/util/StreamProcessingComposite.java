@@ -114,6 +114,10 @@ public class StreamProcessingComposite implements CommandWriter {
     streams.pauseProcessing(getLogName(partitionId));
   }
 
+  public void banInstanceInNewTransaction(final int partitionId, final long processInstanceKey) {
+    streams.banInstanceInNewTransaction(getLogName(partitionId), partitionId, processInstanceKey);
+  }
+
   public void resumeProcessing(final int partitionId) {
     streams.resumeProcessing(getLogName(partitionId));
   }

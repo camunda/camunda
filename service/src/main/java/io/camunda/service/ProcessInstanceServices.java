@@ -17,10 +17,15 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import java.util.List;
 import java.util.Map;
@@ -93,6 +98,32 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest);
   }
 
+  public CompletableFuture<ProcessInstanceRecord> cancelProcessInstance(
+      final ProcessInstanceCancelRequest request) {
+    final var brokerRequest =
+        new BrokerCancelProcessInstanceRequest()
+            .setProcessInstanceKey(request.processInstanceKey());
+
+    if (request.operationReference() != null) {
+      brokerRequest.setOperationReference(request.operationReference());
+    }
+    return sendBrokerRequest(brokerRequest);
+  }
+
+  public CompletableFuture<ProcessInstanceMigrationRecord> migrateProcessInstance(
+      final ProcessInstanceMigrateRequest request) {
+    final var brokerRequest =
+        new BrokerMigrateProcessInstanceRequest()
+            .setProcessInstanceKey(request.processInstanceKey())
+            .setTargetProcessDefinitionKey(request.targetProcessDefinitionKey())
+            .setMappingInstructions(request.mappingInstructions());
+
+    if (request.operationReference() != null) {
+      brokerRequest.setOperationReference(request.operationReference());
+    }
+    return sendBrokerRequest(brokerRequest);
+  }
+
   public record ProcessInstanceCreateRequest(
       Long processDefinitionKey,
       String bpmnProcessId,
@@ -103,4 +134,12 @@ public final class ProcessInstanceServices
       Long requestTimeout,
       Long operationReference,
       List<ProcessInstanceCreationStartInstruction> startInstructions) {}
+
+  public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}
+
+  public record ProcessInstanceMigrateRequest(
+      Long processInstanceKey,
+      Long targetProcessDefinitionKey,
+      List<ProcessInstanceMigrationMappingInstruction> mappingInstructions,
+      Long operationReference) {}
 }

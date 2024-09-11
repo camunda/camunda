@@ -20,6 +20,7 @@ import io.camunda.service.JobServices;
 import io.camunda.service.MessageServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
+import io.camunda.service.SignalServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -116,5 +117,10 @@ public class CamundaServicesConfiguration {
   @Bean
   public ElementInstanceServices elementServices(final CamundaServices camundaServices) {
     return camundaServices.elementServices();
+  }
+
+  @Bean
+  public SignalServices signalServices(final CamundaServices camundaServices) {
+    return camundaServices.signalServices();
   }
 }

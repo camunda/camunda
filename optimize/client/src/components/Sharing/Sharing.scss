@@ -14,7 +14,13 @@
     margin-bottom: 40px;
 
     .title-button {
+      display: flex;
+      align-items: center;
       flex-shrink: 0;
+
+      > svg {
+        margin-left: 0.5rem;
+      }
     }
   }
 
@@ -68,10 +74,6 @@
         .Popover {
           margin-top: 4px;
         }
-      }
-
-      .title-button {
-        max-height: 25px;
       }
     }
 

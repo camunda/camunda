@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.function.Function;
 
 public class ClockClient {
@@ -26,11 +27,18 @@ public class ClockClient {
           RecordingExporter.clockRecords(ClockIntent.RESETTED)
               .withSourceRecordPosition(position)
               .getFirst();
+  private static final Function<Long, Record<ClockRecordValue>> REJECTION_EXPECTATION =
+      (position) ->
+          RecordingExporter.clockRecords()
+              .onlyCommandRejections()
+              .withSourceRecordPosition(position)
+              .getFirst();
 
   private final CommandWriter writer;
   private final ClockRecord record = new ClockRecord();
   private long requestId = -1L;
   private int requestStreamId = -1;
+  private Function<Long, Record<ClockRecordValue>> expectation = null;
 
   public ClockClient(final CommandWriter writer) {
     this.writer = writer;
@@ -46,18 +54,27 @@ public class ClockClient {
     return this;
   }
 
-  public Record<ClockRecordValue> pinAt(final Instant now) {
-    record.pinAt(now.toEpochMilli());
+  public ClockClient expectRejection() {
+    expectation = REJECTION_EXPECTATION;
+    return this;
+  }
+
+  public Record<ClockRecordValue> pinAt(final long timestamp) {
+    record.pinAt(timestamp);
 
     final long position = writeCommand(ClockIntent.PIN);
-    return PIN_SUCCESS_EXPECTATION.apply(position);
+    return Objects.requireNonNullElse(expectation, PIN_SUCCESS_EXPECTATION).apply(position);
+  }
+
+  public Record<ClockRecordValue> pinAt(final Instant instant) {
+    return pinAt(instant.toEpochMilli());
   }
 
   public Record<ClockRecordValue> reset() {
     record.reset();
 
     final long position = writeCommand(ClockIntent.RESET);
-    return RESET_SUCCESS_EXPECTATION.apply(position);
+    return Objects.requireNonNullElse(expectation, RESET_SUCCESS_EXPECTATION).apply(position);
   }
 
   private long writeCommand(final ClockIntent intent) {

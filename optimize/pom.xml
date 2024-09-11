@@ -23,9 +23,9 @@
     <surefire-plugin.version>3.5.0</surefire-plugin.version>
 
     <!-- database config -->
-    <elasticsearch.client.version>7.17.23</elasticsearch.client.version>
+    <elasticsearch.client.version>7.17.24</elasticsearch.client.version>
     <opensearch.client.version>2.10.1</opensearch.client.version>
-    <awssdk.version>2.27.21</awssdk.version>
+    <awssdk.version>2.27.23</awssdk.version>
     <!-- The default opensearch version we are going to be testing with-->
     <opensearch.test.version>2.9.0</opensearch.test.version>
     <!--The least supported elasticsearch version we should test against-->

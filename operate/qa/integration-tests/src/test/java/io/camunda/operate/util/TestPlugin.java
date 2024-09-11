@@ -5,18 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.exporter.opensearch.utils;
+package io.camunda.operate.util;
 
 import io.camunda.plugin.search.header.CustomHeader;
 import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
 
-public class TestStaticCustomHeaderInterceptor implements DatabaseCustomHeaderSupplier {
-
-  public static final String X_CUSTOM_HEADER = "X-Custom-Header";
-  public static final String X_CUSTOM_HEADER_VALUE = "MyValue";
+public class TestPlugin implements DatabaseCustomHeaderSupplier {
 
   @Override
   public CustomHeader getSearchDatabaseCustomHeader() {
-    return new CustomHeader(X_CUSTOM_HEADER, X_CUSTOM_HEADER_VALUE);
+    return new CustomHeader("foo", "bar");
   }
 }
