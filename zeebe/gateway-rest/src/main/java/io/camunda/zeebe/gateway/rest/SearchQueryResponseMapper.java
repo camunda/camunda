@@ -190,7 +190,20 @@ public final class SearchQueryResponseMapper {
   }
 
   private static FlowNodeInstanceItem toFlowNodeInstance(final FlowNodeInstanceEntity instance) {
-    return new FlowNodeInstanceItem();
+    return new FlowNodeInstanceItem()
+        .flowNodeInstanceKey(instance.flowNodeInstanceKey())
+        .flowNodeId(instance.flowNodeId())
+        .flowNodeName(instance.flowNodeName())
+        .processDefinitionKey(instance.processDefinitionKey())
+        .processInstanceKey(instance.processInstanceKey())
+        .incidentKey(instance.incidentKey())
+        .incident(instance.incident())
+        .startDate(instance.startDate())
+        .endDate(instance.endDate())
+        .state(instance.state())
+        .treePath(instance.treePath())
+        .type(instance.type())
+        .tenantId(instance.tenantId());
   }
 
   private static DecisionDefinitionItem toDecisionDefinition(final DecisionDefinitionEntity d) {
