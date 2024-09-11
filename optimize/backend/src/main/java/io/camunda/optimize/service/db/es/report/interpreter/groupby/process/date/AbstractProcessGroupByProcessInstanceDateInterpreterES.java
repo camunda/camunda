@@ -14,8 +14,6 @@ import io.camunda.optimize.dto.optimize.query.report.single.configuration.Distri
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
-import io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
-import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.report.context.DateAggregationContextES;
 import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterES;
@@ -23,6 +21,7 @@ import io.camunda.optimize.service.db.es.report.service.DateAggregationServiceES
 import io.camunda.optimize.service.db.es.report.service.MinMaxStatsServiceES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
+import io.camunda.optimize.service.db.report.groupby.ProcessGroupByProcessInstanceDateInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
@@ -125,21 +124,11 @@ public abstract class AbstractProcessGroupByProcessInstanceDateInterpreterES
       final CompositeCommandResult result,
       final SearchResponse response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    result.setGroups(processAggregations(response, response.getAggregations(), context));
-    result.setGroupBySorting(
-        context
-            .getReportConfiguration()
-            .getSorting()
-            .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC)));
-    result.setGroupByKeyOfNumericType(false);
-    result.setDistributedByKeyOfNumericType(
-        getDistributedByInterpreter().isKeyOfNumericType(context));
-    ProcessReportDataDto reportData = context.getReportData();
-    // We sort by label for management report because keys change on every request
-    if (reportData.isManagementReport()) {
-      result.setDistributedBySorting(
-          new ReportSortingDto(ReportSortingDto.SORT_BY_LABEL, SortOrder.ASC));
-    }
+    ProcessGroupByProcessInstanceDateInterpreter.addQueryResult(
+        processAggregations(response, response.getAggregations(), context),
+        getDistributedByInterpreter().isKeyOfNumericType(context),
+        result,
+        context);
   }
 
   private List<GroupByResult> processAggregations(

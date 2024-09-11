@@ -21,7 +21,6 @@ import io.camunda.optimize.service.db.os.report.context.DateAggregationContextOS
 import io.camunda.optimize.service.db.os.report.filter.DecisionQueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
 import io.camunda.optimize.service.db.os.report.interpreter.distributedby.decision.DecisionDistributedByNoneInterpreterOS;
-import io.camunda.optimize.service.db.os.report.interpreter.util.Transformations;
 import io.camunda.optimize.service.db.os.report.interpreter.view.decision.DecisionViewInterpreterFacadeOS;
 import io.camunda.optimize.service.db.os.report.service.DateAggregationServiceOS;
 import io.camunda.optimize.service.db.os.report.service.MinMaxStatsServiceOS;
@@ -40,6 +39,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.util.types.MapUtil;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -93,7 +93,7 @@ public class DecisionGroupByEvaluationDateTimeInterpreterOS
 
     return dateAggregationService
         .createDecisionEvaluationDateAggregation(dateAggContext)
-        .map(Transformations::pairToMap)
+        .map(MapUtil::createFromPair)
         .orElse(Map.of());
   }
 

@@ -16,8 +16,6 @@ import io.camunda.optimize.dto.optimize.query.report.single.configuration.Distri
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
-import io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
-import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import io.camunda.optimize.service.db.os.report.context.DateAggregationContextOS;
 import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
@@ -26,6 +24,7 @@ import io.camunda.optimize.service.db.os.report.service.DateAggregationServiceOS
 import io.camunda.optimize.service.db.os.report.service.MinMaxStatsServiceOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
+import io.camunda.optimize.service.db.report.groupby.ProcessGroupByProcessInstanceDateInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
@@ -109,7 +108,7 @@ public abstract class AbstractProcessGroupByProcessInstanceDateInterpreterOS
     return getDateAggregationService()
         .createProcessInstanceDateAggregation(dateAggContext)
         .map(agg -> addSiblingAggregationIfRequired(context, query, agg))
-        .map(MapUtil::fromPair)
+        .map(MapUtil::createFromPair)
         .orElse(Map.of());
   }
 
@@ -125,21 +124,11 @@ public abstract class AbstractProcessGroupByProcessInstanceDateInterpreterOS
       final CompositeCommandResult result,
       final SearchResponse<RawResult> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    result.setGroups(processAggregations(response, response.aggregations(), context));
-    result.setGroupBySorting(
-        context
-            .getReportConfiguration()
-            .getSorting()
-            .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC)));
-    result.setGroupByKeyOfNumericType(false);
-    result.setDistributedByKeyOfNumericType(
-        getDistributedByInterpreter().isKeyOfNumericType(context));
-    ProcessReportDataDto reportData = context.getReportData();
-    // We sort by label for management report because keys change on every request
-    if (reportData.isManagementReport()) {
-      result.setDistributedBySorting(
-          new ReportSortingDto(ReportSortingDto.SORT_BY_LABEL, SortOrder.ASC));
-    }
+    ProcessGroupByProcessInstanceDateInterpreter.addQueryResult(
+        processAggregations(response, response.aggregations(), context),
+        getDistributedByInterpreter().isKeyOfNumericType(context),
+        result,
+        context);
   }
 
   private List<GroupByResult> processAggregations(
@@ -197,7 +186,7 @@ public abstract class AbstractProcessGroupByProcessInstanceDateInterpreterOS
     // required for variable distribution
     if (DistributedByType.VARIABLE.equals(getDistributedByType(context.getReportData()))) {
       Map<String, Aggregation> subAggregations =
-          MapUtil.add(
+          MapUtil.combineUniqueMaps(
               aggregation.getValue().aggregations(),
               getDistributedByInterpreter().createAggregations(context, baseQuery));
       return Pair.of(
