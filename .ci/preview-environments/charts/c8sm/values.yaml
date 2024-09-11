@@ -194,6 +194,7 @@ camunda-platform:
       fullURL: "https://test.camunda.camunda.cloud/identity"
 
     operate:
+      """
       image:
         registry: registry.camunda.cloud
         repository: team-camunda/operate
@@ -201,12 +202,14 @@ camunda-platform:
         tag: latest
         pullSecrets:
         - name: registry-camunda-cloud
+      """"
       contextPath: "/operate"
 
     optimize:
       contextPath: "/optimize"
 
     tasklist:
+      """
       image:
         registry: registry.camunda.cloud
         repository: team-camunda/tasklist
@@ -214,9 +217,12 @@ camunda-platform:
         tag: latest
         pullSecrets:
           - name: registry-camunda-cloud
+      """
       contextPath: "/tasklist"
 
+    """
     zeebe:
+
       image:
         registry: registry.camunda.cloud
         repository: team-camunda/zeebe
@@ -224,6 +230,7 @@ camunda-platform:
         tag: latest
         pullSecrets:
           - name: registry-camunda-cloud
+    """
 
     webModeler:
       contextPath: "/modeler"
