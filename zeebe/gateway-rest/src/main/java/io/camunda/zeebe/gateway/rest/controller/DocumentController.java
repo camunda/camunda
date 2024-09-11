@@ -49,10 +49,10 @@ public class DocumentController {
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public CompletableFuture<ResponseEntity<Object>> createDocument(
-      @RequestParam(required = false) String documentId,
-      @RequestParam(required = false) String storeId,
-      @RequestPart("file") MultipartFile file,
-      @RequestPart(value = "metadata", required = false) DocumentMetadata metadata) {
+      @RequestParam(required = false) final String documentId,
+      @RequestParam(required = false) final String storeId,
+      @RequestPart("file") final MultipartFile file,
+      @RequestPart(value = "metadata", required = false) final DocumentMetadata metadata) {
 
     return RequestMapper.toDocumentCreateRequest(documentId, storeId, file, metadata)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createDocument);
@@ -76,11 +76,11 @@ public class DocumentController {
         MediaType.APPLICATION_PROBLEM_JSON_VALUE
       })
   public ResponseEntity<StreamingResponseBody> getDocumentContent(
-      @PathVariable String documentId, @RequestParam(required = false) String storeId) {
+      @PathVariable final String documentId, @RequestParam(required = false) final String storeId) {
 
     try (final InputStream contentInputStream = getDocumentContentStream(documentId, storeId)) {
       return ResponseEntity.ok().body(contentInputStream::transferTo);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       // we can't return a generic Object type when streaming a response due to Spring MVC
       // limitations
       // exception handling is done in the exception handler below
@@ -89,14 +89,15 @@ public class DocumentController {
   }
 
   @ExceptionHandler(DocumentContentFetchException.class)
-  public ResponseEntity<ProblemDetail> handleDocumentContentException(CamundaServiceException e) {
+  public ResponseEntity<ProblemDetail> handleDocumentContentException(
+      final CamundaServiceException e) {
     final var problemDetail =
         RestErrorMapper.createProblemDetail(
             HttpStatus.BAD_REQUEST, e.getMessage(), "Failed to get document content");
     return RestErrorMapper.mapProblemToResponse(problemDetail);
   }
 
-  private InputStream getDocumentContentStream(String documentId, String storeId) {
+  private InputStream getDocumentContentStream(final String documentId, final String storeId) {
     return documentServices
         .withAuthentication(RequestMapper.getAuthentication())
         .getDocumentContent(documentId, storeId);
@@ -106,7 +107,7 @@ public class DocumentController {
       path = "/{documentId}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public CompletableFuture<ResponseEntity<Object>> deleteDocument(
-      @PathVariable String documentId, @RequestParam(required = false) String storeId) {
+      @PathVariable final String documentId, @RequestParam(required = false) final String storeId) {
 
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
@@ -120,7 +121,7 @@ public class DocumentController {
       consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public ResponseEntity<Void> createDocumentLink(
-      @PathVariable String documentId, @RequestBody DocumentLinkRequest linkRequest) {
+      @PathVariable final String documentId, @RequestBody final DocumentLinkRequest linkRequest) {
 
     // TODO: implement
     final var problemDetail =
@@ -130,7 +131,7 @@ public class DocumentController {
   }
 
   public static class DocumentContentFetchException extends RuntimeException {
-    public DocumentContentFetchException(String message, Throwable cause) {
+    public DocumentContentFetchException(final String message, final Throwable cause) {
       super(message, cause);
     }
   }

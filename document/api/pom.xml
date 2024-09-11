@@ -21,4 +21,11 @@
   <packaging>jar</packaging>
 
   <name>Camunda Document Store API</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+  </dependencies>
 </project>

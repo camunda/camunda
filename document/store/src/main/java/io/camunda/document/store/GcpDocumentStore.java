@@ -15,14 +15,12 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import io.camunda.document.api.DocumentCreationRequest;
+import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentLink;
 import io.camunda.document.api.DocumentMetadataModel;
-import io.camunda.document.api.DocumentOperationResponse;
-import io.camunda.document.api.DocumentOperationResponse.DocumentErrorCode;
-import io.camunda.document.api.DocumentOperationResponse.Failure;
-import io.camunda.document.api.DocumentOperationResponse.Success;
 import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
+import io.camunda.zeebe.util.Either;
 import java.io.InputStream;
 import java.nio.channels.Channels;
 import java.time.OffsetDateTime;
@@ -31,6 +29,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class GcpDocumentStore implements DocumentStore {
@@ -40,95 +41,124 @@ public class GcpDocumentStore implements DocumentStore {
 
   private final ObjectMapper objectMapper;
 
-  public GcpDocumentStore(final String bucketName) {
-    this(bucketName, new ObjectMapper());
-  }
+  private final ExecutorService executor;
 
-  public GcpDocumentStore(final String bucketName, final ObjectMapper objectMapper) {
-    this.bucketName = bucketName;
-    storage = StorageOptions.getDefaultInstance().getService();
-    this.objectMapper = objectMapper;
+  public GcpDocumentStore(final String bucketName) {
+    this(bucketName, new ObjectMapper(), Executors.newSingleThreadExecutor());
   }
 
   public GcpDocumentStore(
-      final String bucketName, final Storage storage, final ObjectMapper objectMapper) {
+      final String bucketName, final ObjectMapper objectMapper, final ExecutorService executor) {
+    this.bucketName = bucketName;
+    storage = StorageOptions.getDefaultInstance().getService();
+    this.objectMapper = objectMapper;
+    this.executor = executor;
+  }
+
+  public GcpDocumentStore(
+      final String bucketName,
+      final Storage storage,
+      final ObjectMapper objectMapper,
+      final ExecutorService executor) {
     this.bucketName = bucketName;
     this.storage = storage;
     this.objectMapper = objectMapper;
+    this.executor = executor;
   }
 
   @Override
-  public DocumentOperationResponse<DocumentReference> createDocument(
+  public CompletableFuture<Either<DocumentError, DocumentReference>> createDocument(
       final DocumentCreationRequest request) {
+    return CompletableFuture.supplyAsync(() -> createDocumentInternal(request), executor);
+  }
 
+  @Override
+  public CompletableFuture<Either<DocumentError, InputStream>> getDocument(
+      final String documentId) {
+    return CompletableFuture.supplyAsync(() -> getDocumentContentInternal(documentId), executor);
+  }
+
+  @Override
+  public CompletableFuture<Either<DocumentError, Void>> deleteDocument(final String documentId) {
+    return CompletableFuture.supplyAsync(() -> deleteDocumentInternal(documentId), executor);
+  }
+
+  @Override
+  public CompletableFuture<Either<DocumentError, DocumentLink>> createLink(
+      final String documentId, final long durationInSeconds) {
+    return CompletableFuture.supplyAsync(
+        () -> createLinkInternal(documentId, durationInSeconds), executor);
+  }
+
+  private Either<DocumentError, DocumentReference> createDocumentInternal(
+      final DocumentCreationRequest request) {
     final String documentId =
         Optional.of(request.documentId()).orElse(UUID.randomUUID().toString());
+
     final Blob existingBlob;
     try {
       existingBlob = storage.get(bucketName, documentId);
     } catch (final Exception e) {
-      return new Failure<>(DocumentErrorCode.UNKNOWN_ERROR, e);
+      return Either.left(new DocumentError.UnknownError(e));
     }
     if (existingBlob != null) {
-      return new Failure<>(DocumentErrorCode.DOCUMENT_ALREADY_EXISTS);
+      return Either.left(new DocumentError.DocumentAlreadyExists(documentId));
     }
     final BlobId blobId = BlobId.of(bucketName, request.documentId());
     final var blobInfoBuilder = BlobInfo.newBuilder(blobId);
     try {
       applyMetadata(blobInfoBuilder, request.metadata());
     } catch (final JsonProcessingException e) {
-      return new Failure<>("Failed to serialize metadata", DocumentErrorCode.INVALID_INPUT, e);
+      return Either.left(
+          new DocumentError.InvalidInput("Failed to serialize metadata: " + e.getMessage()));
     }
 
     try {
       storage.createFrom(blobInfoBuilder.build(), request.contentInputStream());
     } catch (final Exception e) {
-      return new Failure<>(DocumentErrorCode.UNKNOWN_ERROR, e);
+      return Either.left(new DocumentError.UnknownError(e));
     }
     final var documentReference = new DocumentReference(request.documentId(), request.metadata());
-    return new Success<>(documentReference);
+    return Either.right(documentReference);
   }
 
-  @Override
-  public DocumentOperationResponse<InputStream> getDocument(final String documentId) {
+  private Either<DocumentError, InputStream> getDocumentContentInternal(final String documentId) {
     try {
       final Blob blob = storage.get(bucketName, documentId);
       if (blob == null) {
-        return new Failure<>(DocumentErrorCode.DOCUMENT_NOT_FOUND);
+        return Either.left(new DocumentError.DocumentNotFound(documentId));
       }
       final var inputStream = Channels.newInputStream(blob.reader());
-      return new Success<>(inputStream);
+      return Either.right(inputStream);
     } catch (final Exception e) {
-      return new Failure<>(DocumentErrorCode.UNKNOWN_ERROR, e);
+      return Either.left(new DocumentError.UnknownError(e));
     }
   }
 
-  @Override
-  public DocumentOperationResponse<Void> deleteDocument(final String documentId) {
+  private Either<DocumentError, Void> deleteDocumentInternal(final String documentId) {
     try {
       final boolean result = storage.delete(bucketName, documentId);
       if (!result) {
-        return new Failure<>(DocumentErrorCode.DOCUMENT_NOT_FOUND);
+        return Either.left(new DocumentError.DocumentNotFound(documentId));
       }
-      return new Success<>(null);
+      return Either.right(null);
     } catch (final Exception e) {
-      return new Failure<>(DocumentErrorCode.UNKNOWN_ERROR, e);
+      return Either.left(new DocumentError.UnknownError(e));
     }
   }
 
-  @Override
-  public DocumentOperationResponse<DocumentLink> createLink(
+  private Either<DocumentError, DocumentLink> createLinkInternal(
       final String documentId, final long durationInSeconds) {
     try {
       final Blob blob = storage.get(bucketName, documentId);
       if (blob == null) {
-        return new Failure<>(DocumentErrorCode.DOCUMENT_NOT_FOUND);
+        return Either.left(new DocumentError.DocumentNotFound(documentId));
       }
       final var link = blob.signUrl(durationInSeconds, TimeUnit.SECONDS);
-      return new Success<>(
+      return Either.right(
           new DocumentLink(link.toString(), ZonedDateTime.now().plusSeconds(durationInSeconds)));
     } catch (final Exception e) {
-      return new Failure<>(DocumentErrorCode.UNKNOWN_ERROR, e);
+      return Either.left(new DocumentError.UnknownError(e));
     }
   }
 

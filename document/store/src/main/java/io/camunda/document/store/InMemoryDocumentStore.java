@@ -8,37 +8,38 @@
 package io.camunda.document.store;
 
 import io.camunda.document.api.DocumentCreationRequest;
+import io.camunda.document.api.DocumentError;
+import io.camunda.document.api.DocumentError.OperationNotSupported;
 import io.camunda.document.api.DocumentLink;
-import io.camunda.document.api.DocumentOperationResponse;
-import io.camunda.document.api.DocumentOperationResponse.DocumentErrorCode;
-import io.camunda.document.api.DocumentOperationResponse.Failure;
-import io.camunda.document.api.DocumentOperationResponse.Success;
 import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
+import io.camunda.zeebe.util.Either;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class InMemoryDocumentStore implements DocumentStore {
 
   private final Map<String, byte[]> documents;
 
   public InMemoryDocumentStore() {
-    documents = new HashMap<>();
+    documents = new ConcurrentHashMap<>();
   }
 
   @Override
-  public DocumentOperationResponse<DocumentReference> createDocument(
+  public CompletableFuture<Either<DocumentError, DocumentReference>> createDocument(
       final DocumentCreationRequest request) {
 
     final String id =
         Optional.ofNullable(request.documentId()).orElse(UUID.randomUUID().toString());
     if (documents.containsKey(id)) {
-      return new Failure<>(DocumentOperationResponse.DocumentErrorCode.DOCUMENT_ALREADY_EXISTS);
+      return CompletableFuture.completedFuture(
+          Either.left(new DocumentError.DocumentAlreadyExists(id)));
     }
     final var contentInputStream = request.contentInputStream();
     final byte[] content;
@@ -46,33 +47,41 @@ public class InMemoryDocumentStore implements DocumentStore {
       content = contentInputStream.readAllBytes();
       contentInputStream.close();
     } catch (final IOException e) {
-      return new Failure<>(DocumentErrorCode.UNKNOWN_ERROR, e);
+      return CompletableFuture.completedFuture(
+          Either.left(new DocumentError.InvalidInput("Failed to read content")));
     }
     documents.put(id, content);
-    return new Success<>(new DocumentReference(id, request.metadata()));
+    return CompletableFuture.completedFuture(
+        Either.right(new DocumentReference(id, request.metadata())));
   }
 
   @Override
-  public DocumentOperationResponse<InputStream> getDocument(final String documentId) {
+  public CompletableFuture<Either<DocumentError, InputStream>> getDocument(
+      final String documentId) {
     final var content = documents.get(documentId);
     if (content == null) {
-      return new Failure<>(DocumentErrorCode.DOCUMENT_NOT_FOUND);
+      return CompletableFuture.completedFuture(
+          Either.left(new DocumentError.DocumentNotFound(documentId)));
     }
-    return new Success<>(new ByteArrayInputStream(content));
+    return CompletableFuture.completedFuture(Either.right(new ByteArrayInputStream(content)));
   }
 
   @Override
-  public DocumentOperationResponse<Void> deleteDocument(final String documentId) {
+  public CompletableFuture<Either<DocumentError, Void>> deleteDocument(final String documentId) {
     final var content = documents.remove(documentId);
     if (content == null) {
-      return new Failure<>(DocumentErrorCode.DOCUMENT_NOT_FOUND);
+      return CompletableFuture.completedFuture(
+          Either.left(new DocumentError.DocumentNotFound(documentId)));
     }
-    return new Success<>(null);
+    return CompletableFuture.completedFuture(Either.right(null));
   }
 
   @Override
-  public DocumentOperationResponse<DocumentLink> createLink(
+  public CompletableFuture<Either<DocumentError, DocumentLink>> createLink(
       final String documentId, final long durationInSeconds) {
-    return new Failure<>(DocumentErrorCode.OPERATION_NOT_SUPPORTED);
+    return CompletableFuture.completedFuture(
+        Either.left(
+            new OperationNotSupported(
+                "The in-memory document instance does not support creating links")));
   }
 }

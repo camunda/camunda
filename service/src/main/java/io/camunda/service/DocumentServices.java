@@ -8,12 +8,10 @@
 package io.camunda.service;
 
 import io.camunda.document.api.DocumentCreationRequest;
+import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentMetadataModel;
-import io.camunda.document.api.DocumentOperationResponse;
-import io.camunda.document.api.DocumentOperationResponse.DocumentErrorCode;
-import io.camunda.document.api.DocumentReference;
-import io.camunda.document.api.DocumentStoreClient;
-import io.camunda.document.store.DocumentStoreClientImpl;
+import io.camunda.document.api.DocumentStoreRecord;
+import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
@@ -23,7 +21,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class DocumentServices extends ApiServices<DocumentServices> {
 
-  private final DocumentStoreClient documentStoreClient = new DocumentStoreClientImpl();
+  private final SimpleDocumentStoreRegistry registry = new SimpleDocumentStoreRegistry();
 
   public DocumentServices(final BrokerClient brokerClient, final CamundaSearchClient searchClient) {
     this(brokerClient, searchClient, null, null);
@@ -49,44 +47,48 @@ public class DocumentServices extends ApiServices<DocumentServices> {
         new DocumentCreationRequest(
             request.documentId, request.contentInputStream, request.metadata);
 
-    return documentStoreClient
-        .withStore(request.storeId)
-        .executeAsync(store -> store.createDocument(storeRequest))
+    final DocumentStoreRecord storeRecord = registry.getDocumentStore(request.storeId);
+    return storeRecord
+        .instance()
+        .createDocument(storeRequest)
         .thenApply(
             result -> {
-              if (result
-                  instanceof final DocumentOperationResponse.Failure<DocumentReference> failure) {
-                throw new DocumentException(
-                    "Failed to create document", failure.errorCode(), failure.cause());
+              if (result.isLeft()) {
+                throw new DocumentException("Failed to create document", result.getLeft());
+              } else {
+                return new DocumentReferenceResponse(
+                    result.get().documentId(), request.storeId, result.get().metadata());
               }
-              final var success = (DocumentOperationResponse.Success<DocumentReference>) result;
-              return new DocumentReferenceResponse(
-                  success.result().documentId(),
-                  documentStoreClient.resolveStoreId(request.storeId),
-                  success.result().metadata());
             });
   }
 
   public InputStream getDocumentContent(final String documentId, final String storeId) {
 
-    final var result =
-        documentStoreClient.withStore(storeId).execute(store -> store.getDocument(documentId));
-
-    if (result instanceof final DocumentOperationResponse.Failure<InputStream> failure) {
-      throw new DocumentException("Failed to get document", failure.errorCode(), failure.cause());
-    }
-    return ((DocumentOperationResponse.Success<InputStream>) result).result();
+    final DocumentStoreRecord storeRecord = registry.getDocumentStore(storeId);
+    return storeRecord
+        .instance()
+        .getDocument(documentId)
+        .thenApply(
+            result -> {
+              if (result.isLeft()) {
+                throw new DocumentException("Failed to get document", result.getLeft());
+              } else {
+                return result.get();
+              }
+            })
+        .join();
   }
 
   public CompletableFuture<Void> deleteDocument(final String documentId, final String storeId) {
-    return documentStoreClient
-        .withStore(storeId)
-        .executeAsync(store -> store.deleteDocument(documentId))
+
+    final DocumentStoreRecord storeRecord = registry.getDocumentStore(storeId);
+    return storeRecord
+        .instance()
+        .deleteDocument(documentId)
         .thenAccept(
             result -> {
-              if (result instanceof final DocumentOperationResponse.Failure<Void> failure) {
-                throw new DocumentException(
-                    "Failed to delete document", failure.errorCode(), failure.cause());
+              if (result.isLeft()) {
+                throw new DocumentException("Failed to delete document", result.getLeft());
               }
             });
   }
@@ -102,17 +104,17 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
   public static class DocumentException extends CamundaServiceException {
 
-    private final DocumentErrorCode errorCode;
+    private final DocumentError error;
 
-    public DocumentException(final String message, final DocumentErrorCode errorCode) {
+    public DocumentException(final String message, final DocumentError error) {
       super(message);
-      this.errorCode = errorCode;
+      this.error = error;
     }
 
     public DocumentException(
-        final String message, final DocumentErrorCode errorCode, final Throwable cause) {
+        final String message, final DocumentError error, final Throwable cause) {
       super(message, cause);
-      this.errorCode = errorCode;
+      this.error = error;
     }
   }
 }

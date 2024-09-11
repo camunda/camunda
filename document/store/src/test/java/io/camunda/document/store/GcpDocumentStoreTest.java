@@ -17,15 +17,18 @@ import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import io.camunda.document.api.DocumentCreationRequest;
+import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentLink;
-import io.camunda.document.api.DocumentOperationResponse;
-import io.camunda.document.api.DocumentOperationResponse.DocumentErrorCode;
-import io.camunda.document.api.DocumentOperationResponse.Failure;
-import io.camunda.document.api.DocumentOperationResponse.Success;
+import io.camunda.document.api.DocumentReference;
+import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.Either.Left;
+import io.camunda.zeebe.util.Either.Right;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +46,8 @@ public class GcpDocumentStoreTest {
 
   @BeforeEach
   void init() {
-    gcpDocumentStore = new GcpDocumentStore(BUCKET_NAME, storage, mapper);
+    gcpDocumentStore =
+        new GcpDocumentStore(BUCKET_NAME, storage, mapper, Executors.newSingleThreadExecutor());
   }
 
   @Test
@@ -56,13 +60,14 @@ public class GcpDocumentStoreTest {
     when(storage.get(BUCKET_NAME, "documentId")).thenReturn(mock(Blob.class));
 
     // when
-    final var documentReferenceResponse = gcpDocumentStore.createDocument(documentCreationRequest);
+    final var documentReferenceResponse =
+        gcpDocumentStore.createDocument(documentCreationRequest).join();
 
     // then
     assertThat(documentReferenceResponse).isNotNull();
-    assertThat(documentReferenceResponse).isInstanceOf(Failure.class);
-    assertThat(((Failure<?>) documentReferenceResponse).errorCode())
-        .isEqualTo(DocumentOperationResponse.DocumentErrorCode.DOCUMENT_ALREADY_EXISTS);
+    assertThat(documentReferenceResponse).isInstanceOf(Either.Left.class);
+    assertThat(((Either.Left<DocumentError, DocumentReference>) documentReferenceResponse).value())
+        .isInstanceOf(DocumentError.DocumentAlreadyExists.class);
   }
 
   @Test
@@ -77,13 +82,14 @@ public class GcpDocumentStoreTest {
         .thenThrow(new RuntimeException("Failed to create document"));
 
     // when
-    final var documentReferenceResponse = gcpDocumentStore.createDocument(documentCreationRequest);
+    final var documentReferenceResponse =
+        gcpDocumentStore.createDocument(documentCreationRequest).join();
 
     // then
     assertThat(documentReferenceResponse).isNotNull();
-    assertThat(documentReferenceResponse).isInstanceOf(Failure.class);
-    assertThat(((Failure<?>) documentReferenceResponse).errorCode())
-        .isEqualTo(DocumentErrorCode.UNKNOWN_ERROR);
+    assertThat(documentReferenceResponse).isInstanceOf(Left.class);
+    assertThat(((Left<DocumentError, DocumentReference>) documentReferenceResponse).value())
+        .isInstanceOf(DocumentError.UnknownError.class);
   }
 
   @Test
@@ -96,11 +102,14 @@ public class GcpDocumentStoreTest {
     when(storage.get(BUCKET_NAME, "documentId")).thenReturn(null);
 
     // when
-    final var documentReferenceResponse = gcpDocumentStore.createDocument(documentCreationRequest);
+    final var documentReferenceResponse =
+        gcpDocumentStore.createDocument(documentCreationRequest).join();
 
     // then
     assertThat(documentReferenceResponse).isNotNull();
-    assertThat(documentReferenceResponse).isInstanceOf(Success.class);
+    assertThat(documentReferenceResponse).isInstanceOf(Right.class);
+    assertThat(((Right<DocumentError, DocumentReference>) documentReferenceResponse).value())
+        .isNotNull();
   }
 
   @Test
@@ -111,13 +120,13 @@ public class GcpDocumentStoreTest {
     when(storage.get(BUCKET_NAME, documentId)).thenReturn(null);
 
     // when
-    final var documentOperationResponse = gcpDocumentStore.getDocument(documentId);
+    final var documentOperationResponse = gcpDocumentStore.getDocument(documentId).join();
 
     // then
     assertThat(documentOperationResponse).isNotNull();
-    assertThat(documentOperationResponse).isInstanceOf(Failure.class);
-    assertThat(((Failure<?>) documentOperationResponse).errorCode())
-        .isEqualTo(DocumentOperationResponse.DocumentErrorCode.DOCUMENT_NOT_FOUND);
+    assertThat(documentOperationResponse).isInstanceOf(Left.class);
+    assertThat(((Left<DocumentError, InputStream>) documentOperationResponse).value())
+        .isInstanceOf(DocumentError.DocumentNotFound.class);
   }
 
   @Test
@@ -129,13 +138,13 @@ public class GcpDocumentStoreTest {
         .thenThrow(new RuntimeException("Failed to get document"));
 
     // when
-    final var documentOperationResponse = gcpDocumentStore.getDocument(documentId);
+    final var documentOperationResponse = gcpDocumentStore.getDocument(documentId).join();
 
     // then
     assertThat(documentOperationResponse).isNotNull();
-    assertThat(documentOperationResponse).isInstanceOf(Failure.class);
-    assertThat(((Failure<?>) documentOperationResponse).errorCode())
-        .isEqualTo(DocumentErrorCode.UNKNOWN_ERROR);
+    assertThat(documentOperationResponse).isInstanceOf(Left.class);
+    assertThat(((Left<DocumentError, InputStream>) documentOperationResponse).value())
+        .isInstanceOf(DocumentError.UnknownError.class);
   }
 
   @Test
@@ -149,11 +158,12 @@ public class GcpDocumentStoreTest {
     when(blob.reader()).thenReturn(readChannel);
 
     // when
-    final var documentOperationResponse = gcpDocumentStore.getDocument(documentId);
+    final var documentOperationResponse = gcpDocumentStore.getDocument(documentId).join();
 
     // then
     assertThat(documentOperationResponse).isNotNull();
-    assertThat(documentOperationResponse).isInstanceOf(Success.class);
+    assertThat(documentOperationResponse).isInstanceOf(Right.class);
+    assertThat(((Right<DocumentError, InputStream>) documentOperationResponse).value()).isNotNull();
   }
 
   @Test
@@ -164,13 +174,13 @@ public class GcpDocumentStoreTest {
     when(storage.delete(BUCKET_NAME, documentId)).thenReturn(false);
 
     // when
-    final var documentOperationResponse = gcpDocumentStore.deleteDocument(documentId);
+    final var documentOperationResponse = gcpDocumentStore.deleteDocument(documentId).join();
 
     // then
     assertThat(documentOperationResponse).isNotNull();
-    assertThat(documentOperationResponse).isInstanceOf(Failure.class);
-    assertThat(((Failure<?>) documentOperationResponse).errorCode())
-        .isEqualTo(DocumentOperationResponse.DocumentErrorCode.DOCUMENT_NOT_FOUND);
+    assertThat(documentOperationResponse).isInstanceOf(Left.class);
+    assertThat(((Left<DocumentError, Void>) documentOperationResponse).value())
+        .isInstanceOf(DocumentError.DocumentNotFound.class);
   }
 
   @Test
@@ -182,13 +192,13 @@ public class GcpDocumentStoreTest {
         .thenThrow(new RuntimeException("Failed to delete document"));
 
     // when
-    final var documentOperationResponse = gcpDocumentStore.deleteDocument(documentId);
+    final var documentOperationResponse = gcpDocumentStore.deleteDocument(documentId).join();
 
     // then
     assertThat(documentOperationResponse).isNotNull();
-    assertThat(documentOperationResponse).isInstanceOf(Failure.class);
-    assertThat(((Failure<?>) documentOperationResponse).errorCode())
-        .isEqualTo(DocumentErrorCode.UNKNOWN_ERROR);
+    assertThat(documentOperationResponse).isInstanceOf(Left.class);
+    assertThat(((Left<DocumentError, Void>) documentOperationResponse).value())
+        .isInstanceOf(DocumentError.UnknownError.class);
   }
 
   @Test
@@ -199,11 +209,12 @@ public class GcpDocumentStoreTest {
     when(storage.delete(BUCKET_NAME, documentId)).thenReturn(true);
 
     // when
-    final var documentOperationResponse = gcpDocumentStore.deleteDocument(documentId);
+    final var documentOperationResponse = gcpDocumentStore.deleteDocument(documentId).join();
 
     // then
     assertThat(documentOperationResponse).isNotNull();
-    assertThat(documentOperationResponse).isInstanceOf(Success.class);
+    assertThat(documentOperationResponse).isInstanceOf(Right.class);
+    assertThat(((Right<DocumentError, Void>) documentOperationResponse).value()).isNull();
   }
 
   @Test
@@ -216,13 +227,13 @@ public class GcpDocumentStoreTest {
 
     // when
     final var documentOperationResponse =
-        gcpDocumentStore.createLink(documentId, durationInSeconds);
+        gcpDocumentStore.createLink(documentId, durationInSeconds).join();
 
     // then
     assertThat(documentOperationResponse).isNotNull();
-    assertThat(documentOperationResponse).isInstanceOf(Failure.class);
-    assertThat(((Failure<?>) documentOperationResponse).errorCode())
-        .isEqualTo(DocumentOperationResponse.DocumentErrorCode.DOCUMENT_NOT_FOUND);
+    assertThat(documentOperationResponse).isInstanceOf(Left.class);
+    assertThat(((Left<DocumentError, DocumentLink>) documentOperationResponse).value())
+        .isInstanceOf(DocumentError.DocumentNotFound.class);
   }
 
   @Test
@@ -236,13 +247,13 @@ public class GcpDocumentStoreTest {
 
     // when
     final var documentOperationResponse =
-        gcpDocumentStore.createLink(documentId, durationInSeconds);
+        gcpDocumentStore.createLink(documentId, durationInSeconds).join();
 
     // then
     assertThat(documentOperationResponse).isNotNull();
-    assertThat(documentOperationResponse).isInstanceOf(Failure.class);
-    assertThat(((Failure<?>) documentOperationResponse).errorCode())
-        .isEqualTo(DocumentErrorCode.UNKNOWN_ERROR);
+    assertThat(documentOperationResponse).isInstanceOf(Left.class);
+    assertThat(((Left<DocumentError, DocumentLink>) documentOperationResponse).value())
+        .isInstanceOf(DocumentError.UnknownError.class);
   }
 
   @Test
@@ -258,12 +269,12 @@ public class GcpDocumentStoreTest {
 
     // when
     final var documentOperationResponse =
-        gcpDocumentStore.createLink(documentId, durationInSeconds);
+        gcpDocumentStore.createLink(documentId, durationInSeconds).join();
 
     // then
     assertThat(documentOperationResponse).isNotNull();
-    assertThat(documentOperationResponse).isInstanceOf(Success.class);
-    assertThat(((Success<DocumentLink>) documentOperationResponse).result().link())
+    assertThat(documentOperationResponse).isInstanceOf(Right.class);
+    assertThat(((Right<DocumentError, DocumentLink>) documentOperationResponse).value().link())
         .isEqualTo("http://localhost");
   }
 }

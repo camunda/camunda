@@ -8,13 +8,16 @@
 package io.camunda.document.store;
 
 import io.camunda.document.api.DocumentStore;
+import io.camunda.document.api.DocumentStoreRecord;
+import io.camunda.document.api.DocumentStoreRegistry;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 
-public class DocumentStoreRegistry {
+public class SimpleDocumentStoreRegistry implements DocumentStoreRegistry {
 
-  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DocumentStoreRegistry.class);
+  private static final Logger LOG =
+      org.slf4j.LoggerFactory.getLogger(SimpleDocumentStoreRegistry.class);
 
   private static final String GCP_STORE_BUCKET_NAME_VARIABLE = "CAMUNDA_DOCUMENT_STORE_GCP_BUCKET";
 
@@ -23,29 +26,29 @@ public class DocumentStoreRegistry {
 
   private final Map<String, DocumentStore> stores = new HashMap<>();
 
-  public DocumentStoreRegistry() {
+  public SimpleDocumentStoreRegistry() {
     final String gcpBucketName = System.getenv(GCP_STORE_BUCKET_NAME_VARIABLE);
     if (gcpBucketName != null) {
       stores.put(STORE_ID_GCP, new GcpDocumentStore(gcpBucketName));
     }
-    LOG.warn("No GCP bucket name provided, using in-memory document store");
+    LOG.warn("No GCP bucket name provided, using in-memory document instance");
     stores.put(STORE_ID_IN_MEMORY, new InMemoryDocumentStore());
   }
 
-  public DocumentStoreInstance getDocumentStore(final String id) {
+  @Override
+  public DocumentStoreRecord getDocumentStore(final String id) {
     final DocumentStore store = stores.get(id);
     if (store == null) {
-      throw new IllegalArgumentException("No such document store: " + id);
+      throw new IllegalArgumentException("No such document instance: " + id);
     }
-    return new DocumentStoreInstance(id, store);
+    return new DocumentStoreRecord(id, store);
   }
 
-  public DocumentStoreInstance getDefaultDocumentStore() {
+  @Override
+  public DocumentStoreRecord getDefaultDocumentStore() {
     if (stores.containsKey(STORE_ID_GCP)) {
-      return new DocumentStoreInstance(STORE_ID_GCP, stores.get(STORE_ID_GCP));
+      return new DocumentStoreRecord(STORE_ID_GCP, stores.get(STORE_ID_GCP));
     }
-    return new DocumentStoreInstance(STORE_ID_IN_MEMORY, stores.get(STORE_ID_IN_MEMORY));
+    return new DocumentStoreRecord(STORE_ID_IN_MEMORY, stores.get(STORE_ID_IN_MEMORY));
   }
-
-  public record DocumentStoreInstance(String storeId, DocumentStore store) {}
 }

@@ -19,7 +19,7 @@ import org.testcontainers.utility.DockerImageName;
  * Minio is a S3 compatible high performance object storage. See <a href="https://min.io/">their
  * official page</a> for more.
  *
- * <p>We use it primarily to test compatibility with our S3 backup store, as it's lightweight and
+ * <p>We use it primarily to test compatibility with our S3 backup instance, as it's lightweight and
  * popular.
  *
  * <p>When using this, keep in mind that you will need to add a network alias per bucket that you
