@@ -7,99 +7,24 @@
  */
 
 import {render, screen, waitFor, within} from 'modules/testing-library';
-import {useEffect} from 'react';
-import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
-import {processXmlStore as processXmlMigrationTargetStore} from 'modules/stores/processXml/processXml.migration.target';
-import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 import {BottomPanel} from '.';
 import {open} from 'modules/mocks/diagrams';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {elements, Wrapper} from './tests/mocks';
 
-type Props = {
-  children?: React.ReactNode;
-};
-
-const checkPayment = {
-  id: 'checkPayment',
-  name: 'Check payment',
-  type: 'serviceTask',
-};
-
-const requestForPayment = {
-  id: 'requestForPayment',
-  name: 'Request for payment',
-  type: 'serviceTask',
-};
-
-const shippingSubProcess = {
-  id: 'shippingSubProcess',
-  name: 'Shipping Sub Process',
-  type: 'subProcess',
-};
-
-const shipArticles = {
-  id: 'shipArticles',
-  name: 'Ship Articles',
-  type: 'userTask',
-};
-
-const confirmDelivery = {
-  id: 'confirmDelivery',
-  name: 'Confirm delivery',
-  type: 'callActivity',
-};
-
-const MessageInterrupting = {
-  id: 'MessageInterrupting',
-  name: 'Message interrupting',
-  type: 'messageBoundaryEventInterrupting',
-};
-
-const TimerInterrupting = {
-  id: 'TimerInterrupting',
-  name: 'Timer interrupting',
-  type: 'timerBoundaryEventInterrupting',
-};
-
-const MessageNonInterrupting = {
-  id: 'MessageNonInterrupting',
-  name: 'Message non-interrupting',
-  type: 'messageBoundaryEventNonInterrupting',
-};
-
-const TimerNonInterrupting = {
-  id: 'TimerNonInterrupting',
-  name: 'Timer non-interrupting',
-  type: 'timerBoundaryEventNonInterrupting',
-};
-
-const Wrapper = ({children}: Props) => {
-  processXmlMigrationSourceStore.setProcessXml(open('instanceMigration.bpmn'));
-  processInstanceMigrationStore.enable();
-
-  useEffect(() => {
-    return () => {
-      processInstanceMigrationStore.reset();
-      processXmlMigrationSourceStore.reset();
-      processXmlMigrationTargetStore.reset();
-      processStatisticsStore.reset();
-    };
-  }, []);
-
-  return (
-    <>
-      {children}
-      <button
-        onClick={() => {
-          processXmlMigrationTargetStore.fetchProcessXml();
-        }}
-      >
-        Fetch Target Process
-      </button>
-    </>
-  );
-};
+const {
+  requestForPayment,
+  checkPayment,
+  shipArticles,
+  shippingSubProcess,
+  confirmDelivery,
+  MessageInterrupting,
+  TimerInterrupting,
+  MessageNonInterrupting,
+  TimerNonInterrupting,
+  MessageIntermediateCatch,
+  TimerIntermediateCatch,
+} = elements;
 
 describe('MigrationView/BottomPanel', () => {
   it('should render source flow nodes', async () => {
