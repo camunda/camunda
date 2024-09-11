@@ -21,26 +21,23 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
 import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.util.ConversionUtils;
-import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.cache.FNITreePathCacheCompositeKey;
 import io.camunda.operate.zeebeimport.cache.FlowNodeInstanceTreePathCache;
 import io.camunda.operate.zeebeimport.cache.TreePathCacheMetricsImpl;
+import io.camunda.operate.zeebeimport.processors.fni.FNITransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,18 +49,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class FlowNodeInstanceZeebeRecordProcessor {
 
+  public static final Set<String> AI_FINISH_STATES =
+      Set.of(ELEMENT_COMPLETED.name(), ELEMENT_TERMINATED.name());
   private static final Logger LOGGER =
       LoggerFactory.getLogger(FlowNodeInstanceZeebeRecordProcessor.class);
-
-  private static final Set<String> AI_FINISH_STATES =
-      Set.of(ELEMENT_COMPLETED.name(), ELEMENT_TERMINATED.name());
   private static final Set<String> AI_START_STATES = Set.of(ELEMENT_ACTIVATING.name());
 
   private final FlowNodeStore flowNodeStore;
   private final FlowNodeInstanceTemplate flowNodeInstanceTemplate;
-
-  // treePath by flowNodeInstanceKey caches
-  private final FlowNodeInstanceTreePathCache treePathCache;
+  private final FNITransformer fniTransformer;
 
   public FlowNodeInstanceZeebeRecordProcessor(
       final FlowNodeStore flowNodeStore,
@@ -75,12 +69,14 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     this.flowNodeInstanceTemplate = flowNodeInstanceTemplate;
     final var flowNodeTreeCacheSize = operateProperties.getImporter().getFlowNodeTreeCacheSize();
     final var partitionIds = partitionHolder.getPartitionIds();
-    treePathCache =
+    // treePath by flowNodeInstanceKey caches
+    final FlowNodeInstanceTreePathCache treePathCache =
         new FlowNodeInstanceTreePathCache(
             partitionIds,
             flowNodeTreeCacheSize,
             flowNodeStore::findParentTreePathFor,
             new TreePathCacheMetricsImpl(partitionIds, metrics));
+    fniTransformer = new FNITransformer(treePathCache::resolveTreePath);
   }
 
   public void processIncidentRecord(final Record record, final BatchRequest batchRequest)
@@ -124,7 +120,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       for (final Record<ProcessInstanceRecordValue> record : wiRecords) {
 
         if (shouldProcessProcessInstanceRecord(record)) {
-          fniEntity = updateFlowNodeInstance(record, fniEntity);
+          fniEntity = fniTransformer.toFlowNodeInstanceEntity(record, fniEntity);
         }
       }
       if (fniEntity != null) {
@@ -179,56 +175,6 @@ public class FlowNodeInstanceZeebeRecordProcessor {
         record.getKey(),
         recordValue.getFlowScopeKey(),
         recordValue.getProcessInstanceKey());
-  }
-
-  private FlowNodeInstanceEntity updateFlowNodeInstance(
-      final Record<ProcessInstanceRecordValue> record, FlowNodeInstanceEntity entity) {
-    if (entity == null) {
-      entity = new FlowNodeInstanceEntity();
-    }
-
-    final var recordValue = record.getValue();
-    final var intentStr = record.getIntent().name();
-
-    entity.setKey(record.getKey());
-    entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
-    entity.setPartitionId(record.getPartitionId());
-    entity.setFlowNodeId(recordValue.getElementId());
-    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-    entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
-    entity.setBpmnProcessId(recordValue.getBpmnProcessId());
-    entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
-
-    if (entity.getTreePath() == null) {
-      final String parentTreePath =
-          treePathCache.resolveTreePath(toCompositeKey(record, recordValue));
-      entity.setTreePath(
-          String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey())));
-      entity.setLevel(parentTreePath.split("/").length);
-    }
-
-    if (AI_FINISH_STATES.contains(intentStr)) {
-      if (intentStr.equals(ELEMENT_TERMINATED.name())) {
-        entity.setState(FlowNodeState.TERMINATED);
-      } else {
-        entity.setState(FlowNodeState.COMPLETED);
-      }
-      entity.setEndDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-    } else {
-      entity.setState(FlowNodeState.ACTIVE);
-      if (AI_START_STATES.contains(intentStr)) {
-        entity.setStartDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-        entity.setPosition(record.getPosition());
-      }
-    }
-
-    entity.setType(
-        FlowNodeType.fromZeebeBpmnElementType(
-            recordValue.getBpmnElementType() == null
-                ? null
-                : recordValue.getBpmnElementType().name()));
-
-    return entity;
   }
 
   private boolean canOptimizeFlowNodeInstanceIndexing(final FlowNodeInstanceEntity entity) {
