@@ -48,6 +48,8 @@ public class FNITransformerTest {
     // then
     assertThat(flowNodeInstanceEntity).isNotNull();
     assertGeneralValues(flowNodeInstanceEntity);
+    assertThat(flowNodeInstanceEntity.getTreePath()).isEqualTo("1/3/4");
+    assertThat(flowNodeInstanceEntity.getLevel()).isEqualTo(2);
     assertThat(flowNodeInstanceEntity.getState()).isEqualTo(FlowNodeState.ACTIVE);
     assertThat(flowNodeInstanceEntity.getEndDate()).isNull();
     assertThat(flowNodeInstanceEntity.getStartDate().toInstant())
@@ -67,6 +69,8 @@ public class FNITransformerTest {
     // then
     assertThat(flowNodeInstanceEntity).isNotNull();
     assertGeneralValues(flowNodeInstanceEntity);
+    assertThat(flowNodeInstanceEntity.getTreePath()).isEqualTo("1/3/4");
+    assertThat(flowNodeInstanceEntity.getLevel()).isEqualTo(2);
     assertThat(flowNodeInstanceEntity.getState()).isEqualTo(FlowNodeState.ACTIVE);
     assertThat(flowNodeInstanceEntity.getEndDate()).isNull();
     assertThat(flowNodeInstanceEntity.getStartDate()).isNull();
@@ -85,8 +89,34 @@ public class FNITransformerTest {
     // then
     assertThat(flowNodeInstanceEntity).isNotNull();
     assertGeneralValues(flowNodeInstanceEntity);
+    assertThat(flowNodeInstanceEntity.getTreePath()).isNull();
+    assertThat(flowNodeInstanceEntity.getLevel()).isZero();
     assertThat(flowNodeInstanceEntity.getState()).isEqualTo(FlowNodeState.COMPLETED);
     assertThat(flowNodeInstanceEntity.getStartDate()).isNull();
+    assertThat(flowNodeInstanceEntity.getEndDate().toInstant())
+        .isEqualTo(Instant.ofEpochMilli(time));
+  }
+
+  @Test
+  public void shouldTransformMultipleRecordsIntoEntity() {
+    // given
+    final var time = System.currentTimeMillis();
+    final var activated = createStartingZeebeRecord(time);
+    var flowNodeInstanceEntity = fniTransformer.toFlowNodeInstanceEntity(activated, null);
+    final var completed = createCompletedZeebeRecord(time);
+
+    // when
+    flowNodeInstanceEntity =
+        fniTransformer.toFlowNodeInstanceEntity(completed, flowNodeInstanceEntity);
+
+    // then
+    assertThat(flowNodeInstanceEntity).isNotNull();
+    assertGeneralValues(flowNodeInstanceEntity);
+    assertThat(flowNodeInstanceEntity.getTreePath()).isEqualTo("1/3/4");
+    assertThat(flowNodeInstanceEntity.getLevel()).isEqualTo(2);
+    assertThat(flowNodeInstanceEntity.getState()).isEqualTo(FlowNodeState.COMPLETED);
+    assertThat(flowNodeInstanceEntity.getStartDate().toInstant())
+        .isEqualTo(Instant.ofEpochMilli(time));
     assertThat(flowNodeInstanceEntity.getEndDate().toInstant())
         .isEqualTo(Instant.ofEpochMilli(time));
   }
@@ -104,6 +134,8 @@ public class FNITransformerTest {
     // then
     assertThat(flowNodeInstanceEntity).isNotNull();
     assertGeneralValues(flowNodeInstanceEntity);
+    assertThat(flowNodeInstanceEntity.getTreePath()).isNull();
+    assertThat(flowNodeInstanceEntity.getLevel()).isZero();
     assertThat(flowNodeInstanceEntity.getState()).isEqualTo(FlowNodeState.TERMINATED);
     assertThat(flowNodeInstanceEntity.getStartDate()).isNull();
     assertThat(flowNodeInstanceEntity.getEndDate().toInstant())
@@ -115,11 +147,9 @@ public class FNITransformerTest {
     assertThat(entity.getFlowNodeId()).isEqualTo("element");
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(123);
     assertThat(entity.getProcessInstanceKey()).isEqualTo(1);
-    assertThat(entity.getLevel()).isEqualTo(2);
     assertThat(entity.getKey()).isEqualTo(4L);
     assertThat(entity.getTenantId()).isEqualTo("none");
     assertThat(entity.getType()).isEqualTo(FlowNodeType.START_EVENT);
-    assertThat(entity.getTreePath()).isEqualTo("1/3/4");
   }
 
   private static io.camunda.zeebe.protocol.record.Record createStartingZeebeRecord(

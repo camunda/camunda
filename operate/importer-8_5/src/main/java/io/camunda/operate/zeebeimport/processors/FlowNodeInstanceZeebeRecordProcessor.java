@@ -28,7 +28,6 @@ import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.zeebe.PartitionHolder;
-import io.camunda.operate.zeebeimport.cache.FNITreePathCacheCompositeKey;
 import io.camunda.operate.zeebeimport.cache.FlowNodeInstanceTreePathCache;
 import io.camunda.operate.zeebeimport.cache.TreePathCacheMetricsImpl;
 import io.camunda.operate.zeebeimport.processors.fni.FNITransformer;
@@ -133,12 +132,15 @@ public class FlowNodeInstanceZeebeRecordProcessor {
           updateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, fniEntity.getPartitionId());
           updateFields.put(FlowNodeInstanceTemplate.TYPE, fniEntity.getType());
           updateFields.put(FlowNodeInstanceTemplate.STATE, fniEntity.getState());
-          updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, fniEntity.getTreePath());
           updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, fniEntity.getFlowNodeId());
           updateFields.put(
               FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, fniEntity.getProcessDefinitionKey());
           updateFields.put(FlowNodeInstanceTemplate.BPMN_PROCESS_ID, fniEntity.getBpmnProcessId());
-          updateFields.put(FlowNodeInstanceTemplate.LEVEL, fniEntity.getLevel());
+
+          if (fniEntity.getTreePath() != null) {
+            updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, fniEntity.getTreePath());
+            updateFields.put(FlowNodeInstanceTemplate.LEVEL, fniEntity.getLevel());
+          }
           if (fniEntity.getStartDate() != null) {
             updateFields.put(FlowNodeInstanceTemplate.START_DATE, fniEntity.getStartDate());
           }
@@ -166,15 +168,6 @@ public class FlowNodeInstanceZeebeRecordProcessor {
         && (AI_START_STATES.contains(intent)
             || AI_FINISH_STATES.contains(intent)
             || ELEMENT_MIGRATED.name().equals(intent));
-  }
-
-  private static FNITreePathCacheCompositeKey toCompositeKey(
-      final Record<?> record, final ProcessInstanceRecordValue recordValue) {
-    return new FNITreePathCacheCompositeKey(
-        record.getPartitionId(),
-        record.getKey(),
-        recordValue.getFlowScopeKey(),
-        recordValue.getProcessInstanceKey());
   }
 
   private boolean canOptimizeFlowNodeInstanceIndexing(final FlowNodeInstanceEntity entity) {
