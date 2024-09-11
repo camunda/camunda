@@ -23,6 +23,10 @@ public record IndexMapping(
             Collectors.toMap(IndexMappingProperty::name, IndexMappingProperty::typeDefinition));
   }
 
+  public boolean isDynamic() {
+    return Boolean.parseBoolean(dynamic);
+  }
+
   public static class Builder {
     private Set<IndexMappingProperty> properties;
     private Map<String, Object> metaProperties;

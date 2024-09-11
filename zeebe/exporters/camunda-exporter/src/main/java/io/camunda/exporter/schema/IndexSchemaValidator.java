@@ -31,14 +31,17 @@ public class IndexSchemaValidator {
    * @param mappings is a map of all the mappings to compare.
    * @param indexDescriptors is the set of all index descriptors representing desired schema states.
    * @return new mapping properties to add to schemas so they align with the descriptors.
+   * @throws IndexSchemaValidationException if the existing indices cannot be updated with the given
+   *     mappings.
    */
   public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings(
-      final Map<String, IndexMapping> mappings, final Set<IndexDescriptor> indexDescriptors) {
+      final Map<String, IndexMapping> mappings, final Set<IndexDescriptor> indexDescriptors)
+      throws IndexSchemaValidationException {
     final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields = new HashMap<>();
     for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       final Map<String, IndexMapping> indexMappingsGroup =
           filterIndexMappings(mappings, indexDescriptor);
-      //       we don't check indices that were not yet created
+      // we don't check indices that were not yet created
       if (!indexMappingsGroup.isEmpty()) {
         final IndexMappingDifference difference =
             getIndexMappingDifference(indexDescriptor, indexMappingsGroup);
@@ -68,7 +71,7 @@ public class IndexSchemaValidator {
 
       if (!difference.entriesOnlyOnRight().isEmpty()) {
         LOGGER.info(
-            "Index name: {}. Field deletion is requested, will be ignored. Fields: {}",
+            "Index '{}': Field deletion is requested, will be ignored. Fields: {}",
             indexDescriptor.getIndexName(),
             difference.entriesOnlyOnRight());
 
@@ -77,7 +80,7 @@ public class IndexSchemaValidator {
         newFields.put(indexDescriptor, difference.entriesOnlyOnLeft());
       }
     } else {
-      LOGGER.debug("Index fields are up to date. Index name: {}.", indexDescriptor.getIndexName());
+      LOGGER.debug("Index fields are up to date for Index '{}'.", indexDescriptor.getIndexName());
     }
   }
 
@@ -134,27 +137,11 @@ public class IndexSchemaValidator {
     }
   }
 
-  private boolean indexIsDynamic(final IndexMapping mapping) {
-    if (mapping == null) {
-      return false;
-    }
-    if (mapping.dynamic() == null) {
-      return true;
-    }
-
-    return Boolean.parseBoolean(mapping.dynamic());
-  }
-
   private void failIfIndexNotDynamic(
       final IndexMappingDifference difference, final IndexDescriptor indexDescriptor) {
-    if (indexIsDynamic(difference.leftIndexMapping())) {
+    if (difference.isLeftDynamic() || difference.isRightDynamic()) {
       LOGGER.debug(
-          "Left index name: {} is dynamic, ignoring changes found: {}",
-          indexDescriptor.getIndexName(),
-          difference.entriesDiffering());
-    } else if (indexIsDynamic(difference.rightIndexMapping())) {
-      LOGGER.debug(
-          "Right index name: {} is dynamic, ignoring changes found: {}",
+          "Index '{}' is dynamic, ignoring changes found: {}",
           indexDescriptor.getIndexName(),
           difference.entriesDiffering());
     } else {

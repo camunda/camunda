@@ -55,6 +55,36 @@ public class IndexSchemaValidatorTest {
   }
 
   @Test
+  public void shouldDetectAnAddedIndexPropertyOnTwoIndicesWithMissingField() throws IOException {
+    // given
+    // a schema with two indices that has a missing field
+    final var currentIndices =
+        Map.of(
+            "qualified_name",
+            jsonToIndexMappingProperties("mappings.json", "qualified_name"),
+            "qualified_name_2",
+            jsonToIndexMappingProperties("mappings.json", "qualified_name_2"));
+
+    // when
+    final var index =
+        TestUtil.mockIndex(
+            "qualified_name", "aliasx", "qualified_name", "mappings-added-property.json");
+
+    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
+
+    // then
+    assertThat(difference)
+        .containsExactly(
+            entry(
+                index,
+                Set.of(
+                    new IndexMappingProperty.Builder()
+                        .name("foo")
+                        .typeDefinition(Map.of("type", "text"))
+                        .build())));
+  }
+
+  @Test
   void shouldValidateSameIndexWithNoDifferences() throws IOException {
     // given
     final var currentIndices =

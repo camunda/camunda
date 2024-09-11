@@ -14,16 +14,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * The #{@link IndexMappingDifference} will be built using the builder where the left and right are
- * two index mappings, and after it is built it will result in a record where
+ * The #{@link IndexMappingDifference} denotes the differences between two Index mappings.
+ * Typically, the left mapping is the new mapping and the right one is the existing mapping.
  *
- * @param equal is whether the two mappings are the same
+ * @param equal indicates whether the two mappings are the same
  * @param entriesOnlyOnLeft properties which only exist in the left mapping
  * @param entriesOnlyOnRight properties which only exist in the right mapping
  * @param entriesInCommon properties which exist in both mappings
  * @param entriesDiffering properties which exist in both mappings but with different exact values
- * @param leftIndexMapping the left mapping to compare
- * @param rightIndexMapping the right mapping to compare
+ * @param isLeftDynamic true if the left mapping is dynamic
+ * @param isRightDynamic true if the right mapping is dynamic
  */
 public record IndexMappingDifference(
     boolean equal,
@@ -31,8 +31,8 @@ public record IndexMappingDifference(
     Set<IndexMappingProperty> entriesOnlyOnRight,
     Set<IndexMappingProperty> entriesInCommon,
     Set<PropertyDifference> entriesDiffering,
-    IndexMapping leftIndexMapping,
-    IndexMapping rightIndexMapping) {
+    boolean isLeftDynamic,
+    boolean isRightDynamic) {
 
   public static class IndexMappingDifferenceBuilder {
     private IndexMapping left;
@@ -84,8 +84,8 @@ public record IndexMappingDifference(
                                   .build())
                           .build())
               .collect(Collectors.toSet()),
-          left,
-          right);
+          left.isDynamic(),
+          right.isDynamic());
     }
   }
 
