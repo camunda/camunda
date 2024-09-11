@@ -87,8 +87,12 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return longTerms("processDefinitionId", processDefinitionIds);
   }
 
-  private SearchQuery getUserTaskKeysQuery(final List<Long> userTaskKeys) {
-    return longTerms("key", userTaskKeys);
+  private SearchQuery getUserTaskKeysQuery(final FieldFilter<List<Long>> keys) {
+    if (keys != null && keys.getValue() != null && !keys.getValue().isEmpty()) {
+      final FilterOperator operator = keys.getOperator();
+      return QueryFieldFilterTransformers.buildLongQuery("key", keys.getValue(), operator);
+    }
+    return null;
   }
 
   private SearchQuery getUserTasksImplementationOnly() {

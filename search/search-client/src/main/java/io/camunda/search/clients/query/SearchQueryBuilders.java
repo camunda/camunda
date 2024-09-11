@@ -197,6 +197,14 @@ public final class SearchQueryBuilders {
     return SearchRangeQuery.of(q -> q.field(field).gt(gt)).toSearchQuery();
   }
 
+  public static <A> SearchQuery gte(final String field, final A gte) {
+    return SearchRangeQuery.of(q -> q.field(field).gte(gte)).toSearchQuery();
+  }
+
+  public static <A> SearchQuery lt(final String field, final A lt) {
+    return SearchRangeQuery.of(q -> q.field(field).lte(lt)).toSearchQuery();
+  }
+
   public static <A> SearchQuery lte(final String field, final A lte) {
     return SearchRangeQuery.of(q -> q.field(field).lte(lte)).toSearchQuery();
   }

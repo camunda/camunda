@@ -12,7 +12,9 @@ import io.camunda.service.query.filter.FilterOperator;
 public abstract class FieldFilterTypeValidator {
     public static boolean isNumericOperator(final FilterOperator operator) {
       if(operator == FilterOperator.GTE || operator == FilterOperator.GT ||
-          operator == FilterOperator.LTE || operator == FilterOperator.LT || operator == FilterOperator.EQ || operator == FilterOperator.EXISTS) {
+          operator == FilterOperator.LTE || operator == FilterOperator.LT ||
+          operator == FilterOperator.EQ || operator == FilterOperator.EXISTS ||
+          operator == FilterOperator.IN) {
         return true;
       } else {
         throw new IllegalArgumentException("Unsupported operator for Numeric data type: " + operator);

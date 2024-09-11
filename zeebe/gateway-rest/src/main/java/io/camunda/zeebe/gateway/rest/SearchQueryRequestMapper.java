@@ -65,6 +65,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.springframework.http.ProblemDetail;
 
 public final class SearchQueryRequestMapper {
@@ -226,16 +227,32 @@ public final class SearchQueryRequestMapper {
       for (final Filter filter : filters) {
         switch (filter.getField()) {
           case "key":
-            if (FieldFilterTypeValidator.isNumericOperator(filter.getOperator()) && filter.getValue() instanceof List) {
-              builder.keys((List<Long>) filter.getValue());
+            if (FieldFilterTypeValidator.isNumericOperator(filter.getOperator())) {
+              if (filter.getValue() instanceof List) {
+                // Convert List<String> to List<Long>
+                final List<Long> longValues = ((List<String>) filter.getValue()).stream()
+                    .map(Long::parseLong)  // Convert each String to Long
+                    .collect(Collectors.toList());
+                builder.keys(filter.getOperator(), longValues);
+              } else {
+                // Convert single String value to Long
+                builder.keys(filter.getOperator(), List.of(Long.parseLong((String) filter.getValue())));
+              }
             }
             break;
 
           case "state":
-            if (FieldFilterTypeValidator.isStringOperator(filter.getOperator()) || filter.getValue() instanceof List) {
-              builder.states(filter.getOperator(), (List<String>) filter.getValue());
+            if (FieldFilterTypeValidator.isStringOperator(filter.getOperator())) {
+              if (filter.getValue() instanceof List) {
+                // Value is already a List<String>
+                builder.states(filter.getOperator(), (List<String>) filter.getValue());
+              } else {
+                // Value is a single String, wrap it in a List
+                builder.states(filter.getOperator(), List.of((String) filter.getValue()));
+              }
             }
             break;
+
 
           case "bpmnProcessId":
             if (FieldFilterTypeValidator.isStringOperator(filter.getOperator()) && filter.getValue() instanceof List) {

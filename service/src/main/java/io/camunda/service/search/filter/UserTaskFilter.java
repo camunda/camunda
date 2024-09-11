@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Objects;
 
 public record UserTaskFilter(
-    List<Long> keys,
+    FieldFilter<List<Long>> keys,
     List<String> elementIds,
     List<String> bpmnProcessIds,
     List<String> assignees,
@@ -25,7 +25,7 @@ public record UserTaskFilter(
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
-    private List<Long> keys;
+    private FieldFilter<List<Long>> keys;
     private List<String> elementIds;
     private List<String> bpmnProcessIds;
     private List<String> assignees;
@@ -37,15 +37,30 @@ public record UserTaskFilter(
     private List<String> tenantIds;
     private ComparableValueFilter priority;
 
-    public Builder keys(final Long... values) {
-      return keys(collectValuesAsList(values));
-    }
-
-    public Builder keys(final List<Long> values) {
-      keys = addValuesToList(keys, values);
+    // Builder for keys (FieldFilter<List<Long>>)
+    public Builder keys(final FilterOperator operator, final List<Long> values) {
+      keys = new FieldFilter<>(operator, values);  // Assigning operator and values to FieldFilter for keys
       return this;
     }
 
+    public Builder keys(final FilterOperator operator, final Long... values) {
+      keys = new FieldFilter<>(operator, collectValuesAsList(values));  // Assigning operator and values to FieldFilter for keys
+      return this;
+    }
+
+    // Builder for states (FieldFilter<List<String>>)
+    public Builder states(final FilterOperator operator, final List<String> values) {
+      states = new FieldFilter<>(operator, values);  // Assigning operator and values to FieldFilter for states
+      return this;
+    }
+
+    // Builder for states (FieldFilter<List<String>>)
+    public Builder states(final FilterOperator operator, final String... values) {
+      states = new FieldFilter<>(operator, collectValuesAsList(values));  // Assigning operator and values to FieldFilter for states
+      return this;
+    }
+
+    // Other builder methods remain the same
     public Builder elementIds(final String... values) {
       return elementIds(collectValuesAsList(values));
     }
@@ -70,11 +85,6 @@ public record UserTaskFilter(
 
     public Builder assignees(final List<String> values) {
       assignees = addValuesToList(assignees, values);
-      return this;
-    }
-
-    public Builder states(final FilterOperator operator, final List<String> values) {
-      states = new FieldFilter<>(operator, values);  // Assigning operator and values to FieldFilter
       return this;
     }
 
@@ -131,11 +141,11 @@ public record UserTaskFilter(
     @Override
     public UserTaskFilter build() {
       return new UserTaskFilter(
-          Objects.requireNonNullElse(keys, Collections.emptyList()),
+          Objects.requireNonNullElse(keys, new FieldFilter<>(FilterOperator.EQ, Collections.emptyList())),  // Default FieldFilter for keys
           Objects.requireNonNullElse(elementIds, Collections.emptyList()),
           Objects.requireNonNullElse(bpmnProcessIds, Collections.emptyList()),
           Objects.requireNonNullElse(assignees, Collections.emptyList()),
-          Objects.requireNonNullElse(states, new FieldFilter<>(FilterOperator.EQ, Collections.emptyList())),  // Use FieldFilter for states
+          Objects.requireNonNullElse(states, new FieldFilter<>(FilterOperator.EQ, Collections.emptyList())),  // Default FieldFilter for states
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUsers, Collections.emptyList()),

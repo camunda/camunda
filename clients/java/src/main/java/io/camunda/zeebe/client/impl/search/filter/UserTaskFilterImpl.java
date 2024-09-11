@@ -34,7 +34,7 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
   }
 
   @Override
-  public UserTaskFilter key(final Long value) {
+  public UserTaskFilter key(final String value) {
     filter.setKey(value);
     return this;
   }

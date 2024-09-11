@@ -27,7 +27,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param value the key of the user task
    * @return the updated filter
    */
-  UserTaskFilter key(final Long value);
+  UserTaskFilter key(final String value);
 
   /**
    * Filters user tasks by the specified state.

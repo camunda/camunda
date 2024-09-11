@@ -1144,8 +1144,7 @@ components:
       type: object
       properties:
         key:
-          type: integer
-          format: int64
+          type: string
         state:
           type: string
         assignee:
