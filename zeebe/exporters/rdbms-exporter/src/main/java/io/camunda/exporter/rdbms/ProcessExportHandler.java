@@ -9,14 +9,17 @@ package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.domain.ProcessDefinitionModel;
 import io.camunda.db.rdbms.service.ProcessRdbmsService;
-import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProcessExportHandler implements RdbmsExportHandler<Process> {
+  private static final Logger LOG = LoggerFactory.getLogger(ProcessExportHandler.class);
 
   private final ProcessRdbmsService processRdbmsService;
 
@@ -38,12 +41,19 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
   }
 
   private ProcessDefinitionModel map(final Process value) {
-    final var xml = new XMLUtil().extractDiagramData(value.getResource(), value.getBpmnProcessId());
+    String processName = null;
+    try {
+      var xml = new XMLUtil().extractDiagramData(value.getResource(), value.getBpmnProcessId());
+      processName = xml.map(ProcessEntity::getName).orElse(null);
+    } catch (Exception e) {
+      // skip
+      LOG.debug("Unable to parse XML diagram", e);
+    }
 
     return new ProcessDefinitionModel(
         value.getProcessDefinitionKey(),
         value.getBpmnProcessId(),
-        xml.map(ProcessEntity::getName).orElse(null),
+        processName,
         value.getTenantId(),
         value.getVersionTag(),
         value.getVersion()

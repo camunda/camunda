@@ -20,9 +20,16 @@
            TENANT_ID,
            PARENT_PROCESS_INSTANCE_KEY,
            PARENT_ELEMENT_INSTANCE_KEY,
+           ELEMENT_ID,
            VERSION
     FROM PROCESS_INSTANCE
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </select>
+
+  <select id="count">
+    SELECT COUNT(*)
+    FROM PROCESS_INSTANCE pi
+    <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter" />
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.domain.ProcessInstanceFilter"
@@ -36,20 +43,25 @@
     pi.TENANT_ID,
     pi.PARENT_PROCESS_INSTANCE_KEY,
     pi.PARENT_ELEMENT_INSTANCE_KEY,
+    pi.ELEMENT_ID,
     pi.VERSION
     FROM PROCESS_INSTANCE pi
+    <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter" />
+  </select>
+
+  <sql id="searchFilter">
     WHERE 1 = 1
     <if test="bpmnProcessId != null">
       AND BPMN_PROCESS_ID = #{bpmnProcessId}
     </if>
     <if test="variable != null">
       AND pi.PROCESS_INSTANCE_KEY IN (SELECT v.PROCESS_INSTANCE_KEY FROM VARIABLE v WHERE v.VAR_NAME = #{variable.name} AND v.VAR_VALUE IN
-        <foreach collection="variable.values" item="variableValue" open="(" separator=", " close=")">
-          CAST(#{variableValue} as VARCHAR)
-        </foreach>
+      <foreach collection="variable.values" item="variableValue" open="(" separator=", " close=")">
+        CAST(#{variableValue} as VARCHAR)
+      </foreach>
       )
     </if>
-  </select>
+  </sql>
 
   <insert
     id="insert"
@@ -69,6 +81,17 @@
     UPDATE PROCESS_INSTANCE p
     SET STATE    = #{state},
         END_DATE = #{endDate}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+
+  <update
+    id="updateCurrentElementId"
+    statementType="PREPARED"
+    parameterType="hashMap"
+    flushCache="true"
+    timeout="20">
+    UPDATE PROCESS_INSTANCE p
+    SET ELEMENT_ID = #{elementId}
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>
 </mapper>

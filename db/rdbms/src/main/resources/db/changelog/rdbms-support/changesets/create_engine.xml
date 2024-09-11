@@ -42,6 +42,7 @@
       <column name="TENANT_ID" type="VARCHAR(200)" />
       <column name="PARENT_PROCESS_INSTANCE_KEY" type="NUMBER" />
       <column name="PARENT_ELEMENT_INSTANCE_KEY" type="NUMBER" />
+      <column name="ELEMENT_ID" type="VARCHAR(255)" />
       <column name="VERSION" type="NUMBER" />
     </createTable>
   </changeSet>

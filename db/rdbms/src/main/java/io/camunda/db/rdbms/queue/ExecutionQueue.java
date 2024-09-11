@@ -15,7 +15,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +58,10 @@ public class ExecutionQueue extends Actor {
       return;
     }
     LOG.debug("[RDBMS Execution Queue] Flushing execution queue with {} items", queue.size());
-    final var session = sessionFactory.openSession();
+
+    final var startMillis = System.currentTimeMillis();
+    final var queueSize = queue.size();
+    final var session = sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
 
     try {
       var preFlushListenersCalled = false;
@@ -72,8 +77,9 @@ public class ExecutionQueue extends Actor {
           preFlushListenersCalled = true;
         }
       }
+      session.flushStatements();
       session.commit();
-      LOG.debug("[RDBMS Execution Queue] Commit queue with {} entries", queue.size());
+      LOG.debug("[RDBMS Execution Queue] Commit queue with {} entries in {}ms", queueSize, System.currentTimeMillis() - startMillis);
     } catch (final Exception e) {
       LOG.error("Error while executing queue", e);
       session.rollback();

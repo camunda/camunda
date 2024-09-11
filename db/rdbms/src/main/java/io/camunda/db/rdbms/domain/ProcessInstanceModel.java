@@ -19,6 +19,7 @@ public record ProcessInstanceModel(
     String tenantId,
     Long parentProcessInstanceKey,
     Long parentElementInstanceKey,
+    String elementId,
     int version
 ) {
 
