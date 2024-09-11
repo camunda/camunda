@@ -28,6 +28,7 @@ import org.opensearch.client.opensearch._types.aggregations.FieldDateMath;
 import org.opensearch.client.opensearch._types.aggregations.FiltersAggregation;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
 import org.opensearch.client.opensearch._types.aggregations.ParentAggregation;
+import org.opensearch.client.opensearch._types.aggregations.ReverseNestedAggregation;
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregation;
 import org.opensearch.client.opensearch._types.aggregations.ValueCountAggregation;
@@ -117,6 +118,25 @@ public interface AggregationDSL {
   }
 
   static Aggregation withSubaggregations(
+      final Aggregation aggregation, final Map<String, Aggregation> aggregations) {
+    if (aggregation.isDateHistogram()) {
+      return withSubaggregations(aggregation.dateHistogram(), aggregations);
+    } else if (aggregation.isNested()) {
+      return withSubaggregations(aggregation.nested(), aggregations);
+    } else if (aggregation.isFilter()) {
+      return withSubaggregations(aggregation.filter(), aggregations);
+    } else if (aggregation.isFilters()) {
+      return withSubaggregations(aggregation.filters(), aggregations);
+    } else if (aggregation.isChildren()) {
+      return withSubaggregations(aggregation.children(), aggregations);
+    } else if (aggregation.isTerms()) {
+      return withSubaggregations(aggregation.terms(), aggregations);
+    } else {
+      throw new OptimizeRuntimeException("Unsupported aggregation type: " + aggregation);
+    }
+  }
+
+  static Aggregation withSubaggregations(
       final DateHistogramAggregation aggregation, final Map<String, Aggregation> aggregations) {
     return Aggregation.of(a -> a.dateHistogram(aggregation).aggregations(aggregations));
   }
@@ -139,6 +159,11 @@ public interface AggregationDSL {
   static Aggregation withSubaggregations(
       final Query query, final Map<String, Aggregation> aggregations) {
     return Aggregation.of(a -> a.filter(query).aggregations(aggregations));
+  }
+
+  static Aggregation withSubaggregations(
+      final ReverseNestedAggregation aggregation, final Map<String, Aggregation> aggregations) {
+    return Aggregation.of(a -> a.reverseNested(aggregation).aggregations(aggregations));
   }
 
   static Aggregation withSubaggregations(
