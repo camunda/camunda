@@ -565,15 +565,15 @@ test.describe('task details page', () => {
     await tasksPage.openTask('Employee Details');
     await expect(tasksPage.detailsNav).toBeVisible();
     await tasksPage.assignToMeButton.click();
-
     try {
+      await page.waitForTimeout(10000);
       await expect(taskFormView.nameInput).toBeVisible({timeout: 60000});
     } catch (error) {
       console.error('Form not loaded error:', error);
-      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-      await sleep(10000);
+      // const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      // await sleep(10000);
       await page.reload();
-      await expect(taskFormView.nameInput).toBeVisible({timeout: 60000});
+      await expect(taskFormView.nameInput).toBeVisible();
     }
 
     await taskFormView.nameInput.fill('Ben');
