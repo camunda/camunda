@@ -138,11 +138,6 @@
       <artifactId>simpleclient</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-codec-dns</artifactId>
-    </dependency>
-
     <!-- test dependencies -->
 
     <dependency>
@@ -245,16 +240,6 @@
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcprov-jdk18on</artifactId>
       <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-resolver-dns</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-resolver</artifactId>
     </dependency>
 
   </dependencies>
