@@ -127,8 +127,7 @@ public class IndexSchemaValidatorTest {
     // then
     assertThatThrownBy(() -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(currentIndex)))
         .isInstanceOf(IndexSchemaValidationException.class)
-        .hasMessageContaining(
-            "Ambiguous schema update. First bring runtime and date indices to one schema.");
+        .hasMessageContaining("Ambiguous schema update.");
   }
 
   @Test

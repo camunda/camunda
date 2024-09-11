@@ -16,6 +16,35 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * The {@link IndexSchemaValidator} validates existing indices mappings against index/index template
+ * mappings defined.
+ *
+ * <p>Mappings are valid if
+ *
+ * <ul>
+ *   <li>The existing indices corresponding to an {@link IndexDescriptor} or {@link
+ *       IndexTemplateDescriptor} has the same mappings as provided by the descriptor
+ *   <li>The mapping provided by the descriptor has new fields compared to the existing indices
+ *       corresponding to an {@link IndexDescriptor} or {@link IndexTemplateDescriptor}.
+ *   <li>The mapping provided by the descriptor has removed some fields compared to the existing
+ *       indices corresponding to an {@link IndexDescriptor} or {@link IndexTemplateDescriptor}.
+ * </ul>
+ *
+ * <p>Mappings are invalid if
+ *
+ * <ul>
+ *   <li/>The mapping provided by the descriptor has same fields with different types compared to
+ *       the existing indices corresponding to an {@link IndexDescriptor} or {@link
+ *       IndexTemplateDescriptor}. This indicates that the existing indices cannot be updated to new
+ *       mappings. If the index is set to allow dynamic mapping, then this case is ignored and the
+ *       mapping will be considered as valid.
+ *   <li/>If multiple indices corresponding to the {@link IndexDescriptor} or {@link
+ *       IndexTemplateDescriptor} has different mappings and the differences are not the same. In
+ *       this case, it is not clear how to update multiple indices for the same descriptor to the
+ *       provided mapping.
+ * </ul>
+ */
 public class IndexSchemaValidator {
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexSchemaValidator.class);
 
@@ -106,8 +135,9 @@ public class IndexSchemaValidator {
 
     if (differences.size() > 1) {
       throw new IndexSchemaValidationException(
-          "Ambiguous schema update. First bring runtime and date indices to one schema. Differences: "
-              + differences);
+          String.format(
+              "Ambiguous schema update. Multiple indices for mapping '%s' has different fields. Differences: '%s'",
+              indexDescriptor.getIndexName(), differences));
     }
 
     return differences.getFirst();
