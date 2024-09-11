@@ -10,12 +10,17 @@ package io.camunda.optimize.service.db.es.reader;
 import static io.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static io.camunda.optimize.service.util.DefinitionQueryUtilES.createDefinitionQuery;
 import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
+import co.elastic.clients.elasticsearch._types.query_dsl.NestedQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.CountRequest;
+import co.elastic.clients.elasticsearch.core.CountResponse;
 import com.google.common.collect.Sets;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.ReportConstants;
@@ -24,12 +29,14 @@ import io.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import io.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeCountRequestBuilderES;
 import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.db.reader.BranchAnalysisReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.service.util.DefinitionQueryUtilES;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -43,16 +50,10 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.client.core.CountResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -184,12 +185,13 @@ public class BranchAnalysisReaderES implements BranchAnalysisReader {
       final BranchAnalysisRequestDto request,
       final Set<String> activitiesToExclude,
       final ZoneId timezone) {
-    final BoolQueryBuilder query =
+    final BoolQuery.Builder builder =
         buildBaseQuery(request, activitiesToExclude)
             .must(createMustMatchFlowNodeIdQuery(request.getGateway()))
             .must(createMustMatchFlowNodeIdQuery(flowNodeId))
             .must(createMustMatchFlowNodeIdQuery(request.getEnd()));
-    return executeQuery(request, query, timezone);
+
+    return executeQuery(request, builder, timezone);
   }
 
   private long calculateFlowNodeCount(
@@ -197,17 +199,18 @@ public class BranchAnalysisReaderES implements BranchAnalysisReader {
       final BranchAnalysisRequestDto request,
       final Set<String> activitiesToExclude,
       final ZoneId timezone) {
-    final BoolQueryBuilder query =
+    final BoolQuery.Builder builder =
         buildBaseQuery(request, activitiesToExclude)
             .must(createMustMatchFlowNodeIdQuery(request.getGateway()))
             .must(createMustMatchFlowNodeIdQuery(flowNodeId));
-    return executeQuery(request, query, timezone);
+
+    return executeQuery(request, builder, timezone);
   }
 
-  private BoolQueryBuilder buildBaseQuery(
+  private BoolQuery.Builder buildBaseQuery(
       final BranchAnalysisRequestDto request, final Set<String> activitiesToExclude) {
-    final BoolQueryBuilder query =
-        createDefinitionQuery(
+    final BoolQuery.Builder query =
+        DefinitionQueryUtilES.createDefinitionQuery(
             request.getProcessDefinitionKey(),
             request.getProcessDefinitionVersions(),
             request.getTenantIds(),
@@ -218,29 +221,43 @@ public class BranchAnalysisReaderES implements BranchAnalysisReader {
   }
 
   private void excludeFlowNodes(
-      final Set<String> flowNodeIdsToExclude, final BoolQueryBuilder query) {
+      final Set<String> flowNodeIdsToExclude, final BoolQuery.Builder query) {
     for (String excludeFlowNodeId : flowNodeIdsToExclude) {
       query.mustNot(createMustMatchFlowNodeIdQuery(excludeFlowNodeId));
     }
   }
 
-  private NestedQueryBuilder createMustMatchFlowNodeIdQuery(final String flowNodeId) {
-    return nestedQuery(
-        FLOW_NODE_INSTANCES,
-        termQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID, flowNodeId),
-        ScoreMode.None);
+  private Query createMustMatchFlowNodeIdQuery(final String flowNodeId) {
+    return Query.of(
+        qu ->
+            qu.nested(
+                NestedQuery.of(
+                    b ->
+                        b.path(FLOW_NODE_INSTANCES)
+                            .query(
+                                q ->
+                                    q.term(
+                                        t ->
+                                            t.field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID)
+                                                .value(FieldValue.of(flowNodeId))))
+                            .scoreMode(ChildScoreMode.None))));
   }
 
   private long executeQuery(
-      final BranchAnalysisRequestDto request, final BoolQueryBuilder query, final ZoneId timezone) {
+      final BranchAnalysisRequestDto request, final BoolQuery.Builder bool, final ZoneId timezone) {
     queryFilterEnhancer.addFilterToQuery(
-        query, request.getFilter(), FilterContext.builder().timezone(timezone).build());
-    final CountRequest searchRequest =
-        new CountRequest(getProcessInstanceIndexAliasName(request.getProcessDefinitionKey()))
-            .query(query);
+        bool, request.getFilter(), FilterContext.builder().timezone(timezone).build());
+    CountRequest countRequest =
+        OptimizeCountRequestBuilderES.of(
+            b ->
+                b.optimizeIndex(
+                        esClient,
+                        getProcessInstanceIndexAliasName(request.getProcessDefinitionKey()))
+                    .query(q -> q.bool(bool.build())));
+
     try {
-      final CountResponse countResponse = esClient.count(searchRequest);
-      return countResponse.getCount();
+      final CountResponse countResponse = esClient.count(countRequest);
+      return countResponse.count();
     } catch (IOException e) {
       String reason =
           String.format(
@@ -248,7 +265,7 @@ public class BranchAnalysisReaderES implements BranchAnalysisReader {
               request.getProcessDefinitionKey(), request.getProcessDefinitionVersions());
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info(
             "Was not able to perform branch analysis because the required instance index {} does not "

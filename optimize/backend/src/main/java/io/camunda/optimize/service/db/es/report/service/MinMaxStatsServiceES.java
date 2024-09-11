@@ -8,12 +8,19 @@
 package io.camunda.optimize.service.db.es.report.service;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static io.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtilES.unwrapFilterLimitedAggregations;
-import static io.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtilES.wrapWithFilterLimitedParentAggregation;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.FilterLimitedAggregationUtilES.wrapWithFilterLimitedParentAggregation;
 
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.StatsAggregate;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
+import io.camunda.optimize.service.db.es.report.interpreter.util.FilterLimitedAggregationUtilES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.report.service.AbstractMinMaxStatsService;
@@ -21,20 +28,12 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.nested.Nested;
-import org.elasticsearch.search.aggregations.metrics.Stats;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -47,7 +46,7 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
 
   public MinMaxStatDto getMinMaxDateRange(
       final ExecutionContext<? extends SingleReportDataDto, ?> context,
-      final QueryBuilder query,
+      final Query query,
       final String[] indexNames,
       final String field) {
     return getMinMaxDateRangeForNestedField(context, query, indexNames, field, field, null, null);
@@ -55,7 +54,7 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
 
   public MinMaxStatDto getMinMaxDateRangeForCrossField(
       final ExecutionContext<? extends SingleReportDataDto, ?> context,
-      final QueryBuilder query,
+      final Query query,
       final String[] indexNames,
       final String firstField,
       final String secondField) {
@@ -65,11 +64,11 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
 
   public MinMaxStatDto getMinMaxDateRangeForNestedField(
       final ExecutionContext<? extends SingleReportDataDto, ?> context,
-      final QueryBuilder query,
+      final Query query,
       final String[] indexNames,
       final String field,
       final String pathForNestedStatsAgg,
-      final QueryBuilder filterQueryToWrapStatsWith) {
+      final Query filterQueryToWrapStatsWith) {
     return getMinMaxDateRangeForNestedField(
         context,
         query,
@@ -82,7 +81,7 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
 
   public MinMaxStatDto getMinMaxNumberRangeForScriptedField(
       final ExecutionContext<? extends SingleReportDataDto, ?> context,
-      final QueryBuilder query,
+      final Query query,
       final String[] indexNames,
       final Script script) {
     return context
@@ -92,7 +91,7 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
 
   public MinMaxStatDto getMinMaxNumberRangeForNestedScriptedField(
       final ExecutionContext<? extends SingleReportDataDto, ?> context,
-      final QueryBuilder query,
+      final Query query,
       final String[] indexNames,
       final String pathForNestedStatsAgg,
       final Script script) {
@@ -104,11 +103,11 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
 
   public MinMaxStatDto getMinMaxNumberRangeForNestedScriptedField(
       final ExecutionContext<? extends SingleReportDataDto, ?> context,
-      final QueryBuilder query,
+      final Query query,
       final String[] indexNames,
       final String pathForNestedStatsAgg,
       final Script script,
-      final BoolQueryBuilder filterQueryToWrapStatsWith) {
+      final Query filterQueryToWrapStatsWith) {
     return context
         .getCombinedRangeMinMaxStats()
         .orElseGet(
@@ -118,7 +117,7 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
   }
 
   public MinMaxStatDto getScriptedMinMaxStats(
-      final QueryBuilder query,
+      final Query query,
       final String[] indexNames,
       final String pathForNestedStatsAgg,
       final Script script) {
@@ -126,38 +125,55 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
   }
 
   public MinMaxStatDto getScriptedMinMaxStats(
-      final QueryBuilder query,
+      final Query query,
       final String[] indexNames,
       final String pathForNestedStatsAgg,
       final Script script,
-      final BoolQueryBuilder filterQueryToWrapStatsWith) {
-    AggregationBuilder statsAggregation =
-        AggregationBuilders.stats(STATS_AGGREGATION_FIRST_FIELD).script(script);
+      final Query filterQueryToWrapStatsWith) {
+    Supplier<Map<String, Aggregation.Builder.ContainerBuilder>> supplier =
+        () -> {
+          Aggregation.Builder.ContainerBuilder builder =
+              new Aggregation.Builder().stats(s -> s.script(script));
+          Map<String, Aggregation.Builder.ContainerBuilder> statsAggregation =
+              Map.of(STATS_AGGREGATION_FIRST_FIELD, builder);
 
-    if (filterQueryToWrapStatsWith != null) {
-      statsAggregation =
-          wrapWithFilterLimitedParentAggregation(
-              FILTER_AGGREGATION_FIRST_FIELD, filterQueryToWrapStatsWith, statsAggregation);
-    }
+          if (filterQueryToWrapStatsWith != null) {
+            statsAggregation =
+                wrapWithFilterLimitedParentAggregation(
+                    FILTER_AGGREGATION_FIRST_FIELD, filterQueryToWrapStatsWith, statsAggregation);
+          }
+          return statsAggregation;
+        };
 
-    final AggregationBuilder finalStatsAggregation = statsAggregation;
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
-            .query(query)
-            .fetchSource(false)
-            .aggregation(
-                Optional.ofNullable(pathForNestedStatsAgg)
-                    .map(nestedPath -> nested(NESTED_AGGREGATION_FIRST_FIELD, nestedPath))
-                    .map(
-                        nestedAgg ->
-                            (AggregationBuilder) nestedAgg.subAggregation(finalStatsAggregation))
-                    .orElse(statsAggregation))
-            .size(0);
-
-    final SearchRequest searchRequest = new SearchRequest(indexNames).source(searchSourceBuilder);
-    final SearchResponse response;
+    final SearchRequest searchRequest =
+        OptimizeSearchRequestBuilderES.of(
+            s ->
+                s.optimizeIndex(esClient, indexNames)
+                    .query(query)
+                    .source(o -> o.fetch(false))
+                    .size(0)
+                    .aggregations(
+                        Optional.ofNullable(pathForNestedStatsAgg)
+                            .map(
+                                nestedPath ->
+                                    new Aggregation.Builder().nested(n -> n.path(nestedPath)))
+                            .map(
+                                nestedAgg -> {
+                                  nestedAgg.aggregations(
+                                      supplier.get().entrySet().stream()
+                                          .collect(
+                                              Collectors.toMap(
+                                                  Map.Entry::getKey, e -> e.getValue().build())));
+                                  return Map.of(NESTED_AGGREGATION_FIRST_FIELD, nestedAgg.build());
+                                })
+                            .orElse(
+                                supplier.get().entrySet().stream()
+                                    .collect(
+                                        Collectors.toMap(
+                                            Map.Entry::getKey, e -> e.getValue().build())))));
+    final SearchResponse<?> response;
     try {
-      response = esClient.search(searchRequest);
+      response = esClient.search(searchRequest, Object.class);
     } catch (IOException e) {
       final String reason =
           String.format(
@@ -169,44 +185,44 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
       return returnEmptyResultIfInstanceIndexNotFound(e, indexNames);
     }
 
-    final Stats minMaxStats =
+    final StatsAggregate minMaxStats =
         retrieveNestedWrappedStatsAggregation(
             NESTED_AGGREGATION_FIRST_FIELD,
             FILTER_AGGREGATION_FIRST_FIELD,
             STATS_AGGREGATION_FIRST_FIELD,
             response);
-    return new MinMaxStatDto(minMaxStats.getMin(), minMaxStats.getMax());
+    return new MinMaxStatDto(minMaxStats.min(), minMaxStats.max());
   }
 
   public MinMaxStatDto getSingleFieldMinMaxStats(
-      final QueryBuilder query,
+      final Query query,
       final String[] indexNames,
       final String field,
       final String pathForNestedStatsAgg,
-      final BoolQueryBuilder filterQueryToWrapStatsWith) {
+      final Query filterQueryToWrapStatsWith) {
     return getCrossFieldMinMaxStats(
         query, indexNames, field, field, null, pathForNestedStatsAgg, filterQueryToWrapStatsWith);
   }
 
   public MinMaxStatDto getSingleFieldMinMaxStats(
-      final QueryBuilder query,
+      final Query query,
       final String[] indexNames,
       final String field,
       final String format,
       final String pathForNestedStatsAgg,
-      final BoolQueryBuilder filterQueryToWrapStatsWith) {
+      final Query filterQueryToWrapStatsWith) {
     return getCrossFieldMinMaxStats(
         query, indexNames, field, field, format, pathForNestedStatsAgg, filterQueryToWrapStatsWith);
   }
 
   private MinMaxStatDto getMinMaxDateRangeForNestedField(
       final ExecutionContext<? extends SingleReportDataDto, ?> context,
-      final QueryBuilder query,
+      final Query query,
       final String[] indexNames,
       final String firstField,
       final String secondField,
       final String pathForNestedStatsAgg,
-      final QueryBuilder filterQueryToWrapStatsWith) {
+      final Query filterQueryToWrapStatsWith) {
     return context
         .getCombinedRangeMinMaxStats()
         .orElseGet(
@@ -222,16 +238,16 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
   }
 
   private MinMaxStatDto getCrossFieldMinMaxStats(
-      final QueryBuilder query,
+      final Query query,
       final String[] indexNames,
       final String firstField,
       final String secondField,
       final String format,
       final String pathForNestedStatsAgg,
-      final QueryBuilder filterQueryToWrapStatsWith) {
-    AggregationBuilder statsAggField1 =
+      final Query filterQueryToWrapStatsWith) {
+    Map<String, Aggregation.Builder.ContainerBuilder> statsAggField1 =
         createStatsAggregation(STATS_AGGREGATION_FIRST_FIELD, firstField, format);
-    AggregationBuilder statsAggField2 =
+    Map<String, Aggregation.Builder.ContainerBuilder> statsAggField2 =
         createStatsAggregation(STATS_AGGREGATION_SECOND_FIELD, secondField, format);
 
     if (filterQueryToWrapStatsWith != null) {
@@ -244,26 +260,44 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
     }
 
     if (pathForNestedStatsAgg != null) {
-      statsAggField1 =
-          nested(NESTED_AGGREGATION_FIRST_FIELD, pathForNestedStatsAgg)
-              .subAggregation(statsAggField1);
-      statsAggField2 =
-          nested(NESTED_AGGREGATION_SECOND_FIELD, pathForNestedStatsAgg)
-              .subAggregation(statsAggField2);
+      Aggregation.Builder.ContainerBuilder builder =
+          new Aggregation.Builder().nested(n -> n.path(pathForNestedStatsAgg));
+      builder.aggregations(
+          statsAggField1.entrySet().stream()
+              .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().build())));
+      statsAggField1 = Map.of(NESTED_AGGREGATION_FIRST_FIELD, builder);
+
+      Aggregation.Builder.ContainerBuilder builder1 =
+          new Aggregation.Builder().nested(n -> n.path(pathForNestedStatsAgg));
+      builder1.aggregations(
+          statsAggField2.entrySet().stream()
+              .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().build())));
+      statsAggField2 = Map.of(NESTED_AGGREGATION_SECOND_FIELD, builder1);
     }
 
-    SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
-            .query(query)
-            .fetchSource(false)
-            .aggregation(statsAggField1)
-            .aggregation(statsAggField2)
-            .size(0);
-    SearchRequest searchRequest = new SearchRequest(indexNames).source(searchSourceBuilder);
-
-    SearchResponse response;
+    SearchResponse<?> response;
     try {
-      response = esClient.search(searchRequest);
+      Map<String, Aggregation.Builder.ContainerBuilder> finalStatsAggField = statsAggField1;
+      Map<String, Aggregation.Builder.ContainerBuilder> finalStatsAggField1 = statsAggField2;
+      response =
+          esClient.search(
+              OptimizeSearchRequestBuilderES.of(
+                  s ->
+                      s.optimizeIndex(esClient, indexNames)
+                          .query(query)
+                          .source(o -> o.fetch(false))
+                          .aggregations(
+                              finalStatsAggField.entrySet().stream()
+                                  .collect(
+                                      Collectors.toMap(
+                                          Map.Entry::getKey, e -> e.getValue().build())))
+                          .aggregations(
+                              finalStatsAggField1.entrySet().stream()
+                                  .collect(
+                                      Collectors.toMap(
+                                          Map.Entry::getKey, e -> e.getValue().build())))
+                          .size(0)),
+              Object.class);
     } catch (IOException e) {
       String reason =
           String.format(
@@ -277,49 +311,55 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
     return mapCrossFieldStatAggregationsToStatDto(response);
   }
 
-  private AggregationBuilder createStatsAggregation(
+  private Map<String, Aggregation.Builder.ContainerBuilder> createStatsAggregation(
       final String aggregationName, final String aggregationField, final String format) {
-    if (format == null) {
-      return AggregationBuilders.stats(aggregationName).field(aggregationField);
-    } else {
-      return AggregationBuilders.stats(aggregationName).field(aggregationField).format(format);
-    }
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder()
+            .stats(
+                s -> {
+                  s.field(aggregationField);
+                  if (format != null) {
+                    s.format(format);
+                  }
+                  return s;
+                });
+    return Map.of(aggregationName, builder);
   }
 
   private MinMaxStatDto mapCrossFieldStatAggregationsToStatDto(final SearchResponse response) {
-    final Stats minMaxStats1 =
+    final StatsAggregate minMaxStats1 =
         retrieveNestedWrappedStatsAggregation(
             NESTED_AGGREGATION_FIRST_FIELD,
             FILTER_AGGREGATION_FIRST_FIELD,
             STATS_AGGREGATION_FIRST_FIELD,
             response);
-    final Stats minMaxStats2 =
+    final StatsAggregate minMaxStats2 =
         retrieveNestedWrappedStatsAggregation(
             NESTED_AGGREGATION_SECOND_FIELD,
             FILTER_AGGREGATION_SECOND_FIELD,
             STATS_AGGREGATION_SECOND_FIELD,
             response);
 
-    final Stats minStats =
-        minMaxStats1.getMin() < minMaxStats2.getMin() ? minMaxStats1 : minMaxStats2;
-    final Stats maxStats =
-        minMaxStats1.getMax() > minMaxStats2.getMax() ? minMaxStats1 : minMaxStats2;
+    final StatsAggregate minStats =
+        minMaxStats1.min() < minMaxStats2.min() ? minMaxStats1 : minMaxStats2;
+    final StatsAggregate maxStats =
+        minMaxStats1.max() > minMaxStats2.max() ? minMaxStats1 : minMaxStats2;
 
     return new MinMaxStatDto(
-        minStats.getMin(), maxStats.getMax(), minStats.getMinAsString(), maxStats.getMaxAsString());
+        minStats.min(), maxStats.max(), minStats.minAsString(), maxStats.maxAsString());
   }
 
-  private Stats retrieveNestedWrappedStatsAggregation(
+  private StatsAggregate retrieveNestedWrappedStatsAggregation(
       final String nestedAggName,
       final String filterAggName,
       final String statsAggName,
-      final SearchResponse response) {
-    final Aggregations unnestedAggs =
-        response.getAggregations().asMap().containsKey(nestedAggName)
-            ? ((Nested) response.getAggregations().get(nestedAggName)).getAggregations()
-            : response.getAggregations();
-    final Optional<Aggregations> unwrappedAggs =
-        unwrapFilterLimitedAggregations(filterAggName, unnestedAggs);
-    return unwrappedAggs.orElse(unnestedAggs).get(statsAggName);
+      final SearchResponse<?> response) {
+    final Map<String, Aggregate> unnestedAggs =
+        response.aggregations().containsKey(nestedAggName)
+            ? response.aggregations().get(nestedAggName).nested().aggregations()
+            : response.aggregations();
+    final Optional<Map<String, Aggregate>> unwrappedAggs =
+        FilterLimitedAggregationUtilES.unwrapFilterLimitedAggregations(filterAggName, unnestedAggs);
+    return unwrappedAggs.orElse(unnestedAggs).get(statsAggName).stats();
   }
 }

@@ -8,12 +8,11 @@
 package io.camunda.optimize.service.db.schema.index;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_INDEX_PREFIX;
-import static io.camunda.optimize.service.db.DatabaseConstants.FIELDS;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
-import java.io.IOException;
+import co.elastic.clients.elasticsearch._types.mapping.Property;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import java.util.Locale;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class DecisionInstanceIndex<TBuilder> extends AbstractInstanceIndex<TBuilder> {
 
@@ -93,126 +92,63 @@ public abstract class DecisionInstanceIndex<TBuilder> extends AbstractInstanceIn
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder builder) throws IOException {
-    // @formatter:off
-    XContentBuilder newBuilder =
-        builder
-            .startObject(DECISION_INSTANCE_ID)
-            .field("type", "keyword")
-            .endObject()
-            .startObject(DECISION_DEFINITION_ID)
-            .field("type", "keyword")
-            .endObject()
-            .startObject(DECISION_DEFINITION_KEY)
-            .field("type", "keyword")
-            .endObject()
-            .startObject(DECISION_DEFINITION_VERSION)
-            .field("type", "keyword")
-            .endObject()
-            .startObject(PROCESS_DEFINITION_ID)
-            .field("type", "keyword")
-            .endObject()
-            .startObject(PROCESS_DEFINITION_KEY)
-            .field("type", "keyword")
-            .endObject()
-            .startObject(PROCESS_INSTANCE_ID)
-            .field("type", "keyword")
-            .endObject()
-            .startObject(ROOT_PROCESS_INSTANCE_ID)
-            .field("type", "keyword")
-            .endObject()
-            .startObject(EVALUATION_DATE_TIME)
-            .field("type", "date")
-            .field("format", OPTIMIZE_DATE_FORMAT)
-            .endObject()
-            .startObject(ACTIVITY_ID)
-            .field("type", "keyword")
-            .endObject()
-            .startObject(INPUTS)
-            .field("type", "nested")
-            .startObject("properties");
-    addNestedInputField(newBuilder)
-        .endObject()
-        .endObject()
-        .startObject(OUTPUTS)
-        .field("type", "nested")
-        .startObject("properties");
-    addNestedOutputField(newBuilder)
-        .endObject()
-        .endObject()
-        .startObject(MATCHED_RULES)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(COLLECT_RESULT_VALUE)
-        .field("type", "double")
-        .endObject()
-        .startObject(ROOT_DECISION_INSTANCE_ID)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(ENGINE)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(TENANT_ID)
-        .field("type", "keyword")
-        .endObject();
-    // @formatter:on
-    return newBuilder;
-  }
-
-  private XContentBuilder addNestedInputField(XContentBuilder builder) throws IOException {
-    // @formatter:off
-    builder
-        .startObject(VARIABLE_ID)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(VARIABLE_CLAUSE_ID)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(VARIABLE_CLAUSE_NAME)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(VARIABLE_VALUE_TYPE)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(VARIABLE_VALUE)
-        .field("type", "keyword")
-        .startObject(FIELDS);
-    addValueMultifields(builder).endObject().endObject();
-    return builder;
-    // @formatter:on
-  }
-
-  private XContentBuilder addNestedOutputField(XContentBuilder builder) throws IOException {
-    // @formatter:off
-    builder
-        .startObject(VARIABLE_ID)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(VARIABLE_CLAUSE_ID)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(VARIABLE_CLAUSE_NAME)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(VARIABLE_VALUE_TYPE)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(VARIABLE_VALUE)
-        .field("type", "keyword")
-        .startObject(FIELDS);
-    addValueMultifields(builder)
-        .endObject()
-        .endObject()
-        .startObject(OUTPUT_VARIABLE_RULE_ID)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(OUTPUT_VARIABLE_RULE_ORDER)
-        .field("type", "long")
-        .endObject()
-        .startObject(OUTPUT_VARIABLE_NAME)
-        .field("type", "keyword")
-        .endObject();
-    return builder;
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+    return builder
+        .properties(DECISION_INSTANCE_ID, Property.of(p -> p.keyword(k -> k)))
+        .properties(DECISION_DEFINITION_ID, Property.of(p -> p.keyword(k -> k)))
+        .properties(DECISION_DEFINITION_KEY, Property.of(p -> p.keyword(k -> k)))
+        .properties(DECISION_DEFINITION_VERSION, Property.of(p -> p.keyword(k -> k)))
+        .properties(PROCESS_DEFINITION_ID, Property.of(p -> p.keyword(k -> k)))
+        .properties(PROCESS_DEFINITION_KEY, Property.of(p -> p.keyword(k -> k)))
+        .properties(PROCESS_INSTANCE_ID, Property.of(p -> p.keyword(k -> k)))
+        .properties(ROOT_PROCESS_INSTANCE_ID, Property.of(p -> p.keyword(k -> k)))
+        .properties(
+            EVALUATION_DATE_TIME, Property.of(p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT))))
+        .properties(ACTIVITY_ID, Property.of(p -> p.keyword(k -> k)))
+        .properties(
+            INPUTS,
+            Property.of(
+                p ->
+                    p.nested(
+                        k ->
+                            k.properties(VARIABLE_ID, Property.of(p1 -> p1.keyword(k1 -> k1)))
+                                .properties(
+                                    VARIABLE_CLAUSE_ID, Property.of(p1 -> p1.keyword(k1 -> k1)))
+                                .properties(
+                                    VARIABLE_CLAUSE_NAME, Property.of(p1 -> p1.keyword(k1 -> k1)))
+                                .properties(
+                                    VARIABLE_VALUE_TYPE, Property.of(p1 -> p1.keyword(k1 -> k1)))
+                                .properties(
+                                    VARIABLE_VALUE,
+                                    Property.of(p1 -> p1.keyword(this::addValueMultifields))))))
+        .properties(
+            OUTPUTS,
+            Property.of(
+                p ->
+                    p.nested(
+                        k ->
+                            k.properties(VARIABLE_ID, Property.of(p1 -> p1.keyword(k1 -> k1)))
+                                .properties(
+                                    VARIABLE_CLAUSE_ID, Property.of(p1 -> p1.keyword(k1 -> k1)))
+                                .properties(
+                                    VARIABLE_CLAUSE_NAME, Property.of(p1 -> p1.keyword(k1 -> k1)))
+                                .properties(
+                                    VARIABLE_VALUE_TYPE, Property.of(p1 -> p1.keyword(k1 -> k1)))
+                                .properties(
+                                    OUTPUT_VARIABLE_RULE_ID,
+                                    Property.of(p1 -> p1.keyword(k1 -> k1)))
+                                .properties(
+                                    OUTPUT_VARIABLE_RULE_ORDER,
+                                    Property.of(p1 -> p1.long_(k1 -> k1)))
+                                .properties(
+                                    OUTPUT_VARIABLE_NAME, Property.of(p1 -> p1.keyword(k1 -> k1)))
+                                .properties(
+                                    VARIABLE_VALUE,
+                                    Property.of(p1 -> p1.keyword(this::addValueMultifields))))))
+        .properties(MATCHED_RULES, Property.of(p -> p.keyword(k -> k)))
+        .properties(ROOT_DECISION_INSTANCE_ID, Property.of(p -> p.keyword(k -> k)))
+        .properties(ENGINE, Property.of(p -> p.keyword(k -> k)))
+        .properties(TENANT_ID, Property.of(p -> p.keyword(k -> k)))
+        .properties(COLLECT_RESULT_VALUE, Property.of(p -> p.double_(k -> k)));
   }
 }

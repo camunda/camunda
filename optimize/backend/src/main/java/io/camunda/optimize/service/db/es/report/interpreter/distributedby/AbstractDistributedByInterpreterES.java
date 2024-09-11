@@ -7,12 +7,12 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.distributedby;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import io.camunda.optimize.service.db.es.report.interpreter.view.ViewInterpreterES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.ExecutionPlan;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 
 public abstract class AbstractDistributedByInterpreterES<
         DATA extends SingleReportDataDto, PLAN extends ExecutionPlan>
@@ -22,9 +22,9 @@ public abstract class AbstractDistributedByInterpreterES<
 
   @Override
   public void adjustSearchRequest(
-      final SearchRequest searchRequest,
-      final BoolQueryBuilder baseQuery,
+      final SearchRequest.Builder searchRequestBuilder,
+      final BoolQuery.Builder baseQueryBuilder,
       final ExecutionContext<DATA, PLAN> context) {
-    getViewInterpreter().adjustSearchRequest(searchRequest, baseQuery, context);
+    getViewInterpreter().adjustSearchRequest(searchRequestBuilder, baseQueryBuilder, context);
   }
 }

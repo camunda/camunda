@@ -7,10 +7,10 @@
  */
 package io.camunda.optimize.service.db.es.filter;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import java.util.List;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 
 public interface QueryFilterEnhancerES<T> {
-  void addFilterToQuery(BoolQueryBuilder query, List<T> filter, FilterContext filterContext);
+  void addFilterToQuery(BoolQuery.Builder query, List<T> filter, FilterContext filterContext);
 }

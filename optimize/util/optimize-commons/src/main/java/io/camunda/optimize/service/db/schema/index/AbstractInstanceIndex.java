@@ -7,25 +7,16 @@
  */
 package io.camunda.optimize.service.db.schema.index;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.FORMAT_PROPERTY_TYPE;
 import static io.camunda.optimize.service.db.DatabaseConstants.IGNORE_ABOVE_CHAR_LIMIT;
-import static io.camunda.optimize.service.db.DatabaseConstants.IGNORE_ABOVE_SETTING;
-import static io.camunda.optimize.service.db.DatabaseConstants.IGNORE_MALFORMED;
 import static io.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NGRAM;
 import static io.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NORMALIZER;
-import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_DATE;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_DOUBLE;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_LONG;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_TEXT;
 
+import co.elastic.clients.elasticsearch._types.mapping.KeywordProperty;
+import co.elastic.clients.elasticsearch._types.mapping.Property;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import io.camunda.optimize.service.db.schema.DynamicIndexable;
-import java.io.IOException;
 import lombok.Getter;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class AbstractInstanceIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder>
     implements DynamicIndexable {
@@ -48,37 +39,21 @@ public abstract class AbstractInstanceIndex<TBuilder> extends DefaultIndexMappin
 
   public abstract String getTenantIdFieldName();
 
-  protected XContentBuilder addValueMultifields(XContentBuilder builder) throws IOException {
-    // @formatter:off
+  protected KeywordProperty.Builder addValueMultifields(KeywordProperty.Builder builder) {
     return builder
-        // search relevant fields
-        .startObject(N_GRAM_FIELD)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
-        .field("analyzer", LOWERCASE_NGRAM)
-        .endObject()
-        .startObject(LOWERCASE_FIELD)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .field("normalizer", LOWERCASE_NORMALIZER)
-        .field(IGNORE_ABOVE_SETTING, IGNORE_ABOVE_CHAR_LIMIT)
-        .endObject()
-        // multi type fields
-        .startObject(MULTIVALUE_FIELD_DATE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
-        .field(IGNORE_MALFORMED, true)
-        .endObject()
-        .startObject(MULTIVALUE_FIELD_LONG)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
-        .field(IGNORE_MALFORMED, true)
-        .endObject()
-        .startObject(MULTIVALUE_FIELD_DOUBLE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DOUBLE)
-        .field(IGNORE_MALFORMED, true)
-        .endObject()
-    // boolean is not supported to be ignored if malformed, see
-    // https://github.com/elastic/elasticsearch/pull/29522
-    // it is enough tough to just filter on the default string value with true/false at query time
-    ;
-    // @formatter:on
+        .fields(N_GRAM_FIELD, Property.of(p -> p.text(t -> t.analyzer(LOWERCASE_NGRAM))))
+        .fields(
+            LOWERCASE_FIELD,
+            Property.of(
+                p ->
+                    p.keyword(
+                        t ->
+                            t.normalizer(LOWERCASE_NORMALIZER)
+                                .ignoreAbove(IGNORE_ABOVE_CHAR_LIMIT))))
+        .fields(
+            MULTIVALUE_FIELD_DATE,
+            Property.of(p -> p.date(t -> t.format(OPTIMIZE_DATE_FORMAT).ignoreMalformed(true))))
+        .fields(MULTIVALUE_FIELD_LONG, Property.of(p -> p.long_(t -> t.ignoreMalformed(true))))
+        .fields(MULTIVALUE_FIELD_DOUBLE, Property.of(p -> p.double_(t -> t.ignoreMalformed(true))));
   }
 }

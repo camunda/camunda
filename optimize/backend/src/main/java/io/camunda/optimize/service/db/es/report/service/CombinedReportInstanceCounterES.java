@@ -10,6 +10,7 @@ package io.camunda.optimize.service.db.es.report.service;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -25,8 +26,6 @@ import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -34,15 +33,17 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
-public class CombinedReportInstanceCounterES extends CombinedReportInstanceCounter<QueryBuilder> {
+public class CombinedReportInstanceCounterES
+    extends CombinedReportInstanceCounter<BoolQuery.Builder> {
   private final OptimizeElasticsearchClient esClient;
   private final ExecutionPlanExtractor executionPlanExtractor;
   private final ProcessExecutionPlanInterpreterFacadeES interpreter;
 
   @Override
   public long count(List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions) {
-    final List<QueryBuilder> baseQueries = getAllBaseQueries(singleReportDefinitions);
-    final QueryBuilder instanceCountRequestQuery = createInstanceCountRequestQueries(baseQueries);
+    final List<BoolQuery.Builder> baseQueries = getAllBaseQueries(singleReportDefinitions);
+    final BoolQuery.Builder instanceCountRequestQuery =
+        createInstanceCountRequestQueries(baseQueries);
     try {
       return esClient.count(new String[] {PROCESS_INSTANCE_MULTI_ALIAS}, instanceCountRequestQuery);
     } catch (IOException e) {
@@ -70,15 +71,17 @@ public class CombinedReportInstanceCounterES extends CombinedReportInstanceCount
   }
 
   @Override
-  protected QueryBuilder getBaseQuery(
+  protected BoolQuery.Builder getBaseQuery(
       ProcessExecutionPlan plan,
       ReportEvaluationContext<SingleProcessReportDefinitionRequestDto> context) {
-    return interpreter.getBaseQuery(ExecutionContextFactory.buildExecutionContext(plan, context));
+    return interpreter.getBaseQueryBuilder(
+        ExecutionContextFactory.buildExecutionContext(plan, context));
   }
 
-  private QueryBuilder createInstanceCountRequestQueries(final List<QueryBuilder> baseQueries) {
-    final BoolQueryBuilder baseQuery = new BoolQueryBuilder();
-    baseQueries.forEach(baseQuery::should);
+  private BoolQuery.Builder createInstanceCountRequestQueries(
+      final List<BoolQuery.Builder> baseQueriesBuilders) {
+    final BoolQuery.Builder baseQuery = new BoolQuery.Builder();
+    baseQueriesBuilders.forEach(q -> baseQuery.should(s -> s.bool(q.build())));
     return baseQuery;
   }
 }

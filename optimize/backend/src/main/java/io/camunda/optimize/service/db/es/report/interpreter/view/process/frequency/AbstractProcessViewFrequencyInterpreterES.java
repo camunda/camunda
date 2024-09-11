@@ -8,43 +8,41 @@
 package io.camunda.optimize.service.db.es.report.interpreter.view.process.frequency;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.FilterAggregate;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.view.process.frequency.ProcessViewFrequencyInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
-import java.util.Collections;
-import java.util.List;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
+import java.util.Map;
 
 public abstract class AbstractProcessViewFrequencyInterpreterES
     implements ProcessViewInterpreterES, ProcessViewFrequencyInterpreter {
 
   @Override
-  public ViewResult createEmptyResult(
+  public CompositeCommandResult.ViewResult createEmptyResult(
       ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return createViewResult(null);
   }
 
   @Override
-  public List<AggregationBuilder> createAggregations(
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    return Collections.singletonList(filter(FREQUENCY_AGGREGATION, QueryBuilders.matchAllQuery()));
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    Aggregation.Builder builder = new Aggregation.Builder();
+    return Map.of(FREQUENCY_AGGREGATION, builder.filter(f -> f.matchAll(m -> m)));
   }
 
   @Override
-  public ViewResult retrieveResult(
-      SearchResponse response,
-      Aggregations aggregations,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final Filter count = aggregations.get(FREQUENCY_AGGREGATION);
-    return createViewResult((double) count.getDocCount());
+  public CompositeCommandResult.ViewResult retrieveResult(
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggs,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    final FilterAggregate count = aggs.get(FREQUENCY_AGGREGATION).filter();
+    return createViewResult((double) count.docCount());
   }
 }

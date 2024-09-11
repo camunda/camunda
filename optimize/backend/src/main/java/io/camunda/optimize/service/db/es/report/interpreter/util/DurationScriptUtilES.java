@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.command.util;
+package io.camunda.optimize.service.db.es.report.interpreter.util;
 
 import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_END_DATE;
@@ -16,13 +16,13 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.U
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
 
+import co.elastic.clients.elasticsearch._types.Script;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.elasticsearch.script.Script;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DurationScriptUtilES {

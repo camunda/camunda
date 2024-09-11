@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.plan.process;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.report.ExecutionContext;
@@ -18,7 +19,6 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -51,8 +51,8 @@ public class ProcessExecutionPlanInterpreterFacadeES
   }
 
   @Override
-  public BoolQueryBuilder getBaseQuery(
+  public BoolQuery.Builder getBaseQueryBuilder(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    return interpreter(context.getPlan()).getBaseQuery(context);
+    return interpreter(context.getPlan()).getBaseQueryBuilder(context);
   }
 }

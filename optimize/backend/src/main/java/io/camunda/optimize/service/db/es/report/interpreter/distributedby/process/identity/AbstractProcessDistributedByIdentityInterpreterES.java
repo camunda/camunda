@@ -11,6 +11,16 @@ import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQu
 import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.FilterAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
+import co.elastic.clients.elasticsearch._types.aggregations.TermsAggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
+import co.elastic.clients.util.NamedValue;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.IdentityType;
 import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
@@ -27,23 +37,12 @@ import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.BucketOrder;
-import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 
 public abstract class AbstractProcessDistributedByIdentityInterpreterES
     extends AbstractProcessDistributedByInterpreterES {
@@ -66,56 +65,61 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
   protected abstract IdentityType getIdentityType();
 
   @Override
-  public List<AggregationBuilder> createAggregations(
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final QueryBuilder baseQueryBuilder) {
-    final TermsAggregationBuilder identityTermsAggregation =
-        AggregationBuilders.terms(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION)
-            .size(
-                getConfigurationService()
-                    .getElasticSearchConfiguration()
-                    .getAggregationBucketLimit())
-            .order(BucketOrder.key(true))
-            .field(FLOW_NODE_INSTANCES + "." + getIdentityField())
-            .missing(DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
+      final BoolQuery baseQuery) {
+    TermsAggregation.Builder builder = new TermsAggregation.Builder();
+    builder
+        .size(getConfigurationService().getElasticSearchConfiguration().getAggregationBucketLimit())
+        .order(NamedValue.of("_key", SortOrder.Asc))
+        .field(FLOW_NODE_INSTANCES + "." + getIdentityField())
+        .missing(DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
+    Aggregation.Builder.ContainerBuilder identityTermsAggregation =
+        new Aggregation.Builder().terms(builder.build());
     getViewInterpreter()
         .createAggregations(context)
-        .forEach(identityTermsAggregation::subAggregation);
-    return Collections.singletonList(
-        AggregationBuilders.filter(
-                // it's possible to do report evaluations over several definitions versions.
-                // However, only the most recent
-                // one is used to decide which user tasks should be taken into account. To make sure
-                // that we only fetch
-                // assignees related to this definition version we filter for userTasks that only
-                // occur in the latest version.
-                FILTERED_USER_TASKS_AGGREGATION,
-                createInclusiveFlowNodeIdFilterQuery(
-                    context.getReportData(),
-                    getUserTaskIds(context.getReportData()),
-                    context.getFilterContext(),
-                    getDefinitionService()))
-            .subAggregation(identityTermsAggregation));
+        .forEach((k, v) -> identityTermsAggregation.aggregations(k, v.build()));
+    // it's possible to do report evaluations over several definitions versions.
+    // However, only the most recent
+    // one is used to decide which user tasks should be taken into account. To make sure
+    // that we only fetch
+    // assignees related to this definition version we filter for userTasks that only
+    // occur in the latest version.
+    Aggregation.Builder.ContainerBuilder ag =
+        new Aggregation.Builder()
+            .filter(
+                f ->
+                    f.bool(
+                        createInclusiveFlowNodeIdFilterQuery(
+                                context.getReportData(),
+                                getUserTaskIds(context.getReportData()),
+                                context.getFilterContext(),
+                                getDefinitionService())
+                            .build()))
+            .aggregations(
+                DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION, identityTermsAggregation.build());
+    return Map.of(FILTERED_USER_TASKS_AGGREGATION, ag);
   }
 
   @Override
   public List<CompositeCommandResult.DistributedByResult> retrieveResult(
-      final SearchResponse response,
-      final Aggregations aggregations,
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggregations,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final Filter onlyIdentitiesRelatedToTheLatestDefinitionVersion =
-        aggregations.get(FILTERED_USER_TASKS_AGGREGATION);
-    final Terms byIdentityAggregations =
+    final FilterAggregate onlyIdentitiesRelatedToTheLatestDefinitionVersion =
+        aggregations.get(FILTERED_USER_TASKS_AGGREGATION).filter();
+    final StringTermsAggregate byIdentityAggregations =
         onlyIdentitiesRelatedToTheLatestDefinitionVersion
-            .getAggregations()
-            .get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION);
+            .aggregations()
+            .get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION)
+            .sterms();
     List<CompositeCommandResult.DistributedByResult> distributedByIdentity = new ArrayList<>();
 
-    for (Terms.Bucket identityBucket : byIdentityAggregations.getBuckets()) {
+    for (StringTermsBucket identityBucket : byIdentityAggregations.buckets().array()) {
       CompositeCommandResult.ViewResult viewResult =
-          getViewInterpreter().retrieveResult(response, identityBucket.getAggregations(), context);
+          getViewInterpreter().retrieveResult(response, identityBucket.aggregations(), context);
 
-      final String key = identityBucket.getKeyAsString();
+      final String key = identityBucket.key().stringValue();
       if (DISTRIBUTE_BY_IDENTITY_MISSING_KEY.equals(key)) {
         for (CompositeCommandResult.ViewMeasure viewMeasure : viewResult.getViewMeasures()) {
           final AggregationDto aggTypeDto = viewMeasure.getAggregationType();
@@ -139,16 +143,17 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
   @Override
   public void enrichContextWithAllExpectedDistributedByKeys(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final Aggregations aggregations) {
-    final Filter onlyIdentitiesRelatedToTheLatestDefinitionVersion =
-        aggregations.get(FILTERED_USER_TASKS_AGGREGATION);
-    final Terms allIdentityAggregation =
+      final Map<String, Aggregate> aggregations) {
+    final FilterAggregate onlyIdentitiesRelatedToTheLatestDefinitionVersion =
+        aggregations.get(FILTERED_USER_TASKS_AGGREGATION).filter();
+    final StringTermsAggregate allIdentityAggregation =
         onlyIdentitiesRelatedToTheLatestDefinitionVersion
-            .getAggregations()
-            .get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION);
+            .aggregations()
+            .get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION)
+            .sterms();
     final Map<String, String> allDistributedByIdentityKeys =
-        allIdentityAggregation.getBuckets().stream()
-            .map(MultiBucketsAggregation.Bucket::getKeyAsString)
+        allIdentityAggregation.buckets().array().stream()
+            .map(v -> v.key().stringValue())
             .collect(Collectors.toMap(Function.identity(), this::resolveIdentityName));
     context.setAllDistributedByKeysAndLabels(allDistributedByIdentityKeys);
   }
@@ -168,7 +173,7 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .map(ProcessDefinitionOptimizeDto.class::cast)
-                .toList())
+                .collect(Collectors.toList()))
         .keySet();
   }
 

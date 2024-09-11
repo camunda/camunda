@@ -7,6 +7,11 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.groupby;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.DistributedByInterpreterES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.ViewInterpreterES;
@@ -14,28 +19,24 @@ import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.report.plan.ExecutionPlan;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
-import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 public abstract class AbstractGroupByInterpreterES<
     DATA extends SingleReportDataDto, PLAN extends ExecutionPlan> {
   public void adjustSearchRequest(
-      final SearchRequest searchRequest,
-      final BoolQueryBuilder baseQuery,
+      final SearchRequest.Builder searchRequestBuilder,
+      final BoolQuery.Builder baseQueryBuilder,
       final ExecutionContext<DATA, PLAN> context) {
-    getDistributedByInterpreter().adjustSearchRequest(searchRequest, baseQuery, context);
+    getDistributedByInterpreter()
+        .adjustSearchRequest(searchRequestBuilder, baseQueryBuilder, context);
   }
 
-  public abstract List<AggregationBuilder> createAggregation(
-      final SearchSourceBuilder searchSourceBuilder, final ExecutionContext<DATA, PLAN> context);
+  public abstract Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
+      final BoolQuery boolQuery, final ExecutionContext<DATA, PLAN> context);
 
   public CompositeCommandResult retrieveQueryResult(
-      final SearchResponse response, final ExecutionContext<DATA, PLAN> executionContext) {
+      final ResponseBody<?> response, final ExecutionContext<DATA, PLAN> executionContext) {
     final CompositeCommandResult compositeCommandResult =
         new CompositeCommandResult(
             executionContext.getReportData(),
@@ -57,7 +58,7 @@ public abstract class AbstractGroupByInterpreterES<
    * @return min and max value range for the value grouped on by
    */
   public Optional<MinMaxStatDto> getMinMaxStats(
-      final ExecutionContext<DATA, PLAN> context, final BoolQueryBuilder baseQuery) {
+      final ExecutionContext<DATA, PLAN> context, final Query baseQuery) {
     return Optional.empty();
   }
 
@@ -65,7 +66,7 @@ public abstract class AbstractGroupByInterpreterES<
 
   protected abstract void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
-      final SearchResponse response,
+      final ResponseBody<?> response,
       final ExecutionContext<DATA, PLAN> executionContext);
 
   protected abstract DistributedByInterpreterES<DATA, PLAN> getDistributedByInterpreter();

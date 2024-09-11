@@ -10,7 +10,7 @@ package io.camunda.optimize.upgrade.es;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static io.camunda.optimize.upgrade.db.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
@@ -19,7 +19,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.CountRequest;
+import co.elastic.clients.elasticsearch.core.ReindexRequest;
+import co.elastic.clients.elasticsearch.tasks.ListRequest;
+import co.elastic.clients.elasticsearch.tasks.ListResponse;
+import co.elastic.clients.elasticsearch.tasks.TaskInfo;
+import co.elastic.clients.elasticsearch.tasks.TaskInfos;
 import com.google.common.collect.ImmutableMap;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
@@ -31,18 +37,11 @@ import io.github.netmikey.logunit.api.LogCapturer;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
-import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
-import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksResponse;
 import org.elasticsearch.client.Response;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.index.reindex.ReindexRequest;
-import org.elasticsearch.tasks.TaskId;
-import org.elasticsearch.tasks.TaskInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,13 +82,10 @@ public class SchemaUpgradeClientESReindexTest {
     final String index2 = "index2";
     final String taskId = "12345:67890";
 
-    mockCountResponseFromIndex(index1, 1L);
-    mockCountResponseFromIndex(index2, 0L);
-    when(elasticsearchClient.getTaskList(any()))
-        .thenReturn(
-            new ListTasksResponse(
-                Collections.emptyList(), Collections.emptyList(), Collections.emptyList()));
-    when(elasticsearchClient.submitReindexTask(any(ReindexRequest.class)).getTask())
+    mockCountResponseFromIndex(false);
+    when(elasticsearchClient.esWithTransportOptions()).thenReturn(mock(ElasticsearchClient.class));
+    when(elasticsearchClient.getTaskList(any())).thenReturn(ListResponse.of(l -> l));
+    when(elasticsearchClient.submitReindexTask(any(ReindexRequest.class)).task())
         .thenReturn(taskId);
 
     // the first task response is in progress, the second is successfully complete
@@ -109,17 +105,15 @@ public class SchemaUpgradeClientESReindexTest {
     // given
     final String index1 = "index1";
     final String index2 = "index2";
-    final String nodeId = "abc";
     final int numericTaskId = 12345;
-    final String taskId = nodeId + ":" + numericTaskId;
+    final String taskId = String.valueOf(numericTaskId);
 
-    mockCountResponseFromIndex(index1, 1L);
-    mockCountResponseFromIndex(index2, 0L);
+    mockCountResponseFromIndex(false);
     final TaskInfo taskInfo = mock(TaskInfo.class);
-    when(elasticsearchClient.getTaskList(any(ListTasksRequest.class)).getTasks())
-        .thenReturn(ImmutableList.of(taskInfo));
-    when(taskInfo.getTaskId()).thenReturn(new TaskId(nodeId, numericTaskId));
-    when(taskInfo.getDescription()).thenReturn(createReindexTaskDescription(index1, index2));
+    when(elasticsearchClient.getTaskList(any(ListRequest.class)).tasks())
+        .thenReturn(TaskInfos.of(t -> t.flat(List.of(taskInfo))));
+    when(taskInfo.id()).thenReturn(Long.valueOf(numericTaskId));
+    when(taskInfo.description()).thenReturn(createReindexTaskDescription(index1, index2));
 
     mockReindexStatus(taskId, new TaskResponse.Status(20L, 3L, 3L, 4L));
 
@@ -142,8 +136,7 @@ public class SchemaUpgradeClientESReindexTest {
     final String index1 = "index1";
     final String index2 = "index2";
 
-    mockCountResponseFromIndex(index1, 1L);
-    mockCountResponseFromIndex(index2, 1L);
+    mockCountResponseFromIndex(true);
 
     // when
     assertThatCode(() -> underTest.reindex(index1, index2))
@@ -167,13 +160,9 @@ public class SchemaUpgradeClientESReindexTest {
     final String index1 = "index1";
     final String index2 = "index2";
 
-    mockCountResponseFromIndex(index1, 1L);
-    mockCountResponseFromIndex(index2, 0L);
-    when(elasticsearchClient.getTaskList(any()))
-        .thenReturn(
-            new ListTasksResponse(
-                Collections.emptyList(), Collections.emptyList(), Collections.emptyList()));
-    given(elasticsearchClient.submitReindexTask(any(ReindexRequest.class)).getTask())
+    mockCountResponseFromIndex(false);
+    when(elasticsearchClient.getTaskList(any())).thenReturn(ListResponse.of(r -> r));
+    given(elasticsearchClient.submitReindexTask(any(ReindexRequest.class)).task())
         .willAnswer(
             invocation -> {
               throw new IOException();
@@ -193,11 +182,11 @@ public class SchemaUpgradeClientESReindexTest {
     // given
     final String index1 = "index1";
     final String index2 = "index2";
-    final String taskId = "12345:67890";
+    final String node = "12345";
+    final String taskId = "67890";
 
-    mockCountResponseFromIndex(index1, 1L);
-    mockCountResponseFromIndex(index2, 0L);
-    mockListTaskInfoResponseContainingSourceAndTarget(taskId, index1, index2);
+    mockCountResponseFromIndex(false);
+    mockListTaskInfoResponseContainingSourceAndTarget(taskId, node, index1, index2);
 
     // the task status response contains an error when checking for status
     final TaskResponse taskResponseWithError =
@@ -218,8 +207,8 @@ public class SchemaUpgradeClientESReindexTest {
     whenReindexStatusRequest(taskId).thenReturn(taskStatusResponse);
 
     // when
-    final String newReindexTaskId = "09876:54321";
-    when(elasticsearchClient.submitReindexTask(any(ReindexRequest.class)).getTask())
+    final String newReindexTaskId = "54321";
+    when(elasticsearchClient.submitReindexTask(any(ReindexRequest.class)).task())
         .thenReturn(newReindexTaskId);
     mockReindexStatus(newReindexTaskId, new TaskResponse.Status(20L, 3L, 3L, 4L));
     assertThatCode(() -> underTest.reindex(index1, index2))
@@ -256,23 +245,23 @@ public class SchemaUpgradeClientESReindexTest {
   }
 
   private void mockListTaskInfoResponseContainingSourceAndTarget(
-      final String taskId, final String sourceIndex, final String targetIndex) throws IOException {
-    when(taskInfo.getDescription())
-        .thenReturn(createReindexTaskDescription(sourceIndex, targetIndex));
-    when(taskInfo.getTaskId()).thenReturn(new TaskId(taskId));
+      final String taskId, String node, final String sourceIndex, final String targetIndex)
+      throws IOException {
+    when(taskInfo.description()).thenReturn(createReindexTaskDescription(sourceIndex, targetIndex));
+    when(taskInfo.id()).thenReturn(Long.valueOf(taskId));
     when(elasticsearchClient.getTaskList(any()))
-        .thenReturn(
-            new ListTasksResponse(
-                List.of(taskInfo), Collections.emptyList(), Collections.emptyList()));
+        .thenReturn(ListResponse.of(l -> l.tasks(TaskInfos.of(t -> t.flat(List.of(taskInfo))))));
   }
 
   private String createReindexTaskDescription(
       final String sourceIndexName, final String targetIndexName) {
-    return new ReindexRequest()
-        .setSourceIndices(sourceIndexName)
-        .setDestIndex(targetIndexName)
-        .setRefresh(true)
-        .getDescription();
+    return ReindexRequest.of(
+            r ->
+                r.source(s -> s.index(sourceIndexName))
+                    .dest(d -> d.index(targetIndexName))
+                    .waitForCompletion(false)
+                    .refresh(true))
+        .toString();
   }
 
   @SneakyThrows
@@ -287,8 +276,16 @@ public class SchemaUpgradeClientESReindexTest {
   }
 
   @SneakyThrows
-  private void mockCountResponseFromIndex(final String indexName, final long count) {
-    when(elasticsearchClient.countWithoutPrefix(new CountRequest(indexName))).thenReturn(count);
+  private void mockCountResponseFromIndex(boolean isDocCountEquals) {
+    when(elasticsearchClient.countWithoutPrefix(any(CountRequest.class)))
+        .thenAnswer(
+            a -> {
+              if (isDocCountEquals) {
+                return 1L;
+              } else {
+                return ((CountRequest) a.getArguments()[0]).index().get(0).contains("1") ? 1L : 0L;
+              }
+            });
   }
 
   private Response createEsResponse(final TaskResponse taskResponse) throws IOException {

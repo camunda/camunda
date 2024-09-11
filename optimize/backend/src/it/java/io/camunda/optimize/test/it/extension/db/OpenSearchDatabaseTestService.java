@@ -19,6 +19,7 @@ import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInsta
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static io.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
 
+import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
 import com.google.common.collect.Iterables;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
@@ -73,8 +74,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.common.Strings;
-import org.elasticsearch.xcontent.XContentBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.mockserver.integration.ClientAndServer;
 import org.opensearch.client.json.JsonData;
@@ -322,7 +321,8 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public void initSchema(
-      List<IndexMappingCreator<XContentBuilder>> mappingCreators,
+      List<IndexMappingCreator<co.elastic.clients.elasticsearch.indices.IndexSettings.Builder>>
+          mappingCreators,
       DatabaseMetadataService metadataService) {
     OpenSearchSchemaManager schemaManager =
         new OpenSearchSchemaManager(
@@ -704,10 +704,10 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
       aliasData.put(entry.getKey(), new Alias.Builder().isWriteIndex(entry.getValue()).build());
     }
 
-    indexMapping.setDynamic("false");
+    indexMapping.setDynamic(DynamicMapping.False);
     final CreateIndexRequest request =
         createIndexFromJson(
-            Strings.toString(indexMapping.getSource()), indexName, aliasData, indexSettings);
+            indexMapping.getSource().toString(), indexName, aliasData, indexSettings);
     final boolean created =
         getOptimizeOpenSearchClient().getRichOpenSearchClient().index().createIndex(request);
     if (!created) {

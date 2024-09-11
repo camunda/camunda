@@ -7,9 +7,9 @@
  */
 package io.camunda.optimize.service.db.schema;
 
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public interface IndexMappingCreator<TBuilder> {
 
@@ -29,8 +29,8 @@ public interface IndexMappingCreator<TBuilder> {
 
   int getVersion();
 
-  XContentBuilder getSource();
+  TypeMapping getSource();
 
-  TBuilder getStaticSettings(TBuilder xContentBuilder, ConfigurationService configurationService)
+  TBuilder getStaticSettings(TBuilder builder, ConfigurationService configurationService)
       throws IOException;
 }

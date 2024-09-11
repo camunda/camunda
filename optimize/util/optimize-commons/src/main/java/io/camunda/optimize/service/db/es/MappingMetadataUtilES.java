@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.es;
 
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
@@ -15,14 +16,13 @@ import io.camunda.optimize.service.db.schema.MappingMetadataUtil;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Collection;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.xcontent.XContentBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 @Conditional(ElasticSearchCondition.class)
-public class MappingMetadataUtilES extends MappingMetadataUtil<XContentBuilder> {
+public class MappingMetadataUtilES extends MappingMetadataUtil<IndexSettings.Builder> {
 
   public MappingMetadataUtilES(OptimizeElasticsearchClient dbClient) {
     super(dbClient);
@@ -39,7 +39,8 @@ public class MappingMetadataUtilES extends MappingMetadataUtil<XContentBuilder> 
   }
 
   @Override
-  protected Collection<? extends IndexMappingCreator<XContentBuilder>> getAllNonDynamicMappings() {
+  protected Collection<? extends IndexMappingCreator<IndexSettings.Builder>>
+      getAllNonDynamicMappings() {
     return ElasticSearchSchemaManager.getAllNonDynamicMappings();
   }
 }

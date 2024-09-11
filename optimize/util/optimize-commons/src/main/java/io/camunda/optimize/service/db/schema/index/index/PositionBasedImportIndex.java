@@ -7,21 +7,14 @@
  */
 package io.camunda.optimize.service.db.schema.index.index;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.DYNAMIC_PROPERTY_TYPE;
-import static io.camunda.optimize.service.db.DatabaseConstants.FORMAT_PROPERTY_TYPE;
-import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.DatabaseConstants.POSITION_BASED_IMPORT_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_BOOLEAN;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_DATE;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_OBJECT;
 
+import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import io.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class PositionBasedImportIndex<TBuilder>
     extends DefaultIndexMappingCreator<TBuilder> {
@@ -58,33 +51,16 @@ public abstract class PositionBasedImportIndex<TBuilder>
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return xContentBuilder
-        .startObject(DATA_SOURCE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-        .field(DYNAMIC_PROPERTY_TYPE, true)
-        .endObject()
-        .startObject(DB_TYPE_INDEX_REFERS_TO)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(POSITION_OF_LAST_ENTITY)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(SEQUENCE_OF_LAST_ENTITY)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(HAS_SEEN_SEQUENCE_FIELD)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
-        .endObject()
-        .startObject(TIMESTAMP_OF_LAST_ENTITY)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
-        .endObject()
-        .startObject(LAST_IMPORT_EXECUTION_TIMESTAMP)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
-        .endObject();
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+
+    return builder
+        .properties(DATA_SOURCE, p -> p.object(o -> o.dynamic(DynamicMapping.True)))
+        .properties(DB_TYPE_INDEX_REFERS_TO, p -> p.keyword(o -> o))
+        .properties(POSITION_OF_LAST_ENTITY, p -> p.keyword(o -> o))
+        .properties(SEQUENCE_OF_LAST_ENTITY, p -> p.keyword(o -> o))
+        .properties(HAS_SEEN_SEQUENCE_FIELD, p -> p.boolean_(o -> o))
+        .properties(TIMESTAMP_OF_LAST_ENTITY, p -> p.date(o -> o.format(OPTIMIZE_DATE_FORMAT)))
+        .properties(
+            LAST_IMPORT_EXECUTION_TIMESTAMP, p -> p.date(o -> o.format(OPTIMIZE_DATE_FORMAT)));
   }
 }

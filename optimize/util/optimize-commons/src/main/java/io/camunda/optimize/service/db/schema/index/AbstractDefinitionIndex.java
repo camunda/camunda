@@ -7,10 +7,11 @@
  */
 package io.camunda.optimize.service.db.schema.index;
 
+import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
+import co.elastic.clients.elasticsearch._types.mapping.Property;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class AbstractDefinitionIndex<TBuilder>
     extends DefaultIndexMappingCreator<TBuilder> {
@@ -25,34 +26,15 @@ public abstract class AbstractDefinitionIndex<TBuilder>
   public static final String DEFINITION_DELETED = DefinitionOptimizeResponseDto.Fields.deleted;
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return xContentBuilder
-        .startObject(DEFINITION_ID)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(DEFINITION_KEY)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(DEFINITION_VERSION)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(DEFINITION_VERSION_TAG)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(DATA_SOURCE)
-        .field("type", "object")
-        .field("dynamic", true)
-        .endObject()
-        .startObject(DEFINITION_TENANT_ID)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(DEFINITION_NAME)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(DEFINITION_DELETED)
-        .field("type", "boolean")
-        .endObject();
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+    return builder
+        .properties(DEFINITION_ID, Property.of(p -> p.keyword(k -> k)))
+        .properties(DEFINITION_KEY, Property.of(p -> p.keyword(k -> k)))
+        .properties(DEFINITION_VERSION, Property.of(p -> p.keyword(k -> k)))
+        .properties(DEFINITION_VERSION_TAG, Property.of(p -> p.keyword(k -> k)))
+        .properties(DATA_SOURCE, Property.of(p -> p.object(o -> o.dynamic(DynamicMapping.True))))
+        .properties(DEFINITION_TENANT_ID, Property.of(p -> p.keyword(k -> k)))
+        .properties(DEFINITION_NAME, Property.of(p -> p.keyword(k -> k)))
+        .properties(DEFINITION_DELETED, Property.of(p -> p.boolean_(k -> k)));
   }
 }

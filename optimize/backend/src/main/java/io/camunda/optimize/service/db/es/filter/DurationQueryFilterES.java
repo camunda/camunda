@@ -7,17 +7,14 @@
  */
 package io.camunda.optimize.service.db.es.filter;
 
-import static io.camunda.optimize.service.db.es.report.command.util.DurationScriptUtilES.getDurationFilterScript;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.DurationScriptUtilES.getDurationFilterScript;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import java.util.List;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.ScriptQueryBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -25,22 +22,21 @@ public class DurationQueryFilterES implements QueryFilterES<DurationFilterDataDt
 
   @Override
   public void addFilters(
-      final BoolQueryBuilder query,
+      final BoolQuery.Builder query,
       final List<DurationFilterDataDto> durations,
       final FilterContext filterContext) {
     if (durations != null && !durations.isEmpty()) {
-      final List<QueryBuilder> filters = query.filter();
-
       for (final DurationFilterDataDto durationDto : durations) {
-        final ScriptQueryBuilder scriptQueryBuilder =
-            QueryBuilders.scriptQuery(
-                getDurationFilterScript(
-                    LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-                    ProcessInstanceIndex.DURATION,
-                    ProcessInstanceIndex.START_DATE,
-                    durationDto));
-
-        filters.add(scriptQueryBuilder);
+        query.filter(
+            f ->
+                f.script(
+                    s ->
+                        s.script(
+                            getDurationFilterScript(
+                                LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
+                                ProcessInstanceIndex.DURATION,
+                                ProcessInstanceIndex.START_DATE,
+                                durationDto))));
       }
     }
   }

@@ -7,19 +7,19 @@
  */
 package io.camunda.optimize.service.db.es.report.context;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import io.camunda.optimize.service.db.es.filter.DecisionQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.report.context.DateAggregationContext;
-import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
 
 @SuperBuilder
 @Getter
 public class DateAggregationContextES extends DateAggregationContext {
-  @NonNull private final List<AggregationBuilder> subAggregations;
+  @NonNull private final Map<String, Aggregation.Builder.ContainerBuilder> subAggregations;
   private final DecisionQueryFilterEnhancerES decisionQueryFilterEnhancer;
   private final ProcessQueryFilterEnhancerES processQueryFilterEnhancer;
 }

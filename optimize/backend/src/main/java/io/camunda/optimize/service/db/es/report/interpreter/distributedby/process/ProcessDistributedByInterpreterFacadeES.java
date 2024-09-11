@@ -7,6 +7,11 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.distributedby.process;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.AbstractInterpreterFacade;
@@ -15,13 +20,8 @@ import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -42,17 +42,17 @@ public class ProcessDistributedByInterpreterFacadeES
   }
 
   @Override
-  public List<AggregationBuilder> createAggregations(
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final QueryBuilder baseQueryBuilder) {
+      final BoolQuery baseQueryBuilder) {
     return interpreter(context.getPlan().getDistributedBy())
         .createAggregations(context, baseQueryBuilder);
   }
 
   @Override
   public List<DistributedByResult> retrieveResult(
-      SearchResponse response,
-      Aggregations aggregations,
+      ResponseBody<?> response,
+      Map<String, Aggregate> aggregations,
       ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return interpreter(context.getPlan().getDistributedBy())
         .retrieveResult(response, aggregations, context);
@@ -66,17 +66,17 @@ public class ProcessDistributedByInterpreterFacadeES
 
   @Override
   public void adjustSearchRequest(
-      SearchRequest searchRequest,
-      BoolQueryBuilder baseQuery,
+      SearchRequest.Builder searchRequestBuilder,
+      BoolQuery.Builder baseQueryBuilder,
       ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     interpreter(context.getPlan().getDistributedBy())
-        .adjustSearchRequest(searchRequest, baseQuery, context);
+        .adjustSearchRequest(searchRequestBuilder, baseQueryBuilder, context);
   }
 
   @Override
   public void enrichContextWithAllExpectedDistributedByKeys(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final Aggregations aggregations) {
+      final Map<String, Aggregate> aggregations) {
     interpreter(context.getPlan().getDistributedBy())
         .enrichContextWithAllExpectedDistributedByKeys(context, aggregations);
   }

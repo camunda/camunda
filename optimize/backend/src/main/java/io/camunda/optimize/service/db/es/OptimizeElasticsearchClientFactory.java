@@ -10,20 +10,19 @@ package io.camunda.optimize.service.db.es;
 import static io.camunda.optimize.service.util.DatabaseVersionChecker.checkESVersionSupport;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.transport.TransportOptions;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
-import io.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
+import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import io.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder;
 import java.io.IOException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.context.annotation.Conditional;
 
 @Slf4j
@@ -38,16 +37,21 @@ public class OptimizeElasticsearchClientFactory {
       final BackoffCalculator backoffCalculator)
       throws IOException {
     log.info("Initializing Elasticsearch rest client...");
-    final RequestOptionsProvider requestOptionsProvider =
-        new RequestOptionsProvider(configurationService);
-    final RestHighLevelClient esClient =
-        ElasticsearchHighLevelRestClientBuilder.build(configurationService);
-    waitForElasticsearch(esClient, backoffCalculator, requestOptionsProvider.getRequestOptions());
+    final TransportOptionsProvider transportOptionsProvider =
+        new TransportOptionsProvider(configurationService);
+    ElasticsearchClient build =
+        ElasticsearchClientBuilder.build(configurationService, OPTIMIZE_MAPPER);
+
+    waitForElasticsearch(build, backoffCalculator, transportOptionsProvider.getTransportOptions());
     log.info("Elasticsearch client has successfully been started");
 
     final OptimizeElasticsearchClient prefixedClient =
         new OptimizeElasticsearchClient(
-            esClient, optimizeIndexNameService, requestOptionsProvider, OPTIMIZE_MAPPER);
+            ElasticsearchClientBuilder.restClient(configurationService),
+            OPTIMIZE_MAPPER,
+            build,
+            optimizeIndexNameService,
+            transportOptionsProvider);
 
     elasticSearchSchemaManager.validateDatabaseMetadata(prefixedClient);
     elasticSearchSchemaManager.initializeSchema(prefixedClient);
@@ -55,19 +59,16 @@ public class OptimizeElasticsearchClientFactory {
   }
 
   private static void waitForElasticsearch(
-      final RestHighLevelClient esClient,
+      final ElasticsearchClient esClient,
       final BackoffCalculator backoffCalculator,
-      final RequestOptions requestOptions)
+      final TransportOptions requestOptions)
       throws IOException {
     boolean isConnected = false;
     while (!isConnected) {
       try {
         isConnected = getNumberOfClusterNodes(esClient, requestOptions) > 0;
       } catch (final Exception e) {
-        log.error(
-            "Can't connect to any Elasticsearch node {}. Please check the connection!",
-            esClient.getLowLevelClient().getNodes(),
-            e);
+        log.error("Can't connect to any Elasticsearch node. Please check the connection!", e);
       } finally {
         if (!isConnected) {
           final long sleepTime = backoffCalculator.calculateSleepTime();
@@ -86,7 +87,8 @@ public class OptimizeElasticsearchClientFactory {
   }
 
   private static int getNumberOfClusterNodes(
-      final RestHighLevelClient esClient, final RequestOptions requestOptions) throws IOException {
-    return esClient.cluster().health(new ClusterHealthRequest(), requestOptions).getNumberOfNodes();
+      final ElasticsearchClient esClient, final TransportOptions requestOptions)
+      throws IOException {
+    return esClient.withTransportOptions(requestOptions).cluster().health(c -> c).numberOfNodes();
   }
 }

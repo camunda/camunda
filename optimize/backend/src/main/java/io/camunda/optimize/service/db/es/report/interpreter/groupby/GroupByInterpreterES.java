@@ -7,26 +7,25 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.groupby;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder.ContainerBuilder;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.ExecutionPlan;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
-import java.util.List;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
+import java.util.Map;
 
 public interface GroupByInterpreterES<D extends SingleReportDataDto, P extends ExecutionPlan> {
   void adjustSearchRequest(
-      final SearchRequest searchRequest,
-      final BoolQueryBuilder baseQuery,
+      final SearchRequest.Builder searchRequestBuilder,
+      final BoolQuery.Builder baseQueryBuilder,
       final ExecutionContext<D, P> context);
 
-  List<AggregationBuilder> createAggregation(
-      final SearchSourceBuilder searchSourceBuilder, final ExecutionContext<D, P> context);
+  Map<String, ContainerBuilder> createAggregation(
+      final BoolQuery boolQuery, final ExecutionContext<D, P> context);
 
   CompositeCommandResult retrieveQueryResult(
-      final SearchResponse response, final ExecutionContext<D, P> context);
+      final ResponseBody<?> response, final ExecutionContext<D, P> context);
 }

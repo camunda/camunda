@@ -9,7 +9,7 @@ package io.camunda.optimize.service.db.es.filter.util;
 
 import static io.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 import static io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
-import static io.camunda.optimize.service.db.es.report.command.util.DurationScriptUtilES.getDurationFilterScript;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.DurationScriptUtilES.getDurationFilterScript;
 import static io.camunda.optimize.service.db.report.filter.util.ModelElementFilterQueryUtil.getViewLevelFiltersForInstanceMatch;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_CANCELED;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_DEFINITION_KEY;
@@ -25,12 +25,15 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.U
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_MI_BODY;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_USER_TASK;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery.Builder;
+import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
+import co.elastic.clients.elasticsearch._types.query_dsl.NestedQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.flownode.FlowNodeDateFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -53,7 +56,6 @@ import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
-import io.camunda.optimize.service.util.NestedDefinitionQueryBuilderES;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -69,19 +71,12 @@ import java.util.stream.Stream;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.lucene.search.join.ScoreMode;
-import org.elasticsearch.common.TriFunction;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.NestedQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
-import org.elasticsearch.index.query.TermsQueryBuilder;
+import org.apache.commons.lang3.function.TriFunction;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ModelElementFilterQueryUtilES {
   private static final Map<
-          Class<? extends ProcessFilterDto<?>>, Function<BoolQueryBuilder, QueryBuilder>>
+          Class<? extends ProcessFilterDto<?>>, Function<BoolQuery.Builder, BoolQuery.Builder>>
       FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES =
           Map.of(
               RunningFlowNodesOnlyFilterDto.class,
@@ -95,7 +90,7 @@ public class ModelElementFilterQueryUtilES {
 
   private static final Map<
           Class<? extends ProcessFilterDto<?>>,
-          TriFunction<FlowNodeDateFilterDataDto<?>, ZoneId, BoolQueryBuilder, QueryBuilder>>
+          TriFunction<FlowNodeDateFilterDataDto<?>, ZoneId, Builder, Builder>>
       FLOW_NODE_DATE_VIEW_FILTER_INSTANCE_QUERIES =
           Map.of(
               FlowNodeStartDateFilterDto.class,
@@ -110,12 +105,12 @@ public class ModelElementFilterQueryUtilES {
           FLOW_NODE_DEFINITION_VERSION,
           FLOW_NODE_TENANT_ID);
 
-  public static Optional<NestedQueryBuilder> addInstanceFilterForRelevantViewLevelFilters(
+  public static Optional<NestedQuery.Builder> addInstanceFilterForRelevantViewLevelFilters(
       final List<ProcessFilterDto<?>> filters, final FilterContext filterContext) {
     final List<ProcessFilterDto<?>> viewLevelFiltersForInstanceMatch =
         getViewLevelFiltersForInstanceMatch(filters);
     if (!viewLevelFiltersForInstanceMatch.isEmpty()) {
-      BoolQueryBuilder viewFilterInstanceQuery =
+      BoolQuery.Builder viewFilterInstanceQuery =
           createFlowNodeTypeFilterQuery(filterContext.isUserTaskReport());
       viewLevelFiltersForInstanceMatch.forEach(
           filter -> {
@@ -148,37 +143,42 @@ public class ModelElementFilterQueryUtilES {
                   .apply(viewFilterInstanceQuery);
             }
           });
-      return Optional.of(nestedQuery(FLOW_NODE_INSTANCES, viewFilterInstanceQuery, ScoreMode.None));
+      NestedQuery.Builder builder = new NestedQuery.Builder();
+      builder
+          .path(FLOW_NODE_INSTANCES)
+          .scoreMode(ChildScoreMode.None)
+          .query(q -> q.bool(viewFilterInstanceQuery.build()));
+      return Optional.of(builder);
     }
     return Optional.empty();
   }
 
-  public static BoolQueryBuilder createModelElementAggregationFilter(
+  public static BoolQuery.Builder createModelElementAggregationFilter(
       final ProcessReportDataDto reportData,
       final FilterContext filterContext,
       final DefinitionService definitionService) {
-    final BoolQueryBuilder filterBoolQuery =
-        createFlowNodeTypeFilterQuery(reportData).minimumShouldMatch(1);
+    final BoolQuery.Builder filterBoolQuery =
+        createFlowNodeTypeFilterQuery(reportData).minimumShouldMatch("1");
     final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition =
         reportData.groupFiltersByDefinitionIdentifier();
     reportData
         .getDefinitions()
         .forEach(
             definitionDto -> {
-              final BoolQueryBuilder flowNodeDefinitionQuery =
-                  boolQuery()
-                      .must(
-                          NESTED_DEFINITION_QUERY_BUILDER.createNestedDocDefinitionQuery(
-                              definitionDto.getKey(),
-                              definitionDto.getVersions(),
-                              definitionDto.getTenantIds(),
-                              definitionService));
+              final BoolQuery.Builder flowNodeDefinitionQuery = new BoolQuery.Builder();
+              flowNodeDefinitionQuery.must(
+                  m ->
+                      NESTED_DEFINITION_QUERY_BUILDER.createNestedDocDefinitionQuery(
+                          definitionDto.getKey(),
+                          definitionDto.getVersions(),
+                          definitionDto.getTenantIds(),
+                          definitionService));
               addModelElementFilters(
                   flowNodeDefinitionQuery,
                   filterContext,
                   filtersByDefinition.getOrDefault(
                       definitionDto.getIdentifier(), Collections.emptyList()));
-              filterBoolQuery.should(flowNodeDefinitionQuery);
+              filterBoolQuery.should(s -> s.bool(flowNodeDefinitionQuery.build()));
             });
 
     addModelElementFilters(
@@ -189,7 +189,7 @@ public class ModelElementFilterQueryUtilES {
   }
 
   private static void addModelElementFilters(
-      final BoolQueryBuilder filterBoolQuery,
+      final BoolQuery.Builder filterBoolQuery,
       final FilterContext filterContext,
       final List<ProcessFilterDto<?>> filters) {
     if (filters.isEmpty()) {
@@ -204,12 +204,17 @@ public class ModelElementFilterQueryUtilES {
     addCandidateGroupFilter(filterBoolQuery, filters);
   }
 
-  public static BoolQueryBuilder createUserTaskFlowNodeTypeFilter() {
-    return boolQuery()
-        .must(termQuery(nestedFieldReference(FLOW_NODE_TYPE), FLOW_NODE_TYPE_USER_TASK));
+  public static BoolQuery.Builder createUserTaskFlowNodeTypeFilter() {
+    return new BoolQuery.Builder()
+        .must(
+            m ->
+                m.term(
+                    t ->
+                        t.field(nestedFieldReference(FLOW_NODE_TYPE))
+                            .value(FLOW_NODE_TYPE_USER_TASK)));
   }
 
-  public static BoolQueryBuilder createInclusiveFlowNodeIdFilterQuery(
+  public static BoolQuery.Builder createInclusiveFlowNodeIdFilterQuery(
       final ProcessReportDataDto reportDataDto,
       final Set<String> flowNodeIds,
       final FilterContext filterContext,
@@ -221,9 +226,9 @@ public class ModelElementFilterQueryUtilES {
         IN);
   }
 
-  public static BoolQueryBuilder createExecutedFlowNodeFilterQuery(
+  public static BoolQuery.Builder createExecutedFlowNodeFilterQuery(
       final ExecutedFlowNodeFilterDataDto executedFlowNodeFilterData,
-      final BoolQueryBuilder boolQuery) {
+      final BoolQuery.Builder boolQuery) {
     return createExecutedFlowNodeFilterQuery(
         boolQuery,
         nestedFieldReference(FLOW_NODE_ID),
@@ -231,10 +236,10 @@ public class ModelElementFilterQueryUtilES {
         executedFlowNodeFilterData.getOperator());
   }
 
-  public static BoolQueryBuilder createExecutedFlowNodeFilterQuery(
+  public static BoolQuery.Builder createExecutedFlowNodeFilterQuery(
       final ExecutedFlowNodeFilterDataDto executedFlowNodeFilterData,
       final String nestedFieldReference,
-      final BoolQueryBuilder boolQuery) {
+      final BoolQuery.Builder boolQuery) {
     return createExecutedFlowNodeFilterQuery(
         boolQuery,
         nestedFieldReference,
@@ -242,133 +247,171 @@ public class ModelElementFilterQueryUtilES {
         executedFlowNodeFilterData.getOperator());
   }
 
-  public static BoolQueryBuilder createExecutedFlowNodeFilterQuery(
-      final BoolQueryBuilder boolQuery,
+  public static BoolQuery.Builder createExecutedFlowNodeFilterQuery(
+      final BoolQuery.Builder boolQuery,
       final String nestedFieldReference,
       final List<String> flowNodeIds,
       final MembershipFilterOperator operator) {
-    final TermsQueryBuilder termsQuery = termsQuery(nestedFieldReference, flowNodeIds);
+    TermsQuery.Builder builder = new TermsQuery.Builder();
+    builder.field(nestedFieldReference);
+    builder.terms(tt -> tt.value(flowNodeIds.stream().map(FieldValue::of).toList()));
     if (IN.equals(operator)) {
-      boolQuery.filter(termsQuery);
+      boolQuery.filter(f -> f.terms(builder.build()));
     } else {
-      boolQuery.filter(boolQuery().mustNot(termsQuery));
+      boolQuery.filter(f -> f.bool(b -> b.mustNot(m -> m.terms(builder.build()))));
     }
     return boolQuery;
   }
 
-  public static QueryBuilder createFlowNodeDurationFilterQuery(
+  public static BoolQuery.Builder createFlowNodeDurationFilterQuery(
       final FlowNodeDurationFiltersDataDto durationFilterData) {
-    return createFlowNodeDurationFilterQuery(durationFilterData, boolQuery());
+    return createFlowNodeDurationFilterQuery(durationFilterData, new BoolQuery.Builder());
   }
 
-  public static QueryBuilder createRunningFlowNodesOnlyFilterQuery(
-      final BoolQueryBuilder boolQuery) {
-    return boolQuery
-        .mustNot(termQuery(nestedFieldReference(FLOW_NODE_TYPE), FLOW_NODE_TYPE_MI_BODY))
-        .mustNot(existsQuery(nestedFieldReference(FLOW_NODE_END_DATE)));
+  public static BoolQuery.Builder createRunningFlowNodesOnlyFilterQuery(
+      final BoolQuery.Builder boolQuery) {
+    boolQuery
+        .mustNot(
+            m ->
+                m.term(
+                    t ->
+                        t.field(nestedFieldReference(FLOW_NODE_TYPE))
+                            .value(FLOW_NODE_TYPE_MI_BODY)))
+        .mustNot(m -> m.exists(e -> e.field(nestedFieldReference(FLOW_NODE_END_DATE))));
+    return boolQuery;
   }
 
-  public static QueryBuilder createCompletedFlowNodesOnlyFilterQuery(
-      final BoolQueryBuilder boolQuery) {
-    return boolQuery
-        .mustNot(termQuery(nestedFieldReference(FLOW_NODE_TYPE), FLOW_NODE_TYPE_MI_BODY))
-        .must(termQuery(nestedFieldReference(FLOW_NODE_CANCELED), false))
-        .must(existsQuery(nestedFieldReference(FLOW_NODE_END_DATE)));
+  public static BoolQuery.Builder createCompletedFlowNodesOnlyFilterQuery(
+      final BoolQuery.Builder boolQuery) {
+    boolQuery
+        .mustNot(
+            m ->
+                m.term(
+                    t ->
+                        t.field(nestedFieldReference(FLOW_NODE_TYPE))
+                            .value(FLOW_NODE_TYPE_MI_BODY)))
+        .must(m -> m.term(t -> t.field(nestedFieldReference(FLOW_NODE_CANCELED)).value(false)))
+        .must(m -> m.exists(t -> t.field(nestedFieldReference(FLOW_NODE_END_DATE))));
+    return boolQuery;
   }
 
-  public static QueryBuilder createCanceledFlowNodesOnlyFilterQuery(
-      final BoolQueryBuilder boolQuery) {
-    return boolQuery
-        .mustNot(termQuery(nestedFieldReference(FLOW_NODE_TYPE), FLOW_NODE_TYPE_MI_BODY))
-        .must(termQuery(nestedFieldReference(FLOW_NODE_CANCELED), true));
+  public static BoolQuery.Builder createCanceledFlowNodesOnlyFilterQuery(
+      final BoolQuery.Builder boolQuery) {
+    boolQuery
+        .mustNot(
+            m ->
+                m.term(
+                    t ->
+                        t.field(nestedFieldReference(FLOW_NODE_TYPE))
+                            .value(FLOW_NODE_TYPE_MI_BODY)))
+        .must(m -> m.term(t -> t.field(nestedFieldReference(FLOW_NODE_CANCELED)).value(true)));
+    return boolQuery;
   }
 
-  public static QueryBuilder createCompletedOrCanceledFlowNodesOnlyFilterQuery(
-      final BoolQueryBuilder boolQuery) {
-    return boolQuery
-        .mustNot(termQuery(nestedFieldReference(FLOW_NODE_TYPE), FLOW_NODE_TYPE_MI_BODY))
-        .must(existsQuery(nestedFieldReference(FLOW_NODE_END_DATE)));
+  public static BoolQuery.Builder createCompletedOrCanceledFlowNodesOnlyFilterQuery(
+      final BoolQuery.Builder builder) {
+    builder
+        .mustNot(
+            m ->
+                m.term(
+                    t ->
+                        t.field(nestedFieldReference(FLOW_NODE_TYPE))
+                            .value(FLOW_NODE_TYPE_MI_BODY)))
+        .must(m -> m.exists(e -> e.field(nestedFieldReference(FLOW_NODE_END_DATE))));
+    return builder;
   }
 
-  public static QueryBuilder createFlowNodeStartDateFilterQuery(
+  public static BoolQuery.Builder createFlowNodeStartDateFilterQuery(
       final FlowNodeDateFilterDataDto<?> filterData, final ZoneId timezone) {
-    return createFlowNodeStartDateFilterQuery(filterData, timezone, boolQuery());
+    return createFlowNodeStartDateFilterQuery(filterData, timezone, new BoolQuery.Builder());
   }
 
-  public static QueryBuilder createFlowNodeStartDateFilterQuery(
+  public static BoolQuery.Builder createFlowNodeStartDateFilterQuery(
       final FlowNodeDateFilterDataDto<?> filterData,
       final ZoneId timezone,
-      final BoolQueryBuilder queryBuilder) {
+      final BoolQuery.Builder queryBuilder) {
     return createFlowNodeDateFilterQuery(
         filterData, timezone, queryBuilder, nestedFieldReference(FLOW_NODE_START_DATE));
   }
 
-  public static QueryBuilder createFlowNodeEndDateFilterQuery(
+  public static BoolQuery.Builder createFlowNodeEndDateFilterQuery(
       final FlowNodeDateFilterDataDto<?> filterData, final ZoneId timezone) {
-    return createFlowNodeEndDateFilterQuery(filterData, timezone, boolQuery());
+    return createFlowNodeEndDateFilterQuery(filterData, timezone, new BoolQuery.Builder());
   }
 
-  public static QueryBuilder createFlowNodeEndDateFilterQuery(
+  public static BoolQuery.Builder createFlowNodeEndDateFilterQuery(
       final FlowNodeDateFilterDataDto<?> filterData,
       final ZoneId timezone,
-      final BoolQueryBuilder queryBuilder) {
+      final BoolQuery.Builder queryBuilder) {
     return createFlowNodeDateFilterQuery(
         filterData, timezone, queryBuilder, nestedFieldReference(FLOW_NODE_END_DATE));
   }
 
-  private static QueryBuilder createFlowNodeDateFilterQuery(
+  private static BoolQuery.Builder createFlowNodeDateFilterQuery(
       final FlowNodeDateFilterDataDto<?> filterData,
       final ZoneId timezone,
-      final BoolQueryBuilder queryBuilder,
+      final BoolQuery.Builder queryBuilder,
       final String nestedDateField) {
-    final Optional<RangeQueryBuilder> optionalDateRangeQuery =
+    Optional<RangeQuery> rangeQuery =
         DateFilterQueryUtilES.createRangeQuery(filterData, nestedDateField, timezone);
-    optionalDateRangeQuery.ifPresent(
+    rangeQuery.ifPresent(
         dateRangeQuery -> {
           if (CollectionUtils.isEmpty(filterData.getFlowNodeIds())) {
-            queryBuilder.filter(dateRangeQuery);
+            queryBuilder.filter(f -> f.range(dateRangeQuery));
           } else {
-            queryBuilder.minimumShouldMatch(1);
+            queryBuilder.minimumShouldMatch("1");
             filterData
                 .getFlowNodeIds()
                 .forEach(
-                    flowNodeId -> {
-                      final BoolQueryBuilder flowNodeQuery =
-                          boolQuery()
-                              .must(termsQuery(nestedFieldReference(FLOW_NODE_ID), flowNodeId))
-                              .must(dateRangeQuery);
-                      queryBuilder.should(flowNodeQuery);
-                    });
+                    flowNodeId ->
+                        queryBuilder.should(
+                            s ->
+                                s.bool(
+                                    b ->
+                                        b.must(
+                                                m ->
+                                                    m.terms(
+                                                        t ->
+                                                            t.field(
+                                                                    nestedFieldReference(
+                                                                        FLOW_NODE_ID))
+                                                                .terms(
+                                                                    tt ->
+                                                                        tt.value(
+                                                                            List.of(
+                                                                                FieldValue.of(
+                                                                                    flowNodeId))))))
+                                            .must(m -> m.range(dateRangeQuery)))));
           }
         });
     return queryBuilder;
   }
 
-  public static QueryBuilder createAssigneeFilterQuery(
+  public static BoolQuery.Builder createAssigneeFilterQuery(
       final IdentityLinkFilterDataDto assigneeFilter) {
-    return createAssigneeFilterQuery(assigneeFilter, boolQuery());
+    return createAssigneeFilterQuery(assigneeFilter, new BoolQuery.Builder());
   }
 
-  private static QueryBuilder createAssigneeFilterQuery(
-      final IdentityLinkFilterDataDto assigneeFilter, final BoolQueryBuilder queryBuilder) {
+  private static BoolQuery.Builder createAssigneeFilterQuery(
+      final IdentityLinkFilterDataDto assigneeFilter, final BoolQuery.Builder queryBuilder) {
     return createIdentityLinkFilterQuery(assigneeFilter, USER_TASK_ASSIGNEE, queryBuilder);
   }
 
-  public static QueryBuilder createCandidateGroupFilterQuery(
+  public static BoolQuery.Builder createCandidateGroupFilterQuery(
       final IdentityLinkFilterDataDto candidateGroupFilter) {
-    return createCandidateGroupFilterQuery(candidateGroupFilter, boolQuery());
+    return createCandidateGroupFilterQuery(candidateGroupFilter, new BoolQuery.Builder());
   }
 
-  private static QueryBuilder createCandidateGroupFilterQuery(
-      final IdentityLinkFilterDataDto candidateGroupFilter, final BoolQueryBuilder queryBuilder) {
+  private static BoolQuery.Builder createCandidateGroupFilterQuery(
+      final IdentityLinkFilterDataDto candidateGroupFilter, final BoolQuery.Builder queryBuilder) {
     return createIdentityLinkFilterQuery(
         candidateGroupFilter, USER_TASK_CANDIDATE_GROUPS, queryBuilder);
   }
 
-  private static QueryBuilder createIdentityLinkFilterQuery(
+  private static BoolQuery.Builder createIdentityLinkFilterQuery(
       final IdentityLinkFilterDataDto identityFilter,
       final String valueField,
-      final BoolQueryBuilder queryBuilder) {
+      final BoolQuery.Builder queryBuilder) {
     if (CollectionUtils.isEmpty(identityFilter.getValues())) {
       throw new OptimizeValidationException("Filter values are not allowed to be empty.");
     }
@@ -386,46 +429,68 @@ public class ModelElementFilterQueryUtilES {
             .collect(Collectors.toSet());
 
     // identity filters should always only return flowNodes of type userTask
-    queryBuilder.must(createUserTaskFlowNodeTypeFilter());
+    queryBuilder.must(Query.of(q -> q.bool(createUserTaskFlowNodeTypeFilter().build())));
 
-    final BoolQueryBuilder identityQuery = boolQuery().minimumShouldMatch(1);
+    final BoolQuery.Builder identityQuery = new BoolQuery.Builder().minimumShouldMatch("1");
     if (!nonNullValues.isEmpty()) {
-      identityQuery.should(termsQuery(nestedFieldReference(valueField), nonNullValues));
+      identityQuery.should(
+          s ->
+              s.terms(
+                  t ->
+                      t.field(nestedFieldReference(valueField))
+                          .terms(
+                              tt ->
+                                  tt.value(nonNullValues.stream().map(FieldValue::of).toList()))));
     }
     if (includeNull.get()) {
-      identityQuery.should(boolQuery().mustNot(existsQuery(nestedFieldReference(valueField))));
+      identityQuery.should(
+          s ->
+              s.bool(
+                  b -> b.mustNot(e -> e.exists(ee -> ee.field(nestedFieldReference(valueField))))));
     }
 
     if (MembershipFilterOperator.NOT_IN.equals(identityFilter.getOperator())) {
-      return queryBuilder.mustNot(identityQuery);
+      queryBuilder.mustNot(m -> m.bool(identityQuery.build()));
     } else {
-      return queryBuilder.must(identityQuery);
+      queryBuilder.must(m -> m.bool(identityQuery.build()));
     }
+    return queryBuilder;
   }
 
-  private static QueryBuilder createFlowNodeDurationFilterQuery(
+  private static BoolQuery.Builder createFlowNodeDurationFilterQuery(
       final FlowNodeDurationFiltersDataDto durationFilterData,
-      final BoolQueryBuilder queryBuilder) {
-    queryBuilder.minimumShouldMatch(1);
+      final BoolQuery.Builder queryBuilder) {
+    queryBuilder.minimumShouldMatch("1");
     durationFilterData.forEach(
-        (flowNodeId, durationFilter) -> {
-          final BoolQueryBuilder particularFlowNodeQuery =
-              boolQuery()
-                  .must(termQuery(nestedFieldReference(FLOW_NODE_ID), flowNodeId))
-                  .must(
-                      QueryBuilders.scriptQuery(
-                          getDurationFilterScript(
-                              LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-                              nestedFieldReference(FLOW_NODE_TOTAL_DURATION),
-                              nestedFieldReference(FLOW_NODE_START_DATE),
-                              durationFilter)));
-          queryBuilder.should(particularFlowNodeQuery);
-        });
+        (flowNodeId, durationFilter) ->
+            queryBuilder.should(
+                s ->
+                    s.bool(
+                        b ->
+                            b.must(
+                                    m ->
+                                        m.term(
+                                            t ->
+                                                t.field(nestedFieldReference(FLOW_NODE_ID))
+                                                    .value(flowNodeId)))
+                                .must(
+                                    m ->
+                                        m.script(
+                                            sc ->
+                                                sc.script(
+                                                    getDurationFilterScript(
+                                                        LocalDateUtil.getCurrentDateTime()
+                                                            .toInstant()
+                                                            .toEpochMilli(),
+                                                        nestedFieldReference(
+                                                            FLOW_NODE_TOTAL_DURATION),
+                                                        nestedFieldReference(FLOW_NODE_START_DATE),
+                                                        durationFilter)))))));
     return queryBuilder;
   }
 
   private static void addFlowNodeStatusFilter(
-      final BoolQueryBuilder boolQuery, final List<ProcessFilterDto<?>> filters) {
+      final BoolQuery.Builder boolQuery, final List<ProcessFilterDto<?>> filters) {
     filters.stream()
         .filter(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
         .filter(
@@ -433,52 +498,67 @@ public class ModelElementFilterQueryUtilES {
         .forEach(
             filter ->
                 boolQuery.filter(
-                    FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES
-                        .get(filter.getClass())
-                        .apply(boolQuery())));
+                    f ->
+                        f.bool(
+                            FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES
+                                .get(filter.getClass())
+                                .apply(new BoolQuery.Builder())
+                                .build())));
   }
 
   private static void addFlowNodeDurationFilter(
-      final BoolQueryBuilder boolQuery, final List<ProcessFilterDto<?>> filters) {
+      final BoolQuery.Builder boolQuery, final List<ProcessFilterDto<?>> filters) {
     findAllViewLevelFiltersOfType(filters, FlowNodeDurationFilterDto.class)
         .map(ProcessFilterDto::getData)
         .forEach(
             durationFilterData ->
-                boolQuery.filter(createFlowNodeDurationFilterQuery(durationFilterData)));
+                boolQuery.filter(
+                    f -> f.bool(createFlowNodeDurationFilterQuery(durationFilterData).build())));
   }
 
   private static void addAssigneeFilter(
-      final BoolQueryBuilder userTaskFilterBoolQuery, final List<ProcessFilterDto<?>> filters) {
+      final BoolQuery.Builder userTaskFilterBoolQuery, final List<ProcessFilterDto<?>> filters) {
     findAllViewLevelFiltersOfType(filters, AssigneeFilterDto.class)
         .map(ProcessFilterDto::getData)
         .forEach(
             assigneeFilterData ->
                 userTaskFilterBoolQuery.filter(
-                    createAssigneeFilterQuery(assigneeFilterData, boolQuery())));
+                    f ->
+                        f.bool(
+                            createAssigneeFilterQuery(assigneeFilterData, new BoolQuery.Builder())
+                                .build())));
   }
 
   private static void addCandidateGroupFilter(
-      final BoolQueryBuilder userTaskFilterBoolQuery, final List<ProcessFilterDto<?>> filters) {
+      final BoolQuery.Builder userTaskFilterBoolQuery, final List<ProcessFilterDto<?>> filters) {
     findAllViewLevelFiltersOfType(filters, CandidateGroupFilterDto.class)
         .map(ProcessFilterDto::getData)
         .forEach(
             candidateFilterData ->
                 userTaskFilterBoolQuery.filter(
-                    createCandidateGroupFilterQuery(candidateFilterData, boolQuery())));
+                    f ->
+                        f.bool(
+                            createCandidateGroupFilterQuery(
+                                    candidateFilterData, new BoolQuery.Builder())
+                                .build())));
   }
 
   private static void addFlowNodeIdFilter(
-      final BoolQueryBuilder boolQuery, final List<ProcessFilterDto<?>> filters) {
+      final BoolQuery.Builder boolQuery, final List<ProcessFilterDto<?>> filters) {
     findAllViewLevelFiltersOfType(filters, ExecutedFlowNodeFilterDto.class)
         .map(ProcessFilterDto::getData)
         .forEach(
             executedFlowNodeFilterData ->
                 boolQuery.filter(
-                    createExecutedFlowNodeFilterQuery(executedFlowNodeFilterData, boolQuery())));
+                    f ->
+                        f.bool(
+                            createExecutedFlowNodeFilterQuery(
+                                    executedFlowNodeFilterData, new BoolQuery.Builder())
+                                .build())));
   }
 
   private static void addFlowNodeStartDateFilter(
-      final BoolQueryBuilder boolQuery,
+      final BoolQuery.Builder boolQuery,
       final ZoneId timezone,
       final List<ProcessFilterDto<?>> filters) {
     findAllViewLevelFiltersOfType(filters, FlowNodeStartDateFilterDto.class)
@@ -490,7 +570,7 @@ public class ModelElementFilterQueryUtilES {
   }
 
   private static void addFlowNodeEndDateFilter(
-      final BoolQueryBuilder boolQuery,
+      final BoolQuery.Builder boolQuery,
       final ZoneId timezone,
       final List<ProcessFilterDto<?>> filters) {
     findAllViewLevelFiltersOfType(filters, FlowNodeEndDateFilterDto.class)
@@ -512,12 +592,12 @@ public class ModelElementFilterQueryUtilES {
     return FLOW_NODE_INSTANCES + "." + fieldName;
   }
 
-  private static BoolQueryBuilder createFlowNodeTypeFilterQuery(
+  private static BoolQuery.Builder createFlowNodeTypeFilterQuery(
       final ProcessReportDataDto reportDataDto) {
     return createFlowNodeTypeFilterQuery(reportDataDto.isUserTaskReport());
   }
 
-  private static BoolQueryBuilder createFlowNodeTypeFilterQuery(final boolean isUserTaskReport) {
-    return isUserTaskReport ? createUserTaskFlowNodeTypeFilter() : boolQuery();
+  private static BoolQuery.Builder createFlowNodeTypeFilterQuery(final boolean isUserTaskReport) {
+    return isUserTaskReport ? createUserTaskFlowNodeTypeFilter() : new BoolQuery.Builder();
   }
 }

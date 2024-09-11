@@ -5,19 +5,24 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.command.util;
+package io.camunda.optimize.service.db.es.report.interpreter.util;
 
+import co.elastic.clients.elasticsearch._types.aggregations.TDigestPercentilesAggregate;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.elasticsearch.search.aggregations.metrics.ParsedTDigestPercentiles;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ElasticsearchAggregationResultMappingUtil {
 
   public static Double mapToDoubleOrNull(
-      final ParsedTDigestPercentiles aggregation, final double percentileValue) {
-    double percentile = aggregation.percentile(percentileValue);
-    if (Double.isNaN(percentile) || Double.isInfinite(percentile)) {
+      final TDigestPercentilesAggregate aggregation, final double percentileValue) {
+    Double percentile =
+        Optional.ofNullable(aggregation.values())
+            .filter(h -> h.keyed().get(Double.toString(percentileValue)) != null)
+            .map(h -> Double.parseDouble(h.keyed().get(Double.toString(percentileValue))))
+            .orElse(null);
+    if (percentile == null || Double.isNaN(percentile) || Double.isInfinite(percentile)) {
       return null;
     } else {
       return percentile;

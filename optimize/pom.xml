@@ -23,7 +23,8 @@
     <surefire-plugin.version>3.5.0</surefire-plugin.version>
 
     <!-- database config -->
-    <elasticsearch.client.version>7.17.24</elasticsearch.client.version>
+    <elasticsearch.client.version>8.13.0</elasticsearch.client.version>
+    <elasticsearch.client.test.version>7.17.24</elasticsearch.client.test.version>
     <opensearch.client.version>2.10.4</opensearch.client.version>
     <awssdk.version>2.27.22</awssdk.version>
     <!-- The default opensearch version we are going to be testing with-->
@@ -55,6 +56,8 @@
     <version.node>v20.9.0</version.node>
     <version.yarn>v1.22.19</version.yarn>
 
+    <!-- lucene config-->
+    <lucene.version>8.11.1</lucene.version>
     <!-- testing config -->
     <mockito.version>5.13.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
@@ -454,7 +457,10 @@
             <skipTests>${skip.unit.tests}</skipTests>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <useModulePath>false</useModulePath>
-            <argLine>--add-opens java.base/java.util=ALL-UNNAMED</argLine>
+            <argLine>
+              --add-opens java.base/java.lang=ALL-UNNAMED
+              --add-opens java.base/java.util=ALL-UNNAMED
+            </argLine>
             <systemPropertyVariables>
               <database.type>${database.type}</database.type>
             </systemPropertyVariables>

@@ -5,16 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.util;
+package io.camunda.optimize.service.db.es.report.interpreter.util;
 
 import static io.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll;
 import static io.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToLatest;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import com.google.common.collect.ImmutableList;
 import io.camunda.optimize.dto.optimize.ReportConstants;
 import io.camunda.optimize.service.db.schema.index.AbstractInstanceIndex;
@@ -25,64 +23,100 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DefinitionQueryUtilES {
 
-  public static BoolQueryBuilder createDefinitionQuery(
+  public static BoolQuery createDefinitionQuery(
       final String definitionKey, final List<String> tenantIds, final AbstractInstanceIndex type) {
     return createDefinitionQuery(
-        definitionKey,
-        ImmutableList.of(ReportConstants.ALL_VERSIONS),
-        tenantIds,
-        type,
-        // not relevant
-        s -> "");
+            definitionKey,
+            ImmutableList.of(ReportConstants.ALL_VERSIONS),
+            tenantIds,
+            type,
+            // not relevant
+            s -> "")
+        .build();
   }
 
-  public static BoolQueryBuilder createDefinitionQuery(
+  public static Query createDefinitionQuery(
       final Map<String, Set<String>> definitionKeyToTenantsMap,
       final String definitionKeyFieldName,
       final String tenantKeyFieldName) {
-    final BoolQueryBuilder query = boolQuery().minimumShouldMatch(1);
-    definitionKeyToTenantsMap.forEach(
-        (definitionKey, tenantIds) ->
-            query.should(
-                boolQuery()
-                    .must(termQuery(definitionKeyFieldName, definitionKey))
-                    .must(createTenantIdQuery(tenantKeyFieldName, new ArrayList<>(tenantIds)))));
-    return query;
+    return Query.of(
+        bb ->
+            bb.bool(
+                b -> {
+                  b.minimumShouldMatch("1");
+                  definitionKeyToTenantsMap.forEach(
+                      (definitionKey, tenantIds) ->
+                          b.should(
+                              s ->
+                                  s.bool(
+                                      bol ->
+                                          bol.must(
+                                                  m ->
+                                                      m.term(
+                                                          t ->
+                                                              t.field(definitionKeyFieldName)
+                                                                  .value(
+                                                                      FieldValue.of(
+                                                                          definitionKey))))
+                                              .must(
+                                                  createTenantIdQuery(
+                                                      tenantKeyFieldName,
+                                                      new ArrayList<>(tenantIds))))));
+
+                  return b;
+                }));
   }
 
-  public static BoolQueryBuilder createDefinitionQuery(
+  public static BoolQuery.Builder createDefinitionQuery(
       final String definitionKey,
       final List<String> definitionVersions,
       final List<String> tenantIds,
-      final AbstractInstanceIndex type,
+      final AbstractInstanceIndex<?> type,
       final UnaryOperator<String> getLatestVersionToKey) {
-    final BoolQueryBuilder query = boolQuery();
-    query.must(createTenantIdQuery(type.getTenantIdFieldName(), tenantIds));
-    query.must(termQuery(type.getDefinitionKeyFieldName(), definitionKey));
+    BoolQuery.Builder bb = new BoolQuery.Builder();
+    bb.must(
+            m ->
+                m.term(
+                    t ->
+                        t.field(type.getDefinitionKeyFieldName())
+                            .value(FieldValue.of(definitionKey))))
+        .must(createTenantIdQuery(type.getTenantIdFieldName(), tenantIds));
     if (isDefinitionVersionSetToLatest(definitionVersions)) {
-      query.must(
-          termsQuery(
-              type.getDefinitionVersionFieldName(), getLatestVersionToKey.apply(definitionKey)));
+      bb.must(
+          m ->
+              m.terms(
+                  t ->
+                      t.field(type.getDefinitionVersionFieldName())
+                          .terms(
+                              tt ->
+                                  tt.value(
+                                      List.of(
+                                          FieldValue.of(
+                                              getLatestVersionToKey.apply(definitionKey)))))));
     } else if (!isDefinitionVersionSetToAll(definitionVersions)) {
-      query.must(termsQuery(type.getDefinitionVersionFieldName(), definitionVersions));
+      bb.must(
+          m ->
+              m.terms(
+                  t ->
+                      t.field(type.getDefinitionVersionFieldName())
+                          .terms(
+                              tt ->
+                                  tt.value(
+                                      definitionVersions.stream().map(FieldValue::of).toList()))));
     } else if (definitionVersions.isEmpty()) {
       // if no version is set just return empty results
-      query.mustNot(matchAllQuery());
+      bb.mustNot(m -> m.matchAll(a -> a));
     }
-    return query;
+    return bb;
   }
 
-  public static QueryBuilder createTenantIdQuery(
-      final String tenantField, final List<String> tenantIds) {
+  public static Query createTenantIdQuery(final String tenantField, final List<String> tenantIds) {
     final AtomicBoolean includeNotDefinedTenant = new AtomicBoolean(false);
     final List<String> tenantIdTerms =
         tenantIds.stream()
@@ -93,21 +127,36 @@ public class DefinitionQueryUtilES {
                   }
                 })
             .filter(Objects::nonNull)
-            .collect(Collectors.toList());
+            .toList();
 
-    final BoolQueryBuilder tenantQueryBuilder = boolQuery().minimumShouldMatch(1);
-    if (!tenantIdTerms.isEmpty()) {
-      tenantQueryBuilder.should(termsQuery(tenantField, tenantIdTerms));
-    }
-    if (includeNotDefinedTenant.get()) {
-      tenantQueryBuilder.should(boolQuery().mustNot(existsQuery(tenantField)));
-    }
-    if (tenantIdTerms.isEmpty() && !includeNotDefinedTenant.get()) {
-      // All tenants have been deselected and therefore we should not return any data.
-      // This query ensures that the condition never holds for any data.
-      tenantQueryBuilder.mustNot(matchAllQuery());
-    }
+    final BoolQuery tenantQueryBuilder =
+        BoolQuery.of(
+            b -> {
+              b.minimumShouldMatch("1");
+              if (!tenantIdTerms.isEmpty()) {
+                b.should(
+                    s ->
+                        s.terms(
+                            t ->
+                                t.field(tenantField)
+                                    .terms(
+                                        tt ->
+                                            tt.value(
+                                                tenantIdTerms.stream()
+                                                    .map(FieldValue::of)
+                                                    .toList()))));
+              }
+              if (includeNotDefinedTenant.get()) {
+                b.should(s -> s.bool(bb -> bb.mustNot(m -> m.exists(e -> e.field(tenantField)))));
+              }
+              if (tenantIdTerms.isEmpty() && !includeNotDefinedTenant.get()) {
+                // All tenants have been deselected and therefore we should not return any data.
+                // This query ensures that the condition never holds for any data.
+                b.mustNot(m -> m.matchAll(a -> a));
+              }
+              return b;
+            });
 
-    return tenantQueryBuilder;
+    return Query.of(b -> b.bool(tenantQueryBuilder));
   }
 }

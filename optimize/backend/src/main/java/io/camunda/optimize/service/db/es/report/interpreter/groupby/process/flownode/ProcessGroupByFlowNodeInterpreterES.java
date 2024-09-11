@@ -11,8 +11,11 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.
 import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -24,11 +27,9 @@ import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,11 +37,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -61,39 +57,43 @@ public class ProcessGroupByFlowNodeInterpreterES extends AbstractGroupByFlowNode
   }
 
   @Override
-  public List<AggregationBuilder> createAggregation(
-      final SearchSourceBuilder searchSourceBuilder,
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
+      final BoolQuery boolQuery,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final TermsAggregationBuilder flowNodeTermsAggregation =
-        terms(NESTED_EVENTS_AGGREGATION)
-            .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
-            .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID);
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder()
+            .terms(
+                t ->
+                    t.size(
+                            configurationService
+                                .getElasticSearchConfiguration()
+                                .getAggregationBucketLimit())
+                        .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID));
     distributedByInterpreter
-        .createAggregations(context, searchSourceBuilder.query())
-        .forEach(flowNodeTermsAggregation::subAggregation);
-    return Collections.singletonList(
-        createFilteredFlowNodeAggregation(context, flowNodeTermsAggregation));
+        .createAggregations(context, boolQuery)
+        .forEach((k, v) -> builder.aggregations(k, v.build()));
+    return createFilteredFlowNodeAggregation(context, Map.of(NESTED_EVENTS_AGGREGATION, builder));
   }
 
   @Override
   public void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
-      final SearchResponse response,
+      final ResponseBody<?> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     getFilteredFlowNodesAggregation(response)
         .map(
             filteredFlowNodes ->
-                (Terms) filteredFlowNodes.getAggregations().get(NESTED_EVENTS_AGGREGATION))
+                filteredFlowNodes.aggregations().get(NESTED_EVENTS_AGGREGATION).sterms())
         .ifPresent(
             byFlowNodeIdAggregation -> {
               final Map<String, String> flowNodeNames = getFlowNodeNames(context.getReportData());
               final List<GroupByResult> groupedData = new ArrayList<>();
-              for (Terms.Bucket flowNodeBucket : byFlowNodeIdAggregation.getBuckets()) {
-                final String flowNodeKey = flowNodeBucket.getKeyAsString();
+              for (StringTermsBucket flowNodeBucket : byFlowNodeIdAggregation.buckets().array()) {
+                final String flowNodeKey = flowNodeBucket.key().stringValue();
                 if (flowNodeNames.containsKey(flowNodeKey)) {
-                  final List<DistributedByResult> singleResult =
+                  final List<CompositeCommandResult.DistributedByResult> singleResult =
                       distributedByInterpreter.retrieveResult(
-                          response, flowNodeBucket.getAggregations(), context);
+                          response, flowNodeBucket.aggregations(), context);
                   String label = flowNodeNames.get(flowNodeKey);
                   groupedData.add(
                       GroupByResult.createGroupByResult(flowNodeKey, label, singleResult));

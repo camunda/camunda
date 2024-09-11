@@ -7,16 +7,16 @@
  */
 package io.camunda.optimize.service.db.es.report.context;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.service.db.report.context.VariableAggregationContext;
-import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
 
 @SuperBuilder
 @Data
 public class VariableAggregationContextES extends VariableAggregationContext {
-  private final QueryBuilder baseQueryForMinMaxStats;
-  private final List<AggregationBuilder> subAggregations;
+  private final BoolQuery baseQueryForMinMaxStats;
+  private final Map<String, Aggregation.Builder.ContainerBuilder> subAggregations;
 }

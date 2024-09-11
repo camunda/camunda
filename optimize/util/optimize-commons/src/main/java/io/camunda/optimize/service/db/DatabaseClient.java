@@ -53,6 +53,8 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
 
   public abstract List<String> getAllIndexNames() throws IOException;
 
+  public abstract List<String> addPrefixesToIndices(String... indexes);
+
   public abstract String getDatabaseVersion() throws IOException;
 
   public abstract void setDefaultRequestOptions();
@@ -74,14 +76,29 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
 
   public abstract DatabaseType getDatabaseVendor();
 
-  protected String[] convertToPrefixedAliasNames(final String[] indices) {
+  public String[] convertToPrefixedAliasNames(final String[] indices) {
     return Arrays.stream(indices).map(this::convertToPrefixedAliasName).toArray(String[]::new);
   }
 
-  protected String convertToPrefixedAliasName(final String index) {
+  public static String[] convertToPrefixedAliasNames(
+      final String[] indices, DatabaseClient client) {
+    return Arrays.stream(indices)
+        .map(i -> convertToPrefixedAliasName(i, client))
+        .toArray(String[]::new);
+  }
+
+  public String convertToPrefixedAliasName(final String index) {
     final boolean hasExcludePrefix = '-' == index.charAt(0);
     final String rawIndexName = hasExcludePrefix ? index.substring(1) : index;
     final String prefixedIndexName = indexNameService.getOptimizeIndexAliasForIndex(rawIndexName);
+    return hasExcludePrefix ? "-" + prefixedIndexName : prefixedIndexName;
+  }
+
+  public static String convertToPrefixedAliasName(final String index, DatabaseClient client) {
+    final boolean hasExcludePrefix = '-' == index.charAt(0);
+    final String rawIndexName = hasExcludePrefix ? index.substring(1) : index;
+    final String prefixedIndexName =
+        client.indexNameService.getOptimizeIndexAliasForIndex(rawIndexName);
     return hasExcludePrefix ? "-" + prefixedIndexName : prefixedIndexName;
   }
 

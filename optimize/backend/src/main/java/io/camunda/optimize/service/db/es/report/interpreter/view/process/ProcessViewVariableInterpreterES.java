@@ -12,12 +12,12 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.V
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableNameField;
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.FilterAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.NestedAggregate;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.VariableViewPropertyDto;
@@ -25,21 +25,13 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessView;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewMeasure;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
+import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import jakarta.ws.rs.BadRequestException;
-import java.util.Collections;
-import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -57,14 +49,14 @@ public class ProcessViewVariableInterpreterES
 
   @Override
   public ViewProperty getViewProperty(
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final VariableViewPropertyDto variableViewDto = getVariableViewDto(context);
     return ViewProperty.VARIABLE(variableViewDto.getName(), variableViewDto.getType());
   }
 
   @Override
-  public List<AggregationBuilder> createAggregations(
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final VariableViewPropertyDto variableViewDto = getVariableViewDto(context);
     final VariableType variableType = variableViewDto.getType();
     if (!VariableType.getNumericTypes().contains(variableType)) {
@@ -72,42 +64,64 @@ public class ProcessViewVariableInterpreterES
           "Only numeric variable types are supported for reports with view on variables!");
     }
 
-    final FilterAggregationBuilder filteredVariablesAggregation =
-        filter(
-            FILTERED_VARIABLES_AGGREGATION,
-            boolQuery()
-                .must(termQuery(getNestedVariableNameField(), variableViewDto.getName()))
-                .must(termQuery(getNestedVariableTypeField(), variableType.getId()))
-                .must(existsQuery(getNestedVariableValueFieldForType(variableType))));
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder()
+            .filter(
+                f ->
+                    f.bool(
+                        bb ->
+                            bb.must(
+                                    mm ->
+                                        mm.term(
+                                            t ->
+                                                t.field(getNestedVariableNameField())
+                                                    .value(variableViewDto.getName())))
+                                .must(
+                                    mm ->
+                                        mm.term(
+                                            t ->
+                                                t.field(getNestedVariableTypeField())
+                                                    .value(variableType.getId())))
+                                .must(
+                                    mm ->
+                                        mm.exists(
+                                            e ->
+                                                e.field(
+                                                    getNestedVariableValueFieldForType(
+                                                        variableType))))));
+
     getAggregationStrategies(context.getReportData()).stream()
         .map(
             strategy ->
-                strategy
-                    .createAggregationBuilder()
-                    .field(getNestedVariableValueFieldForType(variableType)))
-        .forEach(filteredVariablesAggregation::subAggregation);
+                strategy.createAggregationBuilder(
+                    null, getNestedVariableValueFieldForType(variableType)))
+        .forEach((k) -> builder.aggregations(k.key(), k.value().build()));
 
-    return Collections.singletonList(
-        nested(NESTED_VARIABLE_AGGREGATION, VARIABLES)
-            .subAggregation(filteredVariablesAggregation));
+    Aggregation.Builder.ContainerBuilder aggBuilder =
+        new Aggregation.Builder().nested(n -> n.path(VARIABLES));
+    aggBuilder.aggregations(FILTERED_VARIABLES_AGGREGATION, a -> builder);
+    return Map.of(NESTED_VARIABLE_AGGREGATION, aggBuilder);
   }
 
   @Override
-  public ViewResult retrieveResult(
-      SearchResponse response,
-      Aggregations aggregations,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final Nested nested = response.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
-    final Filter filterVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
+  public CompositeCommandResult.ViewResult retrieveResult(
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggs,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    final NestedAggregate nested =
+        response.aggregations().get(NESTED_VARIABLE_AGGREGATION).nested();
+    final FilterAggregate filterVariables =
+        nested.aggregations().get(FILTERED_VARIABLES_AGGREGATION).filter();
 
-    final ViewResult.ViewResultBuilder viewResultBuilder = ViewResult.builder();
+    final CompositeCommandResult.ViewResult.ViewResultBuilder viewResultBuilder =
+        CompositeCommandResult.ViewResult.builder();
     getAggregationStrategies(context.getReportData())
         .forEach(
             aggregationStrategy -> {
               final Double measureResult =
-                  aggregationStrategy.getValue(filterVariables.getAggregations());
+                  aggregationStrategy.getValue(filterVariables.aggregations());
               viewResultBuilder.viewMeasure(
-                  ViewMeasure.builder()
+                  CompositeCommandResult.ViewMeasure.builder()
                       .aggregationType(aggregationStrategy.getAggregationType())
                       .value(measureResult)
                       .build());

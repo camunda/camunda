@@ -9,6 +9,14 @@ package io.camunda.optimize.service.db.es.report.interpreter.distributedby.proce
 
 import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_PROCESS;
 
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
+import co.elastic.clients.util.NamedValue;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
@@ -17,26 +25,16 @@ import io.camunda.optimize.service.db.report.interpreter.distributedby.process.P
 import io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.BucketOrder;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -56,37 +54,57 @@ public class ProcessDistributedByProcessInterpreterES
   }
 
   @Override
-  public List<AggregationBuilder> createAggregations(
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final QueryBuilder baseQueryBuilder) {
-    final TermsAggregationBuilder tenantAgg =
-        AggregationBuilders.terms(TENANT_AGG)
-            .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
-            .order(BucketOrder.key(true))
-            .missing(MISSING_TENANT_KEY)
-            .field(tenantField(context));
-    viewInterpreter.createAggregations(context).forEach(tenantAgg::subAggregation);
-    return Collections.singletonList(
-        AggregationBuilders.terms(PROC_DEF_KEY_AGG)
-            .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
-            .order(BucketOrder.key(true))
-            .field(definitionKeyField(context))
-            .subAggregation(
-                AggregationBuilders.terms(PROC_DEF_VERSION_AGG)
-                    .size(
-                        configurationService
-                            .getElasticSearchConfiguration()
-                            .getAggregationBucketLimit())
-                    .order(BucketOrder.key(true))
-                    .field(definitionVersionField(context))
-                    .subAggregation(tenantAgg)));
+      BoolQuery baseQueryBuilder) {
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder()
+            .terms(
+                t ->
+                    t.size(
+                            configurationService
+                                .getElasticSearchConfiguration()
+                                .getAggregationBucketLimit())
+                        .order(NamedValue.of("_key", SortOrder.Asc))
+                        .missing(MISSING_TENANT_KEY)
+                        .field(tenantField(context)));
+
+    viewInterpreter
+        .createAggregations(context)
+        .forEach((k, v) -> builder.aggregations(k, v.build()));
+    Aggregation.Builder aggBuilder = new Aggregation.Builder();
+
+    return Map.of(
+        PROC_DEF_KEY_AGG,
+        aggBuilder
+            .terms(
+                t ->
+                    t.size(
+                            configurationService
+                                .getElasticSearchConfiguration()
+                                .getAggregationBucketLimit())
+                        .order(NamedValue.of("_key", SortOrder.Asc))
+                        .field(definitionKeyField(context)))
+            .aggregations(
+                PROC_DEF_VERSION_AGG,
+                Aggregation.of(
+                    a ->
+                        a.terms(
+                                t ->
+                                    t.size(
+                                            configurationService
+                                                .getElasticSearchConfiguration()
+                                                .getAggregationBucketLimit())
+                                        .order(NamedValue.of("_key", SortOrder.Asc))
+                                        .field(definitionVersionField(context)))
+                            .aggregations(TENANT_AGG, builder.build()))));
   }
 
   @Override
-  public List<DistributedByResult> retrieveResult(
-      SearchResponse response,
-      Aggregations aggregations,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+  public List<CompositeCommandResult.DistributedByResult> retrieveResult(
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggregations,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final List<CompositeCommandResult.DistributedByResult> results = new ArrayList<>();
     final Map<String, List<ProcessBucket>> bucketsByDefKey =
         extractBucketsByDefKey(response, aggregations, context);
@@ -94,7 +112,7 @@ public class ProcessDistributedByProcessInterpreterES
   }
 
   @Override
-  public ViewResult emptyViewResult(
+  public CompositeCommandResult.ViewResult emptyViewResult(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return viewInterpreter.createEmptyResult(context);
   }
@@ -106,32 +124,33 @@ public class ProcessDistributedByProcessInterpreterES
   }
 
   private Map<String, List<ProcessBucket>> extractBucketsByDefKey(
-      final SearchResponse response,
-      final Aggregations aggregations,
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggregations,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final Map<String, List<ProcessBucket>> bucketsByDefKey = new HashMap<>();
-    final Terms procDefKeyAgg = aggregations.get(PROC_DEF_KEY_AGG);
+    Map<String, List<ProcessBucket>> bucketsByDefKey = new HashMap<>();
+    final StringTermsAggregate procDefKeyAgg = aggregations.get(PROC_DEF_KEY_AGG).sterms();
     if (procDefKeyAgg != null) {
-      for (final Terms.Bucket keyBucket : procDefKeyAgg.getBuckets()) {
-        final Terms procDefVersionAgg = keyBucket.getAggregations().get(PROC_DEF_VERSION_AGG);
+      for (co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket keyBucket :
+          procDefKeyAgg.buckets().array()) {
+        final Aggregate procDefVersionAgg = keyBucket.aggregations().get(PROC_DEF_VERSION_AGG);
         if (procDefVersionAgg != null) {
-          for (final Terms.Bucket versionBucket : procDefVersionAgg.getBuckets()) {
-            final Terms tenantTermsAgg = versionBucket.getAggregations().get(TENANT_AGG);
+          for (StringTermsBucket versionBucket : procDefVersionAgg.sterms().buckets().array()) {
+            final Aggregate tenantTermsAgg = versionBucket.aggregations().get(TENANT_AGG);
             if (tenantTermsAgg != null) {
               final List<ProcessBucket> bucketsForKey =
-                  tenantTermsAgg.getBuckets().stream()
+                  tenantTermsAgg.sterms().buckets().array().stream()
                       .map(
                           tenantBucket ->
                               new ProcessBucket(
-                                  keyBucket.getKeyAsString(),
-                                  versionBucket.getKeyAsString(),
-                                  tenantBucket.getKeyAsString(),
-                                  tenantBucket.getDocCount(),
+                                  keyBucket.key().stringValue(),
+                                  versionBucket.key().stringValue(),
+                                  tenantBucket.key().stringValue(),
+                                  tenantBucket.docCount(),
                                   viewInterpreter.retrieveResult(
-                                      response, tenantBucket.getAggregations(), context)))
-                      .toList();
+                                      response, tenantBucket.aggregations(), context)))
+                      .collect(Collectors.toList());
               bucketsByDefKey
-                  .computeIfAbsent(keyBucket.getKeyAsString(), key -> new ArrayList<>())
+                  .computeIfAbsent(keyBucket.key().stringValue(), key -> new ArrayList<>())
                   .addAll(bucketsForKey);
             }
           }

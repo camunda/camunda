@@ -9,6 +9,7 @@ package io.camunda.optimize.service.db.es.filter;
 
 import static io.camunda.optimize.service.db.filter.util.OperatorMultipleValuesVariableFilterDataDtoUtil.validateMultipleValuesFilterDataDto;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
@@ -17,33 +18,32 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.time.ZoneId;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 
 @Slf4j
 public abstract class AbstractVariableQueryFilterES {
 
-  protected abstract QueryBuilder createContainsOneOfTheGivenStringsQueryBuilder(
+  protected abstract Query.Builder createContainsOneOfTheGivenStringsQueryBuilder(
       final StringVariableFilterDataDto dto);
 
-  protected abstract BoolQueryBuilder createContainsOneOfTheGivenStringsQueryBuilder(
+  protected abstract Query.Builder createContainsOneOfTheGivenStringsQueryBuilder(
       final String variableName, final List<String> values);
 
-  protected abstract QueryBuilder createContainsGivenStringQuery(
+  protected abstract Query.Builder createContainsGivenStringQuery(
       final String variableId, final String valueToContain);
 
-  protected abstract QueryBuilder createEqualsOneOrMoreValuesQueryBuilder(
+  protected abstract Query.Builder createEqualsOneOrMoreValuesQueryBuilder(
       final OperatorMultipleValuesVariableFilterDataDto dto);
 
-  protected abstract QueryBuilder createBooleanQueryBuilder(final BooleanVariableFilterDataDto dto);
+  protected abstract Query.Builder createBooleanQueryBuilder(
+      final BooleanVariableFilterDataDto dto);
 
-  protected abstract QueryBuilder createNumericQueryBuilder(
+  protected abstract Query.Builder createNumericQueryBuilder(
       OperatorMultipleValuesVariableFilterDataDto dto);
 
-  protected abstract QueryBuilder createDateQueryBuilder(
+  protected abstract Query.Builder createDateQueryBuilder(
       final DateVariableFilterDataDto dto, final ZoneId timezone);
 
-  protected QueryBuilder createStringQueryBuilder(final StringVariableFilterDataDto stringVarDto) {
+  protected Query.Builder createStringQueryBuilder(final StringVariableFilterDataDto stringVarDto) {
     validateMultipleValuesFilterDataDto(stringVarDto);
 
     if (stringVarDto.hasContainsOperation()) {

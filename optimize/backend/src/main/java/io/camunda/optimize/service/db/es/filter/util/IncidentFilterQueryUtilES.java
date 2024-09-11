@@ -14,10 +14,11 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.I
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_DEFINITION_VERSION;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_STATUS;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_TENANT_ID;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
+import co.elastic.clients.elasticsearch._types.query_dsl.NestedQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import com.google.common.collect.ImmutableMap;
 import io.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import io.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
@@ -28,7 +29,6 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.OpenI
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ResolvedIncidentFilterDto;
 import io.camunda.optimize.service.DefinitionService;
-import io.camunda.optimize.service.util.NestedDefinitionQueryBuilderES;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -38,10 +38,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.apache.lucene.search.join.ScoreMode;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.NestedQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class IncidentFilterQueryUtilES {
@@ -50,7 +46,8 @@ public class IncidentFilterQueryUtilES {
       new NestedDefinitionQueryBuilderES(
           INCIDENTS, INCIDENT_DEFINITION_KEY, INCIDENT_DEFINITION_VERSION, INCIDENT_TENANT_ID);
 
-  private static Map<Class<? extends ProcessFilterDto<?>>, Function<BoolQueryBuilder, QueryBuilder>>
+  private static Map<
+          Class<? extends ProcessFilterDto<?>>, Function<BoolQuery.Builder, BoolQuery.Builder>>
       incidentViewFilterInstanceQueries =
           ImmutableMap.of(
               OpenIncidentFilterDto.class,
@@ -58,28 +55,28 @@ public class IncidentFilterQueryUtilES {
               ResolvedIncidentFilterDto.class,
               IncidentFilterQueryUtilES::createResolvedIncidentTermQuery);
 
-  public static BoolQueryBuilder createIncidentAggregationFilter(
+  public static BoolQuery.Builder createIncidentAggregationFilter(
       final ProcessReportDataDto reportData, final DefinitionService definitionService) {
-    final BoolQueryBuilder filterBoolQuery = boolQuery().minimumShouldMatch(1);
+    final BoolQuery.Builder filterBoolQuery = new BoolQuery.Builder().minimumShouldMatch("1");
     final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition =
         reportData.groupFiltersByDefinitionIdentifier();
     reportData
         .getDefinitions()
         .forEach(
             definitionDto -> {
-              final BoolQueryBuilder incidentDefinitionQuery =
-                  boolQuery()
-                      .must(
-                          NESTED_DEFINITION_QUERY_BUILDER.createNestedDocDefinitionQuery(
-                              definitionDto.getKey(),
-                              definitionDto.getVersions(),
-                              definitionDto.getTenantIds(),
-                              definitionService));
+              final BoolQuery.Builder incidentDefinitionQuery = new BoolQuery.Builder();
+              incidentDefinitionQuery.must(
+                  m ->
+                      NESTED_DEFINITION_QUERY_BUILDER.createNestedDocDefinitionQuery(
+                          definitionDto.getKey(),
+                          definitionDto.getVersions(),
+                          definitionDto.getTenantIds(),
+                          definitionService));
               addIncidentFilters(
                   incidentDefinitionQuery,
                   filtersByDefinition.getOrDefault(
                       definitionDto.getIdentifier(), Collections.emptyList()));
-              filterBoolQuery.should(incidentDefinitionQuery);
+              filterBoolQuery.should(s -> s.bool(incidentDefinitionQuery.build()));
             });
 
     addIncidentFilters(
@@ -89,13 +86,13 @@ public class IncidentFilterQueryUtilES {
   }
 
   private static void addIncidentFilters(
-      final BoolQueryBuilder filterBoolQuery, final List<ProcessFilterDto<?>> filters) {
+      final BoolQuery.Builder filterBoolQuery, final List<ProcessFilterDto<?>> filters) {
     addOpenIncidentFilter(filterBoolQuery, filters);
     addResolvedIncidentFilter(filterBoolQuery, filters);
     addExecutedFlowNodeFilter(filterBoolQuery, filters);
   }
 
-  public static Optional<NestedQueryBuilder> addInstanceFilterForRelevantViewLevelFilters(
+  public static Optional<NestedQuery.Builder> addInstanceFilterForRelevantViewLevelFilters(
       final List<ProcessFilterDto<?>> filters) {
     final List<ProcessFilterDto<?>> viewLevelFiltersForInstanceMatch =
         filters.stream()
@@ -103,70 +100,93 @@ public class IncidentFilterQueryUtilES {
             .filter(filter -> incidentViewFilterInstanceQueries.containsKey(filter.getClass()))
             .collect(Collectors.toList());
     if (!viewLevelFiltersForInstanceMatch.isEmpty()) {
-      final BoolQueryBuilder viewFilterInstanceQuery = boolQuery();
+      final BoolQuery.Builder viewFilterInstanceQuery = new BoolQuery.Builder();
       viewLevelFiltersForInstanceMatch.forEach(
           filter ->
               incidentViewFilterInstanceQueries
                   .get(filter.getClass())
                   .apply(viewFilterInstanceQuery));
-      return Optional.of(nestedQuery(INCIDENTS, viewFilterInstanceQuery, ScoreMode.None));
+      NestedQuery.Builder builder = new NestedQuery.Builder();
+      builder
+          .path(INCIDENTS)
+          .scoreMode(ChildScoreMode.None)
+          .query(q -> q.bool(viewFilterInstanceQuery.build()));
+      return Optional.of(builder);
     }
     return Optional.empty();
   }
 
-  public static BoolQueryBuilder createResolvedIncidentTermQuery() {
-    return createResolvedIncidentTermQuery(boolQuery());
+  public static Query.Builder createResolvedIncidentTermQuery() {
+    Query.Builder builder = new Query.Builder();
+    builder.bool(b -> createResolvedIncidentTermQuery(new BoolQuery.Builder()));
+    return builder;
   }
 
-  private static BoolQueryBuilder createResolvedIncidentTermQuery(
-      final BoolQueryBuilder boolQuery) {
+  private static BoolQuery.Builder createResolvedIncidentTermQuery(
+      final BoolQuery.Builder boolQuery) {
     return boolQuery.must(
-        termQuery(INCIDENTS + "." + INCIDENT_STATUS, IncidentStatus.RESOLVED.getId()));
+        m ->
+            m.term(
+                t ->
+                    t.field(INCIDENTS + "." + INCIDENT_STATUS)
+                        .value(IncidentStatus.RESOLVED.getId())));
   }
 
-  public static BoolQueryBuilder createOpenIncidentTermQuery() {
-    return createOpenIncidentTermQuery(boolQuery());
+  public static BoolQuery.Builder createOpenIncidentTermQuery() {
+    return createOpenIncidentTermQuery(new BoolQuery.Builder());
   }
 
-  public static BoolQueryBuilder createDeletedIncidentTermQuery() {
-    return createDeletedIncidentTermQuery(boolQuery());
+  public static BoolQuery.Builder createDeletedIncidentTermQuery() {
+    return createDeletedIncidentTermQuery(new BoolQuery.Builder());
   }
 
-  private static BoolQueryBuilder createDeletedIncidentTermQuery(final BoolQueryBuilder boolQuery) {
+  private static BoolQuery.Builder createDeletedIncidentTermQuery(
+      final BoolQuery.Builder boolQuery) {
+    return new BoolQuery.Builder()
+        .must(
+            m ->
+                m.term(
+                    t ->
+                        t.field(INCIDENTS + "." + INCIDENT_STATUS)
+                            .value(IncidentStatus.DELETED.getId())));
+  }
+
+  private static BoolQuery.Builder createOpenIncidentTermQuery(final BoolQuery.Builder boolQuery) {
     return boolQuery.must(
-        termQuery(INCIDENTS + "." + INCIDENT_STATUS, IncidentStatus.DELETED.getId()));
-  }
-
-  private static BoolQueryBuilder createOpenIncidentTermQuery(final BoolQueryBuilder boolQuery) {
-    return boolQuery.must(
-        termQuery(INCIDENTS + "." + INCIDENT_STATUS, IncidentStatus.OPEN.getId()));
+        m ->
+            m.term(
+                t ->
+                    t.field(INCIDENTS + "." + INCIDENT_STATUS).value(IncidentStatus.OPEN.getId())));
   }
 
   private static void addOpenIncidentFilter(
-      final BoolQueryBuilder boolQuery, final List<ProcessFilterDto<?>> filters) {
+      final BoolQuery.Builder boolQuery, final List<ProcessFilterDto<?>> filters) {
     if (containsViewLevelFilterOfType(filters, OpenIncidentFilterDto.class)) {
-      boolQuery.filter(createOpenIncidentTermQuery());
+      boolQuery.filter(f -> f.bool(createOpenIncidentTermQuery().build()));
     }
   }
 
   private static void addResolvedIncidentFilter(
-      final BoolQueryBuilder boolQuery, final List<ProcessFilterDto<?>> filters) {
+      final BoolQuery.Builder boolQuery, final List<ProcessFilterDto<?>> filters) {
     if (containsViewLevelFilterOfType(filters, ResolvedIncidentFilterDto.class)) {
-      boolQuery.filter(createResolvedIncidentTermQuery());
+      boolQuery.filter(f -> createResolvedIncidentTermQuery());
     }
   }
 
   public static void addExecutedFlowNodeFilter(
-      final BoolQueryBuilder boolQuery, final List<ProcessFilterDto<?>> filters) {
+      final BoolQuery.Builder boolQuery, final List<ProcessFilterDto<?>> filters) {
     findAllViewLevelFiltersOfType(filters, ExecutedFlowNodeFilterDto.class)
         .map(ProcessFilterDto::getData)
         .forEach(
             executedFlowNodeFilterData ->
                 boolQuery.filter(
-                    createExecutedFlowNodeFilterQuery(
-                        executedFlowNodeFilterData,
-                        nestedFieldReference(IncidentDto.Fields.activityId),
-                        boolQuery())));
+                    f ->
+                        f.bool(
+                            createExecutedFlowNodeFilterQuery(
+                                    executedFlowNodeFilterData,
+                                    nestedFieldReference(IncidentDto.Fields.activityId),
+                                    new BoolQuery.Builder())
+                                .build())));
   }
 
   private static String nestedFieldReference(final String fieldName) {

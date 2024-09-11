@@ -10,594 +10,357 @@ package io.camunda.optimize.service.db.es;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
+import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static java.util.stream.Collectors.groupingBy;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.ErrorResponse;
+import co.elastic.clients.elasticsearch._types.FieldSort;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.ScriptLanguage;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.analysis.TokenChar;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.ExistsQuery;
+import co.elastic.clients.elasticsearch.cluster.HealthRequest;
+import co.elastic.clients.elasticsearch.cluster.HealthResponse;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
+import co.elastic.clients.elasticsearch.core.ClearScrollResponse;
+import co.elastic.clients.elasticsearch.core.CountRequest;
+import co.elastic.clients.elasticsearch.core.CountResponse;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
+import co.elastic.clients.elasticsearch.core.DeleteRequest;
+import co.elastic.clients.elasticsearch.core.DeleteResponse;
+import co.elastic.clients.elasticsearch.core.GetRequest;
+import co.elastic.clients.elasticsearch.core.GetResponse;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
+import co.elastic.clients.elasticsearch.core.MgetRequest;
+import co.elastic.clients.elasticsearch.core.MgetResponse;
+import co.elastic.clients.elasticsearch.core.ReindexRequest;
+import co.elastic.clients.elasticsearch.core.ReindexResponse;
+import co.elastic.clients.elasticsearch.core.ScrollRequest;
+import co.elastic.clients.elasticsearch.core.ScrollResponse;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.UpdateByQueryRequest;
+import co.elastic.clients.elasticsearch.core.UpdateByQueryResponse;
+import co.elastic.clients.elasticsearch.core.UpdateRequest;
+import co.elastic.clients.elasticsearch.core.UpdateResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
+import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
+import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
+import co.elastic.clients.elasticsearch.indices.ExistsRequest;
+import co.elastic.clients.elasticsearch.indices.GetAliasRequest;
+import co.elastic.clients.elasticsearch.indices.GetAliasResponse;
+import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
+import co.elastic.clients.elasticsearch.indices.GetIndicesSettingsResponse;
+import co.elastic.clients.elasticsearch.indices.GetMappingRequest;
+import co.elastic.clients.elasticsearch.indices.GetMappingResponse;
+import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
+import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
+import co.elastic.clients.elasticsearch.indices.PutTemplateRequest;
+import co.elastic.clients.elasticsearch.indices.RefreshRequest;
+import co.elastic.clients.elasticsearch.indices.RolloverRequest;
+import co.elastic.clients.elasticsearch.indices.RolloverResponse;
+import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotRequest;
+import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotResponse;
+import co.elastic.clients.elasticsearch.snapshot.DeleteSnapshotRequest;
+import co.elastic.clients.elasticsearch.snapshot.DeleteSnapshotResponse;
+import co.elastic.clients.elasticsearch.snapshot.GetRepositoryRequest;
+import co.elastic.clients.elasticsearch.snapshot.GetSnapshotRequest;
+import co.elastic.clients.elasticsearch.snapshot.GetSnapshotResponse;
+import co.elastic.clients.elasticsearch.tasks.ListRequest;
+import co.elastic.clients.elasticsearch.tasks.ListResponse;
+import co.elastic.clients.json.JsonData;
+import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.DefaultTransportOptions;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.DataImportSourceType;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
+import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES;
+import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
-import io.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder;
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumSet;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.FailsafeException;
 import net.jodah.failsafe.FailsafeExecutor;
 import net.jodah.failsafe.RetryPolicy;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.IndicesRequest;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
-import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksResponse;
-import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesRequest;
-import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRequest;
-import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotResponse;
-import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotRequest;
-import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsRequest;
-import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
-import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.rollover.Condition;
-import org.elasticsearch.action.admin.indices.rollover.MaxSizeCondition;
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
-import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
-import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
-import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.delete.DeleteResponse;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.get.MultiGetRequest;
-import org.elasticsearch.action.get.MultiGetResponse;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.search.ClearScrollRequest;
-import org.elasticsearch.action.search.ClearScrollResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.action.support.IndicesOptions;
-import org.elasticsearch.action.support.master.AcknowledgedResponse;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.GetAliasesResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.http.HttpEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.nio.entity.NStringEntity;
 import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
+import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.client.core.CountResponse;
-import org.elasticsearch.client.indices.CreateIndexRequest;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.GetMappingsRequest;
-import org.elasticsearch.client.indices.GetMappingsResponse;
-import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
-import org.elasticsearch.client.indices.PutIndexTemplateRequest;
-import org.elasticsearch.client.indices.PutMappingRequest;
-import org.elasticsearch.client.indices.rollover.RolloverRequest;
-import org.elasticsearch.client.indices.rollover.RolloverResponse;
-import org.elasticsearch.client.tasks.TaskSubmissionResponse;
-import org.elasticsearch.cluster.metadata.AliasMetadata;
-import org.elasticsearch.common.unit.ByteSizeUnit;
-import org.elasticsearch.common.unit.ByteSizeValue;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
-import org.elasticsearch.index.reindex.ReindexRequest;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.rest.RestStatus;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
-import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.ApplicationContext;
 
 /**
  * This Client serves as the main elasticsearch client to be used from application code.
  *
- * <p>The exposed methods correspond to the interface of the {@link RestHighLevelClient}, any
+ * <p>The exposed methods correspond to the interface of the {@link ElasticsearchClient}, any
  * requests passed are expected to contain just the {@link IndexMappingCreator#getIndexName()} value
  * as index name. The client will care about injecting the current index prefix.
  *
- * <p>For low level operations it still exposes the underlying {@link RestHighLevelClient}, as well
+ * <p>For low level operations it still exposes the underlying {@link ElasticsearchClient}, as well
  * as the {@link OptimizeIndexNameService}.
  */
 @Slf4j
 public class OptimizeElasticsearchClient extends DatabaseClient {
 
-  // we had to introduce our own options due to a regression with the client's behaviour with the
-  // 7.16
-  // see
-  // https://discuss.elastic.co/t/regression-client-7-16-x-indicesclient-exists-indicesoptions-are-not-present-in-request-anymore/298017
-  public static final IndicesOptions INDICES_EXIST_OPTIONS =
-      new IndicesOptions(
-          EnumSet.of(
-              IndicesOptions.Option.FORBID_CLOSED_INDICES, IndicesOptions.Option.IGNORE_THROTTLED),
-          EnumSet.of(IndicesOptions.WildcardStates.OPEN));
   private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
-  private final ObjectMapper objectMapper;
-  @Getter private RestHighLevelClient highLevelClient;
-  private RequestOptionsProvider requestOptionsProvider;
+  private RestClient restClient;
+  private ObjectMapper objectMapper;
+  @Getter private ElasticsearchClient esClient;
+  private ElasticsearchAsyncClient elasticsearchAsyncClient;
+  private TransportOptionsProvider transportOptionsProvider;
 
   @Setter
   private int snapshotInProgressRetryDelaySeconds = DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY;
 
   public OptimizeElasticsearchClient(
-      final RestHighLevelClient highLevelClient,
-      final OptimizeIndexNameService indexNameService,
-      final ObjectMapper objectMapper) {
-    this(highLevelClient, indexNameService, new RequestOptionsProvider(), objectMapper);
+      RestClient restClient,
+      ObjectMapper objectMapper,
+      ElasticsearchClient esClient,
+      OptimizeIndexNameService indexNameService) {
+    this(restClient, objectMapper, esClient, indexNameService, new TransportOptionsProvider());
   }
 
   public OptimizeElasticsearchClient(
-      final RestHighLevelClient highLevelClient,
-      final OptimizeIndexNameService indexNameService,
-      final RequestOptionsProvider requestOptionsProvider,
-      final ObjectMapper objectMapper) {
-    this.highLevelClient = highLevelClient;
-    this.indexNameService = indexNameService;
-    this.requestOptionsProvider = requestOptionsProvider;
+      RestClient restClient,
+      ObjectMapper objectMapper,
+      ElasticsearchClient esClient,
+      OptimizeIndexNameService indexNameService,
+      TransportOptionsProvider transportOptionsProvider) {
+    this.restClient = restClient;
     this.objectMapper = objectMapper;
+    this.esClient = esClient;
+    this.indexNameService = indexNameService;
+    this.transportOptionsProvider = transportOptionsProvider;
+    this.elasticsearchAsyncClient =
+        new ElasticsearchAsyncClient(esClient._transport(), esClient._transportOptions());
   }
 
-  // to avoid cross-dependency, we copied that method from the ElasticsearchWriterUtil
-  private static Script createDefaultScriptWithPrimitiveParams(
-      final String inlineUpdateScript, final Map<String, Object> params) {
-    return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, inlineUpdateScript, params);
+  public final ElasticsearchClient esWithTransportOptions() {
+    return esClient.withTransportOptions(transportOptionsProvider.getTransportOptions());
   }
 
-  private static boolean containsNestedDocumentLimitErrorMessage(final BulkResponse bulkResponse) {
-    return bulkResponse.buildFailureMessage().contains(NESTED_DOC_LIMIT_MESSAGE);
+  public final GetMappingResponse getMapping(
+      final GetMappingRequest.Builder getMappingsRequest, final String... indexes)
+      throws IOException {
+    getMappingsRequest.index(Arrays.stream(convertToPrefixedAliasNames(indexes)).toList());
+    return esWithTransportOptions().indices().getMapping(getMappingsRequest.build());
   }
 
-  private static String getHintForErrorMsg(final BulkResponse bulkResponse) {
-    if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
-      // exception potentially related to nested object limit
-      return "If you are experiencing failures due to too many nested documents, try carefully increasing the "
-          + "configured nested object limit (es.settings.index.nested_documents_limit) or enabling the skipping of "
-          + "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). "
-          + "See Optimize documentation for details.";
+  public void updateSettings(final PutIndicesSettingsRequest request) throws IOException {
+    esWithTransportOptions().indices().putSettings(request);
+  }
+
+  // We need this logic because the Elasticsearch Java client depends on the existence
+  // of the `tokenChars` field. Optimize indices created using the Elasticsearch 7 client
+  // did not have this field, so we require custom logic to get their index settings.
+  // Once all indices have this field specified, this method can be removed
+  public GetIndicesSettingsResponse getOldIndexSettings() throws IOException {
+    final Request request = new Request(HttpGet.METHOD_NAME, "/optimize*/_settings");
+    request.setOptions(transportOptionsProvider.getRequestOptions());
+    final Response response = restClient.performRequest(request);
+    final Map<String, Map> responseContentAsMap =
+        OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), Map.class);
+    for (Map contentEntry : responseContentAsMap.values()) {
+      final Map settings = (Map) contentEntry.get("settings");
+      if (settings != null) {
+        final Map index = (Map) settings.get("index");
+        if (index != null) {
+          final Map analysis = (Map) index.get("analysis");
+          if (analysis != null) {
+            final Map tokenizer = (Map) analysis.get("tokenizer");
+            if (tokenizer != null) {
+              final Map ngramTokenizer = (Map) tokenizer.get("ngram_tokenizer");
+              if (!ngramTokenizer.containsKey("token_chars")) {
+                ngramTokenizer.put(
+                    "token_chars",
+                    List.of(
+                        TokenChar.Letter.jsonValue(),
+                        TokenChar.Digit.jsonValue(),
+                        TokenChar.Whitespace.jsonValue(),
+                        TokenChar.Punctuation.jsonValue(),
+                        TokenChar.Symbol.jsonValue()));
+              }
+            }
+          }
+        }
+      }
     }
-    return "";
+    return GetIndicesSettingsResponse.of(
+        b -> {
+          try {
+            return b.withJson(
+                new StringReader(OPTIMIZE_MAPPER.writeValueAsString(responseContentAsMap)));
+          } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
-  @Override
-  public void reloadConfiguration(final ApplicationContext context) {
-    try {
-      highLevelClient.close();
-      final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
-      highLevelClient = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
-      indexNameService = context.getBean(OptimizeIndexNameService.class);
-      requestOptionsProvider = new RequestOptionsProvider(configurationService);
-    } catch (final IOException e) {
-      log.error("There was an error closing Elasticsearch Client {}", highLevelClient);
-    }
+  public final <T> ScrollResponse<T> scroll(
+      final ScrollRequest searchScrollRequest, final Class<T> clas) throws IOException {
+    return esWithTransportOptions().scroll(searchScrollRequest, clas);
   }
 
-  public RequestOptions requestOptions() {
-    return requestOptionsProvider.getRequestOptions();
+  public final List<String> getAllIndexNames() throws IOException {
+    return esWithTransportOptions()
+        .indices()
+        .get(
+            GetIndexRequest.of(
+                g ->
+                    g.index(
+                        List.of(
+                            convertToPrefixedAliasNames(
+                                GetIndexRequest.of(r -> r.index("*"))
+                                    .index()
+                                    .toArray(new String[] {}))))))
+        .result()
+        .keySet()
+        .stream()
+        .toList();
   }
 
-  public final void close() throws IOException {
-    highLevelClient.close();
+  public void verifyRepositoryExists(final GetRepositoryRequest getRepositoriesRequest)
+      throws IOException, ElasticsearchException {
+    esWithTransportOptions().snapshot().getRepository(getRepositoriesRequest);
   }
 
-  public final RestClient getLowLevelClient() {
-    return highLevelClient.getLowLevelClient();
+  public GetSnapshotResponse getSnapshots(final GetSnapshotRequest getSnapshotsRequest)
+      throws IOException {
+    return esWithTransportOptions().snapshot().get(getSnapshotsRequest);
   }
 
-  public final BulkResponse bulk(final BulkRequest bulkRequest) throws IOException {
-    bulkRequest.requests().forEach(this::applyIndexPrefix);
-
-    return highLevelClient.bulk(bulkRequest, requestOptions());
+  public final <T> MgetResponse<T> mget(final MgetRequest multiGetRequest, final Class<T> tClass)
+      throws IOException {
+    return esWithTransportOptions().mget(multiGetRequest, tClass);
   }
 
-  public final CountResponse count(final CountRequest countRequest) throws IOException {
-    applyIndexPrefixes(countRequest);
-    return highLevelClient.count(countRequest, requestOptions());
+  public CompletableFuture<CreateSnapshotResponse> triggerSnapshotAsync(
+      final CreateSnapshotRequest createSnapshotRequest) {
+    return elasticsearchAsyncClient.snapshot().create(createSnapshotRequest);
+  }
+
+  public HealthResponse getClusterHealth(final HealthRequest request) throws IOException {
+    return esWithTransportOptions().cluster().health(request);
+  }
+
+  public CompletableFuture<DeleteSnapshotResponse> deleteSnapshotAsync(
+      final DeleteSnapshotRequest deleteSnapshotRequest) {
+    return elasticsearchAsyncClient.snapshot().delete(deleteSnapshotRequest);
   }
 
   public final DeleteResponse delete(final DeleteRequest deleteRequest) throws IOException {
-    applyIndexPrefix(deleteRequest);
-
-    return highLevelClient.delete(deleteRequest, requestOptions());
+    return esWithTransportOptions().delete(deleteRequest);
   }
 
-  @Override
-  public final List<String> getAllIndexNames() throws IOException {
-    return Arrays.asList(
-        highLevelClient
-            .indices()
-            .get(
-                new GetIndexRequest(convertToPrefixedAliasNames(new GetIndexRequest("*").indices()))
-                    .indicesOptions(INDICES_EXIST_OPTIONS),
-                requestOptions())
-            .getIndices());
+  public Response performRequest(final Request request) throws IOException {
+    request.setOptions(transportOptionsProvider.getRequestOptions());
+    return restClient.performRequest(request);
   }
 
-  public final void deleteByQuery(final DeleteByQueryRequest deleteByQueryRequest)
-      throws IOException {
-    applyIndexPrefixes(deleteByQueryRequest);
-
-    highLevelClient.deleteByQuery(deleteByQueryRequest, requestOptions());
-  }
-
-  public final boolean exists(final String indexName) throws IOException {
-    return exists(new GetIndexRequest(convertToPrefixedAliasNames(new String[] {indexName})));
-  }
-
-  public final boolean exists(final IndexMappingCreator indexMappingCreator) throws IOException {
-    return exists(
-        new GetIndexRequest(
-            indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMappingCreator)));
-  }
-
-  public final boolean exists(final GetIndexRequest getRequest) throws IOException {
-    return highLevelClient
-        .indices()
-        .exists(
-            new GetIndexRequest(convertToPrefixedAliasNames(getRequest.indices()))
-                .indicesOptions(INDICES_EXIST_OPTIONS),
-            requestOptions());
-  }
-
-  public final boolean templateExists(final String indexName) throws IOException {
-    return highLevelClient
-        .indices()
-        .existsTemplate(
-            new IndexTemplatesExistRequest(convertToPrefixedAliasNames(new String[] {indexName})),
-            requestOptions());
-  }
-
-  public final GetResponse get(final GetRequest getRequest) throws IOException {
-    getRequest.index(indexNameService.getOptimizeIndexAliasForIndex(getRequest.index()));
-
-    return highLevelClient.get(getRequest, requestOptions());
-  }
-
-  public final IndexResponse index(final IndexRequest indexRequest) throws IOException {
-    applyIndexPrefix(indexRequest);
-
-    return highLevelClient.index(indexRequest, requestOptions());
-  }
-
-  public final GetMappingsResponse getMapping(final GetMappingsRequest getMappingsRequest)
-      throws IOException {
-    getMappingsRequest.indices(convertToPrefixedAliasNames(getMappingsRequest.indices()));
-    return highLevelClient.indices().getMapping(getMappingsRequest, requestOptions());
-  }
-
-  public final MultiGetResponse mget(final MultiGetRequest multiGetRequest) throws IOException {
-    multiGetRequest
-        .getItems()
-        .forEach(item -> item.index(indexNameService.getOptimizeIndexAliasForIndex(item.index())));
-
-    return highLevelClient.mget(multiGetRequest, requestOptions());
-  }
-
-  public final UpdateResponse update(final UpdateRequest updateRequest) throws IOException {
-    applyIndexPrefix(updateRequest);
-
-    return highLevelClient.update(updateRequest, requestOptions());
-  }
-
-  public final BulkByScrollResponse updateByQuery(final UpdateByQueryRequest updateByQueryRequest)
-      throws IOException {
-    applyIndexPrefixes(updateByQueryRequest);
-    return highLevelClient.updateByQuery(updateByQueryRequest, requestOptions());
-  }
-
-  public final RolloverResponse rollover(RolloverRequest rolloverRequest) throws IOException {
-    rolloverRequest = applyAliasPrefixAndRolloverConditions(rolloverRequest);
-    return highLevelClient.indices().rollover(rolloverRequest, requestOptions());
-  }
-
-  public void deleteIndex(final IndexMappingCreator indexMappingCreator) {
-    final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(indexMappingCreator);
-    deleteIndex(indexAlias);
-  }
-
-  @Override
-  public void refresh(final String indexPattern) {
-    final RefreshRequest refreshRequest = new RefreshRequest(indexPattern);
-    applyIndexPrefixes(refreshRequest);
-    try {
-      highLevelClient.indices().refresh(refreshRequest, requestOptions());
-    } catch (final IOException e) {
-      log.error("Could not refresh Optimize indexes!", e);
-      throw new OptimizeRuntimeException("Could not refresh Optimize indexes!", e);
-    }
+  public final <T> IndexResponse index(final IndexRequest<T> indexRequest) throws IOException {
+    return esWithTransportOptions().index(indexRequest);
   }
 
   public <T> void doImportBulkRequestWithList(
       final String importItemName,
       final Collection<T> entityCollection,
-      final BiConsumer<BulkRequest, T> addDtoToRequestConsumer,
+      final BiConsumer<BulkRequest.Builder, T> addDtoToRequestConsumer,
       final boolean retryRequestIfNestedDocLimitReached) {
     if (entityCollection.isEmpty()) {
       log.warn("Cannot perform bulk request with empty collection of {}.", importItemName);
     } else {
-      final BulkRequest bulkRequest = new BulkRequest();
-      entityCollection.forEach(dto -> addDtoToRequestConsumer.accept(bulkRequest, dto));
+      final BulkRequest bulkRequest =
+          BulkRequest.of(
+              b -> {
+                entityCollection.forEach(dto -> addDtoToRequestConsumer.accept(b, dto));
+                return b;
+              });
       doBulkRequest(bulkRequest, importItemName, retryRequestIfNestedDocLimitReached);
     }
   }
 
-  private void applyOperationToBulkRequest(
-      final BulkRequest bulkRequest, final ImportRequestDto requestDto) {
-
-    validateOperationParams(requestDto);
-
-    switch (requestDto.getType()) {
-      case INDEX ->
-          bulkRequest.add(
-              new IndexRequest()
-                  .id(requestDto.getId())
-                  .source(serializeToJson(requestDto), XContentType.JSON)
-                  .index(requestDto.getIndexName()));
-      case UPDATE ->
-          bulkRequest.add(
-              new UpdateRequest()
-                  .id(requestDto.getId())
-                  .index(requestDto.getIndexName())
-                  .upsert(serializeToJson(requestDto), XContentType.JSON)
-                  .script(
-                      createDefaultScriptWithPrimitiveParams(
-                          requestDto.getScriptData().scriptString(),
-                          requestDto.getScriptData().params()))
-                  .retryOnConflict(requestDto.getRetryNumberOnConflict()));
-    }
+  public final <T> GetResponse<T> get(final GetRequest getRequest, final Class<T> tClass)
+      throws IOException {
+    return esWithTransportOptions().get(getRequest, tClass);
   }
 
-  private String serializeToJson(final ImportRequestDto requestDto) {
+  public final boolean exists(final String indexName) throws IOException {
+    return exists(ExistsRequest.of(b -> b.index(List.of(convertToPrefixedAliasName(indexName)))));
+  }
+
+  public final boolean exists(final IndexMappingCreator indexMappingCreator) throws IOException {
+    return exists(
+        GetIndexRequest.of(
+            b ->
+                b.index(
+                    indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(
+                        indexMappingCreator))));
+  }
+
+  public final boolean exists(final ExistsRequest getRequest) throws IOException {
+    return esWithTransportOptions().indices().exists(getRequest).value();
+  }
+
+  public final boolean exists(final GetIndexRequest getRequest) throws IOException {
     try {
-      return objectMapper.writeValueAsString(requestDto.getSource());
-    } catch (final Exception e) {
-      final String error =
-          String.format(
-              "Failed to serialize source of type %s for ImportRequestDto(name=%s, id=%s, source=%s)!",
-              requestDto.getSource() != null ? requestDto.getSource().getClass() : "null",
-              requestDto.getImportName(),
-              requestDto.getId(),
-              requestDto.getSource());
-      log.error(error, e);
-      throw new OptimizeRuntimeException(error, e);
-    }
-  }
-
-  public void doBulkRequest(
-      final BulkRequest bulkRequest,
-      final String itemName,
-      final boolean retryRequestIfNestedDocLimitReached) {
-    if (retryRequestIfNestedDocLimitReached) {
-      doBulkRequestWithNestedDocHandling(bulkRequest, itemName);
-    } else {
-      doBulkRequestWithoutRetries(bulkRequest, itemName);
-    }
-  }
-
-  private void doBulkRequestWithoutRetries(final BulkRequest bulkRequest, final String itemName) {
-    if (bulkRequest.numberOfActions() > 0) {
-      try {
-        final BulkResponse bulkResponse = bulk(bulkRequest);
-        if (bulkResponse.hasFailures()) {
-          throw new OptimizeRuntimeException(
-              String.format(
-                  "There were failures while performing bulk on %s.%n%s Message: %s",
-                  itemName, getHintForErrorMsg(bulkResponse), bulkResponse.buildFailureMessage()));
-        }
-      } catch (final IOException e) {
-        final String reason =
-            String.format("There were errors while performing a bulk on %s.", itemName);
-        log.error(reason, e);
-        throw new OptimizeRuntimeException(reason, e);
+      return !esWithTransportOptions().indices().get(getRequest).result().isEmpty();
+    } catch (ElasticsearchException e) {
+      if (e.getMessage().contains("index_not_found_exception")) {
+        return false;
       }
-    } else {
-      log.debug("Bulkrequest on {} not executed because it contains no actions.", itemName);
+      throw e;
     }
   }
 
-  private void doBulkRequestWithNestedDocHandling(
-      final BulkRequest bulkRequest, final String itemName) {
-    if (bulkRequest.numberOfActions() > 0) {
-      log.info("Executing bulk request on {} items of {}", bulkRequest.requests().size(), itemName);
-      try {
-        final BulkResponse bulkResponse = bulk(bulkRequest);
-        if (bulkResponse.hasFailures()) {
-          if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
-            final Set<String> failedItemIds =
-                Arrays.stream(bulkResponse.getItems())
-                    .filter(BulkItemResponse::isFailed)
-                    .filter(
-                        responseItem ->
-                            responseItem.getFailureMessage().contains(NESTED_DOC_LIMIT_MESSAGE))
-                    .map(BulkItemResponse::getId)
-                    .collect(Collectors.toSet());
-            log.warn(
-                "There were failures while performing bulk on {} due to the nested document limit being reached."
-                    + " Removing {} failed items and retrying",
-                itemName,
-                failedItemIds.size());
-            bulkRequest.requests().removeIf(request -> failedItemIds.contains(request.id()));
-            if (!bulkRequest.requests().isEmpty()) {
-              doBulkRequestWithNestedDocHandling(bulkRequest, itemName);
-            }
-          } else {
-            throw new OptimizeRuntimeException(
-                String.format(
-                    "There were failures while performing bulk on %s. Message: %s",
-                    itemName, bulkResponse.buildFailureMessage()));
-          }
-        }
-      } catch (final IOException e) {
-        final String reason =
-            String.format("There were errors while performing a bulk on %s.", itemName);
-        log.error(reason, e);
-        throw new OptimizeRuntimeException(reason, e);
-      }
-    } else {
-      log.debug("Bulkrequest on {} not executed because it contains no actions.", itemName);
-    }
-  }
-
-  public void createIndex(final CreateIndexRequest request) throws IOException {
-    highLevelClient.indices().create(request, requestOptions());
-  }
-
-  public void createMapping(final PutMappingRequest request) throws IOException {
-    highLevelClient.indices().putMapping(request, requestOptions());
-  }
-
-  public void updateSettings(final UpdateSettingsRequest request) throws IOException {
-    highLevelClient.indices().putSettings(request, requestOptions());
-  }
-
-  public void createTemplate(final PutIndexTemplateRequest request) throws IOException {
-    highLevelClient.indices().putTemplate(request, requestOptions());
-  }
-
-  public GetSettingsResponse getIndexSettings() throws IOException {
-    return highLevelClient
+  public final boolean templateExists(final String indexName) throws IOException {
+    return esWithTransportOptions()
         .indices()
-        .getSettings(
-            new GetSettingsRequest().indices(getIndexNameService().getIndexPrefix() + "*"),
-            requestOptions());
-  }
-
-  public ClusterHealthResponse getClusterHealth(final ClusterHealthRequest request)
-      throws IOException {
-    return highLevelClient.cluster().health(request, requestOptions());
-  }
-
-  public TaskSubmissionResponse submitReindexTask(final ReindexRequest request) throws IOException {
-    return highLevelClient.submitReindexTask(request, requestOptions());
-  }
-
-  public TaskSubmissionResponse submitUpdateTask(final UpdateByQueryRequest request)
-      throws IOException {
-    return highLevelClient.submitUpdateByQueryTask(request, requestOptions());
-  }
-
-  public TaskSubmissionResponse submitDeleteTask(final DeleteByQueryRequest request)
-      throws IOException {
-    return highLevelClient.submitDeleteByQueryTask(request, requestOptions());
-  }
-
-  public ListTasksResponse getTaskList(final ListTasksRequest request) throws IOException {
-    return highLevelClient.tasks().list(request, requestOptions());
-  }
-
-  public void verifyRepositoryExists(final GetRepositoriesRequest getRepositoriesRequest)
-      throws IOException, ElasticsearchStatusException {
-    highLevelClient.snapshot().getRepository(getRepositoriesRequest, requestOptions());
-  }
-
-  public GetSnapshotsResponse getSnapshots(final GetSnapshotsRequest getSnapshotsRequest)
-      throws IOException, ElasticsearchStatusException {
-    return highLevelClient.snapshot().get(getSnapshotsRequest, requestOptions());
-  }
-
-  public void triggerSnapshotAsync(
-      final CreateSnapshotRequest createSnapshotRequest,
-      final ActionListener<CreateSnapshotResponse> listener) {
-    highLevelClient.snapshot().createAsync(createSnapshotRequest, requestOptions(), listener);
-  }
-
-  public void deleteSnapshotAsync(
-      final DeleteSnapshotRequest deleteSnapshotRequest,
-      final ActionListener<AcknowledgedResponse> listener) {
-    highLevelClient.snapshot().deleteAsync(deleteSnapshotRequest, requestOptions(), listener);
-  }
-
-  public long countWithoutPrefix(final CountRequest request)
-      throws IOException, InterruptedException {
-    final int maxNumberOfRetries = 10;
-    final int waitIntervalMillis = 3000;
-    int retryAttempts = 0;
-    while (retryAttempts < maxNumberOfRetries) {
-      final CountResponse countResponse = highLevelClient.count(request, requestOptions());
-      if (countResponse.getFailedShards() > 0) {
-        log.info(
-            "Not all shards returned successful for count response from indices: {}",
-            Arrays.asList(request.indices()));
-        retryAttempts++;
-        Thread.sleep(waitIntervalMillis);
-      } else {
-        return countResponse.getCount();
-      }
-    }
-    throw new OptimizeRuntimeException(
-        String.format(
-            "Could not determine count from indices: %s", Arrays.asList(request.indices())));
-  }
-
-  public Response performRequest(final Request request) throws IOException {
-    request.setOptions(requestOptions());
-    return getLowLevelClient().performRequest(request);
-  }
-
-  /**
-   * Deletes an index and retries in recoverable situations (e.g. snapshot in progress). This
-   * expects the plain index name to be provided, no automatic prefixing or other modifications will
-   * be applied.
-   *
-   * @param indexNames plain index names to delete
-   */
-  @Override
-  public void deleteIndexByRawIndexNames(final String... indexNames) {
-    final String indexNamesString = Arrays.toString(indexNames);
-    log.debug("Deleting indices [{}].", indexNamesString);
-    try {
-      esClientSnapshotFailsafe("DeleteIndex: " + indexNamesString)
-          .get(
-              () ->
-                  highLevelClient
-                      .indices()
-                      .delete(new DeleteIndexRequest(indexNames), requestOptions()));
-    } catch (final FailsafeException failsafeException) {
-      final Throwable cause = failsafeException.getCause();
-      if (cause instanceof final ElasticsearchStatusException elasticsearchStatusException) {
-        throw elasticsearchStatusException;
-      } else {
-        final String errorMessage = String.format("Could not delete index [%s]!", indexNamesString);
-        throw new OptimizeRuntimeException(errorMessage, cause);
-      }
-    }
-    log.debug("Successfully deleted index [{}].", indexNamesString);
+        .existsTemplate(b -> b.name(List.of(convertToPrefixedAliasNames(new String[] {indexName}))))
+        .value();
   }
 
   public void deleteIndexTemplateByIndexTemplateName(final String indexTemplateName) {
@@ -605,10 +368,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
         indexNameService.getOptimizeIndexAliasForIndex(indexTemplateName);
     log.debug("Deleting index template [{}].", prefixedIndexTemplateName);
     try {
-      highLevelClient
-          .indices()
-          .deleteTemplate(
-              new DeleteIndexTemplateRequest(prefixedIndexTemplateName), requestOptions());
+      esWithTransportOptions().indices().deleteTemplate(b -> b.name(prefixedIndexTemplateName));
     } catch (final IOException e) {
       final String errorMessage =
           String.format("Could not delete index template [%s]!", prefixedIndexTemplateName);
@@ -617,14 +377,104 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     log.debug("Successfully deleted index template [{}].", prefixedIndexTemplateName);
   }
 
-  public void applyIndexPrefixes(final IndicesRequest.Replaceable request) {
-    final String[] indices = request.indices();
-    request.indices(convertToPrefixedAliasNames(indices));
+  public void createIndex(final CreateIndexRequest request) throws IOException {
+    esWithTransportOptions().indices().create(request);
   }
 
-  public final SearchResponse searchWithoutPrefixing(final SearchRequest searchRequest)
+  public long countWithoutPrefix(final CountRequest request)
+      throws IOException, InterruptedException {
+    final int maxNumberOfRetries = 10;
+    final int waitIntervalMillis = 3000;
+    int retryAttempts = 0;
+    while (retryAttempts < maxNumberOfRetries) {
+      final CountResponse countResponse = esWithTransportOptions().count(request);
+      if (countResponse.shards().failed().intValue() > 0) {
+        log.info(
+            "Not all shards returned successful for count response from indices: {}",
+            request.index());
+        retryAttempts++;
+        Thread.sleep(waitIntervalMillis);
+      } else {
+        return countResponse.count();
+      }
+    }
+    throw new OptimizeRuntimeException(
+        String.format("Could not determine count from indices: %s", request.index()));
+  }
+
+  public ElasticsearchClient elasticsearchClient() {
+    return esClient;
+  }
+
+  public UpdateByQueryResponse submitUpdateTask(final UpdateByQueryRequest request)
       throws IOException {
-    return highLevelClient.search(searchRequest, requestOptions());
+    return esWithTransportOptions().updateByQuery(request);
+  }
+
+  public final UpdateByQueryResponse updateByQuery(
+      final UpdateByQueryRequest.Builder updateByQueryRequestBuilder, final List<String> indexes)
+      throws IOException {
+    return esWithTransportOptions()
+        .updateByQuery(
+            updateByQueryRequestBuilder
+                .index(indexes.stream().map(this::convertToPrefixedAliasName).toList())
+                .build());
+  }
+
+  public ListResponse getTaskList(final ListRequest request) throws IOException {
+    return esWithTransportOptions().tasks().list(request);
+  }
+
+  @Override
+  public Map<String, Set<String>> getAliasesForIndexPattern(final String indexNamePattern) {
+    try {
+      return getAlias(indexNamePattern).result().entrySet().stream()
+          .collect(
+              Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().aliases().keySet()));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public final GetAliasResponse getAlias(final GetAliasRequest getAliasesRequest)
+      throws IOException {
+    return esWithTransportOptions().indices().getAlias(getAliasesRequest);
+  }
+
+  private GetAliasResponse getAlias(final String indexNamePattern) throws IOException {
+    return esWithTransportOptions()
+        .indices()
+        .getAlias((b) -> b.index(convertToPrefixedAliasName(indexNamePattern)));
+  }
+
+  public final RolloverResponse rollover(final RolloverRequest rolloverRequest) throws IOException {
+    return esWithTransportOptions().indices().rollover(rolloverRequest);
+  }
+
+  public void createMapping(final PutMappingRequest request) throws IOException {
+    esWithTransportOptions().indices().putMapping(request);
+  }
+
+  public void createTemplate(final PutTemplateRequest request) throws IOException {
+    esWithTransportOptions().indices().putTemplate(request);
+  }
+
+  public <T> void deleteIndex(final IndexMappingCreator<T> indexMappingCreator) {
+    final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(indexMappingCreator);
+    deleteIndex(indexAlias);
+  }
+
+  @Override
+  public void deleteIndexByRawIndexNames(final String... indexNames) {
+    final String indexNamesString = Arrays.toString(indexNames);
+    log.debug("Deleting indices [{}].", indexNamesString);
+    esClientSnapshotFailsafe("DeleteIndex: " + indexNamesString)
+        .get(
+            () ->
+                esWithTransportOptions()
+                    .indices()
+                    .delete(DeleteIndexRequest.of(b -> b.index(List.of(indexNames)))));
+    log.debug("Successfully deleted index [{}].", indexNamesString);
   }
 
   private FailsafeExecutor<Object> esClientSnapshotFailsafe(final String operation) {
@@ -635,8 +485,8 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     return new RetryPolicy<>()
         .handleIf(
             failure -> {
-              if (failure instanceof final ElasticsearchStatusException statusException) {
-                return statusException.status() == RestStatus.BAD_REQUEST
+              if (failure instanceof final ElasticsearchException statusException) {
+                return statusException.status() == 400
                     && statusException.getMessage().contains("snapshot_in_progress_exception");
               } else {
                 return false;
@@ -655,131 +505,171 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
             });
   }
 
-  private void applyIndexPrefix(final DocWriteRequest<?> request) {
-    request.index(indexNameService.getOptimizeIndexAliasForIndex(request.index()));
-  }
-
-  @Override
-  public Map<String, Set<String>> getAliasesForIndexPattern(final String indexNamePattern)
-      throws IOException {
-    final GetAliasesRequest getAliasesRequest = new GetAliasesRequest();
-    getAliasesRequest.indices(indexNamePattern);
-    final GetAliasesResponse aliases = getAlias(getAliasesRequest);
-    return aliases.getAliases().entrySet().stream()
-        .collect(
-            Collectors.toMap(
-                Map.Entry::getKey,
-                entry ->
-                    entry.getValue().stream()
-                        .map(AliasMetadata::getAlias)
-                        .collect(Collectors.toSet())));
-  }
-
-  @Override
-  public Set<String> getAllIndicesForAlias(final String aliasName) {
-    final GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasName);
-    try {
-      return highLevelClient
-          .indices()
-          .getAlias(aliasesRequest, requestOptions())
-          .getAliases()
-          .keySet();
-    } catch (final Exception e) {
-      final String message =
-          String.format("Could not retrieve index names for alias {%s}.", aliasName);
-      throw new OptimizeRuntimeException(message, e);
-    }
-  }
-
-  @Override
-  public boolean triggerRollover(final String indexAliasName, final int maxIndexSizeGB) {
-    final RolloverRequest rolloverRequest = new RolloverRequest(indexAliasName, null);
-    rolloverRequest.addMaxIndexSizeCondition(new ByteSizeValue(maxIndexSizeGB, ByteSizeUnit.GB));
-    log.info("Executing rollover request on {}", indexAliasName);
-    try {
-      final RolloverResponse rolloverResponse = rollover(rolloverRequest);
-      if (rolloverResponse.isRolledOver()) {
-        log.info(
-            "Index with alias {} has been rolled over. New index name: {}",
-            indexAliasName,
-            rolloverResponse.getNewIndex());
-      } else {
-        log.debug("Index with alias {} has not been rolled over.", indexAliasName);
-      }
-      return rolloverResponse.isRolledOver();
-    } catch (final Exception e) {
-      final String message = "Failed to execute rollover request";
-      log.error(message, e);
-      throw new OptimizeRuntimeException(message, e);
-    }
-  }
-
-  @Override
-  public void deleteIndex(final String indexAlias) {
-    final String[] allIndicesForAlias = getAllIndicesForAlias(indexAlias).toArray(String[]::new);
-    deleteIndexByRawIndexNames(allIndicesForAlias);
-  }
-
   @Override
   public <T> long count(final String[] indexNames, final T query) throws IOException {
-    final CountRequest countRequest = new CountRequest(indexNames);
-    if (query instanceof final QueryBuilder elasticSearchQuery) {
-      countRequest.query(elasticSearchQuery);
-      return count(countRequest).getCount();
-    } else {
-      throw new IllegalArgumentException(
-          "The count method requires an ElasticSearch object of type QueryBuilder, "
-              + "instead got "
-              + query.getClass().getSimpleName());
+    return Objects.requireNonNull(
+            count(
+                CountRequest.of(
+                    b -> {
+                      CountRequest.Builder builder =
+                          b.index(List.of(convertToPrefixedAliasNames(indexNames)));
+                      builder.query(q -> q.bool(((BoolQuery.Builder) query).build()));
+                      return b;
+                    })))
+        .count();
+  }
+
+  public final CountResponse count(final CountRequest countRequest) throws IOException {
+    return esWithTransportOptions().count(countRequest);
+  }
+
+  @Override
+  public List<String> addPrefixesToIndices(final String... indexes) {
+    return List.of(convertToPrefixedAliasNames(indexes));
+  }
+
+  private void applyIndexPrefixes(
+      final RefreshRequest.Builder request, final List<String> indexes) {
+    request.index(List.of(convertToPrefixedAliasNames(indexes.toArray(new String[] {}))));
+  }
+
+  public <T> SearchResponse<T> search(final SearchRequest searchRequest, final Class<T> tClass)
+      throws IOException {
+    return esWithTransportOptions().search(searchRequest, tClass);
+  }
+
+  public <T> SearchResponse<T> search(final SearchRequest searchRequest) throws IOException {
+    String path = "/" + String.join(",", searchRequest.index()) + "/_search?typed_keys=true";
+    if (searchRequest.scroll() != null) {
+      path = path + "&scroll=" + searchRequest.scroll().time();
+    }
+    try {
+      final Request request = new Request(HttpPost.METHOD_NAME, path);
+      final HttpEntity entity =
+          new NStringEntity(extractQuery(searchRequest), ContentType.APPLICATION_JSON);
+      request.setEntity(entity);
+      final Response response = restClient.performRequest(request);
+      final Map map = OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), Map.class);
+      changeAggregationNullValuesOnNAN(map);
+      return SearchResponse.of(
+          s -> {
+            try {
+              return s.withJson(new StringReader(OPTIMIZE_MAPPER.writeValueAsString(map)));
+            } catch (JsonProcessingException e) {
+              throw new RuntimeException(e);
+            }
+          });
+    } catch (ResponseException e) {
+      throw new ElasticsearchException(
+          "error",
+          ErrorResponse.of(
+              r -> {
+                try {
+                  return r.withJson(e.getResponse().getEntity().getContent());
+                } catch (IOException ex) {
+                  throw new RuntimeException(ex);
+                }
+              }));
     }
   }
 
-  public final SearchResponse scroll(final SearchScrollRequest searchScrollRequest)
-      throws IOException {
-    // nothing to modify here, still exposing to not force usage of highLevelClient for this common
-    // use case
-    return highLevelClient.scroll(searchScrollRequest, requestOptions());
+  /**
+   * This method implements a workaround to address a breaking change introduced in the
+   * Elasticsearch client library.
+   *
+   * <p>In a recent version of the Elasticsearch Java client, the behavior of aggregation values
+   * changed. Previously, aggregation results could contain {@code null} values, but in the newer
+   * version, {@code null} values are replaced with a default value of 0.0. Additionally, this
+   * change also involved converting the aggregation result to a primitive {@code double}, which
+   * cannot represent {@code null}. This breaking change has caused significant issues in our APIs,
+   * which rely on the presence of {@code null} to distinguish between absent and zero-valued
+   * aggregations.
+   *
+   * <p>To mitigate this, we opted to use the low-level client API to perform the search request, as
+   * it does not enforce default deserialization. By retrieving the raw response as a {@code Map},
+   * we can manually inspect the aggregation values. If a {@code null} value is found, we replace it
+   * with {@code Double.NaN}, which our existing logic handles appropriately. This approach allows
+   * us to maintain backward compatibility without waiting for the official fix, which the
+   * Elasticsearch team has indicated will be reintroduced in an upcoming minor release.
+   *
+   * <p>Note that this workaround will be removed once the issue is resolved in the Elasticsearch
+   * client library.
+   *
+   * <p>This solution ensures that our API continues to function correctly, despite the changes in
+   * the underlying Elasticsearch client.
+   */
+  public static void changeAggregationNullValuesOnNAN(final Map<String, Object> map) {
+    for (Map.Entry<String, Object> entry : map.entrySet()) {
+      final String key = entry.getKey();
+      final Object value = entry.getValue();
+
+      if (key.contains("avg#")
+          || key.contains("max#")
+          || key.contains("sum#")
+          || key.contains("min#")) {
+        final Object o = ((Map<String, Object>) value).get("value");
+        if (o == null) {
+          ((Map<String, Object>) value).put("value", Double.NaN);
+        }
+      }
+
+      if (value instanceof HashMap) {
+        changeAggregationNullValuesOnNAN((Map<String, Object>) value);
+      } else if (value instanceof List<?> values) {
+        for (Object o : values) {
+          if (o instanceof HashMap) {
+            changeAggregationNullValuesOnNAN((Map<String, Object>) o);
+          }
+        }
+      }
+    }
   }
 
-  public final SearchResponse search(final SearchRequest searchRequest) throws IOException {
-    applyIndexPrefixes(searchRequest);
-    return highLevelClient.search(searchRequest, requestOptions());
+  String extractQuery(final SearchRequest searchRequest) {
+    try {
+      final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(OPTIMIZE_MAPPER);
+
+      final StringWriter writer = new StringWriter();
+      final JacksonJsonpGenerator generator =
+          new JacksonJsonpGenerator(new JsonFactory().createGenerator(writer));
+      searchRequest.serialize(generator, jsonpMapper);
+      generator.flush();
+      return writer.toString();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  public final ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest)
-      throws IOException {
-    // nothing to modify here, still exposing to not force usage of highLevelClient for this common
-    // use case
-    return highLevelClient.clearScroll(clearScrollRequest, requestOptions());
-  }
-
-  @Override
-  public String getDatabaseVersion() throws IOException {
-    return highLevelClient.info(requestOptions()).getVersion().getNumber();
-  }
-
-  @Override
-  @SneakyThrows
-  public void setDefaultRequestOptions() {
-    highLevelClient.info(RequestOptions.DEFAULT);
+  public ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest) {
+    try {
+      return esWithTransportOptions().clearScroll(clearScrollRequest);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
   public void update(final String indexName, final String entityId, final ScriptData script) {
-
-    final UpdateRequest updateRequest =
-        new UpdateRequest()
-            .index(indexName)
-            .id(entityId)
-            .script(
-                new Script(
-                    ScriptType.INLINE,
-                    Script.DEFAULT_SCRIPT_LANG,
-                    script.scriptString(),
-                    script.params()))
-            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
     try {
-      update(updateRequest);
+      update(
+          OptimizeUpdateRequestBuilderES.of(
+              b ->
+                  b.optimizeIndex(this, indexNameService.getOptimizeIndexAliasForIndex(indexName))
+                      .id(entityId)
+                      .script(
+                          sb ->
+                              sb.inline(
+                                  ib ->
+                                      ib.params(
+                                              script.params().entrySet().stream()
+                                                  .collect(
+                                                      Collectors.toMap(
+                                                          Map.Entry::getKey,
+                                                          e -> JsonData.of(e.getValue()))))
+                                          .source(script.scriptString())
+                                          .lang(ScriptLanguage.Painless)))
+                      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)),
+          Object.class);
     } catch (final IOException e) {
       final String errorMessage =
           String.format(
@@ -790,22 +680,299 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     }
   }
 
+  private void applyOperationToBulkRequest(
+      final BulkRequest.Builder builder, final ImportRequestDto requestDto) {
+
+    validateOperationParams(requestDto);
+
+    switch (requestDto.getType()) {
+      case INDEX ->
+          builder.operations(
+              bb ->
+                  bb.index(
+                      bi ->
+                          bi.index(addPrefixesToIndices(requestDto.getIndexName()).get(0))
+                              .id(requestDto.getId())
+                              .document(requestDto.getSource())));
+      case UPDATE ->
+          builder.operations(
+              bb ->
+                  bb.update(
+                      bi ->
+                          bi.index(addPrefixesToIndices(requestDto.getIndexName()).get(0))
+                              .id(requestDto.getId())
+                              .action(
+                                  a ->
+                                      a.upsert(requestDto.getSource())
+                                          .script(
+                                              createDefaultScriptWithPrimitiveParams(
+                                                  requestDto.getScriptData().scriptString(),
+                                                  requestDto.getScriptData().params())))
+                              .retryOnConflict(requestDto.getRetryNumberOnConflict())));
+    }
+  }
+
+  public static <T> Script createDefaultScriptWithPrimitiveParams(
+      final String inlineUpdateScript, final Map<String, T> params) {
+    return Script.of(
+        b ->
+            b.inline(
+                i ->
+                    i.lang(ScriptLanguage.Painless)
+                        .source(inlineUpdateScript)
+                        .params(
+                            params.entrySet().stream()
+                                .collect(
+                                    Collectors.toMap(
+                                        Map.Entry::getKey, e -> JsonData.of(e.getValue()))))));
+  }
+
+  public void doBulkRequest(
+      final BulkRequest bulkRequest,
+      final String itemName,
+      final boolean retryRequestIfNestedDocLimitReached) {
+    if (retryRequestIfNestedDocLimitReached) {
+      doBulkRequestWithNestedDocHandling(bulkRequest, itemName);
+    } else {
+      doBulkRequestWithoutRetries(bulkRequest, itemName);
+    }
+  }
+
+  private void doBulkRequestWithoutRetries(final BulkRequest bulkRequest, final String itemName) {
+    if (bulkRequest != null && !bulkRequest.operations().isEmpty()) {
+      try {
+        final BulkResponse bulkResponse = bulk(bulkRequest);
+        if (bulkResponse.errors()) {
+          throw new OptimizeRuntimeException(
+              String.format(
+                  "There were failures while performing bulk on %s.%n%s Message: %s",
+                  itemName,
+                  getHintForErrorMsg(bulkResponse),
+                  bulkResponse.items().stream()
+                      .map(
+                          i ->
+                              i.operationType() + " " + i.error().type() + " " + i.error().reason())
+                      .collect(Collectors.joining(" , "))));
+        }
+      } catch (final IOException e) {
+        final String reason =
+            String.format("There were errors while performing a bulk on %s.", itemName);
+        log.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
+      }
+    } else {
+      log.debug("Bulkrequest on {} not executed because it contains no actions.", itemName);
+    }
+  }
+
+  private static String getHintForErrorMsg(final BulkResponse bulkResponse) {
+    if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
+      // exception potentially related to nested object limit
+      return "If you are experiencing failures due to too many nested documents, try carefully increasing the "
+          + "configured nested object limit (es.settings.index.nested_documents_limit) or enabling the skipping of "
+          + "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). "
+          + "See Optimize documentation for details.";
+    }
+    return "";
+  }
+
+  private static boolean containsNestedDocumentLimitErrorMessage(final BulkResponse bulkResponse) {
+    return bulkResponse.items().stream()
+        .filter(i -> i.error() != null)
+        .map(i -> i.error().reason().contains(NESTED_DOC_LIMIT_MESSAGE))
+        .findFirst()
+        .orElse(false);
+  }
+
+  public final BulkResponse bulk(final BulkRequest bulkRequest) throws IOException {
+    return esWithTransportOptions().bulk(bulkRequest);
+  }
+
+  private void doBulkRequestWithNestedDocHandling(
+      final BulkRequest bulkRequest, final String itemName) {
+    if (bulkRequest != null && !bulkRequest.operations().isEmpty()) {
+      log.info(
+          "Executing bulk request on {} items of {}", bulkRequest.operations().size(), itemName);
+      try {
+        final BulkResponse bulkResponse = bulk(bulkRequest);
+        if (bulkResponse.errors()) {
+          if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
+            final Set<String> failedItemIds =
+                bulkResponse.items().stream()
+                    .filter(b -> b.error() != null && b.error().reason() != null)
+                    .filter(
+                        responseItem ->
+                            responseItem.error().reason().contains(NESTED_DOC_LIMIT_MESSAGE))
+                    .map(BulkResponseItem::id)
+                    .collect(Collectors.toSet());
+            log.warn(
+                "There were failures while performing bulk on {} due to the nested document limit being reached."
+                    + " Removing {} failed items and retrying",
+                itemName,
+                failedItemIds.size());
+            List<BulkOperation> bulkOperations = new ArrayList<>(bulkRequest.operations());
+            bulkOperations.removeIf(
+                request -> {
+                  if (request.isCreate()) {
+                    return failedItemIds.contains(request.create().id());
+                  } else if (request.isUpdate()) {
+                    return failedItemIds.contains(request.update().id());
+                  } else if (request.isDelete()) {
+                    return failedItemIds.contains(request.delete().id());
+                  } else if (request.isIndex()) {
+                    return failedItemIds.contains(request.index().id());
+                  }
+                  return false;
+                });
+            if (!bulkOperations.isEmpty()) {
+              doBulkRequestWithNestedDocHandling(
+                  BulkRequest.of(b -> b.operations(bulkOperations)), itemName);
+            }
+          } else {
+            throw new OptimizeRuntimeException(
+                String.format("There were failures while performing bulk on %s", itemName));
+          }
+        }
+      } catch (final IOException e) {
+        final String reason =
+            String.format("There were errors while performing a bulk on %s.", itemName);
+        log.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
+      }
+    } else {
+      log.debug("Bulkrequest on {} not executed because it contains no actions.", itemName);
+    }
+  }
+
+  @Override
+  public void refresh(final String indexPattern) {
+    RefreshRequest.Builder builder = new RefreshRequest.Builder();
+    applyIndexPrefixes(builder, List.of(indexPattern));
+    try {
+      esWithTransportOptions().indices().refresh(builder.build());
+    } catch (final IOException e) {
+      log.error("Could not refresh Optimize indexes!", e);
+      throw new OptimizeRuntimeException("Could not refresh Optimize indexes!", e);
+    }
+  }
+
+  @Override
+  public void deleteIndex(final String indexAlias) {
+    final String[] allIndicesForAlias = getAllIndicesForAlias(indexAlias).toArray(String[]::new);
+    deleteIndexByRawIndexNames(allIndicesForAlias);
+  }
+
+  public DeleteByQueryResponse submitDeleteTask(final DeleteByQueryRequest request)
+      throws IOException {
+    return esWithTransportOptions().deleteByQuery(request);
+  }
+
+  public ReindexResponse submitReindexTask(final ReindexRequest request) throws IOException {
+    return esWithTransportOptions().reindex(request);
+  }
+
+  public final void deleteByQuery(
+      final DeleteByQueryRequest.Builder deleteByQueryRequestBuilder, final String... indexes)
+      throws IOException {
+    esWithTransportOptions()
+        .deleteByQuery(
+            deleteByQueryRequestBuilder
+                .index(Arrays.stream(convertToPrefixedAliasNames(indexes)).toList())
+                .build());
+  }
+
+  @Override
+  public String getDatabaseVersion() {
+    try {
+      return esWithTransportOptions().info().version().number();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public void setDefaultRequestOptions() {
+    try {
+      esClient.withTransportOptions(DefaultTransportOptions.EMPTY).info();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public Set<String> getAllIndicesForAlias(final String aliasName) {
+    try {
+      return esWithTransportOptions()
+          .indices()
+          .getAlias((b) -> b.name(aliasName))
+          .result()
+          .keySet();
+    } catch (final ElasticsearchException e) {
+      if (e.response().status() == 404) {
+        return Set.of();
+      }
+      throw e;
+    } catch (final Exception e) {
+      final String message =
+          String.format("Could not retrieve index names for alias {%s}.", aliasName);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  @Override
+  public boolean triggerRollover(final String indexAliasName, final int maxIndexSizeGB) {
+    final RolloverRequest rolloverRequest =
+        RolloverRequest.of(
+            b ->
+                b.alias(convertToPrefixedAliasName(indexAliasName))
+                    .conditions(builder -> builder.maxSize(maxIndexSizeGB + "gb")));
+    log.info("Executing rollover request on {}", indexAliasName);
+    try {
+      final RolloverResponse rolloverResponse = rollover(rolloverRequest);
+      if (rolloverResponse.rolledOver()) {
+        log.info(
+            "Index with alias {} has been rolled over. New index name: {}",
+            indexAliasName,
+            rolloverResponse.newIndex());
+      } else {
+        log.debug("Index with alias {} has not been rolled over.", indexAliasName);
+      }
+      return rolloverResponse.rolledOver();
+    } catch (final Exception e) {
+      final String message = "Failed to execute rollover request";
+      log.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  public final <T, R> UpdateResponse<T> update(
+      final UpdateRequest<T, R> updateRequest, final Class<T> tClass) throws IOException {
+    return esWithTransportOptions().update(updateRequest, tClass);
+  }
+
   @Override
   public void executeImportRequestsAsBulk(
       final String bulkRequestName,
       final List<ImportRequestDto> importRequestDtos,
       final Boolean retryFailedRequestsOnNestedDocLimit) {
-    final BulkRequest bulkRequest = new BulkRequest();
-    final Map<String, List<ImportRequestDto>> requestsByType =
-        importRequestDtos.stream()
-            .filter(this::validateImportName)
-            .collect(groupingBy(ImportRequestDto::getImportName));
-    requestsByType.forEach(
-        (type, requests) -> {
-          log.debug("Adding [{}] requests of type {} to bulk request", requests.size(), type);
-          requests.forEach(
-              importRequest -> applyOperationToBulkRequest(bulkRequest, importRequest));
-        });
+    BulkRequest bulkRequest =
+        BulkRequest.of(
+            b -> {
+              final Map<String, List<ImportRequestDto>> requestsByType =
+                  importRequestDtos.stream()
+                      .filter(this::validateImportName)
+                      .collect(groupingBy(ImportRequestDto::getImportName));
+
+              requestsByType.forEach(
+                  (type, requests) -> {
+                    log.debug(
+                        "Adding [{}] requests of type {} to bulk request", requests.size(), type);
+                    requests.forEach(
+                        importRequest -> applyOperationToBulkRequest(b, importRequest));
+                  });
+              return b;
+            });
+
     doBulkRequest(bulkRequest, bulkRequestName, retryFailedRequestsOnNestedDocLimit);
   }
 
@@ -817,34 +984,68 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
       final int maxPageSize,
       final String engineAlias) {
     log.debug("Performing " + indexName + " search query!");
-    final Set<String> result = new HashSet<>();
-    final QueryBuilder query = buildBasicSearchDefinitionQuery(definitionXml, engineAlias);
-
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
-            .query(query)
-            .fetchSource(false)
-            .sort(SortBuilders.fieldSort(definitionIdField).order(SortOrder.DESC))
-            .size(maxPageSize);
-    final SearchRequest searchRequest = new SearchRequest(indexName).source(searchSourceBuilder);
-
-    final SearchResponse searchResponse;
+    final SearchRequest searchRequest =
+        OptimizeSearchRequestBuilderES.of(
+            builder ->
+                builder
+                    .optimizeIndex(this, indexName)
+                    .query(
+                        qb ->
+                            qb.bool(
+                                bb ->
+                                    bb.mustNot(
+                                            lb ->
+                                                lb.exists(
+                                                    ExistsQuery.of(eb -> eb.field(definitionXml))))
+                                        .must(
+                                            lb ->
+                                                lb.term(
+                                                    tb ->
+                                                        tb.field(DEFINITION_DELETED).value(false)))
+                                        .must(
+                                            lb ->
+                                                lb.term(
+                                                    tb ->
+                                                        tb.field(
+                                                                DATA_SOURCE
+                                                                    + "."
+                                                                    + DataSourceDto.Fields.type)
+                                                            .value(
+                                                                FieldValue.of(
+                                                                    DataImportSourceType.ENGINE))))
+                                        .must(
+                                            lb ->
+                                                lb.term(
+                                                    tb ->
+                                                        tb.field(
+                                                                DATA_SOURCE
+                                                                    + "."
+                                                                    + DataSourceDto.Fields.name)
+                                                            .value(engineAlias)))))
+                    .source(sb -> sb.fetch(false))
+                    .sort(
+                        sb ->
+                            sb.field(
+                                FieldSort.of(
+                                    fs -> fs.field(definitionIdField).order(SortOrder.Desc))))
+                    .size(maxPageSize));
+    final SearchResponse<?> searchResponse;
     try {
       // refresh to ensure we see the latest state
-      refresh(indexName);
-      searchResponse = search(searchRequest);
+      refresh(RefreshRequest.of(rb -> rb.index(addPrefixesToIndices(indexName))));
+      searchResponse = search(searchRequest, Object.class);
     } catch (final IOException e) {
       log.error("Was not able to search for " + indexName + "!", e);
       throw new OptimizeRuntimeException("Was not able to search for " + indexName + "!", e);
     }
 
-    log.debug(
-        indexName + " search query got [{}] results", searchResponse.getHits().getHits().length);
+    log.debug(indexName + " search query got [{}] results", searchResponse.hits().hits().size());
 
-    for (final SearchHit hit : searchResponse.getHits().getHits()) {
-      result.add(hit.getId());
-    }
-    return result;
+    return searchResponse.hits().hits().stream().map(Hit::id).collect(Collectors.toSet());
+  }
+
+  public void refresh(final RefreshRequest refreshRequest) throws IOException {
+    esWithTransportOptions().indices().refresh(refreshRequest);
   }
 
   @Override
@@ -852,33 +1053,24 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     return DatabaseType.ELASTICSEARCH;
   }
 
-  public final GetAliasesResponse getAlias(final GetAliasesRequest getAliasesRequest)
-      throws IOException {
-    getAliasesRequest.indices(convertToPrefixedAliasNames(getAliasesRequest.indices()));
-    getAliasesRequest.aliases(convertToPrefixedAliasNames(getAliasesRequest.aliases()));
-    return highLevelClient.indices().getAlias(getAliasesRequest, requestOptions());
-  }
-
-  private QueryBuilder buildBasicSearchDefinitionQuery(
-      final String definitionXml, final String engineAlias) {
-    return QueryBuilders.boolQuery()
-        .mustNot(existsQuery(definitionXml))
-        .must(termQuery(DEFINITION_DELETED, false))
-        .must(termQuery(DATA_SOURCE + "." + DataSourceDto.Fields.type, DataImportSourceType.ENGINE))
-        .must(termQuery(DATA_SOURCE + "." + DataSourceDto.Fields.name, engineAlias));
-  }
-
-  private RolloverRequest applyAliasPrefixAndRolloverConditions(final RolloverRequest request) {
-    final RolloverRequest requestWithPrefix =
-        new RolloverRequest(
-            indexNameService.getOptimizeIndexAliasForIndex(request.getAlias()), null);
-    for (final Condition<?> condition : request.getConditions().values()) {
-      if (condition instanceof final MaxSizeCondition maxSizeCondition) {
-        requestWithPrefix.addMaxIndexSizeCondition(maxSizeCondition.value());
-      } else {
-        log.warn("Rollover condition not supported: {}", condition.name());
-      }
+  @Override
+  public void reloadConfiguration(final ApplicationContext context) {
+    try {
+      esWithTransportOptions()._transport().close();
+      final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
+      esClient = ElasticsearchClientBuilder.build(configurationService, objectMapper);
+      restClient = ElasticsearchClientBuilder.restClient(configurationService);
+      indexNameService = context.getBean(OptimizeIndexNameService.class);
+      transportOptionsProvider = new TransportOptionsProvider(configurationService);
+      elasticsearchAsyncClient =
+          new ElasticsearchAsyncClient(esClient._transport(), esClient._transportOptions());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
-    return requestWithPrefix;
+  }
+
+  public final <T> SearchResponse<T> searchWithoutPrefixing(
+      final SearchRequest searchRequest, final Class<T> clas) throws IOException {
+    return esWithTransportOptions().search(searchRequest, clas);
   }
 }

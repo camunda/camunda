@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.groupby.process;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.es.report.interpreter.groupby.GroupByInterpreterES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
@@ -15,7 +16,6 @@ import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import java.util.Optional;
 import java.util.Set;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 
 public interface ProcessGroupByInterpreterES
     extends GroupByInterpreterES<ProcessReportDataDto, ProcessExecutionPlan> {
@@ -31,7 +31,7 @@ public interface ProcessGroupByInterpreterES
    */
   default Optional<MinMaxStatDto> getMinMaxStats(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final BoolQueryBuilder baseQuery) {
+      final Query baseQuery) {
     return Optional.empty();
   }
 }

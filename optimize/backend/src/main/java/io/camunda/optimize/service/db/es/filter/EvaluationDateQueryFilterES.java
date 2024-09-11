@@ -9,12 +9,12 @@ package io.camunda.optimize.service.db.es.filter;
 
 import static io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.EVALUATION_DATE_TIME;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import io.camunda.optimize.service.db.es.filter.util.DateFilterQueryUtilES;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
@@ -23,7 +23,7 @@ public class EvaluationDateQueryFilterES implements QueryFilterES<DateFilterData
 
   @Override
   public void addFilters(
-      final BoolQueryBuilder query,
+      final BoolQuery.Builder query,
       final List<DateFilterDataDto<?>> filter,
       final FilterContext filterContext) {
     DateFilterQueryUtilES.addFilters(

@@ -7,15 +7,12 @@
  */
 package io.camunda.optimize.service.db.schema.index;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
-
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class DashboardShareIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -50,79 +47,33 @@ public abstract class DashboardShareIndex<TBuilder> extends DefaultIndexMappingC
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    XContentBuilder newBuilder =
-        xContentBuilder
-            .startObject(ID)
-            .field("type", "keyword")
-            .endObject()
-            .startObject(TILE_SHARES)
-            .field("type", "nested")
-            .startObject("properties");
-    addNestedReportsField(newBuilder)
-        .endObject()
-        .endObject()
-        .startObject(DASHBOARD_ID)
-        .field("type", "keyword")
-        .endObject();
-    // @formatter:on
-    return newBuilder;
-  }
-
-  private XContentBuilder addNestedReportsField(XContentBuilder builder) throws IOException {
-    // @formatter:off
-    XContentBuilder newBuilder =
-        builder
-            .startObject(REPORT_ID)
-            .field("type", "keyword")
-            .endObject()
-            .startObject(REPORT_TILE_TYPE)
-            .field("type", "keyword")
-            .endObject()
-            .startObject(REPORT_NAME)
-            .field("type", "keyword")
-            .endObject()
-            .startObject(POSITION)
-            .field("type", "nested")
-            .startObject("properties");
-    addNestedPositionField(newBuilder)
-        .endObject()
-        .endObject()
-        .startObject(DIMENSION)
-        .field("type", "nested")
-        .startObject("properties");
-    addNestedDimensionField(newBuilder)
-        .endObject()
-        .endObject()
-        .startObject(CONFIGURATION)
-        .field(MAPPING_ENABLED_SETTING, false)
-        .endObject();
-    // @formatter:on
-    return newBuilder;
-  }
-
-  private XContentBuilder addNestedPositionField(XContentBuilder builder) throws IOException {
-    // @formatter:off
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
     return builder
-        .startObject(X_POSITION)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(Y_POSITION)
-        .field("type", "keyword")
-        .endObject();
-    // @formatter:on
-  }
-
-  private XContentBuilder addNestedDimensionField(XContentBuilder builder) throws IOException {
-    // @formatter:off
-    return builder
-        .startObject(WIDTH)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(HEIGHT)
-        .field("type", "keyword")
-        .endObject();
-    // @formatter:on
+        .properties(ID, p -> p.keyword(k -> k))
+        .properties(DASHBOARD_ID, p -> p.keyword(k -> k))
+        .properties(
+            TILE_SHARES,
+            p ->
+                p.nested(
+                    k ->
+                        k.properties(REPORT_ID, pp -> pp.keyword(kk -> kk))
+                            .properties(REPORT_TILE_TYPE, pp -> pp.keyword(kk -> kk))
+                            .properties(REPORT_NAME, pp -> pp.keyword(kk -> kk))
+                            .properties(CONFIGURATION, np -> np.object(nk -> nk.enabled(false)))
+                            .properties(
+                                POSITION,
+                                pp ->
+                                    pp.nested(
+                                        n ->
+                                            n.properties(X_POSITION, ppp -> ppp.keyword(x -> x))
+                                                .properties(
+                                                    Y_POSITION, ppp -> ppp.keyword(x -> x))))
+                            .properties(
+                                DIMENSION,
+                                pp ->
+                                    pp.nested(
+                                        n ->
+                                            n.properties(WIDTH, ppp -> ppp.keyword(x -> x))
+                                                .properties(HEIGHT, ppp -> ppp.keyword(x -> x))))));
   }
 }

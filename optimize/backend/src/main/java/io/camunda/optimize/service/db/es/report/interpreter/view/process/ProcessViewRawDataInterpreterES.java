@@ -10,60 +10,64 @@ package io.camunda.optimize.service.db.es.report.interpreter.view.process;
 import static io.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.SortUtilsES.getSortOrder;
 import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_RAW_DATA;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableNameField;
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableValueField;
-import static org.elasticsearch.core.TimeValue.timeValueSeconds;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.ScriptField;
+import co.elastic.clients.elasticsearch._types.ScriptSortType;
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.mapping.FieldType;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.es.report.command.process.mapping.RawProcessDataResultDtoMapper;
+import io.camunda.optimize.service.db.reader.ProcessVariableReader;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.view.process.AbstractProcessViewRawDataInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
-import io.camunda.optimize.service.db.repository.es.VariableRepositoryES;
+import io.camunda.optimize.service.db.report.plan.process.ProcessView;
+import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.NestedSortBuilder;
-import org.elasticsearch.search.sort.ScriptSortBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -77,31 +81,79 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
   private final DefinitionService definitionService;
-  private final VariableRepositoryES variableRepository;
+  private final ProcessVariableReader processVariableReader;
+
+  @Override
+  public Set<ProcessView> getSupportedViews() {
+    return Set.of(PROCESS_VIEW_RAW_DATA);
+  }
 
   @Override
   public void adjustSearchRequest(
-      final SearchRequest searchRequest,
-      final BoolQueryBuilder baseQuery,
+      final SearchRequest.Builder searchRequestBuilder,
+      final BoolQuery.Builder baseQueryBuilder,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    context.setAllVariablesNames(allVariableNamesForMatchingInstances(baseQuery, context));
 
-    final SearchSourceBuilder search = searchRequest.source().fetchSource(true);
-    if (!context.isJsonExport()) {
-      search.fetchSource(null, new String[] {FLOW_NODE_INSTANCES});
-    }
+    List<String> defKeysToTarget =
+        context.getReportData().getDefinitions().stream()
+            .map(ReportDataDefinitionDto::getKey)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+    Supplier<BoolQuery.Builder> builderSupplier =
+        () -> {
+          BoolQuery.Builder variableQuery = new BoolQuery.Builder();
+          variableQuery.must(m -> m.bool(b -> baseQueryBuilder));
+          // we do not fetch the variable labels as part of the /evaluate
+          // endpoint, but the frontend will query the /variables endpoint
+          // to fetch them
+          return variableQuery;
+        };
+    final Set<String> allVariableNamesForMatchingInstances =
+        processVariableReader
+            .getVariableNamesForInstancesMatchingQuery(
+                defKeysToTarget, builderSupplier, Collections.emptyMap())
+            .stream()
+            .map(ProcessVariableNameResponseDto::getName)
+            .collect(Collectors.toSet());
+    context.setAllVariablesNames(allVariableNamesForMatchingInstances);
+
+    final String sortByField =
+        context
+            .getReportConfiguration()
+            .getSorting()
+            .flatMap(ReportSortingDto::getBy)
+            .orElse(ProcessInstanceIndex.START_DATE);
+    final SortOrder sortOrder =
+        context
+            .getReportConfiguration()
+            .getSorting()
+            .flatMap(ReportSortingDto::getOrder)
+            .map(order -> SortOrder.valueOf(order.name()))
+            .orElse(SortOrder.DESC);
+
+    searchRequestBuilder.source(
+        s -> {
+          s.fetch(true);
+          if (!context.isJsonExport()) {
+            s.filter(f -> f.excludes(FLOW_NODE_INSTANCES));
+          }
+          return s;
+        });
+
     if (context.isCsvExport()) {
       context
           .getPagination()
           .ifPresent(
               pag ->
-                  search.size(
+                  searchRequestBuilder.size(
                       pag.getLimit() > MAX_RESPONSE_SIZE_LIMIT
                           ? MAX_RESPONSE_SIZE_LIMIT
                           : pag.getLimit()));
-      searchRequest.scroll(
-          timeValueSeconds(
-              configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
+      searchRequestBuilder.scroll(
+          s ->
+              s.time(
+                  configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
+                      + "s"));
     } else {
       context
           .getPagination()
@@ -110,64 +162,79 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
                 if (pag.getLimit() > MAX_RESPONSE_SIZE_LIMIT) {
                   pag.setLimit(MAX_RESPONSE_SIZE_LIMIT);
                 }
-                search.size(pag.getLimit()).from(pag.getOffset());
+                searchRequestBuilder.size(pag.getLimit()).from(pag.getOffset());
               });
     }
 
     Map<String, Object> params = new HashMap<>();
     params.put(CURRENT_TIME, LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli());
     params.put(DATE_FORMAT, OPTIMIZE_DATE_FORMAT);
-    searchRequest
-        .source()
-        .scriptField(
-            CURRENT_TIME,
-            createDefaultScriptWithSpecificDtoParams(PARAMS_CURRENT_TIME, params, objectMapper));
-    searchRequest
-        .source()
-        .scriptField(NUMBER_OF_USER_TASKS, createDefaultScript(NUMBER_OF_USER_TASKS_SCRIPT));
-    searchRequest
-        .source()
-        .scriptField(
-            FLOW_NODE_IDS_TO_DURATIONS,
-            createDefaultScriptWithSpecificDtoParams(
-                GET_FLOW_NODE_DURATIONS_SCRIPT, params, objectMapper));
-    addSorting(sortByField(context), sortOrder(context), searchRequest.source(), params);
+    searchRequestBuilder.scriptFields(
+        CURRENT_TIME,
+        ScriptField.of(
+            f -> f.script(createDefaultScriptWithSpecificDtoParams(PARAMS_CURRENT_TIME, params))));
+    searchRequestBuilder.scriptFields(
+        NUMBER_OF_USER_TASKS,
+        ScriptField.of(f -> f.script(createDefaultScript(NUMBER_OF_USER_TASKS_SCRIPT))));
+    searchRequestBuilder.scriptFields(
+        FLOW_NODE_IDS_TO_DURATIONS,
+        ScriptField.of(
+            f ->
+                f.script(
+                    createDefaultScriptWithSpecificDtoParams(
+                        GET_FLOW_NODE_DURATIONS_SCRIPT, params))));
+    addSorting(sortByField, sortOrder, searchRequestBuilder, params);
   }
 
   @Override
-  public List<AggregationBuilder> createAggregations(
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    return Collections.emptyList();
+    return Map.of();
   }
 
   @Override
-  public ViewResult retrieveResult(
-      final SearchResponse response,
-      final Aggregations aggs,
+  public CompositeCommandResult.ViewResult retrieveResult(
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggs,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     Map<String, Map<String, Long>> processInstanceIdsToFlowNodeIdsAndDurations = new HashMap<>();
     Map<String, Long> instanceIdsToUserTaskCount = new HashMap<>();
-    Function<SearchHit, ProcessInstanceDto> mappingFunction =
+    Function<Hit<?>, ProcessInstanceDto> mappingFunction =
         hit -> {
           try {
-            final ProcessInstanceDto processInstance =
-                objectMapper.readValue(hit.getSourceAsString(), ProcessInstanceDto.class);
+            // TODO Condition here we need for support low request deserialization.
+            // After new minor release we will remove it.
+            final ProcessInstanceDto processInstance;
+            if (hit.source() instanceof Map) {
+              processInstance = objectMapper.convertValue(hit.source(), ProcessInstanceDto.class);
+            } else if (hit.source() instanceof ProcessInstanceDto) {
+              processInstance = (ProcessInstanceDto) hit.source();
+            } else {
+              processInstance =
+                  objectMapper.readValue(hit.source().toString(), ProcessInstanceDto.class);
+            }
             processInstanceIdsToFlowNodeIdsAndDurations.put(
                 processInstance.getProcessInstanceId(),
-                hit.getFields().get(FLOW_NODE_IDS_TO_DURATIONS).getValue());
+                ((Map<String, Object>)
+                        hit.fields().get(FLOW_NODE_IDS_TO_DURATIONS).to(List.class).get(0))
+                    .entrySet().stream()
+                        .collect(
+                            Collectors.toMap(
+                                Map.Entry::getKey, e -> Long.valueOf(e.getValue().toString()))));
             instanceIdsToUserTaskCount.put(
                 processInstance.getProcessInstanceId(),
-                Long.valueOf(hit.getFields().get(NUMBER_OF_USER_TASKS).getValue().toString()));
+                Long.valueOf(
+                    hit.fields().get(NUMBER_OF_USER_TASKS).to(List.class).get(0).toString()));
             if (processInstance.getDuration() == null && processInstance.getStartDate() != null) {
               final Optional<ReportSortingDto> sorting =
                   context.getReportConfiguration().getSorting();
               if (sorting.isPresent()
                   && sorting.get().getBy().isPresent()
                   && ProcessInstanceIndex.DURATION.equals(sorting.get().getBy().get())) {
-                processInstance.setDuration(
-                    Math.round(Double.parseDouble(hit.getSortValues()[0].toString())));
+                processInstance.setDuration(Math.round(hit.sort().get(0).doubleValue()));
               } else {
-                Long currentTime = hit.getFields().get(CURRENT_TIME).getValue();
+                long currentTime =
+                    Long.parseLong(hit.fields().get(CURRENT_TIME).to(List.class).get(0).toString());
                 processInstance.setDuration(
                     currentTime - processInstance.getStartDate().toInstant().toEpochMilli());
               }
@@ -175,10 +242,8 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
             return processInstance;
           } catch (final NumberFormatException exception) {
             throw new OptimizeRuntimeException("Error while parsing fields to numbers");
-          } catch (IOException e) {
-            final String reason = "Error while mapping search results to Process Instances";
-            log.error(reason, e);
-            throw new OptimizeRuntimeException(reason);
+          } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
           }
         };
 
@@ -195,7 +260,7 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
     } else {
       rawDataProcessInstanceDtos =
           ElasticsearchReaderUtil.mapHits(
-              response.getHits(), Integer.MAX_VALUE, ProcessInstanceDto.class, mappingFunction);
+              response.hits(), Integer.MAX_VALUE, ProcessInstanceDto.class, mappingFunction);
     }
 
     RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper =
@@ -213,69 +278,66 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
             flowNodeIdsToFlowNodeNames);
 
     addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawData);
-    return ViewResult.builder().rawData(rawData).build();
+    return CompositeCommandResult.ViewResult.builder().rawData(rawData).build();
   }
 
-  private Set<String> allVariableNamesForMatchingInstances(
-      final BoolQueryBuilder baseQuery,
+  @Override
+  public CompositeCommandResult.ViewResult createEmptyResult(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final BoolQueryBuilder variableQuery = boolQuery().must(baseQuery);
-    // we do not fetch the variable labels as part of the /evaluate
-    // endpoint, but the frontend will query the /variables endpoint
-    // to fetch them
-    return variableRepository
-        .getVariableNamesForInstancesMatchingQuery(
-            defKeysToTarget(context.getReportData().getDefinitions()), variableQuery, Map.of())
-        .stream()
-        .map(ProcessVariableNameResponseDto::getName)
-        .collect(Collectors.toSet());
-  }
-
-  private SortOrder sortOrder(
-      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    return context
-        .getReportConfiguration()
-        .getSorting()
-        .flatMap(ReportSortingDto::getOrder)
-        .map(order -> SortOrder.valueOf(order.name()))
-        .orElse(SortOrder.DESC);
+    return CompositeCommandResult.ViewResult.builder().rawData(new ArrayList<>()).build();
   }
 
   private void addSorting(
       String sortByField,
       SortOrder sortOrder,
-      SearchSourceBuilder searchSourceBuilder,
+      SearchRequest.Builder searchRequestBuilder,
       Map<String, Object> params) {
     if (sortByField.startsWith(VARIABLE_PREFIX)) {
       final String variableName = sortByField.substring(VARIABLE_PREFIX.length());
-      searchSourceBuilder.sort(
-          SortBuilders.fieldSort(getNestedVariableValueField())
-              .setNestedSort(
-                  new NestedSortBuilder(VARIABLES)
-                      .setFilter(termQuery(getNestedVariableNameField(), variableName)))
-              .order(sortOrder));
+      searchRequestBuilder.sort(
+          SortOptions.of(
+              s ->
+                  s.field(
+                      f ->
+                          f.field(getNestedVariableValueField())
+                              .nested(
+                                  n ->
+                                      n.path(VARIABLES)
+                                          .filter(
+                                              ff ->
+                                                  ff.term(
+                                                      t ->
+                                                          t.field(getNestedVariableNameField())
+                                                              .value(variableName))))
+                              .order(getSortOrder(sortOrder)))));
     } else if (sortByField.equals(ProcessInstanceIndex.DURATION)) {
       params.put("duration", ProcessInstanceIndex.DURATION);
       params.put("startDate", ProcessInstanceIndex.START_DATE);
+
       // when running the query, ES throws an error message for checking the existence of the value
       // of a field with
       // doc['field'].value == null
       // and recommends using doc['field'].size() == 0
-      Script script = createDefaultScriptWithSpecificDtoParams(SORT_SCRIPT, params, objectMapper);
-      searchSourceBuilder.sort(
-          SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.NUMBER)
-              .order(sortOrder));
+      Script script = createDefaultScriptWithSpecificDtoParams(SORT_SCRIPT, params);
+      searchRequestBuilder.sort(
+          s ->
+              s.script(
+                  ss ->
+                      ss.script(script)
+                          .type(ScriptSortType.Number)
+                          .order(getSortOrder(sortOrder))));
     } else {
-      searchSourceBuilder.sort(
-          SortBuilders.fieldSort(sortByField)
-              .order(sortOrder)
-              // this ensures the query doesn't fail on unknown properties but just ignores them
-              // this is done to ensure consistent behavior compared to unknown variable names as ES
-              // doesn't fail there
-              // @formatter:off
-              // https://www.elastic.co/guide/en/elasticsearch/reference/6.0/search-request-sort.html#_ignoring_unmapped_fields
-              // @formatter:on
-              .unmappedType("short"));
+      searchRequestBuilder.sort(
+          s ->
+              s.field(
+                  f ->
+                      f.field(sortByField)
+                          .order(getSortOrder(sortOrder))
+                          // this ensures the query doesn't fail on unknown properties but just
+                          // ignores them this is done to ensure consistent behavior compared to
+                          // unknown variable names as ES doesn't fail there
+                          // https://www.elastic.co/guide/en/elasticsearch/reference/6.0/search-request-sort.html#_ignoring_unmapped_fields
+                          .unmappedType(FieldType.Short)));
     }
   }
 }

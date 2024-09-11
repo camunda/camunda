@@ -7,6 +7,11 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.view.process;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.report.ExecutionContext;
@@ -16,12 +21,8 @@ import io.camunda.optimize.service.db.report.plan.process.ProcessView;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -53,24 +54,25 @@ public class ProcessViewInterpreterFacadeES
   }
 
   @Override
-  public List<AggregationBuilder> createAggregations(
+  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return interpreter(context.getPlan().getView()).createAggregations(context);
   }
 
   @Override
   public ViewResult retrieveResult(
-      SearchResponse response,
-      Aggregations aggregations,
+      ResponseBody<?> response,
+      Map<String, Aggregate> aggregations,
       ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return interpreter(context.getPlan().getView()).retrieveResult(response, aggregations, context);
   }
 
   @Override
   public void adjustSearchRequest(
-      final SearchRequest searchRequest,
-      final BoolQueryBuilder baseQuery,
+      final SearchRequest.Builder searchRequestBuilder,
+      final BoolQuery.Builder baseQueryBuilder,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    interpreter(context.getPlan().getView()).adjustSearchRequest(searchRequest, baseQuery, context);
+    interpreter(context.getPlan().getView())
+        .adjustSearchRequest(searchRequestBuilder, baseQueryBuilder, context);
   }
 }

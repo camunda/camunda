@@ -7,50 +7,52 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.util;
 
-import java.util.List;
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.histogram.HistogramAggregationBuilder;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class NumberHistogramAggregationUtilES {
 
-  public static HistogramAggregationBuilder generateHistogramWithField(
+  public static Aggregation.Builder.ContainerBuilder generateHistogramWithField(
       final String histogramName,
       final double intervalSize,
       final double offsetValue,
       final double max,
       final String fieldName,
       final String formatString,
-      final List<AggregationBuilder> subAggregations) {
-    final HistogramAggregationBuilder histogramAggregationBuilder =
-        AggregationBuilders.histogram(histogramName)
-            .interval(intervalSize)
-            .offset(offsetValue)
-            .field(fieldName)
-            .extendedBounds(offsetValue, max)
-            .format(formatString);
-    subAggregations.forEach(histogramAggregationBuilder::subAggregation);
-    return histogramAggregationBuilder;
+      final Map<String, Aggregation.Builder.ContainerBuilder> subAggregations) {
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder()
+            .histogram(
+                h ->
+                    h.interval(intervalSize)
+                        .offset(offsetValue)
+                        .field(fieldName)
+                        .format(formatString)
+                        .extendedBounds(e -> e.min(offsetValue).max(max)));
+    subAggregations.forEach((k, v) -> builder.aggregations(k, v.build()));
+    return builder;
   }
 
-  public static HistogramAggregationBuilder generateHistogramFromScript(
+  public static Aggregation.Builder.ContainerBuilder generateHistogramFromScript(
       final String histogramName,
       final double intervalSize,
       final double offsetValue,
       final Script script,
       final double max,
-      final List<AggregationBuilder> subAggregations) {
-    final HistogramAggregationBuilder histogramAggregationBuilder =
-        AggregationBuilders.histogram(histogramName)
-            .interval(intervalSize)
-            .offset(offsetValue)
-            .script(script)
-            .extendedBounds(offsetValue, max);
-    subAggregations.forEach(histogramAggregationBuilder::subAggregation);
-    return histogramAggregationBuilder;
+      final Map<String, Aggregation.Builder.ContainerBuilder> subAggregations) {
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder()
+            .histogram(
+                h ->
+                    h.interval(intervalSize)
+                        .offset(offsetValue)
+                        .script(script)
+                        .extendedBounds(e -> e.min(offsetValue).max(max)));
+    subAggregations.forEach((k, v) -> builder.aggregations(k, v.build()));
+    return builder;
   }
 }

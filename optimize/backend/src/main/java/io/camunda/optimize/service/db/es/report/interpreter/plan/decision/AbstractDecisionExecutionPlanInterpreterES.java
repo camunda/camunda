@@ -8,9 +8,10 @@
 package io.camunda.optimize.service.db.es.report.interpreter.plan.decision;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import io.camunda.optimize.service.db.es.builders.OptimizeBoolQueryBuilderES;
 import io.camunda.optimize.service.db.es.filter.DecisionQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.report.interpreter.plan.AbstractExecutionPlanInterpreterES;
 import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
@@ -20,7 +21,6 @@ import io.camunda.optimize.service.db.report.interpreter.plan.decision.DecisionE
 import io.camunda.optimize.service.db.report.plan.decision.DecisionExecutionPlan;
 import io.camunda.optimize.service.util.DefinitionQueryUtilES;
 import io.camunda.optimize.service.util.InstanceIndexUtil;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 
 public abstract class AbstractDecisionExecutionPlanInterpreterES
     extends AbstractExecutionPlanInterpreterES<DecisionReportDataDto, DecisionExecutionPlan>
@@ -31,9 +31,9 @@ public abstract class AbstractDecisionExecutionPlanInterpreterES
   protected abstract DecisionQueryFilterEnhancerES getQueryFilterEnhancer();
 
   @Override
-  public BoolQueryBuilder getBaseQuery(
+  public BoolQuery.Builder getBaseQueryBuilder(
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
-    final BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(context);
+    final BoolQuery.Builder boolQueryBuilder = setupUnfilteredBaseQueryBuilder(context);
     getQueryFilterEnhancer()
         .addFilterToQuery(
             boolQueryBuilder, context.getReportData().getFilter(), context.getFilterContext());
@@ -41,22 +41,27 @@ public abstract class AbstractDecisionExecutionPlanInterpreterES
   }
 
   @Override
-  protected BoolQueryBuilder setupUnfilteredBaseQuery(
+  protected BoolQuery.Builder setupUnfilteredBaseQueryBuilder(
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
-    final BoolQueryBuilder definitionFilterQuery = boolQuery().minimumShouldMatch(1);
+    final BoolQuery.Builder definitionFilterQueryBuilder =
+        new OptimizeBoolQueryBuilderES().minimumShouldMatch("1");
+
     // for decision reports only one (the first) definition is supported
     context.getReportData().getDefinitions().stream()
         .findFirst()
         .ifPresent(
             definitionDto ->
-                definitionFilterQuery.should(
-                    DefinitionQueryUtilES.createDefinitionQuery(
-                        definitionDto.getKey(),
-                        definitionDto.getVersions(),
-                        definitionDto.getTenantIds(),
-                        new DecisionInstanceIndexES(definitionDto.getKey()),
-                        getDecisionDefinitionReader()::getLatestVersionToKey)));
-    return definitionFilterQuery;
+                definitionFilterQueryBuilder.should(
+                    s ->
+                        s.bool(
+                            DefinitionQueryUtilES.createDefinitionQuery(
+                                    definitionDto.getKey(),
+                                    definitionDto.getVersions(),
+                                    definitionDto.getTenantIds(),
+                                    new DecisionInstanceIndexES(definitionDto.getKey()),
+                                    getDecisionDefinitionReader()::getLatestVersionToKey)
+                                .build())));
+    return definitionFilterQueryBuilder;
   }
 
   @Override

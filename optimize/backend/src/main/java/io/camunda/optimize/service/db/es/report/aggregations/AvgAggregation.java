@@ -5,32 +5,46 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.command.aggregations;
+package io.camunda.optimize.service.db.es.report.aggregations;
 
-import static io.camunda.optimize.service.db.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.avg;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
 
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder.ContainerBuilder;
+import co.elastic.clients.elasticsearch._types.aggregations.AverageAggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.AvgAggregate;
+import co.elastic.clients.util.Pair;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.metrics.Avg;
-import org.elasticsearch.search.aggregations.metrics.AvgAggregationBuilder;
-import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
+import java.util.Map;
 
-public class AvgAggregation extends AggregationStrategy<AvgAggregationBuilder> {
+public class AvgAggregation extends AggregationStrategy<AverageAggregation.Builder> {
 
   private static final String AVG_AGGREGATION = "avgAggregation";
 
   @Override
-  public Double getValueForAggregation(final String customIdentifier, final Aggregations aggs) {
-    final Avg aggregation = aggs.get(createAggregationName(customIdentifier, AVG_AGGREGATION));
-    return mapToDoubleOrNull(aggregation.getValue());
+  public Pair<String, ContainerBuilder> createAggregationBuilderForAggregation(
+      final String customIdentifier, Script script, String... field) {
+    Aggregation.Builder builder = new Aggregation.Builder();
+    return Pair.of(
+        createAggregationName(customIdentifier, AVG_AGGREGATION),
+        builder.avg(
+            a -> {
+              a.script(script);
+              if (field != null && field.length != 0) {
+                a.field(field[0]);
+              }
+              return a;
+            }));
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<AvgAggregationBuilder>
-      createAggregationBuilderForAggregation(final String customIdentifier) {
-    return avg(createAggregationName(customIdentifier, AVG_AGGREGATION));
+  protected Double getValueForAggregation(String customIdentifier, Map<String, Aggregate> aggs) {
+    final AvgAggregate aggregation =
+        aggs.get(createAggregationName(customIdentifier, AVG_AGGREGATION)).avg();
+    return mapToDoubleOrNull(aggregation.value());
   }
 
   @Override

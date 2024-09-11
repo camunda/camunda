@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.es.filter;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.filter.InputVariableFilterDto;
@@ -16,7 +17,6 @@ import io.camunda.optimize.service.db.report.filter.DecisionQueryFilterEnhancer;
 import java.util.List;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
@@ -30,7 +30,7 @@ public class DecisionQueryFilterEnhancerES extends DecisionQueryFilterEnhancer
 
   @Override
   public void addFilterToQuery(
-      final BoolQueryBuilder query,
+      final BoolQuery.Builder query,
       final List<DecisionFilterDto<?>> filter,
       final FilterContext filterContext) {
     if (filter != null) {

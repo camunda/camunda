@@ -14,11 +14,11 @@ import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.DatabaseConstants.TOO_MANY_BUCKETS_EXCEPTION_TYPE;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.ErrorCause;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import java.util.Arrays;
 import java.util.function.Function;
-import org.elasticsearch.ElasticsearchStatusException;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 
 public class ExceptionUtil {
@@ -41,10 +41,13 @@ public class ExceptionUtil {
 
   private static boolean isDbExceptionWithMessage(
       final RuntimeException e, Function<String, Boolean> messageFilter) {
-    if (e instanceof ElasticsearchStatusException) {
-      return Arrays.stream(e.getSuppressed())
-          .map(Throwable::getMessage)
-          .anyMatch(msg -> messageFilter.apply(msg));
+    if (e instanceof ElasticsearchException err) {
+      ErrorCause errorCause = err.error().causedBy();
+      if (errorCause != null) {
+        return messageFilter.apply(errorCause.type());
+      } else {
+        return messageFilter.apply(err.getMessage());
+      }
     } else if (e instanceof OpenSearchException) {
       return messageFilter.apply(e.getMessage());
     } else {

@@ -53,6 +53,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -62,8 +63,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
-import org.elasticsearch.common.Strings;
-import org.elasticsearch.common.util.set.Sets;
 import org.opensearch.client.json.ObjectDeserializer;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -105,7 +104,7 @@ public class OpenSearchSchemaManager
       final OpenSearchMetadataService metadataService,
       final ConfigurationService configurationService,
       final OptimizeIndexNameService indexNameService,
-      final List<IndexMappingCreator<IndexSettings.Builder>> mappings) {
+      final List<IndexMappingCreator<Builder>> mappings) {
     super(configurationService, indexNameService, mappings);
     this.metadataService = metadataService;
   }
@@ -256,7 +255,13 @@ public class OpenSearchSchemaManager
       final Map<String, Alias> aliases,
       final IndexSettings settings)
       throws OptimizeRuntimeException {
-    final String jsonNew = "{\"mappings\": " + jsonMappings + "}";
+    final String jsonNew =
+        "{\"mappings\": "
+            + jsonMappings
+                .replace("TypeMapping: ", "")
+                .replace("\"match_mapping_type\":[\"string\"]", "\"match_mapping_type\":\"string\"")
+                .replace("\"path_match\":[\"*\"]", "\"path_match\":\"*\"")
+            + "}";
     try (final JsonParser jsonParser =
         JsonProvider.provider().createParser(new StringReader(jsonNew))) {
       final Supplier<CreateIndexRequest.Builder> builderSupplier =
@@ -340,7 +345,7 @@ public class OpenSearchSchemaManager
 
     final CreateIndexRequest request =
         createIndexFromJson(
-            Strings.toString(mapping.getSource()),
+            mapping.getSource().toString(),
             suffixedIndexName,
             createAliasMap(prefixedReadOnlyAliases, defaultAliasName),
             indexSettings);
@@ -352,7 +357,15 @@ public class OpenSearchSchemaManager
   private PutMappingRequest updateMappingFromJson(final String jsonMappings, final String indexName)
       throws OptimizeRuntimeException {
     try (final JsonParser jsonParser =
-        JsonProvider.provider().createParser(new StringReader(jsonMappings))) {
+        JsonProvider.provider()
+            .createParser(
+                new StringReader(
+                    jsonMappings
+                        .replace("TypeMapping: ", "")
+                        .replace(
+                            "\"match_mapping_type\":[\"string\"]",
+                            "\"match_mapping_type\":\"string\"")
+                        .replace("\"path_match\":[\"*\"]", "\"path_match\":\"*\"")))) {
       final Supplier<PutMappingRequest.Builder> builderSupplier =
           () -> new PutMappingRequest.Builder().index(indexName);
       final ObjectDeserializer<PutMappingRequest.Builder> deserializer =
@@ -473,7 +486,7 @@ public class OpenSearchSchemaManager
     try {
       template =
           createTemplateFromJson(
-              Strings.toString(mappingCreator.getSource()),
+              mappingCreator.getSource().toString(),
               aliases,
               OpenSearchIndexSettingsBuilder.buildAllSettings(
                   configurationService, mappingCreator));
@@ -500,7 +513,13 @@ public class OpenSearchSchemaManager
   private IndexTemplateMapping createTemplateFromJson(
       final String jsonMappings, final Map<String, Alias> aliases, final IndexSettings settings)
       throws OptimizeRuntimeException {
-    final String jsonNew = "{\"mappings\": " + jsonMappings + "}";
+    final String jsonNew =
+        "{\"mappings\": "
+            + jsonMappings
+                .replace("TypeMapping: ", "")
+                .replace("\"match_mapping_type\":[\"string\"]", "\"match_mapping_type\":\"string\"")
+                .replace("\"path_match\":[\"*\"]", "\"path_match\":\"*\"")
+            + "}";
     try (final JsonParser jsonParser =
         JsonProvider.provider().createParser(new StringReader(jsonNew))) {
       final Supplier<IndexTemplateMapping.Builder> builderSupplier =
@@ -595,7 +614,7 @@ public class OpenSearchSchemaManager
         indexNameService.getOptimizeIndexAliasForIndex(mappingCreator.getIndexName());
     final IndexSettings indexSettings = createIndexSettings(mappingCreator);
     createOrUpdateTemplateWithAliases(
-        osClient, mappingCreator, defaultAliasName, Sets.newHashSet(), indexSettings);
+        osClient, mappingCreator, defaultAliasName, new HashSet<>(), indexSettings);
   }
 
   private void updateIndexDynamicSettingsAndMappings(
@@ -621,7 +640,7 @@ public class OpenSearchSchemaManager
 
     try {
       final PutMappingRequest mappingUpdateRequest =
-          updateMappingFromJson(Strings.toString(indexMapping.getSource()), indexName);
+          updateMappingFromJson(indexMapping.getSource().toString(), indexName);
       final PutMappingResponse response =
           osClient.getOpenSearchClient().indices().putMapping(mappingUpdateRequest);
       if (!response.acknowledged()) {

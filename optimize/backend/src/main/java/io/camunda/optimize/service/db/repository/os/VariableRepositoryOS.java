@@ -82,11 +82,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.SortOptions;
@@ -416,7 +416,8 @@ public class VariableRepositoryOS implements VariableRepository {
   @Override
   public List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(
       final List<String> processDefinitionKeysToTarget,
-      final BoolQueryBuilder baseQuery,
+      final Supplier<co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery.Builder>
+          baseQueryBuilderSupplier,
       final Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos) {
     log.debug(
         "getVariableNamesForInstancesMatchingQuery: Functionality not implemented for OpenSearch");

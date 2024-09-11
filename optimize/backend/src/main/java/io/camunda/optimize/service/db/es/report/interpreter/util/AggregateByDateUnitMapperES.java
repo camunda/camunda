@@ -7,29 +7,69 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.util;
 
+import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
+import java.time.temporal.ChronoUnit;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AggregateByDateUnitMapperES {
   private static final String UNSUPPORTED_UNIT_STRING = "Unsupported unit: ";
 
-  public static DateHistogramInterval mapToDateHistogramInterval(final AggregateByDateUnit unit) {
+  public static ChronoUnit mapToChronoUnit(final AggregateByDateUnit unit) {
     switch (unit) {
       case YEAR:
-        return DateHistogramInterval.YEAR;
+        return ChronoUnit.YEARS;
       case MONTH:
-        return DateHistogramInterval.MONTH;
+        return ChronoUnit.MONTHS;
       case WEEK:
-        return DateHistogramInterval.WEEK;
+        return ChronoUnit.WEEKS;
       case DAY:
-        return DateHistogramInterval.DAY;
+        return ChronoUnit.DAYS;
       case HOUR:
-        return DateHistogramInterval.HOUR;
+        return ChronoUnit.HOURS;
       case MINUTE:
-        return DateHistogramInterval.MINUTE;
+        return ChronoUnit.MINUTES;
+      default:
+      case AUTOMATIC:
+        throw new IllegalArgumentException(UNSUPPORTED_UNIT_STRING + unit);
+    }
+  }
+
+  public static AggregateByDateUnit mapToAggregateByDateUnit(final ChronoUnit unit) {
+    switch (unit) {
+      case YEARS:
+        return AggregateByDateUnit.YEAR;
+      case MONTHS:
+        return AggregateByDateUnit.MONTH;
+      case WEEKS:
+        return AggregateByDateUnit.WEEK;
+      case DAYS:
+        return AggregateByDateUnit.DAY;
+      case HOURS:
+        return AggregateByDateUnit.HOUR;
+      case MINUTES:
+        return AggregateByDateUnit.MINUTE;
+      default:
+        throw new IllegalArgumentException(UNSUPPORTED_UNIT_STRING + unit);
+    }
+  }
+
+  public static CalendarInterval mapToCalendarInterval(final AggregateByDateUnit unit) {
+    switch (unit) {
+      case YEAR:
+        return CalendarInterval.Year;
+      case MONTH:
+        return CalendarInterval.Month;
+      case WEEK:
+        return CalendarInterval.Week;
+      case DAY:
+        return CalendarInterval.Day;
+      case HOUR:
+        return CalendarInterval.Hour;
+      case MINUTE:
+        return CalendarInterval.Minute;
       default:
         throw new IllegalArgumentException(UNSUPPORTED_UNIT_STRING + unit);
     }

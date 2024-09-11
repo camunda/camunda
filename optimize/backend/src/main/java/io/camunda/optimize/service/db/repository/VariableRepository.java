@@ -9,6 +9,7 @@ package io.camunda.optimize.service.db.repository;
 
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueField;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import io.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
@@ -27,8 +28,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 
 public interface VariableRepository {
 
@@ -82,7 +83,7 @@ public interface VariableRepository {
 
   List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(
       final List<String> processDefinitionKeysToTarget,
-      final BoolQueryBuilder baseQuery,
+      final Supplier<BoolQuery.Builder> baseQueryBuilderSupplier,
       final Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos);
 
   List<String> getVariableValues(

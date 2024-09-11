@@ -10,9 +10,16 @@ package io.camunda.optimize.service.db.es.report.service;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.es.report.interpreter.groupby.AbstractGroupByVariableInterpreterES.FILTERED_FLOW_NODE_AGGREGATION;
 import static java.util.stream.Collectors.toMap;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.FilterAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.HistogramBucket;
+import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketAggregateBase;
+import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
+import co.elastic.clients.elasticsearch._types.aggregations.ReverseNestedAggregate;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.json.JsonData;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.service.db.es.report.context.DateAggregationContextES;
 import io.camunda.optimize.service.db.es.report.context.VariableAggregationContextES;
@@ -23,18 +30,6 @@ import java.time.ZoneId;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
-import org.elasticsearch.search.aggregations.bucket.nested.ParsedNested;
-import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -57,21 +52,23 @@ public class VariableAggregationServiceES {
   private final DateAggregationServiceES dateAggregationService;
   private final MinMaxStatsServiceES minMaxStatsService;
 
-  public Optional<AggregationBuilder> createVariableSubAggregation(
+  public Optional<Map<String, Aggregation.Builder.ContainerBuilder>> createVariableSubAggregation(
       final VariableAggregationContextES context) {
     context.setVariableRangeMinMaxStats(getVariableMinMaxStats(context));
     switch (context.getVariableType()) {
       case STRING:
       case BOOLEAN:
-        final TermsAggregationBuilder variableTermsAggregation =
-            AggregationBuilders.terms(VARIABLES_AGGREGATION)
-                .size(
-                    configurationService
-                        .getElasticSearchConfiguration()
-                        .getAggregationBucketLimit())
-                .field(context.getNestedVariableValueFieldLabel());
-        context.getSubAggregations().forEach(variableTermsAggregation::subAggregation);
-        return Optional.of(variableTermsAggregation);
+        Aggregation.Builder.ContainerBuilder builder =
+            new Aggregation.Builder()
+                .terms(
+                    t ->
+                        t.field(context.getNestedVariableValueFieldLabel())
+                            .size(
+                                configurationService
+                                    .getElasticSearchConfiguration()
+                                    .getAggregationBucketLimit()));
+        context.getSubAggregations().forEach((k, v) -> builder.aggregations(k, a -> v));
+        return Optional.of(Map.of(VARIABLES_AGGREGATION, builder));
       case DATE:
         return createDateVariableAggregation(context);
       default:
@@ -83,23 +80,26 @@ public class VariableAggregationServiceES {
     }
   }
 
-  public Optional<QueryBuilder> createVariableFilterQuery(
-      final VariableAggregationContextES context) {
+  public Optional<Query> createVariableFilterQuery(final VariableAggregationContextES context) {
     if (VariableType.getNumericTypes().contains(context.getVariableType())) {
       return numberVariableAggregationService
           .getBaselineForNumberVariableAggregation(context)
           .filter(baseLineValue -> !baseLineValue.isNaN())
           .map(
               baseLineValue ->
-                  QueryBuilders.rangeQuery(context.getNestedVariableValueFieldLabel())
-                      .lte(context.getMaxVariableValue())
-                      .gte(baseLineValue));
+                  Query.of(
+                      q ->
+                          q.range(
+                              r ->
+                                  r.field(context.getNestedVariableValueFieldLabel())
+                                      .lte(JsonData.of(context.getMaxVariableValue()))
+                                      .gte(JsonData.of(baseLineValue)))));
     } else {
       return Optional.empty();
     }
   }
 
-  private Optional<AggregationBuilder> createDateVariableAggregation(
+  private Optional<Map<String, Aggregation.Builder.ContainerBuilder>> createDateVariableAggregation(
       final VariableAggregationContextES context) {
     final DateAggregationContextES dateAggContext =
         DateAggregationContextES.builder()
@@ -115,44 +115,54 @@ public class VariableAggregationServiceES {
     return dateAggregationService.createDateVariableAggregation(dateAggContext);
   }
 
-  public Map<String, Aggregations> retrieveResultBucketMap(
-      final Filter filteredParentAgg,
-      final MultiBucketsAggregation variableTermsAgg,
+  public Map<String, Map<String, Aggregate>> retrieveResultBucketMap(
+      final FilterAggregate filteredParentAgg,
+      final Aggregate variableTermsAgg,
       final VariableType variableType,
       final ZoneId timezone) {
-    Map<String, Aggregations> bucketAggregations;
+    Map<String, Map<String, Aggregate>> bucketAggregations;
     if (VariableType.DATE.equals(variableType)) {
       bucketAggregations =
           dateAggregationService.mapDateAggregationsToKeyAggregationMap(
-              filteredParentAgg.getAggregations(), timezone, VARIABLES_AGGREGATION);
+              (MultiBucketAggregateBase<? extends MultiBucketBase>)
+                  filteredParentAgg.aggregations().get(VARIABLES_AGGREGATION)._get(),
+              timezone);
     } else {
       bucketAggregations =
-          variableTermsAgg.getBuckets().stream()
-              .collect(
-                  toMap(
-                      MultiBucketsAggregation.Bucket::getKeyAsString,
-                      MultiBucketsAggregation.Bucket::getAggregations,
-                      (bucketAggs1, bucketAggs2) -> bucketAggs1));
+          (variableTermsAgg.isHistogram())
+              ? variableTermsAgg.histogram().buckets().array().stream()
+                  .collect(
+                      toMap(
+                          HistogramBucket::keyAsString,
+                          MultiBucketBase::aggregations,
+                          (bucketAggs1, bucketAggs2) -> bucketAggs1))
+              : variableTermsAgg.sterms().buckets().array().stream()
+                  .collect(
+                      toMap(
+                          a -> a.key().stringValue(),
+                          MultiBucketBase::aggregations,
+                          (bucketAggs1, bucketAggs2) -> bucketAggs1));
     }
     return bucketAggregations;
   }
 
-  public Aggregations retrieveSubAggregationFromBucketMapEntry(
-      Map.Entry<String, Aggregations> bucketMapEntry) {
-    final ReverseNested reverseNested =
-        bucketMapEntry.getValue().get(VARIABLES_INSTANCE_COUNT_AGGREGATION);
+  public Map<String, Aggregate> retrieveSubAggregationFromBucketMapEntry(
+      Map.Entry<String, Map<String, Aggregate>> bucketMapEntry) {
+    final ReverseNestedAggregate reverseNested =
+        bucketMapEntry.getValue().get(VARIABLES_INSTANCE_COUNT_AGGREGATION).reverseNested();
     if (reverseNested == null) {
       return bucketMapEntry.getValue();
     } else {
-      final ParsedNested nestedFlowNodeAgg =
-          reverseNested.getAggregations().get(NESTED_FLOWNODE_AGGREGATION);
+      final Aggregate nestedFlowNodeAgg =
+          reverseNested.aggregations().get(NESTED_FLOWNODE_AGGREGATION);
       if (nestedFlowNodeAgg == null) {
-        return reverseNested.getAggregations(); // this is an instance report
+        return reverseNested.aggregations(); // this is an instance report
       } else {
-        Aggregations flowNodeAggs =
-            nestedFlowNodeAgg.getAggregations(); // this is a flownode report
-        final ParsedFilter aggregation = flowNodeAggs.get(FILTERED_FLOW_NODE_AGGREGATION);
-        return aggregation.getAggregations();
+        Map<String, Aggregate> flowNodeAggs =
+            nestedFlowNodeAgg.nested().aggregations(); // this is a flownode report
+        final FilterAggregate aggregation =
+            flowNodeAggs.get(FILTERED_FLOW_NODE_AGGREGATION).filter();
+        return aggregation.aggregations();
       }
     }
   }
@@ -165,7 +175,7 @@ public class VariableAggregationServiceES {
         context.getNestedVariableNameField(),
         context.getNestedVariableValueFieldLabel(),
         context.getIndexNames(),
-        context.getBaseQueryForMinMaxStats());
+        Query.of(q -> q.bool(context.getBaseQueryForMinMaxStats())));
   }
 
   public MinMaxStatDto getVariableMinMaxStats(
@@ -175,9 +185,16 @@ public class VariableAggregationServiceES {
       final String nestedVariableNameField,
       final String nestedVariableValueFieldLabel,
       final String[] indexNames,
-      final QueryBuilder baseQuery) {
-    final BoolQueryBuilder filterQuery =
-        boolQuery().must(termQuery(nestedVariableNameField, variableName));
+      final Query baseQuery) {
+    final Query filterQuery =
+        Query.of(
+            q ->
+                q.bool(
+                    b ->
+                        b.must(
+                            m ->
+                                m.term(
+                                    t -> t.field(nestedVariableNameField).value(variableName)))));
     if (VariableType.getNumericTypes().contains(variableType)) {
       return minMaxStatsService.getSingleFieldMinMaxStats(
           baseQuery, indexNames, nestedVariableValueFieldLabel, variablePath, filterQuery);

@@ -8,16 +8,11 @@
 package io.camunda.optimize.service.db.schema.index;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
-import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_DATE;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
 
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class ExternalProcessVariableIndex<TBuilder>
     extends DefaultIndexMappingCreator<TBuilder> {
@@ -58,33 +53,16 @@ public abstract class ExternalProcessVariableIndex<TBuilder>
   }
 
   @Override
-  public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return xContentBuilder
-        .startObject(VARIABLE_ID)
-        .field("type", TYPE_KEYWORD)
-        .endObject()
-        .startObject(VARIABLE_NAME)
-        .field("type", TYPE_KEYWORD)
-        .endObject()
-        .startObject(VARIABLE_TYPE)
-        .field("type", TYPE_KEYWORD)
-        .endObject()
-        .startObject(VARIABLE_VALUE)
-        .field(MAPPING_ENABLED_SETTING, false)
-        .endObject()
-        .startObject(PROCESS_INSTANCE_ID)
-        .field("type", TYPE_KEYWORD)
-        .endObject()
-        .startObject(PROCESS_DEFINITION_KEY)
-        .field("type", TYPE_KEYWORD)
-        .endObject()
-        .startObject(INGESTION_TIMESTAMP)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .endObject()
-        .startObject(SERIALIZATION_DATA_FORMAT)
-        .field("type", TYPE_KEYWORD)
-        .endObject();
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+
+    return builder
+        .properties(VARIABLE_ID, p -> p.keyword(k -> k))
+        .properties(VARIABLE_NAME, p -> p.keyword(k -> k))
+        .properties(VARIABLE_TYPE, p -> p.keyword(k -> k))
+        .properties(VARIABLE_VALUE, p -> p.object(k -> k.enabled(false)))
+        .properties(PROCESS_INSTANCE_ID, p -> p.keyword(k -> k))
+        .properties(PROCESS_DEFINITION_KEY, p -> p.keyword(k -> k))
+        .properties(INGESTION_TIMESTAMP, p -> p.date(k -> k))
+        .properties(SERIALIZATION_DATA_FORMAT, p -> p.keyword(k -> k));
   }
 }

@@ -10,10 +10,9 @@ package io.camunda.optimize.service.db.schema.index;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.DatabaseConstants.SETTINGS_INDEX_NAME;
 
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.SettingsDto;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class SettingsIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
   public static final int VERSION = 3;
@@ -33,16 +32,10 @@ public abstract class SettingsIndex<TBuilder> extends DefaultIndexMappingCreator
   }
 
   @Override
-  public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return xContentBuilder
-        .startObject(SHARING_ENABLED)
-        .field("type", "boolean")
-        .endObject()
-        .startObject(LAST_MODIFIED)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-        .endObject();
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+
+    return builder
+        .properties(SHARING_ENABLED, p -> p.boolean_(b -> b))
+        .properties(LAST_MODIFIED, p -> p.date(b -> b.format(OPTIMIZE_DATE_FORMAT)));
   }
 }

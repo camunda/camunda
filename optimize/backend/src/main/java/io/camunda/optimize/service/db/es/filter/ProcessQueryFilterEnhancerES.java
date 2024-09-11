@@ -9,6 +9,7 @@ package io.camunda.optimize.service.db.es.filter;
 
 import static io.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodeFilterDto;
@@ -51,7 +52,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -96,7 +96,7 @@ public class ProcessQueryFilterEnhancerES implements QueryFilterEnhancerES<Proce
 
   @Override
   public void addFilterToQuery(
-      final BoolQueryBuilder query,
+      final BoolQuery.Builder query,
       final List<ProcessFilterDto<?>> filters,
       final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(filters)) {
@@ -195,14 +195,14 @@ public class ProcessQueryFilterEnhancerES implements QueryFilterEnhancerES<Proce
   }
 
   private void addInstanceFilterForViewLevelMatching(
-      final BoolQueryBuilder query,
+      final BoolQuery.Builder query,
       final List<ProcessFilterDto<?>> filters,
       final FilterContext filterContext) {
     ModelElementFilterQueryUtilES.addInstanceFilterForRelevantViewLevelFilters(
             filters, filterContext)
-        .ifPresent(query::filter);
+        .ifPresent(n -> query.filter(f -> f.nested(n.build())));
     IncidentFilterQueryUtilES.addInstanceFilterForRelevantViewLevelFilters(filters)
-        .ifPresent(query::filter);
+        .ifPresent(n -> query.filter(f -> f.nested(n.build())));
   }
 
   private boolean isAssigneeFiltersEnabled() {

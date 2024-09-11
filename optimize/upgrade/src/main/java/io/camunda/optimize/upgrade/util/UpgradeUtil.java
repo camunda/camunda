@@ -11,12 +11,12 @@ import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMI
 
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
-import io.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
+import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
-import io.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -53,10 +53,11 @@ public class UpgradeUtil {
         new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH);
     final OptimizeElasticsearchClient esClient =
         new OptimizeElasticsearchClient(
-            ElasticsearchHighLevelRestClientBuilder.build(configurationService),
+            ElasticsearchClientBuilder.restClient(configurationService),
+            OPTIMIZE_MAPPER,
+            ElasticsearchClientBuilder.build(configurationService, OPTIMIZE_MAPPER),
             indexNameService,
-            new RequestOptionsProvider(configurationService),
-            OPTIMIZE_MAPPER);
+            new TransportOptionsProvider(configurationService));
     final ElasticSearchMetadataService metadataService =
         new ElasticSearchMetadataService(OPTIMIZE_MAPPER);
     return new UpgradeExecutionDependencies(

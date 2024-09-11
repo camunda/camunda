@@ -8,19 +8,36 @@
 package io.camunda.optimize.service.db.es.report.service;
 
 import static io.camunda.optimize.rest.util.TimeZoneUtil.formatToCorrectTimezone;
+import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.es.filter.util.DateHistogramFilterUtilES.createModelElementDateHistogramLimitingFilterFor;
 import static io.camunda.optimize.service.db.es.filter.util.DateHistogramFilterUtilES.extendBoundsAndCreateDecisionDateHistogramLimitingFilterFor;
 import static io.camunda.optimize.service.db.es.filter.util.DateHistogramFilterUtilES.extendBoundsAndCreateProcessDateHistogramLimitingFilterFor;
-import static io.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtilES.FILTER_LIMITED_AGGREGATION;
-import static io.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtilES.wrapWithFilterLimitedParentAggregation;
-import static io.camunda.optimize.service.db.es.report.interpreter.util.AggregateByDateUnitMapperES.mapToDateHistogramInterval;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.AggregateByDateUnitMapperES.mapToCalendarInterval;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.FilterLimitedAggregationUtilES.FILTER_LIMITED_AGGREGATION;
+import static io.camunda.optimize.service.db.es.report.interpreter.util.FilterLimitedAggregationUtilES.wrapWithFilterLimitedParentAggregation;
 import static io.camunda.optimize.service.db.report.interpreter.util.AggregateByDateUnitMapper.mapToChronoUnit;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramAggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramAggregation.Builder;
+import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramBucket;
+import co.elastic.clients.elasticsearch._types.aggregations.DateRangeAggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.FieldDateMath;
+import co.elastic.clients.elasticsearch._types.aggregations.FiltersAggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketAggregateBase;
+import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
+import co.elastic.clients.elasticsearch._types.aggregations.RangeBucket;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.json.JsonData;
+import co.elastic.clients.util.NamedValue;
+import co.elastic.clients.util.Pair;
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.service.db.es.report.context.DateAggregationContextES;
+import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.report.service.DateAggregationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.time.Duration;
@@ -28,28 +45,14 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.BucketOrder;
-import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
-import org.elasticsearch.search.aggregations.bucket.filter.FiltersAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.filter.FiltersAggregator;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.histogram.LongBounds;
-import org.elasticsearch.search.aggregations.bucket.range.DateRangeAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.range.RangeAggregator;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -62,8 +65,8 @@ public class DateAggregationServiceES extends DateAggregationService {
 
   private final DateTimeFormatter dateTimeFormatter;
 
-  public Optional<AggregationBuilder> createProcessInstanceDateAggregation(
-      final DateAggregationContextES context) {
+  public Optional<Map<String, Aggregation.Builder.ContainerBuilder>>
+      createProcessInstanceDateAggregation(final DateAggregationContextES context) {
     if (context.getMinMaxStats().isEmpty()) {
       // no instances present
       return Optional.empty();
@@ -76,8 +79,8 @@ public class DateAggregationServiceES extends DateAggregationService {
     return Optional.of(createFilterLimitedProcessDateHistogramWithSubAggregation(context));
   }
 
-  public Optional<AggregationBuilder> createModelElementDateAggregation(
-      final DateAggregationContextES context) {
+  public Optional<Map<String, Aggregation.Builder.ContainerBuilder>>
+      createModelElementDateAggregation(final DateAggregationContextES context) {
     if (context.getMinMaxStats().isEmpty()) {
       // no instances present
       return Optional.empty();
@@ -90,7 +93,7 @@ public class DateAggregationServiceES extends DateAggregationService {
     return Optional.of(createFilterLimitedModelElementDateHistogramWithSubAggregation(context));
   }
 
-  public Optional<AggregationBuilder> createDateVariableAggregation(
+  public Optional<Map<String, Aggregation.Builder.ContainerBuilder>> createDateVariableAggregation(
       final DateAggregationContextES context) {
     if (context.getMinMaxStats().isEmpty()) {
       // no instances present
@@ -105,8 +108,8 @@ public class DateAggregationServiceES extends DateAggregationService {
     return Optional.of(createDateHistogramWithSubAggregation(context));
   }
 
-  public Optional<AggregationBuilder> createDecisionEvaluationDateAggregation(
-      final DateAggregationContextES context) {
+  public Optional<Map<String, Aggregation.Builder.ContainerBuilder>>
+      createDecisionEvaluationDateAggregation(final DateAggregationContextES context) {
     if (context.getMinMaxStats().isEmpty()) {
       // no instances present
       return Optional.empty();
@@ -120,7 +123,7 @@ public class DateAggregationServiceES extends DateAggregationService {
     return Optional.of(createFilterLimitedDecisionDateHistogramWithSubAggregation(context));
   }
 
-  public Optional<AggregationBuilder> createRunningDateAggregation(
+  public Optional<Map<String, Aggregation.Builder.ContainerBuilder>> createRunningDateAggregation(
       final DateAggregationContextES context) {
     if (!context.getMinMaxStats().isMinValid()) {
       return Optional.empty();
@@ -134,20 +137,37 @@ public class DateAggregationServiceES extends DateAggregationService {
     return Optional.of(createRunningDateFilterAggregations(context));
   }
 
-  public Map<String, Aggregations> mapDateAggregationsToKeyAggregationMap(
-      final Aggregations aggregations, final ZoneId timezone) {
-    return mapDateAggregationsToKeyAggregationMap(aggregations, timezone, DATE_AGGREGATION);
+  public static Duration getDateHistogramIntervalDurationFromMinMax(
+      final MinMaxStatDto minMaxStats) {
+    final long intervalFromMinToMax =
+        (long) (minMaxStats.getMax() - minMaxStats.getMin())
+            / NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+    // we need to ensure that the interval is > 1 since we create the range buckets based on this
+    // interval and it will cause an endless loop if the interval is 0.
+    return Duration.of(Math.max(intervalFromMinToMax, 1), ChronoUnit.MILLIS);
   }
 
-  public Map<String, Aggregations> mapDateAggregationsToKeyAggregationMap(
-      final Aggregations aggregations, final ZoneId timezone, final String aggregationName) {
-    final MultiBucketsAggregation agg = aggregations.get(aggregationName);
+  public Map<String, Map<String, Aggregate>> mapDateAggregationsToKeyAggregationMap(
+      final Map<String, Aggregate> aggregations, final ZoneId timezone) {
+    return mapDateAggregationsToKeyAggregationMap(
+        (MultiBucketAggregateBase<? extends MultiBucketBase>)
+            aggregations.get(DATE_AGGREGATION)._get(),
+        timezone);
+  }
 
-    Map<String, Aggregations> formattedKeyToBucketMap = new LinkedHashMap<>();
-    for (MultiBucketsAggregation.Bucket entry : agg.getBuckets()) {
+  public Map<String, Map<String, Aggregate>> mapDateAggregationsToKeyAggregationMap(
+      final MultiBucketAggregateBase<? extends MultiBucketBase> aggr, final ZoneId timezone) {
+
+    Map<String, Map<String, Aggregate>> formattedKeyToBucketMap = new LinkedHashMap<>();
+    for (MultiBucketBase entry : aggr.buckets().array()) {
       String formattedDate =
-          formatToCorrectTimezone(entry.getKeyAsString(), timezone, dateTimeFormatter);
-      formattedKeyToBucketMap.put(formattedDate, entry.getAggregations());
+          formatToCorrectTimezone(
+              entry instanceof DateHistogramBucket
+                  ? ((DateHistogramBucket) entry).keyAsString()
+                  : ((RangeBucket) entry).key(),
+              timezone,
+              dateTimeFormatter);
+      formattedKeyToBucketMap.put(formattedDate, entry.aggregations());
     }
     // sort in descending order
     formattedKeyToBucketMap =
@@ -164,42 +184,47 @@ public class DateAggregationServiceES extends DateAggregationService {
     return formattedKeyToBucketMap;
   }
 
-  private DateHistogramAggregationBuilder createDateHistogramAggregation(
+  private Pair<String, Builder> createDateHistogramAggregation(
       final DateAggregationContextES context) {
-    DateHistogramAggregationBuilder dateHistogramAggregationBuilder =
-        AggregationBuilders.dateHistogram(context.getDateAggregationName().orElse(DATE_AGGREGATION))
-            .order(BucketOrder.key(false))
-            .field(context.getDateField())
-            .calendarInterval(mapToDateHistogramInterval(context.getAggregateByDateUnit()))
-            .format(OPTIMIZE_DATE_FORMAT)
-            .timeZone(context.getTimezone());
+
+    DateHistogramAggregation.Builder builder = new DateHistogramAggregation.Builder();
+    builder
+        .field(context.getDateField())
+        .format(OPTIMIZE_DATE_FORMAT)
+        .calendarInterval(mapToCalendarInterval(context.getAggregateByDateUnit()))
+        .timeZone(context.getTimezone().toString())
+        .order(NamedValue.of("_key", SortOrder.Desc));
 
     if (context.isExtendBoundsToMinMaxStats()
         && context.getMinMaxStats().isMaxValid()
         && context.getMinMaxStats().isMinValid()) {
-      dateHistogramAggregationBuilder.extendedBounds(
-          new LongBounds(
-              Math.round(context.getMinMaxStats().getMin()),
-              Math.round(context.getMinMaxStats().getMax())));
+
+      builder.extendedBounds(
+          e ->
+              e.min(FieldDateMath.of(f -> f.value(context.getMinMaxStats().getMin())))
+                  .max(FieldDateMath.of(f -> f.value(context.getMinMaxStats().getMax()))));
     }
 
-    return dateHistogramAggregationBuilder;
+    return Pair.of(context.getDateAggregationName().orElse(DATE_AGGREGATION), builder);
   }
 
-  private DateHistogramAggregationBuilder createDateHistogramWithSubAggregation(
+  private Map<String, Aggregation.Builder.ContainerBuilder> createDateHistogramWithSubAggregation(
       final DateAggregationContextES context) {
-    final DateHistogramAggregationBuilder dateHistogramAggregationBuilder =
-        AggregationBuilders.dateHistogram(context.getDateAggregationName().orElse(DATE_AGGREGATION))
-            .order(BucketOrder.key(false))
-            .field(context.getDateField())
-            .calendarInterval(mapToDateHistogramInterval(context.getAggregateByDateUnit()))
-            .format(OPTIMIZE_DATE_FORMAT)
-            .timeZone(context.getTimezone());
-    context.getSubAggregations().forEach(dateHistogramAggregationBuilder::subAggregation);
-    return dateHistogramAggregationBuilder;
+    DateHistogramAggregation.Builder builder = new DateHistogramAggregation.Builder();
+    builder
+        .field(context.getDateField())
+        .format(OPTIMIZE_DATE_FORMAT)
+        .calendarInterval(mapToCalendarInterval(context.getAggregateByDateUnit()))
+        .timeZone(context.getTimezone().toString())
+        .order(NamedValue.of("_key", SortOrder.Desc));
+
+    Aggregation.Builder.ContainerBuilder abuilder =
+        new Aggregation.Builder().dateHistogram(builder.build());
+    context.getSubAggregations().forEach((k, v) -> abuilder.aggregations(k, v.build()));
+    return Map.of(context.getDateAggregationName().orElse(DATE_AGGREGATION), abuilder);
   }
 
-  private AggregationBuilder createRunningDateFilterAggregations(
+  private Map<String, Aggregation.Builder.ContainerBuilder> createRunningDateFilterAggregations(
       final DateAggregationContextES context) {
     final AggregateByDateUnit unit = context.getAggregateByDateUnit();
     final ZonedDateTime startOfFirstBucket = truncateToUnit(context.getEarliestDate(), unit);
@@ -211,7 +236,10 @@ public class DateAggregationServiceES extends DateAggregationService {
     final Duration automaticIntervalDuration =
         getDateHistogramIntervalDurationFromMinMax(context.getMinMaxStats());
 
-    List<FiltersAggregator.KeyedFilter> filters = new ArrayList<>();
+    FiltersAggregation.Builder fbuilder = new FiltersAggregation.Builder();
+
+    Map<String, Query> keyedQueryMap = new HashMap<>();
+
     for (ZonedDateTime currentBucketStart = startOfFirstBucket;
         currentBucketStart.isBefore(endOfLastBucket);
         currentBucketStart = getEndOfBucket(currentBucketStart, unit, automaticIntervalDuration)) {
@@ -222,45 +250,73 @@ public class DateAggregationServiceES extends DateAggregationService {
               getEndOfBucket(currentBucketStart, unit, automaticIntervalDuration)
                   .toOffsetDateTime());
 
-      BoolQueryBuilder query =
-          QueryBuilders.boolQuery()
-              .must(QueryBuilders.rangeQuery(context.getDateField()).lt(endAsString))
-              .must(
-                  QueryBuilders.boolQuery()
-                      .should(
-                          QueryBuilders.rangeQuery(context.getRunningDateReportEndDateField())
-                              .gte(startAsString))
-                      .should(
-                          QueryBuilders.boolQuery()
-                              .mustNot(
-                                  QueryBuilders.existsQuery(
-                                      context.getRunningDateReportEndDateField()))));
-
-      FiltersAggregator.KeyedFilter keyedFilter =
-          new FiltersAggregator.KeyedFilter(startAsString, query);
-      filters.add(keyedFilter);
+      keyedQueryMap.put(
+          startAsString,
+          Query.of(
+              q ->
+                  q.bool(
+                      b ->
+                          b.must(
+                                  m ->
+                                      m.range(
+                                          r ->
+                                              r.field(context.getDateField())
+                                                  .lt(JsonData.of(endAsString))))
+                              .must(
+                                  m ->
+                                      m.bool(
+                                          bb ->
+                                              bb.should(
+                                                      s ->
+                                                          s.range(
+                                                              r ->
+                                                                  r.field(
+                                                                          context
+                                                                              .getRunningDateReportEndDateField())
+                                                                      .gte(
+                                                                          JsonData.of(
+                                                                              startAsString))))
+                                                  .should(
+                                                      s ->
+                                                          s.bool(
+                                                              bbb ->
+                                                                  bbb.mustNot(
+                                                                      mm ->
+                                                                          mm.exists(
+                                                                              e ->
+                                                                                  e.field(
+                                                                                      context
+                                                                                          .getRunningDateReportEndDateField()))))))))));
     }
-
-    final FiltersAggregationBuilder limitingFilterAggregation =
-        AggregationBuilders.filters(
-            FILTER_LIMITED_AGGREGATION, filters.toArray(new FiltersAggregator.KeyedFilter[] {}));
-    context.getSubAggregations().forEach(limitingFilterAggregation::subAggregation);
-    return limitingFilterAggregation;
+    fbuilder.filters(f -> f.keyed(keyedQueryMap));
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder().filters(fbuilder.build());
+    context.getSubAggregations().forEach((k, v) -> builder.aggregations(k, v.build()));
+    return Map.of(FILTER_LIMITED_AGGREGATION, builder);
   }
 
-  private Optional<AggregationBuilder> createAutomaticIntervalAggregationOrFallbackToMonth(
-      final DateAggregationContextES context,
-      final Function<DateAggregationContextES, AggregationBuilder> defaultAggregationCreator) {
-    final Optional<AggregationBuilder> automaticIntervalAggregation =
-        createAutomaticIntervalAggregationWithSubAggregation(context);
+  private Optional<Map<String, Aggregation.Builder.ContainerBuilder>>
+      createAutomaticIntervalAggregationOrFallbackToMonth(
+          final DateAggregationContextES context,
+          final Function<
+                  DateAggregationContextES, Map<String, Aggregation.Builder.ContainerBuilder>>
+              defaultAggregationCreator) {
+    final Optional<Pair<String, Aggregation.Builder.ContainerBuilder>>
+        automaticIntervalAggregation =
+            createAutomaticIntervalAggregationWithSubAggregation(context);
 
     if (automaticIntervalAggregation.isPresent()) {
-      final AggregationBuilder automaticIntervalAggregationValue =
+      final Pair<String, Aggregation.Builder.ContainerBuilder> automaticIntervalAggregationValue =
           automaticIntervalAggregation.get();
-      context.getSubAggregations().forEach(automaticIntervalAggregationValue::subAggregation);
+      context
+          .getSubAggregations()
+          .forEach((k, v) -> automaticIntervalAggregationValue.value().aggregations(k, v.build()));
       return Optional.of(
           wrapWithFilterLimitedParentAggregation(
-              boolQuery().filter(matchAllQuery()), automaticIntervalAggregationValue));
+              Query.of(q -> q.bool(b -> b.filter(f -> f.matchAll(m -> m)))),
+              Map.of(
+                  automaticIntervalAggregationValue.key(),
+                  automaticIntervalAggregationValue.value())));
     }
 
     // automatic interval not possible, return default aggregation with unit month instead
@@ -268,8 +324,8 @@ public class DateAggregationServiceES extends DateAggregationService {
     return Optional.of(defaultAggregationCreator.apply(context));
   }
 
-  private Optional<AggregationBuilder> createAutomaticIntervalAggregationWithSubAggregation(
-      final DateAggregationContextES context) {
+  private Optional<Pair<String, Aggregation.Builder.ContainerBuilder>>
+      createAutomaticIntervalAggregationWithSubAggregation(final DateAggregationContextES context) {
     if (!context.getMinMaxStats().isValidRange()) {
       return Optional.empty();
     }
@@ -279,10 +335,10 @@ public class DateAggregationServiceES extends DateAggregationService {
 
     final Duration intervalDuration =
         getDateHistogramIntervalDurationFromMinMax(context.getMinMaxStats());
-    DateRangeAggregationBuilder rangeAgg =
-        AggregationBuilders.dateRange(context.getDateAggregationName().orElse(DATE_AGGREGATION))
-            .timeZone(min.getZone())
-            .field(context.getDateField());
+
+    DateRangeAggregation.Builder rangeAgg = new DateRangeAggregation.Builder();
+    rangeAgg.timeZone(min.getZone().toString()).field(context.getDateField());
+
     ZonedDateTime start = min;
 
     do {
@@ -294,52 +350,69 @@ public class DateAggregationServiceES extends DateAggregationService {
       // the last bucket
       ZonedDateTime end = isLast ? nextStart.plus(1, ChronoUnit.MILLIS) : nextStart;
 
-      RangeAggregator.Range range =
-          new RangeAggregator.Range(
-              dateTimeFormatter.format(start), // key that's being used
-              dateTimeFormatter.format(start),
-              dateTimeFormatter.format(end));
-      rangeAgg.addRange(range);
+      ZonedDateTime finalStart = start;
+      rangeAgg.ranges(
+          r ->
+              r.from(f -> f.expr(dateTimeFormatter.format(finalStart)))
+                  .key(dateTimeFormatter.format(finalStart))
+                  .to(f -> f.expr(dateTimeFormatter.format(end))));
       start = nextStart;
     } while (start.isBefore(max));
-    return Optional.of(rangeAgg);
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder().dateRange(rangeAgg.build());
+    return Optional.of(Pair.of(context.getDateAggregationName().orElse(DATE_AGGREGATION), builder));
   }
 
-  private AggregationBuilder createFilterLimitedDecisionDateHistogramWithSubAggregation(
-      final DateAggregationContextES context) {
-    final DateHistogramAggregationBuilder dateHistogramAggregation =
+  private Map<String, Aggregation.Builder.ContainerBuilder>
+      createFilterLimitedDecisionDateHistogramWithSubAggregation(
+          final DateAggregationContextES context) {
+    final Pair<String, DateHistogramAggregation.Builder> dateHistogramAggregation =
         createDateHistogramAggregation(context);
 
-    final BoolQueryBuilder limitFilterQuery =
+    final BoolQuery.Builder limitFilterQuery =
         extendBoundsAndCreateDecisionDateHistogramLimitingFilterFor(
-            dateHistogramAggregation, context, dateTimeFormatter);
+            dateHistogramAggregation.value(), context, dateTimeFormatter);
 
-    context.getSubAggregations().forEach(dateHistogramAggregation::subAggregation);
-    return wrapWithFilterLimitedParentAggregation(limitFilterQuery, dateHistogramAggregation);
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder().dateHistogram(dateHistogramAggregation.value().build());
+    context.getSubAggregations().forEach((k, v) -> builder.aggregations(k, v.build()));
+    return wrapWithFilterLimitedParentAggregation(
+        Query.of(q -> q.bool(limitFilterQuery.build())),
+        Map.of(dateHistogramAggregation.key(), builder));
   }
 
-  private AggregationBuilder createFilterLimitedProcessDateHistogramWithSubAggregation(
-      final DateAggregationContextES context) {
-    final DateHistogramAggregationBuilder dateHistogramAggregation =
+  private Map<String, Aggregation.Builder.ContainerBuilder>
+      createFilterLimitedProcessDateHistogramWithSubAggregation(
+          final DateAggregationContextES context) {
+    final Pair<String, DateHistogramAggregation.Builder> dateHistogramAggregation =
         createDateHistogramAggregation(context);
 
-    final BoolQueryBuilder limitFilterQuery =
+    final BoolQuery.Builder limitFilterQuery =
         extendBoundsAndCreateProcessDateHistogramLimitingFilterFor(
-            dateHistogramAggregation, context, dateTimeFormatter);
+            dateHistogramAggregation.value(), context, dateTimeFormatter);
 
-    context.getSubAggregations().forEach(dateHistogramAggregation::subAggregation);
-    return wrapWithFilterLimitedParentAggregation(limitFilterQuery, dateHistogramAggregation);
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder().dateHistogram(dateHistogramAggregation.value().build());
+    context.getSubAggregations().forEach((k, v) -> builder.aggregations(k, v.build()));
+    return wrapWithFilterLimitedParentAggregation(
+        Query.of(q -> q.bool(limitFilterQuery.build())),
+        Map.of(dateHistogramAggregation.key(), builder));
   }
 
-  private AggregationBuilder createFilterLimitedModelElementDateHistogramWithSubAggregation(
-      final DateAggregationContextES context) {
-    final DateHistogramAggregationBuilder dateHistogramAggregation =
+  private Map<String, Aggregation.Builder.ContainerBuilder>
+      createFilterLimitedModelElementDateHistogramWithSubAggregation(
+          final DateAggregationContextES context) {
+    final Pair<String, DateHistogramAggregation.Builder> dateHistogramAggregation =
         createDateHistogramAggregation(context);
 
-    final BoolQueryBuilder limitFilterQuery =
+    final BoolQuery.Builder limitFilterQueryBuilder =
         createModelElementDateHistogramLimitingFilterFor(context, dateTimeFormatter);
 
-    context.getSubAggregations().forEach(dateHistogramAggregation::subAggregation);
-    return wrapWithFilterLimitedParentAggregation(limitFilterQuery, dateHistogramAggregation);
+    Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder().dateHistogram(dateHistogramAggregation.value().build());
+    context.getSubAggregations().forEach((k, v) -> builder.aggregations(k, v.build()));
+    return wrapWithFilterLimitedParentAggregation(
+        Query.of(q -> q.bool(limitFilterQueryBuilder.build())),
+        Map.of(dateHistogramAggregation.key(), builder));
   }
 }

@@ -7,9 +7,12 @@
  */
 package io.camunda.optimize.upgrade.es;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.TransportOptions;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
+import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -17,7 +20,6 @@ import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.ConnectException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -29,82 +31,66 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.ssl.SSLContexts;
-import org.apache.http.util.EntityUtils;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.RestHighLevelClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ElasticsearchHighLevelRestClientBuilder {
+public class ElasticsearchClientBuilder {
 
   private static final String HTTP = "http";
   private static final String HTTPS = "https";
-  private static RequestOptions requestOptions;
+  private static TransportOptions transportOptions;
 
-  private static final Logger logger =
-      LoggerFactory.getLogger(ElasticsearchHighLevelRestClientBuilder.class);
+  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchClientBuilder.class);
 
-  public static RestHighLevelClient build(final ConfigurationService configurationService) {
-    requestOptions = getRequestOptions(configurationService);
-    if (configurationService.getElasticSearchConfiguration().getSecuritySSLEnabled()) {
-      return buildHttpsRestClient(configurationService);
-    }
-    return buildHttpRestClient(configurationService);
+  public static ElasticsearchClient build(
+      final ConfigurationService configurationService, final ObjectMapper objectMapper) {
+    transportOptions = getTransportOptions(configurationService);
+    return getElasticsearchClient(restClient(configurationService), objectMapper);
   }
 
   public static String getCurrentESVersion(
-      final RestHighLevelClient esClient, final RequestOptions requestOptions) throws IOException {
-    final Request request = new Request(HttpGet.METHOD_NAME, "/");
-    request.setOptions(requestOptions);
-    final String responseJson =
-        EntityUtils.toString(esClient.getLowLevelClient().performRequest(request).getEntity());
-    final ObjectNode node = new ObjectMapper().readValue(responseJson, ObjectNode.class);
-    return node.get("version").get("number").toString().replace("\"", "");
+      final ElasticsearchClient esClient, final TransportOptions requestOptions)
+      throws IOException {
+    return esClient.withTransportOptions(requestOptions).info().version().number();
   }
 
-  private static RestHighLevelClient buildHttpRestClient(
-      final ConfigurationService configurationService) {
-    logger.info("Setting up http rest client connection");
-    return getRestHighLevelClient(
-        buildDefaultRestClient(configurationService, HTTP), requestOptions);
-  }
-
-  private static RestHighLevelClient buildHttpsRestClient(
-      final ConfigurationService configurationService) {
-    logger.info("Setting up https rest client connection");
-    try {
+  public static RestClient restClient(final ConfigurationService configurationService) {
+    if (configurationService.getElasticSearchConfiguration().getSecuritySSLEnabled()) {
+      logger.info("Setting up https rest client connection");
       final RestClientBuilder builder = buildDefaultRestClient(configurationService, HTTPS);
+      try {
 
-      final SSLContext sslContext;
-      final KeyStore truststore = loadCustomTrustStore(configurationService);
+        final SSLContext sslContext;
+        final KeyStore truststore = loadCustomTrustStore(configurationService);
 
-      if (truststore.size() > 0) {
-        final TrustStrategy trustStrategy =
-            configurationService.getElasticSearchConfiguration().getSecuritySslSelfSigned()
-                    == Boolean.TRUE
-                ? new TrustSelfSignedStrategy()
-                : null;
-        sslContext = SSLContexts.custom().loadTrustMaterial(truststore, trustStrategy).build();
-      } else {
-        // default if custom truststore is empty
-        sslContext = SSLContext.getDefault();
+        if (truststore.size() > 0) {
+          final TrustStrategy trustStrategy =
+              configurationService.getElasticSearchConfiguration().getSecuritySslSelfSigned()
+                      == Boolean.TRUE
+                  ? new TrustSelfSignedStrategy()
+                  : null;
+          sslContext = SSLContexts.custom().loadTrustMaterial(truststore, trustStrategy).build();
+        } else {
+          // default if custom truststore is empty
+          sslContext = SSLContext.getDefault();
+        }
+
+        builder.setHttpClientConfigCallback(
+            createHttpClientConfigCallback(configurationService, sslContext));
+      } catch (Exception e) {
+        String message = "Could not build secured Elasticsearch client.";
+        throw new OptimizeRuntimeException(message, e);
       }
-
-      builder.setHttpClientConfigCallback(
-          createHttpClientConfigCallback(configurationService, sslContext));
-      return getRestHighLevelClient(builder, requestOptions);
-    } catch (final Exception e) {
-      final String message = "Could not build secured Elasticsearch client.";
-      throw new OptimizeRuntimeException(message, e);
+      return builder.build();
+    } else {
+      logger.info("Setting up http rest client connection");
+      return buildDefaultRestClient(configurationService, HTTP).build();
     }
   }
 
@@ -251,54 +237,17 @@ public class ElasticsearchHighLevelRestClientBuilder {
     return cert;
   }
 
-  private static RestHighLevelClient getRestHighLevelClient(
-      final RestClientBuilder builder, final RequestOptions requestOptions) {
-    RestHighLevelClient restHighLevelClient =
-        new RestHighLevelClientBuilder(builder.build()).build();
-    // we only need to turn on the compatibility mode when the server is ES8
-    final String esVersion =
-        waitUntilElasticIsUpAndFetchVersion(restHighLevelClient, requestOptions);
-    // The string containing the ElasticSearch version has the format X.X.X, therefore if the first
-    // character is 8,
-    // we are dealing with ES8
-    if (esVersion.startsWith("8")) {
-      restHighLevelClient =
-          new RestHighLevelClientBuilder(builder.build()).setApiCompatibilityMode(true).build();
-      logger.info("The compatibility mode for ES8 has been enabled for the client.");
-    }
+  private static ElasticsearchClient getElasticsearchClient(
+      final RestClient builder, final ObjectMapper objectMapper) {
     logger.info("Finished setting up HTTP rest client connection.");
-    return restHighLevelClient;
+    return new ElasticsearchClient(
+        new RestClientTransport(builder, new JacksonJsonpMapper(objectMapper)), transportOptions);
   }
 
-  private static String waitUntilElasticIsUpAndFetchVersion(
-      final RestHighLevelClient restHighLevelClient, final RequestOptions requestOptions) {
-    // We keep trying until elasticsearch is up and running. If ES does not boot then we cannot run
-    // Optimize anyway,
-    // therefore we just stay in this infinite loop until it's up
-    while (true) {
-      try {
-        return getCurrentESVersion(restHighLevelClient, requestOptions);
-      } catch (final ConnectException ex) {
-        logger.error("Can't connect to any ES node right now. Retrying connection...");
-        final long sleepTime = 1000;
-        logger.info(
-            "No Elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
-        try {
-          Thread.sleep(sleepTime);
-        } catch (final InterruptedException e) {
-          logger.warn("Got interrupted while waiting to retry connecting to Elasticsearch.", e);
-          Thread.currentThread().interrupt();
-        }
-      } catch (final IOException e) {
-        final String message = "Could not fetch the version of the Elasticsearch server.";
-        throw new OptimizeRuntimeException(message, e);
-      }
-    }
-  }
-
-  private static RequestOptions getRequestOptions(final ConfigurationService configurationService) {
-    final RequestOptionsProvider requestOptionsProvider =
-        new RequestOptionsProvider(configurationService);
-    return requestOptionsProvider.getRequestOptions();
+  public static TransportOptions getTransportOptions(
+      final ConfigurationService configurationService) {
+    final TransportOptionsProvider transportOptionsProvider =
+        new TransportOptionsProvider(configurationService);
+    return transportOptionsProvider.getTransportOptions();
   }
 }

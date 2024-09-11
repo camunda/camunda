@@ -13,6 +13,7 @@ import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariabl
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableTypeField;
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByOutputVariableDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
@@ -32,7 +33,6 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -91,7 +91,7 @@ public class DecisionGroupByOutputVariableInterpreterES
   }
 
   @Override
-  protected BoolQueryBuilder getVariableUndefinedOrNullQuery(
+  protected BoolQuery.Builder getVariableUndefinedOrNullQuery(
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     return DecisionVariableHelperES.getVariableUndefinedOrNullQuery(
         getVariableName(context), getVariablePath(), getVariableType(context));

@@ -8,35 +8,62 @@
 package io.camunda.optimize.test.it.extension.db;
 
 import static io.camunda.optimize.ApplicationContextProvider.getBean;
+import static io.camunda.optimize.service.db.DatabaseClient.convertToPrefixedAliasName;
 import static io.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
-import static io.camunda.optimize.service.db.es.OptimizeElasticsearchClient.INDICES_EXIST_OPTIONS;
 import static io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil.mapHits;
-import static io.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder.buildDynamicSettings;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
-import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableIdField;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static io.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
-import static io.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
-import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.elasticsearch.script.Script.DEFAULT_SCRIPT_LANG;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
-import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 
+import co.elastic.clients.elasticsearch._types.Conflicts;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.ExpandWildcard;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.ScriptLanguage;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.NestedAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.ValueCountAggregate;
+import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.cluster.PutClusterSettingsRequest;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.CountRequest;
+import co.elastic.clients.elasticsearch.core.CountResponse;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
+import co.elastic.clients.elasticsearch.core.DeleteRequest;
+import co.elastic.clients.elasticsearch.core.GetRequest;
+import co.elastic.clients.elasticsearch.core.GetResponse;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.UpdateByQueryRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.indices.Alias;
+import co.elastic.clients.elasticsearch.indices.AliasDefinition;
+import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
+import co.elastic.clients.elasticsearch.indices.ExistsRequest;
+import co.elastic.clients.elasticsearch.indices.ExistsTemplateRequest;
+import co.elastic.clients.elasticsearch.indices.GetAliasRequest;
+import co.elastic.clients.elasticsearch.indices.GetAliasResponse;
+import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
+import co.elastic.clients.elasticsearch.indices.GetMappingRequest;
+import co.elastic.clients.elasticsearch.indices.GetMappingResponse;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
+import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
+import co.elastic.clients.elasticsearch.indices.RefreshRequest;
+import co.elastic.clients.elasticsearch.indices.get.Feature;
+import co.elastic.clients.elasticsearch.indices.get_alias.IndexAliases;
+import co.elastic.clients.json.JsonData;
 import com.google.common.collect.Iterables;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
@@ -47,6 +74,13 @@ import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeCountRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeDeleteRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeGetRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeIndexOperationBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeIndexRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES;
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
@@ -71,7 +105,7 @@ import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConn
 import io.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import io.camunda.optimize.test.it.extension.MockServerUtil;
 import io.camunda.optimize.test.repository.TestIndexRepositoryES;
-import io.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
@@ -79,8 +113,6 @@ import java.lang.module.ModuleDescriptor;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,66 +127,24 @@ import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.apache.tika.utils.StringUtils;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
-import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.Request;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.client.core.CountResponse;
-import org.elasticsearch.client.indices.CreateIndexRequest;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.GetMappingsRequest;
-import org.elasticsearch.client.indices.GetMappingsResponse;
-import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
-import org.elasticsearch.cluster.metadata.AliasMetadata;
-import org.elasticsearch.common.Strings;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.aggregations.bucket.nested.Nested;
-import org.elasticsearch.search.aggregations.metrics.ValueCount;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.xcontent.ToXContent;
-import org.elasticsearch.xcontent.XContentBuilder;
-import org.elasticsearch.xcontent.XContentType;
 import org.mockserver.integration.ClientAndServer;
 
 @Slf4j
 public class ElasticsearchDatabaseTestService extends DatabaseTestService {
-
-  private static final ToXContent.Params XCONTENT_PARAMS_FLAT_SETTINGS =
-      new ToXContent.MapParams(Collections.singletonMap("flat_settings", "true"));
   private static final String MOCKSERVER_CLIENT_KEY = "MockServer";
   private static final Map<String, OptimizeElasticsearchClient> CLIENT_CACHE = new HashMap<>();
   private static final ClientAndServer mockServerClient = initMockServer();
 
   private String elasticsearchDatabaseVersion;
 
-  private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
+  private OptimizeElasticsearchClient optimizeElasticsearchClient;
 
   public ElasticsearchDatabaseTestService(
       final String customIndexPrefix, final boolean haveToClean) {
     super(customIndexPrefix, haveToClean);
     initEsClient();
-    setTestIndexRepository(new TestIndexRepositoryES(prefixAwareRestHighLevelClient));
+    setTestIndexRepository(new TestIndexRepositoryES(optimizeElasticsearchClient));
   }
 
   private static ClientAndServer initMockServer() {
@@ -177,7 +167,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   public void afterEach() {
     // If the MockServer has been used, we reset all expectations and logs and revert to the default
     // client
-    if (prefixAwareRestHighLevelClient == CLIENT_CACHE.get(MOCKSERVER_CLIENT_KEY)) {
+    if (optimizeElasticsearchClient == CLIENT_CACHE.get(MOCKSERVER_CLIENT_KEY)) {
       log.info("Resetting all MockServer expectations and logs");
       mockServerClient.reset();
       log.info("No longer using ES MockServer");
@@ -189,7 +179,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   public ClientAndServer useDBMockServer() {
     log.info("Using ElasticSearch MockServer");
     if (CLIENT_CACHE.containsKey(MOCKSERVER_CLIENT_KEY)) {
-      prefixAwareRestHighLevelClient = CLIENT_CACHE.get(MOCKSERVER_CLIENT_KEY);
+      optimizeElasticsearchClient = CLIENT_CACHE.get(MOCKSERVER_CLIENT_KEY);
     } else {
       final ConfigurationService configurationService = createConfigurationService();
       final DatabaseConnectionNodeConfiguration esConfig =
@@ -204,12 +194,16 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public void refreshAllOptimizeIndices() {
     try {
-      final RefreshRequest refreshAllIndicesRequest =
-          new RefreshRequest(getIndexNameService().getIndexPrefix() + "*");
       getOptimizeElasticClient()
-          .getHighLevelClient()
+          .getEsClient()
           .indices()
-          .refresh(refreshAllIndicesRequest, getOptimizeElasticClient().requestOptions());
+          .refresh(
+              RefreshRequest.of(
+                  r ->
+                      r.index(getIndexNameService().getIndexPrefix() + "*")
+                          .allowNoIndices(true)
+                          .ignoreUnavailable(true)
+                          .expandWildcards(ExpandWildcard.Open)));
     } catch (final Exception e) {
       throw new OptimizeIntegrationTestException("Could not refresh Optimize indices!", e);
     }
@@ -218,14 +212,15 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public void addEntryToDatabase(final String indexName, final String id, final Object entry) {
     try {
-      final String json = OBJECT_MAPPER.writeValueAsString(entry);
-      final IndexRequest request =
-          new IndexRequest(indexName)
-              .id(id)
-              .source(json, XContentType.JSON)
-              .setRefreshPolicy(
-                  IMMEDIATE); // necessary in order to search for the entry immediately
-      getOptimizeElasticClient().index(request);
+      getOptimizeElasticClient()
+          .index(
+              OptimizeIndexRequestBuilderES.of(
+                  i ->
+                      i.optimizeIndex(getOptimizeElasticClient(), indexName)
+                          .id(id)
+                          .document(entry)
+                          // necessary in order to search for the entry immediately
+                          .refresh(Refresh.True)));
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException("Unable to add an entry to elasticsearch", e);
     }
@@ -236,36 +231,43 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     StreamSupport.stream(Iterables.partition(idToEntryMap.entrySet(), 10_000).spliterator(), false)
         .forEach(
             batch -> {
-              final BulkRequest bulkRequest = new BulkRequest();
+              final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
               for (final Map.Entry<String, Object> idAndObject : batch) {
-                final String json = writeJsonString(idAndObject);
-                final IndexRequest request =
-                    new IndexRequest(indexName)
-                        .id(idAndObject.getKey())
-                        .source(json, XContentType.JSON);
-                bulkRequest.add(request);
+                bulkRequest.operations(
+                    o ->
+                        o.index(
+                            OptimizeIndexOperationBuilderES.of(
+                                i ->
+                                    i.optimizeIndex(getOptimizeElasticClient(), indexName)
+                                        .id(idAndObject.getKey())
+                                        .document(idAndObject.getValue()))));
               }
-              executeBulk(bulkRequest);
+              executeBulk(bulkRequest.build());
             });
   }
 
   @Override
   public <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> type) {
-    return getAllDocumentsOfIndexAs(indexName, type, matchAllQuery());
+    return getAllDocumentsOfIndexAs(indexName, type, Query.of(q -> q.matchAll(m -> m)));
   }
 
   @Override
   public DatabaseClient getDatabaseClient() {
-    return prefixAwareRestHighLevelClient;
+    return optimizeElasticsearchClient;
   }
 
   @Override
   public Integer getDocumentCountOf(final String indexName) {
     try {
       final CountResponse countResponse =
-          getOptimizeElasticClient().count(new CountRequest(indexName).query(matchAllQuery()));
-      return Long.valueOf(countResponse.getCount()).intValue();
-    } catch (final IOException | ElasticsearchStatusException e) {
+          getOptimizeElasticClient()
+              .count(
+                  OptimizeCountRequestBuilderES.of(
+                      c ->
+                          c.optimizeIndex(getOptimizeElasticClient(), indexName)
+                              .query(Query.of(q -> q.matchAll(m -> m)))));
+      return Long.valueOf(countResponse.count()).intValue();
+    } catch (final IOException | ElasticsearchException e) {
       throw new OptimizeIntegrationTestException(
           "Cannot evaluate document count for index " + indexName, e);
     }
@@ -274,22 +276,35 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public Integer getCountOfCompletedInstancesWithIdsIn(final Set<Object> processInstanceIds) {
     return getInstanceCountWithQuery(
-        boolQuery()
-            .filter(termsQuery(ProcessInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds))
-            .filter(existsQuery(ProcessInstanceIndex.END_DATE)));
+        Query.of(
+            q ->
+                q.bool(
+                    b ->
+                        b.filter(
+                                f ->
+                                    f.terms(
+                                        t ->
+                                            t.field(ProcessInstanceIndex.PROCESS_INSTANCE_ID)
+                                                .terms(
+                                                    tt ->
+                                                        tt.value(
+                                                            processInstanceIds.stream()
+                                                                .map(FieldValue::of)
+                                                                .toList()))))
+                            .filter(f -> f.exists(e -> e.field(ProcessInstanceIndex.END_DATE))))));
   }
 
   @Override
   public void deleteAllOptimizeData() {
-    final DeleteByQueryRequest request =
-        new DeleteByQueryRequest(getIndexNameService().getIndexPrefix() + "*")
-            .setQuery(matchAllQuery())
-            .setRefresh(true);
-
     try {
       getOptimizeElasticClient()
-          .getHighLevelClient()
-          .deleteByQuery(request, getOptimizeElasticClient().requestOptions());
+          .getEsClient()
+          .deleteByQuery(
+              DeleteByQueryRequest.of(
+                  d ->
+                      d.index(getIndexNameService().getIndexPrefix() + "*")
+                          .query(Query.of(q -> q.matchAll(m -> m)))
+                          .refresh(true)));
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException("Could not delete all Optimize data", e);
     }
@@ -309,18 +324,18 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public void deleteAllSingleProcessReports() {
-    final DeleteByQueryRequest request =
-        new DeleteByQueryRequest(
-                getIndexNameService()
-                    .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()))
-            .setQuery(matchAllQuery())
-            .setRefresh(true);
-
     try {
       getOptimizeElasticClient()
-          .getHighLevelClient()
-          .deleteByQuery(request, getOptimizeElasticClient().requestOptions());
-    } catch (final IOException | ElasticsearchStatusException e) {
+          .getEsClient()
+          .deleteByQuery(
+              DeleteByQueryRequest.of(
+                  d ->
+                      d.index(
+                              getIndexNameService()
+                                  .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()))
+                          .query(Query.of(q -> q.matchAll(m -> m)))
+                          .refresh(true)));
+    } catch (final IOException | ElasticsearchException e) {
       throw new OptimizeIntegrationTestException(
           "Could not delete data in index "
               + getIndexNameService()
@@ -360,18 +375,17 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   public void createIndex(
       String indexName, Map<String, Boolean> aliases, DefaultIndexMappingCreator indexMapping)
       throws IOException {
-    final Settings indexSettings = createIndexSettings(indexMapping, createConfigurationService());
-    final CreateIndexRequest request = new CreateIndexRequest(indexName);
+    final IndexSettings indexSettings =
+        createIndexSettings(indexMapping, createConfigurationService());
+    final CreateIndexRequest.Builder request = new CreateIndexRequest.Builder();
+    request.index(convertToPrefixedAliasName(indexName, getOptimizeElasticClient()));
     for (Map.Entry<String, Boolean> alias : aliases.entrySet()) {
-      request.alias(new Alias(alias.getKey()).writeIndex(alias.getValue()));
+      request.aliases(alias.getKey(), Alias.of(a -> a.isWriteIndex(alias.getValue())));
     }
     request.settings(indexSettings);
-    request.mapping(indexMapping.getSource());
-    indexMapping.setDynamic("false");
-    getOptimizeElasticClient()
-        .getHighLevelClient()
-        .indices()
-        .create(request, getOptimizeElasticClient().requestOptions());
+    request.mappings(indexMapping.getSource());
+    indexMapping.setDynamic(DynamicMapping.False);
+    getOptimizeElasticClient().elasticsearchClient().indices().create(request.build());
   }
 
   @SneakyThrows
@@ -392,14 +406,13 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix) {
     final String[] indicesToDelete =
-        Arrays.stream(
-                getOptimizeElasticClient()
-                    .getHighLevelClient()
-                    .indices()
-                    .get(
-                        new GetIndexRequest("*").indicesOptions(INDICES_EXIST_OPTIONS),
-                        getOptimizeElasticClient().requestOptions())
-                    .getIndices())
+        getOptimizeElasticClient()
+            .getEsClient()
+            .indices()
+            .get(GetIndexRequest.of(r -> r.index("*")))
+            .result()
+            .keySet()
+            .stream()
             .filter(indexName -> indexName.contains(zeebeRecordPrefix))
             .toArray(String[]::new);
     if (indicesToDelete.length > 1) {
@@ -412,14 +425,13 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   public void deleteAllOtherZeebeRecordsWithPrefix(
       final String zeebeRecordPrefix, final String recordsToKeep) {
     final String[] indicesToDelete =
-        Arrays.stream(
-                getOptimizeElasticClient()
-                    .getHighLevelClient()
-                    .indices()
-                    .get(
-                        new GetIndexRequest("*").indicesOptions(INDICES_EXIST_OPTIONS),
-                        getOptimizeElasticClient().requestOptions())
-                    .getIndices())
+        getOptimizeElasticClient()
+            .elasticsearchClient()
+            .indices()
+            .get(GetIndexRequest.of(r -> r.index("*")))
+            .result()
+            .keySet()
+            .stream()
             .filter(
                 indexName ->
                     indexName.contains(zeebeRecordPrefix) && !indexName.contains(recordsToKeep))
@@ -433,20 +445,19 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public void updateZeebeRecordsForPrefix(
       final String zeebeRecordPrefix, final String indexName, final String updateScript) {
-    final UpdateByQueryRequest update =
-        new UpdateByQueryRequest(zeebeRecordPrefix + "_" + indexName + "*")
-            .setQuery(matchAllQuery())
-            .setScript(
-                new Script(
-                    ScriptType.INLINE,
-                    Script.DEFAULT_SCRIPT_LANG,
-                    updateScript,
-                    Collections.emptyMap()))
-            .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
-            .setRefresh(true);
     getOptimizeElasticClient()
-        .getHighLevelClient()
-        .updateByQuery(update, getOptimizeElasticClient().requestOptions());
+        .getEsClient()
+        .updateByQuery(
+            UpdateByQueryRequest.of(
+                u ->
+                    u.index(zeebeRecordPrefix + "_" + indexName + "*")
+                        .refresh(true)
+                        .script(
+                            Script.of(
+                                s ->
+                                    s.inline(
+                                        i -> i.lang(ScriptLanguage.Painless).source(updateScript))))
+                        .query(Query.of(q -> q.matchAll(m -> m)))));
   }
 
   @SneakyThrows
@@ -456,20 +467,29 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
       final String indexName,
       final long position,
       final String updateScript) {
-    final UpdateByQueryRequest update =
-        new UpdateByQueryRequest(zeebeRecordPrefix + "_" + indexName + "*")
-            .setQuery(boolQuery().must(termQuery(ZeebeRecordDto.Fields.position, position)))
-            .setScript(
-                new Script(
-                    ScriptType.INLINE,
-                    Script.DEFAULT_SCRIPT_LANG,
-                    updateScript,
-                    Collections.emptyMap()))
-            .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
-            .setRefresh(true);
     getOptimizeElasticClient()
-        .getHighLevelClient()
-        .updateByQuery(update, getOptimizeElasticClient().requestOptions());
+        .getEsClient()
+        .updateByQuery(
+            UpdateByQueryRequest.of(
+                u ->
+                    u.index(zeebeRecordPrefix + "_" + indexName + "*")
+                        .refresh(true)
+                        .script(
+                            Script.of(
+                                s ->
+                                    s.inline(
+                                        i -> i.lang(ScriptLanguage.Painless).source(updateScript))))
+                        .query(
+                            Query.of(
+                                q ->
+                                    q.bool(
+                                        b ->
+                                            b.must(
+                                                m ->
+                                                    m.term(
+                                                        t ->
+                                                            t.field(ZeebeRecordDto.Fields.position)
+                                                                .value(position))))))));
   }
 
   @SneakyThrows
@@ -478,27 +498,34 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
       final String zeebeRecordPrefix,
       final BpmnElementType bpmnElementType,
       final String updateScript) {
-    final UpdateByQueryRequest update =
-        new UpdateByQueryRequest(zeebeRecordPrefix + "_" + ZEEBE_PROCESS_INSTANCE_INDEX_NAME + "*")
-            .setQuery(
-                boolQuery()
-                    .must(
-                        termQuery(
-                            ZeebeRecordDto.Fields.value
-                                + "."
-                                + ZeebeProcessInstanceDataDto.Fields.bpmnElementType,
-                            bpmnElementType.name())))
-            .setScript(
-                new Script(
-                    ScriptType.INLINE,
-                    Script.DEFAULT_SCRIPT_LANG,
-                    updateScript,
-                    Collections.emptyMap()))
-            .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
-            .setRefresh(true);
     getOptimizeElasticClient()
-        .getHighLevelClient()
-        .updateByQuery(update, getOptimizeElasticClient().requestOptions());
+        .getEsClient()
+        .updateByQuery(
+            UpdateByQueryRequest.of(
+                u ->
+                    u.index(zeebeRecordPrefix + "_" + ZEEBE_PROCESS_INSTANCE_INDEX_NAME + "*")
+                        .refresh(true)
+                        .script(
+                            Script.of(
+                                s ->
+                                    s.inline(
+                                        i -> i.lang(ScriptLanguage.Painless).source(updateScript))))
+                        .query(
+                            Query.of(
+                                q ->
+                                    q.bool(
+                                        b ->
+                                            b.must(
+                                                m ->
+                                                    m.term(
+                                                        t ->
+                                                            t.field(
+                                                                    ZeebeRecordDto.Fields.value
+                                                                        + "."
+                                                                        + ZeebeProcessInstanceDataDto
+                                                                            .Fields.bpmnElementType)
+                                                                .value(
+                                                                    bpmnElementType.name()))))))));
   }
 
   @SneakyThrows
@@ -506,19 +533,21 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   public void updateUserTaskDurations(
       final String processInstanceId, final String processDefinitionKey, final long duration) {
     final String updateScript = buildUpdateScript(duration);
-    final UpdateRequest update =
-        new UpdateRequest()
-            .index(getProcessInstanceIndexAliasName(processDefinitionKey))
-            .id(processInstanceId)
-            .script(
-                new Script(
-                    ScriptType.INLINE,
-                    Script.DEFAULT_SCRIPT_LANG,
-                    updateScript,
-                    Collections.emptyMap()))
-            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-    getOptimizeElasticClient().update(update);
+    getOptimizeElasticClient()
+        .update(
+            OptimizeUpdateRequestBuilderES.of(
+                u ->
+                    u.optimizeIndex(
+                            getOptimizeElasticClient(),
+                            getProcessInstanceIndexAliasName(processDefinitionKey))
+                        .id(processInstanceId)
+                        .script(
+                            Script.of(
+                                s ->
+                                    s.inline(
+                                        i -> i.lang(ScriptLanguage.Painless).source(updateScript))))
+                        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)),
+            Object.class);
   }
 
   @Override
@@ -528,12 +557,13 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public boolean indexExists(final String indexOrAliasName, Boolean addMappingFeatures) {
-    final GetIndexRequest request = new GetIndexRequest(indexOrAliasName);
+    final GetIndexRequest.Builder request = new GetIndexRequest.Builder();
+    request.index(getOptimizeElasticClient().addPrefixesToIndices(indexOrAliasName));
     if (addMappingFeatures) {
-      request.features(GetIndexRequest.Feature.MAPPINGS);
+      request.features(Feature.Mappings);
     }
     try {
-      return getOptimizeElasticClient().exists(request);
+      return getOptimizeElasticClient().exists(request.build());
     } catch (final IOException e) {
       final String message =
           String.format(
@@ -545,22 +575,27 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public boolean templateExists(String optimizeIndexTemplateNameWithVersion) throws IOException {
     return getOptimizeElasticClient()
-        .getHighLevelClient()
+        .elasticsearchClient()
         .indices()
-        .existsTemplate(
-            new IndexTemplatesExistRequest(optimizeIndexTemplateNameWithVersion),
-            getOptimizeElasticClient().requestOptions());
+        .existsTemplate(ExistsTemplateRequest.of(e -> e.name(optimizeIndexTemplateNameWithVersion)))
+        .value();
   }
 
   @Override
   public boolean isAliasReadOnly(String readOnlyAliasForIndex) throws IOException {
-    GetAliasesRequest aliasesRequest = new GetAliasesRequest(readOnlyAliasForIndex);
-    GetAliasesResponse aliases = getOptimizeElasticClient().getAlias(aliasesRequest);
-    return aliases.getAliases().values().stream()
-        .flatMap(Collection::stream)
+    GetAliasResponse aliases =
+        getOptimizeElasticClient()
+            .getAlias(
+                GetAliasRequest.of(
+                    a ->
+                        a.name(
+                            getOptimizeElasticClient()
+                                .addPrefixesToIndices(readOnlyAliasForIndex))));
+    return aliases.result().values().stream()
+        .flatMap(a -> a.aliases().values().stream())
         .collect(Collectors.toSet())
         .stream()
-        .noneMatch(AliasMetadata::writeIndex);
+        .noneMatch(AliasDefinition::isWriteIndex);
   }
 
   @Override
@@ -568,23 +603,25 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   public boolean indexExistsCheckWithoutApplyingOptimizePrefix(final String indexName) {
     final OptimizeElasticsearchClient esClient = getOptimizeElasticClient();
     return esClient
-        .getHighLevelClient()
+        .getEsClient()
         .indices()
-        .exists(new GetIndexRequest(indexName), esClient.requestOptions());
+        .exists(ExistsRequest.of(r -> r.index(indexName)))
+        .value();
   }
 
   @SneakyThrows
   @Override
   public OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(
       final String dbType, final String engine) {
-    final GetRequest getRequest =
-        new GetRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME)
-            .id(DatabaseHelper.constructKey(dbType, engine));
-    final GetResponse response = prefixAwareRestHighLevelClient.get(getRequest);
-    if (response.isExists()) {
-      return OBJECT_MAPPER
-          .readValue(response.getSourceAsString(), TimestampBasedImportIndexDto.class)
-          .getTimestampOfLastEntity();
+    final GetResponse<TimestampBasedImportIndexDto> response =
+        optimizeElasticsearchClient.get(
+            OptimizeGetRequestBuilderES.of(
+                r ->
+                    r.optimizeIndex(optimizeElasticsearchClient, TIMESTAMP_BASED_IMPORT_INDEX_NAME)
+                        .id(DatabaseHelper.constructKey(dbType, engine))),
+            TimestampBasedImportIndexDto.class);
+    if (response.found()) {
+      return response.source().getTimestampOfLastEntity();
     } else {
       throw new NotFoundException(
           String.format(
@@ -602,8 +639,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public long countRecordsByQuery(
       final TermsQueryContainer termsQueryContainer, final String expectedIndex) {
-    final BoolQueryBuilder boolQueryBuilder = termsQueryContainer.toElasticSearchQuery();
-    return countRecordsByQuery(boolQueryBuilder, expectedIndex);
+    return countRecordsByQuery(termsQueryContainer.toElasticSearchQuery(), expectedIndex);
   }
 
   @Override
@@ -611,21 +647,29 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   public <T> List<T> getZeebeExportedRecordsByQuery(
       final String exportIndex, final TermsQueryContainer query, final Class<T> zeebeRecordClass) {
     final OptimizeElasticsearchClient esClient = getOptimizeElasticClient();
-    final BoolQueryBuilder boolQueryBuilder = query.toElasticSearchQuery();
-    final SearchRequest searchRequest =
-        new SearchRequest()
-            .indices(exportIndex)
-            .source(
-                new SearchSourceBuilder().query(boolQueryBuilder).trackTotalHits(true).size(100));
-    final SearchResponse searchResponse = esClient.searchWithoutPrefixing(searchRequest);
+    final Query boolQueryBuilder = query.toElasticSearchQuery();
+    final SearchResponse<T> searchResponse =
+        esClient.searchWithoutPrefixing(
+            SearchRequest.of(
+                s ->
+                    s.index(exportIndex)
+                        .query(boolQueryBuilder)
+                        .trackTotalHits(t -> t.enabled(true))
+                        .size(100)),
+            zeebeRecordClass);
     return ElasticsearchReaderUtil.mapHits(
-        searchResponse.getHits(), zeebeRecordClass, OPTIMIZE_MAPPER);
+        searchResponse.hits(), zeebeRecordClass, OPTIMIZE_MAPPER);
   }
 
   @Override
   @SneakyThrows
   public void deleteProcessInstancesFromIndex(final String indexName, final String id) {
-    final DeleteRequest request = new DeleteRequest(indexName).id(id).setRefreshPolicy(IMMEDIATE);
+    final DeleteRequest request =
+        OptimizeDeleteRequestBuilderES.of(
+            d ->
+                d.optimizeIndex(getOptimizeElasticClient(), indexName)
+                    .id(id)
+                    .refresh(Refresh.True));
     getOptimizeElasticClient().delete(request);
   }
 
@@ -642,18 +686,29 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
       final String idField,
       final Class<T> type) {
     final List<T> results = new ArrayList<>();
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
-            .query(termsQuery(idField, instanceIds))
-            .trackTotalHits(true)
-            .size(100);
 
     final SearchRequest searchRequest =
-        new SearchRequest().indices(indexName).source(searchSourceBuilder);
+        OptimizeSearchRequestBuilderES.of(
+            s ->
+                s.optimizeIndex(getOptimizeElasticClient(), indexName)
+                    .query(
+                        Query.of(
+                            q ->
+                                q.terms(
+                                    t ->
+                                        t.field(idField)
+                                            .terms(
+                                                tt ->
+                                                    tt.value(
+                                                        instanceIds.stream()
+                                                            .map(FieldValue::of)
+                                                            .toList())))))
+                    .trackTotalHits(t -> t.enabled(true))
+                    .size(100));
 
-    final SearchResponse searchResponse = getOptimizeElasticClient().search(searchRequest);
-    for (final SearchHit hit : searchResponse.getHits().getHits()) {
-      results.add(getObjectMapper().readValue(hit.getSourceAsString(), type));
+    final SearchResponse<T> searchResponse = getOptimizeElasticClient().search(searchRequest, type);
+    for (final Hit<T> hit : searchResponse.hits().hits()) {
+      results.add(hit.source());
     }
     return results;
   }
@@ -662,10 +717,12 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @SneakyThrows
   public <T> Optional<T> getDatabaseEntryById(
       final String indexName, final String entryId, final Class<T> type) {
-    final GetRequest getRequest = new GetRequest().index(indexName).id(entryId);
-    final GetResponse getResponse = getOptimizeElasticClient().get(getRequest);
-    if (getResponse.isExists()) {
-      return Optional.of(getObjectMapper().readValue(getResponse.getSourceAsString(), type));
+    final GetRequest getRequest =
+        OptimizeGetRequestBuilderES.of(
+            r -> r.optimizeIndex(getOptimizeElasticClient(), indexName).id(entryId));
+    final GetResponse<T> getResponse = getOptimizeElasticClient().get(getRequest, type);
+    if (getResponse.found()) {
+      return Optional.of(getResponse.source());
     } else {
       return Optional.empty();
     }
@@ -675,10 +732,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @SneakyThrows
   public String getDatabaseVersion() {
     if (elasticsearchDatabaseVersion == null) {
-      elasticsearchDatabaseVersion =
-          ElasticsearchHighLevelRestClientBuilder.getCurrentESVersion(
-              getOptimizeElasticClient().getHighLevelClient(),
-              getOptimizeElasticClient().requestOptions());
+      elasticsearchDatabaseVersion = getOptimizeElasticClient().getDatabaseVersion();
     }
     return elasticsearchDatabaseVersion;
   }
@@ -711,25 +765,32 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                 new ProcessInstanceIndexES(processDefinitionKey));
 
     esClient
-        .getHighLevelClient()
+        .elasticsearchClient()
         .indices()
         .putSettings(
-            new UpdateSettingsRequest(buildDynamicSettings(configurationService), indexName),
-            esClient.requestOptions());
+            PutIndicesSettingsRequest.of(
+                p ->
+                    p.index(indexName)
+                        .settings(
+                            ElasticSearchIndexSettingsBuilder.buildDynamicSettings(
+                                configurationService))));
   }
 
   @Override
   public void createIndex(
       final String optimizeIndexNameWithVersion, final String optimizeIndexAliasForIndex)
       throws IOException {
-    final CreateIndexRequest request = new CreateIndexRequest(optimizeIndexNameWithVersion);
-    if (!StringUtils.isBlank(optimizeIndexAliasForIndex)) {
-      request.alias(new Alias(optimizeIndexAliasForIndex).writeIndex(true));
-    }
-    getOptimizeElasticClient()
-        .getHighLevelClient()
-        .indices()
-        .create(request, getOptimizeElasticClient().requestOptions());
+    final CreateIndexRequest request =
+        CreateIndexRequest.of(
+            i -> {
+              i.index(optimizeIndexNameWithVersion);
+              if (!StringUtils.isBlank(optimizeIndexAliasForIndex)) {
+                i.aliases(optimizeIndexAliasForIndex, Alias.of(a -> a.isWriteIndex(true)));
+              }
+              return i;
+            });
+
+    getOptimizeElasticClient().elasticsearchClient().indices().create(request);
   }
 
   @Override
@@ -740,18 +801,28 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public void setActivityStartDatesToNull(
       final String processDefinitionKey, final ScriptData scriptData) {
-    final Script setActivityStartDatesToNull =
-        new Script(
-            ScriptType.INLINE, DEFAULT_SCRIPT_LANG, scriptData.scriptString(), scriptData.params());
-    final UpdateByQueryRequest request =
-        new UpdateByQueryRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
-            .setAbortOnVersionConflict(false)
-            .setQuery(matchAllQuery())
-            .setScript(setActivityStartDatesToNull)
-            .setRefresh(true);
+    final UpdateByQueryRequest.Builder request =
+        new UpdateByQueryRequest.Builder()
+            .conflicts(Conflicts.Proceed)
+            .query(Query.of(q -> q.matchAll(m -> m)))
+            .script(
+                Script.of(
+                    s ->
+                        s.inline(
+                            i ->
+                                i.lang(ScriptLanguage.Painless)
+                                    .source(scriptData.scriptString())
+                                    .params(
+                                        scriptData.params().entrySet().stream()
+                                            .collect(
+                                                Collectors.toMap(
+                                                    Map.Entry::getKey,
+                                                    e -> JsonData.of(e.getValue())))))))
+            .refresh(true);
 
     try {
-      getOptimizeElasticClient().updateByQuery(request);
+      getOptimizeElasticClient()
+          .updateByQuery(request, List.of(getProcessInstanceIndexAliasName(processDefinitionKey)));
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException("Could not set activity start dates to null.", e);
     }
@@ -760,21 +831,37 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public void setUserTaskDurationToNull(
       final String processInstanceId, final String durationFieldName, final ScriptData script) {
-
-    final Script updateScript =
-        new Script(
-            ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script.scriptString(), script.params());
-
-    final UpdateByQueryRequest request =
-        new UpdateByQueryRequest(PROCESS_INSTANCE_MULTI_ALIAS)
-            .setQuery(boolQuery().must(termQuery(PROCESS_INSTANCE_ID, processInstanceId)))
-            .setAbortOnVersionConflict(false)
-            .setScript(updateScript)
-            .setRefresh(true);
-    getOptimizeElasticClient().applyIndexPrefixes(request);
+    final UpdateByQueryRequest.Builder request =
+        new UpdateByQueryRequest.Builder()
+            .conflicts(Conflicts.Proceed)
+            .query(
+                Query.of(
+                    q ->
+                        q.bool(
+                            b ->
+                                b.must(
+                                    m ->
+                                        m.term(
+                                            t ->
+                                                t.field(PROCESS_INSTANCE_ID)
+                                                    .value(processInstanceId))))))
+            .script(
+                Script.of(
+                    s ->
+                        s.inline(
+                            i ->
+                                i.lang(ScriptLanguage.Painless)
+                                    .source(script.scriptString())
+                                    .params(
+                                        script.params().entrySet().stream()
+                                            .collect(
+                                                Collectors.toMap(
+                                                    Map.Entry::getKey,
+                                                    e -> JsonData.of(e.getValue())))))))
+            .refresh(true);
 
     try {
-      getOptimizeElasticClient().updateByQuery(request);
+      getOptimizeElasticClient().updateByQuery(request, List.of(PROCESS_INSTANCE_MULTI_ALIAS));
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(
           String.format("Could not set userTask duration field [%s] to null.", durationFieldName),
@@ -785,40 +872,52 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   @SneakyThrows
   public Long getImportedActivityCount() {
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
-            .query(QueryBuilders.matchAllQuery())
-            .size(0)
-            .fetchSource(false)
-            .aggregation(
-                nested(FLOW_NODE_INSTANCES, FLOW_NODE_INSTANCES)
-                    .subAggregation(
-                        count(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION)
-                            .field(
-                                FLOW_NODE_INSTANCES
-                                    + "."
-                                    + ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID)));
+    final SearchResponse<?> response =
+        getOptimizeElasticClient()
+            .search(
+                OptimizeSearchRequestBuilderES.of(
+                    s ->
+                        s.optimizeIndex(getOptimizeElasticClient(), PROCESS_INSTANCE_MULTI_ALIAS)
+                            .query(q -> q.matchAll(m -> m))
+                            .size(0)
+                            .source(ss -> ss.fetch(false))
+                            .aggregations(
+                                FLOW_NODE_INSTANCES,
+                                Aggregation.of(
+                                    a ->
+                                        a.nested(n -> n.path(FLOW_NODE_INSTANCES))
+                                            .aggregations(
+                                                FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION,
+                                                Aggregation.of(
+                                                    aa ->
+                                                        aa.valueCount(
+                                                            c ->
+                                                                c.field(
+                                                                    FLOW_NODE_INSTANCES
+                                                                        + "."
+                                                                        + ProcessInstanceIndex
+                                                                            .FLOW_NODE_INSTANCE_ID))))))),
+                Object.class);
 
-    final SearchRequest searchRequest =
-        new SearchRequest().indices(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder);
-
-    final SearchResponse response = getOptimizeElasticClient().search(searchRequest);
-
-    final Nested nested = response.getAggregations().get(FLOW_NODE_INSTANCES);
-    final ValueCount countAggregator =
-        nested.getAggregations().get(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION);
-    return countAggregator.getValue();
+    final NestedAggregate nested = response.aggregations().get(FLOW_NODE_INSTANCES).nested();
+    final ValueCountAggregate countAggregator =
+        nested.aggregations().get(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION).valueCount();
+    return Double.valueOf(countAggregator.value()).longValue();
   }
 
   @Override
   @SneakyThrows
   public List<String> getAllIndicesWithWriteAlias(final String aliasNameWithPrefix) {
-    final GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasNameWithPrefix);
-    final Map<String, Set<AliasMetadata>> indexNameToAliasMap =
-        getOptimizeElasticClient().getAlias(aliasesRequest).getAliases();
+    final GetAliasRequest aliasesRequest =
+        GetAliasRequest.of(
+            a -> a.index(getOptimizeElasticClient().addPrefixesToIndices(aliasNameWithPrefix)));
+    final Map<String, IndexAliases> indexNameToAliasMap =
+        getOptimizeElasticClient().getAlias(aliasesRequest).result();
     return indexNameToAliasMap.keySet().stream()
         .filter(
-            index -> indexNameToAliasMap.get(index).stream().anyMatch(AliasMetadata::writeIndex))
+            index ->
+                indexNameToAliasMap.get(index).aliases().entrySet().stream()
+                    .anyMatch(a -> a.getValue().isWriteIndex()))
         .toList();
   }
 
@@ -832,18 +931,15 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   public OptimizeElasticsearchClient getOptimizeElasticClient() {
-    return prefixAwareRestHighLevelClient;
+    return optimizeElasticsearchClient;
   }
 
-  private long countRecordsByQuery(
-      final BoolQueryBuilder boolQueryBuilder, final String expectedIndex) {
+  private long countRecordsByQuery(final Query boolQueryBuilder, final String expectedIndex) {
     final OptimizeElasticsearchClient esClient = getOptimizeElasticClient();
-    final CountRequest countRequest = new CountRequest(expectedIndex).query(boolQueryBuilder);
+    final CountRequest countRequest =
+        CountRequest.of(c -> c.index(expectedIndex).query(boolQueryBuilder));
     try {
-      return esClient
-          .getHighLevelClient()
-          .count(countRequest, esClient.requestOptions())
-          .getCount();
+      return esClient.elasticsearchClient().count(countRequest).count();
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(e);
     }
@@ -861,7 +957,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   private void initEsClient() {
     if (CLIENT_CACHE.containsKey(customIndexPrefix)) {
-      prefixAwareRestHighLevelClient = CLIENT_CACHE.get(customIndexPrefix);
+      optimizeElasticsearchClient = CLIENT_CACHE.get(customIndexPrefix);
     } else {
       createClientAndAddToCache(customIndexPrefix, createConfigurationService());
     }
@@ -873,13 +969,14 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
         configurationService.getElasticSearchConfiguration().getFirstConnectionNode();
     log.info(
         "Creating ES Client with host {} and port {}", esConfig.getHost(), esConfig.getHttpPort());
-    prefixAwareRestHighLevelClient =
+    optimizeElasticsearchClient =
         new OptimizeElasticsearchClient(
-            ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-            new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH),
-            OPTIMIZE_MAPPER);
+            ElasticsearchClientBuilder.restClient(configurationService),
+            OPTIMIZE_MAPPER,
+            ElasticsearchClientBuilder.build(configurationService, OPTIMIZE_MAPPER),
+            new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH));
     adjustClusterSettings();
-    CLIENT_CACHE.put(clientKey, prefixAwareRestHighLevelClient);
+    CLIENT_CACHE.put(clientKey, optimizeElasticsearchClient);
   }
 
   private ConfigurationService createConfigurationService() {
@@ -896,28 +993,23 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   private void adjustClusterSettings() {
-    final Settings settings =
-        Settings.builder()
-            // we allow auto index creation because the Zeebe exporter creates indices for records
-            .put("action.auto_create_index", true)
-            // all of our tests are running against a one node cluster. Since we're creating a lot
-            // of indexes,
-            // we are easily hitting the default value of 1000. Thus, we need to increase this value
-            // for the test setup.
-            .put("cluster.max_shards_per_node", 10_000)
-            .build();
-    final ClusterUpdateSettingsRequest clusterUpdateSettingsRequest =
-        new ClusterUpdateSettingsRequest();
-    clusterUpdateSettingsRequest.persistentSettings(settings);
-    try (final XContentBuilder builder = jsonBuilder()) {
-      // low level request as we need body serialized with flat_settings option for AWS hosted
-      // elasticsearch support
-      final Request request = new Request("PUT", "/_cluster/settings");
-      request.setJsonEntity(
-          Strings.toString(
-              clusterUpdateSettingsRequest.toXContent(builder, XCONTENT_PARAMS_FLAT_SETTINGS)));
-      prefixAwareRestHighLevelClient.getLowLevelClient().performRequest(request);
-    } catch (final IOException e) {
+    final PutClusterSettingsRequest clusterUpdateSettingsRequest =
+        PutClusterSettingsRequest.of(
+            p ->
+                // we allow auto index creation because the Zeebe exporter creates indices for
+                // records
+                p.persistent("action.auto_create_index", JsonData.of(true))
+                    // all of our tests are running against a one node cluster.
+                    // Since we're creating a lot of indexes, we are easily hitting the default
+                    // value of 1000. Thus, we need to increase this value for the test setup.
+                    .persistent("cluster.max_shards_per_node", JsonData.of(10000))
+                    .flatSettings(true));
+    try {
+      optimizeElasticsearchClient
+          .elasticsearchClient()
+          .cluster()
+          .putSettings(clusterUpdateSettingsRequest);
+    } catch (IOException e) {
       throw new OptimizeRuntimeException("Could not update cluster settings!", e);
     }
   }
@@ -933,10 +1025,10 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   private <T> List<T> getAllDocumentsOfIndexAs(
-      final String indexName, final Class<T> type, final QueryBuilder query) {
+      final String indexName, final Class<T> type, final Query query) {
     try {
       return getAllDocumentsOfIndicesAs(new String[] {indexName}, type, query);
-    } catch (final ElasticsearchStatusException e) {
+    } catch (final ElasticsearchException e) {
       throw new OptimizeIntegrationTestException(
           "Cannot get all documents for index " + indexName, e);
     }
@@ -944,12 +1036,9 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   @SneakyThrows
   private <T> List<T> getAllDocumentsOfIndicesAs(
-      final String[] indexNames, final Class<T> type, final QueryBuilder query) {
+      final String[] indexNames, final Class<T> type, final Query query) {
 
     final List<T> results = new ArrayList<>();
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder().query(query).trackTotalHits(true).size(100);
-
     // Requests to optimize indexes require prefixing, while zeebe indexes don't. So differentiating
     // both here to perform the search request properly
     final Map<String, List<String>> groupedByPrefix =
@@ -962,67 +1051,98 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                             : "OptimizeIndex"));
 
     if (groupedByPrefix.containsKey("ZeebeIndex")) {
-      final SearchRequest searchRequest =
-          new SearchRequest().indices(indexNames).source(searchSourceBuilder);
-      final SearchResponse response =
-          getOptimizeElasticClient().searchWithoutPrefixing(searchRequest);
-      results.addAll(mapHits(response.getHits(), type, getObjectMapper()));
+      final SearchResponse<T> response =
+          getOptimizeElasticClient()
+              .searchWithoutPrefixing(
+                  SearchRequest.of(
+                      s ->
+                          s.index(List.of(indexNames))
+                              .query(query)
+                              .trackTotalHits(t -> t.enabled(true))
+                              .size(100)),
+                  type);
+      results.addAll(mapHits(response.hits(), type, getObjectMapper()));
     }
 
     if (groupedByPrefix.containsKey("OptimizeIndex")) {
-      final SearchRequest searchRequest =
-          new SearchRequest().indices(indexNames).source(searchSourceBuilder);
-      final SearchResponse response = getOptimizeElasticClient().search(searchRequest);
-      results.addAll(mapHits(response.getHits(), type, getObjectMapper()));
+      final SearchResponse<T> response =
+          getOptimizeElasticClient()
+              .search(
+                  OptimizeSearchRequestBuilderES.of(
+                      s ->
+                          s.optimizeIndex(getOptimizeElasticClient(), indexNames)
+                              .query(query)
+                              .trackTotalHits(t -> t.enabled(true))
+                              .size(100)),
+                  type);
+      results.addAll(mapHits(response.hits(), type, getObjectMapper()));
     }
 
     return results;
   }
 
-  private int getInstanceCountWithQuery(final BoolQueryBuilder query) {
+  private int getInstanceCountWithQuery(final Query query) {
     try {
       final CountResponse countResponse =
           getOptimizeElasticClient()
-              .count(new CountRequest(PROCESS_INSTANCE_MULTI_ALIAS).query(query));
-      return Long.valueOf(countResponse.getCount()).intValue();
-    } catch (final IOException | ElasticsearchStatusException e) {
+              .count(
+                  OptimizeCountRequestBuilderES.of(
+                      c ->
+                          c.optimizeIndex(getOptimizeElasticClient(), PROCESS_INSTANCE_MULTI_ALIAS)
+                              .query(query)));
+      return Long.valueOf(countResponse.count()).intValue();
+    } catch (final IOException | ElasticsearchException e) {
       throw new OptimizeIntegrationTestException(
           "Cannot evaluate document count for index " + PROCESS_INSTANCE_MULTI_ALIAS, e);
     }
   }
 
-  private Integer getVariableInstanceCountForAllProcessInstances(
-      final QueryBuilder processInstanceQuery) {
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder().query(processInstanceQuery).fetchSource(false).size(0);
-
-    final SearchRequest searchRequest =
-        new SearchRequest().indices(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder);
-
-    searchSourceBuilder.aggregation(
-        nested(VARIABLES, VARIABLES)
-            .subAggregation(count("count").field(getNestedVariableIdField())));
-
-    final SearchResponse searchResponse;
+  private Integer getVariableInstanceCountForAllProcessInstances(final Query processInstanceQuery) {
+    final SearchResponse<?> searchResponse;
     try {
-      searchResponse = getOptimizeElasticClient().search(searchRequest);
-    } catch (final IOException | ElasticsearchStatusException e) {
+      searchResponse =
+          getOptimizeElasticClient()
+              .search(
+                  OptimizeSearchRequestBuilderES.of(
+                      s ->
+                          s.optimizeIndex(getOptimizeElasticClient(), PROCESS_INSTANCE_MULTI_ALIAS)
+                              .query(Query.of(q -> q.matchAll(m -> m)))
+                              .size(0)
+                              .source(ss -> ss.fetch(false))
+                              .aggregations(
+                                  FLOW_NODE_INSTANCES,
+                                  Aggregation.of(
+                                      a ->
+                                          a.nested(n -> n.path(FLOW_NODE_INSTANCES))
+                                              .aggregations(
+                                                  FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION,
+                                                  Aggregation.of(
+                                                      aa ->
+                                                          aa.valueCount(
+                                                              v ->
+                                                                  v.field(
+                                                                      FLOW_NODE_INSTANCES
+                                                                          + "."
+                                                                          + ProcessInstanceIndex
+                                                                              .FLOW_NODE_INSTANCE_ID))))))),
+                  Object.class);
+    } catch (final IOException | ElasticsearchException e) {
       throw new OptimizeIntegrationTestException(
           "Cannot evaluate variable instance count in process instance indices.", e);
     }
 
-    final Nested nestedAgg = searchResponse.getAggregations().get(VARIABLES);
-    final ValueCount countAggregator = nestedAgg.getAggregations().get("count");
-    final long totalVariableCount = countAggregator.getValue();
+    final NestedAggregate nestedAgg = searchResponse.aggregations().get(VARIABLES).nested();
+    final ValueCountAggregate countAggregator = nestedAgg.aggregations().get("count").valueCount();
+    final double totalVariableCount = countAggregator.value();
 
-    return Long.valueOf(totalVariableCount).intValue();
+    return Double.valueOf(totalVariableCount).intValue();
   }
 
-  private void deleteIndexOfMapping(final IndexMappingCreator<XContentBuilder> indexMapping) {
+  private void deleteIndexOfMapping(final IndexMappingCreator<IndexSettings.Builder> indexMapping) {
     getOptimizeElasticClient().deleteIndex(indexMapping);
   }
 
-  private Settings createIndexSettings(
+  private IndexSettings createIndexSettings(
       final IndexMappingCreator indexMappingCreator, ConfigurationService configurationService) {
     try {
       return ElasticSearchIndexSettingsBuilder.buildAllSettings(
@@ -1034,16 +1154,18 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public void deleteAllDocumentsInIndex(String optimizeIndexAliasForIndex) {
-    final DeleteByQueryRequest request =
-        new DeleteByQueryRequest(optimizeIndexAliasForIndex)
-            .setQuery(matchAllQuery())
-            .setRefresh(true);
-
     try {
       getOptimizeElasticClient()
-          .getHighLevelClient()
-          .deleteByQuery(request, getOptimizeElasticClient().requestOptions());
-    } catch (final IOException | ElasticsearchStatusException e) {
+          .elasticsearchClient()
+          .deleteByQuery(
+              DeleteByQueryRequest.of(
+                  r ->
+                      r.index(
+                              convertToPrefixedAliasName(
+                                  optimizeIndexAliasForIndex, getOptimizeElasticClient()))
+                          .query(q -> q.matchAll(m -> m))
+                          .refresh(true)));
+    } catch (final IOException | ElasticsearchException e) {
       throw new OptimizeIntegrationTestException(
           "Could not delete data in index " + optimizeIndexAliasForIndex, e);
     }
@@ -1052,12 +1174,24 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public void insertTestDocuments(int amount, String indexName, String jsonDocument)
       throws IOException {
-    final BulkRequest bulkRequest = new BulkRequest();
-    for (int i = 0; i < amount; i++) {
-      bulkRequest.add(
-          new IndexRequest(indexName).source(String.format(jsonDocument, i), XContentType.JSON));
-    }
-    getOptimizeElasticClient().bulk(bulkRequest);
+    getOptimizeElasticClient()
+        .bulk(
+            BulkRequest.of(
+                r -> {
+                  for (int i = 0; i < amount; i++) {
+                    int finalI = i;
+                    r.operations(
+                        o ->
+                            o.index(
+                                OptimizeIndexOperationBuilderES.of(
+                                    b ->
+                                        b.optimizeIndex(getOptimizeElasticClient(), indexName)
+                                            .document(
+                                                JsonData.fromJson(
+                                                    String.format(jsonDocument, finalI))))));
+                  }
+                  return r;
+                }));
     getOptimizeElasticClient().refresh(indexName);
   }
 
@@ -1067,12 +1201,12 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     final HttpEntity entity = new NStringEntity(bulkPayload, ContentType.APPLICATION_JSON);
     final Request request = new Request(methodName, endpoint);
     request.setEntity(entity);
-    getOptimizeElasticClient().getLowLevelClient().performRequest(request);
+    getOptimizeElasticClient().performRequest(request);
   }
 
   @Override
   public void initSchema(
-      List<IndexMappingCreator<XContentBuilder>> mappingCreators,
+      List<IndexMappingCreator<IndexSettings.Builder>> mappingCreators,
       DatabaseMetadataService metadataService) {
     ElasticSearchSchemaManager schemaManager =
         new ElasticSearchSchemaManager(
@@ -1085,20 +1219,17 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public Map<String, ? extends Object> getMappingFields(final String indexName) throws IOException {
-    @SuppressWarnings(UNCHECKED_CAST)
-    GetMappingsRequest request = new GetMappingsRequest();
-    request.indices(indexName);
-
-    GetMappingsResponse getMappingResponse = getOptimizeElasticClient().getMapping(request);
+    GetMappingResponse getMappingResponse =
+        getOptimizeElasticClient().getMapping(new GetMappingRequest.Builder(), indexName);
     final Object propertiesMap =
-        getMappingResponse.mappings().values().stream()
+        getMappingResponse.result().values().stream()
             .findFirst()
             .orElseThrow(
                 () ->
                     new OptimizeRuntimeException(
                         "There should be at least one mapping available for the index!"))
-            .getSourceAsMap()
-            .get("properties");
+            .mappings()
+            .properties();
     if (propertiesMap instanceof Map) {
       return (Map<String, Object>) propertiesMap;
     } else {

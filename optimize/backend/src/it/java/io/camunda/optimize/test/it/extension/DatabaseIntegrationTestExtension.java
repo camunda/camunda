@@ -16,6 +16,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_
 import static io.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
@@ -48,7 +49,6 @@ import java.util.Set;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
-import org.elasticsearch.xcontent.XContentBuilder;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -383,7 +383,7 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
   }
 
   public void initSchema(
-      List<IndexMappingCreator<XContentBuilder>> mappingCreators,
+      List<IndexMappingCreator<IndexSettings.Builder>> mappingCreators,
       DatabaseMetadataService metadataService) {
     databaseTestService.initSchema(mappingCreators, metadataService);
   }

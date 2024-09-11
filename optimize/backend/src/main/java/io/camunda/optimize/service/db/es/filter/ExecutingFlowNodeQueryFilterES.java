@@ -10,18 +10,13 @@ package io.camunda.optimize.service.db.es.filter;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutingFlowNodeFilterDataDto;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
-import org.apache.lucene.search.join.ScoreMode;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -32,27 +27,45 @@ public class ExecutingFlowNodeQueryFilterES
 
   @Override
   public void addFilters(
-      final BoolQueryBuilder query,
+      final BoolQuery.Builder query,
       final List<ExecutingFlowNodeFilterDataDto> flowNodeFilter,
       final FilterContext filterContext) {
-    List<QueryBuilder> filters = query.filter();
-    flowNodeFilter.forEach(filter -> filters.add(createFilterQueryBuilder(filter)));
+    if (!flowNodeFilter.isEmpty()) {
+      flowNodeFilter.forEach(
+          filter -> query.filter(f -> f.bool(createFilterQueryBuilder(filter).build())));
+    }
   }
 
-  private QueryBuilder createFilterQueryBuilder(
+  private BoolQuery.Builder createFilterQueryBuilder(
       final ExecutingFlowNodeFilterDataDto flowNodeFilter) {
-    BoolQueryBuilder boolQueryBuilder = boolQuery();
+    BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
     flowNodeFilter
         .getValues()
         .forEach(
             flowNodeId ->
                 boolQueryBuilder.should(
-                    nestedQuery(
-                        FLOW_NODE_INSTANCES,
-                        boolQuery()
-                            .must(termQuery(nestedActivityIdFieldLabel(), flowNodeId))
-                            .mustNot(existsQuery(nestedEndDateFieldLabel())),
-                        ScoreMode.None)));
+                    s ->
+                        s.nested(
+                            n ->
+                                n.path(FLOW_NODE_INSTANCES)
+                                    .query(
+                                        q ->
+                                            q.bool(
+                                                b ->
+                                                    b.must(
+                                                            m ->
+                                                                m.term(
+                                                                    t ->
+                                                                        t.field(
+                                                                                nestedActivityIdFieldLabel())
+                                                                            .value(flowNodeId)))
+                                                        .mustNot(
+                                                            m ->
+                                                                m.exists(
+                                                                    e ->
+                                                                        e.field(
+                                                                            nestedEndDateFieldLabel())))))
+                                    .scoreMode(ChildScoreMode.None))));
     return boolQueryBuilder;
   }
 

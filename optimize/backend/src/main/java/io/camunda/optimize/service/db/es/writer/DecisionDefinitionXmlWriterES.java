@@ -10,20 +10,18 @@ package io.camunda.optimize.service.db.es.writer;
 import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeUpdateOperationBuilderES;
 import io.camunda.optimize.service.db.writer.DecisionDefinitionXmlWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import io.camunda.optimize.util.SuppressionConstants;
 import java.util.List;
-import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.script.Script;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -49,20 +47,20 @@ public class DecisionDefinitionXmlWriterES implements DecisionDefinitionXmlWrite
         configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
-  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   private void addImportDecisionDefinitionXmlRequest(
-      final BulkRequest bulkRequest, final DecisionDefinitionOptimizeDto decisionDefinitionDto) {
+      final BulkRequest.Builder bulkRequestBuilder,
+      final DecisionDefinitionOptimizeDto decisionDefinitionDto) {
     final Script updateScript =
         ElasticsearchWriterUtil.createFieldUpdateScript(
             FIELDS_TO_UPDATE, decisionDefinitionDto, objectMapper);
-    UpdateRequest updateRequest =
-        new UpdateRequest()
-            .index(DECISION_DEFINITION_INDEX_NAME)
-            .id(decisionDefinitionDto.getId())
-            .script(updateScript)
-            .upsert(objectMapper.convertValue(decisionDefinitionDto, Map.class))
-            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-    bulkRequest.add(updateRequest);
+    bulkRequestBuilder.operations(
+        o ->
+            o.update(
+                OptimizeUpdateOperationBuilderES.of(
+                    u ->
+                        u.optimizeIndex(esClient, DECISION_DEFINITION_INDEX_NAME)
+                            .id(decisionDefinitionDto.getId())
+                            .action(a -> a.script(updateScript).upsert(decisionDefinitionDto))
+                            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT))));
   }
 }
