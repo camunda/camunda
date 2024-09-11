@@ -24,12 +24,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -109,6 +107,8 @@ public class ListViewStoreOpenSearch implements ListViewStore {
 
   @Override
   public List<VariableListViewEntity> getVariablesByVariableName(final String varName) {
+    final List<VariableListViewEntity> variableList = new ArrayList<>();
+
     try {
       final SearchRequest.Builder searchRequest =
           new SearchRequest.Builder()
@@ -118,19 +118,27 @@ public class ListViewStoreOpenSearch implements ListViewStore {
                       q.term(
                           t ->
                               t.field(TasklistListViewTemplate.VARIABLE_NAME)
-                                  .value(FieldValue.of(varName))));
+                                  .value(FieldValue.of(varName))))
+              .size(1000); // Set batch size (1000 is an example, adjust as necessary)
 
-      final SearchResponse<VariableListViewEntity> searchResponse =
-          osClient.search(searchRequest.build(), VariableListViewEntity.class);
-
-      return searchResponse.hits().hits().stream().map(Hit::source).collect(Collectors.toList());
+      OpenSearchUtil.scrollWith(
+          searchRequest,
+          osClient,
+          hits -> {
+            for (final Hit<VariableListViewEntity> hit : hits) {
+              variableList.add(hit.source());
+            }
+          },
+          null, // No need for an aggregation processor
+          null // No need for first response metadata processing
+          );
 
     } catch (final IOException e) {
       throw new TasklistRuntimeException(
-          String.format(
-              "Error removing job worker variable data for flowNodeInstanceId [%s]", varName),
-          e);
+          String.format("Error retrieving variables for variable name [%s]", varName), e);
     }
+
+    return variableList;
   }
 
   @Override

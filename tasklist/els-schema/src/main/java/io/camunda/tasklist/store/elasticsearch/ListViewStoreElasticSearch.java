@@ -20,12 +20,11 @@ import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.store.ListViewStore;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -102,6 +101,8 @@ public class ListViewStoreElasticSearch implements ListViewStore {
 
   @Override
   public List<VariableListViewEntity> getVariablesByVariableName(final String varName) {
+    final List<VariableListViewEntity> variableList = new ArrayList<>();
+
     try {
       final SearchRequest searchRequest =
           ElasticsearchUtil.createSearchRequest(tasklistListViewTemplate)
@@ -109,22 +110,27 @@ public class ListViewStoreElasticSearch implements ListViewStore {
                   SearchSourceBuilder.searchSource()
                       .query(termQuery(TasklistListViewTemplate.VARIABLE_NAME, varName)));
 
-      final var searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final SearchHit[] hits = searchResponse.getHits().getHits();
-
-      return Arrays.stream(hits)
-          .map(
-              hit ->
+      // Initialize scroll request
+      ElasticsearchUtil.scrollWith(
+          searchRequest,
+          esClient,
+          hits -> {
+            for (final SearchHit hit : hits.getHits()) {
+              variableList.add(
                   fromSearchHit(
-                      hit.getSourceAsString(), objectMapper, VariableListViewEntity.class))
-          .collect(Collectors.toList());
+                      hit.getSourceAsString(), objectMapper, VariableListViewEntity.class));
+            }
+          },
+          null, // No need for an aggregation processor
+          null // No need for processing first response metadata
+          );
 
     } catch (final IOException e) {
       throw new TasklistRuntimeException(
-          String.format(
-              "Error removing job worker variable data for flowNodeInstanceId [%s]", varName),
-          e);
+          String.format("Error retrieving variables for variable name [%s]", varName), e);
     }
+
+    return variableList;
   }
 
   @Override
