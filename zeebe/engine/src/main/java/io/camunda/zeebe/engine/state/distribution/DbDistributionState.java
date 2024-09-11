@@ -271,4 +271,17 @@ public class DbDistributionState implements MutableDistributionState {
     return Optional.ofNullable(commandDistributionRecordColumnFamily.get(this.distributionKey))
         .flatMap(PersistedCommandDistribution::getQueueId);
   }
+
+  @Override
+  public boolean hasQueuedDistributions(final String queue) {
+    queueId.wrapString(queue);
+    final var hasQueuedDistributions = new MutableBoolean();
+    queuedCommandDistributionColumnFamily.whileEqualPrefix(
+        queueId,
+        (key, value) -> {
+          hasQueuedDistributions.set(true);
+          return false;
+        });
+    return hasQueuedDistributions.get();
+  }
 }

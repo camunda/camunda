@@ -85,6 +85,14 @@ public interface DistributionState {
    */
   Optional<String> getQueueIdForDistribution(long distributionKey);
 
+  /**
+   * Returns whether there are any queued distributions for the given queue.
+   *
+   * @param queue the queue to look up
+   * @return true if there are queued distributions for the given queue, otherwise false
+   */
+  boolean hasQueuedDistributions(String queue);
+
   /** This visitor can visit pending distributions of {@link CommandDistributionRecord}. */
   @FunctionalInterface
   interface PendingDistributionVisitor {
