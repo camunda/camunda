@@ -71,7 +71,6 @@ jobs:
             --helm-set global.identity.auth.webModeler.redirectUrl=https://${app_url}/modeler \
             --helm-set global.identity.auth.console.redirectUrl=https://${app_url}/console \
             --helm-set global.identity.auth.connectors.redirectUrl=https://${app_url}/connectors \
-
             --name ${app_name} \
             --revision ${revision} \
             --helm-set git.branch=${revision} \
