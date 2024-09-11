@@ -167,6 +167,9 @@ test.describe('task details page', () => {
     });
 
     await tasksPage.openTask('JobWorker_user_task');
+    if (!(await page.isVisible('text=zeebeVar'))) {
+      page.reload();
+    }
     await expect(tasksPage.completeTaskButton).toBeDisabled();
     await tasksPage.assignToMeButton.click();
     await expect(tasksPage.completeTaskButton).toBeEnabled();
