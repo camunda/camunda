@@ -9,6 +9,7 @@
 import {expect} from '@playwright/test';
 import {test} from '@/test-fixtures';
 import {createInstances, deploy} from '@/utils/zeebeClient';
+import {sleep} from '@/utils/sleep';
 
 test.afterAll(async ({resetData}) => {
   await resetData();
@@ -566,12 +567,10 @@ test.describe('task details page', () => {
     await expect(tasksPage.detailsNav).toBeVisible();
     await tasksPage.assignToMeButton.click();
     try {
-      await page.waitForTimeout(10000);
       await expect(taskFormView.nameInput).toBeVisible({timeout: 60000});
     } catch (error) {
       console.error('Form not loaded error:', error);
-      // const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-      // await sleep(10000);
+      await sleep(5000);
       await page.reload();
       await expect(taskFormView.nameInput).toBeVisible();
     }
