@@ -1295,7 +1295,7 @@ components:
     FlowNodeInstanceFilterRequest:
       type: object
       properties:
-        key:
+        flowNodeInstanceKey:
           type: integer
           format: int64
         processInstanceKey:
@@ -1333,7 +1333,7 @@ components:
     FlowNodeInstanceItem:
       type: object
       properties:
-        key:
+        flowNodeInstanceKey:
           type: integer
           format: int64
         processInstanceKey:
