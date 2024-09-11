@@ -44,7 +44,7 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
+            secret/data/products/camunda/ci/camunda ARGOCD_DEV_TOKEN;
 
       #########################################################################
       # Setup: checkout code. This is required because we are using
