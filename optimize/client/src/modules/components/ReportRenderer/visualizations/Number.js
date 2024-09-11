@@ -10,7 +10,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import fitty from 'fitty';
 
 import {formatters, loadVariables, reportConfig} from 'services';
-import {LoadingIndicator} from 'components';
+import {Loading} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
@@ -91,7 +91,7 @@ export function Number({report, formatter, mightFail}) {
   }
 
   if (processVariableReport && !processVariable) {
-    return <LoadingIndicator />;
+    return <Loading />;
   }
 
   return (

@@ -11,12 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import io.camunda.plugin.search.header.CustomHeader;
-import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.tasklist.property.ElasticsearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.util.TestPlugin;
 import java.util.List;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -87,14 +86,6 @@ class ElasticsearchConnectorTest {
     field.setAccessible(true);
     final RestClient restClient = (RestClient) field.get(client);
     return restClient.getHttpClient();
-  }
-
-  public static final class TestPlugin implements DatabaseCustomHeaderSupplier {
-
-    @Override
-    public CustomHeader getSearchDatabaseCustomHeader() {
-      return new CustomHeader("foo", "bar");
-    }
   }
 
   private static final class NoopCallback implements FutureCallback<HttpResponse> {

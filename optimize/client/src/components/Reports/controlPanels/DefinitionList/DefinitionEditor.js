@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useMemo} from 'react';
 import {TextInput, Button, Stack, Form} from '@carbon/react';
 import {Edit, Maximize} from '@carbon/icons-react';
 
@@ -49,6 +49,7 @@ export function DefinitionEditor({
   const [diagramModalOpen, setDiagramModalOpen] = useState(false);
   const [variableModalOpen, setVariableModalOpen] = useState(false);
   const [optimizeProfile, setOptimizeProfile] = useState();
+  const tenantInfoIds = useMemo(() => tenantInfo?.map(({id}) => id), [tenantInfo]);
 
   useEffect(() => {
     mightFail(loadVersions(type, collection, key), setAvailableVersions, showError);
@@ -143,7 +144,7 @@ export function DefinitionEditor({
               />
             </div>
           )}
-          {showOnlyTenant && <TenantInfo tenant={availableTenants[0]} useCarbonVariant />}
+          {showOnlyTenant && <TenantInfo tenant={availableTenants[0]} />}
           <TextInput
             id="ProcessRenameInput"
             size="sm"
@@ -206,7 +207,7 @@ export function DefinitionEditor({
         filters={filters}
         open={variableModalOpen}
         definitionKey={definition.key}
-        availableTenants={tenantInfo?.map(({id}) => id)}
+        availableTenants={tenantInfoIds}
         onChange={() => onChange(definition)}
         onClose={() => {
           setVariableModalOpen(false);

@@ -49,37 +49,39 @@ export default function RenameVariablesModal({
   const {mightFail} = useErrorHandling();
 
   useEffect(() => {
-    mightFail(
-      loadVariables({
-        processesToQuery: [
-          {
-            processDefinitionKey: definitionKey,
-            processDefinitionVersions: ['all'],
-            tenantIds: availableTenants,
-          },
-        ],
-        filter: filters,
-      }),
-      (variables) => {
-        setVariables(variables);
-        setRenamedVariables(
-          new Map(
-            variables
-              .filter((variable) => !!variable.label)
-              .map((variable) => [
-                variable,
-                {
-                  variableName: variable.name,
-                  variableType: variable.type,
-                  variableLabel: variable.label,
-                },
-              ])
-          )
-        );
-      },
-      showError
-    );
-  }, [availableTenants, definitionKey, filters, mightFail]);
+    if (open) {
+      mightFail(
+        loadVariables({
+          processesToQuery: [
+            {
+              processDefinitionKey: definitionKey,
+              processDefinitionVersions: ['all'],
+              tenantIds: availableTenants,
+            },
+          ],
+          filter: filters,
+        }),
+        (variables) => {
+          setVariables(variables);
+          setRenamedVariables(
+            new Map(
+              variables
+                .filter((variable) => !!variable.label)
+                .map((variable) => [
+                  variable,
+                  {
+                    variableName: variable.name,
+                    variableType: variable.type,
+                    variableLabel: variable.label,
+                  },
+                ])
+            )
+          );
+        },
+        showError
+      );
+    }
+  }, [availableTenants, definitionKey, filters, mightFail, open]);
 
   function updateVariableNames() {
     mightFail(

@@ -68,7 +68,7 @@ it('should display the key properties of a report', () => {
 
   runLastEffect();
 
-  expect(node.find('EntityName').prop('children')).toBe(report.name);
+  expect(node.find('EntityName').prop('name')).toBe(report.name);
   expect(node.find(InstanceCount)).toExist();
 });
 

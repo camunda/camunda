@@ -261,7 +261,7 @@ it('should not re-use modeler instances', async () => {
 it('should show a loading indicator while loading', () => {
   const node = mount<BPMNDiagram>(<BPMNDiagram {...props} xml={diagramXml} />);
 
-  expect(node.find('LoadingIndicator')).toExist();
+  expect(node.find('Loading')).toExist();
 });
 
 it('should show a loading indicator if specified by props', async () => {
@@ -271,7 +271,7 @@ it('should show a loading indicator if specified by props', async () => {
 
   node.setState({loaded: true});
 
-  expect(node.find('LoadingIndicator')).toExist();
+  expect(node.find('Loading')).toExist();
 });
 
 it('should show diagram zoom and reset controls', async () => {

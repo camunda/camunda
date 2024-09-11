@@ -6,12 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
+import React, {Fragment} from 'react';
 import classnames from 'classnames';
 import {Link, withRouter} from 'react-router-dom';
 import {matchPath} from 'react-router';
-
-import {Tooltip} from 'components';
 
 import {loadEntitiesNames} from './service';
 
@@ -96,22 +94,22 @@ export default withRouter(
 
       return (
         <div className="NavItem">
-          <Tooltip content={name} position="bottom" overflowOnly>
-            <Link
-              to={linksTo}
-              className={classnames('cds--header__menu-item', {
-                'cds--header__menu-item--current': active && !breadcrumbsCount,
-              })}
-              replace={active}
-            >
-              {name}
-            </Link>
-          </Tooltip>
+          <Link
+            title={name}
+            to={linksTo}
+            className={classnames('cds--header__menu-item', {
+              'cds--header__menu-item--current': active && !breadcrumbsCount,
+            })}
+            replace={active}
+          >
+            {name}
+          </Link>
           {active &&
             breadcrumbs.map(({id, name, url}, i) => (
-              <Tooltip content={name} key={`${id}_${url}`} position="bottom" overflowOnly>
+              <Fragment key={`${id}_${url}`}>
                 <span className="arrow">›</span>
                 <Link
+                  title={name}
                   className={classnames('breadcrumb cds--header__menu-item', {
                     'cds--header__menu-item--current': breadcrumbsCount - 1 === i,
                   })}
@@ -120,7 +118,7 @@ export default withRouter(
                 >
                   {name}
                 </Link>
-              </Tooltip>
+              </Fragment>
             ))}
         </div>
       );

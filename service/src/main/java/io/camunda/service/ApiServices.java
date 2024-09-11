@@ -15,6 +15,7 @@ import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import java.util.Map;
@@ -56,6 +57,11 @@ public abstract class ApiServices<T extends ApiServices<T>> {
   }
 
   protected <R> CompletableFuture<R> sendBrokerRequest(final BrokerRequest<R> brokerRequest) {
+    return sendBrokerRequestWithFullResponse(brokerRequest).thenApply(BrokerResponse::getResponse);
+  }
+
+  protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
+      final BrokerRequest<R> brokerRequest) {
     brokerRequest.setAuthorization(authentication.token());
     return brokerClient
         .sendRequest(brokerRequest)
@@ -70,7 +76,7 @@ public abstract class ApiServices<T extends ApiServices<T>> {
               if (response.isRejection()) {
                 throw new CamundaServiceException(response.getRejection());
               }
-              return response.getResponse();
+              return response;
             });
   }
 

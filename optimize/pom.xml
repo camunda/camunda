@@ -24,9 +24,9 @@
 
     <!-- database config -->
     <elasticsearch.client.version>8.13.0</elasticsearch.client.version>
-    <elasticsearch.client.test.version>7.17.23</elasticsearch.client.test.version>
+    <elasticsearch.client.test.version>7.17.24</elasticsearch.client.test.version>
     <opensearch.client.version>2.10.4</opensearch.client.version>
-    <awssdk.version>2.27.21</awssdk.version>
+    <awssdk.version>2.27.22</awssdk.version>
     <!-- The default opensearch version we are going to be testing with-->
     <opensearch.test.version>2.9.0</opensearch.test.version>
     <!--The least supported elasticsearch version we should test against-->

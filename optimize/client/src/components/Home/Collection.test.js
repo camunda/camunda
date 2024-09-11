@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {runAllEffects} from 'react';
+import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 import {Tag} from '@carbon/react';
 
-import {Deleter, ReportTemplateModal, KpiCreationModal} from 'components';
+import {Deleter} from 'components';
 import {refreshBreadcrumbs} from 'components/navigation';
 import {loadEntity, updateEntity} from 'services';
 import {isUserSearchAvailable} from 'config';
@@ -110,17 +110,25 @@ beforeEach(() => {
 it('should pass Entity to Deleter', () => {
   const node = shallow(<Collection {...props} />);
 
-  node.find('EntityList').prop('rows')[0].actions[2].action();
+  node.find('CollectionEnitiesList').prop('deleteEntity')({
+    id: 'aDashboardId',
+    name: 'aDashboard',
+    description: 'a description',
+    lastModified: '2017-11-11T11:11:11.1111+0200',
+    created: '2017-11-11T11:11:11.1111+0200',
+    owner: 'user_id',
+    lastModifier: 'user_id',
+    entityType: 'dashboard',
+    currentUserRole: 'editor', // or viewer
+    data: {
+      subEntityCounts: {
+        report: 8,
+      },
+      roleCounts: {},
+    },
+  });
 
   expect(node.find(Deleter).prop('entity').id).toBe('aDashboardId');
-});
-
-it('should show an edit modal when clicking the edit button', () => {
-  const node = shallow(<Collection {...props} />);
-
-  node.find('ForwardRef(OverflowMenuItem)').at(0).simulate('click');
-
-  expect(node.find(CollectionModal)).toExist();
 });
 
 it('should modify the collections name with the edit modal', async () => {
@@ -131,22 +139,6 @@ it('should modify the collections name with the edit modal', async () => {
 
   expect(updateEntity).toHaveBeenCalledWith('collection', 'aCollectionId', {name: 'new Name'});
   expect(refreshBreadcrumbs).toHaveBeenCalled();
-});
-
-it('should show a ReportTemplateModal', () => {
-  const node = shallow(<Collection {...props} />);
-
-  node.find('EntityList').prop('action').props.create('report');
-
-  expect(node.find(ReportTemplateModal)).toExist();
-});
-
-it('should show kpiCreationModal', () => {
-  const node = shallow(<Collection {...props} />);
-
-  node.find('EntityList').prop('action').props.create('kpi');
-
-  expect(node.find(KpiCreationModal)).toExist();
 });
 
 it('should hide edit/delete from context menu for collection items that does not have a "manager" role', () => {
@@ -178,31 +170,15 @@ it('should render content depending on the selected tab', async () => {
 it('should show the copy modal when clicking the copy button', () => {
   const node = shallow(<Collection {...props} />);
 
-  node.find('ForwardRef(OverflowMenuItem)').at(1).simulate('click');
+  node.find('CollectionHeader').prop('onCopy')();
 
   expect(node.find(Copier)).toExist();
-});
-
-it('should hide create new button if the user role is viewer', () => {
-  loadEntity.mockReturnValue({
-    id: 'aCollectionId',
-    name: 'aCollectionName',
-    lastModified: '2017-11-11T11:11:11.1111+0200',
-    created: '2017-11-11T11:11:11.1111+0200',
-    owner: 'user_id',
-    lastModifier: 'user_id',
-    currentUserRole: 'viewer',
-    data: {},
-  });
-  const node = shallow(<Collection {...props} />);
-
-  expect(node.find('EntityList').prop('action')).toBe(false);
 });
 
 it('should load collection entities with sort parameters', () => {
   const node = shallow(<Collection {...props} />);
 
-  node.find('EntityList').prop('onChange')('lastModifier', 'desc');
+  node.find('CollectionEnitiesList').prop('loadEntities')('lastModifier', 'desc');
 
   expect(loadCollectionEntities).toHaveBeenCalledWith('aCollectionId', 'lastModifier', 'desc');
 });
@@ -220,45 +196,15 @@ it('should set the loading state of the entity list', async () => {
 
   runAllEffects();
 
-  expect(node.find('EntityList').prop('isLoading')).toBe(true);
+  expect(node.find('CollectionEnitiesList').prop('isLoading')).toBe(true);
   await flushPromises();
-  expect(node.find('EntityList').prop('isLoading')).toBe(false);
+  expect(node.find('CollectionEnitiesList').prop('isLoading')).toBe(false);
 
-  node.find('EntityList').prop('onChange')('lastModifier', 'desc');
+  node.find('CollectionEnitiesList').prop('loadEntities')('lastModifier', 'desc');
 
-  expect(node.find('EntityList').prop('isLoading')).toBe(true);
+  expect(node.find('CollectionEnitiesList').prop('isLoading')).toBe(true);
   await flushPromises();
-  expect(node.find('EntityList').prop('isLoading')).toBe(false);
-});
-
-it('should include an option to export reports for entity editors', () => {
-  const node = shallow(<Collection {...props} />);
-
-  expect(
-    node
-      .find('EntityList')
-      .prop('rows')[1]
-      .actions.find(({text}) => text === 'Export')
-  ).not.toBe(undefined);
-});
-
-it('should hide the export option for entity viewers', () => {
-  loadCollectionEntities.mockReturnValueOnce([
-    {
-      entityType: 'report',
-      currentUserRole: 'viewer',
-      lastModified: '2019-11-18T12:29:37+0000',
-      data: {subEntityCounts: {}},
-    },
-  ]);
-  const node = shallow(<Collection {...props} />);
-
-  expect(
-    node
-      .find('EntityList')
-      .prop('rows')[0]
-      .actions.find(({text}) => text === 'Export')
-  ).toBe(undefined);
+  expect(node.find('CollectionEnitiesList').prop('isLoading')).toBe(false);
 });
 
 it('should hide alerts tab if user search is not available', async () => {
@@ -277,54 +223,4 @@ it('should hide users tab if user search is not available', async () => {
   await flushPromises();
 
   expect(node.find({title: 'Users'})).not.toExist();
-});
-
-it('should display badge with user role Manager', () => {
-  loadEntity.mockReturnValue({
-    id: 'aCollectionId',
-    name: 'aCollectionName',
-    lastModified: '2017-11-11T11:11:11.1111+0200',
-    created: '2017-11-11T11:11:11.1111+0200',
-    owner: 'user_id',
-    lastModifier: 'user_id',
-    currentUserRole: 'manager',
-    data: {},
-  });
-
-  const node = shallow(<Collection {...props} />);
-
-  expect(node.find(Tag).children().text()).toBe('Manager');
-});
-
-it('should show entity name and description', () => {
-  const node = shallow(<Collection {...props} />);
-
-  runAllEffects();
-
-  expect(node.find('EntityList').prop('rows')[0].name).toBe('aDashboard');
-  expect(node.find('EntityList').prop('rows')[0].meta[0]).toBe('a description');
-});
-
-it('should not show actions in empty state if user is not an editor', async () => {
-  loadEntity.mockReturnValueOnce({
-    id: 'aCollectionId',
-    name: 'aCollectionName',
-    lastModified: '2017-11-11T11:11:11.1111+0200',
-    created: '2017-11-11T11:11:11.1111+0200',
-    owner: 'user_id',
-    lastModifier: 'user_id',
-    currentUserRole: 'viewer',
-    data: {},
-  });
-
-  const node = shallow(<Collection {...props} />);
-
-  runAllEffects();
-
-  await flushPromises();
-
-  const emptyState = node.find('EntityList').prop('emptyStateComponent');
-
-  expect(emptyState.props.title).toBe('There are no items created yet');
-  expect(emptyState.props.actions).toBeUndefined();
 });

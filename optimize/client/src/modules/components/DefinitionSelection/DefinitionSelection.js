@@ -9,9 +9,9 @@
 import React from 'react';
 import classnames from 'classnames';
 import {withRouter} from 'react-router-dom';
-import {ComboBox, FormLabel} from '@carbon/react';
+import {ComboBox, FormLabel, SelectSkeleton} from '@carbon/react';
 
-import {BPMNDiagram, LoadingIndicator, Popover, TenantInfo} from 'components';
+import {BPMNDiagram, Popover, TenantInfo} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getCollection, getRandomId, loadDefinitions} from 'services';
 import {t} from 'translation';
@@ -314,7 +314,7 @@ export class DefinitionSelection extends React.Component {
     if (!availableDefinitions) {
       return (
         <div className="DefinitionSelection">
-          <LoadingIndicator small />
+          <SelectSkeleton hideLabel={!selectedDefinitions} className="LoadingDefinitions" />
         </div>
       );
     }
@@ -393,7 +393,7 @@ export class DefinitionSelection extends React.Component {
                 />
               </div>
               {this.isOnlyTenant() ? (
-                <TenantInfo tenant={this.getAvailableTenants()[0]} useCarbonVariant />
+                <TenantInfo tenant={this.getAvailableTenants()[0]} />
               ) : (
                 <div className="tenant entry">
                   <TenantPopover

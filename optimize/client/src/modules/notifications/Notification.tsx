@@ -8,13 +8,13 @@
 
 import {useState, useEffect, useRef, useCallback, ReactNode} from 'react';
 import classnames from 'classnames';
-import {Button, Icon} from 'components';
+import {ActionableNotification} from '@carbon/react';
 
 import './Notification.scss';
 
 export interface Config {
   id?: string;
-  type?: string;
+  type?: 'success' | 'warning' | 'error' | 'info';
   text: ReactNode;
   stayOpen?: boolean;
   duration?: number;
@@ -28,21 +28,9 @@ interface NotificationProps {
 export default function Notification({config, remove}: NotificationProps): JSX.Element {
   const [closing, setClosing] = useState(false);
   const closeTrigger = useRef<ReturnType<typeof setTimeout>>();
-
-  const getIconType = (): string | null => {
-    switch (config.type) {
-      case 'success':
-        return 'check-large';
-      case 'warning':
-        return 'warning';
-      case 'error':
-        return 'error';
-      case 'hint':
-        return 'hint';
-      default:
-        return null;
-    }
-  };
+  const {text, duration, stayOpen, type} = config;
+  const title = typeof text === 'string' ? text : '';
+  const children = typeof text === 'string' ? undefined : text;
 
   const close = useCallback(() => {
     setClosing(true);
@@ -50,27 +38,30 @@ export default function Notification({config, remove}: NotificationProps): JSX.E
   }, [remove]);
 
   useEffect(() => {
-    if (!config.stayOpen) {
-      closeTrigger.current = setTimeout(close, config.duration || 4350);
+    if (!stayOpen) {
+      closeTrigger.current = setTimeout(close, duration || 4350);
     }
     return () => {
       clearTimeout(closeTrigger.current);
     };
-  }, [config, closeTrigger, close]);
+  }, [duration, stayOpen, closeTrigger, close]);
 
   const keepOpen = () => {
     clearTimeout(closeTrigger.current);
   };
 
-  const iconType = getIconType();
-
   return (
-    <div className={classnames('Notification', config.type, {closing})} onClick={keepOpen}>
-      {iconType && <Icon type={iconType} />}
-      {config.text}
-      <Button className="close" onClick={close}>
-        <Icon type="close-large" />
-      </Button>
-    </div>
+    <ActionableNotification
+      className={classnames('Notification', {closing})}
+      kind={type}
+      title={title}
+      onClose={() => {
+        close();
+        return false;
+      }}
+      onClick={keepOpen}
+    >
+      {children}
+    </ActionableNotification>
   );
 }
