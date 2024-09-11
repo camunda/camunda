@@ -59,7 +59,7 @@ public class IndexSchemaValidator {
    *
    * @param mappings is a map of all the mappings to compare.
    * @param indexDescriptors is the set of all index descriptors representing desired schema states.
-   * @return new mapping properties to add to schemas so they align with the descriptors.
+   * @return new mapping properties to add to schemas, so they align with the descriptors.
    * @throws IndexSchemaValidationException if the existing indices cannot be updated with the given
    *     mappings.
    */
@@ -119,12 +119,7 @@ public class IndexSchemaValidator {
 
     final var differences =
         indexMappingsGroup.values().stream()
-            .map(
-                mapping ->
-                    new IndexMappingDifference.IndexMappingDifferenceBuilder()
-                        .setLeft(indexMappingMustBe)
-                        .setRight(mapping)
-                        .build())
+            .map(mapping -> IndexMappingDifference.of(indexMappingMustBe, mapping))
             .filter(difference -> !difference.equal())
             .distinct()
             .toList();
