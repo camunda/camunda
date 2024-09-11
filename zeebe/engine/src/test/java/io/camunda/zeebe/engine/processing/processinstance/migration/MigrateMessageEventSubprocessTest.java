@@ -25,7 +25,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -612,7 +611,6 @@ public class MigrateMessageEventSubprocessTest {
         .isNotNull();
   }
 
-  @Ignore("This rejection will be supported with #21615")
   @Test
   public void shouldRejectCommandWhenMappedCatchEventIsAttachedToDifferentElement() {
     // given
@@ -711,7 +709,6 @@ public class MigrateMessageEventSubprocessTest {
         .contains("Catch events must stay attached to the same element instance");
   }
 
-  @Ignore("This rejection will be supported with #21615")
   @Test
   public void shouldRejectCommandWhenMappedCatchEventsAreMerged() {
     // given
@@ -793,7 +790,7 @@ public class MigrateMessageEventSubprocessTest {
         .contains("active element with id '" + processId + "' has a catch event attached")
         .contains("catch event attached that is mapped to a catch event with id 'start2'")
         .contains(
-            "There are multiple mapping instructions that target this catch event: 'startA1', 'startA2'")
+            "There are multiple mapping instructions that target this catch event: 'startA1', 'startB1'")
         .contains("Catch events cannot be merged by process instance migration")
         .contains("Please ensure the mapping instructions target a catch event only once");
   }
