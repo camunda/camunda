@@ -561,11 +561,7 @@ public final class ProcessInstanceMigrationPreconditions {
           sourceFlowScopeElement.getValue().getElementIdBuffer();
       final AbstractFlowElement targetFlowElement =
           targetProcessDefinition.getProcess().getElementById(targetElementId);
-      DirectBuffer actualFlowScopeId = targetFlowElement.getFlowScope().getId();
-
-      if (expectedFlowScopeId.equals(actualFlowScopeId)) {
-        return;
-      }
+      DirectBuffer actualFlowScopeId;
 
       // if target element is a multi instance body, we should check the inner activity flow scope
       // because the inner activity of the multi instance body can still match the source element's
@@ -580,6 +576,11 @@ public final class ProcessInstanceMigrationPreconditions {
         if (expectedFlowScopeId.equals(actualFlowScopeId)) {
           return;
         }
+      }
+
+      actualFlowScopeId = targetFlowElement.getFlowScope().getId();
+      if (expectedFlowScopeId.equals(actualFlowScopeId)) {
+        return;
       }
 
       final String reason =
