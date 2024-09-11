@@ -1,15 +1,4 @@
 :root[data-carbon-theme='g10'] {
-  --cds-background: #fc5d0e;
-  --cds-layer: #1e2a44;
-  --cds-layer-01: #0072ce;
-  --cds-layer-02: #0072ce;
-  --cds-layer-03: #232828;
-  --cds-icon-primary: #000000;
-  --cds-text-primary: #ffffff;
-  --cds-field-01: #221515;
-  --cds-field-02: #221515;
-  --cds-layer-selected-01: #027e89;
-  --cds-text-secondary: #ffffff;
 }
 
 :root[data-carbon-theme='g100']{
