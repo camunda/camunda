@@ -63,8 +63,8 @@ public record IndexMappingDifference(
                             .typeDefinition(entry.getValue().rightValue())
                             .build()))
             .collect(Collectors.toSet()),
-        left.isDynamic(),
-        right.isDynamic());
+        left == null ? false : left.isDynamic(),
+        right == null ? false : right.isDynamic());
   }
 
   private record PropertyDifference(
