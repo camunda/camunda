@@ -30,11 +30,13 @@ describe('stores/processXml/processXml.list', () => {
       'requestForPayment',
       'shippingSubProcess',
       'shipArticles',
-      'confirmDelivery',
       'MessageInterrupting',
       'TimerInterrupting',
       'MessageNonInterrupting',
       'TimerNonInterrupting',
+      'confirmDelivery',
+      'MessageIntermediateCatch',
+      'TimerIntermediateCatch',
     ]);
   });
 
@@ -55,11 +57,13 @@ describe('stores/processXml/processXml.list', () => {
       'requestForPayment',
       'shippingSubProcess',
       'shipArticles',
-      'confirmDelivery',
       'MessageInterrupting',
       'TimerInterrupting',
       'MessageNonInterrupting',
       'TimerNonInterrupting',
+      'confirmDelivery',
+      'MessageIntermediateCatch',
+      'TimerIntermediateCatch',
     ]);
   });
 });
