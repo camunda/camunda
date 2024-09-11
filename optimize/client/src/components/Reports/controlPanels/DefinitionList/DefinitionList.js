@@ -7,7 +7,7 @@
  */
 
 import {useEffect, useState} from 'react';
-import {withRouter} from 'react-router-dom';
+import {useLocation} from 'react-router-dom';
 import classnames from 'classnames';
 import useDeepCompareEffect from 'use-deep-compare-effect';
 import deepEqual from 'fast-deep-equal';
@@ -15,7 +15,6 @@ import {Button} from '@carbon/react';
 import {Close, Copy, Edit} from '@carbon/icons-react';
 
 import {Popover, Tooltip} from 'components';
-import {withDocs, withErrorHandling} from 'HOC';
 import {getCollection, formatters} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
@@ -29,7 +28,7 @@ import {useDocs, useErrorHandling} from 'hooks';
 
 const {formatVersions, formatTenants} = formatters;
 
-export function DefinitionList({
+export default function DefinitionList({
   location,
   definitions = [],
   type,
@@ -44,9 +43,9 @@ export function DefinitionList({
   const [tenantsAvailable, setTenantsAvailable] = useState(false);
   const [reportDataSourceLimit, setReportDataSourceLimit] = useState(100);
   const {mightFail} = useErrorHandling();
-  const {generateDocsLink} = useDocs();
+  const {pathname} = useLocation();
 
-  const collection = getCollection(location.pathname);
+  const collection = getCollection(pathname);
   const definitionKeysAndVersions = definitions.map(({key, versions}) => ({key, versions}));
   const isDefinitionLimitReached = definitions.length >= reportDataSourceLimit;
 
@@ -94,25 +93,15 @@ export function DefinitionList({
             )}
             <div className="actions">
               {!isDefinitionLimitReached && (
-                <Tooltip
-                  content={t('report.copyTooltip', {
-                    entity: t('common.process.label'),
-                    docsLink: generateDocsLink(
-                      'components/userguide/additional-features/process-variants-comparison/'
-                    ),
-                  })}
-                  position="bottom"
-                >
-                  <Button
-                    kind="ghost"
-                    size="sm"
-                    className="actionBtn"
-                    onClick={() => onCopy(idx)}
-                    iconDescription={t('common.copy')}
-                    renderIcon={Copy}
-                    hasIconOnly
-                  />
-                </Tooltip>
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  className="actionBtn"
+                  onClick={() => onCopy(idx)}
+                  iconDescription={t('common.copy')}
+                  renderIcon={Copy}
+                  hasIconOnly
+                />
               )}
               <Popover
                 className="DefinitionList"
@@ -154,5 +143,3 @@ export function DefinitionList({
     </ul>
   );
 }
-
-export default withRouter(withErrorHandling(withDocs(DefinitionList)));
