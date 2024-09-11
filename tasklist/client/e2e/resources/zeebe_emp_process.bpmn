@@ -12,7 +12,7 @@
     <bpmn:sequenceFlow id="Flow_0b4z0od" sourceRef="zeebeConfirmEmpDetails" targetRef="Event_0m78y1u" />
     <bpmn:userTask id="ZeebeEmpDetails" name="Zeebe Employee Details">
       <bpmn:extensionElements>
-        <zeebe:formDefinition formId="empFrom" />
+        <zeebe:formDefinition formId="empForm" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_18fqul1</bpmn:incoming>
       <bpmn:outgoing>Flow_1uie9g9</bpmn:outgoing>
