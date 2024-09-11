@@ -238,7 +238,7 @@ camunda-platform:
       contextPath: "/zeebe"
       ingress:
         grpc:
-          enabled: true
+          enabled: false
           className: nginx
           host: "test.camunda.camunda.cloud"
           annotations:
