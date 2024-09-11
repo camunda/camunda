@@ -16,16 +16,12 @@ import static io.camunda.optimize.service.db.es.report.command.util.FilterLimite
 import static io.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtilES.wrapWithFilterLimitedParentAggregation;
 import static io.camunda.optimize.service.db.es.report.interpreter.util.AggregateByDateUnitMapperES.mapToDateHistogramInterval;
 import static io.camunda.optimize.service.db.report.interpreter.util.AggregateByDateUnitMapper.mapToChronoUnit;
-import static io.camunda.optimize.service.db.report.service.DateAggregationService.getDateHistogramIntervalDurationFromMinMax;
-import static java.time.temporal.TemporalAdjusters.firstDayOfMonth;
-import static java.time.temporal.TemporalAdjusters.firstDayOfYear;
-import static java.time.temporal.TemporalAdjusters.previousOrSame;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.service.db.es.report.context.DateAggregationContextES;
-import java.time.DayOfWeek;
+import io.camunda.optimize.service.db.report.service.DateAggregationService;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -57,7 +53,7 @@ import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
 @Component
-public class DateAggregationServiceES {
+public class DateAggregationServiceES extends DateAggregationService {
 
   private static final String DATE_AGGREGATION = "dateAggregation";
 
@@ -342,34 +338,5 @@ public class DateAggregationServiceES {
 
     context.getSubAggregations().forEach(dateHistogramAggregation::subAggregation);
     return wrapWithFilterLimitedParentAggregation(limitFilterQuery, dateHistogramAggregation);
-  }
-
-  private ZonedDateTime getEndOfBucket(
-      final ZonedDateTime startOfBucket,
-      final AggregateByDateUnit unit,
-      final Duration durationOfAutomaticInterval) {
-    return AggregateByDateUnit.AUTOMATIC.equals(unit)
-        ? startOfBucket.plus(durationOfAutomaticInterval)
-        : startOfBucket.plus(1, mapToChronoUnit(unit));
-  }
-
-  private ZonedDateTime truncateToUnit(
-      final ZonedDateTime dateToTruncate, final AggregateByDateUnit unit) {
-    switch (unit) {
-      case YEAR:
-        return dateToTruncate.with(firstDayOfYear()).truncatedTo(ChronoUnit.DAYS);
-      case MONTH:
-        return dateToTruncate.with(firstDayOfMonth()).truncatedTo(ChronoUnit.DAYS);
-      case WEEK:
-        return dateToTruncate.with(previousOrSame(DayOfWeek.MONDAY)).truncatedTo(ChronoUnit.DAYS);
-      case DAY:
-      case HOUR:
-      case MINUTE:
-        return dateToTruncate.truncatedTo(mapToChronoUnit(unit));
-      case AUTOMATIC:
-        return dateToTruncate;
-      default:
-        throw new IllegalArgumentException("Unsupported unit: " + unit);
-    }
   }
 }

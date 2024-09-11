@@ -5,56 +5,56 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.date;
+package io.camunda.optimize.service.db.os.report.interpreter.groupby.process.date;
 
 import static io.camunda.optimize.rest.util.TimeZoneUtil.formatToCorrectTimezone;
-import static io.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtilES.FILTER_LIMITED_AGGREGATION;
+import static io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS.FILTER_LIMITED_AGGREGATION;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_PROCESS_INSTANCE_RUNNING_DATE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.START_DATE;
 
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.service.db.es.report.context.DateAggregationContextES;
-import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
-import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterES;
-import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
-import io.camunda.optimize.service.db.es.report.service.DateAggregationServiceES;
-import io.camunda.optimize.service.db.es.report.service.MinMaxStatsServiceES;
+import io.camunda.optimize.service.db.os.report.context.DateAggregationContextOS;
+import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
+import io.camunda.optimize.service.db.os.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeOS;
+import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterOS;
+import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
+import io.camunda.optimize.service.db.os.report.service.DateAggregationServiceOS;
+import io.camunda.optimize.service.db.os.report.service.MinMaxStatsServiceOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.report.interpreter.groupby.process.date.ProcessGroupByProcessInstanceRunningDateInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
-import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.filter.Filters;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.camunda.optimize.util.types.MapUtil;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.FiltersAggregate;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.SearchResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-@Conditional(ElasticSearchCondition.class)
-public class ProcessGroupByProcessInstanceRunningDateInterpreterES
-    extends AbstractProcessGroupByInterpreterES {
+@Conditional(OpenSearchCondition.class)
+public class ProcessGroupByProcessInstanceRunningDateInterpreterOS
+    extends AbstractProcessGroupByInterpreterOS {
   private final DateTimeFormatter formatter;
-  private final DateAggregationServiceES dateAggregationService;
-  private final MinMaxStatsServiceES minMaxStatsService;
-  @Getter private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
-  @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
+  private final DateAggregationServiceOS dateAggregationService;
+  private final MinMaxStatsServiceOS minMaxStatsService;
+  @Getter private final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
+  @Getter private final ProcessViewInterpreterFacadeOS viewInterpreter;
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
@@ -64,7 +64,7 @@ public class ProcessGroupByProcessInstanceRunningDateInterpreterES
   @Override
   public Optional<MinMaxStatDto> getMinMaxStats(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final BoolQueryBuilder baseQuery) {
+      final Query baseQuery) {
     return ProcessGroupByProcessInstanceRunningDateInterpreter.getMinMaxStats(
         context,
         () ->
@@ -73,15 +73,15 @@ public class ProcessGroupByProcessInstanceRunningDateInterpreterES
   }
 
   @Override
-  public List<AggregationBuilder> createAggregation(
-      final SearchSourceBuilder searchSourceBuilder,
+  public Map<String, Aggregation> createAggregation(
+      final Query query,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final MinMaxStatDto minMaxStats =
         minMaxStatsService.getMinMaxDateRangeForCrossField(
-            context, searchSourceBuilder.query(), getIndexNames(context), START_DATE, END_DATE);
+            context, query, getIndexNames(context), START_DATE, END_DATE);
 
-    final DateAggregationContextES dateAggContext =
-        DateAggregationContextES.builder()
+    final DateAggregationContextOS dateAggContext =
+        DateAggregationContextOS.builder()
             .aggregateByDateUnit(
                 ProcessGroupByProcessInstanceRunningDateInterpreter.getGroupByDateUnit(
                     context.getReportData()))
@@ -89,46 +89,49 @@ public class ProcessGroupByProcessInstanceRunningDateInterpreterES
             .dateField(ProcessInstanceDto.Fields.startDate)
             .runningDateReportEndDateField(ProcessInstanceDto.Fields.endDate)
             .timezone(context.getTimezone())
-            .subAggregations(
-                getDistributedByInterpreter()
-                    .createAggregations(context, searchSourceBuilder.query()))
+            .subAggregations(getDistributedByInterpreter().createAggregations(context, query))
             .filterContext(context.getFilterContext())
             .build();
 
     return dateAggregationService
         .createRunningDateAggregation(dateAggContext)
-        .map(Collections::singletonList)
-        .orElse(Collections.emptyList());
+        .map(MapUtil::createFromPair)
+        .orElse(Map.of());
   }
 
   @Override
   protected void addQueryResult(
       final CompositeCommandResult result,
-      final SearchResponse response,
+      final SearchResponse<RawResult> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    if (response.getAggregations() != null) {
+    if (response.aggregations() != null) {
       // Only enrich result if aggregations exist (if no aggregations exist, this report contains no
       // instances)
       ProcessGroupByProcessInstanceRunningDateInterpreter.addQueryResult(
-          result, processAggregations(response, response.getAggregations(), context), context);
+          result, processAggregations(response, response.aggregations(), context), context);
     }
   }
 
   private List<CompositeCommandResult.GroupByResult> processAggregations(
-      final SearchResponse response,
-      final Aggregations aggregations,
+      final SearchResponse<RawResult> response,
+      final Map<String, Aggregate> aggregations,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    Filters agg = aggregations.get(FILTER_LIMITED_AGGREGATION);
+    if (!aggregations.containsKey(FILTER_LIMITED_AGGREGATION)) {
+      return List.of();
+    } else {
+      FiltersAggregate agg = aggregations.get(FILTER_LIMITED_AGGREGATION).filters();
 
-    List<CompositeCommandResult.GroupByResult> results = new ArrayList<>();
-
-    for (Filters.Bucket entry : agg.getBuckets()) {
-      String key =
-          formatToCorrectTimezone(entry.getKeyAsString(), context.getTimezone(), formatter);
-      final List<CompositeCommandResult.DistributedByResult> distributions =
-          getDistributedByInterpreter().retrieveResult(response, entry.getAggregations(), context);
-      results.add(CompositeCommandResult.GroupByResult.createGroupByResult(key, distributions));
+      return agg.buckets().keyed().entrySet().stream()
+          .map(
+              entry -> {
+                String key =
+                    formatToCorrectTimezone(entry.getKey(), context.getTimezone(), formatter);
+                final List<CompositeCommandResult.DistributedByResult> distributions =
+                    getDistributedByInterpreter()
+                        .retrieveResult(response, entry.getValue().aggregations(), context);
+                return CompositeCommandResult.GroupByResult.createGroupByResult(key, distributions);
+              })
+          .toList();
     }
-    return results;
   }
 }
