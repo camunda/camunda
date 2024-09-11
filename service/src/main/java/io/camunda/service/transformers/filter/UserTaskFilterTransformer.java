@@ -4,13 +4,14 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
-import static io.camunda.search.clients.query.SearchQueryBuilders.wildcard;  // Add wildcard support for $like
 import static io.camunda.search.clients.query.SearchQueryBuilders.wildcardQuery;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.service.query.QueryFieldFilterTransformers;
+import io.camunda.service.query.filter.FilterOperator;
 import io.camunda.service.search.filter.ComparableValueFilter;
 import io.camunda.service.search.filter.UserTaskFilter;
-import io.camunda.service.query.FieldFilter;
+import io.camunda.service.query.filter.FieldFilter;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.service.transformers.filter.ComparableValueFilterTransformer.ComparableFieldFilter;
 import java.util.Arrays;
@@ -18,7 +19,6 @@ import java.util.List;
 import java.util.Objects;
 
 public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilter> {
-
   private final ServiceTransformers transformers;
 
   public UserTaskFilterTransformer(final ServiceTransformers transformers) {
@@ -110,15 +110,8 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
   // Updated to support both $eq and $like operators
   private SearchQuery getStateQuery(final FieldFilter<List<String>> states) {
     if (states != null && states.getValue() != null && !states.getValue().isEmpty()) {
-      final String operator = states.getOperator();
-      switch (operator) {
-        case "eq":  // Equals
-          return stringTerms("state", states.getValue());
-        case "like":  // Like (wildcard or pattern matching)
-          return wildcardQuery("state", states.getValue().get(0));  // Use wildcardQuery method
-        default:
-          throw new IllegalArgumentException("Unsupported operator: " + operator);
-      }
+      final FilterOperator operator = states.getOperator();
+      return QueryFieldFilterTransformers.buildStringQuery("state", states.getValue(), operator);
     }
     return null;
   }

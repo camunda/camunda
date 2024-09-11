@@ -7,9 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.service.CamundaServices;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.query.Filter;
+import io.camunda.service.query.filter.Filter;
 import io.camunda.service.query.QueryParser;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
@@ -43,9 +42,6 @@ public class UserTaskQueryController {
       @RequestBody(required = false) final UserTaskSearchQueryRequest query) {
 
     final List<Filter> queryParsedTest = queryParser.parse(query.getFilter());
-    System.out.println(queryParsedTest);
-
-
 
     return SearchQueryRequestMapper.toUserTaskQuery(query, queryParsedTest)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);

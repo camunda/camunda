@@ -3,7 +3,8 @@ package io.camunda.service.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
-import io.camunda.service.query.FieldFilter;
+import io.camunda.service.query.filter.FieldFilter;
+import io.camunda.service.query.filter.FilterOperator;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
@@ -72,7 +73,7 @@ public record UserTaskFilter(
       return this;
     }
 
-    public Builder states(final String operator, final List<String> values) {
+    public Builder states(final FilterOperator operator, final List<String> values) {
       states = new FieldFilter<>(operator, values);  // Assigning operator and values to FieldFilter
       return this;
     }
@@ -134,7 +135,7 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(elementIds, Collections.emptyList()),
           Objects.requireNonNullElse(bpmnProcessIds, Collections.emptyList()),
           Objects.requireNonNullElse(assignees, Collections.emptyList()),
-          Objects.requireNonNullElse(states, new FieldFilter<>("$eq", Collections.emptyList())),  // Use FieldFilter for states
+          Objects.requireNonNullElse(states, new FieldFilter<>(FilterOperator.EQ, Collections.emptyList())),  // Use FieldFilter for states
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUsers, Collections.emptyList()),

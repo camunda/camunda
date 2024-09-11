@@ -13,8 +13,8 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOW
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_ORDER;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.service.query.FieldFilter;
-import io.camunda.service.query.Filter;
+import io.camunda.service.query.filter.Filter;
+import io.camunda.service.query.FieldFilterTypeValidator;
 import io.camunda.service.search.filter.ComparableValueFilter;
 import io.camunda.service.search.filter.DecisionDefinitionFilter;
 import io.camunda.service.search.filter.DecisionRequirementsFilter;
@@ -56,7 +56,6 @@ import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
@@ -227,67 +226,67 @@ public final class SearchQueryRequestMapper {
       for (final Filter filter : filters) {
         switch (filter.getField()) {
           case "key":
-            if (filter.getOperator().equals("eq") && filter.getValue() instanceof List) {
+            if (FieldFilterTypeValidator.isNumericOperator(filter.getOperator()) && filter.getValue() instanceof List) {
               builder.keys((List<Long>) filter.getValue());
             }
             break;
 
           case "state":
-            if (filter.getOperator().equals("eq") || filter.getOperator().equals("like")) {
-              builder.states(filter.getOperator(), List.of((String) filter.getValue()));
+            if (FieldFilterTypeValidator.isStringOperator(filter.getOperator()) || filter.getValue() instanceof List) {
+              builder.states(filter.getOperator(), (List<String>) filter.getValue());
             }
             break;
 
           case "bpmnProcessId":
-            if (filter.getOperator().equals("eq") && filter.getValue() instanceof List) {
+            if (FieldFilterTypeValidator.isStringOperator(filter.getOperator()) && filter.getValue() instanceof List) {
               builder.bpmnProcessIds((List<String>) filter.getValue());
             }
             break;
 
           case "elementId":
-            if (filter.getOperator().equals("eq") && filter.getValue() instanceof List) {
+            if (FieldFilterTypeValidator.isStringOperator(filter.getOperator()) && filter.getValue() instanceof List) {
               builder.elementIds((List<String>) filter.getValue());
             }
             break;
 
           case "assignee":
-            if (filter.getOperator().equals("eq") && filter.getValue() instanceof List) {
+            if (FieldFilterTypeValidator.isStringOperator(filter.getOperator()) && filter.getValue() instanceof List) {
               builder.assignees((List<String>) filter.getValue());
             }
             break;
 
           case "candidateGroup":
-            if (filter.getOperator().equals("eq") && filter.getValue() instanceof List) {
+            if (FieldFilterTypeValidator.isStringOperator(filter.getOperator()) && filter.getValue() instanceof List) {
               builder.candidateGroups((List<String>) filter.getValue());
             }
             break;
 
           case "candidateUser":
-            if (filter.getOperator().equals("eq") && filter.getValue() instanceof List) {
+            if (FieldFilterTypeValidator.isStringOperator(filter.getOperator()) && filter.getValue() instanceof List) {
               builder.candidateUsers((List<String>) filter.getValue());
             }
             break;
 
           case "processDefinitionKey":
-            if (filter.getOperator().equals("eq") && filter.getValue() instanceof Long) {
+            if (FieldFilterTypeValidator.isNumericOperator(filter.getOperator()) && filter.getValue() instanceof Long) {
               builder.processDefinitionKeys((Long) filter.getValue());
             }
             break;
 
           case "processInstanceKey":
-            if (filter.getOperator().equals("eq") && filter.getValue() instanceof Long) {
+            if (FieldFilterTypeValidator.isNumericOperator(filter.getOperator()) && filter.getValue() instanceof Long) {
               builder.processInstanceKeys((Long) filter.getValue());
             }
             break;
 
           case "tenantIds":
-            if (filter.getOperator().equals("eq") && filter.getValue() instanceof List) {
+            if (FieldFilterTypeValidator.isStringOperator(filter.getOperator()) && filter.getValue() instanceof List) {
               builder.tenantIds((List<String>) filter.getValue());
             }
             break;
 
           case "priority":
-            if (filter.getOperator().equals("eq") && filter.getValue() instanceof ComparableValueFilter) {
+            if (FieldFilterTypeValidator.isStringOperator(filter.getOperator()) && filter.getValue() instanceof ComparableValueFilter) {
               builder.priority((ComparableValueFilter) filter.getValue());
             }
             break;

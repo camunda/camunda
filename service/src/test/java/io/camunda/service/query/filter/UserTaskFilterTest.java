@@ -88,7 +88,7 @@ public class UserTaskFilterTest {
   @Test
   public void shouldApplySortConditionByCreationDate() {
     // given
-    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.states("eq",
+    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.states(FilterOperator.EQ,
         Collections.singletonList("CREATED")));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery(
@@ -119,7 +119,7 @@ public class UserTaskFilterTest {
   @Test
   public void shouldApplySortConditionByCompletionDate() {
     // given
-    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.states("eq",
+    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.states(FilterOperator.EQ,
         Collections.singletonList("CREATED")));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery(
@@ -178,7 +178,7 @@ public class UserTaskFilterTest {
   @Test
   public void shouldQueryByTaskState() {
     // given
-    final var taskStateFilter = FilterBuilders.userTask((f) -> f.states("eq", Collections.singletonList("CREATED")));
+    final var taskStateFilter = FilterBuilders.userTask((f) -> f.states(FilterOperator.EQ, Collections.singletonList("CREATED")));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(taskStateFilter));
 
