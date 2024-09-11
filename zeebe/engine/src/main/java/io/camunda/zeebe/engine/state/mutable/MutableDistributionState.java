@@ -72,4 +72,7 @@ public interface MutableDistributionState extends DistributionState {
 
   /** Removes the queued distribution from the queue */
   void removeQueuedDistribution(String queue, int partitionId, long distributionKey);
+
+  void addContinuationCommand(
+      final long key, final CommandDistributionRecord commandDistributionRecord);
 }

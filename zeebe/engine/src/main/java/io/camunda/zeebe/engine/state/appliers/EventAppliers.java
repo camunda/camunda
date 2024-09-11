@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForIntent;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForVersion;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.analyzers.CommandDistributionContinuationRequestedApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -419,6 +420,9 @@ public final class EventAppliers implements EventApplier {
     register(
         CommandDistributionIntent.ENQUEUED,
         new CommandDistributionEnqueuedApplier(distributionState));
+    register(
+        CommandDistributionIntent.CONTINUATION_REQUESTED,
+        new CommandDistributionContinuationRequestedApplier(distributionState));
   }
 
   private void registerAuthorizationAppliers(final MutableProcessingState state) {
