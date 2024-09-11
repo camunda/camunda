@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -25,7 +26,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -612,7 +612,6 @@ public class MigrateMessageEventSubprocessTest {
         .isNotNull();
   }
 
-  @Ignore("This rejection will be supported with #21615")
   @Test
   public void shouldRejectCommandWhenMappedCatchEventIsAttachedToDifferentElement() {
     // given
@@ -711,7 +710,6 @@ public class MigrateMessageEventSubprocessTest {
         .contains("Catch events must stay attached to the same element instance");
   }
 
-  @Ignore("This rejection will be supported with #21615")
   @Test
   public void shouldRejectCommandWhenMappedCatchEventsAreMerged() {
     // given
@@ -793,8 +791,79 @@ public class MigrateMessageEventSubprocessTest {
         .contains("active element with id '" + processId + "' has a catch event attached")
         .contains("catch event attached that is mapped to a catch event with id 'start2'")
         .contains(
-            "There are multiple mapping instructions that target this catch event: 'startA1', 'startA2'")
+            "There are multiple mapping instructions that target this catch event: 'startA1', 'startB1'")
         .contains("Catch events cannot be merged by process instance migration")
         .contains("Please ensure the mapping instructions target a catch event only once");
+  }
+
+  @Test
+  public void shouldRejectCommandWhenMappedCatchEventChangesEventType() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .eventSubProcess(
+                        "sub1",
+                        s ->
+                            s.startEvent("start1")
+                                .message(m -> m.name("msg").zeebeCorrelationKeyExpression("key"))
+                                .endEvent())
+                    .startEvent()
+                    .userTask("userTask1")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .eventSubProcess(
+                        "sub2", s -> s.startEvent("start2").timerWithDuration("PT1M").endEvent())
+                    .startEvent()
+                    .userTask("userTask2")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(Map.of("key", helper.getCorrelationValue() + "1"))
+            .create();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("userTask1")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("userTask1", "userTask2")
+            .addMappingInstruction("start1", "start2")
+            .expectRejection()
+            .migrate();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .extracting(Record::getRejectionReason)
+        .asString()
+        .contains("Expected to migrate process instance '" + processInstanceKey + "'")
+        .contains("active element with id '" + processId + "' has a catch event")
+        .contains(
+            "has a catch event with id 'start1' that is mapped to a catch event with id 'start2'")
+        .contains("These catch events have different event types: 'MESSAGE' and 'TIMER'")
+        .contains("The event type of a catch event cannot be changed by process instance migration")
+        .contains("Please ensure the event type of the catch event remains the same")
+        .contains("or remove the mapping instruction for these catch events");
   }
 }

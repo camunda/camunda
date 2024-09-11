@@ -617,4 +617,74 @@ public class MigrateBoundaryEventTest {
         .contains("Catch events cannot be merged by process instance migration")
         .contains("Please ensure the mapping instructions target a catch event only once");
   }
+
+  @Test
+  public void shouldRejectCommandWhenMappedBoundaryEventChangesEventType() {
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .boundaryEvent(
+                        "boundary",
+                        b ->
+                            b.message(m -> m.name("msg").zeebeCorrelationKeyExpression("key"))
+                                .endEvent())
+                    .moveToActivity("A")
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent("start")
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .boundaryEvent("boundary", b -> b.timerWithDuration("PT1M").endEvent())
+                    .moveToActivity("A")
+                    .endEvent("end")
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(sourceProcessId)
+            .withVariable("key", "key")
+            .create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withElementId("A")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("A", "A")
+            .addMappingInstruction("boundary", "boundary")
+            .expectRejection()
+            .migrate();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .extracting(Record::getRejectionReason)
+        .asString()
+        .contains("Expected to migrate process instance '" + processInstanceKey + "'")
+        .contains("active element with id 'A' has a catch event")
+        .contains(
+            "has a catch event with id 'boundary' that is mapped to a catch event with id 'boundary'")
+        .contains("These catch events have different event types: 'MESSAGE' and 'TIMER'")
+        .contains("The event type of a catch event cannot be changed by process instance migration")
+        .contains("Please ensure the event type of the catch event remains the same")
+        .contains("or remove the mapping instruction for these catch events");
+  }
 }

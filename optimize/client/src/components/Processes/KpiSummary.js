@@ -8,7 +8,10 @@
 
 import {CheckmarkFilled, Misuse} from '@carbon/icons-react';
 
+import {Popover} from 'components';
+
 import {isSuccessful} from './service';
+import KpiResult from './KpiResult';
 
 import './KpiSummary.scss';
 
@@ -21,19 +24,27 @@ export default function KpiSummary({kpis}) {
   const failedKpis = kpis.filter((args) => !isSuccessful(args));
 
   return (
-    <div className="KpiSummary">
-      {succeededKpis.length > 0 && (
-        <div>
-          <CheckmarkFilled className="success" />
-          <span>{succeededKpis.length}</span>
-        </div>
-      )}
-      {failedKpis.length > 0 && (
-        <div>
-          <Misuse className="error" />
-          <span>{failedKpis.length}</span>
-        </div>
-      )}
-    </div>
+    <Popover
+      className="KpiSummary"
+      align="bottom"
+      trigger={
+        <Popover.Button kind="tertiary" size="sm">
+          {succeededKpis.length > 0 && (
+            <div>
+              <CheckmarkFilled className="success" />
+              <span>{succeededKpis.length}</span>
+            </div>
+          )}
+          {failedKpis.length > 0 && (
+            <div>
+              <Misuse className="error" />
+              <span>{failedKpis.length}</span>
+            </div>
+          )}
+        </Popover.Button>
+      }
+    >
+      <KpiResult kpis={kpis} />
+    </Popover>
   );
 }

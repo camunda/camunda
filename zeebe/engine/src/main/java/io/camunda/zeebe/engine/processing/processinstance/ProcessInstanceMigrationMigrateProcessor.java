@@ -231,6 +231,12 @@ public class ProcessInstanceMigrationMigrateProcessor
         sourceElementIdToTargetElementId);
     requireNoDuplicateTargetsInCatchEventMappings(
         processInstanceKey, sourceProcessDefinition, elementId, sourceElementIdToTargetElementId);
+    requireNoCatchEventMappingToChangeEventType(
+        processInstanceKey,
+        sourceElementIdToTargetElementId,
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        elementId);
     requireNoConcurrentCommand(eventScopeInstanceState, elementInstance, processInstanceKey);
 
     stateWriter.appendFollowUpEvent(
