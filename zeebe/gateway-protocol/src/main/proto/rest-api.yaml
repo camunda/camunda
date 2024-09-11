@@ -2410,7 +2410,7 @@ components:
           type: object
           additionalProperties: true
         tenantId:
-          description: the id of the tenant that owns the job
+          description: The ID of the tenant that owns the job
           type: string
     JobFailRequest:
       type: object
@@ -2855,7 +2855,7 @@ components:
           description: The resource name from which this process was parsed.
         tenantId:
           type: string
-          description: The tenant id of the deployed process.
+          description: The tenant ID of the deployed process.
     DeploymentDecision:
       type: object
       properties:
@@ -2878,7 +2878,7 @@ components:
           description: The DMN name of the decision, as parsed during deployment.
         tenantId:
           type: string
-          description: The tenant id of the deployed decision.
+          description: The tenant ID of the deployed decision.
         dmnDecisionRequirementsId:
           type: string
           description: |
@@ -2904,7 +2904,7 @@ components:
           description: The DMN name of the decision requirements, as parsed during deployment.
         tenantId:
           type: string
-          description: The tenant id of the deployed decision requirements.
+          description: The tenant ID of the deployed decision requirements.
         dmnDecisionRequirementsKey:
           type: integer
           format: int64
@@ -2934,7 +2934,7 @@ components:
           description: The resource name from which this form was parsed.
         tenantId:
           type: string
-          description: The tenant id of the deployed form.
+          description: The tenant ID of the deployed form.
 
     CreateProcessInstanceRequest:
       type: object
@@ -3062,10 +3062,10 @@ components:
         The mapping instructions describe how to map elements from the source process definition to the target process definition.
       properties:
         sourceElementId:
-          description: The element id to migrate from.
+          description: The element ID to migrate from.
           type: string
         targetElementId:
-          description: The element id to migrate into.
+          description: The element ID to migrate into.
           type: string
       required:
         - sourceElementId
@@ -3130,7 +3130,7 @@ components:
           description: The signal variables as a JSON object.
           type: object
         tenantId:
-          description: The id of the tenant that owns the signal.
+          description: The ID of the tenant that owns the signal.
           type: string
       required:
         - signalName
@@ -3142,7 +3142,7 @@ components:
           type: integer
           format: int64
         tenantId:
-          description: The tenant id of the signal that was broadcast.
+          description: The tenant ID of the signal that was broadcast.
           type: string
 
   securitySchemes:
