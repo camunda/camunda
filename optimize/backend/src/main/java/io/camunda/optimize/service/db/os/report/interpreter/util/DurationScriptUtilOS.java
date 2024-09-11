@@ -10,6 +10,7 @@ package io.camunda.optimize.service.db.os.report.interpreter.util;
 import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
+import io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,6 +21,18 @@ import org.opensearch.client.opensearch._types.Script;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DurationScriptUtilOS {
+  public static Script getDurationScript(
+      final long currRequestDateInMs,
+      final String durationFieldName,
+      final String referenceDateFieldName) {
+    final Map<String, JsonData> params = new HashMap<>();
+    return OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+        getDurationCalculationScriptPart(
+                params, currRequestDateInMs, durationFieldName, referenceDateFieldName)
+            + " return result;",
+        params);
+  }
+
   public static Script getDurationFilterScript(
       final long currRequestDateInMs,
       final String durationFieldName,
