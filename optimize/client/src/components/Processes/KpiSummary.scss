@@ -1,32 +1,35 @@
 .KpiSummary {
-  min-width: 100px;
-  border-radius: 2rem;
-  border: solid 1px var(--cds-border-subtle);
-  background-color: var(--cds-field-02);
-  display: flex;
-  align-items: center;
+  width: fit-content;
 
-  svg {
-    &.error {
-      color: var(--cds-support-error);
-    }
-
-    &.success {
-      color: var(--cds-support-success);
-    }
-  }
-
-  > div {
-    padding: 0.25rem 0.5rem;
+  .ButtonTrigger {
+    min-height: 0;
+    padding: 0;
+    min-width: 100px;
     display: flex;
     align-items: center;
 
-    span {
-      margin-left: 0.5rem;
+    svg {
+      &.error {
+        color: var(--cds-support-error);
+      }
+
+      &.success {
+        color: var(--cds-support-success);
+      }
     }
 
-    & + div {
-      border-left: 1px solid var(--cds-border-subtle);
+    > div {
+      padding: var(--cds-spacing-02) var(--cds-spacing-04);
+      display: flex;
+      align-items: center;
+
+      span {
+        margin-left: var(--cds-spacing-04);
+      }
+
+      & + div {
+        border-left: 1px solid;
+      }
     }
   }
 }
