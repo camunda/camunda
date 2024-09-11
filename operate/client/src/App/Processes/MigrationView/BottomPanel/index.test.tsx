@@ -82,8 +82,20 @@ describe('MigrationView/BottomPanel', () => {
       }),
     ).toBeInTheDocument();
 
-    // expect table to have 1 header + 9 content rows
-    expect(screen.getAllByRole('row')).toHaveLength(10);
+    expect(
+      screen.getByRole('cell', {
+        name: new RegExp(`^${MessageIntermediateCatch.name}`),
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('cell', {
+        name: new RegExp(`^${TimerIntermediateCatch.name}`),
+      }),
+    ).toBeInTheDocument();
+
+    // expect table to have 1 header + 11 content rows
+    expect(screen.getAllByRole('row')).toHaveLength(12);
   });
 
   it.each([
@@ -93,6 +105,8 @@ describe('MigrationView/BottomPanel', () => {
     {source: confirmDelivery, target: confirmDelivery},
     {source: MessageInterrupting, target: MessageInterrupting},
     {source: MessageInterrupting, target: MessageNonInterrupting},
+    {source: MessageIntermediateCatch, target: MessageIntermediateCatch},
+    {source: TimerIntermediateCatch, target: TimerIntermediateCatch},
   ])(
     'should allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -106,7 +120,10 @@ describe('MigrationView/BottomPanel', () => {
 
       expect(combobox).toBeDisabled();
 
-      screen.getByRole('button', {name: /fetch target process/i}).click();
+      await user.click(
+        screen.getByRole('button', {name: /fetch target process/i}),
+      );
+
       await waitFor(() => {
         expect(combobox).toBeEnabled();
       });
@@ -134,6 +151,9 @@ describe('MigrationView/BottomPanel', () => {
     {source: confirmDelivery, target: shippingSubProcess},
     {source: MessageInterrupting, target: TimerInterrupting},
     {source: TimerInterrupting, target: MessageNonInterrupting},
+    {source: MessageIntermediateCatch, target: MessageInterrupting},
+    {source: TimerInterrupting, target: TimerIntermediateCatch},
+    {source: MessageIntermediateCatch, target: TimerIntermediateCatch},
   ])(
     'should not allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -205,6 +225,23 @@ describe('MigrationView/BottomPanel', () => {
       ),
     });
 
+    const comboboxTimerIntermediateCatch = await screen.findByRole('combobox', {
+      name: new RegExp(
+        `target flow node for ${TimerIntermediateCatch.name}`,
+        'i',
+      ),
+    });
+
+    const comboboxMessageIntermediateCatch = await screen.findByRole(
+      'combobox',
+      {
+        name: new RegExp(
+          `target flow node for ${MessageIntermediateCatch.name}`,
+          'i',
+        ),
+      },
+    );
+
     screen.getByRole('button', {name: /fetch target process/i}).click();
 
     await waitFor(() => {
@@ -223,6 +260,11 @@ describe('MigrationView/BottomPanel', () => {
       comboboxTimerNonInterrupting.id,
     );
 
+    // Expect auto-mapping (same id, intermediate catch event, same event type)
+    expect(comboboxMessageIntermediateCatch).toHaveValue(
+      comboboxMessageIntermediateCatch.id,
+    );
+
     // Expect no auto-mapping (flow node does not exist in target)
     expect(comboboxShippingSubProcess).toHaveValue('');
     expect(comboboxShippingSubProcess).toBeDisabled();
@@ -232,6 +274,9 @@ describe('MigrationView/BottomPanel', () => {
 
     expect(comboboxTimerInterrupting).toHaveValue('');
     expect(comboboxTimerInterrupting).toBeEnabled();
+
+    expect(comboboxTimerIntermediateCatch).toHaveValue('');
+    expect(comboboxTimerIntermediateCatch).toBeDisabled();
 
     // Expect no auto-mapping (different bpmn type)
     expect(comboboxRequestForPayment).toHaveValue('');
@@ -325,7 +370,7 @@ describe('MigrationView/BottomPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it.only('should hide mapped flow nodes', async () => {
+  it('should hide mapped flow nodes', async () => {
     mockFetchProcessXML().withSuccess(open('instanceMigration_v2.bpmn'));
 
     const {user} = render(<BottomPanel />, {wrapper: Wrapper});
@@ -339,8 +384,8 @@ describe('MigrationView/BottomPanel', () => {
       }),
     ).toBeVisible();
 
-    // Expect all 9 rows to be visible (+1 header row)
-    expect(await screen.findAllByRole('row')).toHaveLength(10);
+    // Expect all 11 rows to be visible (+1 header row)
+    expect(await screen.findAllByRole('row')).toHaveLength(12);
 
     // Toggle on unmapped flow nodes
     await user.click(screen.getByLabelText(/show only not mapped/i));
@@ -366,9 +411,14 @@ describe('MigrationView/BottomPanel', () => {
         name: new RegExp(`^${TimerNonInterrupting.name}`),
       }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('row', {
+        name: new RegExp(`^${MessageIntermediateCatch.name}`),
+      }),
+    ).not.toBeInTheDocument();
 
-    // Expect 5 not mapped rows (+1 header row)
-    expect(await screen.findAllByRole('row')).toHaveLength(6);
+    // Expect 6 not mapped rows (+1 header row)
+    expect(await screen.findAllByRole('row')).toHaveLength(7);
 
     // Expect the following rows to be visible (because they're not mapped)
     expect(
@@ -396,6 +446,11 @@ describe('MigrationView/BottomPanel', () => {
         name: new RegExp(`^${TimerInterrupting.name}`),
       }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole('row', {
+        name: new RegExp(`^${TimerIntermediateCatch.name}`),
+      }),
+    ).toBeInTheDocument();
 
     expect(screen.getByLabelText(/show only not mapped/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/show only not mapped/i)).toBeVisible();
@@ -404,6 +459,6 @@ describe('MigrationView/BottomPanel', () => {
     await user.click(screen.getByLabelText(/show only not mapped/i));
 
     // Expect all rows to be visible again
-    expect(await screen.findAllByRole('row')).toHaveLength(10);
+    expect(await screen.findAllByRole('row')).toHaveLength(12);
   });
 });
