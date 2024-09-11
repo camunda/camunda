@@ -17,7 +17,7 @@ import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.report.command.util.DurationScriptUtilES;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
-import io.camunda.optimize.service.db.es.report.service.DurationAggregationService;
+import io.camunda.optimize.service.db.es.report.service.DurationAggregationServiceES;
 import io.camunda.optimize.service.db.es.report.service.MinMaxStatsServiceES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
@@ -48,7 +48,7 @@ public class ProcessGroupByUserTaskDurationInterpreterES
     extends AbstractGroupByUserTaskInterpreterES {
 
   private final MinMaxStatsServiceES minMaxStatsService;
-  private final DurationAggregationService durationAggregationService;
+  private final DurationAggregationServiceES durationAggregationService;
   @Getter private final DefinitionService definitionService;
   @Getter private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
   @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;

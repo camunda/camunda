@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service.db.es.report.service;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES.createUserTaskFlowNodeTypeFilter;
 import static io.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtilES.wrapWithFilterLimitedParentAggregation;
 import static io.camunda.optimize.service.db.es.report.interpreter.util.NumberHistogramAggregationUtilES.generateHistogramFromScript;
@@ -16,16 +15,11 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.F
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.START_DATE;
-import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasNames;
-import static io.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
-import static io.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import io.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
-import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
@@ -36,6 +30,7 @@ import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
+import io.camunda.optimize.service.db.report.service.DurationAggregationService;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.ArrayList;
@@ -61,12 +56,7 @@ import org.springframework.stereotype.Component;
 @Component
 @AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
-public class DurationAggregationService {
-  private static final String DURATION_HISTOGRAM_AGGREGATION = "durationHistogram";
-  private static final int AUTOMATIC_BUCKET_LIMIT =
-      NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-  private static final BucketUnit DEFAULT_UNIT = BucketUnit.MILLISECOND;
-  private static final DurationUnit FILTER_UNIT = DurationUnit.MILLIS;
+public class DurationAggregationServiceES extends DurationAggregationService {
 
   private final MinMaxStatsServiceES minMaxStatsService;
   private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
@@ -158,25 +148,6 @@ public class DurationAggregationService {
     return durationHistogramData;
   }
 
-  private double getIntervalInMillis(
-      final double minValueInMillis,
-      final double maxValueInMillis,
-      final CustomBucketDto customBucketDto) {
-    final double distance = maxValueInMillis - minValueInMillis;
-    final double interval;
-    if (customBucketDto.isActive()) {
-      interval = customBucketDto.getBucketSizeInUnit(DEFAULT_UNIT).orElse(1.0D);
-    } else if (distance <= AUTOMATIC_BUCKET_LIMIT) {
-      interval = 1.0D;
-    } else {
-      // this is the minimal interval needed to ensure there are no more buckets than the limit
-      final int minimalInterval = (int) Math.ceil(distance / AUTOMATIC_BUCKET_LIMIT);
-      // as base 10 intervals are easier to read
-      interval = roundUpToNearestPowerOfTen((double) minimalInterval).intValue();
-    }
-    return interval;
-  }
-
   private Optional<AggregationBuilder> createLimitedGroupByScriptedDurationAggregation(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
       final QueryBuilder baseQueryBuilder,
@@ -218,15 +189,6 @@ public class DurationAggregationService {
 
     return Optional.of(
         wrapWithFilterLimitedParentAggregation(limitingFilter, histogramAggregation));
-  }
-
-  private double getMinValueInMillis(
-      final MinMaxStatDto minMaxStats, final CustomBucketDto customBucketDto) {
-    if (customBucketDto.isActive()) {
-      return customBucketDto.getBaselineInUnit(DEFAULT_UNIT).orElse(0.0D);
-    } else {
-      return roundDownToNearestPowerOfTen(minMaxStats.getMin());
-    }
   }
 
   private ScriptQueryBuilder createUserTaskLimitingFilterQuery(
@@ -276,9 +238,5 @@ public class DurationAggregationService {
                 .value(filterValueInMillis)
                 .includeNull(includeNull)
                 .build()));
-  }
-
-  private String[] getIndexNames(final ExecutionContext<ProcessReportDataDto, ?> context) {
-    return getProcessInstanceIndexAliasNames(context.getReportData());
   }
 }

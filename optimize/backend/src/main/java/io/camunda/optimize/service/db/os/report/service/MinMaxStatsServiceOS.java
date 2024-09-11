@@ -165,7 +165,7 @@ public class MinMaxStatsServiceOS extends AbstractMinMaxStatsService {
 
     final SearchRequest searchRequest =
         new SearchRequest.Builder()
-            .index(Arrays.asList(indexNames))
+            .index(osClient.applyIndexPrefixes(indexNames))
             .query(query)
             .source(sourceExcluded())
             .aggregations(statsAggregation.getKey(), statsAggregation.getValue())

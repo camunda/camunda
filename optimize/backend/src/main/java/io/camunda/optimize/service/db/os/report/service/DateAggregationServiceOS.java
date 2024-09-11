@@ -10,14 +10,24 @@ package io.camunda.optimize.service.db.os.report.service;
 import static io.camunda.optimize.rest.util.TimeZoneUtil.formatToCorrectTimezone;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.fieldDateMath;
+import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.filtersAggregation;
+import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.withSubaggregations;
+import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.and;
+import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.exists;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.filter;
+import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.gte;
+import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.lt;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
+import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.not;
+import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.or;
 import static io.camunda.optimize.service.db.os.report.filter.util.DateHistogramFilterUtilOS.createDecisionDateHistogramLimitingFilter;
 import static io.camunda.optimize.service.db.os.report.filter.util.DateHistogramFilterUtilOS.createFilterBoolQueryBuilder;
 import static io.camunda.optimize.service.db.os.report.filter.util.DateHistogramFilterUtilOS.extendBounds;
 import static io.camunda.optimize.service.db.os.report.filter.util.DateHistogramFilterUtilOS.getExtendedBoundsFromDateFilters;
 import static io.camunda.optimize.service.db.os.report.interpreter.util.AggregateByDateUnitMapperOS.mapToCalendarInterval;
+import static io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS.FILTER_LIMITED_AGGREGATION;
 import static io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS.wrapWithFilterLimitedParentAggregation;
+import static io.camunda.optimize.service.db.report.interpreter.util.AggregateByDateUnitMapper.mapToChronoUnit;
 import static io.camunda.optimize.service.db.report.service.DateAggregationService.getDateHistogramIntervalDurationFromMinMax;
 
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
@@ -27,6 +37,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.Insta
 import io.camunda.optimize.service.db.os.report.context.DateAggregationContextOS;
 import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS;
+import io.camunda.optimize.service.db.report.service.DateAggregationService;
+import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -35,6 +47,7 @@ import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -55,11 +68,13 @@ import org.opensearch.client.opensearch._types.aggregations.HistogramOrder;
 import org.opensearch.client.opensearch._types.aggregations.MultiBucketBase;
 import org.opensearch.client.opensearch._types.aggregations.RangeBucket;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
 @Component
-public class DateAggregationServiceOS {
+@Conditional(OpenSearchCondition.class)
+public class DateAggregationServiceOS extends DateAggregationService {
 
   private static final String DATE_AGGREGATION = "dateAggregation";
 
@@ -110,6 +125,20 @@ public class DateAggregationServiceOS {
     }
 
     return Optional.of(createFilterLimitedDecisionDateHistogramWithSubAggregation(context));
+  }
+
+  public Optional<Pair<String, Aggregation>> createRunningDateAggregation(
+      final DateAggregationContextOS context) {
+    if (!context.getMinMaxStats().isMinValid()) {
+      return Optional.empty();
+    }
+
+    if (AggregateByDateUnit.AUTOMATIC.equals(context.getAggregateByDateUnit())
+        && !context.getMinMaxStats().isValidRange()) {
+      context.setAggregateByDateUnit(AggregateByDateUnit.MONTH);
+    }
+
+    return Optional.of(createRunningDateFilterAggregations(context));
   }
 
   public Map<String, Map<String, Aggregate>> mapDateAggregationsToKeyAggregationMap(
@@ -196,6 +225,42 @@ public class DateAggregationServiceOS {
                         .timeZone(context.getTimezone().getDisplayName(TextStyle.SHORT, Locale.US)))
             .aggregations(context.getSubAggregations())
             .build());
+  }
+
+  private Pair<String, Aggregation> createRunningDateFilterAggregations(
+      final DateAggregationContextOS context) {
+    final AggregateByDateUnit unit = context.getAggregateByDateUnit();
+    final ZonedDateTime startOfFirstBucket = truncateToUnit(context.getEarliestDate(), unit);
+    final ZonedDateTime endOfLastBucket =
+        AggregateByDateUnit.AUTOMATIC.equals(context.getAggregateByDateUnit())
+            ? context.getLatestDate()
+            : truncateToUnit(context.getLatestDate(), context.getAggregateByDateUnit())
+                .plus(1, mapToChronoUnit(unit));
+    final Duration automaticIntervalDuration =
+        getDateHistogramIntervalDurationFromMinMax(context.getMinMaxStats());
+    final Map<String, Query> filters = new HashMap<>();
+    for (ZonedDateTime currentBucketStart = startOfFirstBucket;
+        currentBucketStart.isBefore(endOfLastBucket);
+        currentBucketStart = getEndOfBucket(currentBucketStart, unit, automaticIntervalDuration)) {
+      // to use our correct date formatting we need to switch back to OffsetDateTime
+      final String startAsString = dateTimeFormatter.format(currentBucketStart.toOffsetDateTime());
+      final String endAsString =
+          dateTimeFormatter.format(
+              getEndOfBucket(currentBucketStart, unit, automaticIntervalDuration)
+                  .toOffsetDateTime());
+      final Query query =
+          and(
+              lt(context.getDateField(), endAsString),
+              or(
+                  gte(context.getRunningDateReportEndDateField(), startAsString),
+                  not(exists(context.getRunningDateReportEndDateField()))));
+
+      filters.put(startAsString, query);
+    }
+
+    return Pair.of(
+        FILTER_LIMITED_AGGREGATION,
+        withSubaggregations(filtersAggregation(filters), context.getSubAggregations()));
   }
 
   private Pair<String, Aggregation> createAutomaticIntervalAggregationOrFallbackToMonth(

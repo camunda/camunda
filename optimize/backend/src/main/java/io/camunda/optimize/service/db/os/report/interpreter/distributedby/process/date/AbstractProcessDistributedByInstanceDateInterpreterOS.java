@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.camunda.optimize.util.types.MapUtil;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -71,7 +72,7 @@ public abstract class AbstractProcessDistributedByInstanceDateInterpreterOS
 
     return getDateAggregationService()
         .createProcessInstanceDateAggregation(dateAggContext)
-        .map(pair -> Map.of(pair.getKey(), pair.getValue()))
+        .map(MapUtil::createFromPair)
         .orElse(getViewInterpreter().createAggregations(context));
   }
 
