@@ -17,8 +17,12 @@ import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceActivateInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceTerminateInstruction;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.springframework.http.ProblemDetail;
 
 public class ProcessInstanceRequestValidator {
@@ -68,21 +72,70 @@ public class ProcessInstanceRequestValidator {
         });
   }
 
+  public static Optional<ProblemDetail> validateModifyProcessInstanceRequest(
+      final ModifyProcessInstanceRequest request) {
+    return validate(
+        violations -> {
+          validateActivateInstructions(request.getActivateInstructions(), violations);
+          validateTerminateInstructions(request.getTerminateInstructions(), violations);
+          validateOperationReference(request.getOperationReference(), violations);
+        });
+  }
+
   private static void validateMappingInstructions(
       final List<MigrateProcessInstanceMappingInstruction> mappingInstructions,
       final List<String> violations) {
-    final boolean areMappingInstructionsValid =
-        mappingInstructions.stream()
-            .allMatch(
-                instruction ->
-                    (instruction.getSourceElementId() != null
-                            && !instruction.getSourceElementId().isEmpty())
-                        && (instruction.getTargetElementId() != null
-                            && !instruction.getTargetElementId().isEmpty()));
-    if (!areMappingInstructionsValid) {
-      violations.add(
-          ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
-              List.of("sourceElementId", "targetElementId")));
+    validateInstructions(
+        mappingInstructions,
+        (instruction) ->
+            (instruction.getSourceElementId() != null
+                    && !instruction.getSourceElementId().isEmpty())
+                && (instruction.getTargetElementId() != null
+                    && !instruction.getTargetElementId().isEmpty()),
+        violations,
+        ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(List.of("sourceElementId", "targetElementId")));
+  }
+
+  private static void validateActivateInstructions(
+      final List<ModifyProcessInstanceActivateInstruction> instructions,
+      final List<String> violations) {
+    validateInstructions(
+        instructions,
+        (instruction) ->
+            instruction.getElementId() != null
+                && instruction.getAncestorElementInstanceKey() != null,
+        violations,
+        ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
+            List.of("elementId", "ancestorElementInstanceKey")));
+    final var variableInstructions =
+        instructions.stream()
+            .flatMap(instruction -> instruction.getVariableInstructions().stream())
+            .toList();
+    validateInstructions(
+        variableInstructions,
+        (variableInstruction) -> !variableInstruction.getVariables().isEmpty(),
+        violations,
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("variables"));
+  }
+
+  private static void validateTerminateInstructions(
+      final List<ModifyProcessInstanceTerminateInstruction> instructions,
+      final List<String> violations) {
+    validateInstructions(
+        instructions,
+        (instruction) -> instruction.getElementInstanceKey() != null,
+        violations,
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
+  }
+
+  private static <T> void validateInstructions(
+      final List<T> instructions,
+      final Predicate<T> match,
+      final List<String> violations,
+      final String message) {
+    final boolean areInstructionsValid = instructions.stream().allMatch(match);
+    if (!areInstructionsValid) {
+      violations.add(message);
     }
   }
 
