@@ -21,9 +21,12 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.security.auth.Authentication;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
->>>>>>>23c6fca8edf(feat:filter processInstance by variable values #21983)
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RdbmsSearchClient implements ProcessInstanceSearchClient {
+
+  private static final Logger LOG = LoggerFactory.getLogger(RdbmsSearchClient.class);
 
   private final RdbmsService rdbmsService;
 
