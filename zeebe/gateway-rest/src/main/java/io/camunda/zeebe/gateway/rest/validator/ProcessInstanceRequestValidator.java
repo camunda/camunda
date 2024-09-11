@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.validator;
 
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ALL_REQUIRED_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
@@ -93,7 +94,7 @@ public class ProcessInstanceRequestValidator {
                 && (instruction.getTargetElementId() != null
                     && !instruction.getTargetElementId().isEmpty()),
         violations,
-        ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(List.of("sourceElementId", "targetElementId")));
+        ERROR_MESSAGE_ALL_REQUIRED_FIELD.formatted(List.of("sourceElementId", "targetElementId")));
   }
 
   private static void validateActivateInstructions(
@@ -105,7 +106,7 @@ public class ProcessInstanceRequestValidator {
             instruction.getElementId() != null
                 && instruction.getAncestorElementInstanceKey() != null,
         violations,
-        ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
+        ERROR_MESSAGE_ALL_REQUIRED_FIELD.formatted(
             List.of("elementId", "ancestorElementInstanceKey")));
     final var variableInstructions =
         instructions.stream()

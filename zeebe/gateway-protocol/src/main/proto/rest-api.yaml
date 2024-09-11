@@ -807,8 +807,8 @@ paths:
         - Process instance
       summary: Modify process instance
       description: |
-        Modifies a running process instance. T
-        his request can contain multiple instructions to activate an element of the process or
+        Modifies a running process instance.
+        This request can contain multiple instructions to activate an element of the process or
         to terminate an active instance of an element.
 
         Use this to repair a process instance that is stuck on an element or took an unintended path.
@@ -3119,9 +3119,11 @@ components:
       type: object
       properties:
         activateInstructions:
+          type: array
           items:
             $ref: "#/components/schemas/ModifyProcessInstanceActivateInstruction"
         terminateInstructions:
+          type: array
           items:
             $ref: "#/components/schemas/ModifyProcessInstanceTerminateInstruction"
         operationReference:
@@ -3147,6 +3149,7 @@ components:
           type: integer
           format: int64
         variableInstructions:
+          type: array
           items:
             $ref: "#/components/schemas/ModifyProcessInstanceVariableInstruction"
       required:
@@ -3160,10 +3163,6 @@ components:
           description: |
             JSON document that will instantiate the variables for the root variable scope of the process instance.
             It must be a JSON object, as variables will be mapped in a key-value fashion.
-
-            e.g. { "a": 1, "b": 2 } will create two variables, named "a" and "b" respectively,
-            with their associated values. [{ "a": 1, "b": 2 }] would not be a valid argument, as the
-            root of the JSON document is an array and not an object.
           additionalProperties: true
           type: object
         scopeId:

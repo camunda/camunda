@@ -718,7 +718,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             "type":"about:blank",
             "title":"INVALID_ARGUMENT",
             "status":400,
-            "detail":"At least one of [sourceElementId, targetElementId] is required.",
+            "detail":"All [sourceElementId, targetElementId] are required.",
             "instance":"/v2/process-instances/1/migration"
          }""";
 
@@ -877,8 +877,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var capturedRequest = modifyRequestCaptor.getValue();
     assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
     assertThat(capturedRequest.activateInstructions()).isEmpty();
-    assertThat(capturedRequest.terminateInstructions()).isNotEmpty();
-    assertThat(capturedRequest.terminateInstructions().size()).isEqualTo(2);
+    assertThat(capturedRequest.terminateInstructions()).hasSize(2);
     assertThat(capturedRequest.operationReference()).isEqualTo(123L);
   }
 
@@ -925,14 +924,65 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     Mockito.verify(processInstanceServices).modifyProcessInstance(modifyRequestCaptor.capture());
     final var capturedRequest = modifyRequestCaptor.getValue();
     assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
-    assertThat(capturedRequest.activateInstructions()).isNotEmpty();
-    assertThat(capturedRequest.activateInstructions().size()).isEqualTo(2);
+    assertThat(capturedRequest.activateInstructions()).hasSize(2);
     assertThat(capturedRequest.terminateInstructions()).isEmpty();
     assertThat(capturedRequest.operationReference()).isEqualTo(123L);
   }
 
   @Test
   void shouldRejectModifyProcessInstanceWithActivateInstructionsElementNull() {
+    // given
+    final var request =
+        """
+        {
+          "activateInstructions": [
+            {
+              "elementId": "elementId"
+            },
+            {
+              "elementId": "elementId2",
+              "ancestorElementInstanceKey": 654321
+            }
+          ],
+          "terminateInstructions": [
+            {
+              "elementInstanceKey": 123456
+            },
+            {
+              "elementInstanceKey": 654321
+            }
+          ],
+          "operationReference": 123
+        }""";
+
+    final var expectedBody =
+        """
+        {
+            "type":"about:blank",
+            "title":"INVALID_ARGUMENT",
+            "status":400,
+            "detail":"All [elementId, ancestorElementInstanceKey] are required.",
+            "instance":"/v2/process-instances/1/modification"
+         }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(MODIFY_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceWithActivateInstructionsElementNullNoAncestorKey() {
     // given
     final var request =
         """
@@ -963,7 +1013,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             "type":"about:blank",
             "title":"INVALID_ARGUMENT",
             "status":400,
-            "detail":"At least one of [elementId, ancestorElementInstanceKey] is required.",
+            "detail":"All [elementId, ancestorElementInstanceKey] are required.",
             "instance":"/v2/process-instances/1/modification"
          }""";
 
