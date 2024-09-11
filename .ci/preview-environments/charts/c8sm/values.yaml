@@ -192,9 +192,6 @@ camunda-platform:
       contextPath: "/identity"
       # will be replaced by the preview-env-deploy workflow
       fullURL: "https://test.camunda.camunda.cloud/identity"
-      image:
-        repository: camunda/identity
-        tag: 8.6.0-alpha4
 
     operate:
       contextPath: "/operate"
