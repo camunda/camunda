@@ -75,13 +75,6 @@ public class FNITransformer {
     entity.setBpmnProcessId(recordValue.getBpmnProcessId());
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
-    if (entity.getTreePath() == null) {
-      final String parentTreePath = treePathResolver.apply(toCompositeKey(record, recordValue));
-      entity.setTreePath(
-          String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey())));
-      entity.setLevel(parentTreePath.split("/").length);
-    }
-
     if (FINISH_STATES.contains(intentStr)) {
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
         entity.setState(FlowNodeState.TERMINATED);
@@ -94,6 +87,17 @@ public class FNITransformer {
       if (START_STATES.contains(intentStr)) {
         entity.setStartDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
         entity.setPosition(record.getPosition());
+      }
+
+      // We resolve the treePath only when necessary, for example when not done earlier
+      // and when in an active state, for completed and terminated we expect the treePath
+      // already be resolved before so we skip this to reduce the load on our cache / backend
+      // storage
+      if (entity.getTreePath() == null) {
+        final String parentTreePath = treePathResolver.apply(toCompositeKey(record, recordValue));
+        entity.setTreePath(
+            String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey())));
+        entity.setLevel(parentTreePath.split("/").length);
       }
     }
 
