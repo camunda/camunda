@@ -15,11 +15,13 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -693,6 +695,291 @@ public class MigrateMultiInstanceBodyTest {
 
     engine.job().ofInstance(processInstanceKey).withType("b").complete();
     engine.job().ofInstance(processInstanceKey).withType("c").complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessDefinitionKey(targetProcessDefinitionKey)
+                .withElementType(BpmnElementType.END_EVENT)
+                .withElementId("multi_instance_target_process_end")
+                .findAny())
+        .describedAs("Expect that the process instance is continued in the target process")
+        .isPresent();
+  }
+
+  @Test
+  public void shouldResolveIncidentCausedByOutputElementWithMultiInstanceMigration() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask(
+                        "serviceTask1",
+                        t ->
+                            t.zeebeJobType("A")
+                                .multiInstance(
+                                    b ->
+                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                            .zeebeInputElement("index")
+                                            .zeebeOutputElementExpression("assert(x, x != null)")
+                                            .zeebeOutputCollection("results")))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask(
+                        "serviceTask2",
+                        t ->
+                            t.zeebeJobType("A")
+                                .multiInstance(
+                                    b ->
+                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                            .zeebeInputElement("index")
+                                            .zeebeOutputElementExpression("result")
+                                            .zeebeOutputCollection("results")))
+                    .endEvent("multi_instance_target_process_end")
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("serviceTask1", "serviceTask2")
+        .migrate();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition key is changed")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that bpmn process id and element id changed")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("serviceTask2")
+        .describedAs("Expect that version number did not change")
+        .hasVersion(1);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.SERVICE_TASK)
+                .limit(3))
+        .extracting(Record::getValue)
+        .extracting(
+            r ->
+                tuple(
+                    r.getProcessDefinitionKey(),
+                    r.getBpmnProcessId(),
+                    r.getElementId(),
+                    r.getVersion()))
+        .containsExactly(
+            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1),
+            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1),
+            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1));
+
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.MIGRATED)
+                .withRecordKey(incident.getKey())
+                .getFirst()
+                .getValue())
+        .isNotNull();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .hasSize(2)
+        .extracting(Record::getValue)
+        .extracting(
+            r ->
+                tuple(
+                    r.getProcessDefinitionKey(),
+                    r.getBpmnProcessId(),
+                    r.getElementId(),
+                    r.getType()))
+        .containsExactly(
+            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "A"),
+            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "A"));
+
+    // after resolving the incident, the first failing job should be completed without a problem
+    engine.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    final var jobs =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withType("A")
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(3)
+            .toList();
+
+    jobs.forEach(job -> engine.job().withKey(job.getKey()).complete());
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessDefinitionKey(targetProcessDefinitionKey)
+                .withElementType(BpmnElementType.END_EVENT)
+                .withElementId("multi_instance_target_process_end")
+                .findAny())
+        .describedAs("Expect that the process instance is continued in the target process")
+        .isPresent();
+  }
+
+  @Test
+  public void shouldResolveIncidentCausedByCompletionConditionWithMultiInstanceMigration() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask(
+                        "serviceTask1",
+                        t ->
+                            t.zeebeJobType("A")
+                                .multiInstance(
+                                    b ->
+                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                            .zeebeInputElement("index")
+                                            .zeebeOutputElementExpression("result")
+                                            .zeebeOutputCollection("results")
+                                            .completionCondition("x > 3")))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask(
+                        "serviceTask2",
+                        t ->
+                            t.zeebeJobType("A")
+                                .multiInstance(
+                                    b ->
+                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                            .zeebeInputElement("index")
+                                            .zeebeOutputElementExpression("result")
+                                            .zeebeOutputCollection("results")
+                                            .completionCondition(
+                                                "= numberOfCompletedInstances = 3")))
+                    .endEvent("multi_instance_target_process_end")
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("serviceTask1", "serviceTask2")
+        .migrate();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition key is changed")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that bpmn process id and element id changed")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("serviceTask2")
+        .describedAs("Expect that version number did not change")
+        .hasVersion(1);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.SERVICE_TASK)
+                .limit(3))
+        .extracting(Record::getValue)
+        .extracting(
+            r ->
+                tuple(
+                    r.getProcessDefinitionKey(),
+                    r.getBpmnProcessId(),
+                    r.getElementId(),
+                    r.getVersion()))
+        .containsExactly(
+            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1),
+            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1),
+            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1));
+
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.MIGRATED)
+                .withRecordKey(incident.getKey())
+                .getFirst()
+                .getValue())
+        .isNotNull();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .hasSize(2)
+        .extracting(Record::getValue)
+        .extracting(
+            r ->
+                tuple(
+                    r.getProcessDefinitionKey(),
+                    r.getBpmnProcessId(),
+                    r.getElementId(),
+                    r.getType()))
+        .containsExactly(
+            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "A"),
+            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "A"));
+
+    // after resolving the incident, the first failing job should be completed without a problem
+    engine.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    final var jobs =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withType("A")
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(3)
+            .toList();
+
+    jobs.forEach(job -> engine.job().withKey(job.getKey()).complete());
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
