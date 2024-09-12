@@ -9,6 +9,7 @@
 import {expect} from '@playwright/test';
 import {test} from '@/test-fixtures';
 import {createInstances, deploy} from '@/utils/zeebeClient';
+import {sleep} from '@/utils/sleep';
 
 test.afterAll(async ({resetData}) => {
   await resetData();
@@ -565,6 +566,7 @@ test.describe('task details page', () => {
     await tasksPage.openTask('Employee Details');
     await expect(tasksPage.detailsNav).toBeVisible();
     await tasksPage.assignToMeButton.click();
+    await sleep(5000);
     await page.reload();
     await expect(taskFormView.nameInput).toBeVisible();
     await taskFormView.nameInput.fill('Ben');
