@@ -10,5 +10,5 @@ version: 0.1.0
 
 dependencies:
 - name: camunda-platform
-  repository: oci://ghcr.io/camunda/helm
-  version: 0.0.0-snapshot-alpha
+  repository: https://helm.camunda.io
+  version: 10.3.2
