@@ -215,7 +215,7 @@ describe('stores/processInstancesListeners', () => {
       expect(processInstanceListenersStore.state.status).toBe('fetched'),
     );
 
-    expect(processInstanceListenersStore.getListenersFailureCount()).toBe(1);
+    expect(processInstanceListenersStore.listenersFailureCount).toBe(1);
 
     mockFetchProcessInstanceListeners().withSuccess({
       ...mockListenerInstances,
@@ -232,7 +232,7 @@ describe('stores/processInstancesListeners', () => {
       expect(processInstanceListenersStore.state.status).toBe('fetched'),
     );
 
-    expect(processInstanceListenersStore.getListenersFailureCount()).toBe(3);
+    expect(processInstanceListenersStore.listenersFailureCount).toBe(3);
   });
 
   it('should reset store', async () => {

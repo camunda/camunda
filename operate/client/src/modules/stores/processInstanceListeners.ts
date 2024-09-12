@@ -62,6 +62,20 @@ class ProcessInstanceListeners {
     makeAutoObservable(this);
   }
 
+  get hasFlowNodeListeners() {
+    return this.state.listenersCount > 0;
+  }
+
+  get listenersFailureCount() {
+    if (!this.state.listenersCount) return 0;
+
+    const failedListeners = this.state?.listeners?.filter(
+      (listener) => listener.state === 'FAILED',
+    );
+
+    return failedListeners?.length || 0;
+  }
+
   startFetching = () => {
     if (this.state.status === 'initial') {
       this.state.status = 'first-fetch';
@@ -102,16 +116,6 @@ class ProcessInstanceListeners {
   setLatestFetchDetails = (fetchType: FetchType, listenersCount: number) => {
     this.state.latestFetch.fetchType = fetchType;
     this.state.latestFetch.itemsCount = listenersCount;
-  };
-
-  getListenersFailureCount = () => {
-    if (!this.state.listenersCount) return 0;
-
-    const failedListeners = this.state?.listeners?.filter(
-      (listener) => listener.state === 'FAILED',
-    );
-
-    return failedListeners?.length || 0;
   };
 
   getListeners = (fetchType: FetchType, listeners: ListenerEntity[]) => {

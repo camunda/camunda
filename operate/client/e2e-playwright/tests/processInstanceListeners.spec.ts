@@ -32,7 +32,8 @@ test.beforeAll(async ({request}) => {
     .toBe(200);
 });
 
-test.describe('Process Instance Listeners', () => {
+test.describe.skip('Process Instance Listeners', () => {
+  // TODO: remove .skip when we can use Zeebe SNAPSHOT or 8.6 version for E2E tests
   test('Listeners tab button show/hide', async ({
     page,
     processInstancePage,

@@ -30,12 +30,6 @@ const Tab = styled(BaseTab)`
   padding: 9px var(--cds-spacing-05) var(--cds-spacing-03) !important;
 `;
 
-const TabInternalContainer = styled.div`
-  display: flex;
-  alignitems: center;
-  gap: 8px;
-`;
-
 type TabPanelProps = {
   $removePadding?: boolean;
 };
@@ -60,4 +54,4 @@ const TabList = styled(BaseTabList)`
   }
 `;
 
-export {Container, Content, Tab, TabInternalContainer, TabPanel, TabList};
+export {Container, Content, Tab, TabPanel, TabList};

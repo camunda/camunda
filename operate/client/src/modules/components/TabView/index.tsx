@@ -7,16 +7,9 @@
  */
 
 import {PanelHeader} from 'modules/components/PanelHeader';
-import {
-  Container,
-  Tab,
-  TabInternalContainer,
-  Content,
-  TabPanel,
-  TabList,
-} from './styled';
+import {Container, Tab, Content, TabPanel, TabList} from './styled';
 import {tracking} from 'modules/tracking';
-import {Tabs, TabPanels} from '@carbon/react';
+import {Tabs, TabPanels, Stack} from '@carbon/react';
 
 type TabType = {
   id: string;
@@ -59,10 +52,10 @@ const TabView: React.FC<Props> = ({tabs = [], eventName, dataTestId}) => {
                   }
                 }}
               >
-                <TabInternalContainer>
+                <Stack orientation="horizontal" gap={3}>
                   {label}
                   {labelIcon}
-                </TabInternalContainer>
+                </Stack>
               </Tab>
             ))}
           </TabList>
