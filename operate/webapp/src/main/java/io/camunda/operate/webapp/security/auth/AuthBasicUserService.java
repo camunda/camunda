@@ -7,42 +7,31 @@
  */
 package io.camunda.operate.webapp.security.auth;
 
-import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AbstractUserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.camunda.operate.webapp.security.Permission;
+import java.util.List;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile({
-  "!"
-      + OperateProfileService.LDAP_AUTH_PROFILE
-      + " & ! "
-      + OperateProfileService.SSO_AUTH_PROFILE
-      + " & !"
-      + OperateProfileService.IDENTITY_AUTH_PROFILE
-      + " & !"
-      + OperateProfileService.AUTH_BASIC
-})
-public class AuthUserService extends AbstractUserService<UsernamePasswordAuthenticationToken> {
-
-  @Autowired private RolePermissionService rolePermissionService;
-
+@Profile("auth-basic")
+public class AuthBasicUserService extends AbstractUserService<UsernamePasswordAuthenticationToken> {
   @Override
   public UserDto createUserDtoFrom(final UsernamePasswordAuthenticationToken authentication) {
-    final User user = (User) authentication.getPrincipal();
+    final var user = (UserDetails) authentication.getPrincipal();
+
     return new UserDto()
-        .setUserId(user.getUserId())
-        .setDisplayName(user.getDisplayName())
-        .setCanLogout(true)
-        .setPermissions(rolePermissionService.getPermissions(user.getRoles()));
+        .setUserId(String.valueOf(user.getUsername()))
+        .setDisplayName(user.getUsername())
+        .setCanLogout(false)
+        .setPermissions(List.of(Permission.READ, Permission.WRITE));
   }
 
   @Override
   public String getUserToken(final UsernamePasswordAuthenticationToken authentication) {
-    throw new UnsupportedOperationException(
-        "Get token is not supported for Elasticsearch authentication");
+    throw new UnsupportedOperationException("Get token is not supported for basic authentication");
   }
 }
