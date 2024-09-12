@@ -22,7 +22,7 @@ public class BrokerAuthorizationCreateRequest extends BrokerExecuteCommand<Autho
   private final AuthorizationRecord requestDto = new AuthorizationRecord();
 
   public BrokerAuthorizationCreateRequest() {
-    super(ValueType.AUTHORIZATION, AuthorizationIntent.CREATE);
+    super(ValueType.AUTHORIZATION, AuthorizationIntent.ADD_PERMISSION);
   }
 
   public BrokerAuthorizationCreateRequest setOwnerKey(final Long ownerKey) {

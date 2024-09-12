@@ -88,7 +88,7 @@ public final class AuthorizationAddPermissionProcessor
   private static final class OwnerNotFoundException extends RuntimeException {
 
     public static final String OWNER_NOT_FOUND_MESSAGE =
-        "Expected to find owner with key: '%d', but not found";
+        "Expected to find owner with key: '%d', but none was found";
 
     public OwnerNotFoundException(final long ownerKey) {
       super(OWNER_NOT_FOUND_MESSAGE.formatted(ownerKey));

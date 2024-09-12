@@ -11,6 +11,7 @@ import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.CreateUserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.concurrent.CompletableFuture;
@@ -42,8 +43,9 @@ public class UserController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> createUser(final CreateUserRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestMapper.executeServiceMethod(
         () ->
-            userServices.withAuthentication(RequestMapper.getAuthentication()).createUser(request));
+            userServices.withAuthentication(RequestMapper.getAuthentication()).createUser(request),
+        ResponseMapper::toUserCreateResponse);
   }
 }
