@@ -4,7 +4,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
-import static io.camunda.search.clients.query.SearchQueryBuilders.wildcardQuery;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.service.query.QueryFieldFilterTransformers;
@@ -15,8 +14,8 @@ import io.camunda.service.query.filter.FieldFilter;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.service.transformers.filter.ComparableValueFilterTransformer.ComparableFieldFilter;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilter> {
   private final ServiceTransformers transformers;
@@ -63,11 +62,6 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   @Override
   public List<String> toIndices(final UserTaskFilter filter) {
-    if (filter != null && filter.states() != null && filter.states().getValue() != null && !filter.states().getValue().isEmpty()) {
-      if (Objects.equals(filter.states().getValue().get(0), "CREATED") && filter.states().getValue().size() == 1) {
-        return Arrays.asList("tasklist-task-8.5.0_"); // Not necessary to visit alias in this case
-      }
-    }
     return Arrays.asList("tasklist-task-8.5.0_alias");
   }
 
@@ -112,10 +106,15 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
   }
 
   // Updated to support both $eq and $like operators
-  private SearchQuery getStateQuery(final FieldFilter<List<String>> states) {
-    if (states != null && states.getValue() != null && !states.getValue().isEmpty()) {
-      final FilterOperator operator = states.getOperator();
-      return QueryFieldFilterTransformers.buildStringQuery("state", states.getValue(), operator);
+  private SearchQuery getStateQuery(final FieldFilter<Object> states) {
+    if (states != null && states.getValue() != null) {
+      if(states.getOperator() == FilterOperator.IN) {
+        return QueryFieldFilterTransformers.buildStringQuery("state", (List<String>) states.getValue(), FilterOperator.IN);
+      } else {
+        final FilterOperator operator = states.getOperator();
+        return QueryFieldFilterTransformers.buildStringQuery("state",
+            Collections.singletonList((String) states.getValue()), operator);
+      }
     }
     return null;
   }

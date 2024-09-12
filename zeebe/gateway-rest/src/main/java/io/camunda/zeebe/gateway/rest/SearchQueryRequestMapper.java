@@ -15,6 +15,7 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.service.query.filter.Filter;
 import io.camunda.service.query.FieldFilterTypeValidator;
+import io.camunda.service.query.filter.FilterOperator;
 import io.camunda.service.search.filter.ComparableValueFilter;
 import io.camunda.service.search.filter.DecisionDefinitionFilter;
 import io.camunda.service.search.filter.DecisionRequirementsFilter;
@@ -56,12 +57,14 @@ import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -119,7 +122,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
-      final UserTaskSearchQueryRequest request, final List<Filter> parsedFilters) {
+      final UserTaskSearchQueryRequest request) {
 
     if (request == null) {
       return Either.right(SearchQueryBuilders.userTaskSearchQuery().build());
@@ -131,7 +134,7 @@ public final class SearchQueryRequestMapper {
             request.getSort(),
             SortOptionBuilders::userTask,
             SearchQueryRequestMapper::applyUserTaskSortField);
-    final var filter = toUserTaskFilter(parsedFilters);
+    final var filter = toUserTaskFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userTaskSearchQuery);
   }
 
@@ -220,40 +223,29 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static UserTaskFilter toUserTaskFilter(final List<Filter> filters) {
+  private static UserTaskFilter toUserTaskFilter(final UserTaskFilterRequest filter) {
     final var builder = FilterBuilders.userTask();
 
-    if (filters != null && !filters.isEmpty()) {
-      for (final Filter filter : filters) {
-        switch (filter.getField()) {
-          case "key":
-            if (FieldFilterTypeValidator.isNumericOperator(filter.getOperator())) {
-              if (filter.getValue() instanceof List) {
-                // Convert List<String> to List<Long>
-                final List<Long> longValues = ((List<String>) filter.getValue()).stream()
-                    .map(Long::parseLong)  // Convert each String to Long
-                    .collect(Collectors.toList());
-                builder.keys(filter.getOperator(), longValues);
+    if (filter != null) {
+              if (filter.getState() instanceof Map) {
+                final Map<String,Object> filterConverted = (Map<String,Object>) filter.getState();
+                final Map.Entry<String, Object> entry = filterConverted.entrySet().iterator().next();
+                final String operatorKey = entry.getKey();
+                final Object value = entry.getValue();
+
+                final FilterOperator operator = FieldFilterTypeValidator.convertToFilterOperator(operatorKey);
+                if(FieldFilterTypeValidator.isStringOperator(operator)){
+                  builder.states(operator, value);
+                }
+
+              } else if (filter.getState() instanceof String){
+                builder.states(FilterOperator.EQ, List.of((String) filter.getState()));
               } else {
-                // Convert single String value to Long
-                builder.keys(filter.getOperator(), List.of(Long.parseLong((String) filter.getValue())));
+                throw new IllegalArgumentException("Invalid value type for State filter");
               }
-            }
-            break;
+    }
 
-          case "state":
-            if (FieldFilterTypeValidator.isStringOperator(filter.getOperator())) {
-              if (filter.getValue() instanceof List) {
-                // Value is already a List<String>
-                builder.states(filter.getOperator(), (List<String>) filter.getValue());
-              } else {
-                // Value is a single String, wrap it in a List
-                builder.states(filter.getOperator(), List.of((String) filter.getValue()));
-              }
-            }
-            break;
-
-
+   /*
           case "bpmnProcessId":
             if (FieldFilterTypeValidator.isStringOperator(filter.getOperator()) && filter.getValue() instanceof List) {
               builder.bpmnProcessIds((List<String>) filter.getValue());
@@ -308,13 +300,13 @@ public final class SearchQueryRequestMapper {
             }
             break;
 
-          default:
-            throw new IllegalArgumentException("Unknown field: " + filter.getField());
         }
-      }
-    }
 
+    }
+*/
     return builder.build();
+
+
   }
 
   private static UserFilter toUserFilter(final UserFilterRequest filter) {

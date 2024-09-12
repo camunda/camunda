@@ -37,4 +37,26 @@ public abstract class FieldFilterTypeValidator {
       }
     }
 
+  public static FilterOperator convertToFilterOperator(final String operatorKey) {
+    switch (operatorKey) {
+      case "$eq":
+        return FilterOperator.EQ;
+      case "$like":
+        return FilterOperator.LIKE;
+      case "$gt":
+        return FilterOperator.GT;
+      case "$gte":
+        return FilterOperator.GTE;
+      case "$lt":
+        return FilterOperator.LT;
+      case "$lte":
+        return FilterOperator.LTE;
+      case "$exists":
+        return FilterOperator.EXISTS;
+      case "$in":
+        return FilterOperator.IN;
+      default:
+        throw new IllegalArgumentException("Unsupported operator: " + operatorKey);
+    }
+  }
 }

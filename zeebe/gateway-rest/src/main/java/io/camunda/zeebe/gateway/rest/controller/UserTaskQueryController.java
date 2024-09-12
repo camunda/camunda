@@ -40,10 +40,7 @@ public class UserTaskQueryController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Object> searchUserTasks(
       @RequestBody(required = false) final UserTaskSearchQueryRequest query) {
-
-    final List<Filter> queryParsedTest = queryParser.parse(query.getFilter());
-
-    return SearchQueryRequestMapper.toUserTaskQuery(query, queryParsedTest)
+    return SearchQueryRequestMapper.toUserTaskQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 

@@ -15,7 +15,7 @@ public record UserTaskFilter(
     List<String> elementIds,
     List<String> bpmnProcessIds,
     List<String> assignees,
-    FieldFilter<List<String>> states,  // Changed to FieldFilter for states
+    FieldFilter<Object> states,  // Changed to FieldFilter for states
     List<Long> processInstanceKeys,
     List<Long> processDefinitionKeys,
     List<String> candidateUsers,
@@ -29,7 +29,7 @@ public record UserTaskFilter(
     private List<String> elementIds;
     private List<String> bpmnProcessIds;
     private List<String> assignees;
-    private FieldFilter<List<String>> states;  // FieldFilter for states
+    private FieldFilter<Object> states;  // FieldFilter for states
     private List<Long> processInstanceKeys;
     private List<Long> processDefinitionKeys;
     private List<String> candidateUsers;
@@ -49,14 +49,8 @@ public record UserTaskFilter(
     }
 
     // Builder for states (FieldFilter<List<String>>)
-    public Builder states(final FilterOperator operator, final List<String> values) {
+    public Builder states(final FilterOperator operator, final Object values) {
       states = new FieldFilter<>(operator, values);  // Assigning operator and values to FieldFilter for states
-      return this;
-    }
-
-    // Builder for states (FieldFilter<List<String>>)
-    public Builder states(final FilterOperator operator, final String... values) {
-      states = new FieldFilter<>(operator, collectValuesAsList(values));  // Assigning operator and values to FieldFilter for states
       return this;
     }
 

@@ -60,7 +60,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByKey() {
     // when
-    client.newUserTaskQuery().filter(f -> f.key(12345L)).send().join();
+    client.newUserTaskQuery().filter(f -> f.key(String.valueOf(12345L))).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =

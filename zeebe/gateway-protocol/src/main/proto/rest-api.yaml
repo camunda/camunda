@@ -1146,7 +1146,8 @@ components:
         key:
           type: string
         state:
-          type: string
+          type: object
+          description: The state of a user task. It can accept a String or a JSON structured query ex {$eq::CREATED}
         assignee:
           type: string
         elementId:
