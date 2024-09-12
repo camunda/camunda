@@ -25,8 +25,12 @@ if (!ciMode) {
 }
 
 let mode = 'self-managed';
+let database = 'elasticsearch';
 if (process.argv.indexOf('cloud') > -1) {
   mode = 'cloud';
+}
+if (process.argv.indexOf('opensearch') > -1) {
+  database = 'opensearch';
 }
 
 // if we are in ci mode we assume data generation is already complete
@@ -37,11 +41,13 @@ let dockerProcess;
 
 let backendVersion;
 let elasticSearchVersion;
+let opensearchVersion;
 let zeebeVersion;
 let identityVersion;
 
 const commonEnv = {
   OPTIMIZE_API_ACCESS_TOKEN: 'secret',
+  CAMUNDA_OPTIMIZE_DATABASE: database,
 };
 
 const cloudEnv = {
@@ -79,6 +85,8 @@ const selfManagedEnv = {
   CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL: 'http://localhost:8081/',
   OPTIMIZE_ELASTICSEARCH_HOST: 'localhost',
   OPTIMIZE_ELASTICSEARCH_HTTP_PORT: '9200',
+  OPTIMIZE_OPENSEARCH_HOST: 'localhost',
+  OPTIMIZE_OPENSEARCH_HTTP_PORT: '9200',
   CAMUNDA_OPTIMIZE_API_AUDIENCE: 'optimize',
   CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED: true,
   SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:
@@ -151,7 +159,7 @@ async function setupEnvironment() {
   await Promise.all([
     startDocker(),
     buildBackend().catch(() => {
-      console.log('Optimize build interrupted');
+      console.err('Optimize build interrupted');
     }),
   ]);
 }
@@ -191,9 +199,14 @@ function startDocker() {
       env: {
         ...process.env, // https://github.com/nodejs/node/issues/12986#issuecomment-301101354
         ES_VERSION: elasticSearchVersion,
+        OS_VERSION: opensearchVersion,
         ZEEBE_VERSION: zeebeVersion,
         IDENTITY_VERSION: identityVersion,
-        COMPOSE_PROFILES: mode,
+        // we assume that the version of operate is the same as zeebe
+        OPERATE_VERSION: zeebeVersion,
+        // to start only the opensearch services, we create profiles for mode + database
+        // so we can better control which services are started
+        COMPOSE_PROFILES: [`${mode}:${database}`].join(','),
       },
     });
 
@@ -219,6 +232,7 @@ function setVersionInfo() {
         backendVersion = data.project.version;
         const properties = data.project.properties;
         elasticSearchVersion = properties['elasticsearch.test.version'];
+        opensearchVersion = properties['opensearch.test.version'];
         zeebeVersion = properties['zeebe.version'];
         identityVersion = properties['identity.version'];
         resolve();
@@ -231,6 +245,10 @@ function stopDocker() {
   const dockerStopProcess = spawnWithArgs('docker-compose rm -sfv', {
     cwd: _resolve(__dirname, '..'),
     shell: true,
+    env: {
+      // this ensures that all started containers are stopped
+      COMPOSE_PROFILES: [mode, database, `${mode}:${database}`].join(','),
+    },
   });
 
   dockerStopProcess.on('close', () => {
