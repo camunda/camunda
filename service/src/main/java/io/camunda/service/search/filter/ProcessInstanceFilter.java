@@ -37,13 +37,13 @@ public record ProcessInstanceFilter(
 
   public static final class Builder implements ObjectBuilder<ProcessInstanceFilter> {
 
-    private boolean running = true;
-    private boolean active = true;
-    private boolean incidents = true;
-    private boolean finished = true;
-    private boolean completed = true;
-    private boolean canceled = true;
-    private boolean retriesLeft = false;
+    private boolean running;
+    private boolean active;
+    private boolean incidents;
+    private boolean finished;
+    private boolean completed;
+    private boolean canceled;
+    private boolean retriesLeft;
     private String errorMessage;
     private String activityId;
     private DateValueFilter startDate;

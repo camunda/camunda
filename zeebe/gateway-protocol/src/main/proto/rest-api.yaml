@@ -1874,6 +1874,7 @@ components:
           minimum: 1
 
     FlowNodeInstanceSearchQueryRequest:
+      description: Flow node instance search request
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
