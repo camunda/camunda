@@ -206,8 +206,11 @@ public final class CommandDistributionBehavior {
 
     commandWriter.appendFollowUpCommand(key, intent, value);
 
-    record.setPartitionId(currentPartitionId);
-    stateWriter.appendFollowUpEvent(key, CommandDistributionIntent.CONTINUATION_COMPLETED, record);
+    commandDistributionContinuation.reset();
+    commandDistributionContinuation.setQueueId(record.getQueueId());
+    commandDistributionContinuation.setPartitionId(currentPartitionId);
+    stateWriter.appendFollowUpEvent(
+        key, CommandDistributionIntent.CONTINUATION_COMPLETED, commandDistributionContinuation);
   }
 
   private void startDistributing(
