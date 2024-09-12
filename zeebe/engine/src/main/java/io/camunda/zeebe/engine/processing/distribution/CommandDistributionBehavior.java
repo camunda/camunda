@@ -57,6 +57,8 @@ public final class CommandDistributionBehavior {
       new CommandDistributionRecord();
   private final CommandDistributionRecord commandDistributionAcknowledge =
       new CommandDistributionRecord();
+  private final CommandDistributionRecord commandDistributionContinuation =
+      new CommandDistributionRecord();
 
   public CommandDistributionBehavior(
       final DistributionState distributionState,
@@ -287,15 +289,15 @@ public final class CommandDistributionBehavior {
       return;
     }
 
-    final var distributionRecord = new CommandDistributionRecord();
-    distributionRecord.setQueueId(queue);
-    distributionRecord.setPartitionId(currentPartitionId);
-    distributionRecord.setValueType(valueType);
-    distributionRecord.setIntent(intent);
-    distributionRecord.setCommandValue(value);
+    commandDistributionContinuation.reset();
+    commandDistributionContinuation.setQueueId(queue);
+    commandDistributionContinuation.setPartitionId(currentPartitionId);
+    commandDistributionContinuation.setValueType(valueType);
+    commandDistributionContinuation.setIntent(intent);
+    commandDistributionContinuation.setCommandValue(value);
 
     stateWriter.appendFollowUpEvent(
-        key, CommandDistributionIntent.CONTINUATION_REQUESTED, distributionRecord);
+        key, CommandDistributionIntent.CONTINUATION_REQUESTED, commandDistributionContinuation);
   }
 
   public interface RequestBuilder {
