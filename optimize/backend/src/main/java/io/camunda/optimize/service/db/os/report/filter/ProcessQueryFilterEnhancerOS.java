@@ -44,7 +44,6 @@ import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.db.os.report.filter.util.IncidentFilterQueryUtilOS;
 import io.camunda.optimize.service.db.os.report.filter.util.ModelElementFilterQueryUtilOS;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -208,7 +207,6 @@ public class ProcessQueryFilterEnhancerOS implements QueryFilterEnhancerOS<Proce
   }
 
   private boolean isAssigneeFiltersEnabled() {
-    return ConfigurationService.getOptimizeProfile(environment).equals(OptimizeProfile.PLATFORM)
-        || configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled();
+    return configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled();
   }
 }

@@ -202,7 +202,6 @@ public class ConfigurationServiceConstants {
   // configured
   public static final String CLOUD_PROFILE = "cloud";
   public static final String CCSM_PROFILE = "ccsm";
-  public static final String PLATFORM_PROFILE = "platform";
   public static final List<String> optimizeModeProfiles = List.of(CLOUD_PROFILE, CCSM_PROFILE);
 
   public static final String CAMUNDA_OPTIMIZE_DATABASE = "CAMUNDA_OPTIMIZE_DATABASE";

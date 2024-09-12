@@ -18,7 +18,6 @@ import io.camunda.optimize.service.db.report.plan.decision.DecisionExecutionPlan
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -46,9 +45,7 @@ public class ExecutionPlanExtractor {
     this.objectMapper = objectMapper;
 
     final boolean isAssigneeAnalyticsEnabled =
-        ConfigurationService.getOptimizeProfile(applicationContext.getEnvironment())
-                .equals(OptimizeProfile.PLATFORM)
-            || configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled();
+        configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled();
 
     executionPlans.putAll(
         Arrays.stream(ProcessExecutionPlan.values())
