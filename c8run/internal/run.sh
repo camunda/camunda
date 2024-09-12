@@ -168,8 +168,8 @@ if [ "$1" = "start" ] ; then
 
 
   function checkStartup {
-    RETRIES=12
-      SLEEP_TIME=10
+    RETRIES=20
+      SLEEP_TIME=14
       URL=$1
       NAME=$2
       COMMAND="curl -XGET $URL"
