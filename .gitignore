@@ -1,3 +1,4 @@
+*/.idea
 .idea/*
 !.idea/codeStyles
 !.idea/externalDependencies.xml

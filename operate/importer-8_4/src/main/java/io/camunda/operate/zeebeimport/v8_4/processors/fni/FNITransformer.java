@@ -27,14 +27,15 @@ import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.zeebeimport.cache.FNITreePathCacheCompositeKey;
+import io.camunda.operate.zeebeimport.cache.TreePathCache;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.time.Instant;
 import java.util.Set;
-import java.util.function.Function;
 
 /**
- * Transfomer to transform a given Zeebe flow node instance record to a {@link
+ * Transformer to transform a given Zeebe flow node instance record to a {@link
  * FlowNodeInstanceEntity}.
  */
 public class FNITransformer {
@@ -42,10 +43,17 @@ public class FNITransformer {
   private static final Set<String> FINISH_STATES =
       Set.of(ELEMENT_COMPLETED.name(), ELEMENT_TERMINATED.name());
   private static final Set<String> START_STATES = Set.of(ELEMENT_ACTIVATING.name());
-  private final Function<FNITreePathCacheCompositeKey, String> treePathResolver;
 
-  public FNITransformer(final Function<FNITreePathCacheCompositeKey, String> treePathResolver) {
-    this.treePathResolver = treePathResolver;
+  private static final Set<BpmnElementType> CONTAINER_TYPES =
+      Set.of(
+          BpmnElementType.SUB_PROCESS,
+          BpmnElementType.EVENT_SUB_PROCESS,
+          BpmnElementType.MULTI_INSTANCE_BODY,
+          BpmnElementType.PROCESS);
+  private final TreePathCache treePathCache;
+
+  public FNITransformer(final TreePathCache treePathCache) {
+    this.treePathCache = treePathCache;
   }
 
   private static FNITreePathCacheCompositeKey toCompositeKey(
@@ -103,10 +111,19 @@ public class FNITransformer {
       // already be resolved before so we skip this to reduce the load on our cache / backend
       // storage
       if (entity.getTreePath() == null) {
-        final String parentTreePath = treePathResolver.apply(toCompositeKey(record, recordValue));
-        entity.setTreePath(
-            String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey())));
+        final FNITreePathCacheCompositeKey compositeKey = toCompositeKey(record, recordValue);
+        final String parentTreePath = treePathCache.resolveParentTreePath(compositeKey);
+
+        final String treePath =
+            String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey()));
+        entity.setTreePath(treePath);
         entity.setLevel(parentTreePath.split("/").length);
+
+        // We cache only treePath's of container types to reduce way too many evictions
+        // when storing leafs, which are never requested
+        if (CONTAINER_TYPES.contains(recordValue.getBpmnElementType())) {
+          treePathCache.cacheTreePath(compositeKey, treePath);
+        }
       }
     }
 

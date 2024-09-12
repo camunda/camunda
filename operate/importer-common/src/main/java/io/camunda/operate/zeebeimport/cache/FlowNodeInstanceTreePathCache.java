@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * cache itself. Be aware that only X elements are to be guaranteed in the cache (corresponding to
  * the given cacheSize on construction).
  */
-public final class FlowNodeInstanceTreePathCache {
+public final class FlowNodeInstanceTreePathCache implements TreePathCache {
   private static final Logger LOGGER = LoggerFactory.getLogger(FlowNodeInstanceTreePathCache.class);
   private final Map<Integer, Map<String, String>> backedTreePathCache;
   private final Function<Long, String> treePathResolver;
@@ -105,7 +105,8 @@ public final class FlowNodeInstanceTreePathCache {
    * @throws IllegalArgumentException when the flow node instance record doesn't correspond to a
    *     supported partition
    */
-  public String resolveTreePath(final FNITreePathCacheCompositeKey compositeKey) {
+  @Override
+  public String resolveParentTreePath(final FNITreePathCacheCompositeKey compositeKey) {
     final int partitionId = compositeKey.partitionId();
     final var partitionCache = backedTreePathCache.get(partitionId);
     if (partitionCache == null) {
@@ -127,6 +128,30 @@ public final class FlowNodeInstanceTreePathCache {
             partitionId, () -> resolveTreePath(partitionCache, compositeKey));
     treePathCacheMetrics.reportCacheSize(partitionId, partitionCache.size());
     return treePath;
+  }
+
+  @Override
+  public void cacheTreePath(
+      final FNITreePathCacheCompositeKey compositeKey, final String treePath) {
+    final int partitionId = compositeKey.partitionId();
+    final var partitionCache = backedTreePathCache.get(partitionId);
+    if (partitionCache == null) {
+      final IllegalArgumentException illegalArgumentException =
+          new IllegalArgumentException(
+              String.format(
+                  "Expected to find treePath cache for partitionId %d, but found nothing. Possible partition Ids are: '%s'.",
+                  partitionId, backedTreePathCache.keySet()));
+
+      LOGGER.error(
+          "Couldn't store tree path {} for given key {}",
+          treePath,
+          compositeKey,
+          illegalArgumentException);
+      throw illegalArgumentException;
+    }
+
+    partitionCache.put(ConversionUtils.toStringOrNull(compositeKey.recordKey()), treePath);
+    treePathCacheMetrics.reportCacheSize(partitionId, partitionCache.size());
   }
 
   private String resolveTreePath(
@@ -165,9 +190,6 @@ public final class FlowNodeInstanceTreePathCache {
       }
       treePathCacheMetrics.reportCacheResult(compositeKey.partitionId(), cacheResult);
     }
-    partitionCache.put(
-        ConversionUtils.toStringOrNull(compositeKey.recordKey()),
-        String.join("/", parentTreePath, ConversionUtils.toStringOrNull(compositeKey.recordKey())));
     return parentTreePath;
   }
 }

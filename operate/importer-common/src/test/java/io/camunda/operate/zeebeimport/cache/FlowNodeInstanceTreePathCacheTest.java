@@ -48,7 +48,7 @@ public class FlowNodeInstanceTreePathCacheTest {
     final var flowNodeInstanceRecord = new FNITreePathCacheCompositeKey(1, 0xCAFE, 0xABCD, 0xABCD);
 
     // when
-    final String treePath = treePathCache.resolveTreePath(flowNodeInstanceRecord);
+    final String treePath = treePathCache.resolveParentTreePath(flowNodeInstanceRecord);
 
     // then
     assertThat(treePath).isEqualTo(Long.toString(0xABCD));
@@ -57,45 +57,44 @@ public class FlowNodeInstanceTreePathCacheTest {
   }
 
   @Test
-  public void shouldResolveTreePathFromPreviousRecord() {
+  public void shouldResolveParentTreePathFromPreviousRecordWhenCached() {
     // given
     // root fni are added to the cache
     final var rootFlowNodeInstanceRecord =
         new FNITreePathCacheCompositeKey(1, 0xCAFE, 0xABCD, 0xABCD);
-    final String firstTreePath = treePathCache.resolveTreePath(rootFlowNodeInstanceRecord);
+    final String treePath = String.join("/", Long.toString(0xABCD), Long.toString(0xCAFE));
+    treePathCache.cacheTreePath(rootFlowNodeInstanceRecord, treePath);
 
     final var leafFlowNodeInstanceRecord =
         new FNITreePathCacheCompositeKey(1, 0xFACE, 0xCAFE, 0xABCD);
 
     // when
     // fni with flow scope key of previous root FNI
-    final String secondTreePath = treePathCache.resolveTreePath(leafFlowNodeInstanceRecord);
+    final String secondTreePath = treePathCache.resolveParentTreePath(leafFlowNodeInstanceRecord);
 
     // then cache should resolve without using the resolver
-    assertThat(secondTreePath)
-        .contains(firstTreePath)
-        .isEqualTo(String.join("/", Long.toString(0xABCD), Long.toString(0xCAFE)));
+    assertThat(secondTreePath).isEqualTo(treePath);
 
     Mockito.verifyNoInteractions(spyTreePathResolver);
   }
 
   @Test
-  public void shouldTryToResolve() {
+  public void shouldReturnProcessInstanceWhenNothingCachedAndStored() {
     // given
     // resolver can't resolve value - returned tree Path is equal to process instance key
     final var flowNodeInstanceRecord = new FNITreePathCacheCompositeKey(1, 0xCAFE, 0xABCD, 0xEFDA);
 
     // when
-    final String treePath = treePathCache.resolveTreePath(flowNodeInstanceRecord);
+    final String parentTreePath = treePathCache.resolveParentTreePath(flowNodeInstanceRecord);
 
     // then
-    assertThat(treePath).isEqualTo(Long.toString(0xEFDA));
+    assertThat(parentTreePath).isEqualTo(Long.toString(0xEFDA));
 
     Mockito.verify(spyTreePathResolver, times(1)).get(eq(0xABCDL));
   }
 
   @Test
-  public void shouldResolveTreePath() {
+  public void shouldResolveParentTreePathViaResolver() {
     // given
     // resolver can resolve tree path
     final String expectedTreePath = String.join("/", Long.toString(0xABCD), Long.toString(0xEFDA));
@@ -103,7 +102,7 @@ public class FlowNodeInstanceTreePathCacheTest {
     final var flowNodeInstanceRecord = new FNITreePathCacheCompositeKey(1, 0xCAFE, 0xABCD, 0xEFDA);
 
     // when
-    final String treePath = treePathCache.resolveTreePath(flowNodeInstanceRecord);
+    final String treePath = treePathCache.resolveParentTreePath(flowNodeInstanceRecord);
 
     // then
     assertThat(treePath).isEqualTo(expectedTreePath);
@@ -115,13 +114,13 @@ public class FlowNodeInstanceTreePathCacheTest {
   public void shouldNotResolveTreePathTwice() {
     // given
     // cache is empty and resolver can resolve tree path
-    final String expectedTreePath = String.join("/", Long.toString(0xABCD), Long.toString(0xEFDA));
+    final String expectedTreePath = String.join("/", Long.toString(0xEFDA), Long.toString(0xABCD));
     spyTreePathResolver.put(0xABCDL, expectedTreePath);
     final var flowNodeInstanceRecord = new FNITreePathCacheCompositeKey(1, 0xCAFE, 0xABCD, 0xEFDA);
-    final String firstTreePath = treePathCache.resolveTreePath(flowNodeInstanceRecord);
+    final String firstTreePath = treePathCache.resolveParentTreePath(flowNodeInstanceRecord);
 
     // when
-    final String secondTreePath = treePathCache.resolveTreePath(flowNodeInstanceRecord);
+    final String secondTreePath = treePathCache.resolveParentTreePath(flowNodeInstanceRecord);
 
     // then
     assertThat(firstTreePath).isEqualTo(secondTreePath).isEqualTo(expectedTreePath);
@@ -136,7 +135,7 @@ public class FlowNodeInstanceTreePathCacheTest {
     final var flowNodeInstanceRecord = new FNITreePathCacheCompositeKey(3, 0xCAFE, 0xABCD, 0xEFDA);
 
     // when - then
-    assertThatThrownBy(() -> treePathCache.resolveTreePath(flowNodeInstanceRecord))
+    assertThatThrownBy(() -> treePathCache.resolveParentTreePath(flowNodeInstanceRecord))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(
             "Expected to find treePath cache for partitionId 3, but found nothing. Possible partition Ids are: '[1, 2]'.");

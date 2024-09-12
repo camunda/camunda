@@ -73,7 +73,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
             flowNodeTreeCacheSize,
             flowNodeStore::findParentTreePathFor,
             new TreePathCacheMetricsImpl(partitionIds, metrics));
-    fniTransformer = new FNITransformer(treePathCache::resolveTreePath);
+    fniTransformer = new FNITransformer(treePathCache);
   }
 
   public void processIncidentRecord(final Record record, final BatchRequest batchRequest)
