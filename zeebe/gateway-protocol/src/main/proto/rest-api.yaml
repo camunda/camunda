@@ -2083,6 +2083,7 @@ components:
       type: "object"
       properties:
         userKey:
+          description: The key of the created user
           type: "integer"
           format: "int64"
     UserSearchQueryRequest:
