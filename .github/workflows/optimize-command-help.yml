@@ -46,6 +46,7 @@ jobs:
             > --- | ---
             > `/help` | Post this message
             > `/assign @username` | To be run by an EM/PM to assign an engineering DRI.<br/><br/> • `Assignee` ➝ `@username`<br/> • `Body` ➝ `Engineering DRI: @username`
+            > `/start` | To be run by a team member (`Implementer`) when they start working on the issue.<br/><br/> • `Status` ➝ `In Progress`<br/> • `Assignee` ➝ `Engineering DRI`
             > `/eng review @username` | To be run by a team member (`Implementer`) when they want to pass the issue to review.<br/><br/> • `Assignee` ➝ `@username`<br/> • `Status` ➝ `In Review`
             > `/eng approve` | To be run by the engineering reviewer if they're fine with the implementation.<br/><br/>if `labels` contains `qa:notNeeded` and `kind/epic`<br/> • `Status` ➝ `PM Review`<br/> • `Assignee` ➝ `PM`<br/>if `labels` contains `qa:notNeeded` and not `kind/epic`<br/> • `Status` ➝ `Ready to Complete`<br/> • `Assignee` ➝ `Engineering DRI`<br/>else<br/> • `Status` ➝ `QA Review`<br/> • `Assignee` ➝ `QA`
             > `/eng reject` | To be run by the engineering reviewer if they request changes in the implementation.<br/><br/> • `Status` ➝ `In Progress`<br/> • `Assignee` ➝ `Engineering DRI`

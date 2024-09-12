@@ -18,6 +18,7 @@ jobs:
             echo "run_url=https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
             echo "qa_engineer=RobertDorlan"
             echo "pm=toco-cam"
+            echo "commenter=${{ github.event.client_payload.github.payload.comment.user.login }}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Generate a GitHub token
@@ -73,9 +74,11 @@ jobs:
             echo "No command provided"
             exit 1
           fi
-          if [ -z "${{ steps.get-engineering-dri.outputs.engineering_dri }}" ]; then
-            echo "Issue has no Engineering DRI"
-            exit 1
+          if [ "${{ steps.parse-args.outputs.arg1 }}" != 'start' ]; then
+            if [ -z "${{ steps.get-engineering-dri.outputs.engineering_dri }}" ]; then
+              echo "Issue has no Engineering DRI"
+              exit 1
+            fi
           fi
           if [ "${{ steps.issue-project.outputs.is_in_project }}" != "true" ]; then
             echo "Issue is not part of the '${{ steps.issue-project.outputs.project_title }}' project"
@@ -85,10 +88,13 @@ jobs:
           # Validate if the command is valid
           if [ "${{ steps.parse-args.outputs.arg1 }}" != 'approve' ] &&
              [ "${{ steps.parse-args.outputs.arg1 }}" != 'reject' ] &&
+             [ "${{ steps.parse-args.outputs.arg1 }}" != 'start' ] &&
              [ "${{ steps.parse-args.outputs.arg1 }}" != 'review' ]; then
             echo "Invalid command. See `/help` for more information"
             exit 1
           fi
+
+          project_status="${{ steps.issue-project.outputs.project_status }}"
 
           # Validate 'review' command
           if [ "${{ steps.parse-args.outputs.arg1 }}" == 'review' ]; then
@@ -99,7 +105,6 @@ jobs:
             fi
 
             # Check if the issue is in the correct status
-            project_status="${{ steps.issue-project.outputs.project_status }}"
             if [ "$project_status" != 'Ready' ] && [ "$project_status" != 'In Progress' ]; then
               echo "Issue can be moved to Eng Review only from 'Ready' or 'In Progress' status"
               exit 1
@@ -110,9 +115,20 @@ jobs:
           if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ] ||
              [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
             # Check if the issue is in the correct status
-            project_status="${{ steps.issue-project.outputs.project_status }}"
             if [ "$project_status" != 'Eng Review' ]; then
               echo "Eng Review can be approved/rejected only from 'Eng Review' status"
+              exit 1
+            fi
+          fi
+
+          # Validate 'start' command
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
+            # Check if the issue is in the correct status
+            if [ "$project_status" != 'Global Backlog' ] ||
+               [ "$project_status" != 'Inbox' ] ||
+               [ "$project_status" != 'On Hold' ] ||
+               [ "$project_status" != 'Inbox' ]; then
+              echo "Issue can be moved to In Progress only from 'Global Backlog', 'Inbox', 'On Hold' or 'Inbox' status"
               exit 1
             fi
           fi
@@ -137,6 +153,8 @@ jobs:
             new_assignee="${{ steps.get-engineering-dri.outputs.engineering_dri }}"
           elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'review' ]; then
             new_assignee="${{ steps.parse-args.outputs.reviewer }}"
+          elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'start' ]; then
+            new_assignee="${{ steps.parse-args.outputs.commenter }}"
           fi
 
           echo "new_assignee=${new_assignee}" >> "$GITHUB_OUTPUT"
@@ -173,6 +191,8 @@ jobs:
             new_status="In Progress"
           elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'review' ]; then
             new_status="Eng Review"
+          elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'start' ]; then
+            new_status="In Progress"
           fi
 
           echo "new_status=${new_status}" >> "$GITHUB_OUTPUT"
@@ -187,6 +207,14 @@ jobs:
           content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
           field: Status
           value: ${{ steps.status.outputs.new_status }}
+
+      - name: Add Engineering DRI to issue description
+        if: steps.parse-args.outputs.arg1 == 'start'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_URL: ${{ github.event.client_payload.github.payload.issue.html_url }}
+          ENGINEERING_DRI: ${{ steps.parse-args.outputs.commenter }}
+        run: .github/optimize/scripts/commands/add-engineering-dri-to-issue-description.sh
 
       - name: Add reaction
         uses: peter-evans/create-or-update-comment@v4

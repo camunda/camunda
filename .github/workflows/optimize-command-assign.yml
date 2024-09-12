@@ -89,19 +89,9 @@ jobs:
       - name: Get and update issue description
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Extract the issue description
-          ISSUE_DESCRIPTION=$(gh issue view ${{ github.event.client_payload.github.payload.issue.html_url }} --json body --jq '.body')
-
-          # Remove the Engineering DRI from the description (either with an assignee or without)
-          ISSUE_DESCRIPTION=$(echo "$ISSUE_DESCRIPTION" | sed "/Engineering DRI: @\w\+[[:space:]]*$/d")
-          ISSUE_DESCRIPTION=$(echo "$ISSUE_DESCRIPTION" | sed "/Engineering DRI:[[:space:]]*$/d")
-
-          # Add new assignee at the beginning of the description (if there were exactly the same assignee already it will be replaced anyway)
-          ISSUE_DESCRIPTION=$(echo -e "Engineering DRI: @${{ steps.parse-args.outputs.assignee }}\\n\\n${ISSUE_DESCRIPTION}")
-
-          # Update the issue description
-          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --body "${ISSUE_DESCRIPTION}"
+          ISSUE_URL: ${{ github.event.client_payload.github.payload.issue.html_url }}
+          ENGINEERING_DRI: ${{ steps.parse-args.outputs.assignee }}
+        run: .github/optimize/scripts/commands/add-engineering-dri-to-issue-description.sh
 
       - name: Add reaction
         uses: peter-evans/create-or-update-comment@v4
