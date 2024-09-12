@@ -17,11 +17,14 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -313,6 +316,128 @@ public final class DistributionStateTest {
     assertThat(visits).isEmpty();
   }
 
+  @Test
+  public void shouldDetectEmptyQueue() {
+    // when
+    final var hasQueuedDistributions = distributionState.hasQueuedDistributions("empty-queue");
+
+    // then
+    assertThat(hasQueuedDistributions).isFalse();
+  }
+
+  @Test
+  public void shouldDetectNonEmptyQueue() {
+    // given
+    final var queue = "test-queue";
+    final var distributionKey = 1L;
+    final var distributionRecord = createCommandDistributionRecord();
+    distributionState.addCommandDistribution(distributionKey, distributionRecord);
+
+    // when
+    distributionState.enqueueCommandDistribution(queue, distributionKey, 2);
+
+    // then
+    assertThat(distributionState.hasQueuedDistributions(queue)).isTrue();
+  }
+
+  @Test
+  public void shouldFindAllContinuationCommands() {
+    // given
+    final var queue = "test-queue";
+    final var record1 = createContinuationCommand(queue, "continuation1");
+    final var record2 = createContinuationCommand(queue, "continuation2");
+    final var record3 = createContinuationCommand(queue, "continuation3");
+
+    // when
+    distributionState.addContinuationCommand(1L, record1);
+    distributionState.addContinuationCommand(2L, record2);
+    distributionState.addContinuationCommand(3L, record3);
+
+    // then
+    final var found = new LinkedList<ContinuationCommand>();
+    distributionState.forEachContinuationCommand(
+        queue,
+        (key, record) ->
+            found.add(
+                new ContinuationCommand(
+                    key, ((SignalRecord) record.getCommandValue()).getSignalName())));
+
+    assertThat(found)
+        .containsExactly(
+            new ContinuationCommand(1L, "continuation1"),
+            new ContinuationCommand(2L, "continuation2"),
+            new ContinuationCommand(3L, "continuation3"));
+  }
+
+  @Test
+  public void shouldFindContinuationCommandsForSpecificQueue() {
+    // given
+    final var queue1 = "test-queue-1";
+    final var queue2 = "test-queue-2";
+    final var record1 = createContinuationCommand(queue1, "continuation1");
+    final var record2 = createContinuationCommand(queue2, "continuation2");
+    final var record3 = createContinuationCommand(queue1, "continuation3");
+
+    // when
+    distributionState.addContinuationCommand(1L, record1);
+    distributionState.addContinuationCommand(2L, record2);
+    distributionState.addContinuationCommand(3L, record3);
+
+    // then
+    final var found = new LinkedList<ContinuationCommand>();
+    distributionState.forEachContinuationCommand(
+        queue1,
+        (key, record) ->
+            found.add(
+                new ContinuationCommand(
+                    key, ((SignalRecord) record.getCommandValue()).getSignalName())));
+
+    assertThat(found)
+        .containsExactly(
+            new ContinuationCommand(1L, "continuation1"),
+            new ContinuationCommand(3L, "continuation3"));
+  }
+
+  @Test
+  public void shouldRemoveContinuationCommand() {
+    // given
+    final var queue = "test-queue";
+    final var record1 = createContinuationCommand(queue, "continuation1");
+    final var record2 = createContinuationCommand(queue, "continuation2");
+    final var record3 = createContinuationCommand(queue, "continuation3");
+
+    distributionState.addContinuationCommand(1L, record1);
+    distributionState.addContinuationCommand(2L, record2);
+    distributionState.addContinuationCommand(3L, record3);
+
+    // when
+    distributionState.removeContinuationCommand(2L, queue);
+
+    // then
+    final var found = new LinkedList<ContinuationCommand>();
+    distributionState.forEachContinuationCommand(
+        queue,
+        (key, record) ->
+            found.add(
+                new ContinuationCommand(
+                    key, ((SignalRecord) record.getCommandValue()).getSignalName())));
+
+    assertThat(found)
+        .containsExactly(
+            new ContinuationCommand(1L, "continuation1"),
+            new ContinuationCommand(3L, "continuation3"));
+  }
+
+  private CommandDistributionRecord createContinuationCommand(
+      final String queueName, final String id) {
+    return new CommandDistributionRecord()
+        .setPartitionId(1)
+        .setQueueId(queueName)
+        .setValueType(ValueType.SIGNAL)
+        .setIntent(SignalIntent.BROADCAST)
+        .setCommandValue(new SignalRecord().setSignalName(id));
+  }
+
   private CommandDistributionRecord createCommandDistributionRecord() {
     return new CommandDistributionRecord()
         .setPartitionId(1)
@@ -343,6 +468,8 @@ public final class DistributionStateTest {
 
     return deploymentRecord;
   }
+
+  record ContinuationCommand(long key, String continuationId) {}
 
   record RetriableDistribution(long key, CommandDistributionRecord record) {}
 
