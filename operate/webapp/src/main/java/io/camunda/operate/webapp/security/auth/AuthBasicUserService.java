@@ -7,13 +7,13 @@
  */
 package io.camunda.operate.webapp.security.auth;
 
+import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AbstractUserService;
 import io.camunda.operate.webapp.security.Permission;
 import java.util.List;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -21,11 +21,11 @@ import org.springframework.stereotype.Component;
 public class AuthBasicUserService extends AbstractUserService<UsernamePasswordAuthenticationToken> {
   @Override
   public UserDto createUserDtoFrom(final UsernamePasswordAuthenticationToken authentication) {
-    final var user = (UserDetails) authentication.getPrincipal();
+    final var camundaUser = (CamundaUser) authentication.getPrincipal();
 
     return new UserDto()
-        .setUserId(String.valueOf(user.getUsername()))
-        .setDisplayName(user.getUsername())
+        .setUserId(String.valueOf(camundaUser.getUserKey()))
+        .setDisplayName(camundaUser.getName())
         .setCanLogout(false)
         .setPermissions(List.of(Permission.READ, Permission.WRITE));
   }
