@@ -21,6 +21,27 @@ jobs:
 
       - uses: actions/checkout@v4
 
+      - name: dir1
+        run: ls /home/runner/work/
+
+      - name: dir2
+        run: ls /home/runner/work/camunda/
+
+      - name: dir3
+        run: ls /home/runner/work/camunda/camunda/
+
+      - name: dir4
+        run: ls /home/runner/work/camunda/camunda/c8run/
+
+      - name: dir5
+        run: ls /home/runner/work/camunda/camunda/c8run/elasticsearch-8.13.4/
+
+      - name: dir6
+        run: ls /home/runner/work/camunda/camunda/c8run/elasticsearch-8.13.4/bin/
+
+      - name: dir7
+        run: ls /home/runner/work/camunda/camunda/c8run/elasticsearch-8.13.4/bin/elasticsearch
+
       - name: Run c8run
         run: nohup ./start.sh
         working-directory: ./c8run
