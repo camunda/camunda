@@ -568,14 +568,14 @@ test.describe('task details page', () => {
     await expect(tasksPage.detailsNav).toBeVisible();
     await tasksPage.assignToMeButton.click();
     try {
-      await expect(taskFormView.nameInput).toBeVisible();
+      await expect(taskFormView.form).toBeVisible();
     } catch (error) {
       console.log('Form not loaded:' + error);
       await sleep(10000);
       await page.reload();
-      await expect(taskFormView.nameInput).toBeVisible();
+      await expect(taskFormView.form).toBeVisible();
     }
-
+    await expect(taskFormView.nameInput).toBeVisible();
     await taskFormView.nameInput.fill('Ben');
     await taskFormView.selectDropdownValue('marketing');
     await tasksPage.completeTaskButton.click();
