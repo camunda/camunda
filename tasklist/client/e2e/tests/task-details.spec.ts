@@ -565,11 +565,17 @@ test.describe('task details page', () => {
     taskFormView,
   }) => {
     await tasksPage.openTask('Employee Details');
-    await sleep(10000);
-    await page.reload();
     await expect(tasksPage.detailsNav).toBeVisible();
     await tasksPage.assignToMeButton.click();
-    await expect(taskFormView.nameInput).toBeVisible();
+    try {
+      await expect(taskFormView.nameInput).toBeVisible();
+    } catch (error) {
+      console.log('Form not loaded:' + error);
+      await sleep(10000);
+      await page.reload();
+      await expect(taskFormView.nameInput).toBeVisible();
+    }
+
     await taskFormView.nameInput.fill('Ben');
     await taskFormView.selectDropdownValue('marketing');
     await tasksPage.completeTaskButton.click();
@@ -580,6 +586,7 @@ test.describe('task details page', () => {
     try {
       await expect(taskFormView.nameInput).toHaveValue('Ben');
     } catch (error) {
+      console.log('Form not loaded:' + error);
       await sleep(10000);
       await page.reload();
       await expect(taskFormView.nameInput).toHaveValue('Ben');
