@@ -97,6 +97,6 @@ public class AddPermissionAuthorizationTest {
         .describedAs("Owner is not found")
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to find owner with key: '%d', but not found".formatted(ownerKey));
+            "Expected to find owner with key: '%d', but none was found".formatted(ownerKey));
   }
 }
