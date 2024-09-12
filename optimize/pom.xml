@@ -610,7 +610,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
         <configuration>
-          <release>17</release>
+          <release>${maven.compiler.target}</release>
         </configuration>
       </plugin>
     </plugins>
