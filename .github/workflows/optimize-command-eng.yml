@@ -125,10 +125,10 @@ jobs:
           if [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
             # Check if the issue is in the correct status
             if [ "$project_status" != 'Global Backlog' ] ||
-               [ "$project_status" != 'Inbox' ] ||
+               [ "$project_status" != 'Ready' ] ||
                [ "$project_status" != 'On Hold' ] ||
                [ "$project_status" != 'Inbox' ]; then
-              echo "Issue can be moved to In Progress only from 'Global Backlog', 'Inbox', 'On Hold' or 'Inbox' status"
+              echo "Issue can be moved to In Progress only from 'Global Backlog', 'Ready', 'On Hold' or 'Inbox' status"
               exit 1
             fi
           fi
