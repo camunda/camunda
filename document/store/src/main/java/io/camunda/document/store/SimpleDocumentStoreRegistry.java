@@ -30,8 +30,9 @@ public class SimpleDocumentStoreRegistry implements DocumentStoreRegistry {
     final String gcpBucketName = System.getenv(GCP_STORE_BUCKET_NAME_VARIABLE);
     if (gcpBucketName != null) {
       stores.put(STORE_ID_GCP, new GcpDocumentStore(gcpBucketName));
+    } else {
+      LOG.warn("No GCP bucket name provided, using in-memory document instance");
     }
-    LOG.warn("No GCP bucket name provided, using in-memory document instance");
     stores.put(STORE_ID_IN_MEMORY, new InMemoryDocumentStore());
   }
 
@@ -39,7 +40,7 @@ public class SimpleDocumentStoreRegistry implements DocumentStoreRegistry {
   public DocumentStoreRecord getDocumentStore(final String id) {
     final DocumentStore store = stores.get(id);
     if (store == null) {
-      throw new IllegalArgumentException("No such document instance: " + id);
+      throw new IllegalArgumentException("No such document store: " + id);
     }
     return new DocumentStoreRecord(id, store);
   }

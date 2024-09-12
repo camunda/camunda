@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
+import io.camunda.document.api.DocumentLink;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
@@ -17,6 +18,7 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.io.InputStream;
+import java.time.ZonedDateTime;
 import java.util.concurrent.CompletableFuture;
 
 public class DocumentServices extends ApiServices<DocumentServices> {
@@ -47,7 +49,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
         new DocumentCreationRequest(
             request.documentId, request.contentInputStream, request.metadata);
 
-    final DocumentStoreRecord storeRecord = registry.getDocumentStore(request.storeId);
+    final DocumentStoreRecord storeRecord = getDocumentStore(request.storeId);
     return storeRecord
         .instance()
         .createDocument(storeRequest)
@@ -57,14 +59,14 @@ public class DocumentServices extends ApiServices<DocumentServices> {
                 throw new DocumentException("Failed to create document", result.getLeft());
               } else {
                 return new DocumentReferenceResponse(
-                    result.get().documentId(), request.storeId, result.get().metadata());
+                    result.get().documentId(), storeRecord.storeId(), result.get().metadata());
               }
             });
   }
 
   public InputStream getDocumentContent(final String documentId, final String storeId) {
 
-    final DocumentStoreRecord storeRecord = registry.getDocumentStore(storeId);
+    final DocumentStoreRecord storeRecord = getDocumentStore(storeId);
     return storeRecord
         .instance()
         .getDocument(documentId)
@@ -81,7 +83,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
   public CompletableFuture<Void> deleteDocument(final String documentId, final String storeId) {
 
-    final DocumentStoreRecord storeRecord = registry.getDocumentStore(storeId);
+    final DocumentStoreRecord storeRecord = getDocumentStore(storeId);
     return storeRecord
         .instance()
         .deleteDocument(documentId)
@@ -93,6 +95,34 @@ public class DocumentServices extends ApiServices<DocumentServices> {
             });
   }
 
+  public CompletableFuture<DocumentLink> createLink(
+      final String documentId, final String storeId, final DocumentLinkParams params) {
+
+    final DocumentStoreRecord storeRecord = getDocumentStore(storeId);
+    final long ttl =
+        params.expiresAt().toInstant().getEpochSecond()
+            - ZonedDateTime.now().toInstant().getEpochSecond();
+    return storeRecord
+        .instance()
+        .createLink(documentId, ttl)
+        .thenApply(
+            result -> {
+              if (result.isLeft()) {
+                throw new DocumentException("Failed to create link", result.getLeft());
+              } else {
+                return result.get();
+              }
+            });
+  }
+
+  private DocumentStoreRecord getDocumentStore(final String id) {
+    if (id == null) {
+      return registry.getDefaultDocumentStore();
+    } else {
+      return registry.getDocumentStore(id);
+    }
+  }
+
   public record DocumentCreateRequest(
       String documentId,
       String storeId,
@@ -102,19 +132,23 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   public record DocumentReferenceResponse(
       String documentId, String storeId, DocumentMetadataModel metadata) {}
 
-  public static class DocumentException extends CamundaServiceException {
+  public record DocumentLinkParams(ZonedDateTime expiresAt) {}
 
-    private final DocumentError error;
+  public static class DocumentException extends RuntimeException {
+
+    private final DocumentError documentError;
 
     public DocumentException(final String message, final DocumentError error) {
-      super(message);
-      this.error = error;
+      documentError = error;
     }
 
     public DocumentException(
         final String message, final DocumentError error, final Throwable cause) {
-      super(message, cause);
-      this.error = error;
+      documentError = error;
+    }
+
+    public DocumentError getDocumentError() {
+      return documentError;
     }
   }
 }

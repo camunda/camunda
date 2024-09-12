@@ -18,6 +18,7 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
+import io.camunda.document.api.DocumentError.UnknownDocumentError;
 import io.camunda.document.api.DocumentLink;
 import io.camunda.document.api.DocumentReference;
 import io.camunda.zeebe.util.Either;
@@ -89,7 +90,7 @@ public class GcpDocumentStoreTest {
     assertThat(documentReferenceResponse).isNotNull();
     assertThat(documentReferenceResponse).isInstanceOf(Left.class);
     assertThat(((Left<DocumentError, DocumentReference>) documentReferenceResponse).value())
-        .isInstanceOf(DocumentError.UnknownError.class);
+        .isInstanceOf(UnknownDocumentError.class);
   }
 
   @Test
@@ -144,7 +145,7 @@ public class GcpDocumentStoreTest {
     assertThat(documentOperationResponse).isNotNull();
     assertThat(documentOperationResponse).isInstanceOf(Left.class);
     assertThat(((Left<DocumentError, InputStream>) documentOperationResponse).value())
-        .isInstanceOf(DocumentError.UnknownError.class);
+        .isInstanceOf(UnknownDocumentError.class);
   }
 
   @Test
@@ -198,7 +199,7 @@ public class GcpDocumentStoreTest {
     assertThat(documentOperationResponse).isNotNull();
     assertThat(documentOperationResponse).isInstanceOf(Left.class);
     assertThat(((Left<DocumentError, Void>) documentOperationResponse).value())
-        .isInstanceOf(DocumentError.UnknownError.class);
+        .isInstanceOf(UnknownDocumentError.class);
   }
 
   @Test
@@ -253,7 +254,7 @@ public class GcpDocumentStoreTest {
     assertThat(documentOperationResponse).isNotNull();
     assertThat(documentOperationResponse).isInstanceOf(Left.class);
     assertThat(((Left<DocumentError, DocumentLink>) documentOperationResponse).value())
-        .isInstanceOf(DocumentError.UnknownError.class);
+        .isInstanceOf(UnknownDocumentError.class);
   }
 
   @Test

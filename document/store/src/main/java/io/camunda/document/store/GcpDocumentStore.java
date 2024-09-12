@@ -16,6 +16,7 @@ import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
+import io.camunda.document.api.DocumentError.UnknownDocumentError;
 import io.camunda.document.api.DocumentLink;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentReference;
@@ -93,18 +94,18 @@ public class GcpDocumentStore implements DocumentStore {
   private Either<DocumentError, DocumentReference> createDocumentInternal(
       final DocumentCreationRequest request) {
     final String documentId =
-        Optional.of(request.documentId()).orElse(UUID.randomUUID().toString());
+        Optional.ofNullable(request.documentId()).orElse(UUID.randomUUID().toString());
 
     final Blob existingBlob;
     try {
       existingBlob = storage.get(bucketName, documentId);
     } catch (final Exception e) {
-      return Either.left(new DocumentError.UnknownError(e));
+      return Either.left(new UnknownDocumentError(e));
     }
     if (existingBlob != null) {
       return Either.left(new DocumentError.DocumentAlreadyExists(documentId));
     }
-    final BlobId blobId = BlobId.of(bucketName, request.documentId());
+    final BlobId blobId = BlobId.of(bucketName, documentId);
     final var blobInfoBuilder = BlobInfo.newBuilder(blobId);
     try {
       applyMetadata(blobInfoBuilder, request.metadata());
@@ -116,9 +117,9 @@ public class GcpDocumentStore implements DocumentStore {
     try {
       storage.createFrom(blobInfoBuilder.build(), request.contentInputStream());
     } catch (final Exception e) {
-      return Either.left(new DocumentError.UnknownError(e));
+      return Either.left(new UnknownDocumentError(e));
     }
-    final var documentReference = new DocumentReference(request.documentId(), request.metadata());
+    final var documentReference = new DocumentReference(documentId, request.metadata());
     return Either.right(documentReference);
   }
 
@@ -131,7 +132,7 @@ public class GcpDocumentStore implements DocumentStore {
       final var inputStream = Channels.newInputStream(blob.reader());
       return Either.right(inputStream);
     } catch (final Exception e) {
-      return Either.left(new DocumentError.UnknownError(e));
+      return Either.left(new UnknownDocumentError(e));
     }
   }
 
@@ -143,7 +144,7 @@ public class GcpDocumentStore implements DocumentStore {
       }
       return Either.right(null);
     } catch (final Exception e) {
-      return Either.left(new DocumentError.UnknownError(e));
+      return Either.left(new UnknownDocumentError(e));
     }
   }
 
@@ -158,7 +159,7 @@ public class GcpDocumentStore implements DocumentStore {
       return Either.right(
           new DocumentLink(link.toString(), ZonedDateTime.now().plusSeconds(durationInSeconds)));
     } catch (final Exception e) {
-      return Either.left(new DocumentError.UnknownError(e));
+      return Either.left(new UnknownDocumentError(e));
     }
   }
 

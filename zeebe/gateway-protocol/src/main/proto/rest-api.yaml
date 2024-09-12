@@ -2801,6 +2801,10 @@ components:
           type: string
           format: date-time
           description: The date and time when the document expires.
+        size:
+          type: integer
+          format: int64
+          description: The size of the document in bytes.
     DocumentLinkRequest:
       type: object
       properties:

@@ -7,17 +7,16 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.service.CamundaServiceException;
 import io.camunda.service.DocumentServices;
+import io.camunda.service.DocumentServices.DocumentException;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
-import io.camunda.zeebe.gateway.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -78,23 +77,30 @@ public class DocumentController {
   public ResponseEntity<StreamingResponseBody> getDocumentContent(
       @PathVariable final String documentId, @RequestParam(required = false) final String storeId) {
 
-    try (final InputStream contentInputStream = getDocumentContentStream(documentId, storeId)) {
+    try {
+      final InputStream contentInputStream = getDocumentContentStream(documentId, storeId);
       return ResponseEntity.ok().body(contentInputStream::transferTo);
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       // we can't return a generic Object type when streaming a response due to Spring MVC
       // limitations
       // exception handling is done in the exception handler below
+      if (e instanceof final CompletionException ce) {
+        throw new DocumentContentFetchException("Failed to get document content", ce.getCause());
+      }
       throw new DocumentContentFetchException("Failed to get document content", e);
     }
   }
 
   @ExceptionHandler(DocumentContentFetchException.class)
-  public ResponseEntity<ProblemDetail> handleDocumentContentException(
-      final CamundaServiceException e) {
-    final var problemDetail =
-        RestErrorMapper.createProblemDetail(
-            HttpStatus.BAD_REQUEST, e.getMessage(), "Failed to get document content");
-    return RestErrorMapper.mapProblemToResponse(problemDetail);
+  public ResponseEntity<Object> handleDocumentContentException(
+      final DocumentContentFetchException e) {
+    if (e.getCause() instanceof final DocumentException de) {
+      return RestErrorMapper.mapDocumentHandlingExceptionToResponse(de);
+    } else {
+      return RestErrorMapper.mapProblemToResponse(
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e.getClass().getName()));
+    }
   }
 
   private InputStream getDocumentContentStream(final String documentId, final String storeId) {
@@ -120,14 +126,20 @@ public class DocumentController {
       path = "/{documentId}/links",
       consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public ResponseEntity<Void> createDocumentLink(
-      @PathVariable final String documentId, @RequestBody final DocumentLinkRequest linkRequest) {
+  public ResponseEntity<Object> createDocumentLink(
+      @PathVariable final String documentId,
+      @RequestParam(required = false) final String storeId,
+      @RequestBody final DocumentLinkRequest linkRequest) {
 
-    // TODO: implement
-    final var problemDetail =
-        RestErrorMapper.createProblemDetail(
-            HttpStatus.NOT_IMPLEMENTED, "Not implemented", "Not implemented");
-    return RestErrorMapper.mapProblemToResponse(problemDetail);
+    return RequestMapper.toDocumentLinkParams(linkRequest)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            params ->
+                documentServices
+                    .withAuthentication(RequestMapper.getAuthentication())
+                    .createLink(documentId, storeId, params)
+                    .thenApply(ResponseMapper::toDocumentLinkResponse)
+                    .join());
   }
 
   public static class DocumentContentFetchException extends RuntimeException {

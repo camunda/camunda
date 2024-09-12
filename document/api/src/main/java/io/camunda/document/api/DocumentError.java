@@ -16,13 +16,13 @@ public sealed interface DocumentError {
 
   record OperationNotSupported(String message) implements DocumentError {}
 
-  record UnknownError(String message, Throwable cause) implements DocumentError {
+  record UnknownDocumentError(String message, Throwable cause) implements DocumentError {
 
-    public UnknownError(final String message) {
+    public UnknownDocumentError(final String message) {
       this(message, null);
     }
 
-    public UnknownError(final Throwable cause) {
+    public UnknownDocumentError(final Throwable cause) {
       this(null, cause);
     }
   }

@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.document.api.DocumentLink;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.gateway.protocol.rest.DeploymentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentProcess;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentReference.DocumentTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResponse;
@@ -105,15 +107,24 @@ public final class ResponseMapper {
                     .map(Object::toString)
                     .orElse(null))
             .fileName(internalMetadata.fileName())
+            .size(internalMetadata.size())
             .contentType(internalMetadata.contentType());
     Optional.ofNullable(internalMetadata.additionalProperties())
         .ifPresent(map -> map.forEach(externalMetadata::putAdditionalProperty));
     final var reference =
         new DocumentReference()
+            .documentType(DocumentTypeEnum.CAMUNDA)
             .documentId(response.documentId())
             .storeId(response.storeId())
             .metadata(externalMetadata);
     return new ResponseEntity<>(reference, HttpStatus.CREATED);
+  }
+
+  public static ResponseEntity<Object> toDocumentLinkResponse(final DocumentLink documentLink) {
+    final var externalDocumentLink = new io.camunda.zeebe.gateway.protocol.rest.DocumentLink();
+    externalDocumentLink.setExpiresAt(documentLink.expiresAt().toString());
+    externalDocumentLink.setUrl(documentLink.link());
+    return new ResponseEntity<>(externalDocumentLink, HttpStatus.OK);
   }
 
   public static ResponseEntity<Object> toDeployResourceResponse(
