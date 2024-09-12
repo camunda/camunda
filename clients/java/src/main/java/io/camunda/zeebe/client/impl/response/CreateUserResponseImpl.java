@@ -13,41 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.protocol.record.intent;
+package io.camunda.zeebe.client.impl.response;
 
-public enum AuthorizationIntent implements Intent {
-  ADD_PERMISSION(0),
-  PERMISSION_ADDED(1);
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.response.CreateUserResponse;
+import io.camunda.zeebe.client.protocol.rest.UserCreateResponse;
 
-  private final short value;
+public class CreateUserResponseImpl implements CreateUserResponse {
 
-  AuthorizationIntent(final int value) {
-    this.value = (short) value;
+  private final JsonMapper jsonMapper;
+  private long userKey;
+
+  public CreateUserResponseImpl(final JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
   }
 
   @Override
-  public short value() {
-    return value;
+  public long getUserKey() {
+    return userKey;
   }
 
-  @Override
-  public boolean isEvent() {
-    switch (this) {
-      case PERMISSION_ADDED:
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  public static Intent from(final short value) {
-    switch (value) {
-      case 0:
-        return ADD_PERMISSION;
-      case 1:
-        return PERMISSION_ADDED;
-      default:
-        return UNKNOWN;
-    }
+  public CreateUserResponseImpl setResponse(final UserCreateResponse response) {
+    userKey = response.getUserKey();
+    return this;
   }
 }

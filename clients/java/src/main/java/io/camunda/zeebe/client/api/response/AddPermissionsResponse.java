@@ -15,12 +15,4 @@
  */
 package io.camunda.zeebe.client.api.response;
 
-public interface CreateUserResponse {
-
-  /**
-   * Returns the key of the created user.
-   *
-   * @return the key of the created user.
-   */
-  long getUserKey();
-}
+public interface AddPermissionsResponse {}

@@ -17,7 +17,6 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -83,24 +82,6 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     ownerTypeByOwnerKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.OWNER_TYPE_BY_OWNER_KEY, transactionContext, ownerKey, ownerType);
-  }
-
-  @Override
-  public void createAuthorization(final AuthorizationRecord authorizationRecord) {
-    persistedAuthorization.setAuthorization(authorizationRecord);
-
-    ownerKey.wrapLong(authorizationRecord.getOwnerKey());
-    ownerType.wrapString(authorizationRecord.getOwnerType().name());
-    resourceType.wrapString(authorizationRecord.getResourceType().name());
-
-    final var permissions = authorizationRecord.getPermissions();
-    permissions.forEach(
-        permission -> {
-          permissionType.wrapString(permission.getPermissionType().name());
-          resourceIdentifiers.setResourceIdentifiers(permission.getResourceIds());
-          resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.insert(
-              ownerKeyAndResourceTypeAndPermissionCompositeKey, resourceIdentifiers);
-        });
   }
 
   @Override

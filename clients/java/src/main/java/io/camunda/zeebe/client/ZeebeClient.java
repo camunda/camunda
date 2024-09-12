@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
+import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
@@ -839,4 +840,27 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   CreateUserCommandStep1 newUserCreateCommand();
+
+  /**
+   * Command to add permissions to an owner.
+   *
+   * <pre>
+   * zeebeClient
+   *  .newAddPermissionsCommand(ownerKey)
+   *  .resourceType(resourceType)
+   *  .permission(permissionType)
+   *  .resourceIds(resourceIds)
+   *  .permission(permissionType)
+   *  .resourceId(resourceId)
+   *  .resourceId(resourceId)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   * <br>
+   *
+   * @param ownerKey the key of the owner
+   * @return a builder for the command
+   */
+  AddPermissionsCommandStep1 newAddPermissionsCommand(long ownerKey);
 }

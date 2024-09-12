@@ -92,7 +92,7 @@ public class BasicAuthIT {
     final MvcResult mvcResult =
         mockMvc.perform(request).andExpect(request().asyncStarted()).andReturn();
     mvcResult.getAsyncResult();
-    mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isNoContent());
+    mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isAccepted());
   }
 
   @Test

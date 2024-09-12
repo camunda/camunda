@@ -12,6 +12,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -443,6 +444,10 @@ public final class RecordingExporter implements Exporter {
   public static AuthorizationRecordStream authorizationRecords() {
     return new AuthorizationRecordStream(
         records(ValueType.AUTHORIZATION, AuthorizationRecordValue.class));
+  }
+
+  public static AuthorizationRecordStream authorizationRecords(final AuthorizationIntent intent) {
+    return authorizationRecords().withIntent(intent);
   }
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {
