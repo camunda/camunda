@@ -25,7 +25,7 @@ public class TaskCompleteRequest {
     return variables;
   }
 
-  public TaskCompleteRequest setVariables(List<VariableInputDTO> variables) {
+  public TaskCompleteRequest setVariables(final List<VariableInputDTO> variables) {
     this.variables = variables;
     return this;
   }

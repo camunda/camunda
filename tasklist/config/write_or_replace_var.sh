@@ -12,8 +12,14 @@ VAR=$1
 VALUE=$2
 FILE=$3
 
-if ! grep -q "^$VAR=" $FILE; then
-  echo "$VAR=$VALUE" >> $FILE
+if ! grep -q "^$VAR=" "$FILE"; then
+  echo "$VAR=$VALUE" >> "$FILE"
 else
-  sed -i "s|^$VAR=.*|$VAR=$VALUE|g" $FILE
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS (BSD sed)
+    sed -i '' "s|^$VAR=.*|$VAR=$VALUE|g" "$FILE"
+  else
+    # Linux (GNU sed)
+    sed -i "s|^$VAR=.*|$VAR=$VALUE|g" "$FILE"
+  fi
 fi

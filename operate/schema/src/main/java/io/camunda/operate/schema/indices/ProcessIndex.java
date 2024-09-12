@@ -19,6 +19,7 @@ public class ProcessIndex extends AbstractIndexDescriptor implements Prio4Backup
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String NAME = "name";
   public static final String VERSION = "version";
+  public static final String VERSION_TAG = "versionTag";
   public static final String BPMN_XML = "bpmnXml";
   public static final String RESOURCE_NAME = "resourceName";
   public static final String FLOWNODES = "flowNodes";
