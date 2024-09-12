@@ -83,7 +83,7 @@ jobs:
   scan:
     name: Snyk Scan
     # Run on self-hosted to make building Zeebe much faster
-    runs-on: [ self-hosted, linux, amd64, "16" ]
+    runs-on: gcp-perf-core-8-default
     permissions:
       security-events: write # required to upload SARIF files
     steps:
