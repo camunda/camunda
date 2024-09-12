@@ -26,7 +26,7 @@ jobs:
         working-directory: ./c8run
 
       - name: Run c8run
-        run: nohup ./start.sh
+        run: nohup ./start.sh &
         working-directory: ./c8run
         env:
           JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
