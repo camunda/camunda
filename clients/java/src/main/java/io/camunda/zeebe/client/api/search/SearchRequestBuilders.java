@@ -187,23 +187,23 @@ public final class SearchRequestBuilders {
     return sort;
   }
 
-  public static FlownodeInstanceFilter flownodeInstanceFilter() {
+  public static FlownodeInstanceFilter flowNodeInstanceFilter() {
     return new FlownodeInstanceFilterImpl();
   }
 
-  public static FlownodeInstanceFilter flownodeInstanceFilter(
+  public static FlownodeInstanceFilter flowNodeInstanceFilter(
       final Consumer<FlownodeInstanceFilter> fn) {
-    final FlownodeInstanceFilter filter = flownodeInstanceFilter();
+    final FlownodeInstanceFilter filter = flowNodeInstanceFilter();
     fn.accept(filter);
     return filter;
   }
 
-  public static FlownodeInstanceSort flownodeInstanceSort() {
+  public static FlownodeInstanceSort flowNodeInstanceSort() {
     return new FlownodeInstanceSortImpl();
   }
 
-  public static FlownodeInstanceSort flownodeInstanceSort(final Consumer<FlownodeInstanceSort> fn) {
-    final FlownodeInstanceSort sort = flownodeInstanceSort();
+  public static FlownodeInstanceSort flowNodeInstanceSort(final Consumer<FlownodeInstanceSort> fn) {
+    final FlownodeInstanceSort sort = flowNodeInstanceSort();
     fn.accept(sort);
     return sort;
   }

@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.search.query;
 
-import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.flownodeInstanceFilter;
-import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.flownodeInstanceSort;
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.flowNodeInstanceFilter;
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.flowNodeInstanceSort;
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class FlownodeInstanceQueryImpl
+public class FlowNodeInstanceQueryImpl
     extends TypedSearchRequestPropertyProvider<FlowNodeInstanceSearchQueryRequest>
     implements FlownodeInstanceQuery {
 
@@ -51,7 +51,7 @@ public class FlownodeInstanceQueryImpl
   private final FlowNodeInstanceSearchQueryRequest request;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public FlownodeInstanceQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+  public FlowNodeInstanceQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
     request = new FlowNodeInstanceSearchQueryRequest();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
@@ -86,7 +86,7 @@ public class FlownodeInstanceQueryImpl
 
   @Override
   public FlownodeInstanceQuery filter(final Consumer<FlownodeInstanceFilter> fn) {
-    return filter(flownodeInstanceFilter(fn));
+    return filter(flowNodeInstanceFilter(fn));
   }
 
   @Override
@@ -98,7 +98,7 @@ public class FlownodeInstanceQueryImpl
 
   @Override
   public FlownodeInstanceQuery sort(final Consumer<FlownodeInstanceSort> fn) {
-    return sort(flownodeInstanceSort(fn));
+    return sort(flowNodeInstanceSort(fn));
   }
 
   @Override
