@@ -405,6 +405,7 @@ opensearch:
       # process instance. So this setting defines the maximum number of activities/variables that a single
       # process instance can contain. This limit helps to prevent out of memory errors and should be used with care.
       nested_documents_limit: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_NESTED_DOCUMENTS_LIMIT:10000}
+  interceptorPlugins: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_INTERCEPTORPLUGINS:[]}
 
 # everything that is related with configuring Elasticsearch or creating
 # a connection to it.

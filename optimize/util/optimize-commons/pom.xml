@@ -13,6 +13,19 @@
 
   <dependencies>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-connect</artifactId>
+      <version>8.6.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-plugin</artifactId>
+      <version>8.6.0-SNAPSHOT</version>
+      <scope>test</scope>
+    </dependency>
+
     <!-- REST -->
     <dependency>
       <groupId>jakarta.validation</groupId>
