@@ -25,12 +25,6 @@ public final class AuthorizationProcessors {
       final CommandDistributionBehavior distributionBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.AUTHORIZATION,
-        AuthorizationIntent.CREATE,
-        new AuthorizationCreateProcessor(
-            keyGenerator, processingState, writers, distributionBehavior));
-
-    typedRecordProcessors.onCommand(
-        ValueType.AUTHORIZATION,
         AuthorizationIntent.ADD_PERMISSION,
         new AuthorizationAddPermissionProcessor(
             writers, keyGenerator, processingState, distributionBehavior));

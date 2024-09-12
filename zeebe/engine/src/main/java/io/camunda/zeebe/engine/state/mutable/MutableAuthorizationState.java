@@ -8,15 +8,12 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 
 public interface MutableAuthorizationState extends AuthorizationState {
-
-  void createAuthorization(final AuthorizationRecord authorizationRecord);
 
   /**
    * Checks if a Permission exists for the provided ownerKey, resourceType and permissionType. If it
