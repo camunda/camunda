@@ -118,8 +118,7 @@ public class ListViewStoreOpenSearch implements ListViewStore {
                       q.term(
                           t ->
                               t.field(TasklistListViewTemplate.VARIABLE_NAME)
-                                  .value(FieldValue.of(varName))))
-              .size(1000); // Set batch size (1000 is an example, adjust as necessary)
+                                  .value(FieldValue.of(varName))));
 
       OpenSearchUtil.scrollWith(
           searchRequest,
