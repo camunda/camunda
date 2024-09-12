@@ -57,7 +57,7 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
 
   @Override
   public List<String> toIndices(final IncidentFilter filter) {
-    return List.of("operate-incident-8.3.0_alias");
+    return List.of("operate-incident-8.3.1_alias");
   }
 
   private SearchQuery getHasActiveOperationQuery(final boolean hasActiveOperation) {
