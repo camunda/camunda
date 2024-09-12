@@ -1886,29 +1886,40 @@ components:
       properties:
         flowNodeInstanceKey:
           type: integer
+          description: The key of this flow node instance.
           format: int64
         processInstanceKey:
           type: integer
+          description: The process instance key.
           format: int64
         processDefinitionKey:
           type: integer
+          description: The process definition key.
           format: int64
         state:
           type: string
+          description: The state, one of ACTIVE, COMPLETED, TERMINATED.
         type:
           type: string
+          description: The flow node type
         flowNodeId:
           type: string
+          description: The flow node id
         flowNodeName:
           type: string
+          description: The flow node name
         treePath:
           type: string
+          description: The path of keys from process instance to this flow node instance separated by '/'
         incident:
           type: boolean
+          description: Shows whether this flow node instance has an incident related to
         incidentKey:
           type: integer
+          description: The key of incident if field incident is true
           format: int64
         tenantId:
+          description: The tenant id
           type: string
     FlowNodeInstanceSearchQueryResponse:
       allOf:
