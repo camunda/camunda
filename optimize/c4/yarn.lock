@@ -2419,17 +2419,15 @@ __metadata:
   linkType: hard
 
 "@chromatic-com/storybook@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "@chromatic-com/storybook@npm:2.0.0"
+  version: 2.0.1
+  resolution: "@chromatic-com/storybook@npm:2.0.1"
   dependencies:
     chromatic: "npm:^11.4.0"
     filesize: "npm:^10.0.12"
     jsonfile: "npm:^6.1.0"
     react-confetti: "npm:^6.1.0"
     strip-ansi: "npm:^7.1.0"
-  peerDependencies:
-    storybook: ^8.2.0
-  checksum: 10c0/4c4df6a331c251abb827e2db500188a042ec84bc78e93172ca0101cbd8e9c5d4a3eb480c1a35e545e54cb0f12ec7e6d40419a3cf4c806b92081e201ca6914be0
+  checksum: 10c0/d77c08b754c67e5ef24912b7cbef1cf71bf78f1918d4a5bc3bb2577f4bbe6a2d50cb89449cec501ed65f3b5f37868baf7c92f7831c526521398a7cd9ff6a6818
   languageName: node
   linkType: hard
 
