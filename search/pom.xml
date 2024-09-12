@@ -19,6 +19,7 @@
     <module>search-client-elasticsearch</module>
     <module>search-client-opensearch</module>
     <module>search-client-connect</module>
+    <module>search-client-query-transformer</module>
     <module>search-client-plugin</module>
   </modules>
 

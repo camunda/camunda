@@ -7,11 +7,11 @@
  */
 package io.camunda.search.os.transformers.sort;
 
-import io.camunda.search.clients.sort.SearchFieldSort;
-import io.camunda.search.clients.sort.SearchSortOptions;
 import io.camunda.search.os.transformers.OpensearchTransformer;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import io.camunda.search.transformers.SearchTransfomer;
+import io.camunda.service.search.sort.SearchFieldSort;
+import io.camunda.service.search.sort.SearchSortOptions;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.SortOptions;
 

@@ -37,7 +37,7 @@ public class AuthorizationFilterTest {
   public void before() {
     client = new StubbedCamundaSearchClient();
     new AuthorizationSearchQueryStub().registerWith(client);
-    services = new AuthorizationServices<>(brokerClient, client);
+    services = new AuthorizationServices<>(brokerClient, null, null);
   }
 
   @Test

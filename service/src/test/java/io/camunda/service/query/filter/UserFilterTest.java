@@ -36,7 +36,7 @@ public class UserFilterTest {
   public void before() {
     client = new StubbedCamundaSearchClient();
     new UserSearchQueryStub().registerWith(client);
-    services = new UserServices(brokerClient, client);
+    services = new UserServices(brokerClient, null, null);
   }
 
   @Test

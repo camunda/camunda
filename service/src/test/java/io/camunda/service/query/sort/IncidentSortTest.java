@@ -9,12 +9,12 @@ package io.camunda.service.query.sort;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.clients.sort.SearchSortOptions;
-import io.camunda.search.clients.sort.SortOrder;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.query.filter.IncidentSearchQueryStub;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.sort.IncidentSort;
+import io.camunda.service.search.sort.SearchSortOptions;
+import io.camunda.service.search.sort.SortOrder;
 import io.camunda.service.util.StubbedCamundaSearchClient;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
@@ -33,7 +33,7 @@ public class IncidentSortTest {
   public void before() {
     client = new StubbedCamundaSearchClient();
     new IncidentSearchQueryStub().registerWith(client);
-    services = new IncidentServices(null, client, null, null);
+    services = new IncidentServices(null, null, null);
   }
 
   private static Stream<Arguments> provideSortParameters() {

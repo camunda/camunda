@@ -18,14 +18,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class ProcessInstanceResultConfigTest {
+
   private ProcessInstanceServices services;
-  private StubbedCamundaSearchClient client;
+  private StubbedCamundaSearchClient client; // Also implements the ProcessSearchClient
 
   @BeforeEach
   public void before() {
     client = new StubbedCamundaSearchClient();
     new ProcessInstanceSearchQueryStub().registerWith(client);
-    services = new ProcessInstanceServices(null, client);
+    services = new ProcessInstanceServices(null, null, null);
   }
 
   @Test

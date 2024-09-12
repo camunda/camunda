@@ -7,16 +7,16 @@
  */
 package io.camunda.service;
 
-import io.camunda.search.clients.CamundaSearchClient;
+import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.service.entities.UserTaskEntity;
 import io.camunda.service.exception.NotFoundException;
+import io.camunda.service.exception.SearchQueryExecutionException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.query.UserTaskQuery.Builder;
 import io.camunda.service.security.auth.Authentication;
-import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskAssignmentRequest;
@@ -31,27 +31,30 @@ import java.util.function.Function;
 public final class UserTaskServices
     extends SearchQueryService<UserTaskServices, UserTaskQuery, UserTaskEntity> {
 
-  public UserTaskServices(
-      final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
-    this(brokerClient, dataStoreClient, null, null);
-  }
+  private final UserTaskSearchClient userTaskSearchClient;
 
   public UserTaskServices(
       final BrokerClient brokerClient,
-      final CamundaSearchClient searchClient,
-      final ServiceTransformers transformers,
+      final UserTaskSearchClient userTaskSearchClient,
       final Authentication authentication) {
-    super(brokerClient, searchClient, transformers, authentication);
+    super(brokerClient, authentication);
+    this.userTaskSearchClient = userTaskSearchClient;
   }
 
   @Override
   public UserTaskServices withAuthentication(final Authentication authentication) {
-    return new UserTaskServices(brokerClient, searchClient, transformers, authentication);
+    return new UserTaskServices(brokerClient, userTaskSearchClient, authentication);
   }
 
   @Override
   public SearchQueryResult<UserTaskEntity> search(final UserTaskQuery query) {
-    return executor.search(query, UserTaskEntity.class);
+    return userTaskSearchClient
+        .searchUserTasks(query, authentication)
+        .fold(
+            (e) -> {
+              throw new SearchQueryExecutionException("Failed to execute search query", e);
+            },
+            (r) -> r);
   }
 
   public SearchQueryResult<UserTaskEntity> search(
@@ -91,9 +94,8 @@ public final class UserTaskServices
 
   public UserTaskEntity getByKey(final Long key) {
     final SearchQueryResult<UserTaskEntity> result =
-        executor.search(
-            SearchQueryBuilders.userTaskSearchQuery().filter(f -> f.userTaskKeys(key)).build(),
-            UserTaskEntity.class);
+        search(
+            SearchQueryBuilders.userTaskSearchQuery().filter(f -> f.userTaskKeys(key)).build());
     if (result.total() < 1) {
       throw new NotFoundException(String.format("User Task with key %d not found", key));
     } else if (result.total() > 1) {

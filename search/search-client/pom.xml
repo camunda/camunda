@@ -16,6 +16,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-service-domain</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
 

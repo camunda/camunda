@@ -29,7 +29,7 @@ public final class FlowNodeInstanceFilterTest {
   public void before() {
     client = new StubbedCamundaSearchClient();
     new FlowNodeInstanceSearchQueryStub().registerWith(client);
-    services = new FlowNodeInstanceServices(null, client, null, null);
+    services = new FlowNodeInstanceServices(null, null, null);
   }
 
   @Test

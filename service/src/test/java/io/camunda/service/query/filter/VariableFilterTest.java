@@ -13,7 +13,6 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchTermQuery;
-import io.camunda.search.clients.sort.SortOrder;
 import io.camunda.service.VariableServices;
 import io.camunda.service.entities.VariableEntity;
 import io.camunda.service.search.filter.FilterBuilders;
@@ -21,6 +20,7 @@ import io.camunda.service.search.filter.VariableFilter;
 import io.camunda.service.search.filter.VariableValueFilter;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
+import io.camunda.service.search.sort.SortOrder;
 import io.camunda.service.util.StubbedBrokerClient;
 import io.camunda.service.util.StubbedCamundaSearchClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +36,7 @@ public final class VariableFilterTest {
   public void before() {
     client = new StubbedCamundaSearchClient();
     new VariableSearchQueryStub().registerWith(client);
-    services = new VariableServices(brokerClient, client);
+    services = new VariableServices(brokerClient, null, null);
   }
 
   @Test

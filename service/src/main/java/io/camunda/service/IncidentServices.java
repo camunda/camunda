@@ -7,15 +7,15 @@
  */
 package io.camunda.service;
 
-import io.camunda.search.clients.CamundaSearchClient;
+import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.service.entities.IncidentEntity;
 import io.camunda.service.exception.NotFoundException;
+import io.camunda.service.exception.SearchQueryExecutionException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.search.query.IncidentQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
-import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
@@ -26,12 +26,14 @@ import java.util.function.Function;
 public class IncidentServices
     extends SearchQueryService<IncidentServices, IncidentQuery, IncidentEntity> {
 
+  private final IncidentSearchClient incidentSearchClient;
+
   public IncidentServices(
       final BrokerClient brokerClient,
-      final CamundaSearchClient searchClient,
-      final ServiceTransformers transformers,
+      final IncidentSearchClient incidentSearchClient,
       final Authentication authentication) {
-    super(brokerClient, searchClient, transformers, authentication);
+    super(brokerClient, authentication);
+    this.incidentSearchClient = incidentSearchClient;
   }
 
   public SearchQueryResult<IncidentEntity> search(
@@ -41,19 +43,23 @@ public class IncidentServices
 
   @Override
   public SearchQueryResult<IncidentEntity> search(final IncidentQuery query) {
-    return executor.search(query, IncidentEntity.class);
+    return incidentSearchClient
+        .searchIncidents(query, authentication)
+        .fold(
+            (e) -> {
+              throw new SearchQueryExecutionException("Failed to execute search query", e);
+            },
+            (r) -> r);
   }
 
   @Override
   public IncidentServices withAuthentication(final Authentication authentication) {
-    return new IncidentServices(brokerClient, searchClient, transformers, authentication);
+    return new IncidentServices(brokerClient, incidentSearchClient, authentication);
   }
 
   public IncidentEntity getByKey(final Long key) {
     final SearchQueryResult<IncidentEntity> result =
-        executor.search(
-            SearchQueryBuilders.incidentSearchQuery().filter(f -> f.keys(key)).build(),
-            IncidentEntity.class);
+        search(SearchQueryBuilders.incidentSearchQuery().filter(f -> f.keys(key)).build());
     if (result.total() < 1) {
       throw new NotFoundException(String.format("Incident with key %d not found", key));
     } else if (result.total() > 1) {

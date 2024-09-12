@@ -13,7 +13,7 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQueryBuilders;
-import io.camunda.search.clients.sort.SearchSortOptions;
+import io.camunda.service.search.sort.SearchSortOptions;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.es.util.ESQuerySerializer;
 import io.camunda.search.transformers.SearchTransfomer;

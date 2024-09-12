@@ -7,15 +7,15 @@
  */
 package io.camunda.service;
 
-import io.camunda.search.clients.CamundaSearchClient;
+import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.service.entities.ProcessInstanceEntity;
 import io.camunda.service.exception.NotFoundException;
+import io.camunda.service.exception.SearchQueryExecutionException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
-import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
@@ -39,29 +39,34 @@ import java.util.function.Function;
 
 public final class ProcessInstanceServices
     extends SearchQueryService<
-        ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
+    ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
 
-  public ProcessInstanceServices(
-      final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
-    this(brokerClient, dataStoreClient, null, null);
-  }
+  private final ProcessInstanceSearchClient processInstanceSearchClient;
 
   public ProcessInstanceServices(
       final BrokerClient brokerClient,
-      final CamundaSearchClient searchClient,
-      final ServiceTransformers transformers,
-      final Authentication authentication) {
-    super(brokerClient, searchClient, transformers, authentication);
+      final ProcessInstanceSearchClient processInstanceSearchClient,
+      final Authentication authentication
+  ) {
+    super(brokerClient, authentication);
+    this.processInstanceSearchClient = processInstanceSearchClient;
   }
 
   @Override
   public ProcessInstanceServices withAuthentication(final Authentication authentication) {
-    return new ProcessInstanceServices(brokerClient, searchClient, transformers, authentication);
+    return new ProcessInstanceServices(brokerClient, processInstanceSearchClient,
+        authentication);
   }
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> search(final ProcessInstanceQuery query) {
-    return executor.search(query, ProcessInstanceEntity.class);
+    return processInstanceSearchClient
+        .searchProcessInstances(query, authentication)
+        .fold(
+            (e) -> {
+              throw new SearchQueryExecutionException("Failed to execute search query", e);
+            },
+            (r) -> r);
   }
 
   public SearchQueryResult<ProcessInstanceEntity> search(
@@ -71,11 +76,10 @@ public final class ProcessInstanceServices
 
   public ProcessInstanceEntity getByKey(final Long processInstanceKey) {
     final SearchQueryResult<ProcessInstanceEntity> result =
-        executor.search(
+        search(
             SearchQueryBuilders.processInstanceSearchQuery()
                 .filter(f -> f.processInstanceKeys(processInstanceKey))
-                .build(),
-            ProcessInstanceEntity.class);
+                .build());
     if (result.total() < 1) {
       throw new NotFoundException(
           String.format("Process Instance with key %d not found", processInstanceKey));
@@ -172,19 +176,27 @@ public final class ProcessInstanceServices
       Long requestTimeout,
       Long operationReference,
       List<ProcessInstanceCreationStartInstruction> startInstructions,
-      List<String> fetchVariables) {}
+      List<String> fetchVariables) {
 
-  public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}
+  }
+
+  public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {
+
+  }
 
   public record ProcessInstanceMigrateRequest(
       Long processInstanceKey,
       Long targetProcessDefinitionKey,
       List<ProcessInstanceMigrationMappingInstruction> mappingInstructions,
-      Long operationReference) {}
+      Long operationReference) {
+
+  }
 
   public record ProcessInstanceModifyRequest(
       Long processInstanceKey,
       List<ProcessInstanceModificationActivateInstruction> activateInstructions,
       List<ProcessInstanceModificationTerminateInstruction> terminateInstructions,
-      Long operationReference) {}
+      Long operationReference) {
+
+  }
 }

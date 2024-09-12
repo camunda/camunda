@@ -7,22 +7,54 @@
  */
 package io.camunda.search.clients;
 
-import static io.camunda.search.clients.core.RequestBuilders.searchRequest;
-
-import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.clients.core.SearchQueryResponse;
-import io.camunda.util.ObjectBuilder;
+import io.camunda.service.entities.AuthorizationEntity;
+import io.camunda.service.entities.DecisionDefinitionEntity;
+import io.camunda.service.entities.DecisionInstanceEntity;
+import io.camunda.service.entities.DecisionRequirementsEntity;
+import io.camunda.service.entities.FlowNodeInstanceEntity;
+import io.camunda.service.entities.IncidentEntity;
+import io.camunda.service.entities.UserEntity;
+import io.camunda.service.entities.UserTaskEntity;
+import io.camunda.service.entities.VariableEntity;
+import io.camunda.service.search.query.AuthorizationQuery;
+import io.camunda.service.search.query.DecisionDefinitionQuery;
+import io.camunda.service.search.query.DecisionInstanceQuery;
+import io.camunda.service.search.query.DecisionRequirementsQuery;
+import io.camunda.service.search.query.FlowNodeInstanceQuery;
+import io.camunda.service.search.query.IncidentQuery;
+import io.camunda.service.search.query.SearchQueryResult;
+import io.camunda.service.search.query.UserQuery;
+import io.camunda.service.search.query.UserTaskQuery;
+import io.camunda.service.search.query.VariableQuery;
+import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.util.Either;
-import java.util.function.Function;
 
 public interface CamundaSearchClient extends AutoCloseable {
 
-  <T> Either<Exception, SearchQueryResponse<T>> search(
-      final SearchQueryRequest searchRequest, final Class<T> documentClass);
+  Either<Exception, SearchQueryResult<AuthorizationEntity>> searchAuthorizations(
+      AuthorizationQuery filter, Authentication authentication);
 
-  default <T> Either<Exception, SearchQueryResponse<T>> search(
-      final Function<SearchQueryRequest.Builder, ObjectBuilder<SearchQueryRequest>> fn,
-      final Class<T> documentClass) {
-    return search(searchRequest(fn), documentClass);
-  }
+  Either<Exception, SearchQueryResult<DecisionDefinitionEntity>> searchDecisionDefinitions(
+      DecisionDefinitionQuery filter, Authentication authentication);
+
+  Either<Exception, SearchQueryResult<DecisionInstanceEntity>> searchDecisionInstances(
+      DecisionInstanceQuery filter, Authentication authentication);
+
+  Either<Exception, SearchQueryResult<DecisionRequirementsEntity>> searchDecisionRequirements(
+      DecisionRequirementsQuery filter, Authentication authentication);
+
+  Either<Exception, SearchQueryResult<FlowNodeInstanceEntity>> searchFlowNodeInstances(
+      FlowNodeInstanceQuery filter, Authentication authentication);
+
+  Either<Exception, SearchQueryResult<IncidentEntity>> searchIncidents(
+      IncidentQuery filter, Authentication authentication);
+
+  Either<Exception, SearchQueryResult<UserEntity>> searchUsers(
+      UserQuery filter, Authentication authentication);
+
+  Either<Exception, SearchQueryResult<UserTaskEntity>> searchUserTasks(
+      UserTaskQuery filter, Authentication authentication);
+
+  Either<Exception, SearchQueryResult<VariableEntity>> searchVariables(
+      VariableQuery filter, Authentication authentication);
 }

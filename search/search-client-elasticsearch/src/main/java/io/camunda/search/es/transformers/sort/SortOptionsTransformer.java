@@ -9,8 +9,8 @@ package io.camunda.search.es.transformers.sort;
 
 import co.elastic.clients.elasticsearch._types.FieldSort;
 import co.elastic.clients.elasticsearch._types.SortOptions;
-import io.camunda.search.clients.sort.SearchFieldSort;
-import io.camunda.search.clients.sort.SearchSortOptions;
+import io.camunda.service.search.sort.SearchFieldSort;
+import io.camunda.service.search.sort.SearchSortOptions;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.transformers.SearchTransfomer;

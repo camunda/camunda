@@ -25,7 +25,7 @@ public final class FormFilterTest {
   public void before() {
     client = new StubbedCamundaSearchClient();
     new FormSearchQueryStub().registerWith(client);
-    services = new FormServices(null, client, null, null);
+    services = new FormServices(null, null, null);
   }
 
   @Test

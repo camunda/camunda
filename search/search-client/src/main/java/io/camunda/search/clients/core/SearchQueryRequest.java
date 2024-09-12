@@ -13,10 +13,10 @@ import static io.camunda.util.CollectionUtil.collectValues;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
-import io.camunda.search.clients.sort.SearchSortOptions;
-import io.camunda.search.clients.sort.SortOptionsBuilders;
 import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.clients.source.SourceConfigBuilders;
+import io.camunda.service.search.sort.SearchSortOptions;
+import io.camunda.service.search.sort.SortOptionsBuilders;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.Objects;

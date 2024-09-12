@@ -41,7 +41,7 @@ public class DecisionDefinitionServicesTest {
     decisionDefinitionSearchQueryStub.registerWith(client);
     decisionRequirementsSearchQueryStub = new DecisionRequirementsSearchQueryStub();
     decisionRequirementsSearchQueryStub.registerWith(client);
-    services = new DecisionDefinitionServices(null, client);
+    services = new DecisionDefinitionServices(null, null, null, null);
   }
 
   @Test

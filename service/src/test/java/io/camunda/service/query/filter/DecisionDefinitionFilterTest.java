@@ -30,7 +30,7 @@ public final class DecisionDefinitionFilterTest {
   public void before() {
     client = new StubbedCamundaSearchClient();
     new DecisionDefinitionSearchQueryStub().registerWith(client);
-    services = new DecisionDefinitionServices(null, client);
+    services = new DecisionDefinitionServices(null, null, null, null);
   }
 
   @Test

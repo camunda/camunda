@@ -36,7 +36,7 @@ class DecisionInstanceFilterTest {
   void before() {
     client = new StubbedCamundaSearchClient();
     new DecisionInstanceSearchQueryStub().registerWith(client);
-    services = new DecisionInstanceServices(null, client);
+    services = new DecisionInstanceServices(null, null, null);
   }
 
   @Test

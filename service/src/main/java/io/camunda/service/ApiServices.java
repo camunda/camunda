@@ -7,11 +7,8 @@
  */
 package io.camunda.service;
 
-import static java.util.Optional.ofNullable;
-
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.security.auth.Authentication;
-import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
@@ -27,26 +24,13 @@ import org.agrona.concurrent.UnsafeBuffer;
 public abstract class ApiServices<T extends ApiServices<T>> {
 
   protected final BrokerClient brokerClient;
-  protected final CamundaSearchClient searchClient;
   protected final Authentication authentication;
-  protected final ServiceTransformers transformers;
 
   protected ApiServices(
       final BrokerClient brokerClient,
-      final CamundaSearchClient searchClient,
-      final Authentication authentication) {
-    this(brokerClient, searchClient, null, authentication);
-  }
-
-  protected ApiServices(
-      final BrokerClient brokerClient,
-      final CamundaSearchClient searchClient,
-      final ServiceTransformers transformers,
       final Authentication authentication) {
     this.brokerClient = brokerClient;
-    this.searchClient = searchClient;
     this.authentication = authentication;
-    this.transformers = ofNullable(transformers).orElseGet(ServiceTransformers::newInstance);
   }
 
   public abstract T withAuthentication(final Authentication authentication);

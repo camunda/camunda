@@ -7,13 +7,15 @@
  */
 package io.camunda.service;
 
+import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.CamundaSearchClient;
+import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.service.entities.AuthorizationEntity;
+import io.camunda.service.exception.SearchQueryExecutionException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.search.query.AuthorizationQuery;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
-import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationPatchRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -27,27 +29,30 @@ import java.util.concurrent.CompletableFuture;
 public class AuthorizationServices<T>
     extends SearchQueryService<AuthorizationServices<T>, AuthorizationQuery, AuthorizationEntity> {
 
-  public AuthorizationServices(
-      final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
-    this(brokerClient, dataStoreClient, null, null);
-  }
+  private final AuthorizationSearchClient authorizationSearchClient;
 
   public AuthorizationServices(
       final BrokerClient brokerClient,
-      final CamundaSearchClient searchClient,
-      final ServiceTransformers transformers,
+      final AuthorizationSearchClient authorizationSearchClient,
       final Authentication authentication) {
-    super(brokerClient, searchClient, transformers, authentication);
+    super(brokerClient, authentication);
+   this.authorizationSearchClient = authorizationSearchClient;
   }
 
   @Override
   public AuthorizationServices<T> withAuthentication(final Authentication authentication) {
-    return new AuthorizationServices<>(brokerClient, searchClient, transformers, authentication);
+    return new AuthorizationServices<>(brokerClient, this.authorizationSearchClient, authentication);
   }
 
   @Override
   public SearchQueryResult<AuthorizationEntity> search(final AuthorizationQuery query) {
-    return executor.search(query, AuthorizationEntity.class);
+    return authorizationSearchClient
+        .searchAuthorizations(query, authentication)
+        .fold(
+            (e) -> {
+              throw new SearchQueryExecutionException("Failed to execute search query", e);
+            },
+            (r) -> r);
   }
 
   public CompletableFuture<AuthorizationRecord> patchAuthorization(

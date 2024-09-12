@@ -25,7 +25,7 @@ public class DecisionRequirementsResultConfigTest {
   public void before() {
     client = new StubbedCamundaSearchClient();
     new DecisionRequirementsSearchQueryStub().registerWith(client);
-    services = new DecisionRequirementsServices(null, client);
+    services = new DecisionRequirementsServices(null, null, null);
   }
 
   @Test

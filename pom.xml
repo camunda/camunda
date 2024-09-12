@@ -29,6 +29,7 @@
     <module>authentication</module>
     <module>search</module>
     <module>service</module>
+    <module>service-domain</module>
     <module>clients/java</module>
     <module>clients/spring-boot-starter-camunda-sdk</module>
     <module>testing/camunda-process-test-java</module>

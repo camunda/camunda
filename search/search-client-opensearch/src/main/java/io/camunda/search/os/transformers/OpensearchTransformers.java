@@ -25,8 +25,6 @@ import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.query.SearchWildcardQuery;
-import io.camunda.search.clients.sort.SearchFieldSort;
-import io.camunda.search.clients.sort.SearchSortOptions;
 import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.clients.types.TypedValue;
@@ -54,6 +52,8 @@ import io.camunda.search.os.transformers.source.SourceConfigTransformer;
 import io.camunda.search.os.transformers.source.SourceFilterTransformer;
 import io.camunda.search.os.transformers.types.TypedValueTransformer;
 import io.camunda.search.transformers.SearchTransfomer;
+import io.camunda.service.search.sort.SearchFieldSort;
+import io.camunda.service.search.sort.SearchSortOptions;
 import java.util.HashMap;
 import java.util.Map;
 
