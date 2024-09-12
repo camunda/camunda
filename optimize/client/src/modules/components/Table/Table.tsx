@@ -193,15 +193,6 @@ export default function Table<T extends object>({
     );
   });
 
-  const isInitialMount = useRef(true);
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-    } else {
-      fetchData({pageIndex, pageSize});
-    }
-  }, [fetchData, pageIndex, pageSize]);
-
   const isEmpty = !loading && (totalRows === 0 || head.length === 0);
   const isSortable = headerGroups.some(({headers}) => headers.some((header) => header.canSort));
   const showPagination =
@@ -295,6 +286,7 @@ export default function Table<T extends object>({
                   // for the `page` prop below, the situation is oposite
                   gotoPage(page - 1);
                   setPageSize(pageSize);
+                  fetchData({pageIndex: page - 1, pageSize});
                 }}
                 totalItems={totalRows}
                 page={pageIndex + 1}
