@@ -571,7 +571,7 @@ test.describe('task details page', () => {
       await expect(taskFormView.form).toBeVisible();
     } catch (error) {
       console.log('Form not loaded:' + error);
-      await sleep(10000);
+      await sleep(15000);
       await page.reload();
       await expect(taskFormView.form).toBeVisible();
     }
