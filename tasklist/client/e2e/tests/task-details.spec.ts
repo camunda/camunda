@@ -587,14 +587,8 @@ test.describe('task details page', () => {
 
     await tasksPage.openTask('Confirm Employee Details');
     await tasksPage.assignToMeButton.click();
-    try {
-      await expect(taskFormView.nameInput).toHaveValue('Ben');
-    } catch (error) {
-      console.log('Form not loaded:' + error);
-      await sleep(10000);
-      await page.reload();
-      await expect(taskFormView.nameInput).toHaveValue('Ben');
-    }
+    await expect(taskFormView.nameInput).toHaveValue('Ben');
+
     await expect(taskFormView.form.getByText('Marketing')).toBeVisible({
       timeout: 60000,
     });
