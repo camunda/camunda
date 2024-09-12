@@ -93,9 +93,9 @@ public final class TimerIncidentTest {
         .hasElementId(elementInstance.getValue().getElementId())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression '"
+            "failed to evaluate expression '"
                 + DURATION_EXPRESSION
-                + "' to be one of '[DURATION, PERIOD, STRING]', but was 'NULL'");
+                + "': no variable found for name 'timer_duration'");
   }
 
   @Test
