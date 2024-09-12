@@ -566,14 +566,14 @@ test.describe('task details page', () => {
     await tasksPage.openTask('Employee Details');
     await expect(tasksPage.detailsNav).toBeVisible();
     await tasksPage.assignToMeButton.click();
-    try {
-      await expect(taskFormView.nameInput).toBeVisible({timeout: 60000});
-    } catch (error) {
-      console.error('Form not loaded error:', error);
-      await sleep(5000);
-      await page.reload();
-      await expect(taskFormView.nameInput).toBeVisible();
-    }
+    // try {
+    //   await expect(taskFormView.nameInput).toBeVisible({timeout: 60000});
+    // } catch (error) {
+    //   console.error('Form not loaded error:', error);
+    //   await sleep(5000);
+    await page.reload();
+    await expect(taskFormView.nameInput).toBeVisible();
+    //}
 
     await taskFormView.nameInput.fill('Ben');
     await taskFormView.selectDropdownValue('marketing');
