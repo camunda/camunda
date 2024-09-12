@@ -54,7 +54,6 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       LoggerFactory.getLogger(FlowNodeInstanceZeebeRecordProcessor.class);
   private static final Set<String> AI_START_STATES = Set.of(ELEMENT_ACTIVATING.name());
 
-  private final FlowNodeStore flowNodeStore;
   private final FlowNodeInstanceTemplate flowNodeInstanceTemplate;
   private final FNITransformer fniTransformer;
 
@@ -64,7 +63,6 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       final OperateProperties operateProperties,
       final PartitionHolder partitionHolder,
       final Metrics metrics) {
-    this.flowNodeStore = flowNodeStore;
     this.flowNodeInstanceTemplate = flowNodeInstanceTemplate;
     final var flowNodeTreeCacheSize = operateProperties.getImporter().getFlowNodeTreeCacheSize();
     final var partitionIds = partitionHolder.getPartitionIds();
