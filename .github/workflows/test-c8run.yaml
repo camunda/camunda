@@ -21,6 +21,10 @@ jobs:
 
       - uses: actions/checkout@v4
 
+      - name: make a package
+        run: ./package.sh
+        working-directory: ./c8run
+
       - name: Run c8run
         run: nohup ./start.sh
         working-directory: ./c8run
