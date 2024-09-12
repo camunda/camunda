@@ -82,8 +82,8 @@
     "@typescript-eslint/eslint-plugin": "8.5.0",
     "@typescript-eslint/parser": "8.5.0",
     "@vitejs/plugin-react": "4.3.1",
-    "@vitest/coverage-istanbul": "2.0.5",
-    "@vitest/ui": "2.0.5",
+    "@vitest/coverage-istanbul": "2.1.0",
+    "@vitest/ui": "2.1.0",
     "axe-core": "4.10.0",
     "browserslist": "4.23.3",
     "browserslist-to-esbuild": "2.1.1",
@@ -108,7 +108,7 @@
     "vite": "5.4.4",
     "vite-plugin-svgr": "4.2.0",
     "vite-tsconfig-paths": "5.0.1",
-    "vitest": "2.0.5",
+    "vitest": "2.1.0",
     "zeebe-node": "8.3.2"
   },
   "scarfSettings": {
