@@ -18,6 +18,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSuppli
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -385,6 +386,34 @@ final class ClusterConfigurationManagementApiTest {
             new PartitionJoinOperation(id1, 2, 1),
             new PartitionLeaveOperation(id0, 2),
             new PartitionBootstrapOperation(id0, 3, 1));
+  }
+
+  @Test
+  void shouldForceRemoveBrokers() {
+    // given
+    final var request = new ForceRemoveBrokersRequest(Set.of(id1, id3), false);
+    final ClusterConfiguration currentTopology =
+        ClusterConfiguration.init()
+            .addMember(id0, MemberState.initializeAsActive(Map.of()))
+            .addMember(id1, MemberState.initializeAsActive(Map.of()))
+            .addMember(id2, MemberState.initializeAsActive(Map.of()))
+            .addMember(id3, MemberState.initializeAsActive(Map.of()))
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
+            .updateMember(id2, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
+            .updateMember(id3, m -> m.addPartition(2, PartitionState.active(2, partitionConfig)));
+    recordingCoordinator.setCurrentTopology(currentTopology);
+
+    // when
+    final var changeStatus = clientApi.forceRemoveBrokers(request).join().get();
+
+    // then
+    assertThat(changeStatus.plannedChanges())
+        .containsExactlyInAnyOrder(
+            new PartitionForceReconfigureOperation(id0, 1, List.of(id0)),
+            new PartitionForceReconfigureOperation(id2, 2, List.of(id2)),
+            new MemberRemoveOperation(id0, id1),
+            new MemberRemoveOperation(id0, id3));
   }
 
   @Test
