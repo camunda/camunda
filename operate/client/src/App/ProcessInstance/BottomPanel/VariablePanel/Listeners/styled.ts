@@ -7,7 +7,10 @@
  */
 
 import {StructuredList as BaseStructuredList} from 'modules/components/StructuredList';
+import {WarningFilled as BaseWarningFilled} from '@carbon/react/icons';
+import {supportError, spacing01, spacing03} from '@carbon/elements';
 import styled from 'styled-components';
+import {Stack} from '@carbon/react';
 
 const Content = styled.div`
   position: relative;
@@ -25,8 +28,13 @@ const StructuredList = styled(BaseStructuredList)`
   }
 `;
 
-const CellContainer = styled.div`
-  padding: var(--cds-spacing-03) var(--cds-spacing-01);
+const CellContainer = styled(Stack)`
+  padding: ${spacing03} ${spacing01};
 `;
 
-export {Content, StructuredList, CellContainer};
+const WarningFilled = styled(BaseWarningFilled)`
+  fill: ${supportError};
+  margin-top: ${spacing01};
+`;
+
+export {Content, StructuredList, CellContainer, WarningFilled};

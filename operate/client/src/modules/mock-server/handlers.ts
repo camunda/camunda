@@ -9,21 +9,19 @@
 import {IS_VERSION_TAG_ENABLED} from 'modules/feature-flags';
 import {RequestHandler, rest} from 'msw';
 
-const processVersionTagHandler = IS_VERSION_TAG_ENABLED
-  ? [
-      rest.get('/api/processes/:processId', async (req, res, ctx) => {
-        const response = await ctx.fetch(req);
-        const body = await response.json();
+const processVersionTagHandler = [
+  rest.get('/api/processes/:processId', async (req, res, ctx) => {
+    const response = await ctx.fetch(req);
+    const body = await response.json();
 
-        return res(
-          ctx.json({
-            ...body,
-            versionTag: 'myVersionTag',
-          }),
-        );
+    return res(
+      ctx.json({
+        ...body,
+        versionTag: 'myVersionTag',
       }),
-    ]
-  : [];
+    );
+  }),
+];
 
 const processInstancesVersionTagHandler = [
   rest.post('/api/processes/grouped', async (req, res, ctx) => {
@@ -48,9 +46,8 @@ const processInstancesVersionTagHandler = [
   }),
 ];
 
-const handlers: RequestHandler[] = [
-  ...processVersionTagHandler,
-  ...processInstancesVersionTagHandler,
-];
+const handlers: RequestHandler[] = IS_VERSION_TAG_ENABLED
+  ? [...processVersionTagHandler, ...processInstancesVersionTagHandler]
+  : [];
 
 export {handlers};

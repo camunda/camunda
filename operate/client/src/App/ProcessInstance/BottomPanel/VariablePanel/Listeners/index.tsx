@@ -7,7 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
-import {CellContainer, Content, StructuredList} from './styled';
+import {CellContainer, Content, StructuredList, WarningFilled} from './styled';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {
   MAX_LISTENERS_STORED,
@@ -26,9 +26,9 @@ const Listeners: React.FC<Props> = observer(({listeners}) => {
       <StructuredList
         dataTestId="listeners-list"
         headerColumns={[
-          {cellContent: 'Listener type', width: '15%'},
+          {cellContent: 'Listener type', width: '20%'},
           {cellContent: 'Listener key', width: '20%'},
-          {cellContent: 'State', width: '15%'},
+          {cellContent: 'State', width: '10%'},
           {cellContent: 'Job type', width: '15%'},
           {cellContent: 'Event', width: '15%'},
           {cellContent: 'Time', width: '20%'},
@@ -75,8 +75,9 @@ const Listeners: React.FC<Props> = observer(({listeners}) => {
               columns: [
                 {
                   cellContent: (
-                    <CellContainer>
+                    <CellContainer orientation="horizontal" gap={3}>
                       {spaceAndCapitalize(listenerType)}
+                      {state === 'FAILED' && <WarningFilled />}
                     </CellContainer>
                   ),
                 },
