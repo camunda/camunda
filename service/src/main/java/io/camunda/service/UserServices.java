@@ -15,6 +15,7 @@ import io.camunda.service.search.query.UserQuery;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserCreateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.concurrent.CompletableFuture;
@@ -43,8 +44,8 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
     return new UserServices(brokerClient, searchClient, transformers, authentication);
   }
 
-  public CompletableFuture<UserRecord> createUser(final CreateUserRequest request) {
-    return sendBrokerRequest(
+  public CompletableFuture<BrokerResponse<UserRecord>> createUser(final CreateUserRequest request) {
+    return sendBrokerRequestWithFullResponse(
         new BrokerUserCreateRequest()
             .setUsername(request.username())
             .setName(request.name())

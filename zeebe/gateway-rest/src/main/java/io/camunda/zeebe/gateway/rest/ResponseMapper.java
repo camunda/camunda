@@ -26,6 +26,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserCreateResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
@@ -38,6 +39,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.util.Collections;
 import java.util.Iterator;
@@ -255,6 +257,13 @@ public final class ResponseMapper {
             .key(brokerResponse.getKey())
             .tenantId(brokerResponse.getResponse().getTenantId());
     return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
+  public static ResponseEntity<Object> toUserCreateResponse(
+      final BrokerResponse<UserRecord> brokerResponse) {
+    final var response =
+        new UserCreateResponse().userKey(brokerResponse.getResponse().getUserKey());
+    return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
   }
 
   static class RestJobActivationResult implements JobActivationResult<JobActivationResponse> {

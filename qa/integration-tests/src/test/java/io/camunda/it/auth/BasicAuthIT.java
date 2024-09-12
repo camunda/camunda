@@ -22,6 +22,7 @@ import io.camunda.service.entities.UserEntity;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.client.protocol.rest.UserRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.List;
@@ -64,7 +65,7 @@ public class BasicAuthIT {
   void setUp() throws JsonProcessingException {
     when(userService.withAuthentication(any(Authentication.class))).thenReturn(userService);
     when(userService.createUser(any()))
-        .thenReturn(CompletableFuture.completedFuture(new UserRecord()));
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(new UserRecord())));
     when(userService.search(any()))
         .thenReturn(
             new SearchQueryResult<>(

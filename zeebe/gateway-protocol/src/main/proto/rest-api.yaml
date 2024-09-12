@@ -1010,9 +1010,13 @@ paths:
               $ref: "#/components/schemas/UserRequest"
         required: true
       responses:
-        "204":
+        "202":
           description: |
             The user was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserCreateResponse"
         "400":
           description: |
             The user could not be created.
@@ -2075,6 +2079,12 @@ components:
           type: "string"
         email:
           type: "string"
+    UserCreateResponse:
+      type: "object"
+      properties:
+        userKey:
+          type: "integer"
+          format: "int64"
     UserSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"

@@ -17,6 +17,7 @@ import io.camunda.service.CamundaServiceException;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.CreateUserRequest;
 import io.camunda.service.security.auth.Authentication;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserController;
@@ -51,7 +52,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  void createUserShouldReturnNoContent() {
+  void createUserShouldReturnAccepted() {
     // given
     final var dto = validCreateUserRequest();
 
@@ -62,7 +63,8 @@ public class UserControllerTest extends RestControllerTest {
             .setEmail(dto.email())
             .setPassword(dto.password());
 
-    when(userServices.createUser(dto)).thenReturn(CompletableFuture.completedFuture(userRecord));
+    when(userServices.createUser(dto))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(userRecord)));
 
     // when
     webClient
@@ -73,7 +75,7 @@ public class UserControllerTest extends RestControllerTest {
         .bodyValue(dto)
         .exchange()
         .expectStatus()
-        .isNoContent();
+        .isAccepted();
 
     // then
     verify(userServices, times(1)).createUser(dto);

@@ -22,6 +22,8 @@ import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.CreateUserResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
+import io.camunda.zeebe.client.impl.response.CreateUserResponseImpl;
+import io.camunda.zeebe.client.protocol.rest.UserCreateResponse;
 import io.camunda.zeebe.client.protocol.rest.UserRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -54,7 +56,14 @@ public final class CreateUserCommandImpl implements CreateUserCommandStep1 {
     ArgumentUtil.ensureNotNull("name", request.getName());
     ArgumentUtil.ensureNotNull("password", request.getPassword());
     final HttpZeebeFuture<CreateUserResponse> result = new HttpZeebeFuture<>();
-    httpClient.post("/users", jsonMapper.toJson(request), httpRequestConfig.build(), result);
+    final CreateUserResponseImpl response = new CreateUserResponseImpl(jsonMapper);
+    httpClient.post(
+        "/users",
+        jsonMapper.toJson(request),
+        httpRequestConfig.build(),
+        UserCreateResponse.class,
+        response::setResponse,
+        result);
     return result;
   }
 
