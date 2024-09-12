@@ -559,6 +559,44 @@ test.describe('task details page', () => {
     await expect(tasksPage.bpmnDiagram).toBeVisible();
   });
 
+  test('Variables are passed along the forms if no output variables are defined for job worker tasks', async ({
+    page,
+    tasksPage,
+    taskFormView,
+  }) => {
+    await tasksPage.openTask('Employee Details');
+    await sleep(10000);
+    await page.reload();
+    await expect(tasksPage.detailsNav).toBeVisible();
+    await tasksPage.assignToMeButton.click();
+    await expect(taskFormView.nameInput).toBeVisible();
+    await taskFormView.nameInput.fill('Ben');
+    await taskFormView.selectDropdownValue('marketing');
+    await tasksPage.completeTaskButton.click();
+    await expect(page.getByText('Task completed')).toBeVisible();
+
+    await tasksPage.openTask('Confirm Employee Details');
+    await tasksPage.assignToMeButton.click();
+    await page.reload();
+    await expect(taskFormView.nameInput).toHaveValue('Ben');
+    await expect(taskFormView.form.getByText('Marketing')).toBeVisible({
+      timeout: 60000,
+    });
+    await expect(taskFormView.checkbox).not.toBeChecked();
+    await tasksPage.completeTaskButton.click();
+    await expect(page.getByText('Task completed')).toBeVisible();
+
+    await tasksPage.filterBy('Completed');
+    await tasksPage.openTask('Employee Details');
+    await expect(taskFormView.nameInput).toHaveValue('Ben');
+    await expect(taskFormView.form.getByText('Marketing')).toBeVisible();
+
+    await tasksPage.openTask('Confirm Employee Details');
+    await expect(taskFormView.nameInput).toHaveValue('Ben');
+    await expect(taskFormView.form.getByText('Marketing')).toBeVisible();
+    await expect(taskFormView.checkbox).not.toBeChecked();
+  });
+
   test('Variables are passed along the forms if no output variables are defined for zeebe tasks ', async ({
     page,
     tasksPage,
