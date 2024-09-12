@@ -20,6 +20,8 @@ test.beforeAll(async () => {
     './e2e/resources/emp_form.form',
     './e2e/resources/confirm_emp_form.form',
     './e2e/resources/create-invoice_8-5.form',
+  ]);
+  await deploy([
     './e2e/resources/usertask_to_be_completed.bpmn',
     './e2e/resources/user_task_with_form.bpmn',
     './e2e/resources/user_task_with_form_and_vars.bpmn',
