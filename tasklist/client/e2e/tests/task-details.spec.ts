@@ -17,6 +17,9 @@ test.afterAll(async ({resetData}) => {
 
 test.beforeAll(async () => {
   await deploy([
+    './e2e/resources/emp_form.form',
+    './e2e/resources/confirm_emp_form.form',
+    './e2e/resources/create-invoice_8-5.form',
     './e2e/resources/usertask_to_be_completed.bpmn',
     './e2e/resources/user_task_with_form.bpmn',
     './e2e/resources/user_task_with_form_and_vars.bpmn',
@@ -31,12 +34,9 @@ test.beforeAll(async () => {
     './e2e/resources/tag_list_task_with_form.bpmn',
     './e2e/resources/text-templating-form-task.bpmn',
     './e2e/resources/processWithDeployedForm.bpmn',
-    './e2e/resources/create-invoice_8-5.form',
     './e2e/resources/Zeebe_Process.bpmn',
     './e2e/resources/emp_process.bpmn',
     './e2e/resources/zeebe_emp_process.bpmn',
-    './e2e/resources/emp_form.form',
-    './e2e/resources/confirm_emp_form.form',
   ]);
 
   await Promise.all([
@@ -571,7 +571,7 @@ test.describe('task details page', () => {
       await expect(taskFormView.form).toBeVisible();
     } catch (error) {
       console.log('Form not loaded:' + error);
-      await sleep(15000);
+      await sleep(10000);
       await page.reload();
       await expect(taskFormView.form).toBeVisible();
     }
