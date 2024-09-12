@@ -9,6 +9,7 @@
 import {expect} from '@playwright/test';
 import {test} from '@/test-fixtures';
 import {createInstances, deploy} from '@/utils/zeebeClient';
+import {sleep} from '@/utils/sleep';
 
 test.afterAll(async ({resetData}) => {
   await resetData();
@@ -574,6 +575,7 @@ test.describe('task details page', () => {
 
     await tasksPage.openTask('Confirm Employee Details');
     await tasksPage.assignToMeButton.click();
+    await sleep(5000);
     await page.reload();
     await expect(taskFormView.nameInput).toHaveValue('Ben');
     await expect(taskFormView.form.getByText('Marketing')).toBeVisible({
