@@ -19,6 +19,7 @@ package io.camunda.operate.zeebeimport.v8_4.processors;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
+import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
@@ -32,6 +33,7 @@ import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.cache.FNITreePathCacheCompositeKey;
 import io.camunda.operate.zeebeimport.cache.FlowNodeInstanceTreePathCache;
+import io.camunda.operate.zeebeimport.cache.TreePathCacheMetricsImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -66,14 +68,18 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       final FlowNodeStore flowNodeStore,
       final FlowNodeInstanceTemplate flowNodeInstanceTemplate,
       final OperateProperties operateProperties,
-      final PartitionHolder partitionHolder) {
+      final PartitionHolder partitionHolder,
+      final Metrics metrics) {
     this.flowNodeStore = flowNodeStore;
     this.flowNodeInstanceTemplate = flowNodeInstanceTemplate;
     final var flowNodeTreeCacheSize = operateProperties.getImporter().getFlowNodeTreeCacheSize();
     final var partitionIds = partitionHolder.getPartitionIds();
     treePathCache =
         new FlowNodeInstanceTreePathCache(
-            partitionIds, flowNodeTreeCacheSize, flowNodeStore::findParentTreePathFor);
+            partitionIds,
+            flowNodeTreeCacheSize,
+            flowNodeStore::findParentTreePathFor,
+            new TreePathCacheMetricsImpl(partitionIds, metrics));
   }
 
   public void processIncidentRecord(final Record record, final BatchRequest batchRequest)
