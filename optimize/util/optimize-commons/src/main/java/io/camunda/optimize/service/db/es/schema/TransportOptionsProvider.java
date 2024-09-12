@@ -38,15 +38,7 @@ public class TransportOptionsProvider {
   }
 
   public TransportOptions getTransportOptions() {
-    final DefaultTransportOptions.Builder optionsBuilder = new DefaultTransportOptions.Builder();
-    //    if (!customHeaderSuppliers.isEmpty()) {
-    //      customHeaderSuppliers.forEach(
-    //          headerFunction -> {
-    //            final CustomHeader customHeader = headerFunction.get();
-    //            optionsBuilder.addHeader(customHeader.getHeader(), customHeader.getValue());
-    //          });
-    //    }
-    return optionsBuilder.build();
+    return new DefaultTransportOptions.Builder().build();
   }
 
   private int getElasticsearchResponseConsumerBufferLimitInBytes() {
