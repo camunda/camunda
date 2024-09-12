@@ -10,6 +10,8 @@ package io.camunda.zeebe.dynamic.config.api;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
@@ -113,6 +115,28 @@ public final class ClusterConfigurationManagementRequestSender {
         serializer::encodeScaleRequest,
         serializer::decodeTopologyChangeResponse,
         coordinatorSupplier.getNextCoordinator(forceScaleDownRequest.members()),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> scaleCluster(
+      final ClusterScaleRequest clusterScaleRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.SCALE_CLUSTER.topic(),
+        clusterScaleRequest,
+        serializer::encodeClusterScaleRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> patchCluster(
+      final ClusterPatchRequest clusterPatchRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.PATCH_CLUSTER.topic(),
+        clusterPatchRequest,
+        serializer::encodeClusterPatchRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);
   }
 
