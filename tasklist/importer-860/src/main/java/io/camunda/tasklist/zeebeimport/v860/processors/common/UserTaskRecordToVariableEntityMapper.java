@@ -7,6 +7,8 @@
  */
 package io.camunda.tasklist.zeebeimport.v860.processors.common;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.zeebeimport.v860.record.Intent;
@@ -28,7 +30,10 @@ public class UserTaskRecordToVariableEntityMapper {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  public List<TaskVariableEntity> mapVariables(final Record<UserTaskRecordValue> record) {
+  @Autowired private ObjectMapper objectMapper;
+
+  public List<TaskVariableEntity> mapVariables(final Record<UserTaskRecordValue> record)
+      throws JsonProcessingException {
     final List<TaskVariableEntity> variables = new ArrayList<>();
 
     if (record.getIntent().equals(Intent.COMPLETED)) {
@@ -36,15 +41,13 @@ public class UserTaskRecordToVariableEntityMapper {
 
       final Map<String, Object> variablesMap = recordValue.getVariables();
       for (final Map.Entry<String, Object> varMap : variablesMap.entrySet()) {
-        final String varValue = String.valueOf(varMap.getValue());
-
+        final String varValue = objectMapper.writeValueAsString(varMap.getValue());
         final TaskVariableEntity variableEntity = new TaskVariableEntity();
         variableEntity.setId(
             TaskVariableEntity.getIdBy(
                 String.valueOf(recordValue.getUserTaskKey()), varMap.getKey()));
         variableEntity.setName(varMap.getKey());
         variableEntity.setTaskId(String.valueOf(recordValue.getUserTaskKey()));
-        variableEntity.setValue(String.valueOf(varMap.getValue()));
         variableEntity.setPartitionId(record.getPartitionId());
         variableEntity.setTenantId(recordValue.getTenantId());
         variableEntity.setFullValue(varValue);
