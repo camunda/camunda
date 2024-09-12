@@ -17,7 +17,6 @@ import io.camunda.service.CamundaServiceException;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.CreateUserRequest;
 import io.camunda.service.security.auth.Authentication;
-import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserController;
@@ -63,8 +62,7 @@ public class UserControllerTest extends RestControllerTest {
             .setEmail(dto.email())
             .setPassword(dto.password());
 
-    when(userServices.createUser(dto))
-        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(userRecord)));
+    when(userServices.createUser(dto)).thenReturn(CompletableFuture.completedFuture(userRecord));
 
     // when
     webClient

@@ -259,10 +259,8 @@ public final class ResponseMapper {
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
-  public static ResponseEntity<Object> toUserCreateResponse(
-      final BrokerResponse<UserRecord> brokerResponse) {
-    final var response =
-        new UserCreateResponse().userKey(brokerResponse.getResponse().getUserKey());
+  public static ResponseEntity<Object> toUserCreateResponse(final UserRecord userRecord) {
+    final var response = new UserCreateResponse().userKey(userRecord.getUserKey());
     return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
   }
 
