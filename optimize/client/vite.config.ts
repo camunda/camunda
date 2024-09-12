@@ -13,6 +13,10 @@ import {readdirSync} from 'fs';
 
 export default defineConfig({
   base: '',
+  build: {
+    // The backend only allow public resources inside the static folder
+    assetsDir: 'static',
+  },
   plugins: [
     {
       name: 'treat-js-files-as-jsx',
