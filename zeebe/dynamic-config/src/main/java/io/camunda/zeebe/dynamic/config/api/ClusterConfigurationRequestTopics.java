@@ -18,7 +18,12 @@ public enum ClusterConfigurationRequestTopics {
   CANCEL_CHANGE("topology-change-cancel"),
   FORCE_SCALE_DOWN("topology-force-scale-down"),
   DISABLE_EXPORTER("topology-exporter-disable"),
-  ENABLE_EXPORTER("topology-exporter-enable");
+  ENABLE_EXPORTER("topology-exporter-enable"),
+
+  SCALE_CLUSTER("topology-cluster-scale"),
+  PATCH_CLUSTER("topology-cluster-patch"),
+  FORCE_REMOVE_BROKERS("topology-broker-force-remove");
+
   private final String topic;
 
   ClusterConfigurationRequestTopics(final String topic) {

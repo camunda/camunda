@@ -9,14 +9,17 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
@@ -102,7 +105,7 @@ public final class ClusterConfigurationManagementRequestsHandler
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> scaleMembers(
-      final ScaleRequest scaleRequest) {
+      final BrokerScaleRequest scaleRequest) {
     return handleRequest(
         scaleRequest.dryRun(),
         new ScaleRequestTransformer(scaleRequest.members(), scaleRequest.newReplicationFactor()));
@@ -110,7 +113,7 @@ public final class ClusterConfigurationManagementRequestsHandler
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> forceScaleDown(
-      final ScaleRequest forceScaleDownRequest) {
+      final BrokerScaleRequest forceScaleDownRequest) {
     final Optional<Integer> optionalNewReplicationFactor =
         forceScaleDownRequest.newReplicationFactor();
     if (optionalNewReplicationFactor.isPresent()) {
@@ -126,6 +129,38 @@ public final class ClusterConfigurationManagementRequestsHandler
     return handleRequest(
         forceScaleDownRequest.dryRun(),
         new ForceScaleDownRequestTransformer(forceScaleDownRequest.members(), localMemberId));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> scaleCluster(
+      final ClusterScaleRequest clusterScaleRequest) {
+    return handleRequest(
+        clusterScaleRequest.dryRun(),
+        new ClusterScaleRequestTransformer(
+            clusterScaleRequest.newClusterSize(),
+            clusterScaleRequest.newPartitionCount(),
+            clusterScaleRequest.newReplicationFactor()));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> patchCluster(
+      final ClusterPatchRequest clusterPatchRequest) {
+    return handleRequest(
+        clusterPatchRequest.dryRun(),
+        new ClusterPatchRequestTransformer(
+            clusterPatchRequest.membersToAdd(),
+            clusterPatchRequest.membersToRemove(),
+            clusterPatchRequest.newPartitionCount(),
+            clusterPatchRequest.newReplicationFactor()));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> forceRemoveBrokers(
+      final ForceRemoveBrokersRequest forceRemoveBrokersRequest) {
+    return handleRequest(
+        forceRemoveBrokersRequest.dryRun(),
+        new ForceRemoveBrokersRequestTransformer(
+            forceRemoveBrokersRequest.membersToRemove(), localMemberId));
   }
 
   @Override
