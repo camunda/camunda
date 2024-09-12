@@ -5,16 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.schema.descriptors;
+package io.camunda.webapps.schema.descriptors;
 
-public interface IndexDescriptor {
-  String getFullQualifiedName();
+import java.util.List;
 
-  String getAlias();
+public interface IndexTemplateDescriptor extends IndexDescriptor {
 
-  String getIndexName();
+  String getIndexPattern();
 
-  String getMappingsClasspathFilename();
+  String getTemplateName();
 
-  String getAllVersionsIndexNameRegexPattern();
+  List<String> getComposedOf();
 }
