@@ -16,6 +16,8 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier.ClusterClusterConfigurationAwareCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -23,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
@@ -334,6 +337,54 @@ final class ClusterConfigurationManagementApiTest {
             new PartitionForceReconfigureOperation(id2, 2, List.of(id2)),
             new MemberRemoveOperation(id0, id1),
             new MemberRemoveOperation(id0, id3));
+  }
+
+  @Test
+  void shouldScaleClusterByNewClusterSizeAndPartitionCount() {
+    // given
+    final var request =
+        new ClusterScaleRequest(Optional.of(2), Optional.of(3), Optional.empty(), false);
+    final ClusterConfiguration currentTopology =
+        initialTopology
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
+
+    recordingCoordinator.setCurrentTopology(currentTopology);
+
+    // when
+    final var changeStatus = clientApi.scaleCluster(request).join().get();
+
+    // then
+    assertThat(changeStatus.plannedChanges())
+        .containsExactly(
+            new MemberJoinOperation(id1),
+            new PartitionJoinOperation(id1, 2, 1),
+            new PartitionLeaveOperation(id0, 2),
+            new PartitionBootstrapOperation(id0, 3, 1));
+  }
+
+  @Test
+  void shouldPatchCluster() {
+    // given
+    final var request =
+        new ClusterPatchRequest(Set.of(id1), Set.of(), Optional.of(3), Optional.empty(), false);
+    final ClusterConfiguration currentTopology =
+        initialTopology
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
+
+    recordingCoordinator.setCurrentTopology(currentTopology);
+
+    // when
+    final var changeStatus = clientApi.patchCluster(request).join().get();
+
+    // then
+    assertThat(changeStatus.plannedChanges())
+        .containsExactly(
+            new MemberJoinOperation(id1),
+            new PartitionJoinOperation(id1, 2, 1),
+            new PartitionLeaveOperation(id0, 2),
+            new PartitionBootstrapOperation(id0, 3, 1));
   }
 
   @Test
