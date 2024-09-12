@@ -9,6 +9,7 @@ package io.camunda.tasklist.zeebeimport.v860.processors.es;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.TaskEntity;
@@ -68,8 +69,12 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
       bulkRequest.add(persistUserTaskToListView(taskEntity.get(), record));
       // Variables
       if (!record.getValue().getVariables().isEmpty()) {
-        final List<TaskVariableEntity> variables =
-            userTaskRecordToVariableEntityMapper.mapVariables(record);
+        final List<TaskVariableEntity> variables;
+        try {
+          variables = userTaskRecordToVariableEntityMapper.mapVariables(record);
+        } catch (final JsonProcessingException e) {
+          throw new RuntimeException(e);
+        }
         for (final TaskVariableEntity variable : variables) {
           bulkRequest.add(getVariableQuery(variable));
         }
@@ -107,16 +112,8 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     try {
       LOGGER.debug("Variable instance for list view: id {}", variable.getId());
       final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(
-          TaskVariableTemplate.VALUE,
-          "null".equals(variable.getValue())
-              ? "null"
-              : objectMapper.writeValueAsString(variable.getValue()));
-      updateFields.put(
-          TaskVariableTemplate.FULL_VALUE,
-          "null".equals(variable.getFullValue())
-              ? "null"
-              : objectMapper.writeValueAsString(variable.getFullValue()));
+      updateFields.put(TaskVariableTemplate.VALUE, variable.getValue());
+      updateFields.put(TaskVariableTemplate.FULL_VALUE, variable.getFullValue());
       updateFields.put(TaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
 
       return new UpdateRequest()
@@ -134,7 +131,7 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     }
   }
 
-  private UpdateRequest persistUserTaskToListView(final TaskEntity taskEntity, Record record)
+  private UpdateRequest persistUserTaskToListView(final TaskEntity taskEntity, final Record record)
       throws PersistenceException {
     try {
       final UserTaskListViewEntity userTaskListViewEntity = new UserTaskListViewEntity(taskEntity);
