@@ -231,7 +231,7 @@ public class RequestMapper {
                     updateRequest.getChangeset().getTimeout())));
   }
 
-  public static Either<ProblemDetail, PatchAuthorizationRequest> toAuthorizationAssignRequest(
+  public static Either<ProblemDetail, PatchAuthorizationRequest> toAuthorizationPatchRequest(
       final long ownerKey, final AuthorizationPatchRequest authorizationPatchRequest) {
     return getResult(
         validateAuthorizationAssignRequest(authorizationPatchRequest),
