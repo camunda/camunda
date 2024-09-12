@@ -29,6 +29,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePublishMessage;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListener;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -95,6 +96,12 @@ public final class ZeebeDesignTimeValidators {
             .hasNonEmptyAttribute(
                 ZeebeExecutionListener::getRetries, ZeebeConstants.ATTRIBUTE_RETRIES));
     validators.add(new ExecutionListenersValidator());
+    validators.add(
+        ZeebeElementValidator.verifyThat(ZeebeTaskListener.class)
+            .hasNonEmptyEnumAttribute(
+                ZeebeTaskListener::getEventType, ZeebeConstants.ATTRIBUTE_EVENT_TYPE)
+            .hasNonEmptyAttribute(ZeebeTaskListener::getType, ZeebeConstants.ATTRIBUTE_TYPE)
+            .hasNonEmptyAttribute(ZeebeTaskListener::getRetries, ZeebeConstants.ATTRIBUTE_RETRIES));
     validators.add(
         ZeebeElementValidator.verifyThat(ZeebeSubscription.class)
             .hasNonEmptyAttribute(
