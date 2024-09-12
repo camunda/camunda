@@ -753,8 +753,6 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-
-
   /process-instances/{processInstanceKey}/migration:
     post:
       tags:
@@ -772,7 +770,7 @@ paths:
         - name: processInstanceKey
           in: path
           required: true
-          description: The key of the process instance that should be modified.
+          description: The key of the process instance that should be migrated.
           schema:
             type: integer
             format: int64
@@ -782,6 +780,53 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/MigrateProcessInstanceRequest"
+      responses:
+        "204":
+          description: The process instance is migrated.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The process instance is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /process-instances/{processInstanceKey}/modification:
+    post:
+      tags:
+        - Process instance
+      summary: Modify process instance
+      description: |
+        Modifies a running process instance.
+        This request can contain multiple instructions to activate an element of the process or
+        to terminate an active instance of an element.
+
+        Use this to repair a process instance that is stuck on an element or took an unintended path.
+        For example, because an external system is not available or doesn't respond as expected.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The key of the process instance that should be modified.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModifyProcessInstanceRequest"
       responses:
         "204":
           description: The process instance is modified.
@@ -3105,6 +3150,74 @@ components:
       required:
         - sourceElementId
         - targetElementId
+    ModifyProcessInstanceRequest:
+      type: object
+      properties:
+        activateInstructions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModifyProcessInstanceActivateInstruction"
+        terminateInstructions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModifyProcessInstanceTerminateInstruction"
+        operationReference:
+          description: >
+            A reference key chosen by the user that will be part of all records resulting from this operation.
+            Must be > 0 if provided.
+          type: integer
+          format: int64
+          minimum: 1
+    ModifyProcessInstanceActivateInstruction:
+      type: object
+      description: |
+        Instructions describing which elements should be activated in which scopes and which variables should be created.
+      properties:
+        elementId:
+          description: The ID of the element that should be activated.
+          type: string
+        ancestorElementInstanceKey:
+          description: |
+            The key of the ancestor scope the element instance should be created in.
+            Set to -1 to create the new element instance within an existing element instance of the
+            flow scope.
+          type: integer
+          format: int64
+          default: -1
+        variableInstructions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModifyProcessInstanceVariableInstruction"
+      required:
+        - elementId
+    ModifyProcessInstanceVariableInstruction:
+      type: object
+      description: Instructions describing which variables should be created.
+      properties:
+        variables:
+          description: |
+            JSON document that will instantiate the variables for the root variable scope of the process instance.
+            It must be a JSON object, as variables will be mapped in a key-value fashion.
+          additionalProperties: true
+          type: object
+        scopeId:
+          description: |
+            The ID of the element in which scope the variables should be created.
+            Leave empty to create the variables in the global scope of the process instance
+          type: string
+          default: ""
+      required:
+        - variables
+    ModifyProcessInstanceTerminateInstruction:
+      type: object
+      description: Instructions describing which elements should be terminated.
+      properties:
+        elementInstanceKey:
+          description: The ID of the element that should be terminated.
+          type: integer
+          format: int64
+      required:
+        - elementInstanceKey
 
     SetVariableRequest:
       type: object
