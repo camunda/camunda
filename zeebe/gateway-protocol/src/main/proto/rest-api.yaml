@@ -3148,13 +3148,13 @@ components:
             flow scope.
           type: integer
           format: int64
+          default: -1
         variableInstructions:
           type: array
           items:
             $ref: "#/components/schemas/ModifyProcessInstanceVariableInstruction"
       required:
         - elementId
-        - ancestorElementInstanceKey
     ModifyProcessInstanceVariableInstruction:
       type: object
       description: Instructions describing which variables should be created.

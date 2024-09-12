@@ -102,12 +102,9 @@ public class ProcessInstanceRequestValidator {
       final List<String> violations) {
     validateInstructions(
         instructions,
-        (instruction) ->
-            instruction.getElementId() != null
-                && instruction.getAncestorElementInstanceKey() != null,
+        (instruction) -> instruction.getElementId() != null,
         violations,
-        ERROR_MESSAGE_ALL_REQUIRED_FIELD.formatted(
-            List.of("elementId", "ancestorElementInstanceKey")));
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementId"));
     final var variableInstructions =
         instructions.stream()
             .flatMap(instruction -> instruction.getVariableInstructions().stream())
