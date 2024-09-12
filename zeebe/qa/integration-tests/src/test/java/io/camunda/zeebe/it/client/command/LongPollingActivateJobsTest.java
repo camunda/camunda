@@ -68,7 +68,7 @@ public class LongPollingActivateJobsTest {
   // TODO: the REST use case is currently not working, see
   // https://github.com/camunda/camunda/issues/19883
   @ParameterizedTest
-  @ValueSource(booleans = {false})
+  @ValueSource(booleans = {true, false})
   public void shouldActivateJobsIfBatchIsTruncated(final boolean useRest, final TestInfo testInfo) {
     // given
     final int availableJobs = 10;
@@ -110,7 +110,7 @@ public class LongPollingActivateJobsTest {
   // TODO: the REST use case is currently not working, see
   // https://github.com/camunda/camunda/issues/19883
   @ParameterizedTest
-  @ValueSource(booleans = {false})
+  @ValueSource(booleans = {true, false})
   public void shouldActivateJobForOpenRequest(final boolean useRest, final TestInfo testInfo)
       throws InterruptedException {
     // given
