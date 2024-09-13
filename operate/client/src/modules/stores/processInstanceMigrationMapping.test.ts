@@ -13,21 +13,43 @@ import {processXmlStore as processXmlMigrationTargetStore} from 'modules/stores/
 import {processInstanceMigrationMappingStore} from './processInstanceMigrationMapping';
 import {waitFor} from '@testing-library/react';
 
-describe('autoMappingStore', () => {
+/**
+ * In these tests a migration mapping from orderProcess.bpmn to orderProcess_v2.bpmn is tested
+ *
+ * orderProcess.bpmn contains:
+ * - checkPayment (service task)
+ * - requestForPayment (service task)
+ * - shipArticles (user task)
+ * - MessageInterrupting (event)
+ * - TimerInterrupting (event)
+ * - MessageNonInterrupting (event)
+ * - TimerNonInterrupting (event)
+ * - MessageIntermediateCatch (event)
+ * - TimerIntermediateCatch (event)
+ *
+ * orderProcess_v2.bpmn contains:
+ * - checkPayment (service task)
+ * - requestForPayment (user task)
+ * - shipArticles (user task)
+ * - MessageInterrupting (event)
+ * - TimerNonInterrupting (event)
+ * - MessageIntermediateCatch (event)
+ */
+describe('processInstanceMigrationMappingStore', () => {
   afterEach(() => {
     processInstanceMigrationMappingStore.reset();
   });
 
   it('should provide auto mapped flow nodes', async () => {
     // Fetch migration source diagram
-    mockFetchProcessXML().withSuccess(open('orderProcess.bpmn'));
+    mockFetchProcessXML().withSuccess(open('instanceMigration.bpmn'));
     processXmlMigrationSourceStore.fetchProcessXml();
     await waitFor(() =>
       expect(processXmlMigrationSourceStore.state.status).toBe('fetched'),
     );
 
     // Fetch migration target diagram
-    mockFetchProcessXML().withSuccess(open('orderProcess_v2.bpmn'));
+    mockFetchProcessXML().withSuccess(open('instanceMigration_v2.bpmn'));
     processXmlMigrationTargetStore.fetchProcessXml();
     await waitFor(() =>
       expect(processXmlMigrationTargetStore.state.status).toBe('fetched'),
@@ -36,19 +58,8 @@ describe('autoMappingStore', () => {
     const {isAutoMappable, autoMappableFlowNodes} =
       processInstanceMigrationMappingStore;
 
-    /**
-     * orderProcess.bpmn contains:
-     * - checkPayment (service task)
-     * - requestForPayment (service task)
-     * - shipArticles (user task)
-     *
-     * orderProcess_v2.bpmn contains:
-     * - checkPayment (service task)
-     * - requestForPayment (service task)
-     * - shipArticles (service task)
-     * - notifyCustomer (service task)
-     *
-     * Expect only checkPayment and requestForPayment to be mappable,
+    /*
+     * Expect the following elements to be mappable,
      * because they are the only ones with the same id and type.
      */
     expect(autoMappableFlowNodes).toEqual([
@@ -56,19 +67,174 @@ describe('autoMappingStore', () => {
         id: 'checkPayment',
         type: 'bpmn:ServiceTask',
       },
+      {id: 'shipArticles', type: 'bpmn:UserTask'},
       {
-        id: 'requestForPayment',
-        type: 'bpmn:ServiceTask',
+        id: 'MessageInterrupting',
+        type: 'bpmn:BoundaryEvent',
+      },
+      {
+        id: 'TimerNonInterrupting',
+        type: 'bpmn:BoundaryEvent',
+      },
+      {
+        id: 'MessageIntermediateCatch',
+        type: 'bpmn:IntermediateCatchEvent',
       },
     ]);
 
     expect(isAutoMappable('checkPayment')).toBe(true);
-    expect(isAutoMappable('requestForPayment')).toBe(true);
+    expect(isAutoMappable('shipArticles')).toBe(true);
+    expect(isAutoMappable('MessageInterrupting')).toBe(true);
+    expect(isAutoMappable('TimerNonInterrupting')).toBe(true);
+    expect(isAutoMappable('MessageIntermediateCatch')).toBe(true);
 
-    expect(isAutoMappable('shipArticles')).toBe(false);
-    expect(isAutoMappable('notifyCustomer')).toBe(false);
+    expect(isAutoMappable('requestForPayment')).toBe(false);
+    expect(isAutoMappable('TimerInterrupting')).toBe(false);
+    expect(isAutoMappable('MessageNonInterrupting')).toBe(false);
+    expect(isAutoMappable('TimerIntermediateCatch')).toBe(false);
+
     expect(isAutoMappable('unknownFlowNodeId')).toBe(false);
     expect(isAutoMappable('')).toBe(false);
+  });
+
+  it('should get mappable flow nodes', async () => {
+    // Fetch migration source diagram
+    mockFetchProcessXML().withSuccess(open('instanceMigration.bpmn'));
+    processXmlMigrationSourceStore.fetchProcessXml();
+    await waitFor(() =>
+      expect(processXmlMigrationSourceStore.state.status).toBe('fetched'),
+    );
+
+    // Fetch migration target diagram
+    mockFetchProcessXML().withSuccess(open('instanceMigration_v2.bpmn'));
+    processXmlMigrationTargetStore.fetchProcessXml();
+    await waitFor(() =>
+      expect(processXmlMigrationTargetStore.state.status).toBe('fetched'),
+    );
+
+    expect(processInstanceMigrationMappingStore.mappableFlowNodes).toEqual([
+      {
+        sourceFlowNode: {
+          id: 'checkPayment',
+          name: 'Check payment',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'checkPayment',
+            name: 'Check payment',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'requestForPayment',
+          name: 'Request for payment',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'checkPayment',
+            name: 'Check payment',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'shippingSubProcess',
+          name: 'Shipping Sub Process',
+        },
+        selectableTargetFlowNodes: [],
+      },
+      {
+        sourceFlowNode: {
+          id: 'shipArticles',
+          name: 'Ship Articles',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'requestForPayment',
+            name: 'Request for payment',
+          },
+          {
+            id: 'shipArticles',
+            name: 'Ship Articles',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'MessageInterrupting',
+          name: 'Message interrupting',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'MessageInterrupting',
+            name: 'Message interrupting',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'TimerInterrupting',
+          name: 'Timer interrupting',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'TimerNonInterrupting',
+            name: 'Timer non-interrupting',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'MessageNonInterrupting',
+          name: 'Message non-interrupting',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'MessageInterrupting',
+            name: 'Message interrupting',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'TimerNonInterrupting',
+          name: 'Timer non-interrupting',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'TimerNonInterrupting',
+            name: 'Timer non-interrupting',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'confirmDelivery',
+          name: 'Confirm delivery',
+        },
+        selectableTargetFlowNodes: [],
+      },
+      {
+        sourceFlowNode: {
+          id: 'MessageIntermediateCatch',
+          name: 'Message intermediate catch',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'MessageIntermediateCatch',
+            name: 'Message intermediate catch',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'TimerIntermediateCatch',
+          name: 'Timer intermediate catch',
+        },
+        selectableTargetFlowNodes: [],
+      },
+    ]);
   });
 
   it('should toggle mapped filter', () => {

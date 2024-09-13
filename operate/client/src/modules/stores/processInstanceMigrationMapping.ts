@@ -9,6 +9,8 @@
 import {makeAutoObservable} from 'mobx';
 import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
 import {processXmlStore as processXmlMigrationTargetStore} from 'modules/stores/processXml/processXml.migration.target';
+import {hasType} from 'modules/bpmn-js/utils/hasType';
+import {getEventType} from 'modules/bpmn-js/utils/getEventType';
 
 type State = {
   isMappedFilterEnabled: boolean;
@@ -18,7 +20,7 @@ const DEFAULT_STATE: State = {
   isMappedFilterEnabled: false,
 };
 
-class ProcessInstanceMigrationMapping {
+class ProcessInstanceMigrationMappingStore {
   state: State = {...DEFAULT_STATE};
 
   constructor() {
@@ -50,6 +52,68 @@ class ProcessInstanceMigrationMapping {
       });
   }
 
+  /**
+   * Returns an array of source flow nodes which each contains an array of mappable target flow nodes.
+   */
+  get mappableFlowNodes() {
+    const {selectableFlowNodes: selectableSourceFlowNodes} =
+      processXmlMigrationSourceStore;
+
+    const {selectableFlowNodes: selectableTargetFlowNodes} =
+      processXmlMigrationTargetStore;
+
+    const sourceFlowNodeMappings = selectableSourceFlowNodes.map(
+      (sourceFlowNode) => {
+        return {
+          sourceFlowNode: {id: sourceFlowNode.id, name: sourceFlowNode.name},
+          selectableTargetFlowNodes: selectableTargetFlowNodes
+            .filter((flowNode) => {
+              /**
+               * For boundary events allow only target flow nodes with the same event type
+               */
+              if (
+                hasType({
+                  businessObject: sourceFlowNode,
+                  types: ['bpmn:BoundaryEvent'],
+                })
+              ) {
+                return (
+                  sourceFlowNode.$type === flowNode.$type &&
+                  getEventType(sourceFlowNode) === getEventType(flowNode)
+                );
+              }
+
+              /**
+               * For intermediate catch events allow only target flow nodes with the same event type
+               */
+              if (
+                hasType({
+                  businessObject: sourceFlowNode,
+                  types: ['bpmn:IntermediateCatchEvent'],
+                })
+              ) {
+                return (
+                  sourceFlowNode.$type === flowNode.$type &&
+                  getEventType(sourceFlowNode) === getEventType(flowNode)
+                );
+              }
+
+              /**
+               * For all other flow nodes allow target flow nodes with the same element type
+               */
+              return sourceFlowNode.$type === flowNode.$type;
+            })
+            .map(({id, name}) => ({
+              id,
+              name,
+            })),
+        };
+      },
+    );
+
+    return sourceFlowNodeMappings;
+  }
+
   toggleMappedFilter = () => {
     this.state.isMappedFilterEnabled = !this.state.isMappedFilterEnabled;
   };
@@ -71,4 +135,4 @@ class ProcessInstanceMigrationMapping {
 }
 
 export const processInstanceMigrationMappingStore =
-  new ProcessInstanceMigrationMapping();
+  new ProcessInstanceMigrationMappingStore();
