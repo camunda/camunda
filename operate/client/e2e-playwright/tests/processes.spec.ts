@@ -149,17 +149,17 @@ test.describe('Processes', () => {
     page,
   }) => {
     const instance = initialData.instanceWithoutAnIncident;
+    const version = initialData.deployedProcess!.version.toString();
 
-    await filtersPanel.displayOptionalFilter('Process Instance Key(s)');
-
-    // Filter by Process Instance Key
-    await filtersPanel.processInstanceKeysFilter.fill(
-      instance.processInstanceKey,
-    );
-
-    await expect(page.getByTestId('diagram')).not.toBeInViewport();
-
-    await filtersPanel.selectProcess('Order process');
+    processesPage.navigateToProcesses({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+        ids: instance.processInstanceKey,
+        process: instance.bpmnProcessId,
+        version,
+      },
+    });
 
     // Select "Ship Articles" flow node
     const shipArticlesTaskId = 'shipArticles';
@@ -178,7 +178,7 @@ test.describe('Processes', () => {
         incidents: 'true',
         ids: instance.processInstanceKey,
         process: 'orderProcess',
-        version: '1',
+        version,
         flowNodeId: shipArticlesTaskId,
       })}`,
     );
@@ -202,7 +202,7 @@ test.describe('Processes', () => {
         incidents: 'true',
         ids: instance.processInstanceKey,
         process: 'orderProcess',
-        version: '1',
+        version,
         flowNodeId: checkPaymentTaskId,
       })}`,
     );
