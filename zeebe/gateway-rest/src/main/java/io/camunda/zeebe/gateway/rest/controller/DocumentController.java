@@ -7,17 +7,16 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.service.CamundaServiceException;
 import io.camunda.service.DocumentServices;
+import io.camunda.service.DocumentServices.DocumentException;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
-import io.camunda.zeebe.gateway.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -49,10 +48,10 @@ public class DocumentController {
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public CompletableFuture<ResponseEntity<Object>> createDocument(
-      @RequestParam(required = false) String documentId,
-      @RequestParam(required = false) String storeId,
-      @RequestPart("file") MultipartFile file,
-      @RequestPart(value = "metadata", required = false) DocumentMetadata metadata) {
+      @RequestParam(required = false) final String documentId,
+      @RequestParam(required = false) final String storeId,
+      @RequestPart("file") final MultipartFile file,
+      @RequestPart(value = "metadata", required = false) final DocumentMetadata metadata) {
 
     return RequestMapper.toDocumentCreateRequest(documentId, storeId, file, metadata)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createDocument);
@@ -76,27 +75,35 @@ public class DocumentController {
         MediaType.APPLICATION_PROBLEM_JSON_VALUE
       })
   public ResponseEntity<StreamingResponseBody> getDocumentContent(
-      @PathVariable String documentId, @RequestParam(required = false) String storeId) {
+      @PathVariable final String documentId, @RequestParam(required = false) final String storeId) {
 
-    try (final InputStream contentInputStream = getDocumentContentStream(documentId, storeId)) {
+    try {
+      final InputStream contentInputStream = getDocumentContentStream(documentId, storeId);
       return ResponseEntity.ok().body(contentInputStream::transferTo);
-    } catch (IOException e) {
+    } catch (final Exception e) {
       // we can't return a generic Object type when streaming a response due to Spring MVC
       // limitations
       // exception handling is done in the exception handler below
+      if (e instanceof final CompletionException ce) {
+        throw new DocumentContentFetchException("Failed to get document content", ce.getCause());
+      }
       throw new DocumentContentFetchException("Failed to get document content", e);
     }
   }
 
   @ExceptionHandler(DocumentContentFetchException.class)
-  public ResponseEntity<ProblemDetail> handleDocumentContentException(CamundaServiceException e) {
-    final var problemDetail =
-        RestErrorMapper.createProblemDetail(
-            HttpStatus.BAD_REQUEST, e.getMessage(), "Failed to get document content");
-    return RestErrorMapper.mapProblemToResponse(problemDetail);
+  public ResponseEntity<Object> handleDocumentContentException(
+      final DocumentContentFetchException e) {
+    if (e.getCause() instanceof final DocumentException de) {
+      return RestErrorMapper.mapDocumentHandlingExceptionToResponse(de);
+    } else {
+      return RestErrorMapper.mapProblemToResponse(
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e.getClass().getName()));
+    }
   }
 
-  private InputStream getDocumentContentStream(String documentId, String storeId) {
+  private InputStream getDocumentContentStream(final String documentId, final String storeId) {
     return documentServices
         .withAuthentication(RequestMapper.getAuthentication())
         .getDocumentContent(documentId, storeId);
@@ -106,7 +113,7 @@ public class DocumentController {
       path = "/{documentId}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public CompletableFuture<ResponseEntity<Object>> deleteDocument(
-      @PathVariable String documentId, @RequestParam(required = false) String storeId) {
+      @PathVariable final String documentId, @RequestParam(required = false) final String storeId) {
 
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
@@ -119,18 +126,24 @@ public class DocumentController {
       path = "/{documentId}/links",
       consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public ResponseEntity<Void> createDocumentLink(
-      @PathVariable String documentId, @RequestBody DocumentLinkRequest linkRequest) {
+  public ResponseEntity<Object> createDocumentLink(
+      @PathVariable final String documentId,
+      @RequestParam(required = false) final String storeId,
+      @RequestBody final DocumentLinkRequest linkRequest) {
 
-    // TODO: implement
-    final var problemDetail =
-        RestErrorMapper.createProblemDetail(
-            HttpStatus.NOT_IMPLEMENTED, "Not implemented", "Not implemented");
-    return RestErrorMapper.mapProblemToResponse(problemDetail);
+    return RequestMapper.toDocumentLinkParams(linkRequest)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            params ->
+                documentServices
+                    .withAuthentication(RequestMapper.getAuthentication())
+                    .createLink(documentId, storeId, params)
+                    .thenApply(ResponseMapper::toDocumentLinkResponse)
+                    .join());
   }
 
   public static class DocumentContentFetchException extends RuntimeException {
-    public DocumentContentFetchException(String message, Throwable cause) {
+    public DocumentContentFetchException(final String message, final Throwable cause) {
       super(message, cause);
     }
   }
