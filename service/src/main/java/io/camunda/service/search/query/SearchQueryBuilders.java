@@ -60,7 +60,6 @@ public final class SearchQueryBuilders {
     return fn.apply(decisionRequirementsSearchQuery()).build();
   }
 
-
   public static DecisionInstanceQuery.Builder decisionInstanceSearchQuery() {
     return new DecisionInstanceQuery.Builder();
   }
