@@ -266,28 +266,28 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.3"
 
-"@bpmn-io/form-js-carbon-styles@1.10.0":
-  version "1.10.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.10.0.tgz#3f690bb47039394b72a5ed842f7c3275ce5faa9b"
-  integrity sha512-phuslRgen2wcq1KhoJtAZMv51U9HbuS1k5YCUkHm8esje+t00kjAhggK9DxEZ4K5DGUdNnB/ZUzqdPIKn1WWPw==
+"@bpmn-io/form-js-carbon-styles@1.10.1":
+  version "1.10.1"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.10.1.tgz#d0af4ab33e6ca2b5d42dc44b47648766317ec985"
+  integrity sha512-UopfGHhfvmdK8p9PPRs/LezSVTUA6UoYmE2h6kRAHAMud2C1V9YjLRinWC5XTR3U5/MGI6Q4KPX9dT30Dr0E7A==
 
-"@bpmn-io/form-js-viewer@1.10.0":
-  version "1.10.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.10.0.tgz#0f96c1ab3b19cde6c5ffe43122c09feb9814d613"
-  integrity sha512-70wKEvmKd7xGZtg3t41eBC3EBANIMe7k0Mt+1vdQbao5oTlT0zHK0XrwEaSEOKTEwMvALZmSyCGGBRYtdgzHkg==
+"@bpmn-io/form-js-viewer@1.10.1":
+  version "1.10.1"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.10.1.tgz#d15f5465dd575c17e92ba3e872ec841aee2fbf3e"
+  integrity sha512-gy5D+pyM9vvwfIWac4+dcEeUuyy+M44YlB9yOYfbsuM1uXWgOXMxsYCxwyPkNL0+J1dPqHCDm6w/RIvfGeFedw==
   dependencies:
-    "@carbon/grid" "^11.22.0"
+    "@carbon/grid" "^11.26.0"
     big.js "^6.2.1"
     classnames "^2.5.1"
     didi "^10.2.2"
-    dompurify "^3.1.2"
-    feelers "^1.3.1"
+    dompurify "^3.1.6"
+    feelers "^1.4.0"
     feelin "^3.1.2"
     flatpickr "^4.6.13"
     ids "^1.0.5"
     lodash "^4.17.21"
     luxon "^3.5.0"
-    marked "^14.0.0"
+    marked "^14.1.2"
     min-dash "^4.2.1"
     preact "^10.5.14"
 
@@ -350,7 +350,7 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/grid@^11.22.0", "@carbon/grid@^11.26.0":
+"@carbon/grid@^11.26.0":
   version "11.26.0"
   resolved "https://registry.yarnpkg.com/@carbon/grid/-/grid-11.26.0.tgz#dd9c5b12a93d3ccf0ad60bd8a7d6482f8c2fb421"
   integrity sha512-lxi1eLtxKJxZJXibQXX0uvCFvZloxsDEPRaLTtk2Ydia5nW+vv89igy+qgi74fSFNGYRWesOSejdTzSlwRTeoA==
@@ -2620,10 +2620,15 @@ domify@^1.4.1:
   resolved "https://registry.yarnpkg.com/domify/-/domify-1.4.2.tgz#2d3e8ac49cae41206cc84be31ca401050ae780a6"
   integrity sha512-m4yreHcUWHBncGVV7U+yQzc12vIlq0jMrtHZ5mW6dQMiL/7skSYNVX9wqKwOtyO9SGCgevrAFEgOCAHmamHTUA==
 
-dompurify@^3.1.2:
-  version "3.1.3"
-  resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-3.1.3.tgz#cfe3ce4232c216d923832f68f2aa18b2fb9bd223"
-  integrity sha512-5sOWYSNPaxz6o2MUPvtyxTTqR4D3L77pr5rUQoWgD5ROQtVIZQgJkXbo1DLlK3vj11YGw5+LnF4SYti4gZmwng==
+domify@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/domify/-/domify-2.0.0.tgz#951f0c36ff960b1cc527444f41819c765336dca8"
+  integrity sha512-rmvrrmWQPD/X1A/nPBfIVg4r05792QdG9Z4Prk6oQG0F9zBMDkr0GKAdds1wjb2dq1rTz/ywc4ZxpZbgz0tttg==
+
+dompurify@^3.1.6:
+  version "3.1.6"
+  resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-3.1.6.tgz#43c714a94c6a7b8801850f82e756685300a027e2"
+  integrity sha512-cTOAhc36AalkjtBpfG6O8JimdTMWNXjiePT2xQH/ppBGi/4uIpmj8eKyIkMJErXWARyINV/sB38yf8JCLF5pbQ==
 
 dot-case@^3.0.4:
   version "3.0.4"
@@ -3005,10 +3010,10 @@ fdir@^6.3.0:
   resolved "https://registry.yarnpkg.com/fdir/-/fdir-6.3.0.tgz#fcca5a23ea20e767b15e081ee13b3e6488ee0bb0"
   integrity sha512-QOnuT+BOtivR77wYvCWHfGt9s4Pz1VIMbD463vegT5MLqNXy8rYFT/lPVEqf/bhYeT6qmqrNHhsX+rWwe3rOCQ==
 
-feelers@^1.3.1:
-  version "1.3.1"
-  resolved "https://registry.yarnpkg.com/feelers/-/feelers-1.3.1.tgz#217be942cbf1f066154eb77954a2395aebb4d596"
-  integrity sha512-vynmIHhjttmT0wfzbI+Nmi84wLbLwUt83NXo5YTQMReIjRwgHhQpxs7koixX/flJIlTG8M4eukc1U1oQAYkhNw==
+feelers@^1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/feelers/-/feelers-1.4.0.tgz#b0fc2c5e387f27ba171f044d229d4755771bb8a5"
+  integrity sha512-CGa/7ILuqoqTaeYeoKsg/4tzu2es9sEEJTmSjdu0lousZBw4V9gcYhHYFNmbrSrKmbAVfOzj6/DsymGJWFIOeg==
   dependencies:
     "@bpmn-io/cm-theme" "^0.1.0-alpha.2"
     "@bpmn-io/feel-lint" "^1.2.0"
@@ -3024,7 +3029,7 @@ feelers@^1.3.1:
     "@lezer/markdown" "^1.1.0"
     feelin "^3.0.1"
     lezer-feel "^1.2.4"
-    min-dom "^4.1.0"
+    min-dom "^5.0.0"
 
 feelin@^3.0.1, feelin@^3.1.2:
   version "3.1.2"
@@ -3947,10 +3952,10 @@ make-dir@^4.0.0:
   dependencies:
     semver "^7.5.3"
 
-marked@^14.0.0:
-  version "14.1.0"
-  resolved "https://registry.yarnpkg.com/marked/-/marked-14.1.0.tgz#736ae774ff06ddf03e55a071f9322fe240cb89cb"
-  integrity sha512-P93GikH/Pde0hM5TAXEd8I4JAYi8IB03n8qzW8Bh1BIEFpEyBoYxi/XWZA53LSpTeLBiMQOoSMj0u5E/tiVYTA==
+marked@^14.1.2:
+  version "14.1.2"
+  resolved "https://registry.yarnpkg.com/marked/-/marked-14.1.2.tgz#3cbc26b2d6832be32b75ae0746e0968c781b6156"
+  integrity sha512-f3r0yqpz31VXiDB/wj9GaOB0a2PRLQl6vJmXiFrniNwjkKdvakqJRULhjFKJpxOchlCRiG5fcacoUZY5Xa6PEQ==
 
 mathml-tag-names@^2.1.3:
   version "2.1.3"
@@ -4276,13 +4281,21 @@ min-dash@^4.0.0, min-dash@^4.1.0, min-dash@^4.1.1, min-dash@^4.2.1:
   resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-4.2.1.tgz#26236f4e278053753f17d4284605ec8fa234a275"
   integrity sha512-to+unsToePnm7cUeR9TrMzFlETHd/UXmU+ELTRfWZj5XGT41KF6X3L233o3E/GdEs3sk2Tbw/lOLD1avmWkg8A==
 
-min-dom@^4.0.2, min-dom@^4.1.0, min-dom@^4.2.1:
+min-dom@^4.0.2, min-dom@^4.2.1:
   version "4.2.1"
   resolved "https://registry.yarnpkg.com/min-dom/-/min-dom-4.2.1.tgz#7154cd30f48bd81222e1d55eef437be9ca9f505e"
   integrity sha512-TMoL8SEEIhUWYgkj7XMSgxmwSyGI+4fP2KFFGnN3FbHfbGHVdsLYSz8LoIsgPhz4dWRmLvxWWSMgzZMJW5sZuA==
   dependencies:
     component-event "^0.2.1"
     domify "^1.4.1"
+    min-dash "^4.2.1"
+
+min-dom@^5.0.0:
+  version "5.1.1"
+  resolved "https://registry.yarnpkg.com/min-dom/-/min-dom-5.1.1.tgz#9c75026e241182f81c9133077470bca5dcaa3f98"
+  integrity sha512-GaKUlguMAofd3OJsB0OkP17i5kucKqErgVCJxPawO9l5NwIPnr28SAr99zzlzMCWWljISBYrnZVWdE2Q92YGFQ==
+  dependencies:
+    domify "^2.0.0"
     min-dash "^4.2.1"
 
 min-indent@^1.0.0:
@@ -6061,21 +6074,10 @@ vite-tsconfig-paths@5.0.1:
     globrex "^0.1.2"
     tsconfck "^3.0.3"
 
-vite@5.4.5:
+vite@5.4.5, vite@^5.0.0:
   version "5.4.5"
   resolved "https://registry.yarnpkg.com/vite/-/vite-5.4.5.tgz#e4ab27709de46ff29bd8db52b0c51606acba893b"
   integrity sha512-pXqR0qtb2bTwLkev4SE3r4abCNioP3GkjvIDLlzziPpXtHgiJIjuKl+1GN6ESOT3wMjG3JTeARopj2SwYaHTOA==
-  dependencies:
-    esbuild "^0.21.3"
-    postcss "^8.4.43"
-    rollup "^4.20.0"
-  optionalDependencies:
-    fsevents "~2.3.3"
-
-vite@^5.0.0:
-  version "5.4.4"
-  resolved "https://registry.yarnpkg.com/vite/-/vite-5.4.4.tgz#3da90314b617047366459443320ea78f39111008"
-  integrity sha512-RHFCkULitycHVTtelJ6jQLd+KSAAzOgEYorV32R2q++M6COBjKJR6BxqClwp5sf0XaBDjVMuJ9wnNfyAJwjMkA==
   dependencies:
     esbuild "^0.21.3"
     postcss "^8.4.43"
