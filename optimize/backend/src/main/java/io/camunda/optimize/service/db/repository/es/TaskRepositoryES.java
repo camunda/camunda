@@ -15,6 +15,7 @@ import io.camunda.optimize.service.db.repository.TaskRepository;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import jakarta.json.JsonObject;
 import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class TaskRepositoryES implements TaskRepository {
+
   private final OptimizeElasticsearchClient esClient;
 
   @Override
@@ -32,15 +34,20 @@ public class TaskRepositoryES implements TaskRepository {
     final ListRequest request = ListRequest.of(b -> b.actions(action).detailed(true));
     return safe(
         () ->
-            esClient.getTaskList(request).tasks().flat().stream()
-                .map(taskInfo -> taskInfo.status().toJson().asJsonObject())
+            Optional.ofNullable(esClient.getTaskList(request).tasks())
                 .map(
-                    status ->
-                        new TaskProgressInfo(
-                            getProgress(status),
-                            status.getInt("total"),
-                            getProcessedTasksCount(status)))
-                .toList(),
+                    tasks ->
+                        tasks.flat().stream()
+                            .filter(taskInfo -> taskInfo.status() != null)
+                            .map(taskInfo -> taskInfo.status().toJson().asJsonObject())
+                            .map(
+                                status ->
+                                    new TaskProgressInfo(
+                                        getProgress(status),
+                                        status.getInt("total"),
+                                        getProcessedTasksCount(status)))
+                            .toList())
+                .orElse(List.of()),
         e -> "Failed to fetch task progress from Elasticsearch!",
         log);
   }
