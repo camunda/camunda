@@ -24,16 +24,10 @@ public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationH
   public AuthorizationCheckReportEvaluationHandler(
       final ReportService reportService,
       final SingleReportEvaluator singleReportEvaluator,
-      final CombinedReportEvaluator combinedReportEvaluator,
       final ReportAuthorizationService authorizationService,
       final ProcessVariableService processVariableService,
       final DefinitionService definitionService) {
-    super(
-        reportService,
-        singleReportEvaluator,
-        combinedReportEvaluator,
-        processVariableService,
-        definitionService);
+    super(reportService, singleReportEvaluator, processVariableService, definitionService);
     this.authorizationService = authorizationService;
   }
 

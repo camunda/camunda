@@ -8,7 +8,6 @@
 package io.camunda.optimize.dto.optimize.query.report.single.process.view;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -21,18 +20,6 @@ public class StringViewPropertyDto implements TypedViewPropertyDto {
   @JsonValue
   public String getId() {
     return id;
-  }
-
-  @Override
-  public boolean isCombinable(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof StringViewPropertyDto)) {
-      return false;
-    }
-    StringViewPropertyDto stringViewPropertyDto = (StringViewPropertyDto) o;
-    return Objects.equals(getId(), stringViewPropertyDto.getId());
   }
 
   @Override

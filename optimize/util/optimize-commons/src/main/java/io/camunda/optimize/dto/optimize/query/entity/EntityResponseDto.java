@@ -29,7 +29,6 @@ public class EntityResponseDto {
   private String lastModifier;
   private EntityType entityType;
   private EntityData data;
-  private Boolean combined;
   private ReportType reportType;
   private RoleType currentUserRole;
 
@@ -55,7 +54,6 @@ public class EntityResponseDto {
         entityType,
         data,
         null,
-        null,
         currentUserRole);
   }
 
@@ -68,7 +66,6 @@ public class EntityResponseDto {
       final String owner,
       final String lastModifier,
       final EntityType entityType,
-      final Boolean combined,
       final ReportType reportType,
       final RoleType currentUserRole) {
     this(
@@ -81,7 +78,6 @@ public class EntityResponseDto {
         lastModifier,
         entityType,
         new EntityData(),
-        combined,
         reportType,
         currentUserRole);
   }
@@ -97,7 +93,6 @@ public class EntityResponseDto {
     public static final String lastModifier = "lastModifier";
     public static final String entityType = "entityType";
     public static final String data = "data";
-    public static final String combined = "combined";
     public static final String reportType = "reportType";
     public static final String currentUserRole = "currentUserRole";
   }

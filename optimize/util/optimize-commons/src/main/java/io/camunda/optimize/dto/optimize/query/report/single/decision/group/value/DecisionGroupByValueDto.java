@@ -7,6 +7,4 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single.decision.group.value;
 
-import io.camunda.optimize.dto.optimize.query.report.Combinable;
-
-public interface DecisionGroupByValueDto extends Combinable {}
+public interface DecisionGroupByValueDto {}

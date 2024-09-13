@@ -23,7 +23,7 @@
 // import io.camunda.optimize.AbstractPlatformIT;
 // import io.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.query.variable.ProcessToQueryDto;
 // import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 // import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;

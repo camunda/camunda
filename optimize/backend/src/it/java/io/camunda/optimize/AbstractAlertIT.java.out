@@ -40,10 +40,10 @@
 // import io.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 // import io.camunda.optimize.service.alert.SyncListener;
 // import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;

@@ -9,6 +9,7 @@ package io.camunda.optimize.upgrade.plan.factories;
 
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.schema.index.SettingsIndexES;
+import io.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -46,6 +47,8 @@ public class Upgrade313To86PlanFactory implements UpgradePlanFactory {
         .addUpgradeSteps(
             deleteProcessInstanceArchiveIndexIfExists(
                 retrieveAllProcessInstanceArchiveIndexKeys(dependencies.esClient())))
+        .addUpgradeStep(new DeleteIndexIfExistsStep("combined-report", 5))
+        .addUpgradeStep(removeCombinedReportFieldFromProcessReportIndex())
         .build();
   }
 
@@ -63,6 +66,11 @@ public class Upgrade313To86PlanFactory implements UpgradePlanFactory {
                 new DeleteIndexIfExistsStep(
                     PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX + key.toLowerCase(Locale.ENGLISH), 8))
         .toList();
+  }
+
+  private static UpdateIndexStep removeCombinedReportFieldFromProcessReportIndex() {
+    return new UpdateIndexStep(
+        new SingleProcessReportIndexES(), "ctx._source.remove(\"combined\");");
   }
 
   private List<String> retrieveAllProcessInstanceArchiveIndexKeys(

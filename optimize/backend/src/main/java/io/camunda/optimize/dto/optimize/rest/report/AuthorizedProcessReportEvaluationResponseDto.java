@@ -8,18 +8,18 @@
 package io.camunda.optimize.dto.optimize.rest.report;
 
 import io.camunda.optimize.dto.optimize.RoleType;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 public class AuthorizedProcessReportEvaluationResponseDto<T>
     extends AuthorizedSingleReportEvaluationResponseDto<
-        T, SingleProcessReportDefinitionRequestDto> {
+        T, ProcessReportDefinitionRequestDto> {
 
   public AuthorizedProcessReportEvaluationResponseDto(
       final RoleType currentUserRole,
       final ReportResultResponseDto<T> reportResult,
-      final SingleProcessReportDefinitionRequestDto reportDefinition) {
+      final ProcessReportDefinitionRequestDto reportDefinition) {
     super(currentUserRole, reportResult, reportDefinition);
   }
 }

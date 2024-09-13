@@ -9,9 +9,8 @@ package io.camunda.optimize.dto.optimize.rest.export.report;
 
 import io.camunda.optimize.dto.optimize.ReportType;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
-import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import lombok.Data;
@@ -39,15 +38,11 @@ public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto 
   public static ReportDefinitionExportDto mapReportDefinitionToExportDto(
       final ReportDefinitionDto<?> reportDef) {
     if (ReportType.PROCESS.equals(reportDef.getReportType())) {
-      if (reportDef.isCombined()) {
-        return new CombinedProcessReportDefinitionExportDto(
-            (CombinedReportDefinitionRequestDto) reportDef);
-      }
       return new SingleProcessReportDefinitionExportDto(
-          (SingleProcessReportDefinitionRequestDto) reportDef);
+          (ProcessReportDefinitionRequestDto) reportDef);
     } else {
       return new SingleDecisionReportDefinitionExportDto(
-          (SingleDecisionReportDefinitionRequestDto) reportDef);
+          (DecisionReportDefinitionRequestDto) reportDef);
     }
   }
 

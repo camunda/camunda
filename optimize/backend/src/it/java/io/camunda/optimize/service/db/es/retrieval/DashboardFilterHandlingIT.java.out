@@ -30,9 +30,9 @@
 // import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 // import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 // import io.camunda.optimize.dto.optimize.query.variable.LabelDto;
 // import io.camunda.optimize.dto.optimize.query.variable.VariableType;

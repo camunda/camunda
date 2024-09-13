@@ -19,9 +19,9 @@
 // import io.camunda.optimize.dto.optimize.UserDto;
 // import io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.service.security.CaseInsensitiveAuthenticationMockUtil;
 // import io.camunda.optimize.test.util.decision.DecisionTypeRef;
 // import io.camunda.optimize.test.util.decision.DmnModelGenerator;

@@ -9,7 +9,7 @@ package io.camunda.optimize.dto.optimize.query.report.single.decision;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByDto;
@@ -34,7 +34,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @SuperBuilder
 @DecisionFiltersMustReferenceExistingDefinitionsConstraint
-public class DecisionReportDataDto extends SingleReportDataDto {
+public class DecisionReportDataDto extends ReportDataDto {
 
   @Builder.Default @Valid protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
   protected DecisionViewDto view;

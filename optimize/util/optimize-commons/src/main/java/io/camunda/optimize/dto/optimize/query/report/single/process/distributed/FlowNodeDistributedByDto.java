@@ -16,9 +16,4 @@ public class FlowNodeDistributedByDto
   public FlowNodeDistributedByDto() {
     this.type = DistributedByType.FLOW_NODE;
   }
-
-  @Override
-  public boolean isCombinable(final Object o) {
-    return DistributedByType.FLOW_NODE.equals(type) && DistributedByType.FLOW_NODE.equals(o);
-  }
 }

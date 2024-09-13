@@ -26,7 +26,7 @@
 // io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 // import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 // import io.camunda.optimize.service.util.ProcessReportDataType;
 // import io.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;

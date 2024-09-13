@@ -13,7 +13,7 @@ import static io.camunda.optimize.service.db.es.report.command.util.FilterLimite
 import static io.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.es.report.command.exec.ExecutionContext;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -51,7 +51,7 @@ public class MinMaxStatsService {
   private final DatabaseClient databaseClient;
 
   public MinMaxStatDto getMinMaxDateRange(
-      final ExecutionContext<? extends SingleReportDataDto> context,
+      final ExecutionContext<? extends ReportDataDto> context,
       final QueryBuilder query,
       final String[] indexNames,
       final String field) {
@@ -59,7 +59,7 @@ public class MinMaxStatsService {
   }
 
   public MinMaxStatDto getMinMaxDateRangeForCrossField(
-      final ExecutionContext<? extends SingleReportDataDto> context,
+      final ExecutionContext<? extends ReportDataDto> context,
       final QueryBuilder query,
       final String[] indexNames,
       final String firstField,
@@ -69,7 +69,7 @@ public class MinMaxStatsService {
   }
 
   public MinMaxStatDto getMinMaxDateRangeForNestedField(
-      final ExecutionContext<? extends SingleReportDataDto> context,
+      final ExecutionContext<? extends ReportDataDto> context,
       final QueryBuilder query,
       final String[] indexNames,
       final String field,
@@ -86,40 +86,31 @@ public class MinMaxStatsService {
   }
 
   public MinMaxStatDto getMinMaxNumberRangeForScriptedField(
-      final ExecutionContext<? extends SingleReportDataDto> context,
+      final ExecutionContext<? extends ReportDataDto> context,
       final QueryBuilder query,
       final String[] indexNames,
       final Script script) {
-    return context
-        .getCombinedRangeMinMaxStats()
-        .orElseGet(() -> getScriptedMinMaxStats(query, indexNames, null, script));
+    return getScriptedMinMaxStats(query, indexNames, null, script);
   }
 
   public MinMaxStatDto getMinMaxNumberRangeForNestedScriptedField(
-      final ExecutionContext<? extends SingleReportDataDto> context,
+      final ExecutionContext<? extends ReportDataDto> context,
       final QueryBuilder query,
       final String[] indexNames,
       final String pathForNestedStatsAgg,
       final Script script) {
-    return context
-        .getCombinedRangeMinMaxStats()
-        .orElseGet(
-            () -> getScriptedMinMaxStats(query, indexNames, pathForNestedStatsAgg, script, null));
+    return getScriptedMinMaxStats(query, indexNames, pathForNestedStatsAgg, script, null);
   }
 
   public MinMaxStatDto getMinMaxNumberRangeForNestedScriptedField(
-      final ExecutionContext<? extends SingleReportDataDto> context,
+      final ExecutionContext<? extends ReportDataDto> context,
       final QueryBuilder query,
       final String[] indexNames,
       final String pathForNestedStatsAgg,
       final Script script,
       final BoolQueryBuilder filterQueryToWrapStatsWith) {
-    return context
-        .getCombinedRangeMinMaxStats()
-        .orElseGet(
-            () ->
-                getScriptedMinMaxStats(
-                    query, indexNames, pathForNestedStatsAgg, script, filterQueryToWrapStatsWith));
+    return getScriptedMinMaxStats(
+        query, indexNames, pathForNestedStatsAgg, script, filterQueryToWrapStatsWith);
   }
 
   public MinMaxStatDto getScriptedMinMaxStats(
@@ -205,25 +196,21 @@ public class MinMaxStatsService {
   }
 
   private MinMaxStatDto getMinMaxDateRangeForNestedField(
-      final ExecutionContext<? extends SingleReportDataDto> context,
+      final ExecutionContext<? extends ReportDataDto> context,
       final QueryBuilder query,
       final String[] indexNames,
       final String firstField,
       final String secondField,
       final String pathForNestedStatsAgg,
       final QueryBuilder filterQueryToWrapStatsWith) {
-    return context
-        .getCombinedRangeMinMaxStats()
-        .orElseGet(
-            () ->
-                getCrossFieldMinMaxStats(
-                    query,
-                    indexNames,
-                    firstField,
-                    secondField,
-                    OPTIMIZE_DATE_FORMAT,
-                    pathForNestedStatsAgg,
-                    filterQueryToWrapStatsWith));
+    return getCrossFieldMinMaxStats(
+        query,
+        indexNames,
+        firstField,
+        secondField,
+        OPTIMIZE_DATE_FORMAT,
+        pathForNestedStatsAgg,
+        filterQueryToWrapStatsWith);
   }
 
   private MinMaxStatDto getCrossFieldMinMaxStats(

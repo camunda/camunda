@@ -16,7 +16,7 @@ import static java.util.Collections.singletonList;
 
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
@@ -61,7 +61,7 @@ import org.apache.commons.lang3.StringUtils;
 @RequiredArgsConstructor
 @Accessors(chain = true)
 public class CompositeCommandResult {
-  private final SingleReportDataDto reportDataDto;
+  private final ReportDataDto reportDataDto;
   private final ViewProperty viewProperty;
 
   private ReportSortingDto groupBySorting = new ReportSortingDto();
@@ -73,7 +73,7 @@ public class CompositeCommandResult {
   private List<GroupByResult> groups = new ArrayList<>();
 
   public CompositeCommandResult(
-      final SingleReportDataDto reportDataDto,
+      final ReportDataDto reportDataDto,
       final ViewProperty viewProperty,
       final Double defaultNumberValue) {
     this.reportDataDto = reportDataDto;

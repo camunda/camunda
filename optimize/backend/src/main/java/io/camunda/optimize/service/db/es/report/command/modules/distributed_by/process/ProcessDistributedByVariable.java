@@ -102,7 +102,6 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
             .dateUnit(getDistributeByDateUnit(context))
             .baseQueryForMinMaxStats(context.getDistributedByMinMaxBaseQuery())
             .subAggregations(Collections.singletonList(reverseNestedInstanceAggregation))
-            .combinedRangeMinMaxStats(context.getCombinedRangeMinMaxStats().orElse(null))
             .filterContext(context.getFilterContext())
             .build();
 

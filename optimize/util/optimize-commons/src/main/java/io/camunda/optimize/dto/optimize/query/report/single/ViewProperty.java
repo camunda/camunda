@@ -16,7 +16,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.camunda.optimize.dto.optimize.query.report.Combinable;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.StringViewPropertyDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.TypedViewPropertyDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.VariableViewPropertyDto;
@@ -25,7 +24,7 @@ import java.util.Optional;
 import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode
-public class ViewProperty implements Combinable {
+public class ViewProperty {
   public static final ViewProperty FREQUENCY = new ViewProperty(VIEW_FREQUENCY_PROPERTY);
   public static final ViewProperty DURATION = new ViewProperty(VIEW_DURATION_PROPERTY);
   public static final ViewProperty PERCENTAGE = new ViewProperty(VIEW_PERCENTAGE_PROPERTY);
@@ -48,18 +47,6 @@ public class ViewProperty implements Combinable {
   private ViewProperty(
       @JsonProperty("name") final String name, @JsonProperty("type") final VariableType type) {
     this.viewPropertyDto = new VariableViewPropertyDto(name, type);
-  }
-
-  @Override
-  public boolean isCombinable(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof ViewProperty)) {
-      return false;
-    }
-    ViewProperty other = (ViewProperty) o;
-    return Combinable.isCombinable(viewPropertyDto, other.viewPropertyDto);
   }
 
   @JsonValue

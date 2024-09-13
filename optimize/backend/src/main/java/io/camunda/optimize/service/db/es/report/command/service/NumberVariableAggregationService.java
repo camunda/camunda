@@ -14,7 +14,6 @@ import static io.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPo
 import static io.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
 
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import io.camunda.optimize.service.db.es.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.es.report.command.util.VariableAggregationContext;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -77,13 +76,12 @@ public class NumberVariableAggregationService {
 
   Optional<Double> getBaselineForNumberVariableAggregation(
       final VariableAggregationContext context) {
-    final Optional<MinMaxStatDto> combinedMinMaxStats = context.getCombinedRangeMinMaxStats();
     final Optional<Double> baselineForSingleReport =
         context.getCustomBucketDto().isActive()
             ? Optional.ofNullable(context.getCustomBucketDto().getBaseline())
             : Optional.empty();
 
-    if (combinedMinMaxStats.isEmpty() && baselineForSingleReport.isPresent()) {
+    if (baselineForSingleReport.isPresent()) {
       if (baselineForSingleReport.get() > context.getVariableRangeMinMaxStats().getMax()) {
         // if report is single report and invalid baseline is set, return empty result
         return Optional.empty();
@@ -94,7 +92,6 @@ public class NumberVariableAggregationService {
     }
 
     return Optional.of(
-        roundDownToNearestPowerOfTen(
-            combinedMinMaxStats.orElse(context.getVariableRangeMinMaxStats()).getMin()));
+        roundDownToNearestPowerOfTen(context.getVariableRangeMinMaxStats().getMin()));
   }
 }

@@ -15,7 +15,7 @@ import static java.util.stream.Collectors.toList;
 
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
-import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
@@ -52,7 +52,7 @@ public class RawDecisionInstanceDataGroupByNoneCmd
 
   @Override
   public CommandEvaluationResult<List<RawDataDecisionInstanceDto>> evaluate(
-      final ReportEvaluationContext<SingleDecisionReportDefinitionRequestDto>
+      final ReportEvaluationContext<DecisionReportDefinitionRequestDto>
           reportEvaluationContext) {
     final CommandEvaluationResult<List<RawDataDecisionInstanceDto>> commandResult =
         super.evaluate(reportEvaluationContext);
@@ -62,7 +62,7 @@ public class RawDecisionInstanceDataGroupByNoneCmd
 
   @SuppressWarnings(UNCHECKED_CAST)
   private void addNewVariablesAndDtoFieldsToTableColumnConfig(
-      final ReportEvaluationContext<SingleDecisionReportDefinitionRequestDto>
+      final ReportEvaluationContext<DecisionReportDefinitionRequestDto>
           reportEvaluationContext,
       final CommandEvaluationResult<List<RawDataDecisionInstanceDto>> result) {
     final List<String> variableNames =

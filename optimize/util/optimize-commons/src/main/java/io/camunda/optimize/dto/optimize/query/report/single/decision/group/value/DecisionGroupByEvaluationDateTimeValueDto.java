@@ -8,23 +8,10 @@
 package io.camunda.optimize.dto.optimize.query.report.single.decision.group.value;
 
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
-import java.util.Objects;
 import lombok.Data;
 
 @Data
 public class DecisionGroupByEvaluationDateTimeValueDto implements DecisionGroupByValueDto {
 
   protected AggregateByDateUnit unit;
-
-  @Override
-  public boolean isCombinable(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof DecisionGroupByEvaluationDateTimeValueDto)) {
-      return false;
-    }
-    DecisionGroupByEvaluationDateTimeValueDto that = (DecisionGroupByEvaluationDateTimeValueDto) o;
-    return Objects.equals(unit, that.unit);
-  }
 }

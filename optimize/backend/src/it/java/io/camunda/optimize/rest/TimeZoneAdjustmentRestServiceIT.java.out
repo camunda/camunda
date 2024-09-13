@@ -8,7 +8,7 @@
 // TODO recreate C8 IT equivalent of this with #13337
 
 // package io.camunda.optimize.rest;
-// 
+//
 // import static io.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 // import static io.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 // import static io.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
@@ -20,7 +20,7 @@
 // import static io.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 // import static io.camunda.optimize.util.BpmnModels.SPLITTING_GATEWAY_ID;
 // import static org.assertj.core.api.Assertions.assertThat;
-// 
+//
 // import com.fasterxml.jackson.core.JsonProcessingException;
 // import com.fasterxml.jackson.core.type.TypeReference;
 // import com.fasterxml.jackson.databind.MapperFeature;
@@ -41,7 +41,7 @@
 // import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 // import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
-// import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.DateDistributedByValueDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -87,15 +87,15 @@
 // import org.junit.jupiter.api.Test;
 // import org.junit.jupiter.params.ParameterizedTest;
 // import org.junit.jupiter.params.provider.MethodSource;
-// 
+//
 // public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT {
-// 
+//
 //   @Test
 //   public void unknownTimezoneUsesServerTimezone() {
 //     // given
 //     final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
 //     final String collectionId = collectionClient.createNewCollection();
-// 
+//
 //     // when
 //     final CollectionDefinitionRestDto collection =
 //         embeddedOptimizeExtension
@@ -103,7 +103,7 @@
 //             .buildGetCollectionRequest(collectionId)
 //             .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "unknownTimezone")
 //             .execute(CollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
-// 
+//
 //     // then
 //     assertThat(collection).isNotNull();
 //     assertThat(collection.getCreated()).isEqualTo(now);
@@ -111,20 +111,20 @@
 //     assertThat(getOffsetDiffInHours(collection.getCreated(), now)).isZero();
 //     assertThat(getOffsetDiffInHours(collection.getLastModified(), now)).isZero();
 //   }
-// 
+//
 //   @Test
 //   public void omittedTimezoneUsesServerTimezone() {
 //     // given
 //     final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
 //     final String collectionId = collectionClient.createNewCollection();
-// 
+//
 //     // when
 //     final CollectionDefinitionRestDto collection =
 //         embeddedOptimizeExtension
 //             .getRequestExecutor()
 //             .buildGetCollectionRequest(collectionId)
 //             .execute(CollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
-// 
+//
 //     // then
 //     assertThat(collection).isNotNull();
 //     assertThat(collection.getCreated()).isEqualTo(now);
@@ -132,7 +132,7 @@
 //     assertThat(getOffsetDiffInHours(collection.getCreated(), now)).isZero();
 //     assertThat(getOffsetDiffInHours(collection.getLastModified(), now)).isZero();
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @MethodSource("allProcessDateReports")
 //   public void adjustReportEvaluationResultToTimezone_processDateReports(
@@ -150,7 +150,7 @@
 //     engineDatabaseExtension.changeFlowNodeStartDate(processInstanceDto2.getId(), USER_TASK_1, now);
 //     engineDatabaseExtension.changeFlowNodeEndDate(processInstanceDto1.getId(), USER_TASK_1, now);
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final ProcessReportDataDto reportData =
 //         TemplatedProcessReportDataBuilder.createReportData()
 //             .setGroupByDateInterval(AggregateByDateUnit.HOUR)
@@ -163,12 +163,12 @@
 //             .setVariableName("someVariable")
 //             .setVariableType(VariableType.STRING)
 //             .build();
-// 
+//
 //     // when
 //     final String clientTimezone = "Europe/London";
 //     final List<String> dateAsStringDateResultEntries =
 //         evaluateReportInClientTimezoneAndReturnDateEntries(reportData, clientTimezone);
-// 
+//
 //     // then
 //     assertThat(dateAsStringDateResultEntries)
 //         .hasSize(1)
@@ -182,7 +182,7 @@
 //                             toZonedDateTime(date, clientTimezone)))
 //                     .isOne());
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @MethodSource("allProcessDateReports")
 //   public void adjustReportEvaluationResultToTimezone_daylightSavingHoursAreRespected(
@@ -207,7 +207,7 @@
 //     engineDatabaseExtension.changeFlowNodeStartDate(processInstanceDto2.getId(), USER_TASK_1, now);
 //     engineDatabaseExtension.changeFlowNodeEndDate(processInstanceDto1.getId(), USER_TASK_1, now);
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final ProcessReportDataDto reportData =
 //         TemplatedProcessReportDataBuilder.createReportData()
 //             // truncation of the date is in winter time
@@ -221,11 +221,11 @@
 //             .setVariableName("someVariable")
 //             .setVariableType(VariableType.STRING)
 //             .build();
-// 
+//
 //     // when
 //     final List<String> dateAsStringDateResultEntries =
 //         evaluateReportInClientTimezoneAndReturnDateEntries(reportData, "Europe/London");
-// 
+//
 //     // then
 //     assertThat(dateAsStringDateResultEntries)
 //         .hasSize(1)
@@ -233,7 +233,7 @@
 //         .extracting(a -> OffsetDateTime.parse(a, embeddedOptimizeExtension.getDateTimeFormatter()))
 //         .satisfies(date -> assertThat(date).isEqualTo(truncateToYearWithLondonTimezone(now)));
 //   }
-// 
+//
 //   @Test
 //   public void adjustReportEvaluationResultToTimezone_checkCorrectTruncation() {
 //     // for details see https://github.com/camunda/camunda-optimize/pull/2318#discussion_r451470038
@@ -245,7 +245,7 @@
 //     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
 //     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto.getId(), now);
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final ProcessReportDataDto reportData =
 //         TemplatedProcessReportDataBuilder.createReportData()
 //             .setGroupByDateInterval(AggregateByDateUnit.YEAR)
@@ -255,7 +255,7 @@
 //             .setStartFlowNodeId(START_EVENT)
 //             .setEndFlowNodeId(END_EVENT)
 //             .build();
-// 
+//
 //     // when
 //     final List<MapResultEntryDto> resultData =
 //         embeddedOptimizeExtension
@@ -271,7 +271,7 @@
 //             // @formatter:on
 //             .getResult()
 //             .getFirstMeasureData();
-// 
+//
 //     // then
 //     final OffsetDateTime expectedDate =
 //         ZonedDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneId.of("Atlantic/Cape_Verde"))
@@ -283,7 +283,7 @@
 //         .extracting(a -> OffsetDateTime.parse(a, embeddedOptimizeExtension.getDateTimeFormatter()))
 //         .satisfies(date -> assertThat(date).isEqualTo(expectedDate));
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @MethodSource("allProcessDateReports")
 //   public void adjustReportEvaluationResultToTimezone_processDateReports_automaticInterval(
@@ -310,7 +310,7 @@
 //     engineDatabaseExtension.changeFlowNodeStartDate(processInstanceDto1.getId(), END_EVENT, now);
 //     engineDatabaseExtension.changeFlowNodeEndDate(processInstanceDto1.getId(), END_EVENT, now);
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final ProcessReportDataDto reportData =
 //         TemplatedProcessReportDataBuilder.createReportData()
 //             .setGroupByDateInterval(AggregateByDateUnit.AUTOMATIC)
@@ -323,12 +323,12 @@
 //             .setVariableName("someVariable")
 //             .setVariableType(VariableType.STRING)
 //             .build();
-// 
+//
 //     // when
 //     final String clientTimezone = "Europe/London";
 //     final List<String> dateAsStringDateResultEntries =
 //         evaluateReportInClientTimezoneAndReturnDateEntries(reportData, clientTimezone);
-// 
+//
 //     // then
 //     assertThat(dateAsStringDateResultEntries)
 //         .hasSize(1)
@@ -342,7 +342,7 @@
 //                             toZonedDateTime(date, clientTimezone)))
 //                     .isOne());
 //   }
-// 
+//
 //   @Test
 //   public void unsavedReportEvaluationDoesNotFailWithZOffsetLastModifiedDateFormat()
 //       throws JsonProcessingException {
@@ -363,7 +363,7 @@
 //     final SingleProcessReportDefinitionRequestDto reportDef =
 //         new SingleProcessReportDefinitionRequestDto(reportData);
 //     reportDef.setLastModified(OffsetDateTime.parse("2021-01-05T10:25:16.161Z"));
-// 
+//
 //     // when
 //     final String requestBodyAsString =
 //         embeddedOptimizeExtension
@@ -376,7 +376,7 @@
 //             .writeValueAsString(reportDef);
 //     // ensure the body is serialized as intended
 //     assertThat(requestBodyAsString).contains("161Z");
-// 
+//
 //     final Response response =
 //         embeddedOptimizeExtension
 //             .getRequestExecutor()
@@ -385,15 +385,15 @@
 //                 "report/evaluate",
 //                 Entity.entity(requestBodyAsString, MediaType.APPLICATION_JSON_TYPE))
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 //   }
-// 
+//
 //   private static Stream<ProcessReportDataType> allProcessDateReports() {
 //     return ProcessReportDataType.allDateReports().stream();
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @MethodSource("allProcessVariableReports")
 //   public void adjustReportEvaluationResultToTimezone_groupOrDistributedByDateVariable(
@@ -405,7 +405,7 @@
 //     final ProcessInstanceEngineDto processInstanceDto =
 //         deployAndStartSimpleProcessWithVariables(variables);
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final ProcessReportDataDto reportData =
 //         TemplatedProcessReportDataBuilder.createReportData()
 //             .setGroupByDateVariableUnit(AggregateByDateUnit.HOUR)
@@ -419,12 +419,12 @@
 //             .setVariableName("dateVar")
 //             .setVariableType(VariableType.DATE)
 //             .build();
-// 
+//
 //     // when
 //     final String clientTimezone = "Europe/London";
 //     final List<String> dateAsStringDateResultEntries =
 //         evaluateReportInClientTimezoneAndReturnDateEntries(reportData, clientTimezone);
-// 
+//
 //     // then
 //     assertThat(dateAsStringDateResultEntries)
 //         .hasSize(1)
@@ -438,11 +438,11 @@
 //                             toZonedDateTime(date, clientTimezone)))
 //                     .isOne());
 //   }
-// 
+//
 //   private static Stream<ProcessReportDataType> allProcessVariableReports() {
 //     return ProcessReportDataType.allVariableReports().stream();
 //   }
-// 
+//
 //   @Test
 //   public void adjustReportEvaluationResultToTimezone_groupByDateVariable_automaticInterval() {
 //     // given
@@ -454,7 +454,7 @@
 //     engineIntegrationExtension.startProcessInstance(
 //         processInstanceDto.getDefinitionId(), variables);
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final ProcessReportDataDto reportData =
 //         TemplatedProcessReportDataBuilder.createReportData()
 //             .setGroupByDateVariableUnit(AggregateByDateUnit.AUTOMATIC)
@@ -466,12 +466,12 @@
 //             .setVariableName("dateVar")
 //             .setVariableType(VariableType.DATE)
 //             .build();
-// 
+//
 //     // when
 //     final String clientTimezone = "Europe/London";
 //     final List<String> dateAsStringDateResultEntries =
 //         evaluateReportInClientTimezoneAndReturnDateEntries(reportData, clientTimezone);
-// 
+//
 //     // then
 //     String expectedDateAsString =
 //         embeddedOptimizeExtension
@@ -481,13 +481,13 @@
 //         .hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
 //     final String firstElement = dateAsStringDateResultEntries.get(0);
 //     assertThat(firstElement).isEqualTo(expectedDateAsString);
-// 
+//
 //     expectedDateAsString = expectedLastDateAsStringForAutomaticInterval(now);
 //     final String lastElement =
 //         dateAsStringDateResultEntries.get(dateAsStringDateResultEntries.size() - 1);
 //     assertThat(lastElement).isEqualTo(expectedDateAsString);
 //   }
-// 
+//
 //   @Test
 //   public void adjustReportEvaluationResultToTimezone_decisionReport() {
 //     // given
@@ -497,7 +497,7 @@
 //         engineIntegrationExtension.deployAndStartDecisionDefinition();
 //     engineIntegrationExtension.startDecisionInstance(decisionDefinition.getId());
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final DecisionReportDataDto reportData =
 //         DecisionReportDataBuilder.create()
 //             .setDateInterval(AggregateByDateUnit.HOUR)
@@ -506,7 +506,7 @@
 //             .setReportDataType(
 //                 DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
 //             .build();
-// 
+//
 //     // when
 //     final String clientTimezone = "Europe/London";
 //     final List<MapResultEntryDto> resultData =
@@ -521,7 +521,7 @@
 //             .getResult()
 //             .getFirstMeasureData();
 //     // @formatter:on
-// 
+//
 //     // then
 //     assertThat(resultData)
 //         .hasSize(1)
@@ -536,7 +536,7 @@
 //                             toZonedDateTime(date, clientTimezone)))
 //                     .isOne());
 //   }
-// 
+//
 //   @Test
 //   public void adjustReportEvaluationResultToTimezone_combinedDateReport() {
 //     // given
@@ -546,7 +546,7 @@
 //     engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
 //     engineDatabaseExtension.changeProcessInstanceStartDate(engineDto.getId(), now.minusDays(2L));
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final ProcessReportDataDto groupByDate =
 //         TemplatedProcessReportDataBuilder.createReportData()
 //             .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
@@ -558,7 +558,7 @@
 //     final String singleProcessReportId2 = reportClient.createSingleProcessReport(groupByDate);
 //     final String combinedReportId =
 //         reportClient.createNewCombinedReport(singleProcessReportId1, singleProcessReportId2);
-// 
+//
 //     // when
 //     final String clientTimezone = "Europe/London";
 //     final AuthorizedCombinedReportEvaluationResponseDto<List<MapResultEntryDto>> result =
@@ -573,7 +573,7 @@
 //         result.getResult();
 //     final Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>
 //         resultMap = resultData.getData();
-// 
+//
 //     // then
 //     assertThat(resultMap).hasSize(2);
 //     assertThat(resultMap.values())
@@ -593,7 +593,7 @@
 //                             toZonedDateTime(date, clientTimezone)))
 //                     .isOne());
 //   }
-// 
+//
 //   @Test
 //   public void adjustReportEvaluationResultToTimezone_combinedDateReport_automaticInterval() {
 //     // given
@@ -604,7 +604,7 @@
 //     engineDatabaseExtension.changeProcessInstanceStartDate(instance1.getId(), now);
 //     engineDatabaseExtension.changeProcessInstanceStartDate(instance2.getId(), now.plusDays(1));
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final ProcessReportDataDto groupByDate =
 //         TemplatedProcessReportDataBuilder.createReportData()
 //             .setProcessDefinitionKey(instance1.getProcessDefinitionKey())
@@ -616,7 +616,7 @@
 //     final String singleProcessReportId2 = reportClient.createSingleProcessReport(groupByDate);
 //     final String combinedReportId =
 //         reportClient.createNewCombinedReport(singleProcessReportId1, singleProcessReportId2);
-// 
+//
 //     // when
 //     final AuthorizedCombinedReportEvaluationResponseDto<List<MapResultEntryDto>> result =
 //         embeddedOptimizeExtension
@@ -630,7 +630,7 @@
 //         result.getResult();
 //     final Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>
 //         combinedResultMap = resultData.getData();
-// 
+//
 //     // then
 //     assertThat(combinedResultMap).hasSize(2);
 //     for (final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> value :
@@ -639,7 +639,7 @@
 //           value.getResult().getFirstMeasureData().stream()
 //               .map(MapResultEntryDto::getKey)
 //               .collect(Collectors.toList());
-// 
+//
 //       String expectedDateAsString =
 //           embeddedOptimizeExtension
 //               .getDateTimeFormatter()
@@ -648,14 +648,14 @@
 //           .hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
 //       final String firstElement = dateAsStringDateResultEntries.get(0);
 //       assertThat(firstElement).isEqualTo(expectedDateAsString);
-// 
+//
 //       expectedDateAsString = expectedLastDateAsStringForAutomaticInterval(now);
 //       final String lastElement =
 //           dateAsStringDateResultEntries.get(dateAsStringDateResultEntries.size() - 1);
 //       assertThat(lastElement).isEqualTo(expectedDateAsString);
 //     }
 //   }
-// 
+//
 //   @Test
 //   public void adjustReportEvaluationResultToTimezone_evaluationById() {
 //     // given
@@ -665,7 +665,7 @@
 //     engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
 //     engineDatabaseExtension.changeProcessInstanceStartDate(engineDto.getId(), now.minusDays(2L));
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final ProcessReportDataDto groupByDate =
 //         TemplatedProcessReportDataBuilder.createReportData()
 //             .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
@@ -674,7 +674,7 @@
 //             .setReportDataType(PROC_INST_FREQ_GROUP_BY_START_DATE)
 //             .build();
 //     final String singleProcessReportId = reportClient.createSingleProcessReport(groupByDate);
-// 
+//
 //     // when
 //     final String clientTimezone = "Europe/London";
 //     final List<MapResultEntryDto> resultData =
@@ -689,7 +689,7 @@
 //             .getResult()
 //             .getFirstMeasureData();
 //     // @formatter:on
-// 
+//
 //     // then
 //     assertThat(resultData)
 //         .hasSize(1)
@@ -705,7 +705,7 @@
 //                             toZonedDateTime(date, clientTimezone)))
 //                     .isOne());
 //   }
-// 
+//
 //   @Test
 //   public void adjustReportEvaluationResultToTimezone_sharedReportEvaluation() {
 //     // given
@@ -715,7 +715,7 @@
 //     engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
 //     engineDatabaseExtension.changeProcessInstanceStartDate(engineDto.getId(), now.minusDays(2L));
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final ProcessReportDataDto groupByDate =
 //         TemplatedProcessReportDataBuilder.createReportData()
 //             .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
@@ -725,7 +725,7 @@
 //             .build();
 //     final String reportId = reportClient.createSingleProcessReport(groupByDate);
 //     final String reportShareId = sharingClient.shareReport(reportId);
-// 
+//
 //     // when
 //     // @formatter:off
 //     final String clientTimezone = "Europe/London";
@@ -740,7 +740,7 @@
 //             .getResult()
 //             .getFirstMeasureData();
 //     // @formatter:on
-// 
+//
 //     // then
 //     assertThat(resultData)
 //         .hasSize(1)
@@ -756,7 +756,7 @@
 //                             toZonedDateTime(date, clientTimezone)))
 //                     .isOne());
 //   }
-// 
+//
 //   @Test
 //   public void adjustReportEvaluationResultToTimezone_reportEvaluationOfSharedDashboard() {
 //     // given
@@ -766,7 +766,7 @@
 //     engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
 //     engineDatabaseExtension.changeProcessInstanceStartDate(engineDto.getId(), now.minusDays(2L));
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final ProcessReportDataDto groupByDate =
 //         TemplatedProcessReportDataBuilder.createReportData()
 //             .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
@@ -778,7 +778,7 @@
 //     final String dashboardId = dashboardClient.createEmptyDashboard(null);
 //     dashboardClient.updateDashboardWithReports(dashboardId, Collections.singletonList(reportId));
 //     final String dashboardShareId = sharingClient.shareDashboard(dashboardId);
-// 
+//
 //     // when
 //     final String clientTimezone = "Europe/London";
 //     final List<MapResultEntryDto> resultData =
@@ -791,7 +791,7 @@
 //                     AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {})
 //             .getResult()
 //             .getFirstMeasureData();
-// 
+//
 //     // then
 //     assertThat(resultData)
 //         .hasSize(1)
@@ -807,7 +807,7 @@
 //                             toZonedDateTime(date, clientTimezone)))
 //                     .isOne());
 //   }
-// 
+//
 //   @Test
 //   public void adjustReportEvaluationResultToTimezone_rawProcessReport() {
 //     // given
@@ -817,7 +817,7 @@
 //     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), now);
 //     engineDatabaseExtension.changeProcessInstanceEndDate(processInstance.getId(), now);
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final ProcessReportDataDto rawDataReport =
 //         new ProcessReportDataBuilderHelper()
 //             .processDefinitionKey(processInstance.getProcessDefinitionKey())
@@ -826,7 +826,7 @@
 //             .viewProperty(ViewProperty.RAW_DATA)
 //             .visualization(ProcessVisualization.TABLE)
 //             .build();
-// 
+//
 //     // when
 //     final String clientTimezone = "Europe/London";
 //     final List<RawDataProcessInstanceDto> resultData =
@@ -842,7 +842,7 @@
 //             // @formatter:on
 //             .getResult()
 //             .getFirstMeasureData();
-// 
+//
 //     // then
 //     assertThat(resultData).hasSize(1);
 //     final RawDataProcessInstanceDto rawInstance = resultData.get(0);
@@ -857,7 +857,7 @@
 //                 toZonedDateTime(rawInstance.getEndDate(), clientTimezone)))
 //         .isOne();
 //   }
-// 
+//
 //   @Test
 //   public void adjustReportEvaluationResultToTimezone_rawDecisionReport() {
 //     // given
@@ -867,14 +867,14 @@
 //         engineIntegrationExtension.deployAndStartDecisionDefinition();
 //     engineDatabaseExtension.changeDecisionInstanceEvaluationDate(now, now);
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final DecisionReportDataDto rawDataReport =
 //         DecisionReportDataBuilder.create()
 //             .setDecisionDefinitionKey(decisionDefinition.getKey())
 //             .setDecisionDefinitionVersion(decisionDefinition.getVersionAsString())
 //             .setReportDataType(DecisionReportDataType.RAW_DATA)
 //             .build();
-// 
+//
 //     // when
 //     final String clientTimezone = "Europe/London";
 //     final List<RawDataDecisionInstanceDto> resultData =
@@ -890,7 +890,7 @@
 //             // @formatter:on
 //             .getResult()
 //             .getFirstMeasureData();
-// 
+//
 //     // then
 //     assertThat(resultData).hasSize(1);
 //     final RawDataDecisionInstanceDto rawInstance = resultData.get(0);
@@ -900,16 +900,16 @@
 //                 toZonedDateTime(rawInstance.getEvaluationDateTime(), clientTimezone)))
 //         .isOne();
 //   }
-// 
+//
 //   @Test
 //   public void adjustDatesInCSVExportToTimezone_byReportId() {
 //     // given
 //     final OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
 //     final ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 //     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), now);
-// 
+//
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final ProcessReportDataDto groupByDate =
 //         TemplatedProcessReportDataBuilder.createReportData()
 //             .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
@@ -917,9 +917,9 @@
 //             .setGroupByDateInterval(AggregateByDateUnit.HOUR)
 //             .setReportDataType(PROC_INST_FREQ_GROUP_BY_START_DATE)
 //             .build();
-// 
+//
 //     final String reportId = reportClient.createSingleProcessReport(groupByDate);
-// 
+//
 //     // when
 //     final Response response =
 //         embeddedOptimizeExtension
@@ -927,10 +927,10 @@
 //             .buildCsvExportRequest(reportId, "my_file.csv")
 //             .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-// 
+//
 //     final String actualContent = getResponseContentAsString(response);
 //     final OffsetDateTime londonTime =
 //         now.truncatedTo(ChronoUnit.HOURS)
@@ -940,7 +940,7 @@
 //         embeddedOptimizeExtension.getDateTimeFormatter().format(londonTime);
 //     assertThat(actualContent).containsOnlyOnce(londonTimeAsString);
 //   }
-// 
+//
 //   @Test
 //   public void adjustDatesInCSVExportToTimezone_byUnsavedRawProcessDataReport() {
 //     // given
@@ -949,7 +949,7 @@
 //     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), now);
 //     engineDatabaseExtension.changeProcessInstanceEndDate(processInstance.getId(), now);
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final ProcessRawDataCsvExportRequestDto exportRequestDto =
 //         ProcessRawDataCsvExportRequestDto.builder()
 //             .processDefinitionKey(processInstance.getProcessDefinitionKey())
@@ -958,7 +958,7 @@
 //                 Lists.newArrayList(
 //                     ProcessInstanceDto.Fields.startDate, ProcessInstanceDto.Fields.endDate))
 //             .build();
-// 
+//
 //     // when
 //     final Response response =
 //         embeddedOptimizeExtension
@@ -966,23 +966,23 @@
 //             .buildDynamicRawProcessCsvExportRequest(exportRequestDto, "my_file.csv")
 //             .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-// 
+//
 //     final String actualContent = getResponseContentAsString(response);
 //     final OffsetDateTime londonTime =
 //         now.atZoneSameInstant(ZoneId.of("Europe/London")).toOffsetDateTime();
 //     final String londonTimeAsString = londonTime.toString();
 //     assertThat(StringUtils.countMatches(actualContent, londonTimeAsString)).isEqualTo(2);
 //   }
-// 
+//
 //   @Test
 //   public void adjustReportEvaluationResultToTimezone_reportDateFilter_fixedDate() {
 //     // given
 //     final OffsetDateTime now = OffsetDateTime.of(2019, 4, 15, 20, 0, 0, 0, ZoneOffset.UTC);
 //     final ProcessInstanceDto instanceDto = createTwoProcessInstancesWithStartDate(now);
-// 
+//
 //     final ProcessReportDataDto reportData =
 //         TemplatedProcessReportDataBuilder.createReportData()
 //             .setGroupByDateInterval(AggregateByDateUnit.DAY)
@@ -990,7 +990,7 @@
 //             .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
 //             .setReportDataType(PROC_INST_FREQ_GROUP_BY_START_DATE)
 //             .build();
-// 
+//
 //     final List<ProcessFilterDto<?>> fixedStartDateFilter =
 //         ProcessFilterBuilder.filter()
 //             .fixedInstanceStartDate()
@@ -1000,7 +1000,7 @@
 //             .add()
 //             .buildList();
 //     reportData.setFilter(fixedStartDateFilter);
-// 
+//
 //     // when
 //     final List<MapResultEntryDto> result =
 //         embeddedOptimizeExtension
@@ -1015,17 +1015,17 @@
 //             // @formatter:on
 //             .getResult()
 //             .getFirstMeasureData();
-// 
+//
 //     // then there should be a result
 //     assertThat(result).hasSize(1).last().extracting(MapResultEntryDto::getValue).isEqualTo(2.0);
 //   }
-// 
+//
 //   @Test
 //   public void adjustReportEvaluationResultToTimezone_dateHistogramFilterBucketLimiting() {
 //     // given
 //     final OffsetDateTime now = OffsetDateTime.of(2019, 4, 15, 20, 0, 0, 0, ZoneOffset.UTC);
 //     final ProcessInstanceDto instanceDto = createTwoProcessInstancesWithStartDate(now);
-// 
+//
 //     final ProcessReportDataDto reportData =
 //         TemplatedProcessReportDataBuilder.createReportData()
 //             .setGroupByDateInterval(AggregateByDateUnit.MONTH)
@@ -1033,7 +1033,7 @@
 //             .setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion())
 //             .setReportDataType(PROC_INST_FREQ_GROUP_BY_START_DATE)
 //             .build();
-// 
+//
 //     // when
 //     final ReportResultResponseDto<List<MapResultEntryDto>> result =
 //         embeddedOptimizeExtension
@@ -1047,7 +1047,7 @@
 //                     AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {})
 //             // @formatter:on
 //             .getResult();
-// 
+//
 //     // then
 //     assertThat(result.getInstanceCount()).isEqualTo(2L);
 //     assertThat(result.getFirstMeasureData())
@@ -1056,7 +1056,7 @@
 //         .extracting(MapResultEntryDto::getValue)
 //         .isEqualTo(2.0);
 //   }
-// 
+//
 //   @Test
 //   public void adjustReportEvaluationResultToTimezone_reportDateFilter_relativeDate() {
 //     // given
@@ -1069,7 +1069,7 @@
 //     engineDatabaseExtension.changeProcessInstanceStartDate(
 //         processInstance.getId(), instanceStartDate);
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final ProcessReportDataDto reportData =
 //         TemplatedProcessReportDataBuilder.createReportData()
 //             .setGroupByDateInterval(AggregateByDateUnit.YEAR)
@@ -1077,7 +1077,7 @@
 //             .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
 //             .setReportDataType(PROC_INST_FREQ_GROUP_BY_START_DATE)
 //             .build();
-// 
+//
 //     final List<ProcessFilterDto<?>> relativeStartDateFilter =
 //         ProcessFilterBuilder.filter()
 //             .relativeInstanceStartDate()
@@ -1086,7 +1086,7 @@
 //             .add()
 //             .buildList();
 //     reportData.setFilter(relativeStartDateFilter);
-// 
+//
 //     // when
 //     final List<MapResultEntryDto> resultData =
 //         embeddedOptimizeExtension
@@ -1105,12 +1105,12 @@
 //             // @formatter:on
 //             .getResult()
 //             .getFirstMeasureData();
-// 
+//
 //     // then
 //     // if the timezone of the request was not respected then the result would be not be empty
 //     assertThat(resultData).isEmpty();
 //   }
-// 
+//
 //   @Test
 //   public void branchAnalysis_adjustsFilterToTimezone() {
 //     // given
@@ -1126,7 +1126,7 @@
 //     engineDatabaseExtension.changeProcessInstanceStartDate(
 //         processInstance.getId(), instanceStartDate);
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final BranchAnalysisRequestDto branchAnalysisRequestDto =
 //         analysisClient.createAnalysisDto(
 //             gatewayDefinition.getKey(),
@@ -1134,7 +1134,7 @@
 //             Collections.singletonList(null),
 //             SPLITTING_GATEWAY_ID,
 //             END_EVENT);
-// 
+//
 //     final List<ProcessFilterDto<?>> relativeStartDateFilter =
 //         ProcessFilterBuilder.filter()
 //             .relativeInstanceStartDate()
@@ -1143,7 +1143,7 @@
 //             .add()
 //             .buildList();
 //     branchAnalysisRequestDto.setFilter(relativeStartDateFilter);
-// 
+//
 //     // when
 //     final BranchAnalysisResponseDto result =
 //         embeddedOptimizeExtension
@@ -1151,12 +1151,12 @@
 //             .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "UTC")
 //             .buildProcessDefinitionCorrelation(branchAnalysisRequestDto)
 //             .execute(BranchAnalysisResponseDto.class, Response.Status.OK.getStatusCode());
-// 
+//
 //     // then
 //     // if the timezone of the request was not respected then the result would be not be empty
 //     assertThat(result.getTotal()).isZero();
 //   }
-// 
+//
 //   private List<String> evaluateReportInClientTimezoneAndReturnDateEntries(
 //       final ProcessReportDataDto reportData, final String clientTimezone) {
 //     final MeasureResponseDto<?> result =
@@ -1192,7 +1192,7 @@
 //       throw new OptimizeIntegrationTestException("Unknown result type!");
 //     }
 //   }
-// 
+//
 //   @SneakyThrows
 //   private ProcessInstanceDto createTwoProcessInstancesWithStartDate(final OffsetDateTime date) {
 //     // we need to add the data by hand to ensure that the date is stored
@@ -1216,12 +1216,12 @@
 //         getProcessInstanceIndexAliasName("aKey"), instanceDto.getProcessInstanceId(), instanceDto);
 //     return instanceDto;
 //   }
-// 
+//
 //   private OffsetDateTime truncateToYearWithLondonTimezone(final OffsetDateTime now) {
 //     return truncateToStartOfUnit(now, ChronoUnit.YEARS, (ZoneId.of("Europe/London")))
 //         .toOffsetDateTime();
 //   }
-// 
+//
 //   private String expectedLastDateAsStringForAutomaticInterval(final OffsetDateTime now) {
 //     final String expectedDateAsString;
 //     final long automaticIntervalStepInMs =
@@ -1238,12 +1238,12 @@
 //                     .toOffsetDateTime());
 //     return expectedDateAsString;
 //   }
-// 
+//
 //   private ZonedDateTime toZonedDateTime(
 //       final OffsetDateTime offsetDateTime, final String timezone) {
 //     return offsetDateTime.atZoneSameInstant(TimeZone.getTimeZone(timezone).toZoneId());
 //   }
-// 
+//
 //   // Compares the first parameter to the second. So will be positive if the offset of z1 is greater
 //   // than z2 after
 //   // daylight savings have been considered, and negative if its offset is less than that of z2

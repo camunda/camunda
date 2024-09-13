@@ -9,14 +9,13 @@ package io.camunda.optimize.service.db.schema.index.report;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_BOOLEAN;
 import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_DATE;
 import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
 import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_TEXT;
 
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.ReportConfigurationDto;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import java.io.IOException;
 import org.elasticsearch.xcontent.XContentBuilder;
@@ -33,13 +32,12 @@ public abstract class AbstractReportIndex<TBuilder> extends DefaultIndexMappingC
   public static final String COLLECTION_ID = ReportDefinitionDto.Fields.collectionId;
 
   public static final String REPORT_TYPE = ReportDefinitionDto.Fields.reportType;
-  public static final String COMBINED = ReportDefinitionDto.Fields.combined;
   public static final String DATA = ReportDefinitionDto.Fields.data;
 
-  public static final String CONFIGURATION = SingleReportDataDto.Fields.configuration;
-  public static final String XML = SingleReportConfigurationDto.Fields.xml;
+  public static final String CONFIGURATION = ReportDataDto.Fields.configuration;
+  public static final String XML = ReportConfigurationDto.Fields.xml;
   public static final String AGGREGATION_TYPES =
-      SingleReportConfigurationDto.Fields.aggregationTypes;
+      ReportConfigurationDto.Fields.aggregationTypes;
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
@@ -75,9 +73,6 @@ public abstract class AbstractReportIndex<TBuilder> extends DefaultIndexMappingC
             .endObject()
             .startObject(REPORT_TYPE)
             .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(COMBINED)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
             .endObject();
     // @formatter:on
     newBuilder = addReportTypeSpecificFields(newBuilder);

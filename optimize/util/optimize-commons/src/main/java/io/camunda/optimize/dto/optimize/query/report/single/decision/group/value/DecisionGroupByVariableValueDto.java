@@ -8,7 +8,6 @@
 package io.camunda.optimize.dto.optimize.query.report.single.decision.group.value;
 
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import java.util.Objects;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,17 +20,5 @@ public class DecisionGroupByVariableValueDto implements DecisionGroupByValueDto 
 
   public Optional<String> getName() {
     return Optional.ofNullable(name);
-  }
-
-  @Override
-  public boolean isCombinable(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof DecisionGroupByVariableValueDto)) {
-      return false;
-    }
-    DecisionGroupByVariableValueDto that = (DecisionGroupByVariableValueDto) o;
-    return Objects.equals(id, that.id);
   }
 }

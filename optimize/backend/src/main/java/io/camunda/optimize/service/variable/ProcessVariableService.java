@@ -12,9 +12,7 @@ import static io.camunda.optimize.service.util.ValidationHelper.ensureNotEmpty;
 import io.camunda.optimize.dto.optimize.IdentityType;
 import io.camunda.optimize.dto.optimize.ReportConstants;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessToQueryDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
@@ -73,7 +71,7 @@ public class ProcessVariableService {
   }
 
   public List<ProcessVariableNameResponseDto> getVariableNamesForReportDefinitions(
-      final List<SingleProcessReportDefinitionRequestDto> definitions) {
+      final List<ProcessReportDefinitionRequestDto> definitions) {
     final List<ProcessToQueryDto> processesToQuery =
         definitions.stream()
             .filter(definition -> definition.getData().getProcessDefinitionKey() != null)
@@ -120,30 +118,14 @@ public class ProcessVariableService {
 
   private <T> List<T> convertReportsToVariableQuery(
       final List<ReportDefinitionDto> reportDefinitions,
-      final Function<SingleReportDefinitionDto<?>, List<T>> mappingFunction) {
-    final List<ReportDefinitionDto> allReportsForIds = new ArrayList<>(reportDefinitions);
-    allReportsForIds.addAll(
-        allReportsForIds.stream()
-            .filter(
-                reportDefinitionDto ->
-                    reportDefinitionDto instanceof CombinedReportDefinitionRequestDto)
-            .flatMap(
-                combinedReport -> {
-                  final List<String> reportIdsFromCombined =
-                      ((CombinedReportDefinitionRequestDto) combinedReport)
-                          .getData()
-                          .getReportIds();
-                  return reportService.getAllReportsForIds(reportIdsFromCombined).stream();
-                })
-            .collect(Collectors.toList()));
-
-    return convertReportsToVariableQuery(mappingFunction, allReportsForIds);
+      final Function<ReportDefinitionDto<?>, List<T>> mappingFunction) {
+    return convertReportsToVariableQuery(mappingFunction, new ArrayList<>(reportDefinitions));
   }
 
   private <T> List<T> convertAuthorizedReportsToVariableQuery(
       final String userId,
       final List<String> reportIds,
-      final Function<SingleReportDefinitionDto<?>, List<T>> mappingFunction) {
+      final Function<ReportDefinitionDto<?>, List<T>> mappingFunction) {
     final List<ReportDefinitionDto> allAuthorizedReportsForIds =
         getAllAuthorizedReportsRecursively(userId, reportIds);
     return convertReportsToVariableQuery(mappingFunction, allAuthorizedReportsForIds);
@@ -151,43 +133,23 @@ public class ProcessVariableService {
 
   private List<ReportDefinitionDto> getAllAuthorizedReportsRecursively(
       final String userId, final List<String> reportIds) {
-    final List<ReportDefinitionDto> allAuthorizedReportsForIds =
-        reportService.getAllAuthorizedReportsForIds(userId, reportIds);
-    allAuthorizedReportsForIds.addAll(
-        allAuthorizedReportsForIds.stream()
-            .filter(CombinedReportDefinitionRequestDto.class::isInstance)
-            .flatMap(
-                combinedReport -> {
-                  final List<String> reportIdsFromCombined =
-                      ((CombinedReportDefinitionRequestDto) combinedReport)
-                          .getData()
-                          .getReportIds();
-                  return Optional.ofNullable(userId)
-                      .map(
-                          user ->
-                              reportService
-                                  .getAllAuthorizedReportsForIds(userId, reportIdsFromCombined)
-                                  .stream())
-                      .orElse(reportService.getAllReportsForIds(reportIdsFromCombined).stream());
-                })
-            .collect(Collectors.toList()));
-    return allAuthorizedReportsForIds;
+    return reportService.getAllAuthorizedReportsForIds(userId, reportIds);
   }
 
   private <T> List<T> convertReportsToVariableQuery(
-      final Function<SingleReportDefinitionDto<?>, List<T>> mappingFunction,
+      final Function<ReportDefinitionDto<?>, List<T>> mappingFunction,
       final List<ReportDefinitionDto> reportDefinitionDtos) {
     return reportDefinitionDtos.stream()
         .distinct()
-        .filter(SingleReportDefinitionDto.class::isInstance)
-        .map(definition -> (SingleReportDefinitionDto<?>) definition)
+        .filter(ReportDefinitionDto.class::isInstance)
+        .map(definition -> (ReportDefinitionDto<?>) definition)
         .map(mappingFunction)
         .flatMap(Collection::stream)
         .collect(Collectors.toList());
   }
 
   private List<ProcessToQueryDto> convertToProcessToQueryDto(
-      final SingleReportDefinitionDto<?> reportDefinitionDto) {
+      final ReportDefinitionDto<?> reportDefinitionDto) {
     return reportDefinitionDto.getData().getDefinitions().stream()
         .map(
             definitionDto -> {

@@ -15,7 +15,7 @@ import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.service.db.es.report.AuthorizationCheckReportEvaluationHandler;
 import io.camunda.optimize.service.db.es.report.result.RawDataCommandResult;
@@ -56,7 +56,7 @@ public class CsvExportServiceTest {
         .thenReturn(
             new AuthorizedReportEvaluationResult(
                 new SingleReportEvaluationResult(
-                    new SingleProcessReportDefinitionRequestDto(), rawDataReportResult),
+                    new ProcessReportDefinitionRequestDto(), rawDataReportResult),
                 RoleType.VIEWER));
 
     // when
@@ -80,7 +80,7 @@ public class CsvExportServiceTest {
         .thenReturn(
             new AuthorizedReportEvaluationResult(
                 new SingleReportEvaluationResult(
-                    new SingleProcessReportDefinitionRequestDto(), rawDataReportResult),
+                    new ProcessReportDefinitionRequestDto(), rawDataReportResult),
                 RoleType.VIEWER));
 
     // when

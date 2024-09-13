@@ -20,7 +20,7 @@ import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class SingleDecisionReportIndex<TBuilder> extends AbstractReportIndex<TBuilder> {
 
-  public static final int VERSION = 10;
+  public static final int VERSION = 11;
 
   @Override
   public String getIndexName() {

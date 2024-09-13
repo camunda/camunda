@@ -5,28 +5,28 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.dto.optimize.query.report.single.process;
+package io.camunda.optimize.dto.optimize.query.report.single.decision;
 
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.ReportType;
-import io.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import java.util.List;
 import lombok.experimental.SuperBuilder;
 
 @SuperBuilder
-public class SingleProcessReportDefinitionRequestDto
-    extends SingleReportDefinitionDto<ProcessReportDataDto> {
+public class DecisionReportDefinitionRequestDto
+    extends ReportDefinitionDto<DecisionReportDataDto> {
 
-  public SingleProcessReportDefinitionRequestDto() {
-    super(new ProcessReportDataDto(), false, ReportType.PROCESS);
+  public DecisionReportDefinitionRequestDto() {
+    this(new DecisionReportDataDto());
   }
 
-  public SingleProcessReportDefinitionRequestDto(final ProcessReportDataDto data) {
-    super(data, false, ReportType.PROCESS);
+  public DecisionReportDefinitionRequestDto(final DecisionReportDataDto data) {
+    super(data, ReportType.DECISION);
   }
 
   @Override
@@ -36,6 +36,6 @@ public class SingleProcessReportDefinitionRequestDto
 
   @JsonIgnore
   public List<FilterDataDto> getFilterData() {
-    return data.getFilter().stream().map(ProcessFilterDto::getData).collect(toList());
+    return data.getFilter().stream().map(DecisionFilterDto::getData).collect(toList());
   }
 }

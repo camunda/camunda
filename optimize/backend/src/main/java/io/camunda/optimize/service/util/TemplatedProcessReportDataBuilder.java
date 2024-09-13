@@ -10,7 +10,7 @@ package io.camunda.optimize.service.util;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
-import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.ReportConfigurationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -37,11 +37,11 @@ public class TemplatedProcessReportDataBuilder {
   private AggregateByDateUnit groupByDateInterval = AggregateByDateUnit.AUTOMATIC;
   private AggregateByDateUnit distributeByDateInterval;
   private AggregateByDateUnit groupByDateVariableUnit =
-      new SingleReportConfigurationDto().getGroupByDateVariableUnit();
+      new ReportConfigurationDto().getGroupByDateVariableUnit();
   private String startFlowNodeId;
   private String endFlowNodeId;
   private UserTaskDurationTime userTaskDurationTime =
-      new SingleReportConfigurationDto()
+      new ReportConfigurationDto()
           .getUserTaskDurationTimes().stream().findFirst().orElse(null);
   private ProcessVisualization visualization;
 

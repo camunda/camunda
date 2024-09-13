@@ -18,11 +18,11 @@
 // import io.camunda.optimize.dto.optimize.DefinitionType;
 // import io.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
-// import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+// import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+// io.camunda.optimize.dto.optimize.query.report.single.configuration.ReportConfigurationDto;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
 // import io.camunda.optimize.dto.optimize.rest.DefinitionExceptionResponseDto;
 // import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;

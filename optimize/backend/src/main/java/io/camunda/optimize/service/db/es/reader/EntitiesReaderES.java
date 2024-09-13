@@ -8,7 +8,6 @@
 package io.camunda.optimize.service.db.es.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
@@ -40,7 +39,6 @@ import io.camunda.optimize.dto.optimize.query.entity.EntityType;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.schema.index.DashboardIndexES;
-import io.camunda.optimize.service.db.es.schema.index.report.CombinedReportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleDecisionReportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
 import io.camunda.optimize.service.db.reader.EntitiesReader;
@@ -248,8 +246,6 @@ public class EntitiesReaderES implements EntitiesReader {
         collectionFilterAggregation.getAggregations().get(AGG_BY_INDEX_COUNT);
     final long singleProcessReportCount =
         getDocCountForIndex(byIndexNameTerms, new SingleProcessReportIndexES());
-    final long combinedProcessReportCount =
-        getDocCountForIndex(byIndexNameTerms, new CombinedReportIndexES());
     final long singleDecisionReportCount =
         getDocCountForIndex(byIndexNameTerms, new SingleDecisionReportIndexES());
     final long dashboardCount = getDocCountForIndex(byIndexNameTerms, new DashboardIndexES());
@@ -257,7 +253,7 @@ public class EntitiesReaderES implements EntitiesReader {
         EntityType.DASHBOARD,
         dashboardCount,
         EntityType.REPORT,
-        singleProcessReportCount + singleDecisionReportCount + combinedProcessReportCount);
+        singleProcessReportCount + singleDecisionReportCount);
   }
 
   private long getDocCountForIndex(
@@ -288,7 +284,6 @@ public class EntitiesReaderES implements EntitiesReader {
     final MultiGetRequest request = new MultiGetRequest();
     addGetEntityToRequest(request, requestDto.getReportId(), SINGLE_PROCESS_REPORT_INDEX_NAME);
     addGetEntityToRequest(request, requestDto.getReportId(), SINGLE_DECISION_REPORT_INDEX_NAME);
-    addGetEntityToRequest(request, requestDto.getReportId(), COMBINED_REPORT_INDEX_NAME);
     addGetEntityToRequest(request, requestDto.getDashboardId(), DASHBOARD_INDEX_NAME);
     addGetEntityToRequest(request, requestDto.getCollectionId(), COLLECTION_INDEX_NAME);
     if (request.getItems().isEmpty()) {
@@ -343,10 +338,7 @@ public class EntitiesReaderES implements EntitiesReader {
 
   private SearchRequest createReportAndDashboardSearchRequest() {
     return new SearchRequest(
-        SINGLE_PROCESS_REPORT_INDEX_NAME,
-        SINGLE_DECISION_REPORT_INDEX_NAME,
-        COMBINED_REPORT_INDEX_NAME,
-        DASHBOARD_INDEX_NAME);
+        SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_DECISION_REPORT_INDEX_NAME, DASHBOARD_INDEX_NAME);
   }
 
   private String getLocalizedDashboardName(

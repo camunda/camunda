@@ -8,13 +8,13 @@
 package io.camunda.optimize.service.db.es.report.command;
 
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
-import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 import io.camunda.optimize.service.db.es.report.ReportEvaluationContext;
 import io.camunda.optimize.service.db.es.report.command.exec.DecisionReportCmdExecutionPlan;
 import io.camunda.optimize.service.db.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 
 public abstract class DecisionCmd<T>
-    implements Command<T, SingleDecisionReportDefinitionRequestDto> {
+    implements Command<T, DecisionReportDefinitionRequestDto> {
 
   protected final DecisionReportCmdExecutionPlan<T> executionPlan;
 
@@ -24,7 +24,7 @@ public abstract class DecisionCmd<T>
 
   @Override
   public CommandEvaluationResult<T> evaluate(
-      final ReportEvaluationContext<SingleDecisionReportDefinitionRequestDto>
+      final ReportEvaluationContext<DecisionReportDefinitionRequestDto>
           reportEvaluationContext) {
     return executionPlan.evaluate(reportEvaluationContext);
   }

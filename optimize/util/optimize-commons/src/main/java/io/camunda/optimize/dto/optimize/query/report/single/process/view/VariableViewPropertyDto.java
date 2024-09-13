@@ -22,9 +22,4 @@ public class VariableViewPropertyDto implements TypedViewPropertyDto {
   public String toString() {
     return "aggregation";
   }
-
-  @Override
-  public boolean isCombinable(final Object o) {
-    return o instanceof VariableViewPropertyDto;
-  }
 }

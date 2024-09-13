@@ -19,9 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Lists;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
-import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataCountDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import io.camunda.optimize.service.db.es.report.result.RawDataCommandResult;
@@ -131,8 +131,8 @@ public class CSVUtilsTest {
     List<String> excludedColumns =
         Lists.newArrayList(RawDataProcessInstanceDto.class.getDeclaredFields()[0].getName());
 
-    final SingleProcessReportDefinitionRequestDto reportDefinition =
-        new SingleProcessReportDefinitionRequestDto();
+    final ProcessReportDefinitionRequestDto reportDefinition =
+        new ProcessReportDefinitionRequestDto();
     reportDefinition
         .getData()
         .getConfiguration()
@@ -165,8 +165,8 @@ public class CSVUtilsTest {
     List<String> includedColumns = extractAllProcessInstanceDtoFieldKeys();
     List<String> excludedColumns =
         Lists.newArrayList(RawDataProcessInstanceDto.class.getDeclaredFields()[1].getName());
-    final SingleProcessReportDefinitionRequestDto reportDefinition =
-        new SingleProcessReportDefinitionRequestDto();
+    final ProcessReportDefinitionRequestDto reportDefinition =
+        new ProcessReportDefinitionRequestDto();
     reportDefinition
         .getData()
         .getConfiguration()
@@ -206,8 +206,8 @@ public class CSVUtilsTest {
         Lists.newArrayList(toMap.get(0).getVariables().keySet());
     List<String> excludedColumns =
         Lists.newArrayList(VARIABLE_PREFIX + firstRowVariableColumnNames.get(0));
-    final SingleProcessReportDefinitionRequestDto reportDefinition =
-        new SingleProcessReportDefinitionRequestDto();
+    final ProcessReportDefinitionRequestDto reportDefinition =
+        new ProcessReportDefinitionRequestDto();
     reportDefinition
         .getData()
         .getConfiguration()
@@ -238,8 +238,8 @@ public class CSVUtilsTest {
     List<String> includedColumns =
         Lists.newArrayList(VARIABLE_PREFIX + firstRowVariableColumnNames.get(0));
     includedColumns.addAll(extractAllProcessInstanceDtoFieldKeys());
-    final SingleProcessReportDefinitionRequestDto reportDefinition =
-        new SingleProcessReportDefinitionRequestDto();
+    final ProcessReportDefinitionRequestDto reportDefinition =
+        new ProcessReportDefinitionRequestDto();
     reportDefinition
         .getData()
         .getConfiguration()
@@ -271,8 +271,8 @@ public class CSVUtilsTest {
         Lists.newArrayList(VARIABLE_PREFIX + firstRowVariableColumnNames.get(1));
     List<String> excludedColumns =
         Lists.newArrayList(VARIABLE_PREFIX + firstRowVariableColumnNames.get(1));
-    final SingleProcessReportDefinitionRequestDto reportDefinition =
-        new SingleProcessReportDefinitionRequestDto();
+    final ProcessReportDefinitionRequestDto reportDefinition =
+        new ProcessReportDefinitionRequestDto();
     reportDefinition
         .getData()
         .getConfiguration()
@@ -335,8 +335,8 @@ public class CSVUtilsTest {
             RawDataDecisionInstanceDto.class.getDeclaredFields()[0].getName(),
             RawDataDecisionInstanceDto.class.getDeclaredFields()[1].getName());
 
-    final SingleDecisionReportDefinitionRequestDto reportDefinition =
-        new SingleDecisionReportDefinitionRequestDto();
+    final DecisionReportDefinitionRequestDto reportDefinition =
+        new DecisionReportDefinitionRequestDto();
     reportDefinition
         .getData()
         .getConfiguration()
@@ -367,8 +367,8 @@ public class CSVUtilsTest {
         Lists.newArrayList(RawDataDecisionInstanceDto.class.getDeclaredFields()[1].getName());
     List<String> excludedColumns =
         Lists.newArrayList(RawDataDecisionInstanceDto.class.getDeclaredFields()[1].getName());
-    final SingleDecisionReportDefinitionRequestDto reportDefinition =
-        new SingleDecisionReportDefinitionRequestDto();
+    final DecisionReportDefinitionRequestDto reportDefinition =
+        new DecisionReportDefinitionRequestDto();
     reportDefinition
         .getData()
         .getConfiguration()
@@ -403,8 +403,8 @@ public class CSVUtilsTest {
     List<String> excludedColumns =
         Lists.newArrayList(INPUT_PREFIX + firstRowInputVariableColumnNames.get(1));
 
-    final SingleDecisionReportDefinitionRequestDto reportDefinition =
-        new SingleDecisionReportDefinitionRequestDto();
+    final DecisionReportDefinitionRequestDto reportDefinition =
+        new DecisionReportDefinitionRequestDto();
     reportDefinition
         .getData()
         .getConfiguration()
@@ -433,8 +433,8 @@ public class CSVUtilsTest {
     List<String> includedColumns =
         Lists.newArrayList(INPUT_PREFIX + firstRowInputVariableColumnNames.get(1));
 
-    final SingleDecisionReportDefinitionRequestDto reportDefinition =
-        new SingleDecisionReportDefinitionRequestDto();
+    final DecisionReportDefinitionRequestDto reportDefinition =
+        new DecisionReportDefinitionRequestDto();
     reportDefinition
         .getData()
         .getConfiguration()
@@ -467,8 +467,8 @@ public class CSVUtilsTest {
     List<String> excludedColumns =
         Lists.newArrayList(INPUT_PREFIX + firstRowInputVariableColumnNames.get(1));
 
-    final SingleDecisionReportDefinitionRequestDto reportDefinition =
-        new SingleDecisionReportDefinitionRequestDto();
+    final DecisionReportDefinitionRequestDto reportDefinition =
+        new DecisionReportDefinitionRequestDto();
     reportDefinition
         .getData()
         .getConfiguration()
@@ -503,8 +503,8 @@ public class CSVUtilsTest {
     List<String> excludedColumns =
         Lists.newArrayList(OUTPUT_PREFIX + firstRowOutputVariableColumnNames.get(0));
 
-    final SingleDecisionReportDefinitionRequestDto reportDefinition =
-        new SingleDecisionReportDefinitionRequestDto();
+    final DecisionReportDefinitionRequestDto reportDefinition =
+        new DecisionReportDefinitionRequestDto();
     reportDefinition
         .getData()
         .getConfiguration()
@@ -533,8 +533,8 @@ public class CSVUtilsTest {
     List<String> includedColumns =
         Lists.newArrayList(OUTPUT_PREFIX + firstRowOutputVariableColumnNames.get(0));
 
-    final SingleDecisionReportDefinitionRequestDto reportDefinition =
-        new SingleDecisionReportDefinitionRequestDto();
+    final DecisionReportDefinitionRequestDto reportDefinition =
+        new DecisionReportDefinitionRequestDto();
     reportDefinition
         .getData()
         .getConfiguration()
@@ -567,8 +567,8 @@ public class CSVUtilsTest {
     List<String> excludedColumns =
         Collections.singletonList(OUTPUT_PREFIX + firstRowOutputVariableColumnNames.get(1));
 
-    final SingleDecisionReportDefinitionRequestDto reportDefinition =
-        new SingleDecisionReportDefinitionRequestDto();
+    final DecisionReportDefinitionRequestDto reportDefinition =
+        new DecisionReportDefinitionRequestDto();
     reportDefinition
         .getData()
         .getConfiguration()

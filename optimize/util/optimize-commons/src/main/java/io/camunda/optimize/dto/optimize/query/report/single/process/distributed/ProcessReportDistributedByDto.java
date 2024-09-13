@@ -21,7 +21,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.camunda.optimize.dto.optimize.query.report.Combinable;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.ProcessReportDistributedByValueDto;
 import lombok.Data;
@@ -48,8 +47,7 @@ import lombok.Data;
   @JsonSubTypes.Type(value = ProcessDistributedByDto.class, name = DISTRIBUTED_BY_PROCESS)
 })
 @Data
-public class ProcessReportDistributedByDto<VALUE extends ProcessReportDistributedByValueDto>
-    implements Combinable {
+public class ProcessReportDistributedByDto<VALUE extends ProcessReportDistributedByValueDto> {
 
   @JsonProperty protected DistributedByType type = DistributedByType.NONE;
   protected VALUE value;
@@ -62,12 +60,6 @@ public class ProcessReportDistributedByDto<VALUE extends ProcessReportDistribute
   @JsonIgnore
   public String createCommandKey() {
     return type.getId();
-  }
-
-  @Override
-  public boolean isCombinable(final Object o) {
-    return DistributedByType.NONE.equals(type)
-        && DistributedByType.NONE.equals(((ProcessReportDistributedByDto<?>) o).getType());
   }
 
   public static final class Fields {

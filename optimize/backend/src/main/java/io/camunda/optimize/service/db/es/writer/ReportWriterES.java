@@ -7,32 +7,26 @@
  */
 package io.camunda.optimize.service.db.es.writer;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 import static io.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COLLECTION_ID;
+import static io.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.DATA;
 import static io.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.DESCRIPTION;
-import static io.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.DATA;
-import static io.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORTS;
-import static io.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
 import static io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionUpdateDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionUpdateDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.writer.DatabaseWriterUtil;
@@ -49,15 +43,11 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.search.join.ScoreMode;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.index.engine.DocumentMissingException;
-import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -75,52 +65,6 @@ public class ReportWriterES implements ReportWriter {
   private final OptimizeElasticsearchClient esClient;
 
   @Override
-  public IdResponseDto createNewCombinedReport(
-      @NonNull final String userId,
-      @NonNull final CombinedReportDataDto reportData,
-      @NonNull final String reportName,
-      final String description,
-      final String collectionId) {
-    log.debug("Writing new combined report to Elasticsearch");
-    final String id = IdGenerator.getNextId();
-    final CombinedReportDefinitionRequestDto reportDefinitionDto =
-        new CombinedReportDefinitionRequestDto();
-    reportDefinitionDto.setId(id);
-    final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
-    reportDefinitionDto.setCreated(now);
-    reportDefinitionDto.setLastModified(now);
-    reportDefinitionDto.setOwner(userId);
-    reportDefinitionDto.setLastModifier(userId);
-    reportDefinitionDto.setName(reportName);
-    reportDefinitionDto.setDescription(description);
-    reportDefinitionDto.setData(reportData);
-    reportDefinitionDto.setCollectionId(collectionId);
-
-    try {
-      IndexRequest request =
-          new IndexRequest(COMBINED_REPORT_INDEX_NAME)
-              .id(id)
-              .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
-              .setRefreshPolicy(IMMEDIATE);
-
-      IndexResponse indexResponse = esClient.index(request);
-
-      if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
-        String message = "Could not write report to Elasticsearch. ";
-        log.error(message);
-        throw new OptimizeRuntimeException(message);
-      }
-
-      log.debug("Report with id [{}] has successfully been created.", id);
-      return new IdResponseDto(id);
-    } catch (IOException e) {
-      String errorMessage = "Was not able to insert combined report.!";
-      log.error(errorMessage, e);
-      throw new OptimizeRuntimeException(errorMessage, e);
-    }
-  }
-
-  @Override
   public IdResponseDto createNewSingleProcessReport(
       final String userId,
       @NonNull final ProcessReportDataDto reportData,
@@ -130,8 +74,8 @@ public class ReportWriterES implements ReportWriter {
     log.debug("Writing new single report to Elasticsearch");
 
     final String id = IdGenerator.getNextId();
-    final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
-        new SingleProcessReportDefinitionRequestDto();
+    final ProcessReportDefinitionRequestDto reportDefinitionDto =
+        new ProcessReportDefinitionRequestDto();
     reportDefinitionDto.setId(id);
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     reportDefinitionDto.setCreated(now);
@@ -177,8 +121,8 @@ public class ReportWriterES implements ReportWriter {
     log.debug("Writing new single report to Elasticsearch");
 
     final String id = IdGenerator.getNextId();
-    final SingleDecisionReportDefinitionRequestDto reportDefinitionDto =
-        new SingleDecisionReportDefinitionRequestDto();
+    final DecisionReportDefinitionRequestDto reportDefinitionDto =
+        new DecisionReportDefinitionRequestDto();
     reportDefinitionDto.setId(id);
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     reportDefinitionDto.setCreated(now);
@@ -226,11 +170,6 @@ public class ReportWriterES implements ReportWriter {
   }
 
   @Override
-  public void updateCombinedReport(final ReportDefinitionUpdateDto updatedReport) {
-    updateReport(updatedReport, COMBINED_REPORT_INDEX_NAME);
-  }
-
-  @Override
   public void updateProcessDefinitionXmlForProcessReportsWithKey(
       final String definitionKey, final String definitionXml) {
     final String updateItem = String.format("reports with definitionKey [%s]", definitionKey);
@@ -275,73 +214,12 @@ public class ReportWriterES implements ReportWriter {
   }
 
   @Override
-  public void removeSingleReportFromCombinedReports(final String reportId) {
-    String updateItemName = String.format("report with ID [%s]", reportId);
-    log.info("Removing {} from combined report.", updateItemName);
-
-    Script removeReportIdFromCombinedReportsScript =
-        new Script(
-            ScriptType.INLINE,
-            Script.DEFAULT_SCRIPT_LANG,
-            "def reports = ctx._source.data.reports;"
-                + "if(reports != null) {"
-                + "  reports.removeIf(r -> r.id.equals(params.idToRemove));"
-                + "}",
-            Collections.singletonMap("idToRemove", reportId));
-
-    NestedQueryBuilder query =
-        nestedQuery(
-            DATA,
-            nestedQuery(
-                String.join(".", DATA, REPORTS),
-                termQuery(String.join(".", DATA, REPORTS, REPORT_ITEM_ID), reportId),
-                ScoreMode.None),
-            ScoreMode.None);
-
-    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-        esClient,
-        updateItemName,
-        removeReportIdFromCombinedReportsScript,
-        query,
-        COMBINED_REPORT_INDEX_NAME);
-  }
-
-  @Override
-  public void deleteCombinedReport(final String reportId) {
-    log.debug("Deleting combined report with id [{}]", reportId);
-
-    DeleteRequest request =
-        new DeleteRequest(COMBINED_REPORT_INDEX_NAME).id(reportId).setRefreshPolicy(IMMEDIATE);
-
-    DeleteResponse deleteResponse;
-    try {
-      deleteResponse = esClient.delete(request);
-    } catch (IOException e) {
-      String reason = String.format("Could not delete combined report with id [%s].", reportId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    if (!deleteResponse.getResult().equals(DeleteResponse.Result.DELETED)) {
-      String message =
-          String.format(
-              "Could not delete combined process report with id [%s]. "
-                  + "Combined process report does not exist."
-                  + "Maybe it was already deleted by someone else?",
-              reportId);
-      log.error(message);
-      throw new NotFoundException(message);
-    }
-  }
-
-  @Override
   public void deleteAllReportsOfCollection(String collectionId) {
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
         esClient,
         QueryBuilders.termQuery(COLLECTION_ID, collectionId),
         String.format("all reports of collection with collectionId [%s]", collectionId),
         true,
-        COMBINED_REPORT_INDEX_NAME,
         SINGLE_PROCESS_REPORT_INDEX_NAME,
         SINGLE_DECISION_REPORT_INDEX_NAME);
   }

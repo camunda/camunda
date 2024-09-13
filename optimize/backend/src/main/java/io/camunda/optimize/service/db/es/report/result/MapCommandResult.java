@@ -8,7 +8,7 @@
 package io.camunda.optimize.service.db.es.report.result;
 
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
@@ -22,7 +22,7 @@ public class MapCommandResult extends CommandEvaluationResult<List<MapResultEntr
 
   public MapCommandResult(
       @NonNull final List<MeasureDto<List<MapResultEntryDto>>> measures,
-      @NonNull final SingleReportDataDto reportDataDto) {
+      @NonNull final ReportDataDto reportDataDto) {
     super(measures, reportDataDto);
   }
 
@@ -40,7 +40,7 @@ public class MapCommandResult extends CommandEvaluationResult<List<MapResultEntr
   }
 
   public void addCsvHeader(final List<String[]> csvStrings) {
-    if (getReportDataAs(SingleReportDataDto.class)
+    if (getReportDataAs(ReportDataDto.class)
         .getViewProperties()
         .contains(ViewProperty.FREQUENCY)) {
       addFrequencyHeader(csvStrings);
@@ -50,7 +50,7 @@ public class MapCommandResult extends CommandEvaluationResult<List<MapResultEntr
   }
 
   private void addDurationHeader(final List<String[]> csvStrings) {
-    final SingleReportDataDto singleReportData = getReportDataAs(SingleReportDataDto.class);
+    final ReportDataDto singleReportData = getReportDataAs(ReportDataDto.class);
     final String normalizedCommandKey = getViewIdentifier(singleReportData);
     final String[] operations =
         new String[] {
@@ -65,9 +65,9 @@ public class MapCommandResult extends CommandEvaluationResult<List<MapResultEntr
   }
 
   private void addFrequencyHeader(final List<String[]> csvStrings) {
-    final SingleReportDataDto singleReportDataDto = getReportDataAs(SingleReportDataDto.class);
-    final String normalizedCommandKey = getViewIdentifier(singleReportDataDto);
+    final ReportDataDto reportDataDto = getReportDataAs(ReportDataDto.class);
+    final String normalizedCommandKey = getViewIdentifier(reportDataDto);
     csvStrings.add(
-        0, new String[] {getGroupByIdentifier(singleReportDataDto), normalizedCommandKey});
+        0, new String[] {getGroupByIdentifier(reportDataDto), normalizedCommandKey});
   }
 }

@@ -15,7 +15,7 @@
 // import io.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 // import io.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 // import io.camunda.optimize.dto.optimize.ReportConstants;
-// import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+// import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 // import
 // io.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;

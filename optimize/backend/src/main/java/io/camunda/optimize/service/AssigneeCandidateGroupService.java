@@ -20,10 +20,9 @@ import io.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import io.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
 import io.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.service.db.reader.AssigneeAndCandidateGroupsReader;
 import io.camunda.optimize.service.identity.UserTaskIdentityService;
 import io.camunda.optimize.service.report.ReportService;
@@ -37,7 +36,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -145,24 +143,11 @@ public class AssigneeCandidateGroupService {
 
   private Map<String, Set<String>> retrieveAuthorizedDefinitionTenantMap(
       @NonNull final String userId, @NonNull final List<String> reportIds) {
-    final List<ReportDefinitionDto> reports =
-        reportService.getAllAuthorizedReportsForIds(userId, reportIds);
-    // Add all single reports contained within combined reports
-    reports.addAll(
-        reports.stream()
-            .filter(CombinedReportDefinitionRequestDto.class::isInstance)
-            .map(CombinedReportDefinitionRequestDto.class::cast)
-            .flatMap(
-                report ->
-                    reportService
-                        .getAllAuthorizedReportsForIds(userId, report.getData().getReportIds())
-                        .stream())
-            .collect(Collectors.toList()));
-    return reports.stream()
-        .filter(SingleProcessReportDefinitionRequestDto.class::isInstance)
-        .map(SingleProcessReportDefinitionRequestDto.class::cast)
+    return reportService.getAllAuthorizedReportsForIds(userId, reportIds).stream()
+        .filter(ProcessReportDefinitionRequestDto.class::isInstance)
+        .map(ProcessReportDefinitionRequestDto.class::cast)
         .map(ReportDefinitionDto::getData)
-        .map(SingleReportDataDto::getDefinitions)
+        .map(ReportDataDto::getDefinitions)
         .flatMap(Collection::stream)
         .collect(
             toMap(

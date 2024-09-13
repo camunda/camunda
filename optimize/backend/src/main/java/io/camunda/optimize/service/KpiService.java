@@ -15,7 +15,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodeFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
@@ -65,10 +65,10 @@ public class KpiService {
   private final PlainReportEvaluationHandler reportEvaluationHandler;
 
   public List<KpiResultDto> evaluateKpiReports(final String processDefinitionKey) {
-    final List<SingleProcessReportDefinitionRequestDto> kpiReports =
+    final List<ProcessReportDefinitionRequestDto> kpiReports =
         getValidKpiReportsForProcessDefinition(processDefinitionKey);
     final List<KpiResultDto> kpiResponseDtos = new ArrayList<>();
-    for (final SingleProcessReportDefinitionRequestDto report : kpiReports) {
+    for (final ProcessReportDefinitionRequestDto report : kpiReports) {
       final SingleReportEvaluationResult<?> evaluationResult =
           (SingleReportEvaluationResult<?>)
               reportEvaluationHandler
@@ -94,12 +94,12 @@ public class KpiService {
   public List<KpiResultDto> extractMostRecentKpiResultsForCurrentKpiReportsForProcess(
       final ProcessOverviewDto processOverviewDto, final String locale) {
     final List<KpiResultDto> kpiResponseDtos = new ArrayList<>();
-    final List<SingleProcessReportDefinitionRequestDto> currentKpiReports =
+    final List<ProcessReportDefinitionRequestDto> currentKpiReports =
         getValidKpiReportsForProcessDefinition(processOverviewDto.getProcessDefinitionKey());
     final Map<String, String> lastKpiEvaluationResults =
         Optional.ofNullable(processOverviewDto.getLastKpiEvaluationResults())
             .orElse(Collections.emptyMap());
-    for (final SingleProcessReportDefinitionRequestDto report : currentKpiReports) {
+    for (final ProcessReportDefinitionRequestDto report : currentKpiReports) {
       // If the most recent results don't include one of the current KPI reports, we exclude it from
       // the results
       if (lastKpiEvaluationResults.containsKey(report.getId())) {
@@ -125,7 +125,7 @@ public class KpiService {
   }
 
   private KpiType getKpiType(
-      final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+      final ProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
     return getViewProperty(singleProcessReportDefinitionRequestDto)
         .filter(
             measure ->
@@ -137,7 +137,7 @@ public class KpiService {
   }
 
   private boolean containsQualityFilter(
-      final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+      final ProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
     return singleProcessReportDefinitionRequestDto.getData().getFilter().stream()
         .anyMatch(
             processFilter ->
@@ -166,7 +166,7 @@ public class KpiService {
   }
 
   private boolean getIsBelow(
-      final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+      final ProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
     final SingleReportTargetValueDto targetValue =
         singleProcessReportDefinitionRequestDto.getData().getConfiguration().getTargetValue();
     if (targetValue == null) {
@@ -185,7 +185,7 @@ public class KpiService {
   }
 
   private Optional<ViewProperty> getViewProperty(
-      final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+      final ProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
     final List<ViewProperty> viewProperties =
         singleProcessReportDefinitionRequestDto.getData().getViewProperties();
     if (viewProperties.contains(ViewProperty.DURATION)) {
@@ -200,7 +200,7 @@ public class KpiService {
   }
 
   private Optional<TargetAndUnit> getTargetAndUnit(
-      final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+      final ProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
     final SingleReportTargetValueDto targetValue =
         singleProcessReportDefinitionRequestDto.getData().getConfiguration().getTargetValue();
     return getViewProperty(singleProcessReportDefinitionRequestDto)
@@ -217,12 +217,12 @@ public class KpiService {
         .orElse(Optional.empty());
   }
 
-  public List<SingleProcessReportDefinitionRequestDto> getValidKpiReportsForProcessDefinition(
+  public List<ProcessReportDefinitionRequestDto> getValidKpiReportsForProcessDefinition(
       final String processDefinitionKey) {
-    final List<SingleProcessReportDefinitionRequestDto> validKpis =
+    final List<ProcessReportDefinitionRequestDto> validKpis =
         reportService.getAllReportsForProcessDefinitionKeyOmitXml(processDefinitionKey).stream()
-            .filter(SingleProcessReportDefinitionRequestDto.class::isInstance)
-            .map(SingleProcessReportDefinitionRequestDto.class::cast)
+            .filter(ProcessReportDefinitionRequestDto.class::isInstance)
+            .map(ProcessReportDefinitionRequestDto.class::cast)
             .filter(
                 processReport ->
                     processReport.getData().getConfiguration().getTargetValue() != null

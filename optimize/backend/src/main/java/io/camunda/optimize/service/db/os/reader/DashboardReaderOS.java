@@ -110,7 +110,7 @@ public class DashboardReaderOS implements DashboardReader {
   public List<DashboardDefinitionRestDto> getDashboardsForReport(final String reportId) {
     log.debug("Fetching dashboards using report with id {}", reportId);
 
-    final Query getCombinedReportsBySimpleReportIdQuery =
+    final Query getDashboardssByReportIdQuery =
         new BoolQuery.Builder()
             .filter(
                 new NestedQuery.Builder()
@@ -127,7 +127,7 @@ public class DashboardReaderOS implements DashboardReader {
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
             .index(DASHBOARD_INDEX_NAME)
-            .query(getCombinedReportsBySimpleReportIdQuery)
+            .query(getDashboardssByReportIdQuery)
             .size(LIST_FETCH_LIMIT);
 
     final String errorMessage =

@@ -8,7 +8,7 @@
 package io.camunda.optimize.service.db.es.report.result;
 
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
@@ -20,13 +20,13 @@ import lombok.NonNull;
 
 public class NumberCommandResult extends CommandEvaluationResult<Double> {
 
-  public NumberCommandResult(@NonNull final SingleReportDataDto reportData) {
+  public NumberCommandResult(@NonNull final ReportDataDto reportData) {
     super(reportData);
   }
 
   public NumberCommandResult(
       @NonNull final List<MeasureDto<Double>> measures,
-      @NonNull final SingleReportDataDto reportData) {
+      @NonNull final ReportDataDto reportData) {
     super(measures, reportData);
   }
 
@@ -34,14 +34,14 @@ public class NumberCommandResult extends CommandEvaluationResult<Double> {
       final long instanceCount,
       final long instanceCountWithoutFilters,
       @NonNull final List<MeasureDto<Double>> measures,
-      @NonNull final SingleReportDataDto reportData) {
+      @NonNull final ReportDataDto reportData) {
     super(instanceCount, instanceCountWithoutFilters, measures, reportData);
   }
 
   @Override
   public List<String[]> getResultAsCsv(
       final Integer limit, final Integer offset, final ZoneId timezone) {
-    if (getReportDataAs(SingleReportDataDto.class)
+    if (getReportDataAs(ReportDataDto.class)
         .getViewProperties()
         .contains(ViewProperty.FREQUENCY)) {
       return frequencyNumberAsCsv();
@@ -60,7 +60,7 @@ public class NumberCommandResult extends CommandEvaluationResult<Double> {
     csvStrings.add(new String[] {String.valueOf(getFirstMeasureData())});
 
     final String normalizedCommandKey =
-        getViewIdentifier(getReportDataAs(SingleReportDataDto.class));
+        getViewIdentifier(getReportDataAs(ReportDataDto.class));
     final String[] header = new String[] {normalizedCommandKey};
     csvStrings.add(0, header);
     return csvStrings;
@@ -71,7 +71,7 @@ public class NumberCommandResult extends CommandEvaluationResult<Double> {
     Double result = getFirstMeasureData();
     csvStrings.add(new String[] {String.valueOf(result)});
 
-    final SingleReportDataDto singleReportData = getReportDataAs(SingleReportDataDto.class);
+    final ReportDataDto singleReportData = getReportDataAs(ReportDataDto.class);
     final String normalizedCommandKey = getViewIdentifier(singleReportData);
     final String[] operations =
         new String[] {

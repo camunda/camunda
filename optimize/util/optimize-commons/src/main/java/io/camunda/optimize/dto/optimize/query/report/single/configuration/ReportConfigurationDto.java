@@ -10,7 +10,6 @@ package io.camunda.optimize.dto.optimize.query.report.single.configuration;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.dto.optimize.ReportConstants;
-import io.camunda.optimize.dto.optimize.query.report.Combinable;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
@@ -32,7 +31,7 @@ import lombok.NonNull;
 @Builder
 @Data
 @NoArgsConstructor
-public class SingleReportConfigurationDto implements Combinable {
+public class ReportConfigurationDto {
 
   @Builder.Default private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
 
@@ -95,20 +94,6 @@ public class SingleReportConfigurationDto implements Combinable {
   @JsonIgnore
   public String createCommandKey() {
     return getProcessPart().map(ProcessPartDto::createCommandKey).orElse(null);
-  }
-
-  @Override
-  public boolean isCombinable(final Object o) {
-    if (!(o instanceof SingleReportConfigurationDto)) {
-      return false;
-    }
-    final SingleReportConfigurationDto that = (SingleReportConfigurationDto) o;
-    final int aggregationTypesAmount = getAggregationTypes().size();
-    final int userTaskDurationTimesAmount = getUserTaskDurationTimes().size();
-    return aggregationTypesAmount <= 1
-        && aggregationTypesAmount == that.getAggregationTypes().size()
-        && userTaskDurationTimesAmount <= 1
-        && userTaskDurationTimesAmount == that.getUserTaskDurationTimes().size();
   }
 
   public void setAggregationTypes(final AggregationDto... aggregationTypes) {

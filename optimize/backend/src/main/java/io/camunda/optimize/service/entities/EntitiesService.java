@@ -141,12 +141,6 @@ public class EntitiesService {
         && !entitiesDeleteRequestDto.getDashboards().contains(item.getId());
   }
 
-  private boolean conflictingItemIsUndeletedCombinedReport(
-      ConflictedItemDto item, List<String> reportIds) {
-    return item.getType().equals(ConflictedItemType.COMBINED_REPORT)
-        && !reportIds.contains(item.getId());
-  }
-
   private boolean reportsHaveConflicts(EntitiesDeleteRequestDto entities, String userId) {
     List<String> reportIds = entities.getReports();
     return reportIds.stream()
@@ -158,9 +152,7 @@ public class EntitiesService {
                   .anyMatch(
                       conflictedItemDto ->
                           conflictingItemIsUndeletedDashboard(conflictedItemDto, entities)
-                              || conflictedItemDto.getType().equals(ConflictedItemType.ALERT)
-                              || conflictingItemIsUndeletedCombinedReport(
-                                  conflictedItemDto, reportIds));
+                              || conflictedItemDto.getType().equals(ConflictedItemType.ALERT));
             });
   }
 }

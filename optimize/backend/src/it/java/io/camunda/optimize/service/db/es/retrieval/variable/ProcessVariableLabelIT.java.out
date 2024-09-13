@@ -18,7 +18,7 @@
 // import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 // import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 // import io.camunda.optimize.dto.optimize.query.variable.LabelDto;
 // import io.camunda.optimize.dto.optimize.query.variable.ProcessToQueryDto;

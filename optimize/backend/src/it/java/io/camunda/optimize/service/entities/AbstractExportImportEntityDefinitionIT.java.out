@@ -54,7 +54,7 @@
 // import io.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
 // import io.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
 // import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-// import io.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
+// import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 // import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 // import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
@@ -67,15 +67,15 @@
 // import
 // io.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value.CombinedReportTargetValueDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
-// import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+// import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+// io.camunda.optimize.dto.optimize.query.report.single.configuration.ReportConfigurationDto;
 // import
 // io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 // import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionVisualization;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 // import
 // io.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByInputVariableDto;
 // import
@@ -90,7 +90,7 @@
 // import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import
 // io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 // import

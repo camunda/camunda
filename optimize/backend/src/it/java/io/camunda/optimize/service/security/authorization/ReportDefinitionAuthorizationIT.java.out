@@ -31,13 +31,13 @@
 // import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 // import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 // import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
-// import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+// import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 // import io.camunda.optimize.service.util.ProcessReportDataType;
 // import io.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;

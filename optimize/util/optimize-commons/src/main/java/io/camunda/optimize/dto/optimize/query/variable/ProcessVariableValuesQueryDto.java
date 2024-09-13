@@ -8,8 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.variable;
 
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -52,10 +51,10 @@ public class ProcessVariableValuesQueryDto {
       final List<ReportDefinitionDto> reports) {
     final List<ProcessVariableSourceDto> reportSources =
         reports.stream()
-            .filter(SingleReportDefinitionDto.class::isInstance)
-            .map(report -> (SingleReportDefinitionDto<?>) report)
-            .map(SingleReportDefinitionDto::getData)
-            .map(SingleReportDataDto::getDefinitions)
+            .filter(ReportDefinitionDto.class::isInstance)
+            .map(report -> (ReportDefinitionDto<?>) report)
+            .map(ReportDefinitionDto::getData)
+            .map(ReportDataDto::getDefinitions)
             .flatMap(Collection::stream)
             .map(
                 definitionDto ->

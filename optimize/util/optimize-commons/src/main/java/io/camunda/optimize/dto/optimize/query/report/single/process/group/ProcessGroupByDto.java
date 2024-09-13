@@ -22,9 +22,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.camunda.optimize.dto.optimize.query.report.Combinable;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.ProcessGroupByValueDto;
-import java.util.Objects;
 import lombok.Data;
 
 /**
@@ -48,8 +46,7 @@ import lombok.Data;
   @JsonSubTypes.Type(value = DurationGroupByDto.class, name = GROUP_BY_DURATION),
 })
 @Data
-public abstract class ProcessGroupByDto<VALUE extends ProcessGroupByValueDto>
-    implements Combinable {
+public abstract class ProcessGroupByDto<VALUE extends ProcessGroupByValueDto> {
 
   @JsonProperty protected ProcessGroupByType type;
   protected VALUE value;
@@ -57,22 +54,6 @@ public abstract class ProcessGroupByDto<VALUE extends ProcessGroupByValueDto>
   @Override
   public String toString() {
     return type.getId();
-  }
-
-  @Override
-  public boolean isCombinable(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof ProcessGroupByDto)) {
-      return false;
-    }
-    ProcessGroupByDto<?> that = (ProcessGroupByDto<?>) o;
-    return isTypeCombinable(that) && Combinable.isCombinable(value, that.value);
-  }
-
-  protected boolean isTypeCombinable(final ProcessGroupByDto<?> that) {
-    return Objects.equals(type, that.type);
   }
 
   @JsonIgnore

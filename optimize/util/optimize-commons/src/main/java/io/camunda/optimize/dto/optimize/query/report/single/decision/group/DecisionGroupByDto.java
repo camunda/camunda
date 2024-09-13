@@ -17,9 +17,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.camunda.optimize.dto.optimize.query.report.Combinable;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByValueDto;
-import java.util.Objects;
 import lombok.Data;
 
 @JsonTypeInfo(
@@ -40,8 +38,7 @@ import lombok.Data;
   @JsonSubTypes.Type(value = DecisionGroupByMatchedRuleDto.class, name = GROUP_BY_MATCHED_RULE_TYPE)
 })
 @Data
-public abstract class DecisionGroupByDto<VALUE extends DecisionGroupByValueDto>
-    implements Combinable {
+public abstract class DecisionGroupByDto<VALUE extends DecisionGroupByValueDto> {
 
   @JsonProperty protected DecisionGroupByType type;
   protected VALUE value;
@@ -49,18 +46,6 @@ public abstract class DecisionGroupByDto<VALUE extends DecisionGroupByValueDto>
   @Override
   public String toString() {
     return type.getId();
-  }
-
-  @Override
-  public boolean isCombinable(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof DecisionGroupByDto)) {
-      return false;
-    }
-    DecisionGroupByDto<?> that = (DecisionGroupByDto<?>) o;
-    return Objects.equals(type, that.type) && Combinable.isCombinable(value, that.value);
   }
 
   @JsonIgnore

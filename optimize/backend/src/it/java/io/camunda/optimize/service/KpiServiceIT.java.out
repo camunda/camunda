@@ -15,7 +15,7 @@
 // import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.service.util.ProcessReportDataType;
 // import io.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 // import java.util.List;

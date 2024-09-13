@@ -38,7 +38,6 @@ public class ReportEvaluationService {
             .pagination(paginationDto)
             .additionalFilters(filterDto)
             .build();
-    // auth is handled in evaluator as it also handles single reports of a combined report
     return reportEvaluator.evaluateReport(evaluationInfo);
   }
 
@@ -58,7 +57,6 @@ public class ReportEvaluationService {
             .timezone(timezone)
             .pagination(paginationDto)
             .build();
-    // auth is handled in evaluator as it also handles single reports of a combined report
     return reportEvaluator.evaluateReport(evaluationInfo);
   }
 }

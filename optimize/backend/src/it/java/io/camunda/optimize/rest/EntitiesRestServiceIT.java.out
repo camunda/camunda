@@ -41,7 +41,7 @@
 // import io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 // import io.camunda.optimize.dto.optimize.query.entity.EntityType;
 // import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
-// import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 // import io.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 // import io.camunda.optimize.service.dashboard.InstantPreviewDashboardService;

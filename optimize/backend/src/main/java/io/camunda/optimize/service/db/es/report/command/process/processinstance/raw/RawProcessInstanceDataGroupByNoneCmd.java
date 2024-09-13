@@ -12,7 +12,7 @@ import static io.camunda.optimize.service.export.CSVUtils.extractAllProcessInsta
 
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import io.camunda.optimize.service.db.es.report.ReportEvaluationContext;
 import io.camunda.optimize.service.db.es.report.command.ProcessCmd;
@@ -48,7 +48,7 @@ public class RawProcessInstanceDataGroupByNoneCmd
 
   @Override
   public CommandEvaluationResult<List<RawDataProcessInstanceDto>> evaluate(
-      final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto>
+      final ReportEvaluationContext<ProcessReportDefinitionRequestDto>
           reportEvaluationContext) {
     final CommandEvaluationResult<List<RawDataProcessInstanceDto>> commandResult =
         super.evaluate(reportEvaluationContext);
@@ -57,7 +57,7 @@ public class RawProcessInstanceDataGroupByNoneCmd
   }
 
   private void addNewVariablesAndDtoFieldsToTableColumnConfig(
-      final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto>
+      final ReportEvaluationContext<ProcessReportDefinitionRequestDto>
           reportEvaluationContext,
       final CommandEvaluationResult<List<RawDataProcessInstanceDto>> result) {
     final List<String> variableNames =

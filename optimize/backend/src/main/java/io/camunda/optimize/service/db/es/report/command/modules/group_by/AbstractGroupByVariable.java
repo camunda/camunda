@@ -27,7 +27,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.reverseNested;
 
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -65,7 +65,7 @@ import org.elasticsearch.search.aggregations.bucket.nested.ReverseNestedAggregat
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 @RequiredArgsConstructor
-public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto>
+public abstract class AbstractGroupByVariable<Data extends ReportDataDto>
     extends GroupByPart<Data> {
 
   public static final String FILTERED_FLOW_NODE_AGGREGATION = "filteredFlowNodeAggregation";
@@ -130,7 +130,6 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto>
             .dateUnit(getGroupByDateUnit(context))
             .baseQueryForMinMaxStats(searchSourceBuilder.query())
             .subAggregations(Collections.singletonList(reverseNestedAggregationBuilder))
-            .combinedRangeMinMaxStats(context.getCombinedRangeMinMaxStats().orElse(null))
             .filterContext(context.getFilterContext())
             .build();
 

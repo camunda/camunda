@@ -14,7 +14,7 @@ import io.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import io.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityType;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.service.LocalizationService;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +44,7 @@ public interface EntitiesReader {
       final String locale) {
     if (reportEntity
         instanceof
-        SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+        ProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
       if (singleProcessReportDefinitionRequestDto.getData().isInstantPreviewReport()) {
         return localizationService.getLocalizationForInstantPreviewReportCode(
             locale, reportEntity.getName());

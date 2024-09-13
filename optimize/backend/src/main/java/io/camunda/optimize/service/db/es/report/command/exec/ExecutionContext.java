@@ -10,12 +10,11 @@ package io.camunda.optimize.service.db.es.report.command.exec;
 import static java.util.stream.Collectors.toMap;
 
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.ReportConfigurationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.service.db.es.filter.FilterContext;
-import io.camunda.optimize.service.db.es.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.es.report.ReportEvaluationContext;
 import java.time.ZoneId;
 import java.util.HashMap;
@@ -28,7 +27,7 @@ import lombok.Data;
 import org.elasticsearch.index.query.QueryBuilder;
 
 @Data
-public class ExecutionContext<D extends SingleReportDataDto> {
+public class ExecutionContext<D extends ReportDataDto> {
 
   private D reportData;
   private ZoneId timezone;
@@ -36,10 +35,6 @@ public class ExecutionContext<D extends SingleReportDataDto> {
   private Optional<PaginationDto> pagination;
   private boolean isCsvExport;
   private boolean isJsonExport;
-
-  // used in the context of combined reports to establish identical bucket sizes/ranges across all
-  // single reports
-  private MinMaxStatDto combinedRangeMinMaxStats;
 
   // used for distributed reports which need to create minMaxStats based on the baseQuery (eg for
   // variable or date
@@ -66,19 +61,14 @@ public class ExecutionContext<D extends SingleReportDataDto> {
       final ReportEvaluationContext<R> reportEvaluationContext) {
     this.reportData = reportEvaluationContext.getReportDefinition().getData();
     this.timezone = reportEvaluationContext.getTimezone();
-    this.combinedRangeMinMaxStats = reportEvaluationContext.getCombinedRangeMinMaxStats();
     this.pagination = reportEvaluationContext.getPagination();
     this.isCsvExport = reportEvaluationContext.isCsvExport();
     this.filterContext = createFilterContext(reportEvaluationContext);
     this.isJsonExport = reportEvaluationContext.isJsonExport();
   }
 
-  public SingleReportConfigurationDto getReportConfiguration() {
+  public ReportConfigurationDto getReportConfiguration() {
     return reportData.getConfiguration();
-  }
-
-  public Optional<MinMaxStatDto> getCombinedRangeMinMaxStats() {
-    return Optional.ofNullable(combinedRangeMinMaxStats);
   }
 
   public void setAllDistributedByKeys(final Set<String> allDistributedByKeys) {

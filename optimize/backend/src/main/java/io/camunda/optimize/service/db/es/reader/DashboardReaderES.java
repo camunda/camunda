@@ -144,7 +144,7 @@ public class DashboardReaderES implements DashboardReader {
   public List<DashboardDefinitionRestDto> getDashboardsForReport(String reportId) {
     log.debug("Fetching dashboards using report with id {}", reportId);
 
-    final QueryBuilder getCombinedReportsBySimpleReportIdQuery =
+    final QueryBuilder getDashboardsByReportIdQuery =
         boolQuery()
             .filter(
                 QueryBuilders.nestedQuery(
@@ -154,7 +154,7 @@ public class DashboardReaderES implements DashboardReader {
                     ScoreMode.None));
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    searchSourceBuilder.query(getCombinedReportsBySimpleReportIdQuery);
+    searchSourceBuilder.query(getDashboardsByReportIdQuery);
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest =
         new SearchRequest(DASHBOARD_INDEX_NAME).source(searchSourceBuilder);

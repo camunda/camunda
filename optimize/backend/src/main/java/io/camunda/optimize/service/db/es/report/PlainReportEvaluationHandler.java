@@ -21,15 +21,9 @@ public class PlainReportEvaluationHandler extends ReportEvaluationHandler {
   public PlainReportEvaluationHandler(
       final ReportService reportService,
       final SingleReportEvaluator singleReportEvaluator,
-      final CombinedReportEvaluator combinedReportEvaluator,
       final ProcessVariableService processVariableService,
       final DefinitionService definitionService) {
-    super(
-        reportService,
-        singleReportEvaluator,
-        combinedReportEvaluator,
-        processVariableService,
-        definitionService);
+    super(reportService, singleReportEvaluator, processVariableService, definitionService);
   }
 
   @Override

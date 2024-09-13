@@ -8,16 +8,12 @@
 package io.camunda.optimize.service.db.es.report.command;
 
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import io.camunda.optimize.service.db.es.report.MinMaxStatDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.service.db.es.report.ReportEvaluationContext;
-import io.camunda.optimize.service.db.es.report.command.exec.ExecutionContext;
 import io.camunda.optimize.service.db.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import io.camunda.optimize.service.db.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
-import java.util.Optional;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 
-public abstract class ProcessCmd<T> implements Command<T, SingleProcessReportDefinitionRequestDto> {
+public abstract class ProcessCmd<T> implements Command<T, ProcessReportDefinitionRequestDto> {
 
   protected final ProcessReportCmdExecutionPlan<T> executionPlan;
 
@@ -27,26 +23,13 @@ public abstract class ProcessCmd<T> implements Command<T, SingleProcessReportDef
 
   @Override
   public CommandEvaluationResult<T> evaluate(
-      final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto>
+      final ReportEvaluationContext<ProcessReportDefinitionRequestDto>
           reportEvaluationContext) {
     return executionPlan.evaluate(reportEvaluationContext);
   }
 
   protected abstract ProcessReportCmdExecutionPlan<T> buildExecutionPlan(
       final ReportCmdExecutionPlanBuilder builder);
-
-  public BoolQueryBuilder getBaseQuery(
-      final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto>
-          reportEvaluationContext) {
-    return executionPlan.setupBaseQuery(new ExecutionContext<>(reportEvaluationContext));
-  }
-
-  @Override
-  public Optional<MinMaxStatDto> getGroupByMinMaxStats(
-      final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto>
-          reportEvaluationContext) {
-    return executionPlan.getGroupByMinMaxStats(new ExecutionContext<>(reportEvaluationContext));
-  }
 
   @Override
   public String createCommandKey() {

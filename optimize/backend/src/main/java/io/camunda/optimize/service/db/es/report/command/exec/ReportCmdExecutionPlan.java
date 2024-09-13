@@ -11,7 +11,7 @@ import static io.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndex
 
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
 import io.camunda.optimize.service.db.DatabaseClient;
@@ -37,7 +37,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 @Slf4j
-public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
+public abstract class ReportCmdExecutionPlan<T, D extends ReportDataDto> {
 
   protected ViewPart<D> viewPart;
   protected GroupByPart<D> groupByPart;

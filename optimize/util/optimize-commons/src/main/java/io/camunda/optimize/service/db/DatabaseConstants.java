@@ -75,7 +75,6 @@ public class DatabaseConstants {
 
   public static final String SINGLE_PROCESS_REPORT_INDEX_NAME = "single-process-report";
   public static final String SINGLE_DECISION_REPORT_INDEX_NAME = "single-decision-report";
-  public static final String COMBINED_REPORT_INDEX_NAME = "combined-report";
   public static final String DASHBOARD_INDEX_NAME = "dashboard";
   public static final String COLLECTION_INDEX_NAME = "collection";
   public static final String ALERT_INDEX_NAME = "alert";

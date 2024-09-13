@@ -14,6 +14,7 @@ import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityType;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import jakarta.validation.Valid;
 import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
@@ -23,7 +24,8 @@ import lombok.experimental.SuperBuilder;
 @Data
 @AllArgsConstructor
 @SuperBuilder(toBuilder = true)
-public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionEntity {
+public abstract class ReportDefinitionDto<D extends ReportDataDto>
+    implements CollectionEntity {
 
   protected String id;
   protected String name;
@@ -36,13 +38,10 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
 
   @Valid protected D data;
 
-  private final boolean combined;
-
   private final ReportType reportType;
 
-  protected ReportDefinitionDto(final D data, final Boolean combined, final ReportType reportType) {
+  protected ReportDefinitionDto(final D data, final ReportType reportType) {
     this.data = data;
-    this.combined = combined;
     this.reportType = reportType;
   }
 
@@ -57,7 +56,6 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
         getOwner(),
         getLastModifier(),
         EntityType.REPORT,
-        combined,
         reportType,
         roleType);
   }
@@ -78,7 +76,6 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
     public static final String lastModifier = "lastModifier";
     public static final String collectionId = "collectionId";
     public static final String data = "data";
-    public static final String combined = "combined";
     public static final String reportType = "reportType";
   }
 }

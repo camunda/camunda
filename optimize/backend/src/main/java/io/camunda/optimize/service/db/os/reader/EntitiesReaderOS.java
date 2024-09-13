@@ -8,7 +8,6 @@
 package io.camunda.optimize.service.db.os.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
@@ -35,7 +34,6 @@ import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.db.os.schema.index.DashboardIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.report.CombinedReportIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.report.SingleDecisionReportIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.report.SingleProcessReportIndexOS;
 import io.camunda.optimize.service.db.reader.EntitiesReader;
@@ -268,8 +266,6 @@ public class EntitiesReaderOS implements EntitiesReader {
 
     final long singleProcessReportCount =
         getDocCountForIndex(bucketNameToDocCount, new SingleProcessReportIndexOS());
-    final long combinedProcessReportCount =
-        getDocCountForIndex(bucketNameToDocCount, new CombinedReportIndexOS());
     final long singleDecisionReportCount =
         getDocCountForIndex(bucketNameToDocCount, new SingleDecisionReportIndexOS());
     final long dashboardCount = getDocCountForIndex(bucketNameToDocCount, new DashboardIndexOS());
@@ -277,7 +273,7 @@ public class EntitiesReaderOS implements EntitiesReader {
         EntityType.DASHBOARD,
         dashboardCount,
         EntityType.REPORT,
-        singleProcessReportCount + singleDecisionReportCount + combinedProcessReportCount);
+        singleProcessReportCount + singleDecisionReportCount);
   }
 
   private long getDocCountForIndex(
@@ -295,7 +291,6 @@ public class EntitiesReaderOS implements EntitiesReader {
     final Map<String, String> indexesToEntitiesId = new HashMap<>();
     indexesToEntitiesId.put(SINGLE_PROCESS_REPORT_INDEX_NAME, requestDto.getReportId());
     indexesToEntitiesId.put(SINGLE_DECISION_REPORT_INDEX_NAME, requestDto.getReportId());
-    indexesToEntitiesId.put(COMBINED_REPORT_INDEX_NAME, requestDto.getReportId());
     indexesToEntitiesId.put(DASHBOARD_INDEX_NAME, requestDto.getDashboardId());
     indexesToEntitiesId.put(COLLECTION_INDEX_NAME, requestDto.getCollectionId());
     final String errorMessage =
@@ -308,7 +303,6 @@ public class EntitiesReaderOS implements EntitiesReader {
         .index(
             SINGLE_PROCESS_REPORT_INDEX_NAME,
             SINGLE_DECISION_REPORT_INDEX_NAME,
-            COMBINED_REPORT_INDEX_NAME,
             DASHBOARD_INDEX_NAME);
   }
 

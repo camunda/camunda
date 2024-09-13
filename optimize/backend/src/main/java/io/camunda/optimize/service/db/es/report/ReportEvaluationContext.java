@@ -23,10 +23,6 @@ public class ReportEvaluationContext<R extends ReportDefinitionDto<?>> {
   private boolean isCsvExport;
   private boolean isJsonExport;
 
-  // used in the context of combined reports to establish identical bucket sizes/ranges across all
-  // single reports
-  private MinMaxStatDto combinedRangeMinMaxStats;
-
   // users can define which timezone the date data should be based on
   private ZoneId timezone = ZoneId.systemDefault();
 

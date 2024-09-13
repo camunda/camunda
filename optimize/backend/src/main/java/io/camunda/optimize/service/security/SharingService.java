@@ -13,7 +13,7 @@ import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEval
 import io.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import io.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import io.camunda.optimize.dto.optimize.query.sharing.ShareSearchRequestDto;
@@ -184,9 +184,9 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     try {
       final AuthorizedReportDefinitionResponseDto reportDefinition =
           reportService.getReportDefinition(reportShare.getReportId(), userId);
-      if (reportDefinition.getDefinitionDto() instanceof SingleProcessReportDefinitionRequestDto) {
+      if (reportDefinition.getDefinitionDto() instanceof ProcessReportDefinitionRequestDto) {
         final ProcessReportDataDto reportData =
-            ((SingleProcessReportDefinitionRequestDto) reportDefinition.getDefinitionDto())
+            ((ProcessReportDefinitionRequestDto) reportDefinition.getDefinitionDto())
                 .getData();
         if (reportData.isManagementReport() || reportData.isInstantPreviewReport()) {
           throw new OptimizeValidationException(

@@ -7,27 +7,22 @@
  */
 package io.camunda.optimize.service.db.os.writer;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static io.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.DATA;
 import static io.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.DESCRIPTION;
-import static io.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORTS;
-import static io.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
 import static io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionUpdateDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionUpdateDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
@@ -38,7 +33,6 @@ import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import jakarta.json.JsonValue;
-import jakarta.ws.rs.NotFoundException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Map;
@@ -49,11 +43,6 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.Script;
-import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
-import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
-import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch.core.DeleteRequest;
-import org.opensearch.client.opensearch.core.DeleteResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
@@ -71,50 +60,6 @@ public class ReportWriterOS implements ReportWriter {
   private final OptimizeOpenSearchClient osClient;
 
   @Override
-  public IdResponseDto createNewCombinedReport(
-      @NonNull final String userId,
-      @NonNull final CombinedReportDataDto reportData,
-      @NonNull final String reportName,
-      final String description,
-      final String collectionId) {
-    log.debug("Writing new combined report to OpenSearch");
-    final String id = IdGenerator.getNextId();
-    final CombinedReportDefinitionRequestDto reportDefinitionDto =
-        new CombinedReportDefinitionRequestDto();
-
-    reportDefinitionDto.setId(id);
-    final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
-    reportDefinitionDto.setCreated(now);
-    reportDefinitionDto.setLastModified(now);
-    reportDefinitionDto.setOwner(userId);
-    reportDefinitionDto.setLastModifier(userId);
-    reportDefinitionDto.setName(reportName);
-    reportDefinitionDto.setDescription(description);
-    reportDefinitionDto.setData(reportData);
-    reportDefinitionDto.setCollectionId(collectionId);
-
-    IndexRequest.Builder<CombinedReportDefinitionRequestDto> request =
-        new IndexRequest.Builder<CombinedReportDefinitionRequestDto>()
-            .index(COMBINED_REPORT_INDEX_NAME)
-            .id(id)
-            .document(reportDefinitionDto)
-            .refresh(Refresh.True);
-
-    IndexResponse indexResponse = osClient.index(request);
-
-    if (!indexResponse.result().equals(Result.Created)) {
-      String message =
-          String.format(
-              "Could not write report with id [%s] and name [%s] to OpenSearch.", id, reportName);
-      log.error(message);
-      throw new OptimizeRuntimeException(message);
-    }
-
-    log.debug("Report with id [{}] has successfully been created.", id);
-    return new IdResponseDto(id);
-  }
-
-  @Override
   public IdResponseDto createNewSingleProcessReport(
       final String userId,
       @NonNull final ProcessReportDataDto reportData,
@@ -124,8 +69,8 @@ public class ReportWriterOS implements ReportWriter {
     log.debug("Writing new single report to OpenSearch");
 
     final String id = IdGenerator.getNextId();
-    final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
-        new SingleProcessReportDefinitionRequestDto();
+    final ProcessReportDefinitionRequestDto reportDefinitionDto =
+        new ProcessReportDefinitionRequestDto();
 
     reportDefinitionDto.setId(id);
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
@@ -138,8 +83,8 @@ public class ReportWriterOS implements ReportWriter {
     reportDefinitionDto.setData(reportData);
     reportDefinitionDto.setCollectionId(collectionId);
 
-    IndexRequest.Builder<SingleProcessReportDefinitionRequestDto> request =
-        new IndexRequest.Builder<SingleProcessReportDefinitionRequestDto>()
+    IndexRequest.Builder<ProcessReportDefinitionRequestDto> request =
+        new IndexRequest.Builder<ProcessReportDefinitionRequestDto>()
             .index(SINGLE_PROCESS_REPORT_INDEX_NAME)
             .id(id)
             .document(reportDefinitionDto)
@@ -170,8 +115,8 @@ public class ReportWriterOS implements ReportWriter {
     log.debug("Writing new single report to OpenSearch");
 
     final String id = IdGenerator.getNextId();
-    final SingleDecisionReportDefinitionRequestDto reportDefinitionDto =
-        new SingleDecisionReportDefinitionRequestDto();
+    final DecisionReportDefinitionRequestDto reportDefinitionDto =
+        new DecisionReportDefinitionRequestDto();
     reportDefinitionDto.setId(id);
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     reportDefinitionDto.setCreated(now);
@@ -183,8 +128,8 @@ public class ReportWriterOS implements ReportWriter {
     reportDefinitionDto.setData(reportData);
     reportDefinitionDto.setCollectionId(collectionId);
 
-    IndexRequest.Builder<SingleDecisionReportDefinitionRequestDto> request =
-        new IndexRequest.Builder<SingleDecisionReportDefinitionRequestDto>()
+    IndexRequest.Builder<DecisionReportDefinitionRequestDto> request =
+        new IndexRequest.Builder<DecisionReportDefinitionRequestDto>()
             .index(SINGLE_DECISION_REPORT_INDEX_NAME)
             .id(id)
             .document(reportDefinitionDto)
@@ -214,11 +159,6 @@ public class ReportWriterOS implements ReportWriter {
   public void updateSingleDecisionReport(
       final SingleDecisionReportDefinitionUpdateDto reportUpdate) {
     updateReport(reportUpdate, SINGLE_DECISION_REPORT_INDEX_NAME);
-  }
-
-  @Override
-  public void updateCombinedReport(final ReportDefinitionUpdateDto updatedReport) {
-    updateReport(updatedReport, COMBINED_REPORT_INDEX_NAME);
   }
 
   @Override
@@ -256,71 +196,10 @@ public class ReportWriterOS implements ReportWriter {
   }
 
   @Override
-  public void removeSingleReportFromCombinedReports(final String reportId) {
-    String updateItemName = String.format("report with ID [%s]", reportId);
-    log.info("Removing {} from combined report.", updateItemName);
-
-    final Script removeReportIdFromCombinedReportsScript =
-        OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-            "def reports = ctx._source.data.reports;"
-                + "if(reports != null) {"
-                + "  reports.removeIf(r -> r.id.equals(params.idToRemove)); }",
-            Collections.singletonMap("idToRemove", JsonData.of(reportId)));
-
-    Query nested =
-        new NestedQuery.Builder()
-            .path(String.join(".", DATA, REPORTS))
-            .query(QueryDSL.term(String.join(".", DATA, REPORTS, REPORT_ITEM_ID), reportId))
-            .scoreMode(ChildScoreMode.None)
-            .build()
-            .query();
-
-    Query query =
-        new NestedQuery.Builder()
-            .path(DATA)
-            .query(nested)
-            .scoreMode(ChildScoreMode.None)
-            .build()
-            .query();
-
-    osClient.updateByQuery(
-        COMBINED_REPORT_INDEX_NAME, query, removeReportIdFromCombinedReportsScript);
-  }
-
-  @Override
-  public void deleteCombinedReport(final String reportId) {
-    log.debug("Deleting combined report with id [{}]", reportId);
-
-    DeleteRequest.Builder requestBuilder =
-        new DeleteRequest.Builder()
-            .index(COMBINED_REPORT_INDEX_NAME)
-            .id(reportId)
-            .refresh(Refresh.True);
-
-    DeleteResponse deleteResponse;
-
-    String reason = String.format("Could not delete combined report with id [%s].", reportId);
-
-    deleteResponse = osClient.delete(requestBuilder, reason);
-
-    if (!deleteResponse.result().equals(Result.Deleted)) {
-      String message =
-          String.format(
-              "Could not delete combined process report with id [%s]. "
-                  + "Combined process report does not exist."
-                  + "Maybe it was already deleted by someone else?",
-              reportId);
-      log.error(message);
-      throw new NotFoundException(message);
-    }
-  }
-
-  @Override
   public void deleteAllReportsOfCollection(String collectionId) {
     osClient.deleteByQuery(
         QueryDSL.term(COLLECTION_ID, collectionId),
         true,
-        COMBINED_REPORT_INDEX_NAME,
         SINGLE_PROCESS_REPORT_INDEX_NAME,
         SINGLE_DECISION_REPORT_INDEX_NAME);
   }
