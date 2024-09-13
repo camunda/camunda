@@ -7,9 +7,7 @@
  */
 
 export {Table} from './Table';
-export {Button} from './Button';
 export {Modal} from './Modal';
-export {Dropdown} from './Dropdown';
 export {Deleter} from './Deleter';
 export {Select} from './Select';
 export {BPMNDiagram, ClickBehavior, PartHighlight} from './BPMNDiagram';

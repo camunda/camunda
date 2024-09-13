@@ -17,7 +17,6 @@ package io.camunda.zeebe.client.usertask;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.protocol.rest.PriorityValueFilter;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
@@ -132,20 +131,5 @@ public final class SearchUserTaskTest extends ClientRestTest {
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
     assertThat(request.getFilter().getTenantIds()).isEqualTo("tenant1");
-  }
-
-  @Test
-  void shouldSearchUserTaskByPriority() {
-    // when
-    client
-        .newUserTaskQuery()
-        .filter(f -> f.priority(new PriorityValueFilter().eq(20)))
-        .send()
-        .join();
-
-    // then
-    final UserTaskSearchQueryRequest request =
-        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getPriority().getEq()).isEqualTo(20);
   }
 }

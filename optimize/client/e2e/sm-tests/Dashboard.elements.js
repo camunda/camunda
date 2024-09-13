@@ -26,7 +26,7 @@ export const textReportInsertDropdown = Selector('.InsertOptions');
 export const textReportUrlInput = Selector('.InsertModal input').nth(0);
 export const textReportAltInput = Selector('.InsertModal input').nth(1);
 export const textReportInsertAddButton = Selector('.InsertModal button').withText('Add');
-export const blankReportButton = Selector('.Button').withText('Blank report');
+export const blankReportButton = Selector('button').withText('Blank report');
 export const externalReport = Selector('iframe', {timeout: 60000});
 export const textReport = Selector('.TextTile .editor');
 export const textReportField = (element) => textReport.find(element);
@@ -46,8 +46,6 @@ export const switchElement = (text) => Selector('.Switch').withText(text);
 export const toggleElement = (text) => Selector('.cds--toggle__label').withText(text);
 export const dashboardContainer = Selector('.Dashboard');
 export const templateModalProcessTag = Selector('.TemplateModal .Tag');
-export const templateOption = (text) =>
-  Selector('.Modal .templateContainer .Button').withText(text);
 export const reportTile = Selector('.OptimizeReportTile');
 export const textTile = Selector('.TextTile');
 export const externalUrlTile = Selector('.ExternalUrlTile');

@@ -12,13 +12,7 @@ import classnames from 'classnames';
 import deepEqual from 'fast-deep-equal';
 import {Button, Column, Grid} from '@carbon/react';
 
-import {
-  Modal,
-  DefinitionSelection,
-  BPMNDiagram,
-  DiagramScrollLock,
-  Button as LegacyButton,
-} from 'components';
+import {Modal, DefinitionSelection, BPMNDiagram, DiagramScrollLock, Tooltip} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {useErrorHandling} from 'hooks';
@@ -187,37 +181,43 @@ export default function TemplateModal({
                     const templateDescription = getDescription(entity, name, disableDescription);
 
                     return (
-                      <div
+                      <Tooltip
                         key={idx}
                         title={
                           disabled?.(selectedDefinitions)
                             ? getDisableStateText(selectedDefinitions)
                             : undefined
                         }
+                        position="bottom"
+                        align="left"
                       >
-                        <LegacyButton
-                          className={classnames({
-                            active: !disabled?.(selectedDefinitions) && deepEqual(template, config),
-                            hasDescription: !!templateDescription,
-                          })}
-                          onClick={() => {
-                            setTemplate(config);
-                            setName(t(entity + '.templates.' + name));
-                            setDescription(templateDescription);
-                          }}
-                          disabled={disabled?.(selectedDefinitions)}
-                        >
-                          {img ? (
-                            <img src={img} alt={t(entity + '.templates.' + name)} />
-                          ) : (
-                            <div className="imgPlaceholder" />
-                          )}
-                          <div className="name">{t(entity + '.templates.' + name)}</div>
-                          {templateDescription && (
-                            <div className="description">{templateDescription}</div>
-                          )}
-                        </LegacyButton>
-                      </div>
+                        <div>
+                          <Button
+                            kind="tertiary"
+                            className={classnames({
+                              active:
+                                !disabled?.(selectedDefinitions) && deepEqual(template, config),
+                              hasDescription: !!templateDescription,
+                            })}
+                            onClick={() => {
+                              setTemplate(config);
+                              setName(t(entity + '.templates.' + name));
+                              setDescription(templateDescription);
+                            }}
+                            disabled={disabled?.(selectedDefinitions)}
+                          >
+                            {img ? (
+                              <img src={img} alt={t(entity + '.templates.' + name)} />
+                            ) : (
+                              <div className="imgPlaceholder" />
+                            )}
+                            <div className="name">{t(entity + '.templates.' + name)}</div>
+                            {templateDescription && (
+                              <div className="description">{templateDescription}</div>
+                            )}
+                          </Button>
+                        </div>
+                      </Tooltip>
                     );
                   })}
                 </div>
