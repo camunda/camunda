@@ -18,12 +18,14 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.test.util.record.ProcessInstanceRecordStream;
@@ -277,14 +279,11 @@ public final class ZeebeAssertHelper {
 
   public static void assertElementInState(
       final long processInstanceKey, final String elementId, final ProcessInstanceIntent intent) {
-    final Record<ProcessInstanceRecordValue> record =
+    consumeFirstProcessInstanceRecord(
         RecordingExporter.processInstanceRecords(intent)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementId(elementId)
-            .findFirst()
-            .orElse(null);
-
-    assertThat(record).isNotNull();
+            .withElementId(elementId),
+        v -> {});
   }
 
   public static void assertElementInState(
@@ -292,13 +291,12 @@ public final class ZeebeAssertHelper {
       final String elementId,
       final BpmnElementType elementType,
       final ProcessInstanceIntent intent) {
-    assertThat(
-            RecordingExporter.processInstanceRecords(intent)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(elementType)
-                .withElementId(elementId)
-                .exists())
-        .isTrue();
+    consumeFirstProcessInstanceRecord(
+        RecordingExporter.processInstanceRecords(intent)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(elementType)
+            .withElementId(elementId),
+        v -> {});
   }
 
   public static void assertElementInState(
@@ -307,6 +305,22 @@ public final class ZeebeAssertHelper {
       final Consumer<ProcessInstanceRecordValue> consumer) {
     consumeFirstProcessInstanceRecord(
         RecordingExporter.processInstanceRecords(intent).withElementId(element), consumer);
+  }
+
+  public static void assertElementRecordInState(
+      final long processInstanceKey,
+      final String element,
+      final ProcessInstanceIntent intent,
+      final Consumer<Record<ProcessInstanceRecordValue>> consumer) {
+    final Record<ProcessInstanceRecordValue> record =
+        RecordingExporter.processInstanceRecords(intent)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(element)
+            .findFirst()
+            .orElse(null);
+
+    assertThat(record).isNotNull();
+    consumer.accept(record);
   }
 
   private static void consumeFirstProcessInstanceRecord(
@@ -348,5 +362,22 @@ public final class ZeebeAssertHelper {
 
     assertThat(record).isNotNull();
     eventConsumer.accept(record.getValue());
+  }
+
+  public static void assertUserCreated(final String username) {
+    assertUserCreated(username, u -> {});
+  }
+
+  public static void assertUserCreated(
+      final String username, final Consumer<UserRecordValue> consumer) {
+    final UserRecordValue user =
+        RecordingExporter.userRecords()
+            .withIntent(UserIntent.CREATED)
+            .withUsernameKey(username)
+            .getFirst()
+            .getValue();
+
+    assertThat(user).isNotNull();
+    consumer.accept(user);
   }
 }

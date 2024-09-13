@@ -11,7 +11,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_EMAIL;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
 
-import io.camunda.zeebe.gateway.protocol.rest.UserWithPasswordRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -20,8 +20,7 @@ import org.springframework.http.ProblemDetail;
 
 public final class UserValidator {
 
-  public static Optional<ProblemDetail> validateUserCreateRequest(
-      final UserWithPasswordRequest request) {
+  public static Optional<ProblemDetail> validateUserCreateRequest(final UserRequest request) {
     final List<String> violations = new ArrayList<>();
 
     if (request.getUsername() == null || request.getUsername().isBlank()) {

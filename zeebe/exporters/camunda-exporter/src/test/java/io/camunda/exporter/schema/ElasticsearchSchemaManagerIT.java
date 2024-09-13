@@ -191,4 +191,31 @@ public class ElasticsearchSchemaManagerIT {
     assertThat(updatedIndex.mappings().properties().get("foo").isText()).isTrue();
     assertThat(updatedIndex.mappings().properties().get("bar").isKeyword()).isTrue();
   }
+
+  @Test
+  void shouldReadIndexMappingsFileCorrectly() {
+    // given
+    final var index = TestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");
+
+    final var schemaManager =
+        new ElasticsearchSchemaManager(
+            searchEngineClient, List.of(), List.of(), new ElasticsearchProperties());
+
+    // when
+    final var indexMapping = schemaManager.readIndex(index);
+
+    // then
+    assertThat(indexMapping.dynamic()).isEqualTo("strict");
+
+    assertThat(indexMapping.properties())
+        .containsExactlyInAnyOrder(
+            new IndexMappingProperty.Builder()
+                .name("hello")
+                .typeDefinition(Map.of("type", "text"))
+                .build(),
+            new IndexMappingProperty.Builder()
+                .name("world")
+                .typeDefinition(Map.of("type", "keyword"))
+                .build());
+  }
 }

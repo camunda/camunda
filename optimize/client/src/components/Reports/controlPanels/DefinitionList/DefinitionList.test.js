@@ -9,11 +9,16 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {getOptimizeProfile} from 'config';
-
 import DefinitionEditor from './DefinitionEditor';
-import {DefinitionList} from './DefinitionList';
+import DefinitionList from './DefinitionList';
 import {loadTenants} from './service';
+
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useLocation: jest.fn(() => ({
+    pathname: '/optimize/reports/process',
+  })),
+}));
 
 jest.mock('config', () => ({
   getOptimizeProfile: jest.fn().mockReturnValue('ccsm'),
@@ -45,8 +50,6 @@ jest.mock('./service', () => ({
 }));
 
 const props = {
-  mightFail: (data, cb) => cb(data),
-  location: '',
   type: 'process',
   definitions: [
     {

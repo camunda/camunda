@@ -10,8 +10,12 @@ package io.camunda.zeebe.gateway.rest.controller;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -55,6 +59,28 @@ public class ProcessInstanceController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::cancelProcessInstance);
   }
 
+  @PostMapping(
+      path = "/{processInstanceKey}/migration",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public CompletableFuture<ResponseEntity<Object>> migrateProcessInstance(
+      @PathVariable final long processInstanceKey,
+      @RequestBody final MigrateProcessInstanceRequest migrationRequest) {
+    return RequestMapper.toMigrateProcessInstance(processInstanceKey, migrationRequest)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::migrateProcessInstance);
+  }
+
+  @PostMapping(
+      path = "/{processInstanceKey}/modification",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public CompletableFuture<ResponseEntity<Object>> modifyProcessInstance(
+      @PathVariable final long processInstanceKey,
+      @RequestBody final ModifyProcessInstanceRequest modifyRequest) {
+    return RequestMapper.toModifyProcessInstance(processInstanceKey, modifyRequest)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::modifyProcessInstance);
+  }
+
   private CompletableFuture<ResponseEntity<Object>> createProcessInstance(
       final ProcessInstanceCreateRequest request) {
     if (request.awaitCompletion()) {
@@ -80,5 +106,23 @@ public class ProcessInstanceController {
             processInstanceServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .cancelProcessInstance(request));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> migrateProcessInstance(
+      final ProcessInstanceMigrateRequest request) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            processInstanceServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .migrateProcessInstance(request));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> modifyProcessInstance(
+      final ProcessInstanceModifyRequest request) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            processInstanceServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .modifyProcessInstance(request));
   }
 }

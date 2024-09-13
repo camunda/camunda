@@ -11,11 +11,12 @@ import {zeebeGrpcApi} from '../api/zeebe-grpc';
 const {deployProcesses, createSingleInstance} = zeebeGrpcApi;
 
 const setup = async () => {
-  await deployProcesses(['orderProcess_v_1.bpmn']);
+  const deployResponse = await deployProcesses(['orderProcess_v_1.bpmn']);
+  const deployedProcess = deployResponse.deployments[0]?.process;
 
   const instanceWithoutAnIncident = await createSingleInstance(
     'orderProcess',
-    1,
+    deployedProcess!.version,
   );
 
   await deployProcesses(['processWithAnIncident.bpmn']);
@@ -29,7 +30,12 @@ const setup = async () => {
 
   const instanceToCancel = await createSingleInstance('processToDelete', 1);
 
-  return {instanceWithoutAnIncident, instanceWithAnIncident, instanceToCancel};
+  return {
+    deployedProcess,
+    instanceWithoutAnIncident,
+    instanceWithAnIncident,
+    instanceToCancel,
+  };
 };
 
 export {setup};

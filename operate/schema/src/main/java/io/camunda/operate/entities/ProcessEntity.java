@@ -18,6 +18,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
 
   private String name;
   private int version;
+  private String versionTag;
   private String bpmnProcessId;
   private String bpmnXml;
   private String resourceName;
@@ -28,13 +29,13 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return name;
   }
 
-  public ProcessEntity setName(String name) {
+  public ProcessEntity setName(final String name) {
     this.name = name;
     return this;
   }
 
   @Override
-  public ProcessEntity setId(String id) {
+  public ProcessEntity setId(final String id) {
     super.setId(id);
     setKey(ConversionUtils.toLongOrNull(id));
     return this;
@@ -48,6 +49,9 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
         + '\''
         + ", version="
         + version
+        + '\''
+        + ", versionTag="
+        + versionTag
         + ", bpmnProcessId='"
         + bpmnProcessId
         + '\''
@@ -70,8 +74,17 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return version;
   }
 
-  public ProcessEntity setVersion(int version) {
+  public ProcessEntity setVersion(final int version) {
     this.version = version;
+    return this;
+  }
+
+  public String getVersionTag() {
+    return versionTag;
+  }
+
+  public ProcessEntity setVersionTag(final String versionTag) {
+    this.versionTag = versionTag;
     return this;
   }
 
@@ -79,7 +92,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return bpmnProcessId;
   }
 
-  public ProcessEntity setBpmnProcessId(String bpmnProcessId) {
+  public ProcessEntity setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -88,7 +101,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return bpmnXml;
   }
 
-  public ProcessEntity setBpmnXml(String bpmnXml) {
+  public ProcessEntity setBpmnXml(final String bpmnXml) {
     this.bpmnXml = bpmnXml;
     return this;
   }
@@ -97,7 +110,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return resourceName;
   }
 
-  public ProcessEntity setResourceName(String resourceName) {
+  public ProcessEntity setResourceName(final String resourceName) {
     this.resourceName = resourceName;
     return this;
   }
@@ -109,7 +122,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return flowNodes;
   }
 
-  public ProcessEntity setFlowNodes(List<ProcessFlowNodeEntity> flowNodes) {
+  public ProcessEntity setFlowNodes(final List<ProcessFlowNodeEntity> flowNodes) {
     this.flowNodes = flowNodes;
     return this;
   }
@@ -118,13 +131,27 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return tenantId;
   }
 
-  public ProcessEntity setTenantId(String tenantId) {
+  public ProcessEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        name,
+        version,
+        versionTag,
+        bpmnProcessId,
+        bpmnXml,
+        resourceName,
+        flowNodes,
+        tenantId);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -136,17 +163,12 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     }
     final ProcessEntity that = (ProcessEntity) o;
     return version == that.version
+        && Objects.equals(versionTag, that.versionTag)
         && Objects.equals(name, that.name)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(bpmnXml, that.bpmnXml)
         && Objects.equals(resourceName, that.resourceName)
         && Objects.equals(flowNodes, that.flowNodes)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(), name, version, bpmnProcessId, bpmnXml, resourceName, flowNodes, tenantId);
   }
 }

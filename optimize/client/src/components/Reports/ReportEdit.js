@@ -6,14 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import update from 'immutability-helper';
 import deepEqual from 'fast-deep-equal';
-import {Redirect, withRouter} from 'react-router-dom';
+import {Redirect, useLocation} from 'react-router-dom';
 import {Button, Toggle} from '@carbon/react';
 import classnames from 'classnames';
 
-import {withErrorHandling} from 'HOC';
 import {nowDirty, nowPristine} from 'saveGuard';
 import {
   ReportRenderer,
@@ -25,7 +24,7 @@ import {
 import {updateEntity, createEntity, evaluateReport, getCollection} from 'services';
 import {showError} from 'notifications';
 import {t} from 'translation';
-import {withDocs} from 'HOC';
+import {useErrorHandling, useChangedState} from 'hooks';
 import {track} from 'tracking';
 
 import ReportControlPanel from './controlPanels/ReportControlPanel';
@@ -37,399 +36,366 @@ import {CollapsibleContainer} from './CollapsibleContainer';
 
 import './ReportEdit.scss';
 
-export class ReportEdit extends React.Component {
-  state = {
-    loadingReportData: false,
-    redirect: '',
-    conflict: null,
-    originalData: this.props.report,
-    updatePromise: null,
-    optimizeVersion: 'latest',
-    report: this.props.report,
-    serverError: this.props.error,
-    shouldAutoReloadPreview: sessionStorage.getItem('shouldAutoReloadPreview') === 'true',
-    frozenReport: this.props.report,
-    runButtonLoading: false,
-    showReportRenderer: true,
-  };
+export function ReportEdit({report: initialReport, isNew, error, updateOverview}) {
+  const [loadingReportData, setLoadingReportData] = useState(false);
+  const [redirect, setRedirect] = useState('');
+  const [conflict, setConflict] = useState(null);
+  const [originalData] = useState(initialReport);
+  const [updatePromise, setUpdatePromise] = useState(null);
+  const [report, setReport] = useChangedState(initialReport);
+  const [serverError, setServerError] = useState(error);
+  const [shouldAutoReloadPreview, setShouldAutoReloadPreview] = useState(
+    sessionStorage.getItem('shouldAutoReloadPreview') === 'true'
+  );
+  const [frozenReport, setFrozenReport] = useChangedState(initialReport);
+  const [runButtonLoading, setRunButtonLoading] = useState(false);
+  const [showReportRenderer, setShowReportRenderer] = useState(true);
+  const containerRef = useRef(null);
+  const {mightFail} = useErrorHandling();
+  const location = useLocation();
+  const isMounted = useRef(false);
 
-  containerRef = React.createRef(null);
-
-  componentDidMount() {
-    const {report} = this.state;
-
-    if (this.isReportComplete(report) && !report.result) {
-      this.loadUpdatedReport(report);
-      nowDirty(t('report.label'), this.save);
-    }
+  function showSaveError(error) {
+    setConflict(null);
+    showError(error);
   }
 
-  showSaveError = (error) => {
-    this.setState({
-      conflict: null,
-    });
-    showError(error);
-  };
-
-  saveUpdatedReport = ({endpoint, id, name, description, data}) => {
-    return new Promise((resolve, reject) => {
-      this.props.mightFail(
-        updateEntity(
-          endpoint,
-          id,
-          {name, description, data},
-          {query: {force: this.state.conflict !== null}}
-        ),
-        () => resolve(id),
-        (error) => {
-          if (error.status === 409 && error.conflictedItems) {
-            this.setState({
-              report: update(this.state.report, {
-                name: {$set: name},
-                description: {$set: description},
-              }),
-              conflict: error.conflictedItems,
-              updatePromise: resolve,
-            });
-          } else {
-            reject(this.showSaveError(error));
+  const saveUpdatedReport = useCallback(
+    function saveUpdatedReport({endpoint, id, name, description, data}) {
+      return new Promise((resolve, reject) => {
+        mightFail(
+          updateEntity(
+            endpoint,
+            id,
+            {name, description, data},
+            {query: {force: conflict !== null}}
+          ),
+          () => resolve(id),
+          (error) => {
+            if (error.status === 409 && error.conflictedItems) {
+              setReport(update(report, {name: {$set: name}, description: {$set: description}}));
+              setConflict(error.conflictedItems);
+              setUpdatePromise(resolve);
+            } else {
+              showSaveError(error);
+              reject();
+            }
           }
-        }
-      );
-    });
-  };
-
-  save = () => {
-    return new Promise(async (resolve, reject) => {
-      const {id, name, description, data} = this.state.report;
-      const endpoint = `report/process/single`;
-
-      if (this.props.isNew) {
-        const collectionId = getCollection(this.props.location.pathname);
-
-        this.props.mightFail(
-          createEntity(endpoint, {collectionId, name, description, data}),
-          resolve,
-          (error) => reject(this.showSaveError(error))
         );
-      } else {
-        resolve(await this.saveUpdatedReport({endpoint, id, name, description, data}));
-      }
-    });
-  };
+      });
+    },
+    [conflict, mightFail, report, setReport]
+  );
 
-  saveAndGoBack = async () => {
-    const id = await this.save();
-    if (this.state.updatePromise) {
-      this.state.updatePromise(id);
-      this.setState({updatePromise: null});
+  const save = useCallback(
+    function save() {
+      return new Promise(async (resolve, reject) => {
+        const {id, name, description, data} = report;
+        const endpoint = `report/process/single`;
+
+        if (isNew) {
+          const collectionId = getCollection(location.pathname);
+
+          mightFail(
+            createEntity(endpoint, {collectionId, name, description, data}),
+            resolve,
+            (error) => {
+              showSaveError(error);
+              reject();
+            }
+          );
+        } else {
+          resolve(await saveUpdatedReport({endpoint, id, name, description, data}));
+        }
+      });
+    },
+    [isNew, location.pathname, mightFail, report, saveUpdatedReport]
+  );
+
+  async function saveAndGoBack() {
+    const id = await save();
+    if (updatePromise) {
+      updatePromise(id);
+      setUpdatePromise(null);
     }
 
-    if (this.isReportDirty() || !this.state.shouldAutoReloadPreview) {
-      await this.reEvaluateReport(this.state.report.data);
+    if (isReportDirty() || !shouldAutoReloadPreview) {
+      await reEvaluateReport(report.data);
     }
 
     if (id) {
       nowPristine();
-      this.props.updateOverview(
-        update(this.state.report, {id: {$set: id}}),
-        this.state.serverError
-      );
+      updateOverview(update(report, {id: {$set: id}}), serverError);
 
-      const params = new URLSearchParams(this.props.location.search);
+      const params = new URLSearchParams(location.search);
       const returnTo = params.get('returnTo');
-
       let redirect = './';
+
       if (returnTo) {
         redirect = returnTo;
-      } else if (this.props.isNew) {
+      } else if (isNew) {
         redirect = `../${id}/`;
       }
 
-      this.setState({redirect});
+      setRedirect(redirect);
     }
-  };
+  }
 
-  cancel = (evt) => {
+  function cancel(evt) {
     nowPristine();
 
-    const params = new URLSearchParams(this.props.location.search);
+    const params = new URLSearchParams(location.search);
     const returnTo = params.get('returnTo');
 
     if (returnTo) {
       evt.preventDefault();
-      this.setState({redirect: returnTo});
+      setRedirect(returnTo);
     }
 
-    this.setState({
-      report: this.state.originalData,
-    });
-  };
+    setReport(originalData);
+  }
 
-  updateReport = async (change, needsReevaluation) => {
-    const newReport = update(this.state.report.data, change);
+  async function updateReport(change, needsReevaluation) {
+    const newReport = update(report, {data: change});
+    const newReportData = update(report.data, change);
 
-    this.setState(
-      ({report}) => ({
-        report: update(report, {data: change}),
-      }),
-      this.dirtyCheck
-    );
+    setReport(newReport);
+    dirtyCheck(newReport);
 
     if (isRearrangementChanged(change)) {
-      this.setState(({frozenReport}) => ({
-        frozenReport: update(frozenReport, {data: change}),
-      }));
+      setFrozenReport(update(frozenReport, {data: change}));
     }
 
-    if (needsReevaluation && this.state.shouldAutoReloadPreview) {
-      await this.reEvaluateReport(newReport);
+    if (needsReevaluation && shouldAutoReloadPreview) {
+      await reEvaluateReport(newReportData);
     }
-  };
+  }
 
-  reEvaluateReport = async (newReport) => {
+  async function reEvaluateReport(newReport) {
     const query = {
-      ...this.state.report,
+      ...report,
       data: newReport,
     };
-    await this.loadUpdatedReport(query);
-  };
+    await loadUpdatedReport(query);
+  }
 
-  updateName = ({target: {value}}) => {
-    this.setState(
-      ({report}) => ({
-        report: update(report, {name: {$set: value}}),
-      }),
-      this.dirtyCheck
-    );
-  };
+  function updateName({target: {value}}) {
+    const newReport = update(report, {name: {$set: value}});
+    setReport(newReport);
+    dirtyCheck(newReport);
+  }
 
-  updateDescription = (description) => {
-    track('editDescription', {entity: 'report', entityId: this.state.report.id});
-    this.setState(
-      ({report}) => ({
-        report: update(report, {description: {$set: description}}),
-      }),
-      this.dirtyCheck
-    );
-  };
+  function updateDescription(description) {
+    track('editDescription', {entity: 'report', entityId: report.id});
+    const newReport = update(report, {description: {$set: description}});
+    setReport(newReport);
+    dirtyCheck(newReport);
+  }
 
-  dirtyCheck = () => {
-    if (this.isReportDirty()) {
-      nowDirty(t('report.label'), this.save);
+  function dirtyCheck(newReport) {
+    if (isReportDirty(newReport)) {
+      nowDirty(t('report.label'), save);
     } else {
       nowPristine();
     }
-  };
+  }
 
-  isReportDirty = () => !deepEqual(this.state.report, this.state.originalData);
+  function isReportDirty(newReport = report) {
+    return !deepEqual(newReport, originalData);
+  }
 
-  isReportComplete = ({data: {view, groupBy, visualization}}) => view && groupBy && visualization;
+  function isReportComplete({data: {view, groupBy, visualization}}) {
+    return !!(view && groupBy && visualization);
+  }
 
-  loadUpdatedReport = async (query) => {
-    this.setState({report: query});
-
-    if (this.isReportComplete(query)) {
-      this.setState({loadingReportData: true});
-      await this.loadReport({}, query);
-      this.setState({loadingReportData: false});
-    }
-  };
-
-  closeConflictModal = () => {
-    this.state.updatePromise(null);
-    this.setState({conflict: null, updatePromise: null});
-  };
-
-  setLoading = (value) => this.setState({loadingReportData: value});
-
-  loadReport = (params, query = this.state.report) =>
-    new Promise((resolve) =>
-      this.props.mightFail(
+  const loadReport = useCallback(
+    function loadReport(params, query = report) {
+      return mightFail(
         evaluateReport(query, [], params),
-        (response) =>
-          this.setState(
-            {
-              report: response,
-              frozenReport: response,
-              serverError: null,
-            },
-            resolve
-          ),
+        (response) => {
+          setReport(response);
+          setFrozenReport(response);
+          setServerError(null);
+        },
         (serverError) => {
           if (serverError.reportDefinition) {
-            this.setState(
-              {
-                report: serverError.reportDefinition,
-                serverError,
-              },
-              resolve
-            );
+            setReport(serverError.reportDefinition);
+            setServerError(serverError);
           } else {
-            this.setState({serverError}, resolve);
+            setServerError(serverError);
           }
         }
-      )
-    );
+      );
+    },
+    [mightFail, report, setReport, setFrozenReport]
+  );
 
-  toggleAutoPreviewUpdate = async (shouldReload) => {
-    if (this.isReportDirty() && shouldReload) {
-      await this.reEvaluateReport(this.state.report.data);
+  const loadUpdatedReport = useCallback(
+    async function loadUpdatedReport(query) {
+      setReport(query);
+
+      if (isReportComplete(query)) {
+        setLoadingReportData(true);
+        await loadReport({}, query);
+        setLoadingReportData(false);
+      }
+    },
+    [loadReport, setReport]
+  );
+
+  function closeConflictModal() {
+    updatePromise(null);
+    setConflict(null);
+  }
+
+  function setLoading(value) {
+    setLoadingReportData(value);
+  }
+
+  async function toggleAutoPreviewUpdate(shouldReload) {
+    if (isReportDirty() && shouldReload) {
+      await reEvaluateReport(report.data);
     }
-    this.setState({shouldAutoReloadPreview: shouldReload});
+    setShouldAutoReloadPreview(shouldReload);
     sessionStorage.setItem('shouldAutoReloadPreview', shouldReload);
-  };
+  }
 
-  runReportPreviewUpdate = async () => {
-    this.setState({runButtonLoading: true});
-    await this.reEvaluateReport(this.state.report.data);
-    this.setState({runButtonLoading: false});
-  };
+  async function runReportPreviewUpdate() {
+    setRunButtonLoading(true);
+    await reEvaluateReport(report.data);
+    setRunButtonLoading(false);
+  }
 
-  showTable = (sectionState) => {
+  function showTable(sectionState) {
     if (sectionState !== 'maximized') {
-      this.setState({showReportRenderer: true});
+      setShowReportRenderer(true);
     }
-  };
+  }
 
-  handleTableExpand = (currentState, newState) => {
+  function handleTableExpand(currentState, newState) {
     track('changeRawDataView', {
       from: currentState,
       to: newState,
-      reportType: this.state.report.data?.visualization,
+      reportType: report.data?.visualization,
     });
-    this.setState({showReportRenderer: newState !== 'maximized'});
-  };
+    setShowReportRenderer(newState !== 'maximized');
+  }
 
-  handleTableCollapse = (currentState, newState) => {
+  function handleTableCollapse(currentState, newState) {
     track('changeRawDataView', {
       from: currentState,
       to: newState,
-      reportType: this.state.report.data?.visualization,
+      reportType: report.data?.visualization,
     });
-  };
+  }
 
-  render() {
-    const {
-      report,
-      serverError,
-      loadingReportData,
-      conflict,
-      redirect,
-      shouldAutoReloadPreview,
-      frozenReport,
-      runButtonLoading,
-      showReportRenderer,
-    } = this.state;
-    const {name, description, data} = report;
-
-    if (redirect) {
-      return <Redirect to={redirect} />;
+  useEffect(() => {
+    // Load report data and set to dirty on initial mount
+    if (!isMounted.current && isReportComplete(report) && !report.result) {
+      loadUpdatedReport(report);
+      nowDirty(t('report.label'), save);
     }
 
-    return (
-      <div className="ReportEdit Report">
-        <div className="reportHeader">
-          <div className="headerTopLine">
-            <EntityNameForm
-              name={name}
-              entity="Report"
-              isNew={this.props.isNew}
-              onChange={this.updateName}
-              onSave={this.saveAndGoBack}
-              onCancel={this.cancel}
-              description={description}
-              onDescriptionChange={this.updateDescription}
-            />
-            {!shouldAutoReloadPreview && (
-              <Button
-                kind="primary"
-                size="md"
-                className="RunPreviewButton"
-                disabled={this.state.loadingReportData || !this.isReportComplete(report)}
-                onClick={this.runReportPreviewUpdate}
-              >
-                {t('report.updateReportPreview.buttonLabel')}
-              </Button>
-            )}
-          </div>
-          <div className="headerBottomLine">
-            <InstanceCount noInfo report={report} />
-            <Toggle
-              id="updatePreview"
-              className="updatePreview"
-              size="sm"
-              toggled={shouldAutoReloadPreview}
-              onToggle={this.toggleAutoPreviewUpdate}
-              labelText={t('report.updateReportPreview.switchLabel')}
-              hideLabel
-            />
-          </div>
+    isMounted.current = true;
+  }, [loadUpdatedReport, report, save]);
+
+  if (redirect) {
+    return <Redirect to={redirect} />;
+  }
+
+  const {name, description, data} = report;
+
+  return (
+    <div className="ReportEdit Report">
+      <div className="reportHeader">
+        <div className="headerTopLine">
+          <EntityNameForm
+            name={name}
+            entity="Report"
+            isNew={isNew}
+            onChange={updateName}
+            onSave={saveAndGoBack}
+            onCancel={cancel}
+            description={description}
+            onDescriptionChange={updateDescription}
+          />
+          {!shouldAutoReloadPreview && (
+            <Button
+              kind="primary"
+              size="md"
+              className="RunPreviewButton"
+              disabled={loadingReportData || !isReportComplete(report)}
+              onClick={runReportPreviewUpdate}
+            >
+              {t('report.updateReportPreview.buttonLabel')}
+            </Button>
+          )}
         </div>
-        <div className="Report__view" ref={this.containerRef}>
-          <div className="viewsContainer">
-            <div className="mainView">
-              <div className={classnames('Report__content', {hidden: !showReportRenderer})}>
-                <div className="visualization">
-                  <Visualization
-                    report={data}
-                    onChange={(change) => this.updateReport(change, true)}
-                  />
-                  <Configuration
-                    type={data.visualization}
-                    onChange={this.updateReport}
-                    disabled={loadingReportData}
-                    report={report}
-                    autoPreviewDisabled={!shouldAutoReloadPreview}
-                  />
-                </div>
-
-                {this.isReportComplete(report) && <ReportWarnings report={report} />}
-
-                {(shouldAutoReloadPreview || runButtonLoading) && loadingReportData ? (
-                  <Loading />
-                ) : (
-                  showReportRenderer && (
-                    <ReportRenderer
-                      error={serverError}
-                      report={shouldAutoReloadPreview ? report : frozenReport}
-                      updateReport={this.updateReport}
-                      loadReport={this.loadReport}
-                    />
-                  )
-                )}
-              </div>
-            </div>
-            {typeof report.result !== 'undefined' && report.data?.visualization !== 'table' && (
-              <CollapsibleContainer
-                maxHeight={this.containerRef.current?.offsetHeight}
-                initialState="minimized"
-                onTransitionEnd={this.showTable}
-                onExpand={this.handleTableExpand}
-                onCollapse={this.handleTableCollapse}
-                title={t('report.view.rawData')}
-              >
-                <InstanceViewTable report={shouldAutoReloadPreview ? report : frozenReport} />
-              </CollapsibleContainer>
-            )}
-          </div>
-          <ReportControlPanel
-            report={report}
-            updateReport={this.updateReport}
-            setLoading={this.setLoading}
+        <div className="headerBottomLine">
+          <InstanceCount noInfo report={report} />
+          <Toggle
+            id="updatePreview"
+            className="updatePreview"
+            size="sm"
+            toggled={shouldAutoReloadPreview}
+            onToggle={toggleAutoPreviewUpdate}
+            labelText={t('report.updateReportPreview.switchLabel')}
+            hideLabel
           />
         </div>
-        <ConflictModal
-          conflicts={conflict}
-          onClose={this.closeConflictModal}
-          onConfirm={this.saveAndGoBack}
-        />
       </div>
-    );
-  }
+      <div className="Report__view" ref={containerRef}>
+        <div className="viewsContainer">
+          <div className="mainView">
+            <div className={classnames('Report__content', {hidden: !showReportRenderer})}>
+              <div className="visualization">
+                <Visualization report={data} onChange={(change) => updateReport(change, true)} />
+                <Configuration
+                  type={data.visualization}
+                  onChange={updateReport}
+                  disabled={loadingReportData}
+                  report={report}
+                  autoPreviewDisabled={!shouldAutoReloadPreview}
+                />
+              </div>
+
+              {isReportComplete(report) && <ReportWarnings report={report} />}
+
+              {(shouldAutoReloadPreview || runButtonLoading) && loadingReportData ? (
+                <Loading />
+              ) : (
+                showReportRenderer && (
+                  <ReportRenderer
+                    error={serverError}
+                    report={shouldAutoReloadPreview ? report : frozenReport}
+                    updateReport={updateReport}
+                    loadReport={loadReport}
+                  />
+                )
+              )}
+            </div>
+          </div>
+          {typeof report.result !== 'undefined' && report.data?.visualization !== 'table' && (
+            <CollapsibleContainer
+              maxHeight={containerRef.current?.offsetHeight}
+              initialState="minimized"
+              onTransitionEnd={showTable}
+              onExpand={handleTableExpand}
+              onCollapse={handleTableCollapse}
+              title={t('report.view.rawData')}
+            >
+              <InstanceViewTable report={shouldAutoReloadPreview ? report : frozenReport} />
+            </CollapsibleContainer>
+          )}
+        </div>
+        <ReportControlPanel report={report} updateReport={updateReport} setLoading={setLoading} />
+      </div>
+      <ConflictModal conflicts={conflict} onClose={closeConflictModal} onConfirm={saveAndGoBack} />
+    </div>
+  );
 }
 
-export default withRouter(withErrorHandling(withDocs(ReportEdit)));
+export default ReportEdit;
 
 function isRearrangementChanged(change) {
   return !!change?.configuration?.tableColumns?.columnOrder;

@@ -9,8 +9,9 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.CreateUserRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserWithPasswordRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.concurrent.CompletableFuture;
@@ -36,14 +37,15 @@ public class UserController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> createUser(
-      @RequestBody final UserWithPasswordRequest userWithPasswordDto) {
-    return RequestMapper.toCreateUserRequest(userWithPasswordDto)
+      @RequestBody final UserRequest userRequest) {
+    return RequestMapper.toCreateUserRequest(userRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
   }
 
   private CompletableFuture<ResponseEntity<Object>> createUser(final CreateUserRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestMapper.executeServiceMethod(
         () ->
-            userServices.withAuthentication(RequestMapper.getAuthentication()).createUser(request));
+            userServices.withAuthentication(RequestMapper.getAuthentication()).createUser(request),
+        ResponseMapper::toUserCreateResponse);
   }
 }

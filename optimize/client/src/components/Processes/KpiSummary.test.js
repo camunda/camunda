@@ -37,13 +37,13 @@ it('should not display the summary if no goals are defined', () => {
 it('should display two indicators if one goal succeeds and the other fails', () => {
   const node = shallow(<KpiSummary kpis={[succeededKpi, failedKpi]} />);
 
-  expect(node.find('.success').length).toBe(1);
-  expect(node.find('.error').length).toBe(1);
+  expect(node.dive().find('.success').length).toBe(1);
+  expect(node.dive().find('.error').length).toBe(1);
 });
 
 it('should display single indicator if all goals succeeded or failed', () => {
   const node = shallow(<KpiSummary kpis={[succeededKpi, {...failedKpi, isBelow: false}]} />);
 
-  expect(node.find('.success').length).toBe(1);
-  expect(node.find('.error')).not.toExist();
+  expect(node.dive().find('.success').length).toBe(1);
+  expect(node.dive().find('.error')).not.toExist();
 });

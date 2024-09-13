@@ -46,6 +46,9 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     registerForceScaleDownHandler();
     registerDisableExporterHandler();
     registerEnableExporterHandler();
+    registerClusterScaleRequestHandler();
+    registerClusterPatchRequestHandler();
+    registerForceRemoveBrokersRequestHandler();
   }
 
   @Override
@@ -158,6 +161,30 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         ClusterConfigurationRequestTopics.ENABLE_EXPORTER.topic(),
         serializer::decodeExporterEnableRequest,
         request -> mapResponse(clusterConfigurationManagementApi.enableExporter(request)),
+        this::encodeResponse);
+  }
+
+  private void registerForceRemoveBrokersRequestHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.FORCE_REMOVE_BROKERS.topic(),
+        serializer::decodeForceRemoveBrokersRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.forceRemoveBrokers(request)),
+        this::encodeResponse);
+  }
+
+  private void registerClusterPatchRequestHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.PATCH_CLUSTER.topic(),
+        serializer::decodeClusterPatchRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.patchCluster(request)),
+        this::encodeResponse);
+  }
+
+  private void registerClusterScaleRequestHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.SCALE_CLUSTER.topic(),
+        serializer::decodeClusterScaleRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.scaleCluster(request)),
         this::encodeResponse);
   }
 

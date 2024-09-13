@@ -182,7 +182,7 @@ it('should filter out invalid kpis', async () => {
   await runAllEffects();
 
   const rows = node.find(EntityList).prop('rows');
-  expect(rows[0].meta[2].props.content.props.kpis).toEqual([validKpi]);
+  expect(rows[0].meta[2].props.kpis).toEqual([validKpi]);
 });
 
 it('should hide the link to view the dashboard if the user has no edit rights', async () => {

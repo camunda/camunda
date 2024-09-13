@@ -2625,13 +2625,12 @@ final class JsonSerializableToJsonTest {
                 new AuthorizationRecord()
                     .setAction(PermissionAction.ADD)
                     .setOwnerKey(1L)
-                    .setOwnerType(AuthorizationOwnerType.USER)
                     .setResourceType(AuthorizationResourceType.DEPLOYMENT),
         """
         {
           "action": "ADD",
           "ownerKey": 1,
-          "ownerType": "USER",
+          "ownerType": "UNSPECIFIED",
           "resourceType": "DEPLOYMENT",
           "permissions": []
         }
