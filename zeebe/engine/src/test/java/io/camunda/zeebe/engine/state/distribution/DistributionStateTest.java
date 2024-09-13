@@ -399,6 +399,19 @@ public final class DistributionStateTest {
   }
 
   @Test
+  public void shouldFindSingleContinuationCommand() {
+    // given
+    final var queue = "test-queue";
+    final var record = createContinuationCommand(queue, "continuation");
+
+    // when
+    distributionState.addContinuationCommand(1L, record);
+
+    // then
+    assertThat(distributionState.getContinuationRecord(queue, 1L)).isNotNull();
+  }
+
+  @Test
   public void shouldRemoveContinuationCommand() {
     // given
     final var queue = "test-queue";
