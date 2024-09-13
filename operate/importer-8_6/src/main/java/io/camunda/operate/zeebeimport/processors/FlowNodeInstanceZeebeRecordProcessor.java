@@ -48,9 +48,11 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       Set.of(ELEMENT_COMPLETED.name(), ELEMENT_TERMINATED.name());
   private static final Set<String> AI_START_STATES = Set.of(ELEMENT_ACTIVATING.name());
   // treePath by flowNodeInstanceKey caches
-  private final FlowNodeInstanceTreePathCache treePathCache;
+  private FlowNodeInstanceTreePathCache treePathCache;
   private final FlowNodeStore flowNodeStore;
   private final FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  private final PartitionHolder partitionHolder;
+  private final int flowNodeTreeCacheSize;
 
   public FlowNodeInstanceZeebeRecordProcessor(
       final FlowNodeStore flowNodeStore,
@@ -59,11 +61,24 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       final PartitionHolder partitionHolder) {
     this.flowNodeStore = flowNodeStore;
     this.flowNodeInstanceTemplate = flowNodeInstanceTemplate;
-    final var flowNodeTreeCacheSize = operateProperties.getImporter().getFlowNodeTreeCacheSize();
+    flowNodeTreeCacheSize = operateProperties.getImporter().getFlowNodeTreeCacheSize();
+    this.partitionHolder = partitionHolder;
+  }
+
+  private FlowNodeInstanceTreePathCache lazyLoadTreePathCache() {
+    if (treePathCache != null) {
+      return treePathCache;
+    }
+
+    // We create the TreePathCache lazy, as partition holder didn't hold the partitionIds right on
+    // start. The chances are higher that when we start importing we can also request the
+    // partitions.
+
     final var partitionIds = partitionHolder.getPartitionIds();
     treePathCache =
         new FlowNodeInstanceTreePathCache(
             partitionIds, flowNodeTreeCacheSize, flowNodeStore::findParentTreePathFor);
+    return treePathCache;
   }
 
   public void processIncidentRecord(final Record record, final BatchRequest batchRequest)
@@ -184,7 +199,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
 
     if (entity.getTreePath() == null) {
       final String parentTreePath =
-          treePathCache.resolveTreePath(toCompositeKey(record, recordValue));
+          lazyLoadTreePathCache().resolveTreePath(toCompositeKey(record, recordValue));
       entity.setTreePath(
           String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey())));
       entity.setLevel(parentTreePath.split("/").length);
