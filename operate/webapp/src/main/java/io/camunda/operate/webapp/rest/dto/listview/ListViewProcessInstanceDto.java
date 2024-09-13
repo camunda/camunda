@@ -29,6 +29,7 @@ public class ListViewProcessInstanceDto {
   private String processId;
   private String processName;
   private Integer processVersion;
+  private String processVersionTag;
 
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
@@ -99,6 +100,7 @@ public class ListViewProcessInstanceDto {
         .setBpmnProcessId(processInstanceEntity.getBpmnProcessId())
         .setProcessName(processInstanceEntity.getProcessName())
         .setProcessVersion(processInstanceEntity.getProcessVersion())
+        .setProcessVersionTag(processInstance.getProcessVersionTag())
         .setOperations(DtoCreator.create(operations, OperationDto.class))
         .setTenantId(processInstanceEntity.getTenantId());
     if (operations != null) {
@@ -187,6 +189,15 @@ public class ListViewProcessInstanceDto {
 
   public ListViewProcessInstanceDto setProcessVersion(final Integer processVersion) {
     this.processVersion = processVersion;
+    return this;
+  }
+
+  public String getProcessVersionTag() {
+    return processVersionTag;
+  }
+
+  public ListViewProcessInstanceDto setProcessVersionTag(final String processVersionTag) {
+    this.processVersionTag = processVersionTag;
     return this;
   }
 
@@ -306,6 +317,7 @@ public class ListViewProcessInstanceDto {
             processId,
             processName,
             processVersion,
+            processVersionTag,
             startDate,
             endDate,
             state,
@@ -335,6 +347,7 @@ public class ListViewProcessInstanceDto {
         && Objects.equals(processId, that.processId)
         && Objects.equals(processName, that.processName)
         && Objects.equals(processVersion, that.processVersion)
+        && Objects.equals(processVersionTag, that.processVersionTag)
         && Objects.equals(startDate, that.startDate)
         && Objects.equals(endDate, that.endDate)
         && state == that.state
