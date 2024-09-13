@@ -841,6 +841,48 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
+  /flownode-instances/search:
+    post:
+      tags:
+        - Flow node Instance
+      summary: Query flow node instances (experimental)
+      description: |
+        Search for flow node instances based on given criteria.
+
+        :::note
+        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlowNodeInstanceSearchQueryRequest"
+      responses:
+        "200":
+          description: >
+            The Flow node instance search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResponse"
+        "400":
+          description: >
+            The Flow node instance Search Query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /decision-definitions/search:
     post:
       tags:
@@ -1888,6 +1930,97 @@ components:
           format: int64
           minimum: 1
 
+    FlowNodeInstanceSearchQueryRequest:
+      description: Flow node instance search request
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/FlowNodeInstanceFilterRequest"
+    FlowNodeInstanceFilterRequest:
+      type: object
+      properties:
+        flowNodeInstanceKey:
+          type: integer
+          description: The key of this flow node instance.
+          format: int64
+        processInstanceKey:
+          type: integer
+          description: The process instance key.
+          format: int64
+        processDefinitionKey:
+          type: integer
+          description: The process definition key.
+          format: int64
+        state:
+          type: string
+          description: The state, one of ACTIVE, COMPLETED, TERMINATED.
+        type:
+          type: string
+          description: The flow node type
+        flowNodeId:
+          type: string
+          description: The flow node id
+        flowNodeName:
+          type: string
+          description: The flow node name
+        treePath:
+          type: string
+          description: The path of keys from process instance to this flow node instance separated by '/'
+        incident:
+          type: boolean
+          description: Shows whether this flow node instance has an incident related to
+        incidentKey:
+          type: integer
+          description: The key of incident if field incident is true
+          format: int64
+        tenantId:
+          description: The tenant id
+          type: string
+    FlowNodeInstanceSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlowNodeInstanceItem"
+    FlowNodeInstanceItem:
+      type: object
+      properties:
+        flowNodeInstanceKey:
+          type: integer
+          format: int64
+        processInstanceKey:
+          type: integer
+          format: int64
+        processDefinitionKey:
+          type: integer
+          format: int64
+        startDate:
+          type: string
+        endDate:
+          type: string
+        flowNodeId:
+          type: string
+        flowNodeName:
+          type: string
+        treePath:
+          type: string
+        type:
+          type: string
+        state:
+          type: string
+        incident:
+          type: boolean
+        incidentKey:
+          type: integer
+          format: int64
+        tenantId:
+          type: string
     DecisionDefinitionSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
