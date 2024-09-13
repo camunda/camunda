@@ -1,0 +1,9 @@
+.Search {
+  display: flex;
+  padding-inline: 0;
+
+  &,
+  &:hover {
+    background-color: transparent;
+  }
+}

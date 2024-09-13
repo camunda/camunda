@@ -8,6 +8,8 @@
 
 import {Children, Fragment, ReactElement, ReactNode} from 'react';
 
+import isReactElement from './isReactElement';
+
 export default function ignoreFragments(children?: ReactNode): ReactElement[] {
   if (isFragment(children)) {
     return ignoreFragments(children.props.children);
@@ -25,8 +27,4 @@ export default function ignoreFragments(children?: ReactNode): ReactElement[] {
 
 function isFragment(child: ReactNode): child is ReactElement<{children?: ReactNode}> {
   return isReactElement(child) && child.type === Fragment;
-}
-
-function isReactElement(child: ReactNode): child is ReactElement {
-  return !!child && typeof child === 'object' && 'type' in child;
 }
