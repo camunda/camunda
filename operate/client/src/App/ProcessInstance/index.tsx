@@ -40,6 +40,7 @@ import {VariablePanel} from './BottomPanel/VariablePanel';
 import {Forbidden} from 'modules/components/Forbidden';
 import {notificationsStore} from 'modules/stores/notifications';
 import {Frame} from 'modules/components/Frame';
+import {processInstanceListenersStore} from 'modules/stores/processInstanceListeners';
 
 const startPolling = (processInstanceId: ProcessInstanceEntity['id']) => {
   variablesStore.startPolling(processInstanceId, {runImmediately: true});
@@ -181,6 +182,8 @@ const ProcessInstance: React.FC = observer(() => {
 
   const hasPendingModifications = modifications.length > 0;
 
+  const {hasFlowNodeListeners} = processInstanceListenersStore;
+
   if (processInstanceDetailsStore.state.status === 'forbidden') {
     return <Forbidden />;
   }
@@ -212,7 +215,7 @@ const ProcessInstance: React.FC = observer(() => {
           header={<ProcessInstanceHeader />}
           topPanel={<TopPanel />}
           bottomPanel={
-            <BottomPanel>
+            <BottomPanel $hasExpandedPanel={hasFlowNodeListeners}>
               <FlowNodeInstanceLog />
               <VariablePanel />
             </BottomPanel>
