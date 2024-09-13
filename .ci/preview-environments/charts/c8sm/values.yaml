@@ -226,7 +226,6 @@ camunda-platform:
             ingress.kubernetes.io/rewrite-target: "/"
             nginx.ingress.kubernetes.io/ssl-redirect: "true"
             nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
-            nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
           tls:
             enabled: true
             secretName: camunda-tls
