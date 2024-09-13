@@ -22,13 +22,15 @@ public class UserProcessors {
       final MutableProcessingState processingState,
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior) {
-    typedRecordProcessors.onCommand(
-        ValueType.USER,
-        UserIntent.CREATE,
-        new UserCreateProcessor(keyGenerator, processingState, writers, distributionBehavior));
-    typedRecordProcessors.onCommand(
-        ValueType.USER,
-        UserIntent.UPDATE,
-        new UserUpdateProcessor(keyGenerator, processingState, writers, distributionBehavior));
+    typedRecordProcessors
+        .onCommand(
+            ValueType.USER,
+            UserIntent.CREATE,
+            new UserCreateProcessor(keyGenerator, processingState, writers, distributionBehavior))
+        .onCommand(
+            ValueType.USER,
+            UserIntent.UPDATE,
+            new UserUpdateProcessor(keyGenerator, processingState, writers, distributionBehavior))
+        .withListener(new DefaultUserCreator(processingState));
   }
 }
