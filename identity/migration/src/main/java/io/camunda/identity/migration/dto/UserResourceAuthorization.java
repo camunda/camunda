@@ -7,12 +7,5 @@
  */
 package io.camunda.identity.migration.dto;
 
-import java.util.List;
-
 public record UserResourceAuthorization(
-    String username,
-    String name,
-    String email,
-    String resourceId,
-    String resourceType,
-    List<String> permissions) {}
+    String username, String resourceId, String resourceType, String permission) {}
