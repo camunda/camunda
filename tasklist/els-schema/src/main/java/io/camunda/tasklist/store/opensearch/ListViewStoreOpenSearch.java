@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Logger;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
@@ -39,9 +40,6 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(OpenSearchCondition.class)
 public class ListViewStoreOpenSearch implements ListViewStore {
-
-  private static final Logger LOGGER = Logger.getLogger(ListViewStoreOpenSearch.class.getName());
-
   @Autowired
   @Qualifier("tasklistOsClient")
   private OpenSearchClient osClient;
@@ -124,9 +122,12 @@ public class ListViewStoreOpenSearch implements ListViewStore {
           searchRequest,
           osClient,
           hits -> {
-            for (final Hit<VariableListViewEntity> hit : hits) {
-              variableList.add(hit.source());
-            }
+            hits.stream()
+                .map(Hit::source)
+                .filter(Objects::nonNull)
+                .filter(VariableListViewEntity.class::isInstance)
+                .map(VariableListViewEntity.class::cast)
+                .forEach(variableList::add);
           },
           null, // No need for an aggregation processor
           null // No need for first response metadata processing
