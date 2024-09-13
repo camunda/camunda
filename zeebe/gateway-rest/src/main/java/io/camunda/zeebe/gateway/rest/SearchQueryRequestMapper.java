@@ -276,11 +276,6 @@ public final class SearchQueryRequestMapper {
       if (filter.getTenantIds() != null) {
         builder.tenantIds(filter.getTenantIds());
       }
-
-      // priority
-      if (filter.getPriority() != null) {
-        builder.priority(mapPriorityFilter(filter.getPriority()));
-      }
     }
 
     return builder.build();
@@ -548,20 +543,11 @@ public final class SearchQueryRequestMapper {
     }
   }
 
-  private static DateValueFilter toDateValueFilter(String text) {
+  private static DateValueFilter toDateValueFilter(final String text) {
     if (StringUtils.isEmpty(text)) {
       return null;
     }
     final var date = OffsetDateTime.parse(text);
     return new DateValueFilter.Builder().before(date).after(date).build();
-  }
-
-  private static ComparableValueFilter mapPriorityFilter(final PriorityValueFilter priority) {
-    return new ComparableValueFilter.Builder()
-        .eq(priority.getEq())
-        .gt(priority.getGt())
-        .lt(priority.getLt())
-        .lte(priority.getLte())
-        .build();
   }
 }

@@ -1688,10 +1688,6 @@ components:
           type: string
         bpmnDefinitionId:
           type: string
-        priority:
-          type: object
-          allOf:
-            - $ref: "#/components/schemas/PriorityValueFilter"
     UserTaskItem:
       type: object
       properties:
@@ -2837,29 +2833,6 @@ components:
           description: The tenant ID of the message.
           type: string
 
-    PriorityValueFilter:
-      type: object
-      properties:
-        eq:
-          type: integer
-          minimum: 0
-          maximum: 100
-        gt:
-          type: integer
-          minimum: 0
-          maximum: 100
-        gte:
-          type: integer
-          minimum: 0
-          maximum: 100
-        lt:
-          type: integer
-          minimum: 0
-          maximum: 100
-        lte:
-          type: integer
-          minimum: 0
-          maximum: 100
     DocumentReference:
       type: object
       properties:

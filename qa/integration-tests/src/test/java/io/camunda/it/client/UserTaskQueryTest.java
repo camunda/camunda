@@ -8,10 +8,10 @@
 package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.protocol.rest.PriorityValueFilter;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -30,13 +30,13 @@ class UserTaskQueryTest {
   private static Long userTaskKeyTaskAssigned;
 
   @TestZeebe
-  private static TestStandaloneCamunda testStandaloneCamunda = new TestStandaloneCamunda();
+  private static final TestStandaloneCamunda TEST_STANDALONE_CAMUNDA = new TestStandaloneCamunda();
 
   private static ZeebeClient camundaClient;
 
   @BeforeAll
   public static void setup() {
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = TEST_STANDALONE_CAMUNDA.newClientBuilder().build();
 
     deployProcess("process", "simple.bpmn", "test", "", "");
     deployProcess("process-2", "simple-2.bpmn", "test-2", "group", "user");
@@ -176,15 +176,16 @@ class UserTaskQueryTest {
   }
 
   @Test
-  public void shouldRetrieveTaskByPriority() {
-    final var resultDefaultTenant =
-        camundaClient
-            .newUserTaskQuery()
-            .filter(f -> f.priority(new PriorityValueFilter().eq(30)))
-            .send()
-            .join();
-    assertThat(resultDefaultTenant.items().size()).isEqualTo(1);
-    assertThat(resultDefaultTenant.items().getFirst().getPriority()).isEqualTo(30);
+  public void retrievedTasksShouldIncludePriority() {
+    final var resultDefaultPriority =
+        camundaClient.newUserTaskQuery().filter(f -> f.bpmnProcessId("process-2")).send().join();
+    assertThat(resultDefaultPriority.items().size()).isEqualTo(1);
+    assertEquals(50, resultDefaultPriority.items().getFirst().getPriority());
+
+    final var resultDefinedPriority =
+        camundaClient.newUserTaskQuery().filter(f -> f.bpmnProcessId("process-3")).send().join();
+    assertThat(resultDefinedPriority.items().size()).isEqualTo(1);
+    assertEquals(30, resultDefinedPriority.items().getFirst().getPriority());
   }
 
   private static void deployProcess(
