@@ -10,7 +10,7 @@ package io.camunda.operate.webapp.elasticsearch.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
@@ -31,7 +31,7 @@ public abstract class AbstractReader {
   @Qualifier("operateObjectMapper")
   protected ObjectMapper objectMapper;
 
-  protected <T extends AbstractExporterEntity> List<T> scroll(
+  protected <T extends ExporterEntity> List<T> scroll(
       final SearchRequest searchRequest, final Class<T> clazz) throws IOException {
     return tenantAwareClient.search(
         searchRequest,
@@ -40,7 +40,7 @@ public abstract class AbstractReader {
         });
   }
 
-  protected <T extends AbstractExporterEntity> List<T> scroll(
+  protected <T extends ExporterEntity> List<T> scroll(
       final SearchRequest searchRequest,
       final Class<T> clazz,
       final Consumer<Aggregations> aggsProcessor)
@@ -53,7 +53,7 @@ public abstract class AbstractReader {
         });
   }
 
-  protected <T extends AbstractExporterEntity> List<T> scroll(
+  protected <T extends ExporterEntity> List<T> scroll(
       final SearchRequest searchRequest,
       final Class<T> clazz,
       final Consumer<SearchHits> searchHitsProcessor,

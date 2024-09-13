@@ -10,7 +10,7 @@ package io.camunda.operate.util;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -71,12 +71,12 @@ public interface SearchTestRuleProvider {
 
   List<RecordsReader> getRecordsReaders(ImportValueType importValueType);
 
-  void persistNew(AbstractExporterEntity... entitiesToPersist);
+  void persistNew(ExporterEntity... entitiesToPersist);
 
-  void persistOperateEntitiesNew(List<? extends AbstractExporterEntity> operateEntities)
+  void persistOperateEntitiesNew(List<? extends ExporterEntity> operateEntities)
       throws PersistenceException;
 
-  Map<Class<? extends AbstractExporterEntity>, String> getEntityToAliasMap();
+  Map<Class<? extends ExporterEntity>, String> getEntityToAliasMap();
 
   int getOpenScrollcontextSize();
 

@@ -15,7 +15,7 @@ import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.DecisionStore;
 import io.camunda.operate.util.PayloadUtil;
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceInputEntity;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceOutputEntity;
@@ -52,7 +52,7 @@ public class DecisionDataUtil {
   public static final String TENANT1 = "tenant1";
   public static final String TENANT2 = "tenant2";
   @Autowired protected DecisionStore decisionStore;
-  private Map<Class<? extends AbstractExporterEntity>, String> entityToESAliasMap;
+  private Map<Class<? extends ExporterEntity>, String> entityToESAliasMap;
   private final Random random = new Random();
 
   @Autowired
@@ -67,8 +67,8 @@ public class DecisionDataUtil {
 
   @Autowired private PayloadUtil payloadUtil;
 
-  public List<AbstractExporterEntity> createDecisionDefinitions() {
-    final List<AbstractExporterEntity> decisionEntities = new ArrayList<>();
+  public List<ExporterEntity> createDecisionDefinitions() {
+    final List<ExporterEntity> decisionEntities = new ArrayList<>();
 
     // create DRD version 1
     decisionEntities.add(
@@ -314,11 +314,11 @@ public class DecisionDataUtil {
         .setTenantId(tenantId);
   }
 
-  public void persistOperateEntities(final List<? extends AbstractExporterEntity> operateEntities)
+  public void persistOperateEntities(final List<? extends ExporterEntity> operateEntities)
       throws PersistenceException {
     try {
       final BatchRequest batchRequest = decisionStore.newBatchRequest();
-      for (final AbstractExporterEntity<?> entity : operateEntities) {
+      for (final ExporterEntity<?> entity : operateEntities) {
         final String alias = getEntityToESAliasMap().get(entity.getClass());
         if (alias == null) {
           throw new RuntimeException("Index not configured for " + entity.getClass().getName());
@@ -331,7 +331,7 @@ public class DecisionDataUtil {
     }
   }
 
-  public Map<Class<? extends AbstractExporterEntity>, String> getEntityToESAliasMap() {
+  public Map<Class<? extends ExporterEntity>, String> getEntityToESAliasMap() {
     if (entityToESAliasMap == null) {
       entityToESAliasMap = new HashMap<>();
       entityToESAliasMap.put(

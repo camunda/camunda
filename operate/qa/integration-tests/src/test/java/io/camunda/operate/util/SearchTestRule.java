@@ -10,7 +10,7 @@ package io.camunda.operate.util;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.zeebe.ImportValueType;
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -115,16 +115,16 @@ public class SearchTestRule extends TestWatcher {
         importValueType, runPostImport, predicate, arguments);
   }
 
-  public void persistNew(final AbstractExporterEntity... entitiesToPersist) {
+  public void persistNew(final ExporterEntity... entitiesToPersist) {
     searchTestRuleProvider.persistNew(entitiesToPersist);
   }
 
-  public void persistOperateEntitiesNew(
-      final List<? extends AbstractExporterEntity> operateEntities) throws PersistenceException {
+  public void persistOperateEntitiesNew(final List<? extends ExporterEntity> operateEntities)
+      throws PersistenceException {
     searchTestRuleProvider.persistOperateEntitiesNew(operateEntities);
   }
 
-  public Map<Class<? extends AbstractExporterEntity>, String> getEntityToAliasMap() {
+  public Map<Class<? extends ExporterEntity>, String> getEntityToAliasMap() {
     return searchTestRuleProvider.getEntityToAliasMap();
   }
 

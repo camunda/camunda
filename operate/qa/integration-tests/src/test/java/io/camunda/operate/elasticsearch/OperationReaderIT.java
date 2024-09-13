@@ -31,7 +31,7 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
@@ -174,7 +174,7 @@ public class OperationReaderIT extends OperateAbstractIT {
   /** */
   protected void createData(final Long processDefinitionKey) {
 
-    final List<AbstractExporterEntity> entities = new ArrayList<>();
+    final List<ExporterEntity> entities = new ArrayList<>();
 
     ProcessInstanceForListViewEntity inst =
         createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey, true);
@@ -227,6 +227,6 @@ public class OperationReaderIT extends OperateAbstractIT {
             inst.getProcessInstanceKey(), null, null, OperationState.COMPLETED, USER_4, false));
     entities.add(inst);
 
-    searchTestRule.persistNew(entities.toArray(new AbstractExporterEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new ExporterEntity[entities.size()]));
   }
 }

@@ -26,7 +26,7 @@ import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.operate.webapp.zeebe.operation.OperationHandler;
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import java.time.OffsetDateTime;
@@ -119,16 +119,16 @@ public class OperationExecutorIT extends OperateAbstractIT {
   }
 
   private void createData(final int processInstanceCount) {
-    final List<AbstractExporterEntity> instances = new ArrayList<>();
+    final List<ExporterEntity> instances = new ArrayList<>();
     for (int i = 0; i < processInstanceCount; i++) {
       instances.addAll(createProcessInstanceAndOperations());
     }
     // persist instances
-    searchTestRule.persistNew(instances.toArray(new AbstractExporterEntity[instances.size()]));
+    searchTestRule.persistNew(instances.toArray(new ExporterEntity[instances.size()]));
   }
 
-  private List<AbstractExporterEntity> createProcessInstanceAndOperations() {
-    final List<AbstractExporterEntity> entities = new ArrayList<>();
+  private List<ExporterEntity> createProcessInstanceAndOperations() {
+    final List<ExporterEntity> entities = new ArrayList<>();
     final ProcessInstanceForListViewEntity processInstance =
         TestUtil.createProcessInstanceEntityWithIds();
     processInstance.setBpmnProcessId("testProcess" + random.nextInt(10));

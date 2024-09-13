@@ -26,7 +26,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
@@ -148,7 +148,7 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
     // given
     final Long processDefinitionKey = PROCESS_KEY_DEMO_PROCESS;
 
-    final List<AbstractExporterEntity> entities = new ArrayList<>();
+    final List<ExporterEntity> entities = new ArrayList<>();
     final ProcessInstanceForListViewEntity processInstance =
         createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey);
     entities.add(
@@ -161,7 +161,7 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
         TestUtil.createFlowNodeInstance(
             processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE, "taskB", null));
     entities.add(processInstance);
-    searchTestRule.persistNew(entities.toArray(new AbstractExporterEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new ExporterEntity[entities.size()]));
 
     final ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(processDefinitionKey);
 
@@ -272,7 +272,7 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
    */
   protected void createData(final Long processDefinitionKey) {
 
-    final List<AbstractExporterEntity> entities = new ArrayList<>();
+    final List<ExporterEntity> entities = new ArrayList<>();
 
     ProcessInstanceForListViewEntity inst =
         createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey);
@@ -475,6 +475,6 @@ public class FlowNodeStatisticsIT extends OperateAbstractIT {
             inst.getProcessInstanceKey(), FlowNodeState.COMPLETED, "end", FlowNodeType.END_EVENT));
     entities.add(inst);
 
-    searchTestRule.persistNew(entities.toArray(new AbstractExporterEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new ExporterEntity[entities.size()]));
   }
 }

@@ -17,7 +17,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.*;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.operate.EventEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
@@ -64,7 +64,7 @@ public class DataMultiplicator implements CommandLineRunner {
   @Autowired private RestHighLevelClient esClient;
   @Autowired private OperateProperties operateProperties;
   @Autowired private List<TemplateDescriptor> indexDescriptors;
-  private final Map<Class<? extends TemplateDescriptor>, Class<? extends AbstractExporterEntity>>
+  private final Map<Class<? extends TemplateDescriptor>, Class<? extends ExporterEntity>>
       descriptorToEntity =
           Map.of(
               EventTemplate.class, EventEntity.class,
@@ -103,10 +103,10 @@ public class DataMultiplicator implements CommandLineRunner {
   }
 
   private void duplicateIndexBy(final int times, final TemplateDescriptor templateDescriptor) {
-    final Class<? extends AbstractExporterEntity> resultClass =
+    final Class<? extends ExporterEntity> resultClass =
         descriptorToEntity.get(templateDescriptor.getClass());
     try {
-      final List<? extends AbstractExporterEntity> results =
+      final List<? extends ExporterEntity> results =
           findDocumentsFor(templateDescriptor, resultClass);
       if (results.isEmpty()) {
         LOGGER.info("No datasets for {} found.", templateDescriptor.getFullQualifiedName());
@@ -127,9 +127,9 @@ public class DataMultiplicator implements CommandLineRunner {
     }
   }
 
-  private List<? extends AbstractExporterEntity> findDocumentsFor(
+  private List<? extends ExporterEntity> findDocumentsFor(
       final TemplateDescriptor templateDescriptor,
-      final Class<? extends AbstractExporterEntity> resultClass)
+      final Class<? extends ExporterEntity> resultClass)
       throws IOException {
     final SearchResponse searchResponse =
         esClient.search(
@@ -143,7 +143,7 @@ public class DataMultiplicator implements CommandLineRunner {
   private void duplicate(
       final int times,
       final TemplateDescriptor templateDescriptor,
-      final List<? extends AbstractExporterEntity> results)
+      final List<? extends ExporterEntity> results)
       throws PersistenceException {
     final int max = times * results.size();
     int count = 0;

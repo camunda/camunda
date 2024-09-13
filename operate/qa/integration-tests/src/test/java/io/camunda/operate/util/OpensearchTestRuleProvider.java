@@ -34,7 +34,7 @@ import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
 import io.camunda.operate.zeebeimport.ZeebePostImporter;
 import io.camunda.operate.zeebeimport.post.PostImportAction;
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
@@ -81,7 +81,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired protected ZeebePostImporter zeebePostImporter;
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
-  Map<Class<? extends AbstractExporterEntity>, String> entityToAliasMap;
+  Map<Class<? extends ExporterEntity>, String> entityToAliasMap;
   @Autowired private ListViewTemplate listViewTemplate;
   @Autowired private VariableTemplate variableTemplate;
   @Autowired private ProcessIndex processIndex;
@@ -338,7 +338,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   }
 
   @Override
-  public void persistNew(final AbstractExporterEntity... entitiesToPersist) {
+  public void persistNew(final ExporterEntity... entitiesToPersist) {
     try {
       persistOperateEntitiesNew(Arrays.asList(entitiesToPersist));
     } catch (final PersistenceException e) {
@@ -349,11 +349,11 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   }
 
   @Override
-  public void persistOperateEntitiesNew(
-      final List<? extends AbstractExporterEntity> operateEntities) throws PersistenceException {
+  public void persistOperateEntitiesNew(final List<? extends ExporterEntity> operateEntities)
+      throws PersistenceException {
     final var batchRequest = richOpenSearchClient.batch().newBatchRequest();
 
-    for (final AbstractExporterEntity entity : operateEntities) {
+    for (final ExporterEntity entity : operateEntities) {
       final String alias = getEntityToAliasMap().get(entity.getClass());
       if (alias == null) {
         throw new RuntimeException("Index not configured for " + entity.getClass().getName());
@@ -373,7 +373,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   }
 
   @Override
-  public Map<Class<? extends AbstractExporterEntity>, String> getEntityToAliasMap() {
+  public Map<Class<? extends ExporterEntity>, String> getEntityToAliasMap() {
     if (entityToAliasMap == null) {
       entityToAliasMap = new HashMap<>();
       entityToAliasMap.put(ProcessEntity.class, processIndex.getFullQualifiedName());

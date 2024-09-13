@@ -18,7 +18,7 @@ import io.camunda.operate.webapp.rest.BatchOperationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -136,7 +136,7 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
 
   protected void createData() {
 
-    final List<AbstractExporterEntity> entities = new ArrayList<>();
+    final List<ExporterEntity> entities = new ArrayList<>();
 
     final OffsetDateTime now = OffsetDateTime.now();
 
@@ -165,10 +165,10 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
             USER_2,
             user2OperationIds)); // finished
 
-    searchTestRule.persistNew(entities.toArray(new AbstractExporterEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new ExporterEntity[entities.size()]));
   }
 
-  private AbstractExporterEntity createBatchOperation(
+  private ExporterEntity createBatchOperation(
       final OffsetDateTime startDate,
       final OffsetDateTime endDate,
       final String username,
