@@ -227,7 +227,7 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.userTask();
 
     if (filter != null) {
-              if (filter.getState() instanceof Map) {
+              if (filter.getState()!=null) {
                 final Map<String,Object> filterConverted = (Map<String,Object>) filter.getState();
                 final Map.Entry<String, Object> entry = filterConverted.entrySet().iterator().next();
                 final String operatorKey = entry.getKey();

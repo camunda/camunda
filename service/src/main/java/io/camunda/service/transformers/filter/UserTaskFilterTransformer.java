@@ -108,12 +108,22 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
   // Updated to support both $eq and $like operators
   private SearchQuery getStateQuery(final FieldFilter<Object> states) {
     if (states != null && states.getValue() != null) {
-      if(states.getOperator() == FilterOperator.IN) {
-        return QueryFieldFilterTransformers.buildStringQuery("state", (List<String>) states.getValue(), FilterOperator.IN);
+      if (states.getValue() instanceof List) {
+        // If the value is a List (which might happen in case of IN operator)
+        return QueryFieldFilterTransformers.buildStringQuery(
+            "state",
+            (List<String>) states.getValue(),
+            states.getOperator()
+        );
+      } else if (states.getValue() instanceof String) {
+        // If the value is a single String, wrap it in a list
+        return QueryFieldFilterTransformers.buildStringQuery(
+            "state",
+            Collections.singletonList((String) states.getValue()),
+            states.getOperator()
+        );
       } else {
-        final FilterOperator operator = states.getOperator();
-        return QueryFieldFilterTransformers.buildStringQuery("state",
-            Collections.singletonList((String) states.getValue()), operator);
+        throw new IllegalArgumentException("Invalid type for state value: " + states.getValue().getClass());
       }
     }
     return null;
