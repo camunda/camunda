@@ -45,6 +45,8 @@ public class SimpleDocumentStoreRegistry implements DocumentStoreRegistry {
     return new DocumentStoreRecord(id, store);
   }
 
+  // TODO: what if the default store is disabled / not available?
+  // should we return e.g. an Either here?
   @Override
   public DocumentStoreRecord getDefaultDocumentStore() {
     if (stores.containsKey(STORE_ID_GCP)) {
