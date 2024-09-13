@@ -20,7 +20,7 @@ paths:
     post:
       summary: Add a broker to the cluster
       description: Add a broker with the given brokerId to the cluster. The broker must be running
-                   to complete the operation.
+        to complete the operation.
       parameters:
         - $ref: '#/components/parameters/BrokerId'
         - $ref: '#/components/parameters/DryRunParameter'
@@ -40,7 +40,7 @@ paths:
     delete:
       summary: Remove a broker from the cluster.
       description: Remove a broker with the given brokerId from the cluster. The broker must be
-                   running to complete the operation.
+        running to complete the operation.
       parameters:
         - $ref: '#/components/parameters/BrokerId'
         - $ref: '#/components/parameters/DryRunParameter'
@@ -61,10 +61,10 @@ paths:
     post:
       summary: Reconfigure the cluster with the given brokers.
       description: The final cluster consists of only the brokers in the request body. New brokers
-                   in the request will be added to the cluster. Any existing brokers that are not part
-                   of the request will be removed from the cluster. The partitions will be re-distributed
-                   to the given brokers. All brokers must be running to complete the operation unless the
-                   parameter force is set to true.
+        in the request will be added to the cluster. Any existing brokers that are not part
+        of the request will be removed from the cluster. The partitions will be re-distributed
+        to the given brokers. All brokers must be running to complete the operation unless the
+        parameter force is set to true.
       requestBody:
         required: true
         content:
@@ -103,6 +103,34 @@ paths:
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
 
+    patch:
+      summary: Reconfigure cluster
+      description: Reconfigure cluster by adding or removing brokers, adding more partitions, or
+                   changing the replicationFactor. Note that adding partitions is an experimental
+                   feature and not fully supported.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/schemas/ClusterConfigPatchRequest"
+      parameters:
+        - $ref: '#/components/parameters/DryRunParameter'
+        - $ref: '#/components/parameters/ForceParameter'
+      responses:
+        '202':
+          $ref: "#/components/responses/ClusterConfigPatchResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
 components:
   parameters:
     BrokerId:
@@ -131,14 +159,14 @@ components:
         type: boolean
         default: false
     ReplicationFactorParameter:
-        name: replicationFactor
-        description: The new replication factor for the partitions. If not specified, the current replication factor is used.
-        in: query
-        style: form
-        required: false
-        schema:
-            type: integer
-            format: int32
+      name: replicationFactor
+      description: The new replication factor for the partitions. If not specified, the current replication factor is used.
+      in: query
+      style: form
+      required: false
+      schema:
+        type: integer
+        format: int32
 
   responses:
     AddBrokersResponse:
@@ -150,6 +178,13 @@ components:
 
     ScaleBrokersResponse:
       description: Request to reconfigure brokers is accepted.
+      content:
+        application.json:
+          schema:
+            $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+
+    ClusterConfigPatchResponse:
+      description: Request to reconfigure cluster is accepted.
       content:
         application.json:
           schema:
