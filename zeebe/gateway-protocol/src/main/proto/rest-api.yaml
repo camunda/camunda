@@ -540,12 +540,12 @@ paths:
     post:
       tags:
         - User task
-      summary: Query user tasks (experimental)
+      summary: Query user tasks (alpha)
       description: |
         Search for user tasks based on given criteria.
 
         :::note
-        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
         for further details.
         :::
@@ -583,15 +583,11 @@ paths:
     put:
       tags:
         - Clock
-      summary: Pin internal clock (experimental)
+      summary: Pin internal clock
       description: |
         Set a precise, static time for the Zeebe engine’s internal clock.
         When the clock is pinned, it remains at the specified time and does not advance.
         To change the time, the clock must be pinned again with a new timestamp.
-
-        :::note
-        This endpoint is experimental. It may undergo changes or improvements in future releases.
-        :::
       requestBody:
         required: true
         content:
@@ -618,15 +614,11 @@ paths:
     post:
       tags:
         - Clock
-      summary: Reset internal clock (experimental)
+      summary: Reset internal clock
       description: |
         Resets the Zeebe engine’s internal clock to the current system time, enabling it to tick in real-time.
         This operation is useful for returning the clock to
         normal behavior after it has been pinned to a specific time.
-
-        :::note
-        This endpoint is experimental and may undergo changes or improvements in future releases.
-        :::
       responses:
         "204":
           description: The clock was successfully reset to the system time.
@@ -674,12 +666,12 @@ paths:
     post:
       tags:
         - Process instance
-      summary: Query process instances (experimental)
+      summary: Query process instances (alpha)
       description: |
         Search for process instances based on given criteria.
 
         :::note
-        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
         for further details.
         :::
@@ -853,12 +845,12 @@ paths:
     post:
       tags:
         - Decision definition
-      summary: Query decision definitions (experimental)
+      summary: Query decision definitions (alpha)
       description: |
         Search for decision definitions based on given criteria.
 
         :::note
-        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
         for further details.
         :::
@@ -895,12 +887,12 @@ paths:
     get:
       tags:
         - Decision definition
-      summary: Get decision definition XML (experimental)
+      summary: Get decision definition XML (alpha)
       description: |
         Returns decision definition as XML.
 
         :::note
-        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
         for further details.
         :::
@@ -947,12 +939,12 @@ paths:
     post:
       tags:
         - Decision requirements
-      summary: Query decision requirements (experimental)
+      summary: Query decision requirements (alpha)
       description: |
         Search for decision requirements based on given criteria.
 
         :::note
-        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
         for further details.
         :::
@@ -1178,13 +1170,13 @@ paths:
     post:
       tags:
         - Documents
-      summary: Upload document (experimental)
+      summary: Upload document (alpha)
       description: |
         Upload a document to the Camunda 8 cluster.
 
         :::note
-        This endpoint is experimental. It currently only supports an in-memory document store, which
-        is not meant for production use.
+        This endpoint is an alpha feature. It currently only supports an in-memory document store,
+        which is not meant for production use.
         :::
       parameters:
         - name: storeId
@@ -1236,13 +1228,13 @@ paths:
     get:
       tags:
         - Documents
-      summary: Download document (experimental)
+      summary: Download document (alpha)
       description: |
         Download a document from the Camunda 8 cluster.
 
         :::note
-        This endpoint is experimental. It currently only supports an in-memory document store, which
-        is not meant for production use.
+        This endpoint is an alpha feature. It currently only supports an in-memory document store,
+        which is not meant for production use.
         :::
       parameters:
         - name: documentId
@@ -1282,13 +1274,13 @@ paths:
     delete:
       tags:
         - Documents
-      summary: Delete document (experimental)
+      summary: Delete document (alpha)
       description: |
         Delete a document from the Camunda 8 cluster.
 
         :::note
-        This endpoint is experimental. It currently only supports an in-memory document store, which
-        is not meant for production use.
+        This endpoint is an alpha feature. It currently only supports an in-memory document store,
+        which is not meant for production use.
         :::
       parameters:
         - name: documentId
@@ -1324,13 +1316,13 @@ paths:
     post:
       tags:
         - Documents
-      summary: Create document link (experimental)
+      summary: Create document link (alpha)
       description: |
         Create a link to a document in the Camunda 8 cluster.
 
         :::note
-        This endpoint is experimental. It currently only supports an in-memory document store, which
-        is not meant for production use.
+        This endpoint is an alpha feature. It currently only supports an in-memory document store,
+        which is not meant for production use.
         :::
       parameters:
         - name: documentId
@@ -1370,7 +1362,15 @@ paths:
     post:
       tags:
         - User
-      summary: "Get list of users"
+      summary: "Query users (alpha)"
+      description: |
+        Search for users based on given criteria.
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
       operationId: "findAllUsers"
       requestBody:
         content:
@@ -1420,7 +1420,15 @@ paths:
     post:
       tags:
         - Incident
-      summary: Query incident (experimental)
+      summary: Query incidents (alpha)
+      description: |
+        Search for incidents based on given criteria.
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
       requestBody:
         required: false
         content:
