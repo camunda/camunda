@@ -3,13 +3,11 @@
     "dynamic": "strict",
     "properties": {
       "hello": {
-        "type": "text"
+        "type": "text",
+        "null_value": "NULL"
       },
       "world": {
         "type": "keyword"
-      },
-      "foo": {
-        "type": "text"
       }
     }
   }

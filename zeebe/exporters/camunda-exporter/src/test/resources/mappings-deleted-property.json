@@ -2,14 +2,8 @@
   "mappings": {
     "dynamic": "strict",
     "properties": {
-      "hello": {
-        "type": "text"
-      },
       "world": {
         "type": "keyword"
-      },
-      "foo": {
-        "type": "text"
       }
     }
   }

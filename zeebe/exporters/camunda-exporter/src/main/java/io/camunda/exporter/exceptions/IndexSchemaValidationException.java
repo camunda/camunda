@@ -5,16 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.schema.descriptors;
+package io.camunda.exporter.exceptions;
 
-public interface IndexDescriptor {
-  String getFullQualifiedName();
-
-  String getAlias();
-
-  String getIndexName();
-
-  String getMappingsClasspathFilename();
-
-  String getAllVersionsIndexNameRegexPattern();
+public class IndexSchemaValidationException extends RuntimeException {
+  public IndexSchemaValidationException(final String message) {
+    super(message);
+  }
 }
