@@ -17,7 +17,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,14 +54,13 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   @Autowired private RestHighLevelClient esClient;
 
   @Override
-  public BatchRequest add(final String index, final AbstractExporterEntity entity)
+  public BatchRequest add(final String index, final ExporterEntity entity)
       throws PersistenceException {
     return addWithId(index, entity.getId(), entity);
   }
 
   @Override
-  public BatchRequest addWithId(
-      final String index, final String id, final AbstractExporterEntity entity)
+  public BatchRequest addWithId(final String index, final String id, final ExporterEntity entity)
       throws PersistenceException {
     LOGGER.debug("Add index request for index {} id {} and entity {} ", index, id, entity);
     try {
@@ -81,7 +80,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest addWithRouting(
-      final String index, final AbstractExporterEntity entity, final String routing)
+      final String index, final ExporterEntity entity, final String routing)
       throws PersistenceException {
     LOGGER.debug(
         "Add index request with routing {} for index {} and entity {} ", routing, index, entity);
@@ -105,7 +104,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public BatchRequest upsert(
       final String index,
       final String id,
-      final AbstractExporterEntity entity,
+      final ExporterEntity entity,
       final Map<String, Object> updateFields)
       throws PersistenceException {
     LOGGER.debug(
@@ -137,7 +136,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public BatchRequest upsertWithRouting(
       final String index,
       final String id,
-      final AbstractExporterEntity entity,
+      final ExporterEntity entity,
       final Map<String, Object> updateFields,
       final String routing)
       throws PersistenceException {
@@ -173,7 +172,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public BatchRequest upsertWithScript(
       final String index,
       final String id,
-      final AbstractExporterEntity entity,
+      final ExporterEntity entity,
       final String script,
       final Map<String, Object> parameters)
       throws PersistenceException {
@@ -206,7 +205,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public BatchRequest upsertWithScriptAndRouting(
       final String index,
       final String id,
-      final AbstractExporterEntity entity,
+      final ExporterEntity entity,
       final String script,
       final Map<String, Object> parameters,
       final String routing)
@@ -263,8 +262,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest update(
-      final String index, final String id, final AbstractExporterEntity entity)
+  public BatchRequest update(final String index, final String id, final ExporterEntity entity)
       throws PersistenceException {
     try {
       return update(

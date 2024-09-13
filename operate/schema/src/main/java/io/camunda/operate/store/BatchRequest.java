@@ -8,43 +8,39 @@
 package io.camunda.operate.store;
 
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.util.Map;
 
 public interface BatchRequest {
 
-  BatchRequest add(String index, AbstractExporterEntity entity) throws PersistenceException;
+  BatchRequest add(String index, ExporterEntity entity) throws PersistenceException;
 
-  BatchRequest addWithId(String index, String id, AbstractExporterEntity entity)
+  BatchRequest addWithId(String index, String id, ExporterEntity entity)
       throws PersistenceException;
 
-  BatchRequest addWithRouting(String index, AbstractExporterEntity entity, String routing)
+  BatchRequest addWithRouting(String index, ExporterEntity entity, String routing)
       throws PersistenceException;
 
   BatchRequest upsert(
-      String index, String id, AbstractExporterEntity entity, Map<String, Object> updateFields)
+      String index, String id, ExporterEntity entity, Map<String, Object> updateFields)
       throws PersistenceException;
 
   BatchRequest upsertWithRouting(
       String index,
       String id,
-      AbstractExporterEntity entity,
+      ExporterEntity entity,
       Map<String, Object> updateFields,
       String routing)
       throws PersistenceException;
 
   BatchRequest upsertWithScript(
-      String index,
-      String id,
-      AbstractExporterEntity entity,
-      String script,
-      Map<String, Object> parameters)
+      String index, String id, ExporterEntity entity, String script, Map<String, Object> parameters)
       throws PersistenceException;
 
   BatchRequest upsertWithScriptAndRouting(
       String index,
       String id,
-      AbstractExporterEntity entity,
+      ExporterEntity entity,
       String script,
       Map<String, Object> parameters,
       String routing)
@@ -53,8 +49,7 @@ public interface BatchRequest {
   BatchRequest update(String index, String id, Map<String, Object> updateFields)
       throws PersistenceException;
 
-  BatchRequest update(String index, String id, AbstractExporterEntity entity)
-      throws PersistenceException;
+  BatchRequest update(String index, String id, ExporterEntity entity) throws PersistenceException;
 
   BatchRequest updateWithScript(
       String index, String id, String script, Map<String, Object> parameters)

@@ -15,7 +15,7 @@ import io.camunda.operate.store.elasticsearch.dao.response.AggregationResponse;
 import io.camunda.operate.store.elasticsearch.dao.response.InsertResponse;
 import io.camunda.operate.store.elasticsearch.dao.response.SearchResponse;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.util.List;
@@ -35,7 +35,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GenericDAO<T extends AbstractExporterEntity, I extends IndexDescriptor> {
+public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(GenericDAO.class);
   private RestHighLevelClient esClient;
@@ -176,7 +176,7 @@ public class GenericDAO<T extends AbstractExporterEntity, I extends IndexDescrip
    * @param <T> TasklistEntity - Elastic Search doc
    * @param <I> IndexDescriptor - which index to persist the doc
    */
-  public static class Builder<T extends AbstractExporterEntity, I extends IndexDescriptor> {
+  public static class Builder<T extends ExporterEntity, I extends IndexDescriptor> {
     private ObjectMapper objectMapper;
     private RestHighLevelClient esClient;
     private I index;
