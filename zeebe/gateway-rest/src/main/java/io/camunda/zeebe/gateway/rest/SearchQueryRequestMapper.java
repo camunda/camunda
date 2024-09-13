@@ -202,6 +202,15 @@ public final class SearchQueryRequestMapper {
     return null;
   }
 
+  private static VariableValueFilter toUserTaskVariableFilter(
+      final ProcessInstanceVariableFilterRequest filter) {
+    if (filter != null && filter.getName() != null) {
+      final var builder = FilterBuilders.variableValue();
+      return builder.name(filter.getName()).eq(filter.getValues()).build();
+    }
+    return null;
+  }
+
   private static DecisionDefinitionFilter toDecisionDefinitionFilter(
       final DecisionDefinitionFilterRequest filter) {
     final var builder = FilterBuilders.decisionDefinition();
@@ -316,6 +325,11 @@ public final class SearchQueryRequestMapper {
       // tenantIds
       if (filter.getTenantIds() != null) {
         builder.tenantIds(filter.getTenantIds());
+      }
+
+      // variables
+      if (filter.getVariables() != null && !filter.getVariables().isEmpty()) {
+        builder.variable(toVariableValueFilters(filter.getVariables()));
       }
     }
 
@@ -480,10 +494,19 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<VariableValueFilter> toVariableValueFilters(
-      final List<VariableValueFilterRequest> filters) {
+      final List<UserTaskVariableFilterRequest> filters) {
+
     if (filters != null && !filters.isEmpty()) {
-      return filters.stream().map(SearchQueryRequestMapper::toVariableValueFilter).toList();
+      return filters.stream()
+          .map(
+              filter ->
+                  new VariableValueFilter.Builder()
+                      .name(filter.getName())
+                      .eq(filter.getValue())
+                      .build())
+          .toList();
     }
+
     return null;
   }
 

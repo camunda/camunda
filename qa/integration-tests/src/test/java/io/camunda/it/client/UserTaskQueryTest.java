@@ -11,9 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -40,13 +42,43 @@ class UserTaskQueryTest {
     deployProcess("process", "simple.bpmn", "test", "", "");
     deployProcess("process-2", "simple-2.bpmn", "test-2", "group", "user");
     deployProcess("process-3", "simple-3.bpmn", "test-3", "", "", "30");
+    deployResource("/processes/bpm_variable_test.bpmn", "bpm_variable_test.bpmn");
 
     startProcessInstance("process");
     startProcessInstance("process-2");
     startProcessInstance("process");
     startProcessInstance("process-3");
+    startProcessInstance("bpmProcessVariable");
 
     waitForTasksBeingExported();
+  }
+
+  @Test
+  public void shouldRetrieveTaskByTaskVariable() {
+    final UserTaskVariableFilterRequest variableValueFilter =
+        new UserTaskVariableFilterRequest().name("task02").value("1");
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.variables(List.of(variableValueFilter)))
+            .send()
+            .join();
+    assertThat(result.items().size()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldRetrieveTaskByProcessVariable() {
+    final UserTaskVariableFilterRequest variableValueFilter =
+        new UserTaskVariableFilterRequest().name("process01").value("\"pVar\"");
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.variables(List.of(variableValueFilter)))
+            .send()
+            .join();
+    assertThat(result.items().size()).isEqualTo(1);
   }
 
   @Test
@@ -62,7 +94,7 @@ class UserTaskQueryTest {
   public void shouldRetrieveTaskByState() {
     final var resultCreated =
         camundaClient.newUserTaskQuery().filter(f -> f.state("CREATED")).send().join();
-    assertThat(resultCreated.items().size()).isEqualTo(3);
+    assertThat(resultCreated.items().size()).isEqualTo(5);
     resultCreated.items().forEach(item -> assertThat(item.getState()).isEqualTo("CREATED"));
 
     final var resultCompleted =
@@ -120,7 +152,7 @@ class UserTaskQueryTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(3);
+    assertThat(resultAfter.items().size()).isEqualTo(5);
     final var keyAfter = resultAfter.items().getFirst().getKey();
     // apply searchBefore
     final var resultBefore =
@@ -138,7 +170,7 @@ class UserTaskQueryTest {
     final var result =
         camundaClient.newUserTaskQuery().sort(s -> s.creationDate().asc()).send().join();
 
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items().size()).isEqualTo(6);
 
     // Assert that the creation date of item 0 is before item 1, and item 1 is before item 2
     assertThat(result.items().get(0).getCreationDate())
@@ -152,19 +184,21 @@ class UserTaskQueryTest {
     final var result =
         camundaClient.newUserTaskQuery().sort(s -> s.creationDate().desc()).send().join();
 
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items().size()).isEqualTo(6);
 
     assertThat(result.items().get(0).getCreationDate())
-        .isGreaterThan(result.items().get(1).getCreationDate());
+        .isGreaterThanOrEqualTo(result.items().get(1).getCreationDate());
     assertThat(result.items().get(1).getCreationDate())
-        .isGreaterThan(result.items().get(2).getCreationDate());
+        .isGreaterThanOrEqualTo(result.items().get(2).getCreationDate());
+    assertThat(result.items().get(2).getCreationDate())
+        .isGreaterThanOrEqualTo(result.items().get(3).getCreationDate());
   }
 
   @Test
   public void shouldRetrieveTaskByTenantId() {
     final var resultDefaultTenant =
         camundaClient.newUserTaskQuery().filter(f -> f.tentantId("<default>")).send().join();
-    assertThat(resultDefaultTenant.items().size()).isEqualTo(4);
+    assertThat(resultDefaultTenant.items().size()).isEqualTo(6);
     resultDefaultTenant
         .items()
         .forEach(item -> assertThat(item.getTenantIds()).isEqualTo("<default>"));
@@ -251,6 +285,16 @@ class UserTaskQueryTest {
         .join();
   }
 
+  private static void deployResource(final String resource, final String resourceName) {
+    final InputStream process = UserTaskQueryTest.class.getResourceAsStream(resource);
+
+    camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(Bpmn.readModelFromStream(process), resourceName)
+        .send()
+        .join();
+  }
+
   private static void startProcessInstance(final String processId) {
     camundaClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
   }
@@ -262,7 +306,7 @@ class UserTaskQueryTest {
         .untilAsserted(
             () -> {
               final var result = camundaClient.newUserTaskQuery().send().join();
-              assertThat(result.items().size()).isEqualTo(4);
+              assertThat(result.items().size()).isEqualTo(6);
               userTaskKeyTaskAssigned = result.items().getFirst().getKey();
             });
 
