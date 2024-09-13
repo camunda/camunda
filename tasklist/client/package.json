@@ -65,7 +65,7 @@
   ],
   "devDependencies": {
     "@axe-core/playwright": "4.10.0",
-    "@playwright/test": "1.47.0",
+    "@playwright/test": "1.47.1",
     "@tanstack/react-query-devtools": "5.56.2",
     "@testing-library/dom": "10.4.0",
     "@testing-library/jest-dom": "6.5.0",
