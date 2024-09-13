@@ -11,7 +11,7 @@ import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
 import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.service.entities.DecisionInstanceEntity.DecisionType;
+import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceType;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +28,7 @@ public record DecisionInstanceFilter(
     List<String> dmnDecisionIds,
     List<String> dmnDecisionNames,
     List<Integer> decisionVersions,
-    List<DecisionType> decisionTypes,
+    List<DecisionInstanceType> decisionTypes,
     List<String> tenantIds)
     implements FilterBase {
 
@@ -43,7 +43,7 @@ public record DecisionInstanceFilter(
     private List<String> dmnDecisionIds;
     private List<String> dmnDecisionNames;
     private List<Integer> decisionVersions;
-    private List<DecisionType> decisionTypes;
+    private List<DecisionInstanceType> decisionTypes;
     private List<String> tenantIds;
 
     public Builder keys(final List<Long> values) {
@@ -132,12 +132,12 @@ public record DecisionInstanceFilter(
       return decisionVersions(collectValuesAsList(values));
     }
 
-    public Builder decisionTypes(final List<DecisionType> values) {
+    public Builder decisionTypes(final List<DecisionInstanceType> values) {
       decisionTypes = addValuesToList(decisionTypes, values);
       return this;
     }
 
-    public Builder decisionTypes(final DecisionType... values) {
+    public Builder decisionTypes(final DecisionInstanceType... values) {
       return decisionTypes(collectValuesAsList(values));
     }
 

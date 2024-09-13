@@ -65,6 +65,17 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
+  public static DecisionInstanceSearchQueryResponse toDecisionInstanceSearchQueryResponse(
+      final SearchQueryResult<DecisionInstanceEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new DecisionInstanceSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toDecisionInstances)
+                .orElseGet(Collections::emptyList));
+  }
+
   public static UserTaskSearchQueryResponse toUserTaskSearchQueryResponse(
       final SearchQueryResult<UserTaskEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -290,5 +301,32 @@ public final class SearchQueryResponseMapper {
             .username(user.username())
             .email(user.email())
             .name(user.name()));
+  }
+
+  private static List<DecisionInstanceItem> toDecisionInstances(
+      final List<DecisionInstanceEntity> instances) {
+    return instances.stream().map(SearchQueryResponseMapper::toDecisionInstance).toList();
+  }
+
+  private static DecisionInstanceItem toDecisionInstance(final DecisionInstanceEntity entity) {
+    return new DecisionInstanceItem()
+        .key(entity.key())
+        .state(
+            (entity.state() == null)
+                ? null
+                : DecisionInstanceStateEnum.fromValue(entity.state().name()))
+        .evaluationDate(entity.evaluationDate())
+        .evaluationFailure(entity.evaluationFailure())
+        .processDefinitionKey(entity.processDefinitionKey())
+        .processInstanceKey(entity.processInstanceKey())
+        .decisionKey(Long.valueOf(entity.decisionId()))
+        .dmnDecisionId(entity.decisionDefinitionId())
+        .dmnDecisionName(entity.decisionName())
+        .decisionVersion(entity.decisionVersion())
+        .decisionType(
+            (entity.decisionType() == null)
+                ? null
+                : DecisionInstanceTypeEnum.fromValue(entity.decisionType().name()))
+        .result(entity.result());
   }
 }

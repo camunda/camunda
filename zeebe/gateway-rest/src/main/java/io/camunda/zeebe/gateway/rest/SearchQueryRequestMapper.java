@@ -13,9 +13,12 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOW
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_ORDER;
 import static java.util.Optional.ofNullable;
 
+import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
+import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceType;
 import io.camunda.service.search.filter.*;
 import io.camunda.service.search.page.SearchQueryPage;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
+import io.camunda.service.search.query.DecisionInstanceQuery;
 import io.camunda.service.search.query.DecisionRequirementsQuery;
 import io.camunda.service.search.query.FlowNodeInstanceQuery;
 import io.camunda.service.search.query.IncidentQuery;
@@ -25,6 +28,7 @@ import io.camunda.service.search.query.TypedSearchQueryBuilder;
 import io.camunda.service.search.query.UserQuery;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.sort.DecisionDefinitionSort;
+import io.camunda.service.search.sort.DecisionInstanceSort;
 import io.camunda.service.search.sort.DecisionRequirementsSort;
 import io.camunda.service.search.sort.FlowNodeInstanceSort;
 import io.camunda.service.search.sort.IncidentSort;
@@ -37,6 +41,7 @@ import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
+import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -109,6 +114,77 @@ public final class SearchQueryRequestMapper {
             SearchQueryRequestMapper::applyFlownodeInstanceSortField);
     final var filter = toFlownodeInstanceFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::flownodeInstanceSearchQuery);
+  }
+
+  public static Either<ProblemDetail, DecisionInstanceQuery> toDecisionInstanceQuery(
+      final DecisionInstanceSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.decisionInstanceSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            request.getSort(),
+            SortOptionBuilders::decisionInstance,
+            SearchQueryRequestMapper::applyDecisionInstanceSortField);
+    final var filter = toDecisionInstanceFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::decisionInstanceSearchQuery);
+  }
+
+  private static DecisionInstanceFilter toDecisionInstanceFilter(
+      final DecisionInstanceFilterRequest filter) {
+    final var builder = FilterBuilders.decisionInstance();
+
+    if (filter != null) {
+      ofNullable(filter.getKey()).ifPresent(builder::keys);
+      ofNullable(filter.getState())
+          .map(s -> convertEnum(s, DecisionInstanceState.class))
+          .ifPresent(builder::states);
+      ofNullable(filter.getEvaluationDateBefore())
+          .map(SearchQueryRequestMapper::toDateValueFilter)
+          .ifPresent(builder::evaluationDate);
+      builder.evaluationDate(
+          toDateValueFilter(filter.getEvaluationDateAfter(), filter.getEvaluationDateBefore()));
+      ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
+      ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
+      ofNullable(filter.getDecisionKeys()).ifPresent(builder::decisionKeys);
+      ofNullable(filter.getDmnDecisionId()).ifPresent(builder::dmnDecisionIds);
+      ofNullable(filter.getDmnDecisionName()).ifPresent(builder::dmnDecisionNames);
+      ofNullable(filter.getDecisionVersion()).ifPresent(builder::decisionVersions);
+      ofNullable(filter.getDecisionType())
+          .map(t -> convertEnum(t, DecisionInstanceType.class))
+          .ifPresent(builder::decisionTypes);
+      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+    }
+    return builder.build();
+  }
+
+  private static List<String> applyDecisionInstanceSortField(
+      final String field, final DecisionInstanceSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "key" -> builder.key();
+        case "state" -> builder.state();
+        case "evaluationDate" -> builder.evaluationDate();
+        case "processDefinitionKey" -> builder.processDefinitionKey();
+        case "decisionKey" -> builder.decisionKey();
+        case "dmnDecisionId" -> builder.dmnDecisionId();
+        case "dmnDecisionName" -> builder.dmnDecisionName();
+        case "decisionVersion" -> builder.decisionVersion();
+        case "decisionType" -> builder.decisionType();
+        case "tenantId" -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static <Q extends Enum<Q>, E extends Enum<E>> E convertEnum(
+      @NotNull final Q sourceEnum, @NotNull final Class<E> targetEnumType) {
+    return Enum.valueOf(targetEnumType, sourceEnum.name());
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
@@ -596,5 +672,18 @@ public final class SearchQueryRequestMapper {
     }
     final var date = OffsetDateTime.parse(text);
     return new DateValueFilter.Builder().before(date).after(date).build();
+  }
+
+  private static DateValueFilter toDateValueFilter(final String after, final String before) {
+    final Optional<OffsetDateTime> beforeDateTime = ofNullable(before).map(OffsetDateTime::parse);
+    final Optional<OffsetDateTime> afterDateTime =
+        Optional.ofNullable(after).map(OffsetDateTime::parse);
+    if (beforeDateTime.isEmpty() && afterDateTime.isEmpty()) {
+      return null;
+    }
+    return new DateValueFilter.Builder()
+        .before(beforeDateTime.orElse(null))
+        .after(afterDateTime.orElse(null))
+        .build();
   }
 }

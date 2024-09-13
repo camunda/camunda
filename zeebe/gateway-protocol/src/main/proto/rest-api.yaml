@@ -1009,6 +1009,50 @@ paths:
             The decision requirements search query failed.
             More details are provided in the response body.
 
+  /decision-instances/search:
+    post:
+      tags:
+        - Decision instance
+      summary: Query decision instances (experimental)
+      description: |
+        Search for decision instances based on given criteria.
+
+        :::note
+        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionInstanceSearchQueryRequest"
+      responses:
+        "200":
+          description: >
+            The Decision Instance Search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionInstanceSearchQueryResponse"
+        "400":
+          description: >
+            The Decision Instance Search Query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
+
   /authorizations/{ownerKey}:
     patch:
       tags:
@@ -2883,6 +2927,139 @@ components:
         tenantId:
           type: string
           description: The tenant id of the decision requirements.
+
+    DecisionInstanceSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/DecisionInstanceFilterRequest"
+    DecisionInstanceFilterRequest:
+      type: object
+      properties:
+        key:
+          type: integer
+          format: int64
+          description: The key of the decision instance.
+        state:
+          $ref: '#/components/schemas/DecisionInstanceStateEnum'
+          description: The state of the decision instance.
+        evaluationDateBefore:
+          type: string
+          format: date-time
+          description: The evaluation date of the decision instance must be before this date.
+        evaluationDateAfter:
+          type: string
+          format: date-time
+          description: The evaluation date of the decision instance must be after this date.
+        evaluationFailure:
+          type: string
+          description: The evaluation failure of the decision instance.
+        processDefinitionKey:
+          type: integer
+          format: int64
+          description: The key of the process definition.
+        processInstanceKey:
+          type: integer
+          format: int64
+          description: The key of the process instance.
+        decisionKeys:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: The keys of the decisions.
+        dmnDecisionId:
+          type: string
+          description: The ID of the DMN decision.
+        dmnDecisionName:
+          type: string
+          description: The name of the DMN decision.
+        decisionVersion:
+          type: integer
+          format: int32
+          description: The version of the decision.
+        decisionType:
+          $ref: '#/components/schemas/DecisionInstanceTypeEnum'
+          description: The type of the decision.
+        tenantId:
+          type: string
+          description: The tenant ID of the decision instance.
+    DecisionInstanceSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionInstanceItem"
+
+    DecisionInstanceItem:
+      type: object
+      properties:
+        key:
+          type: integer
+          format: int64
+          description: The key of the decision instance.
+        state:
+          $ref: '#/components/schemas/DecisionInstanceStateEnum'
+          description: The state of the decision instance.
+        evaluationDate:
+          type: string
+          format: date-time
+          description: The evaluation date of the decision instance.
+        evaluationFailure:
+          type: string
+          description: The evaluation failure of the decision instance.
+        processDefinitionKey:
+          type: integer
+          format: int64
+          description: The key of the process definition.
+        processInstanceKey:
+          type: integer
+          format: int64
+          description: The key of the process instance.
+        decisionKey:
+          type: integer
+          format: int64
+          description: The key of the decision.
+        dmnDecisionId:
+          type: string
+          description: The ID of the DMN decision.
+        dmnDecisionName:
+          type: string
+          description: The name of the DMN decision.
+        decisionVersion:
+          type: integer
+          format: int32
+          description: The version of the decision.
+        decisionType:
+          $ref: '#/components/schemas/DecisionInstanceTypeEnum'
+          description: The type of the decision.
+        result:
+          type: string
+          description: The result of the decision instance.
+        tenantId:
+          type: string
+          description: The tenant ID of the decision instance.
+
+    DecisionInstanceTypeEnum:
+      enum:
+        - DECISION
+        - DECISION_TABLE
+        - LITERAL_EXPRESSION
+        - RELATION
+        - UNSPECIFIED
+        - UNKNOWN
+    DecisionInstanceStateEnum:
+      enum:
+        - EVALUATED
+        - FAILED
+        - UNKNOWN
+        - UNSPECIFIED
 
     MessageCorrelationRequest:
       type: object
