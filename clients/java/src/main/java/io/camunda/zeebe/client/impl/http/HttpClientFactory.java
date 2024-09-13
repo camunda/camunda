@@ -59,6 +59,7 @@ import org.apache.hc.core5.http.config.CharCodingConfig;
 import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.net.URIBuilder;
+import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
@@ -134,9 +135,18 @@ public class HttpClientFactory {
     final PoolingAsyncClientConnectionManager connectionManager =
         PoolingAsyncClientConnectionManagerBuilder.create().setTlsStrategy(tlsStrategy).build();
 
+    final IOReactorConfig ioReactorConfig =
+        IOReactorConfig.custom()
+            .setSoTimeout(Timeout.ofSeconds(30)) // Overall socket timeout
+            .setSndBufSize(64 * 1024) // Larger send buffer size
+            .setRcvBufSize(64 * 1024) // Larger receive buffer size
+            .setTcpNoDelay(true) // Disable Nagle's algorithm for lower latency
+            .build();
+
     final HttpAsyncClientBuilder builder =
         HttpAsyncClients.custom()
             .setConnectionManager(connectionManager)
+            .setIOReactorConfig(ioReactorConfig)
             .setDefaultHeaders(Collections.singletonList(acceptHeader))
             .setUserAgent("zeebe-client-java/" + VersionUtil.getVersion())
             .evictExpiredConnections()
