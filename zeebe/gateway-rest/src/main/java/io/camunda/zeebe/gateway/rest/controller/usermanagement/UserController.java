@@ -38,7 +38,7 @@ public class UserController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> createUser(
       @RequestBody final UserRequest userRequest) {
-    return RequestMapper.toCreateUserRequest(userRequest)
+    return RequestMapper.toCreateUserRequest(userRequest, passwordEncoder)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
   }
 
