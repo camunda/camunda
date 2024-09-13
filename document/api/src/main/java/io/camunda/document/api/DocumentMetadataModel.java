@@ -14,5 +14,5 @@ public record DocumentMetadataModel(
     String contentType,
     String fileName,
     ZonedDateTime expiresAt,
-    long size,
+    Long size,
     Map<String, Object> additionalProperties) {}
