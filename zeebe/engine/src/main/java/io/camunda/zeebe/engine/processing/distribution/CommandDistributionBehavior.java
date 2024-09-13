@@ -174,15 +174,10 @@ public final class CommandDistributionBehavior {
         commandDistributionEnqueued.setQueueId(queue).setPartitionId(partition));
   }
 
-  void advanceQueue(final String queueId, final int partition) {
-    distributeNextInQueue(queueId, partition);
-    continueAfterQueue(queueId);
-  }
-
   /**
    * If the given distribution was part of a queue, the next distribution from the queue is started.
    */
-  private void distributeNextInQueue(final String queue, final int partition) {
+  void distributeNextInQueue(final String queue, final int partition) {
     distributionState
         .getNextQueuedDistributionKey(queue, partition)
         .ifPresent(
@@ -193,7 +188,7 @@ public final class CommandDistributionBehavior {
                     nextDistributionKey));
   }
 
-  private void continueAfterQueue(final String queue) {
+  void continueAfterQueue(final String queue) {
     if (distributionState.hasQueuedDistributions(queue)) {
       return;
     }
