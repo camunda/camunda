@@ -9,7 +9,6 @@ package io.camunda.tasklist.zeebeimport.v860.processors.es;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.TaskEntity;
@@ -69,12 +68,8 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
       bulkRequest.add(persistUserTaskToListView(taskEntity.get(), record));
       // Variables
       if (!record.getValue().getVariables().isEmpty()) {
-        final List<TaskVariableEntity> variables;
-        try {
-          variables = userTaskRecordToVariableEntityMapper.mapVariables(record);
-        } catch (final JsonProcessingException e) {
-          throw new RuntimeException(e);
-        }
+        final List<TaskVariableEntity> variables =
+            userTaskRecordToVariableEntityMapper.mapVariables(record);
         for (final TaskVariableEntity variable : variables) {
           bulkRequest.add(getVariableQuery(variable));
         }

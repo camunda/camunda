@@ -32,8 +32,7 @@ public class UserTaskRecordToVariableEntityMapper {
 
   @Autowired private ObjectMapper objectMapper;
 
-  public List<TaskVariableEntity> mapVariables(final Record<UserTaskRecordValue> record)
-      throws JsonProcessingException {
+  public List<TaskVariableEntity> mapVariables(final Record<UserTaskRecordValue> record) {
     final List<TaskVariableEntity> variables = new ArrayList<>();
 
     if (record.getIntent().equals(Intent.COMPLETED)) {
@@ -41,7 +40,13 @@ public class UserTaskRecordToVariableEntityMapper {
 
       final Map<String, Object> variablesMap = recordValue.getVariables();
       for (final Map.Entry<String, Object> varMap : variablesMap.entrySet()) {
-        final String varValue = objectMapper.writeValueAsString(varMap.getValue());
+        final String varValue;
+        try {
+          varValue = objectMapper.writeValueAsString(varMap.getValue());
+        } catch (final JsonProcessingException e) {
+          LOGGER.error("Failed to parse variable %s".formatted(varMap), e);
+          throw new RuntimeException(e);
+        }
         final TaskVariableEntity variableEntity = new TaskVariableEntity();
         variableEntity.setId(
             TaskVariableEntity.getIdBy(
