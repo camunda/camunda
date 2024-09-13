@@ -20,8 +20,7 @@ import java.util.Objects;
 public record DecisionInstanceFilter(
     List<Long> keys,
     List<DecisionInstanceState> states,
-    DateValueFilter evaluationDateBefore,
-    DateValueFilter evaluationDateAfter,
+    DateValueFilter evaluationDate,
     List<String> evaluationFailures,
     List<Long> processDefinitionKeys,
     List<Long> processInstanceKeys,
@@ -36,8 +35,7 @@ public record DecisionInstanceFilter(
   public static final class Builder implements ObjectBuilder<DecisionInstanceFilter> {
     private List<Long> keys;
     private List<DecisionInstanceState> states;
-    private DateValueFilter evaluationDateBefore;
-    private DateValueFilter evaluationDateAfter;
+    private DateValueFilter evaluationDate;
     private List<String> evaluationFailures;
     private List<Long> processDefinitionKeys;
     private List<Long> processInstanceKeys;
@@ -46,8 +44,6 @@ public record DecisionInstanceFilter(
     private List<String> dmnDecisionNames;
     private List<Integer> decisionVersions;
     private List<DecisionType> decisionTypes;
-    private Boolean evaluated;
-    private Boolean failed;
     private List<String> tenantIds;
 
     public Builder keys(final List<Long> values) {
@@ -68,13 +64,8 @@ public record DecisionInstanceFilter(
       return states(collectValuesAsList(values));
     }
 
-    public Builder evaluationDateBefore(final DateValueFilter evaluationDateBefore) {
-      this.evaluationDateBefore = evaluationDateBefore;
-      return this;
-    }
-
-    public Builder evaluationDateAfter(final DateValueFilter evaluationDateAfter) {
-      this.evaluationDateAfter = evaluationDateAfter;
+    public Builder evaluationDate(final DateValueFilter evaluationDate) {
+      this.evaluationDate = evaluationDate;
       return this;
     }
 
@@ -164,8 +155,7 @@ public record DecisionInstanceFilter(
       return new DecisionInstanceFilter(
           Objects.requireNonNullElse(keys, Collections.emptyList()),
           Objects.requireNonNullElse(states, Collections.emptyList()),
-          evaluationDateBefore,
-          evaluationDateAfter,
+          evaluationDate,
           Objects.requireNonNullElse(evaluationFailures, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
