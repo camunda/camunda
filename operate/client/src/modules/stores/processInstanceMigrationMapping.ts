@@ -18,7 +18,7 @@ const DEFAULT_STATE: State = {
   isMappedFilterEnabled: false,
 };
 
-class AutoMapping {
+class ProcessInstanceMigrationMapping {
   state: State = {...DEFAULT_STATE};
 
   constructor() {
@@ -70,4 +70,5 @@ class AutoMapping {
   };
 }
 
-export const autoMappingStore = new AutoMapping();
+export const processInstanceMigrationMappingStore =
+  new ProcessInstanceMigrationMapping();
