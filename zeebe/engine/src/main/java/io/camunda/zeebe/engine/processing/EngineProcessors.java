@@ -27,7 +27,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionAcknow
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationEventProcessors;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
@@ -40,7 +40,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorCo
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
-import io.camunda.zeebe.engine.processing.user.UserEventProcessors;
+import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskEventProcessors;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -202,13 +202,13 @@ public final class EngineProcessors {
     UserTaskEventProcessors.addUserTaskProcessors(
         typedRecordProcessors, processingState, bpmnBehaviors, writers);
 
-    UserEventProcessors.addUserProcessors(
+    UserProcessors.addUserProcessors(
         keyGenerator, typedRecordProcessors, processingState, writers, commandDistributionBehavior);
 
     ClockProcessors.addClockProcessors(
         typedRecordProcessors, writers, keyGenerator, clock, commandDistributionBehavior);
 
-    AuthorizationEventProcessors.addAuthorizationProcessors(
+    AuthorizationProcessors.addAuthorizationProcessors(
         keyGenerator, typedRecordProcessors, processingState, writers, commandDistributionBehavior);
 
     return typedRecordProcessors;

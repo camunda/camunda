@@ -8,9 +8,36 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.List;
 
 public interface MutableAuthorizationState extends AuthorizationState {
 
-  void createAuthorization(final AuthorizationRecord authorizationRecord);
+  /**
+   * Checks if a Permission exists for the provided ownerKey, resourceType and permissionType. If it
+   * does, adds the resourceIds to this entry. If it does not, creates a new Permission with the
+   * provided resourceIds.
+   *
+   * @param ownerKey the key of the owner of the permissions. This could be a userKey, a roleKey or
+   *     a groupKey
+   * @param resourceType the type of resource the permissions are for (Eg. Process definition, Job)
+   * @param permissionType The type of permission being granted (Eg. READ, WRITE)
+   * @param resourceIds A list of resourceIds the permissions are granted for (Eg.
+   *     bpmnProcessId:foo, *)
+   */
+  void createOrAddPermission(
+      long ownerKey,
+      AuthorizationResourceType resourceType,
+      PermissionType permissionType,
+      List<String> resourceIds);
+
+  /**
+   * Stores the owner type for a new owner in the state.
+   *
+   * @param ownerKey the key of the owner
+   * @param ownerType the type of the owner
+   */
+  void insertOwnerTypeByKey(final long ownerKey, final AuthorizationOwnerType ownerType);
 }

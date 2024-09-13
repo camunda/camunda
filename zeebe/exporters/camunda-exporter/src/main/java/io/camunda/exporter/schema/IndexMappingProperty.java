@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
@@ -31,6 +32,30 @@ public record IndexMappingProperty(String name, Object typeDefinition) {
           mapper.writeValueAsString(propertiesBlock), StandardCharsets.UTF_8);
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  public static IndexMappingProperty createIndexMappingProperty(
+      final Entry<String, Object> propertiesMapEntry) {
+    return new IndexMappingProperty(propertiesMapEntry.getKey(), propertiesMapEntry.getValue());
+  }
+
+  public static class Builder {
+    private String name;
+    private Object typeDefinition;
+
+    public Builder name(final String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder typeDefinition(final Object typeDefinition) {
+      this.typeDefinition = typeDefinition;
+      return this;
+    }
+
+    public IndexMappingProperty build() {
+      return new IndexMappingProperty(name, typeDefinition);
     }
   }
 }

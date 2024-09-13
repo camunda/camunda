@@ -27,74 +27,75 @@ public final class AuthorizationClient {
     this.writer = writer;
   }
 
-  public AuthorizationCreationClient newAuthorization() {
-    return new AuthorizationCreationClient(writer);
+  public AuthorizationAddPermissionClient permission() {
+    return new AuthorizationAddPermissionClient(writer);
   }
 
-  public static class AuthorizationCreationClient {
+  public static class AuthorizationAddPermissionClient {
 
     private static final Function<Long, Record<AuthorizationRecordValue>> SUCCESS_SUPPLIER =
         (position) ->
             RecordingExporter.authorizationRecords()
-                .withIntent(AuthorizationIntent.CREATED)
+                .withIntent(AuthorizationIntent.PERMISSION_ADDED)
                 .withSourceRecordPosition(position)
                 .getFirst();
     private static final Function<Long, Record<AuthorizationRecordValue>> REJECTION_SUPPLIER =
         (position) ->
             RecordingExporter.authorizationRecords()
                 .onlyCommandRejections()
-                .withIntent(AuthorizationIntent.CREATE)
+                .withIntent(AuthorizationIntent.ADD_PERMISSION)
                 .withSourceRecordPosition(position)
                 .getFirst();
+
+    private Function<Long, Record<AuthorizationRecordValue>> expectation = SUCCESS_SUPPLIER;
     private final CommandWriter writer;
     private final AuthorizationRecord authorizationCreationRecord;
-    private Function<Long, Record<AuthorizationRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public AuthorizationCreationClient(final CommandWriter writer) {
+    public AuthorizationAddPermissionClient(final CommandWriter writer) {
       this.writer = writer;
       authorizationCreationRecord = new AuthorizationRecord();
     }
 
-    public AuthorizationCreationClient withOwnerKey(final Long ownerKey) {
+    public AuthorizationAddPermissionClient withOwnerKey(final Long ownerKey) {
       authorizationCreationRecord.setOwnerKey(ownerKey);
       return this;
     }
 
-    public AuthorizationCreationClient withAction(final PermissionAction action) {
+    public AuthorizationAddPermissionClient withAction(final PermissionAction action) {
       authorizationCreationRecord.setAction(action);
       return this;
     }
 
-    public AuthorizationCreationClient withOwnerType(final AuthorizationOwnerType ownerType) {
+    public AuthorizationAddPermissionClient withOwnerType(final AuthorizationOwnerType ownerType) {
       authorizationCreationRecord.setOwnerType(ownerType);
       return this;
     }
 
-    public AuthorizationCreationClient withResourceType(
+    public AuthorizationAddPermissionClient withResourceType(
         final AuthorizationResourceType resourceType) {
       authorizationCreationRecord.setResourceType(resourceType);
       return this;
     }
 
-    public AuthorizationCreationClient withPermission(
+    public AuthorizationAddPermissionClient withPermission(
         final PermissionType permissionType, final String resourceId) {
       authorizationCreationRecord.addPermission(
           new Permission().setPermissionType(permissionType).addResourceId(resourceId));
       return this;
     }
 
-    public AuthorizationCreationClient withPermission(final Permission permission) {
+    public AuthorizationAddPermissionClient withPermission(final Permission permission) {
       authorizationCreationRecord.addPermission(permission);
       return this;
     }
 
-    public Record<AuthorizationRecordValue> create() {
+    public Record<AuthorizationRecordValue> add() {
       final long position =
-          writer.writeCommand(AuthorizationIntent.CREATE, authorizationCreationRecord);
+          writer.writeCommand(AuthorizationIntent.ADD_PERMISSION, authorizationCreationRecord);
       return expectation.apply(position);
     }
 
-    public AuthorizationCreationClient expectRejection() {
+    public AuthorizationAddPermissionClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }

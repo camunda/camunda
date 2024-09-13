@@ -8,9 +8,8 @@
 
 import {useState, useEffect, useCallback, useRef} from 'react';
 import {DataTableSkeleton} from '@carbon/react';
-import deepEqual from 'fast-deep-equal';
 
-import {useErrorHandling} from 'hooks';
+import {useChangedState, useErrorHandling} from 'hooks';
 import {evaluateReport} from 'services';
 import {ReportRenderer} from 'components';
 import {newReport} from 'config';
@@ -97,14 +96,4 @@ function convertToRawData(report) {
       visualization: 'table',
     },
   };
-}
-
-function useChangedState(initialState) {
-  const [state, _setState] = useState(initialState);
-
-  const setState = useCallback((newState) => {
-    _setState((prevState) => (deepEqual(prevState, newState) ? prevState : newState));
-  }, []);
-
-  return [state, setState];
 }

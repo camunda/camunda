@@ -216,6 +216,33 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
   }
 
   @Test
+  public void shouldHaveVersionTagOfProcessInListView() throws PersistenceException, IOException {
+    final String versionTag = "tag-v1";
+    final long instanceKey = 333L;
+    final long definitionKey = 123L;
+    when(processCache.getProcessNameOrDefaultValue(eq(definitionKey), anyString()))
+        .thenReturn(newProcessName);
+    when(processCache.getProcessVersionTag(eq(definitionKey))).thenReturn(versionTag);
+    final ProcessInstanceForListViewEntity pi =
+        createProcessInstance().setProcessInstanceKey(instanceKey);
+    final Record<ProcessInstanceRecordValue> zeebeRecord =
+        createZeebeRecordFromPi(
+            pi,
+            b -> b.withIntent(ELEMENT_COMPLETED),
+            b ->
+                b.withVersion(1)
+                    .withBpmnProcessId(newBpmnProcessId)
+                    .withProcessDefinitionKey(definitionKey));
+
+    importProcessInstanceZeebeRecord(zeebeRecord);
+    final ProcessInstanceForListViewEntity actualPI = findProcessInstanceByKey(instanceKey);
+
+    assertThat(actualPI.getProcessInstanceKey()).isEqualTo(instanceKey);
+    assertThat(actualPI.getKey()).isEqualTo(pi.getKey());
+    assertThat(actualPI.getProcessVersionTag()).isEqualTo(versionTag);
+  }
+
+  @Test
   public void shouldOverrideIncidentErrorMsg() throws IOException, PersistenceException {
     // having
     // flow node instance entity with position = 1

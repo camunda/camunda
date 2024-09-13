@@ -130,6 +130,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private final ReceivableSnapshotStore persistedSnapshotStore;
   private final LogCompactor logCompactor;
   private volatile State state = State.ACTIVE;
+  // Some fields are read by external threads. To ensure thread-safe access, we can use the lock for
+  // synchronizing write and reads on such fields.
+  private final Object externalAccessLock = new Object();
   private RaftRole role = new InactiveRole(this);
   private volatile MemberId leader;
   private volatile long term;
@@ -673,7 +676,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     // Force state transitions to occur synchronously in order to prevent race conditions.
     try {
-      this.role = createRole(role);
+      final RaftRole newRole = createRole(role);
+      synchronized (externalAccessLock) {
+        // role is accessed by external threads. To ensure thread-safe access, we need to
+        // synchronize the udpate.
+        this.role = newRole;
+      }
       this.role.start().get();
     } catch (final InterruptedException | ExecutionException e) {
       throw new IllegalStateException("failed to initialize Raft state", e);
@@ -1004,7 +1012,11 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    * @return The current server state.
    */
   public RaftRole getRaftRole() {
-    return role;
+    // This method is accessed by external threads. To ensure thread-safe access, we need to
+    // synchronize access to role.
+    synchronized (externalAccessLock) {
+      return role;
+    }
   }
 
   public RaftRoleMetrics getRaftRoleMetrics() {
@@ -1017,7 +1029,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    * @return The current server role.
    */
   public Role getRole() {
-    return role.role();
+    return getRaftRole().role();
   }
 
   /**

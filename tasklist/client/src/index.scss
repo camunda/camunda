@@ -7,7 +7,7 @@
  */
 
 @use '@carbon/react' as * with (
-  $font-path: 'https://fonts.camunda.io'
+  $font-path: '@ibm/plex'
 );
 @use '@carbon/react/scss/themes';
 @use '@carbon/react/scss/theme';

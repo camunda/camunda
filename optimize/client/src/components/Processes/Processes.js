@@ -10,7 +10,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {DecisionTree, Settings} from '@carbon/icons-react';
 import {Column, Grid} from '@carbon/react';
 
-import {EntityList, EmptyState, PageTitle, Tooltip} from 'components';
+import {EntityList, EmptyState, PageTitle} from 'components';
 import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
 import {addNotification, showError} from 'notifications';
@@ -120,18 +120,7 @@ export function Processes({mightFail, user}) {
               const kpisWithData = kpis.filter(({value, target}) => value && target);
               const timeKpis = kpisWithData?.filter((kpi) => kpi.type === 'time');
               const qualityKpis = kpisWithData?.filter((kpi) => kpi.type === 'quality');
-              const meta = [
-                <Tooltip position="bottom" content={<KpiResult kpis={timeKpis} />} delay={300}>
-                  <div className="summaryContainer">
-                    <KpiSummary kpis={timeKpis} />
-                  </div>
-                </Tooltip>,
-                <Tooltip position="bottom" content={<KpiResult kpis={qualityKpis} />} delay={300}>
-                  <div className="summaryContainer">
-                    <KpiSummary kpis={qualityKpis} />
-                  </div>
-                </Tooltip>,
-              ];
+              const meta = [<KpiSummary kpis={timeKpis} />, <KpiSummary kpis={qualityKpis} />];
 
               let listItem = {
                 id: processDefinitionKey,

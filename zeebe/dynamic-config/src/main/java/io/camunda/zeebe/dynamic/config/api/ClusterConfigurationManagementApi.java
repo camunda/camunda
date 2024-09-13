@@ -8,13 +8,16 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ScaleRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
@@ -35,7 +38,7 @@ public interface ClusterConfigurationManagementApi {
   ActorFuture<ClusterConfigurationChangeResponse> reassignPartitions(
       ReassignPartitionsRequest reassignPartitionsRequest);
 
-  ActorFuture<ClusterConfigurationChangeResponse> scaleMembers(ScaleRequest scaleRequest);
+  ActorFuture<ClusterConfigurationChangeResponse> scaleMembers(BrokerScaleRequest scaleRequest);
 
   /**
    * Forces a scale down of the cluster. The members that are not specified in the request will be
@@ -45,7 +48,16 @@ public interface ClusterConfigurationManagementApi {
    * <p>This is expected to be used to force remove a set of brokers when they are unreachable.
    */
   ActorFuture<ClusterConfigurationChangeResponse> forceScaleDown(
-      ScaleRequest forceScaleDownRequest);
+      BrokerScaleRequest forceScaleDownRequest);
+
+  ActorFuture<ClusterConfigurationChangeResponse> scaleCluster(
+      ClusterScaleRequest clusterScaleRequest);
+
+  ActorFuture<ClusterConfigurationChangeResponse> patchCluster(
+      ClusterPatchRequest clusterPatchRequest);
+
+  ActorFuture<ClusterConfigurationChangeResponse> forceRemoveBrokers(
+      ForceRemoveBrokersRequest forceRemoveBrokersRequest);
 
   ActorFuture<ClusterConfigurationChangeResponse> disableExporter(
       ExporterDisableRequest exporterDisableRequest);

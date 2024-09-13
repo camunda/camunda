@@ -19,6 +19,7 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.JOB_POSITION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_KEY;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_NAME;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_VERSION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_VERSION_TAG;
 import static io.camunda.operate.schema.templates.ListViewTemplate.START_DATE;
 import static io.camunda.operate.schema.templates.ListViewTemplate.STATE;
 import static io.camunda.operate.schema.templates.ListViewTemplate.VAR_NAME;
@@ -300,6 +301,9 @@ public class ListViewZeebeRecordProcessor {
         if (piEntity.getEndDate() != null) {
           updateFields.put(ListViewTemplate.END_DATE, piEntity.getEndDate());
         }
+        if (piEntity.getProcessVersionTag() != null) {
+          updateFields.put(ListViewTemplate.PROCESS_VERSION_TAG, piEntity.getProcessVersionTag());
+        }
         updateFields.put(ListViewTemplate.PROCESS_NAME, piEntity.getProcessName());
         updateFields.put(ListViewTemplate.PROCESS_VERSION, piEntity.getProcessVersion());
         updateFields.put(ListViewTemplate.PROCESS_KEY, piEntity.getProcessDefinitionKey());
@@ -420,6 +424,7 @@ public class ListViewZeebeRecordProcessor {
             + "ctx._source.%s = params.%s; " // process version
             + "ctx._source.%s = params.%s; " // process key
             + "ctx._source.%s = params.%s; " // bpmnProcessId
+            + "if (params.%s != null) { ctx._source.%s = params.%s; }" // process version tag
             + "if (params.%s != null) { ctx._source.%s = params.%s; }" // start date
             + "if (params.%s != null) { ctx._source.%s = params.%s; }" // end date
             + "if (params.%s != null) { ctx._source.%s = params.%s; }" // state
@@ -437,6 +442,9 @@ public class ListViewZeebeRecordProcessor {
         PROCESS_KEY,
         BPMN_PROCESS_ID,
         BPMN_PROCESS_ID,
+        PROCESS_VERSION_TAG,
+        PROCESS_VERSION_TAG,
+        PROCESS_VERSION_TAG,
         START_DATE,
         START_DATE,
         START_DATE,
@@ -517,6 +525,7 @@ public class ListViewZeebeRecordProcessor {
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
         .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setProcessVersion(recordValue.getVersion())
+        .setProcessVersionTag(processCache.getProcessVersionTag(piEntity.getProcessDefinitionKey()))
         .setProcessName(
             processCache.getProcessNameOrDefaultValue(
                 piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()));

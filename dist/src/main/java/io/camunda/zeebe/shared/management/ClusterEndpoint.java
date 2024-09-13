@@ -9,11 +9,11 @@ package io.camunda.zeebe.shared.management;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.management.cluster.Error;
 import java.util.List;
@@ -145,8 +145,8 @@ public class ClusterEndpoint {
       final boolean force,
       final Optional<Integer> replicationFactor) {
     try {
-      final ScaleRequest scaleRequest =
-          new ScaleRequest(
+      final BrokerScaleRequest scaleRequest =
+          new BrokerScaleRequest(
               ids.stream().map(String::valueOf).map(MemberId::from).collect(Collectors.toSet()),
               replicationFactor,
               dryRun);

@@ -44,6 +44,13 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-plugin</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <!-- SPRING -->
@@ -290,12 +297,6 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>net.bytebuddy</groupId>
-      <artifactId>byte-buddy</artifactId>
       <scope>test</scope>
     </dependency>
 

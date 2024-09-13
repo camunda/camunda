@@ -16,16 +16,19 @@ import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
+import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.utils.TestSupport;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -53,6 +56,12 @@ public class ElasticsearchEngineClientIT {
     elsClient = new ElasticsearchClient(transport);
 
     elsEngineClient = new ElasticsearchEngineClient(elsClient);
+  }
+
+  @BeforeEach
+  public void refresh() throws IOException {
+    elsClient.indices().delete(req -> req.index("*"));
+    elsClient.indices().deleteIndexTemplate(req -> req.name("*"));
   }
 
   @Test
@@ -118,5 +127,53 @@ public class ElasticsearchEngineClientIT {
 
     assertThat(index.mappings().properties().get("hello").isText()).isTrue();
     assertThat(index.mappings().properties().get("world").isKeyword()).isTrue();
+  }
+
+  @Test
+  void shouldRetrieveAllIndexMappingsWithImplementationAgnosticReturnType() {
+    final var index =
+        TestUtil.mockIndex("index_qualified_name", "alias", "index_name", "mappings.json");
+
+    elsEngineClient.createIndex(index);
+
+    final var mappings = elsEngineClient.getMappings("*", MappingSource.INDEX);
+
+    assertThat(mappings.size()).isEqualTo(1);
+    assertThat(mappings.get("index_qualified_name").dynamic()).isEqualTo("strict");
+
+    assertThat(mappings.get("index_qualified_name").properties())
+        .containsExactlyInAnyOrder(
+            new IndexMappingProperty.Builder()
+                .name("hello")
+                .typeDefinition(Map.of("type", "text"))
+                .build(),
+            new IndexMappingProperty.Builder()
+                .name("world")
+                .typeDefinition(Map.of("type", "keyword"))
+                .build());
+  }
+
+  @Test
+  void shouldRetrieveAllIndexTemplateMappingsWithImplementationAgnosticReturnType() {
+    final var template =
+        TestUtil.mockIndexTemplate(
+            "index_name", "index_pattern.*", "alias", List.of(), "template_name", "mappings.json");
+
+    elsEngineClient.createIndexTemplate(template, new IndexSettings(), true);
+
+    final var templateMappings =
+        elsEngineClient.getMappings("template_name", MappingSource.INDEX_TEMPLATE);
+
+    assertThat(templateMappings.size()).isEqualTo(1);
+    assertThat(templateMappings.get("template_name").properties())
+        .containsExactlyInAnyOrder(
+            new IndexMappingProperty.Builder()
+                .name("hello")
+                .typeDefinition(Map.of("type", "text"))
+                .build(),
+            new IndexMappingProperty.Builder()
+                .name("world")
+                .typeDefinition(Map.of("type", "keyword"))
+                .build());
   }
 }

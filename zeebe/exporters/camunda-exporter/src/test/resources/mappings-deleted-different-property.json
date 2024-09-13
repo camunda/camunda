@@ -1,0 +1,10 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "hello": {
+        "type": "text"
+      }
+    }
+  }
+}

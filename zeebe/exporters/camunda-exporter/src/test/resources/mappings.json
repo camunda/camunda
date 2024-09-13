@@ -8,9 +8,6 @@
       "world": {
         "type": "keyword"
       }
-    },
-    "_meta": {
-      "version": "1.0.0"
     }
   }
 }
