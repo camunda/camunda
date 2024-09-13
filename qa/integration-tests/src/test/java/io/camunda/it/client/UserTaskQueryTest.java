@@ -8,7 +8,6 @@
 package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -180,12 +179,12 @@ class UserTaskQueryTest {
     final var resultDefaultPriority =
         camundaClient.newUserTaskQuery().filter(f -> f.bpmnProcessId("process-2")).send().join();
     assertThat(resultDefaultPriority.items().size()).isEqualTo(1);
-    assertEquals(50, resultDefaultPriority.items().getFirst().getPriority());
+    assertThat(resultDefaultPriority.items().getFirst().getPriority()).isEqualTo(50);
 
     final var resultDefinedPriority =
         camundaClient.newUserTaskQuery().filter(f -> f.bpmnProcessId("process-3")).send().join();
     assertThat(resultDefinedPriority.items().size()).isEqualTo(1);
-    assertEquals(30, resultDefinedPriority.items().getFirst().getPriority());
+    assertThat(resultDefinedPriority.items().getFirst().getPriority()).isEqualTo(30);
   }
 
   private static void deployProcess(
