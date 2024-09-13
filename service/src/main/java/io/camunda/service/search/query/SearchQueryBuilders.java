@@ -69,7 +69,7 @@ public final class SearchQueryBuilders {
       final Function<DecisionInstanceQuery.Builder, ObjectBuilder<DecisionInstanceQuery>> fn) {
     return fn.apply(decisionInstanceSearchQuery()).build();
   }
-  
+
   public static FlowNodeInstanceQuery.Builder flownodeInstanceSearchQuery() {
     return new FlowNodeInstanceQuery.Builder();
   }

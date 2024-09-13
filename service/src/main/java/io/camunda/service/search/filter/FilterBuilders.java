@@ -34,11 +34,10 @@ public final class FilterBuilders {
     return new DecisionRequirementsFilter.Builder();
   }
 
-
   public static DecisionInstanceFilter.Builder decisionInstance() {
     return new DecisionInstanceFilter.Builder();
   }
-  
+
   public static FlowNodeInstanceFilter.Builder flownodeInstance() {
     return new FlowNodeInstanceFilter.Builder();
   }

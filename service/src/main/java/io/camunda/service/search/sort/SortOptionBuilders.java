@@ -34,11 +34,10 @@ public final class SortOptionBuilders {
     return new DecisionRequirementsSort.Builder();
   }
 
-
   public static DecisionInstanceSort.Builder decisionInstance() {
     return new DecisionInstanceSort.Builder();
   }
-  
+
   public static FlowNodeInstanceSort.Builder flownodeInstance() {
     return new FlowNodeInstanceSort.Builder();
   }
