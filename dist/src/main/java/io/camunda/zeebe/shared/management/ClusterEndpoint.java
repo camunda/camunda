@@ -183,7 +183,8 @@ public class ClusterEndpoint {
 
       if (brokers != null
           && brokers.getCount() != null
-          && (!brokers.getAdd().isEmpty() || !brokers.getRemove().isEmpty())) {
+          && ((brokers.getAdd() != null || !brokers.getAdd().isEmpty())
+              || (brokers.getRemove() != null || !brokers.getRemove().isEmpty()))) {
         return invalidRequest(
             "Cannot change brokers count and add/remove brokers at the same time. Specify either the newPartitionCount or brokers to add and remove.");
       }
@@ -242,14 +243,18 @@ public class ClusterEndpoint {
       final boolean dryRun,
       final ClusterConfigPatchRequestBrokers brokers,
       final ClusterConfigPatchRequestPartitions partitions) {
-    if (brokers != null) {
-      if (brokers.getCount() != null) {
-        return invalidRequest("Cannot force change the broker count.");
-      }
-      if (!brokers.getAdd().isEmpty()) {
-        return invalidRequest("Cannot force add brokers");
-      }
+
+    if (brokers == null) {
+      return invalidRequest("Must provide a set of brokers to force remove.");
     }
+
+    if (brokers.getCount() != null) {
+      return invalidRequest("Cannot force change the broker count.");
+    }
+    if (brokers.getAdd() != null && !brokers.getAdd().isEmpty()) {
+      return invalidRequest("Cannot force add brokers");
+    }
+
     if (partitions != null) {
       if (partitions.getCount() != null) {
         return invalidRequest("Cannot force change the partition count.");
@@ -259,7 +264,7 @@ public class ClusterEndpoint {
       }
     }
 
-    if (brokers != null && brokers.getRemove().isEmpty()) {
+    if (brokers.getRemove() == null || brokers.getRemove().isEmpty()) {
       return invalidRequest("Must provide a set of brokers to force remove.");
     }
 
