@@ -39,14 +39,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class FlowNodeInstanceZeebeRecordProcessor {
 
+  public static final Set<String> AI_FINISH_STATES =
+      Set.of(ELEMENT_COMPLETED.name(), ELEMENT_TERMINATED.name());
   private static final Logger LOGGER =
       LoggerFactory.getLogger(FlowNodeInstanceZeebeRecordProcessor.class);
-
-  private static final Set<String> AI_FINISH_STATES =
-      Set.of(ELEMENT_COMPLETED.name(), ELEMENT_TERMINATED.name());
   private static final Set<String> AI_START_STATES = Set.of(ELEMENT_ACTIVATING.name());
+
+  private FNITransformer fniTransformer;
+  // treePath by flowNodeInstanceKey caches
+  private final FlowNodeStore flowNodeStore;
   private final FlowNodeInstanceTemplate flowNodeInstanceTemplate;
-  private final FNITransformer fniTransformer;
+  private final PartitionHolder partitionHolder;
+  private final int flowNodeTreeCacheSize;
+  private final Metrics metrics;
 
   public FlowNodeInstanceZeebeRecordProcessor(
       final FlowNodeStore flowNodeStore,
@@ -55,7 +60,21 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       final PartitionHolder partitionHolder,
       final Metrics metrics) {
     this.flowNodeInstanceTemplate = flowNodeInstanceTemplate;
-    final var flowNodeTreeCacheSize = operateProperties.getImporter().getFlowNodeTreeCacheSize();
+    flowNodeTreeCacheSize = operateProperties.getImporter().getFlowNodeTreeCacheSize();
+    this.partitionHolder = partitionHolder;
+    this.flowNodeStore = flowNodeStore;
+    this.metrics = metrics;
+  }
+
+  private FNITransformer lazyLoadFNITransformer() {
+    if (fniTransformer != null) {
+      return fniTransformer;
+    }
+
+    // We create the FNITransformer lazy, as partition holder didn't hold the partitionIds right on
+    // start. The chances are higher that when we start importing we can also request the
+    // partitions.
+
     final var partitionIds = partitionHolder.getPartitionIds();
     // treePath by flowNodeInstanceKey caches
     final FlowNodeInstanceTreePathCache treePathCache =
@@ -65,6 +84,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
             flowNodeStore::findParentTreePathFor,
             new TreePathCacheMetricsImpl(partitionIds, metrics));
     fniTransformer = new FNITransformer(treePathCache);
+    return fniTransformer;
   }
 
   public void processIncidentRecord(final Record record, final BatchRequest batchRequest)
@@ -108,7 +128,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       for (final Record<ProcessInstanceRecordValue> record : wiRecords) {
 
         if (shouldProcessProcessInstanceRecord(record)) {
-          fniEntity = fniTransformer.toFlowNodeInstanceEntity(record, fniEntity);
+          fniEntity = lazyLoadFNITransformer().toFlowNodeInstanceEntity(record, fniEntity);
         }
       }
       if (fniEntity != null) {
@@ -130,7 +150,6 @@ public class FlowNodeInstanceZeebeRecordProcessor {
             updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, fniEntity.getTreePath());
             updateFields.put(FlowNodeInstanceTemplate.LEVEL, fniEntity.getLevel());
           }
-
           if (fniEntity.getStartDate() != null) {
             updateFields.put(FlowNodeInstanceTemplate.START_DATE, fniEntity.getStartDate());
           }
