@@ -29,13 +29,13 @@ class UserTaskQueryTest {
   private static Long userTaskKeyTaskAssigned;
 
   @TestZeebe
-  private static final TestStandaloneCamunda TEST_STANDALONE_CAMUNDA = new TestStandaloneCamunda();
+  private static TestStandaloneCamunda testStandaloneCamunda = new TestStandaloneCamunda();
 
   private static ZeebeClient camundaClient;
 
   @BeforeAll
   public static void setup() {
-    camundaClient = TEST_STANDALONE_CAMUNDA.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     deployProcess("process", "simple.bpmn", "test", "", "");
     deployProcess("process-2", "simple-2.bpmn", "test-2", "group", "user");
