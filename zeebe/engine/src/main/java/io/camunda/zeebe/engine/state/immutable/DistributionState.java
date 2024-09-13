@@ -117,6 +117,6 @@ public interface DistributionState {
   @FunctionalInterface
   interface ContinuationCommandVisitor {
     /** Visits a registered continuation command. */
-    void visit(final long key, final CommandDistributionRecord continuationCommand);
+    void visit(final long key);
   }
 }

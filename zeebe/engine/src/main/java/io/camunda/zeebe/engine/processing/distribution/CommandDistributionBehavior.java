@@ -192,12 +192,13 @@ public final class CommandDistributionBehavior {
     if (distributionState.hasQueuedDistributions(queue)) {
       return;
     }
-    distributionState.forEachContinuationCommand(queue, this::handleContinuationCommand);
+    distributionState.forEachContinuationCommand(
+        queue, key -> handleContinuationCommand(queue, key));
   }
 
-  private void handleContinuationCommand(final long key, final CommandDistributionRecord record) {
+  private void handleContinuationCommand(final String queue, final long key) {
     commandDistributionContinuation.reset();
-    commandDistributionContinuation.setQueueId(record.getQueueId());
+    commandDistributionContinuation.setQueueId(queue);
     commandDistributionContinuation.setPartitionId(currentPartitionId);
     commandWriter.appendFollowUpCommand(
         key, CommandDistributionIntent.CONTINUE, commandDistributionContinuation);

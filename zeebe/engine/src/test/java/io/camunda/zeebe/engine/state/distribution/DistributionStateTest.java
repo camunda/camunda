@@ -354,19 +354,10 @@ public final class DistributionStateTest {
     distributionState.addContinuationCommand(3L, record3);
 
     // then
-    final var found = new LinkedList<ContinuationCommand>();
-    distributionState.forEachContinuationCommand(
-        queue,
-        (key, record) ->
-            found.add(
-                new ContinuationCommand(
-                    key, ((SignalRecord) record.getCommandValue()).getSignalName())));
+    final var found = new LinkedList<Long>();
+    distributionState.forEachContinuationCommand(queue, found::add);
 
-    assertThat(found)
-        .containsExactly(
-            new ContinuationCommand(1L, "continuation1"),
-            new ContinuationCommand(2L, "continuation2"),
-            new ContinuationCommand(3L, "continuation3"));
+    assertThat(found).containsExactly(1L, 2L, 3L);
   }
 
   @Test
@@ -384,18 +375,10 @@ public final class DistributionStateTest {
     distributionState.addContinuationCommand(3L, record3);
 
     // then
-    final var found = new LinkedList<ContinuationCommand>();
-    distributionState.forEachContinuationCommand(
-        queue1,
-        (key, record) ->
-            found.add(
-                new ContinuationCommand(
-                    key, ((SignalRecord) record.getCommandValue()).getSignalName())));
+    final var found = new LinkedList<Long>();
+    distributionState.forEachContinuationCommand(queue1, found::add);
 
-    assertThat(found)
-        .containsExactly(
-            new ContinuationCommand(1L, "continuation1"),
-            new ContinuationCommand(3L, "continuation3"));
+    assertThat(found).containsExactly(1L, 3L);
   }
 
   @Test
@@ -427,18 +410,10 @@ public final class DistributionStateTest {
     distributionState.removeContinuationCommand(2L, queue);
 
     // then
-    final var found = new LinkedList<ContinuationCommand>();
-    distributionState.forEachContinuationCommand(
-        queue,
-        (key, record) ->
-            found.add(
-                new ContinuationCommand(
-                    key, ((SignalRecord) record.getCommandValue()).getSignalName())));
+    final var found = new LinkedList<Long>();
+    distributionState.forEachContinuationCommand(queue, found::add);
 
-    assertThat(found)
-        .containsExactly(
-            new ContinuationCommand(1L, "continuation1"),
-            new ContinuationCommand(3L, "continuation3"));
+    assertThat(found).containsExactly(1L, 3L);
   }
 
   private CommandDistributionRecord createContinuationCommand(

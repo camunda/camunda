@@ -327,14 +327,7 @@ public class DbDistributionState implements MutableDistributionState {
         queueId,
         (key, value) -> {
           final var continuationKey = key.second().getValue();
-
-          final var commandDistributionRecord = new CommandDistributionRecord();
-          commandDistributionRecord.setQueueId(queue);
-          commandDistributionRecord.setValueType(value.getValueType());
-          commandDistributionRecord.setIntent(value.getIntent());
-          commandDistributionRecord.setCommandValue(value.getCommandValue());
-
-          consumer.visit(continuationKey, commandDistributionRecord);
+          consumer.visit(continuationKey);
           return true;
         });
   }
