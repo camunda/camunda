@@ -23,6 +23,11 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * An in-memory implementation of the {@link DocumentStore} interface. This implementation is
+ * intended for testing purposes only. It is not multi-instance safe and does not persist documents
+ * across restarts.
+ */
 public class InMemoryDocumentStore implements DocumentStore {
 
   private final Map<String, byte[]> documents;
