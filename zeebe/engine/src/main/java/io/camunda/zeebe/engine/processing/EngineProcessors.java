@@ -203,7 +203,12 @@ public final class EngineProcessors {
         typedRecordProcessors, processingState, bpmnBehaviors, writers);
 
     UserProcessors.addUserProcessors(
-        keyGenerator, typedRecordProcessors, processingState, writers, commandDistributionBehavior);
+        keyGenerator,
+        typedRecordProcessors,
+        processingState,
+        writers,
+        commandDistributionBehavior,
+        config);
 
     ClockProcessors.addClockProcessors(
         typedRecordProcessors, writers, keyGenerator, clock, commandDistributionBehavior);

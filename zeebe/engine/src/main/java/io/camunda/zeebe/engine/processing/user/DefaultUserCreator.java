@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.user;
 
 import static java.util.Optional.*;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
@@ -29,15 +30,24 @@ public final class DefaultUserCreator implements StreamProcessorLifecycleAware, 
   public static final String DEFAULT_USER_EMAIL = "demo@demo.com";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private final MutableProcessingState processingState;
+  private final EngineConfiguration config;
   private final BCryptPasswordEncoder passwordEncoder;
 
-  public DefaultUserCreator(final MutableProcessingState processingState) {
+  public DefaultUserCreator(
+      final MutableProcessingState processingState, final EngineConfiguration config) {
     this.processingState = processingState;
+    this.config = config;
     passwordEncoder = new BCryptPasswordEncoder();
   }
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    if (!config.isEnableAuthorization()) {
+      // If authorization is disabled we don't need to create the default user.
+      LOG.debug("Skipping default user creation as authorization is disabled");
+      return;
+    }
+
     if (context.getPartitionId() != Protocol.DEPLOYMENT_PARTITION) {
       // We should only create users on the deployment partition. The command will be distributed to
       // the other partitions using our command distribution mechanism.
