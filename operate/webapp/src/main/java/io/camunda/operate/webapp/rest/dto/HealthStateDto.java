@@ -15,7 +15,7 @@ public class HealthStateDto {
 
   public HealthStateDto() {}
 
-  public HealthStateDto(String state) {
+  public HealthStateDto(final String state) {
     this.state = state;
   }
 
@@ -23,7 +23,7 @@ public class HealthStateDto {
     return state;
   }
 
-  public void setState(String state) {
+  public void setState(final String state) {
     this.state = state;
   }
 
@@ -33,7 +33,7 @@ public class HealthStateDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

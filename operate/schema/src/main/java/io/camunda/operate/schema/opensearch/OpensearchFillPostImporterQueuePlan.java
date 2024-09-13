@@ -14,9 +14,6 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBu
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.post.PostImporterActionType;
-import io.camunda.operate.entities.post.PostImporterQueueEntity;
 import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.property.MigrationProperties;
 import io.camunda.operate.property.OperateProperties;
@@ -25,6 +22,9 @@ import io.camunda.operate.schema.migration.FillPostImporterQueuePlan;
 import io.camunda.operate.schema.migration.Step;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
+import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.opensearch.client.opensearch._types.SortOrder;

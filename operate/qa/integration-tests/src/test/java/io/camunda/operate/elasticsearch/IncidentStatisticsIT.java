@@ -14,14 +14,6 @@ import static io.camunda.operate.webapp.rest.IncidentRestService.INCIDENT_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.entities.OperateEntity;
-import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestUtil;
@@ -30,6 +22,14 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatistic
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.IncidentState;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -57,14 +57,14 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   private static final String QUERY_INCIDENTS_BY_ERROR_URL = INCIDENT_URL + "/byError";
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
   @MockBean private PermissionsService permissionsService;
-  private Random random = new Random();
+  private final Random random = new Random();
 
-  private String tenantId1 = "tenant1";
-  private String tenantId2 = "tenant2";
+  private final String tenantId1 = "tenant1";
+  private final String tenantId2 = "tenant2";
 
   @Test
   public void testAbsentProcessDoesntThrowExceptions() throws Exception {
-    final List<OperateEntity> entities = new ArrayList<>();
+    final List<AbstractExporterEntity> entities = new ArrayList<>();
 
     // Create a processInstance that has no matching process
     final Long processDefinitionKey = 0L;
@@ -72,7 +72,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
         createProcessInstanceEntity(ProcessInstanceState.ACTIVE, processDefinitionKey, "process");
     entities.add(processInstance);
     entities.addAll(createIncidents(processInstance, 1, 0));
-    searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new AbstractExporterEntity[entities.size()]));
 
     final List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
 
@@ -335,7 +335,8 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
         .containsExactly(ORDER_BPMN_PROCESS_ID);
   }
 
-  private void assertNoInstancesProcess(IncidentByProcessStatisticsDto process, int version) {
+  private void assertNoInstancesProcess(
+      final IncidentByProcessStatisticsDto process, final int version) {
     assertThat(process.getVersion()).isEqualTo(version);
     assertThat(process.getActiveInstancesCount()).isEqualTo(0);
     assertThat(process.getInstancesWithActiveIncidentsCount()).isEqualTo(0);
@@ -344,7 +345,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     assertThat(process.getName()).isEqualTo(NO_INSTANCES_PROCESS_NAME + version);
   }
 
-  private void assertLoanProcess(IncidentsByProcessGroupStatisticsDto loanProcessGroup) {
+  private void assertLoanProcess(final IncidentsByProcessGroupStatisticsDto loanProcessGroup) {
     assertThat(loanProcessGroup.getBpmnProcessId()).isEqualTo(LOAN_BPMN_PROCESS_ID);
     assertThat(loanProcessGroup.getTenantId()).isEqualTo(tenantId1);
     assertThat(loanProcessGroup.getProcessName()).isEqualTo(LOAN_PROCESS_NAME + "1");
@@ -364,7 +365,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     assertThat(loanProcessProcessStatistic.getInstancesWithActiveIncidentsCount()).isEqualTo(0);
   }
 
-  private void assertOrderProcess(IncidentsByProcessGroupStatisticsDto orderProcessGroup) {
+  private void assertOrderProcess(final IncidentsByProcessGroupStatisticsDto orderProcessGroup) {
     // assert Order process group
     assertThat(orderProcessGroup.getBpmnProcessId()).isEqualTo(ORDER_BPMN_PROCESS_ID);
     assertThat(orderProcessGroup.getTenantId()).isEqualTo(tenantId2);
@@ -383,7 +384,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     assertThat(orderProcess.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
   }
 
-  private void assertDemoProcess(IncidentsByProcessGroupStatisticsDto demoProcessGroup) {
+  private void assertDemoProcess(final IncidentsByProcessGroupStatisticsDto demoProcessGroup) {
     // assert Demo process group
     assertThat(demoProcessGroup.getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
     assertThat(demoProcessGroup.getTenantId()).isEqualTo(tenantId1);
@@ -414,9 +415,10 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   private void createDemoProcessData() {
     final List<ProcessEntity> processVersions =
         createProcessVersions(DEMO_BPMN_PROCESS_ID, DEMO_PROCESS_NAME, 2, tenantId1);
-    searchTestRule.persistNew(processVersions.toArray(new OperateEntity[processVersions.size()]));
+    searchTestRule.persistNew(
+        processVersions.toArray(new AbstractExporterEntity[processVersions.size()]));
 
-    final List<OperateEntity> entities = new ArrayList<>();
+    final List<AbstractExporterEntity> entities = new ArrayList<>();
 
     // Demo process v1
     Long processDefinitionKey = processVersions.get(0).getKey();
@@ -466,15 +468,16 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
               ProcessInstanceState.COMPLETED, processDefinitionKey, DEMO_BPMN_PROCESS_ID));
     }
 
-    searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new AbstractExporterEntity[entities.size()]));
   }
 
   private void createOrderProcessData() {
     final List<ProcessEntity> processVersions =
         createProcessVersions(ORDER_BPMN_PROCESS_ID, ORDER_PROCESS_NAME, 2, tenantId2);
-    searchTestRule.persistNew(processVersions.toArray(new OperateEntity[processVersions.size()]));
+    searchTestRule.persistNew(
+        processVersions.toArray(new AbstractExporterEntity[processVersions.size()]));
 
-    final List<OperateEntity> entities = new ArrayList<>();
+    final List<AbstractExporterEntity> entities = new ArrayList<>();
     // Order process v1
     Long processDefinitionKey = processVersions.get(0).getKey();
     // entities #1-5
@@ -505,7 +508,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
               ProcessInstanceState.ACTIVE, processDefinitionKey, ORDER_BPMN_PROCESS_ID));
     }
 
-    searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new AbstractExporterEntity[entities.size()]));
   }
 
   private void createLoanProcessData() {
@@ -514,7 +517,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
         createProcessVersions(LOAN_BPMN_PROCESS_ID, LOAN_PROCESS_NAME, 1, tenantId1);
     searchTestRule.persistNew(processVersions.get(0));
 
-    final List<OperateEntity> entities = new ArrayList<>();
+    final List<AbstractExporterEntity> entities = new ArrayList<>();
     final Long processDefinitionKey = processVersions.get(0).getKey();
     // entities #1-3
     for (int i = 1; i <= 3; i++) {
@@ -531,10 +534,10 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
               ProcessInstanceState.ACTIVE, processDefinitionKey, LOAN_BPMN_PROCESS_ID));
     }
 
-    searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new AbstractExporterEntity[entities.size()]));
   }
 
-  private void createNoInstancesProcessData(int versionCount) {
+  private void createNoInstancesProcessData(final int versionCount) {
     createProcessVersions(
             NO_INSTANCES_PROCESS_ID, NO_INSTANCES_PROCESS_NAME, versionCount, tenantId2)
         .forEach(processVersion -> searchTestRule.persistNew(processVersion));
@@ -562,19 +565,19 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     createLoanProcessData();
   }
 
-  private List<OperateEntity> createIncidents(
+  private List<AbstractExporterEntity> createIncidents(
       final ProcessInstanceForListViewEntity processInstance,
-      int activeIncidentsCount,
-      int resolvedIncidentsCount) {
+      final int activeIncidentsCount,
+      final int resolvedIncidentsCount) {
     return createIncidents(processInstance, activeIncidentsCount, resolvedIncidentsCount, false);
   }
 
-  private List<OperateEntity> createIncidents(
+  private List<AbstractExporterEntity> createIncidents(
       final ProcessInstanceForListViewEntity processInstance,
-      int activeIncidentsCount,
-      int resolvedIncidentsCount,
-      boolean withOtherMsg) {
-    final List<OperateEntity> entities = new ArrayList<>();
+      final int activeIncidentsCount,
+      final int resolvedIncidentsCount,
+      final boolean withOtherMsg) {
+    final List<AbstractExporterEntity> entities = new ArrayList<>();
     for (int i = 0; i < activeIncidentsCount; i++) {
       final FlowNodeInstanceForListViewEntity activityInstance =
           TestUtil.createFlowNodeInstance(

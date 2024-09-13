@@ -12,12 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.OperationTemplate;
@@ -29,6 +26,9 @@ import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.operate.webapp.zeebe.operation.OperationHandler;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -44,7 +44,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 public class OperationExecutorIT extends OperateAbstractIT {
 
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
-  private Random random = new Random();
+  private final Random random = new Random();
   @Autowired private OperateProperties operateProperties;
 
   @Autowired private OperationExecutor operationExecutor;
@@ -55,6 +55,7 @@ public class OperationExecutorIT extends OperateAbstractIT {
 
   private OffsetDateTime approxLockExpirationTime;
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -97,7 +98,9 @@ public class OperationExecutorIT extends OperateAbstractIT {
   }
 
   private void assertOperationsLocked(
-      List<OperationEntity> allOperations, int operationCount, String assertionLabel) {
+      final List<OperationEntity> allOperations,
+      final int operationCount,
+      final String assertionLabel) {
     final String workerId = operateProperties.getOperationExecutor().getWorkerId();
     final List<OperationEntity> lockedOperations =
         CollectionUtil.filter(
@@ -115,17 +118,17 @@ public class OperationExecutorIT extends OperateAbstractIT {
         .isEmpty();
   }
 
-  private void createData(int processInstanceCount) {
-    final List<OperateEntity> instances = new ArrayList<>();
+  private void createData(final int processInstanceCount) {
+    final List<AbstractExporterEntity> instances = new ArrayList<>();
     for (int i = 0; i < processInstanceCount; i++) {
       instances.addAll(createProcessInstanceAndOperations());
     }
     // persist instances
-    searchTestRule.persistNew(instances.toArray(new OperateEntity[instances.size()]));
+    searchTestRule.persistNew(instances.toArray(new AbstractExporterEntity[instances.size()]));
   }
 
-  private List<OperateEntity> createProcessInstanceAndOperations() {
-    final List<OperateEntity> entities = new ArrayList<>();
+  private List<AbstractExporterEntity> createProcessInstanceAndOperations() {
+    final List<AbstractExporterEntity> entities = new ArrayList<>();
     final ProcessInstanceForListViewEntity processInstance =
         TestUtil.createProcessInstanceEntityWithIds();
     processInstance.setBpmnProcessId("testProcess" + random.nextInt(10));

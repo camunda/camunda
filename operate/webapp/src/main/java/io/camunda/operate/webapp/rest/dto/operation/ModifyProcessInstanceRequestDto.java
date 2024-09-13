@@ -41,7 +41,7 @@ public class ModifyProcessInstanceRequestDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -124,7 +124,7 @@ public class ModifyProcessInstanceRequestDto {
         return null;
       }
       final Map<String, List<Map<String, Object>>> result = new HashMap<>();
-      for (String flowNodeId : variables.keySet()) {
+      for (final String flowNodeId : variables.keySet()) {
         final List<Map<String, Object>> variablesList =
             (List<Map<String, Object>>) variables.get(flowNodeId);
         result.put(flowNodeId, variablesList);
@@ -145,7 +145,7 @@ public class ModifyProcessInstanceRequestDto {
       return newTokensCount;
     }
 
-    public Modification setNewTokensCount(Integer newTokensCount) {
+    public Modification setNewTokensCount(final Integer newTokensCount) {
       this.newTokensCount = newTokensCount;
       return this;
     }
@@ -154,7 +154,7 @@ public class ModifyProcessInstanceRequestDto {
       return ancestorElementInstanceKey;
     }
 
-    public Modification setAncestorElementInstanceKey(Long ancestorElementInstanceKey) {
+    public Modification setAncestorElementInstanceKey(final Long ancestorElementInstanceKey) {
       this.ancestorElementInstanceKey = ancestorElementInstanceKey;
       return this;
     }
@@ -173,7 +173,7 @@ public class ModifyProcessInstanceRequestDto {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
       if (this == o) {
         return true;
       }

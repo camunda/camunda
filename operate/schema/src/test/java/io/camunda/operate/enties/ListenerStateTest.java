@@ -9,7 +9,7 @@ package io.camunda.operate.enties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.camunda.operate.entities.ListenerState;
+import io.camunda.webapps.schema.entities.operate.ListenerState;
 import org.junit.jupiter.api.Test;
 
 public class ListenerStateTest {

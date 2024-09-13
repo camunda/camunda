@@ -7,9 +7,6 @@
  */
 package io.camunda.operate.webapp.opensearch.reader;
 
-import static io.camunda.operate.entities.FlowNodeState.ACTIVE;
-import static io.camunda.operate.entities.FlowNodeState.COMPLETED;
-import static io.camunda.operate.entities.FlowNodeState.TERMINATED;
 import static io.camunda.operate.schema.indices.DecisionIndex.DECISION_ID;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_NAME;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.ELEMENT_INSTANCE_KEY;
@@ -34,16 +31,14 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ONLY_
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
 import static io.camunda.operate.webapp.rest.dto.incidents.IncidentDto.FALLBACK_PROCESS_DEFINITION_NAME;
+import static io.camunda.webapps.schema.entities.operate.FlowNodeState.ACTIVE;
+import static io.camunda.webapps.schema.entities.operate.FlowNodeState.COMPLETED;
+import static io.camunda.webapps.schema.entities.operate.FlowNodeState.TERMINATED;
 import static org.opensearch.client.opensearch._types.SortOrder.Asc;
 import static org.opensearch.client.opensearch._types.SortOrder.Desc;
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
@@ -66,6 +61,11 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceBreadcrumbEnt
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadata;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;

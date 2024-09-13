@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.zeebeimport.post;
 
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.IncidentState;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

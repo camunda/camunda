@@ -12,13 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.webapp.rest.BatchOperationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -37,10 +37,10 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
 
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
 
-  private ArrayList<String> user1OperationIds = new ArrayList<>();
-  private ArrayList<String> user2OperationIds = new ArrayList<>();
+  private final ArrayList<String> user1OperationIds = new ArrayList<>();
+  private final ArrayList<String> user2OperationIds = new ArrayList<>();
 
-  private Comparator<BatchOperationDto> batchOperationEntityComparator =
+  private final Comparator<BatchOperationDto> batchOperationEntityComparator =
       (o1, o2) -> {
         if (o2.getEndDate() != null && o1.getEndDate() != null) {
           final int i = o2.getEndDate().compareTo(o1.getEndDate());
@@ -55,6 +55,7 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
         return o2.getStartDate().compareTo(o1.getStartDate());
       };
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -135,7 +136,7 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
 
   protected void createData() {
 
-    final List<OperateEntity> entities = new ArrayList<>();
+    final List<AbstractExporterEntity> entities = new ArrayList<>();
 
     final OffsetDateTime now = OffsetDateTime.now();
 
@@ -164,21 +165,21 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
             USER_2,
             user2OperationIds)); // finished
 
-    searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new AbstractExporterEntity[entities.size()]));
   }
 
-  private OperateEntity createBatchOperation(
-      OffsetDateTime startDate,
-      OffsetDateTime endDate,
-      String username,
-      ArrayList<String> userList) {
+  private AbstractExporterEntity createBatchOperation(
+      final OffsetDateTime startDate,
+      final OffsetDateTime endDate,
+      final String username,
+      final ArrayList<String> userList) {
     final BatchOperationEntity batchOperationEntity =
         createBatchOperationEntity(startDate, endDate, username);
     userList.add(batchOperationEntity.getId());
     return batchOperationEntity;
   }
 
-  protected MvcResult postRequest(Object query) throws Exception {
+  protected MvcResult postRequest(final Object query) throws Exception {
     return postRequest(BatchOperationRestService.BATCH_OPERATIONS_URL, query);
   }
 }

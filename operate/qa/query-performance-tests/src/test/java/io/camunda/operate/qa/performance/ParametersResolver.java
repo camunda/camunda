@@ -13,12 +13,12 @@ import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.URI;
@@ -80,7 +80,7 @@ public class ParametersResolver {
   private List<String> processIds = new ArrayList<>();
   private String startDateBefore;
   private String startDateAfter;
-  private Random random = new Random();
+  private final Random random = new Random();
 
   @PostConstruct
   public void resolveParameters() throws URISyntaxException {
@@ -118,7 +118,7 @@ public class ParametersResolver {
               ProcessInstanceForListViewEntity.class);
       startDateAfter = pi.getStartDate().format(df);
       startDateBefore = pi.getStartDate().plus(1, ChronoUnit.MINUTES).format(df);
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       throw new RuntimeException(
           "Error occurred when reading processInstanceIds from Elasticsearch", ex);
     }
@@ -136,7 +136,7 @@ public class ParametersResolver {
       final SearchRequest searchRequest =
           new SearchRequest(listViewAlias).source(searchSourceBuilder);
       processInstanceIds = requestIdsFor(searchRequest);
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       throw new RuntimeException(
           "Error occurred when reading processInstanceIds from Elasticsearch", ex);
     }
@@ -155,7 +155,7 @@ public class ParametersResolver {
       final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
       processInstanceIdWithLotsOfVariables =
           hits.getAt(0).getSourceAsMap().get(VariableTemplate.PROCESS_INSTANCE_KEY).toString();
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       throw new RuntimeException(
           "Error occurred when reading processInstanceIds from Elasticsearch", ex);
     }
@@ -167,7 +167,7 @@ public class ParametersResolver {
             esClient, getAlias(processIndex), 2);
   }
 
-  private List<String> requestIdsFor(SearchRequest searchRequest) throws IOException {
+  private List<String> requestIdsFor(final SearchRequest searchRequest) throws IOException {
     final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
     return Arrays.stream(hits.getHits())
         .collect(
@@ -176,7 +176,7 @@ public class ParametersResolver {
             (list1, list2) -> list1.addAll(list2));
   }
 
-  public void replacePlaceholdersInQuery(TestQuery testQuery) {
+  public void replacePlaceholdersInQuery(final TestQuery testQuery) {
     try {
       // replace in url
       String url = testQuery.getUrl();
@@ -192,12 +192,12 @@ public class ParametersResolver {
       if (body != null && !body.equals(testQuery.getBody())) {
         testQuery.setBody(objectMapper.readTree(body));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException("Error occurred when replacing placeholders in queries", e);
     }
   }
 
-  private boolean contains(String str, String substr) {
+  private boolean contains(final String str, final String substr) {
     return str != null && str.contains(substr);
   }
 
@@ -242,23 +242,26 @@ public class ParametersResolver {
     return string;
   }
 
-  private String replacePlaceholderWithIds(String body, String placeholder, List<String> ids) {
+  private String replacePlaceholderWithIds(
+      String body, final String placeholder, final List<String> ids) {
     final String idsString = ids.stream().collect(Collectors.joining("\",\""));
     body = body.replace(placeholder, idsString);
     return body;
   }
 
-  private String replacePlaceholderWithRandomId(String body, String placeholder, List<String> ids) {
+  private String replacePlaceholderWithRandomId(
+      final String body, final String placeholder, final List<String> ids) {
     final String id = ids.get(random.nextInt(ids.size()));
     return replacePlaceholderWithString(body, placeholder, id);
   }
 
-  private String replacePlaceholderWithString(String body, String placeholder, String value) {
+  private String replacePlaceholderWithString(
+      String body, final String placeholder, final String value) {
     body = body.replace(placeholder, value);
     return body;
   }
 
-  private String getAlias(IndexDescriptor descriptor) {
+  private String getAlias(final IndexDescriptor descriptor) {
     return String.format(
         "%s-%s-%s_alias", prefix, descriptor.getIndexName(), descriptor.getVersion().toLowerCase());
   }
