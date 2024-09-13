@@ -342,13 +342,13 @@ public final class CommandDistributionBehavior {
 
   private class DistributionRequest
       implements RequestBuilder, DistributionRequestBuilder, ContinuationRequestBuilder {
-    final long distributionKey;
+    final long key;
     String queue;
     Set<Integer> partitions = routingInfo.partitions();
     private boolean awaitNonEmptyQueue;
 
-    public DistributionRequest(final long distributionKey) {
-      this.distributionKey = distributionKey;
+    public DistributionRequest(final long key) {
+      this.key = key;
     }
 
     @Override
@@ -390,12 +390,7 @@ public final class CommandDistributionBehavior {
     @Override
     public <T extends UnifiedRecordValue> void distribute(final TypedRecord<T> command) {
       distributeCommand(
-          queue,
-          distributionKey,
-          command.getValueType(),
-          command.getIntent(),
-          command.getValue(),
-          partitions);
+          queue, key, command.getValueType(), command.getIntent(), command.getValue(), partitions);
     }
 
     @Override
@@ -403,7 +398,7 @@ public final class CommandDistributionBehavior {
         final ValueType valueType, final Intent intent, final T value) {
       distributeCommand(
           queue,
-          distributionKey,
+          key,
           Objects.requireNonNull(valueType),
           Objects.requireNonNull(intent),
           Objects.requireNonNull(value),
@@ -420,7 +415,7 @@ public final class CommandDistributionBehavior {
     public <T extends UnifiedRecordValue> void continueWith(final TypedRecord<T> command) {
       requestContinuation(
           queue,
-          distributionKey,
+          key,
           awaitNonEmptyQueue,
           command.getValueType(),
           command.getIntent(),
@@ -430,7 +425,7 @@ public final class CommandDistributionBehavior {
     @Override
     public <T extends UnifiedRecordValue> void continueWith(
         final ValueType valueType, final Intent intent, final T value) {
-      requestContinuation(queue, distributionKey, awaitNonEmptyQueue, valueType, intent, value);
+      requestContinuation(queue, key, awaitNonEmptyQueue, valueType, intent, value);
     }
   }
 }
