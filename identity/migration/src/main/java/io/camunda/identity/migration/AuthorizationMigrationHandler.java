@@ -44,23 +44,6 @@ public class AuthorizationMigrationHandler {
         return;
       }
       lastRecord = authorizations.getLast();
-      /*      Map<String, Map<String, Map<String, List<String>>>> authorizationMap = new HashMap<>();
-      authorizations.forEach(
-          authorization -> {
-            authorizationMap.putIfAbsent(authorization.username(), new HashMap<>());
-            authorizationMap
-                .get(authorization.username())
-                .putIfAbsent(authorization.resourceType(), new HashMap<>());
-            authorizationMap
-                .get(authorization.username())
-                .get(authorization.resourceType())
-                .putIfAbsent(authorization.permission(), new ArrayList<>());
-            authorizationMap
-                .get(authorization.username())
-                .get(authorization.resourceType())
-                .get(authorization.permission())
-                .add(authorization.resourceId());
-          });*/
       final Map<String, Map<String, Map<String, List<String>>>> authorizationMap =
           authorizations.stream()
               .collect(
@@ -89,7 +72,7 @@ public class AuthorizationMigrationHandler {
                                   Collectors.flatMapping(
                                       e -> e.getValue().stream(), Collectors.toList())));
                   final long ownerKey = getOwnerKeyForUsername(owner);
-                  authorizationService.createAuthorization(
+                  authorizationService.patchAuthorization(
                       new PatchAuthorizationRequest(
                           ownerKey,
                           PermissionAction.ADD,

@@ -82,7 +82,7 @@ class AuthorizationMigrationHandlerTest {
     migrationHandler.migrate();
 
     // then
-    verify(authorizationServices, times(3)).createAuthorization(any());
+    verify(authorizationServices, times(3)).patchAuthorization(any());
 
     final ArgumentCaptor<Collection<UserResourceAuthorization>> migratedCaptor =
         ArgumentCaptor.forClass(Collection.class);
