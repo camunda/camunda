@@ -7,6 +7,8 @@
  */
 package io.camunda.webapps.schema.entities;
 
+import java.util.Objects;
+
 /**
  * Represents an entity that can be written to ElasticSearch or OpenSearch
  *
@@ -26,5 +28,22 @@ public abstract class AbstractExporterEntity<T extends AbstractExporterEntity<T>
   public T setId(final String id) {
     this.id = id;
     return (T) this;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final AbstractExporterEntity<?> that = (AbstractExporterEntity<?>) o;
+    return Objects.equals(id, that.id);
   }
 }

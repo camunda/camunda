@@ -34,7 +34,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
   @Override
   public ProcessEntity setId(final String id) {
     super.setId(id);
-    setKey(id == null ? null : Long.valueOf(id));
+    setKey(Long.valueOf(id));
     return this;
   }
 
