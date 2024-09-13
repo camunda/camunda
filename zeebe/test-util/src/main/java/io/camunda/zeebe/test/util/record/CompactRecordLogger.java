@@ -826,7 +826,13 @@ public class CompactRecordLogger {
     final var intent = (CommandDistributionIntent) record.getIntent();
     final var targetPartitionWord =
         switch (intent) {
-          case STARTED, FINISH, FINISHED, CONTINUATION_REQUESTED, CONTINUATION_COMPLETED -> "on";
+          case STARTED,
+                  FINISH,
+                  FINISHED,
+                  CONTINUATION_REQUESTED,
+                  CONTINUE,
+                  CONTINUATION_COMPLETED ->
+              "on";
           case DISTRIBUTING, ENQUEUED -> "to";
           case ACKNOWLEDGE, ACKNOWLEDGED -> "for";
         };
