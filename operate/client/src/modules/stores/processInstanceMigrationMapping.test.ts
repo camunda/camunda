@@ -10,12 +10,12 @@ import {open} from 'modules/mocks/diagrams';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
 import {processXmlStore as processXmlMigrationTargetStore} from 'modules/stores/processXml/processXml.migration.target';
-import {autoMappingStore} from './autoMapping';
+import {processInstanceMigrationMappingStore} from './processInstanceMigrationMapping';
 import {waitFor} from '@testing-library/react';
 
 describe('autoMappingStore', () => {
   afterEach(() => {
-    autoMappingStore.reset();
+    processInstanceMigrationMappingStore.reset();
   });
 
   it('should provide auto mapped flow nodes', async () => {
@@ -33,7 +33,8 @@ describe('autoMappingStore', () => {
       expect(processXmlMigrationTargetStore.state.status).toBe('fetched'),
     );
 
-    const {isAutoMappable, autoMappableFlowNodes} = autoMappingStore;
+    const {isAutoMappable, autoMappableFlowNodes} =
+      processInstanceMigrationMappingStore;
 
     /**
      * orderProcess.bpmn contains:
@@ -71,18 +72,28 @@ describe('autoMappingStore', () => {
   });
 
   it('should toggle mapped filter', () => {
-    expect(autoMappingStore.state.isMappedFilterEnabled).toBe(false);
+    expect(
+      processInstanceMigrationMappingStore.state.isMappedFilterEnabled,
+    ).toBe(false);
 
-    autoMappingStore.toggleMappedFilter();
-    expect(autoMappingStore.state.isMappedFilterEnabled).toBe(true);
+    processInstanceMigrationMappingStore.toggleMappedFilter();
+    expect(
+      processInstanceMigrationMappingStore.state.isMappedFilterEnabled,
+    ).toBe(true);
 
-    autoMappingStore.toggleMappedFilter();
-    expect(autoMappingStore.state.isMappedFilterEnabled).toBe(false);
+    processInstanceMigrationMappingStore.toggleMappedFilter();
+    expect(
+      processInstanceMigrationMappingStore.state.isMappedFilterEnabled,
+    ).toBe(false);
 
-    autoMappingStore.toggleMappedFilter();
-    expect(autoMappingStore.state.isMappedFilterEnabled).toBe(true);
+    processInstanceMigrationMappingStore.toggleMappedFilter();
+    expect(
+      processInstanceMigrationMappingStore.state.isMappedFilterEnabled,
+    ).toBe(true);
 
-    autoMappingStore.reset();
-    expect(autoMappingStore.state.isMappedFilterEnabled).toBe(false);
+    processInstanceMigrationMappingStore.reset();
+    expect(
+      processInstanceMigrationMappingStore.state.isMappedFilterEnabled,
+    ).toBe(false);
   });
 });
