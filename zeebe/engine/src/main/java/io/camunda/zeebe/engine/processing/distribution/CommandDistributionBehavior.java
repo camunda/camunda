@@ -275,12 +275,10 @@ public final class CommandDistributionBehavior {
   private <T extends UnifiedRecordValue> void requestContinuation(
       final String queue,
       final long key,
-      final boolean awaitNonEmptyQueue,
       final ValueType valueType,
       final Intent intent,
       final T value) {
-    final var writeImmediately =
-        !awaitNonEmptyQueue && !distributionState.hasQueuedDistributions(queue);
+    final var writeImmediately = !distributionState.hasQueuedDistributions(queue);
 
     if (writeImmediately) {
       commandWriter.appendFollowUpCommand(key, intent, value);
@@ -325,17 +323,17 @@ public final class CommandDistributionBehavior {
   }
 
   public interface ContinuationRequestBuilder {
-    /**
-     * Specifies whether to wait for the queue to be non-empty before writing the continuation
-     * command. If set to false, the continuation command will be written immediately if the queue
-     * is currently empty.
-     */
-    ContinuationRequestBuilder awaitNonEmptyQueue(boolean awaitNonEmptyQueue);
 
-    /** Write this command once the queue is empty. */
+    /**
+     * Write this command once the queue is empty. If the queue is already empty, the command will
+     * be written immediately.
+     */
     <T extends UnifiedRecordValue> void continueWith(TypedRecord<T> command);
 
-    /** Write this command once the queue is empty. */
+    /**
+     * Write this command once the queue is empty. If the queue is already empty, the command will
+     * be written immediately.
+     */
     <T extends UnifiedRecordValue> void continueWith(
         final ValueType valueType, final Intent intent, final T value);
   }
@@ -345,7 +343,6 @@ public final class CommandDistributionBehavior {
     final long key;
     String queue;
     Set<Integer> partitions = routingInfo.partitions();
-    private boolean awaitNonEmptyQueue;
 
     public DistributionRequest(final long key) {
       this.key = key;
@@ -406,26 +403,15 @@ public final class CommandDistributionBehavior {
     }
 
     @Override
-    public ContinuationRequestBuilder awaitNonEmptyQueue(final boolean awaitNonEmptyQueue) {
-      this.awaitNonEmptyQueue = awaitNonEmptyQueue;
-      return this;
-    }
-
-    @Override
     public <T extends UnifiedRecordValue> void continueWith(final TypedRecord<T> command) {
       requestContinuation(
-          queue,
-          key,
-          awaitNonEmptyQueue,
-          command.getValueType(),
-          command.getIntent(),
-          command.getValue());
+          queue, key, command.getValueType(), command.getIntent(), command.getValue());
     }
 
     @Override
     public <T extends UnifiedRecordValue> void continueWith(
         final ValueType valueType, final Intent intent, final T value) {
-      requestContinuation(queue, key, awaitNonEmptyQueue, valueType, intent, value);
+      requestContinuation(queue, key, valueType, intent, value);
     }
   }
 }
