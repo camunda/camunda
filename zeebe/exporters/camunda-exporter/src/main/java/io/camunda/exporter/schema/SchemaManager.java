@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.schema;
 
-import io.camunda.exporter.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.Map;
 import java.util.Set;
 

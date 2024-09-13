@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.entities;
+package io.camunda.webapps.schema.entities;
 
 /**
  * Represents an entity that can be written to ElasticSearch or OpenSearch

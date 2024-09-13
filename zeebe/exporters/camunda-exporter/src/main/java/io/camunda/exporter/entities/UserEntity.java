@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.entities;
 
+import io.camunda.webapps.schema.entities.ExporterEntity;
+
 public class UserEntity implements ExporterEntity<UserEntity> {
   private String id;
   private Long key;
