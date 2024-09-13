@@ -101,21 +101,21 @@
         margin-bottom: 15px;
       }
 
-      .Button {
+      button {
         display: block;
         width: 100%;
-        padding: 1px;
+        padding: 2px;
         margin-bottom: 20px;
         background-color: var(--cds-field);
-        text-align: left;
-        border-radius: 0;
+        color: var(--text-primary);
+        border-color: var(--text-primary);
 
         &:disabled {
           opacity: 0.3;
         }
 
         &.active {
-          padding: 0;
+          padding: 1px;
           border: 2px solid var(--cds-border-interactive);
 
           .name,

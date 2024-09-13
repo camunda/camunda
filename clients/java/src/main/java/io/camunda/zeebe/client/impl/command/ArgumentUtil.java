@@ -17,6 +17,8 @@ package io.camunda.zeebe.client.impl.command;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
+import java.util.function.Predicate;
 
 public final class ArgumentUtil {
 
@@ -27,9 +29,7 @@ public final class ArgumentUtil {
   }
 
   public static void ensureNotEmpty(final String property, final String value) {
-    if (value.isEmpty()) {
-      throw new IllegalArgumentException(property + " must not be empty");
-    }
+    ensureNotEmpty(property, value, String::isEmpty);
   }
 
   public static void ensureNotNullNorEmpty(final String property, final String value) {
@@ -70,6 +70,22 @@ public final class ArgumentUtil {
     if (testValue.isBefore(otherInstant)) {
       throw new IllegalArgumentException(
           String.format("%s must be equal to or after %s", property, otherInstant));
+    }
+  }
+
+  public static void ensureNotEmpty(final String property, final List<?> value) {
+    ensureNotEmpty(property, value, List::isEmpty);
+  }
+
+  public static void ensureNotNullOrEmpty(final String property, final List<?> value) {
+    ensureNotNull(property, value);
+    ensureNotEmpty(property, value);
+  }
+
+  private static <T> void ensureNotEmpty(
+      final String property, final T value, final Predicate<T> isEmptyPredicate) {
+    if (isEmptyPredicate.test(value)) {
+      throw new IllegalArgumentException(property + " must not be empty");
     }
   }
 }

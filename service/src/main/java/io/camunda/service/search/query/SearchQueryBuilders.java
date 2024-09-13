@@ -60,6 +60,15 @@ public final class SearchQueryBuilders {
     return fn.apply(decisionRequirementsSearchQuery()).build();
   }
 
+  public static FlowNodeInstanceQuery.Builder flownodeInstanceSearchQuery() {
+    return new FlowNodeInstanceQuery.Builder();
+  }
+
+  public static FlowNodeInstanceQuery flownodeInstanceSearchQuery(
+      final Function<FlowNodeInstanceQuery.Builder, ObjectBuilder<FlowNodeInstanceQuery>> fn) {
+    return fn.apply(flownodeInstanceSearchQuery()).build();
+  }
+
   public static UserQuery.Builder userSearchQuery() {
     return new UserQuery.Builder();
   }

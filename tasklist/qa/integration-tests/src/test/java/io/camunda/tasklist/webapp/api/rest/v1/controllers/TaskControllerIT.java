@@ -28,6 +28,7 @@ import io.camunda.tasklist.queries.Sort;
 import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import io.camunda.tasklist.queries.TaskSortFields;
+import io.camunda.tasklist.store.ListViewStore;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistTester;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
@@ -65,6 +66,8 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
   @InjectMocks private IdentityProperties identityProperties;
 
   @MockBean private IdentityAuthorizationService identityAuthorizationService;
+
+  @Autowired private ListViewStore listViewStore;
 
   @Autowired private WebApplicationContext context;
 
@@ -1313,6 +1316,13 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               tuple("var_2", "222222", "222222", false),
               tuple("var_a", "225", "225", false),
               tuple("var_b", "779", "779", false));
+
+      // Assure Variables from Job Worker are not persisted on task-list-view
+      assertThat(listViewStore.getVariablesByVariableName("var_0").isEmpty());
+      assertThat(listViewStore.getVariablesByVariableName("var_1").isEmpty());
+      assertThat(listViewStore.getVariablesByVariableName("var_2").isEmpty());
+      assertThat(listViewStore.getVariablesByVariableName("var_a").isEmpty());
+      assertThat(listViewStore.getVariablesByVariableName("var_b").isEmpty());
     }
 
     @Test
@@ -1388,6 +1398,14 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               tuple("var_2", "222222", "222222", false),
               tuple("var_a", "225", "225", false),
               tuple("var_b", "779", "779", false));
+
+      // Assert the Task Variables were persisted in the tasklist-list-view
+      assertThat(listViewStore.getVariablesByVariableName("var_a").get(0).equals("225"));
+      assertThat(listViewStore.getVariablesByVariableName("var_1").get(0).equals("11111111111"));
+
+      // Assure the Draft Variable were not persisted to list-view
+      assertThat(listViewStore.getVariablesByVariableName("var_2").isEmpty());
+      assertThat(listViewStore.getVariablesByVariableName("var_b").isEmpty());
     }
 
     @Test

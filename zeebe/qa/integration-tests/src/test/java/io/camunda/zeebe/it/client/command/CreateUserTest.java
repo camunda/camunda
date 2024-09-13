@@ -39,16 +39,18 @@ class CreateUserTest {
   @Test
   void shouldCreateUser() {
     // when
-    client
-        .newUserCreateCommand()
-        .username("username")
-        .name("name")
-        .email("email@example.com")
-        .password("password")
-        .send()
-        .join();
+    final var response =
+        client
+            .newUserCreateCommand()
+            .username("username")
+            .name("name")
+            .email("email@example.com")
+            .password("password")
+            .send()
+            .join();
 
     // then
+    assertThat(response.getUserKey()).isGreaterThan(0);
     ZeebeAssertHelper.assertUserCreated(
         "username",
         (user) -> {

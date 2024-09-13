@@ -8,20 +8,26 @@
 package io.camunda.exporter.schema;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
+import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import co.elastic.clients.json.JsonpDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
+import io.camunda.exporter.exceptions.IndexSchemaValidationException;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +87,76 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
     }
+  }
+
+  @Override
+  public Map<String, IndexMapping> getMappings(
+      final String namePattern, final MappingSource mappingSource) {
+    try {
+      final Map<String, TypeMapping> mappings = getCurrentMappings(mappingSource, namePattern);
+
+      return mappings.entrySet().stream()
+          .collect(
+              Collectors.toMap(
+                  Entry::getKey,
+                  entry -> {
+                    final var mappingsBlock = entry.getValue();
+                    return new IndexMapping.Builder()
+                        .indexName(entry.getKey())
+                        .dynamic(dynamicFromMappings(mappingsBlock))
+                        .properties(propertiesFromMappings(mappingsBlock))
+                        .metaProperties(metaFromMappings(mappingsBlock))
+                        .build();
+                  }));
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          String.format(
+              "Failed retrieving mappings from index/index templates with pattern [%s]",
+              namePattern),
+          e);
+    }
+  }
+
+  private Map<String, TypeMapping> getCurrentMappings(
+      final MappingSource mappingSource, final String namePattern) throws IOException {
+    if (mappingSource == MappingSource.INDEX) {
+      return client.indices().getMapping(req -> req.index(namePattern)).result().entrySet().stream()
+          .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().mappings()));
+    } else if (mappingSource == MappingSource.INDEX_TEMPLATE) {
+      return client
+          .indices()
+          .getIndexTemplate(req -> req.name(namePattern))
+          .indexTemplates()
+          .stream()
+          .filter(indexTemplateItem -> indexTemplateItem.indexTemplate().template() != null)
+          .collect(
+              Collectors.toMap(
+                  IndexTemplateItem::name, item -> item.indexTemplate().template().mappings()));
+    } else {
+      throw new IndexSchemaValidationException(
+          "Invalid mapping source provided must be either INDEX or INDEX_TEMPLATE");
+    }
+  }
+
+  private Set<IndexMappingProperty> propertiesFromMappings(final TypeMapping mapping) {
+    return mapping.properties().entrySet().stream()
+        .map(
+            p ->
+                new IndexMappingProperty.Builder()
+                    .name(p.getKey())
+                    .typeDefinition(Map.of("type", p.getValue()._kind().jsonValue()))
+                    .build())
+        .collect(Collectors.toSet());
+  }
+
+  private String dynamicFromMappings(final TypeMapping mapping) {
+    final var dynamic = mapping.dynamic();
+    return dynamic == null ? "strict" : dynamic.toString().toLowerCase();
+  }
+
+  private Map<String, Object> metaFromMappings(final TypeMapping mapping) {
+    return mapping.meta().entrySet().stream()
+        .collect(Collectors.toMap(Entry::getKey, ent -> ent.getValue().to(Object.class)));
   }
 
   private PutMappingRequest putMappingRequest(
@@ -155,5 +231,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
               + " from classpath.",
           e);
     }
+  }
+
+  public enum MappingSource {
+    INDEX,
+    INDEX_TEMPLATE
   }
 }

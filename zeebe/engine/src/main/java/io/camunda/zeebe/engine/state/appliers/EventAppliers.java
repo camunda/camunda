@@ -422,7 +422,7 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerAuthorizationAppliers(final MutableProcessingState state) {
-    register(AuthorizationIntent.CREATED, new AuthorizationCreatedApplier(state));
+    register(AuthorizationIntent.PERMISSION_ADDED, new AuthorizationPermissionAddedApplier(state));
   }
 
   private void registerEscalationAppliers() {

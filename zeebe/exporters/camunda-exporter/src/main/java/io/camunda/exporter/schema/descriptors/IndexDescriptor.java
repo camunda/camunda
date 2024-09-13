@@ -15,4 +15,6 @@ public interface IndexDescriptor {
   String getIndexName();
 
   String getMappingsClasspathFilename();
+
+  String getAllVersionsIndexNameRegexPattern();
 }

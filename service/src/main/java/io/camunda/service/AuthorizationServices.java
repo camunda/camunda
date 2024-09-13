@@ -15,7 +15,7 @@ import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationPatchRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
@@ -50,10 +50,10 @@ public class AuthorizationServices<T>
     return executor.search(query, AuthorizationEntity.class);
   }
 
-  public CompletableFuture<AuthorizationRecord> createAuthorization(
+  public CompletableFuture<AuthorizationRecord> patchAuthorization(
       final PatchAuthorizationRequest request) {
     final var brokerRequest =
-        new BrokerAuthorizationCreateRequest()
+        new BrokerAuthorizationPatchRequest()
             .setOwnerKey(request.ownerKey())
             .setAction(request.action())
             .setResourceType(request.resourceType());

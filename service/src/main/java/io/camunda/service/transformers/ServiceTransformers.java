@@ -15,6 +15,7 @@ import io.camunda.service.search.filter.DateValueFilter;
 import io.camunda.service.search.filter.DecisionDefinitionFilter;
 import io.camunda.service.search.filter.DecisionRequirementsFilter;
 import io.camunda.service.search.filter.FilterBase;
+import io.camunda.service.search.filter.FlowNodeInstanceFilter;
 import io.camunda.service.search.filter.IncidentFilter;
 import io.camunda.service.search.filter.ProcessInstanceFilter;
 import io.camunda.service.search.filter.UserFilter;
@@ -24,6 +25,7 @@ import io.camunda.service.search.filter.VariableValueFilter;
 import io.camunda.service.search.query.AuthorizationQuery;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
 import io.camunda.service.search.query.DecisionRequirementsQuery;
+import io.camunda.service.search.query.FlowNodeInstanceQuery;
 import io.camunda.service.search.query.IncidentQuery;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryResult;
@@ -32,6 +34,7 @@ import io.camunda.service.search.query.UserQuery;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.query.VariableQuery;
 import io.camunda.service.search.result.QueryResultConfig;
+import io.camunda.service.search.sort.FlowNodeInstanceSort;
 import io.camunda.service.search.sort.SortOption;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.filter.AuthenticationTransformer;
@@ -41,6 +44,7 @@ import io.camunda.service.transformers.filter.DateValueFilterTransformer;
 import io.camunda.service.transformers.filter.DecisionDefinitionFilterTransformer;
 import io.camunda.service.transformers.filter.DecisionRequirementsFilterTransformer;
 import io.camunda.service.transformers.filter.FilterTransformer;
+import io.camunda.service.transformers.filter.FlownodeInstanceFilterTransformer;
 import io.camunda.service.transformers.filter.IncidentFilterTransformer;
 import io.camunda.service.transformers.filter.ProcessInstanceFilterTransformer;
 import io.camunda.service.transformers.filter.UserFilterTransformer;
@@ -96,6 +100,9 @@ public final class ServiceTransformers {
     mappers.put(UserQuery.class, new TypedSearchQueryTransformer<>(mappers));
     mappers.put(AuthorizationQuery.class, new TypedSearchQueryTransformer<>(mappers));
     mappers.put(IncidentQuery.class, new TypedSearchQueryTransformer<>(mappers));
+    mappers.put(
+        FlowNodeInstanceQuery.class,
+        new TypedSearchQueryTransformer<FlowNodeInstanceFilter, FlowNodeInstanceSort>(mappers));
 
     // search query response -> search query result
     mappers.put(SearchQueryResult.class, new SearchQueryResultTransformer());
@@ -117,6 +124,7 @@ public final class ServiceTransformers {
     mappers.put(UserFilter.class, new UserFilterTransformer());
     mappers.put(AuthorizationFilter.class, new AuthorizationFilterTransformer());
     mappers.put(ComparableValueFilter.class, new ComparableValueFilterTransformer());
+    mappers.put(FlowNodeInstanceFilter.class, new FlownodeInstanceFilterTransformer());
     mappers.put(IncidentFilter.class, new IncidentFilterTransformer(mappers));
 
     // result config -> source config

@@ -38,6 +38,8 @@ public class VariableListViewEntity {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private ListViewJoinRelation join;
 
+  public VariableListViewEntity() {}
+
   public VariableListViewEntity(final VariableEntity entity) {
     setValue(entity.getValue());
     setFullValue(entity.getFullValue());
@@ -133,5 +135,29 @@ public class VariableListViewEntity {
   public VariableListViewEntity setJoin(final ListViewJoinRelation join) {
     this.join = join;
     return this;
+  }
+
+  public static VariableListViewEntity createFrom(
+      final String tenantId,
+      final String id,
+      final String name,
+      final String value,
+      final String scopeKey,
+      final int variableSizeThreshold,
+      final ListViewJoinRelation listViewJoinRelation) {
+    final VariableListViewEntity entity = new VariableListViewEntity().setId(id).setName(name);
+    if (value.length() > variableSizeThreshold) {
+      // store preview
+      entity.setValue(value.substring(0, variableSizeThreshold));
+      entity.setIsPreview(true);
+    } else {
+      entity.setIsPreview(false);
+      entity.setValue(value);
+    }
+    entity.setScopeKey(scopeKey);
+    entity.setFullValue(value);
+    entity.setTenantId(tenantId);
+    entity.setJoin(listViewJoinRelation);
+    return entity;
   }
 }

@@ -11,6 +11,7 @@ import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -747,6 +748,60 @@ public final class ProcessInstanceMigrationPreconditions {
                 reason, RejectionType.INVALID_STATE);
           }
         });
+  }
+
+  /**
+   * It should not be possible to change the event type of a catch event during process instance
+   * migration. This would mean that the catch event is subscribed to a different event type than
+   * before.
+   *
+   * @param processInstanceKey process instance key to be logged
+   * @param mappingInstructions mapping instructions (source catch event id to target catch event
+   *     id)
+   * @param sourceProcessDefinition source process definition to check
+   * @param targetProcessDefinition target process definition to check
+   * @param sourceElementId source element id to check
+   */
+  public static void requireNoCatchEventMappingToChangeEventType(
+      final long processInstanceKey,
+      final Map<String, String> mappingInstructions,
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final String sourceElementId) {
+    final var sourceElement = sourceProcessDefinition.getProcess().getElementById(sourceElementId);
+    if (!(sourceElement instanceof final ExecutableCatchEventSupplier sourceElementWithEvents)) {
+      return;
+    }
+
+    for (final ExecutableCatchEvent sourceCatchEvent : sourceElementWithEvents.getEvents()) {
+      final String sourceCatchEventId = BufferUtil.bufferAsString(sourceCatchEvent.getId());
+      if (!mappingInstructions.containsKey(sourceCatchEventId)) {
+        continue;
+      }
+
+      final String targetCatchEventId = mappingInstructions.get(sourceCatchEventId);
+      final var targetCatchEvent =
+          targetProcessDefinition.getProcess().getElementById(targetCatchEventId);
+      if (sourceCatchEvent.getEventType() != targetCatchEvent.getEventType()) {
+        final var reason =
+            String.format(
+                """
+                Expected to migrate process instance '%s' but active element with id '%s' \
+                has a catch event with id '%s' that is mapped to a catch event with id '%s'. \
+                These catch events have different event types: '%s' and '%s'. \
+                The event type of a catch event cannot be changed by process instance migration. \
+                Please ensure the event type of the catch event remains the same \
+                or remove the mapping instruction for these catch events.""",
+                processInstanceKey,
+                sourceElementId,
+                sourceCatchEventId,
+                targetCatchEventId,
+                sourceCatchEvent.getEventType(),
+                targetCatchEvent.getEventType());
+        throw new ProcessInstanceMigrationPreconditionFailedException(
+            reason, RejectionType.INVALID_STATE);
+      }
+    }
   }
 
   /**

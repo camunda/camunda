@@ -6,8 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
+import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
+import {useLocation} from 'react-router-dom';
 
 import {updateEntity, createEntity, evaluateReport} from 'services';
 import {nowDirty, nowPristine} from 'saveGuard';
@@ -16,6 +17,12 @@ import {track} from 'tracking';
 
 import {ReportEdit} from './ReportEdit';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
+import {useErrorHandling} from 'hooks';
+
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useLocation: jest.fn().mockReturnValue({pathname: '/report/1'}),
+}));
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -31,6 +38,12 @@ jest.mock('services', () => {
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
 jest.mock('saveGuard', () => ({nowDirty: jest.fn(), nowPristine: jest.fn()}));
 jest.mock('tracking', () => ({track: jest.fn()}));
+jest.mock('hooks', () => ({
+  ...jest.requireActual('hooks'),
+  useErrorHandling: jest.fn(() => ({
+    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  })),
+}));
 
 const mockSessionStorage = {
   getItem: jest.fn(),
@@ -74,10 +87,11 @@ const report = {
 
 const props = {
   report,
-  mightFail: (promise, cb) => cb(promise),
   updateOverview: jest.fn(),
-  location: {pathname: '/report/1'},
 };
+
+const mightFail = jest.fn((promise, cb) => cb(promise));
+useErrorHandling.mockReturnValue({mightFail});
 
 it('should show the instance count in the header if it is available', () => {
   const node = shallow(<ReportEdit {...props} />);
@@ -91,40 +105,43 @@ it('should contain a Control Panel in edit mode for a single report', () => {
   expect(node).toIncludeText('ControlPanel');
 });
 
-it('should update the report', async () => {
+it('should update the report', () => {
   const node = shallow(<ReportEdit {...props} />);
 
-  await node.instance().updateReport({visualization: {$set: 'customTestVis'}});
+  node.find('Visualization').simulate('change', {visualization: {$set: 'customTestVis'}}, true);
 
-  expect(node.state().report.data.visualization).toBe('customTestVis');
+  expect(node.find('Visualization').prop('report').visualization).toBe('customTestVis');
 });
 
-it('should evaluate the report on mount if the config is complete, but the result is missing', async () => {
+it('should evaluate the report on mount if the config is complete, but the result is missing', () => {
   evaluateReport.mockClear();
   evaluateReport.mockReturnValue(report);
 
   const node = shallow(<ReportEdit {...props} report={{...report, result: null}} />);
-  node.setState({shouldAutoReloadPreview: true});
+  node.find('.updatePreview').simulate('toggle', true);
+
+  runAllEffects();
 
   expect(node.find('Loading')).toExist();
   expect(evaluateReport).toHaveBeenCalled();
 });
 
-it('should evaluate the report after updating', async () => {
+it('should evaluate the report after updating', () => {
   const node = shallow(<ReportEdit {...props} />);
 
-  node.setState({shouldAutoReloadPreview: true});
+  node.find('.updatePreview').simulate('toggle', true);
   evaluateReport.mockReturnValue(report);
-  await node.instance().updateReport({visualization: {$set: 'customTestVis'}}, true);
+
+  node.find('Visualization').simulate('change', {visualization: {$set: 'customTestVis'}}, true);
 
   expect(evaluateReport).toHaveBeenCalled();
 });
 
-it('should not evaluate the report if the view/groupBy/visualization setting is incomplete', async () => {
+it('should not evaluate the report if the view/groupBy/visualization setting is incomplete', () => {
   const node = shallow(<ReportEdit {...props} />);
 
   evaluateReport.mockClear();
-  await node.instance().updateReport({$unset: ['groupBy', 'visualization']}, true);
+  node.find('Visualization').simulate('change', {$unset: ['groupBy', 'visualization']}, true);
 
   expect(evaluateReport).not.toHaveBeenCalled();
 });
@@ -132,18 +149,18 @@ it('should not evaluate the report if the view/groupBy/visualization setting is 
 it('should reset the report data to its original state after canceling', async () => {
   const node = shallow(<ReportEdit {...props} />);
 
-  const dataBefore = node.state().report;
+  const dataBefore = node.find('Configuration').prop(report);
 
-  await node.instance().updateReport({visualization: {$set: 'customTestVis'}});
-  node.instance().cancel();
+  node.find('Visualization').simulate('change', {visualization: {$set: 'customTestVis'}}, true);
+  node.find('EntityNameForm').simulate('cancel');
 
-  expect(node.state().report).toEqual(dataBefore);
+  expect(node.find('Configuration').prop(report)).toEqual(dataBefore);
 });
 
 it('should save a changed report', async () => {
   const node = shallow(<ReportEdit {...props} />);
 
-  await node.instance().save();
+  node.find('EntityNameForm').simulate('save');
 
   expect(updateEntity).toHaveBeenCalled();
 });
@@ -151,57 +168,50 @@ it('should save a changed report', async () => {
 it('should reset name and description on cancel', async () => {
   const node = shallow(<ReportEdit {...props} />);
 
-  node.setState({report: {...report, name: 'new Name', description: 'new Description'}});
+  node
+    .find('Visualization')
+    .simulate('change', {$set: {name: 'new Name', description: 'new Description'}}, true);
+  node.find('EntityNameForm').simulate('cancel');
 
-  node.instance().cancel();
-
-  expect(node.state().report.name).toBe('name');
-  expect(node.state().report.description).toBe('description');
+  expect(node.find('EntityNameForm').prop('name')).toBe('name');
+  expect(node.find('EntityNameForm').prop('description')).toBe('description');
 });
 
 it('should use original data as result data if report cant be evaluated on cancel', async () => {
   const node = shallow(<ReportEdit {...props} />);
 
-  node.setState({
-    originalData: {
-      ...report,
-      data: {
-        definitions: [
-          {
-            key: '123',
-            versions: ['1'],
-            tenantIds: [null],
-          },
-        ],
-        configuration: {},
-      },
-    },
-  });
+  node
+    .find('Visualization')
+    .simulate(
+      'change',
+      {$set: {definitions: [{key: 123, versions: ['1'], tenantIds: [null]}]}},
+      true
+    );
 
-  node.instance().cancel();
+  node.find('EntityNameForm').simulate('cancel');
 
-  expect(node.state().report.data.definitions[0].key).toEqual('123');
+  expect(node.find('Configuration').prop('report').data.definitions[0].key).toEqual('aKey');
 });
 
 it('should set conflict state when conflict happens on save button click', async () => {
   const conflictedItems = [{id: '1', name: 'alert', type: 'alert'}];
 
-  const mightFail = (promise, cb, err) => err({status: 409, conflictedItems});
+  mightFail.mockImplementationOnce((promise, cb, err) => err({status: 409, conflictedItems}));
 
-  const node = shallow(<ReportEdit {...props} mightFail={mightFail} />);
+  const node = shallow(<ReportEdit {...props} />);
 
   try {
-    node.instance().save();
+    node.find('EntityNameForm').simulate('save');
   } catch (e) {
-    expect(node.state().conflict.type).toEqual('save');
-    expect(node.state().conflict.items).toEqual(conflictedItems);
+    expect(node.find('ConflictModal').prop('conflict').type).toEqual('save');
+    expect(node.find('ConflictModal').prop('conflict').items).toEqual(conflictedItems);
   }
 });
 
 it('should create a new report if the report is new', () => {
   const node = shallow(<ReportEdit {...props} isNew />);
 
-  node.instance().save();
+  node.find('EntityNameForm').simulate('save');
 
   expect(createEntity).toHaveBeenCalledWith('report/process/single', {
     collectionId: null,
@@ -212,16 +222,10 @@ it('should create a new report if the report is new', () => {
 });
 
 it('should create a new report in a collection', async () => {
-  const node = await shallow(
-    <ReportEdit
-      {...props}
-      location={{pathname: '/collection/123/report/new/edit'}}
-      match={{params: {id: 'new'}}}
-      isNew
-    />
-  );
+  useLocation.mockReturnValue({pathname: '/collection/123/report/new/edit'});
+  const node = await shallow(<ReportEdit {...props} match={{params: {id: 'new'}}} isNew />);
 
-  node.instance().save();
+  node.find('EntityNameForm').simulate('save');
 
   expect(createEntity).toHaveBeenCalledWith('report/process/single', {
     collectionId: '123',
@@ -232,20 +236,25 @@ it('should create a new report in a collection', async () => {
 });
 
 it('should invoke updateOverview when saving the report', async () => {
-  updateEntity.mockClear();
-  updateEntity.mockReturnValue({});
+  evaluateReport.mockReturnValue({...report, id: 'change'});
   const spy = jest.fn();
   const node = shallow(<ReportEdit {...props} updateOverview={spy} />);
 
-  await node.find(EntityNameForm).prop('onSave')();
+  node.find('EntityNameForm').simulate('save');
+  await flushPromises();
 
   expect(spy).toHaveBeenCalled();
 });
 
-it('should notify the saveGuard of changes', () => {
+it('should notify the saveGuard of changes', async () => {
   const node = shallow(<ReportEdit {...props} />);
 
-  node.find(ReportControlPanel).prop('updateReport')({processDefinitionKey: {$set: 'b'}});
+  await node.find(ReportControlPanel).prop('updateReport')({processDefinitionKey: {$set: 'b'}});
+
+  await runAllEffects();
+  await flushPromises();
+  await runAllEffects();
+  await flushPromises();
 
   expect(nowDirty).toHaveBeenCalled();
 
@@ -255,9 +264,14 @@ it('should notify the saveGuard of changes', () => {
 });
 
 it('should only resolve the save promise if a decision for conflicts has been made', async () => {
-  const mightFail = jest.fn().mockImplementation((promise, cb) => cb(promise));
   nowDirty.mockClear();
-  const node = shallow(<ReportEdit {...props} mightFail={mightFail} />);
+  evaluateReport.mockReturnValue(report);
+
+  const mightFail = jest.fn().mockImplementation((promise, cb) => cb(promise));
+  useErrorHandling.mockReturnValue({
+    mightFail,
+  });
+  const node = shallow(<ReportEdit {...props} />);
 
   mightFail.mockImplementationOnce((promise, cb, err) =>
     err({status: 409, conflictedItems: [{id: '1', name: 'alert', type: 'alert'}]})
@@ -265,14 +279,14 @@ it('should only resolve the save promise if a decision for conflicts has been ma
 
   let promiseResolved = false;
   node
-    .instance()
-    .save()
-    .then(() => (promiseResolved = true));
-
-  await flushPromises();
+    .find(EntityNameForm)
+    .prop('onSave')()
+    .then(() => {
+      promiseResolved = true;
+    });
 
   expect(promiseResolved).toBe(false);
-  expect(node.state().conflict).not.toBe(null);
+  expect(node.find('ConflictModal').prop('conflict')).not.toBe(null);
 
   node.find('ConflictModal').simulate('confirm');
 
@@ -282,12 +296,8 @@ it('should only resolve the save promise if a decision for conflicts has been ma
 });
 
 it('should go back to a custom route after saving if provided as URL Search Param', async () => {
-  const node = shallow(
-    <ReportEdit
-      {...props}
-      location={{pathname: '/report/1', search: '?returnTo=/dashboard/1/edit'}}
-    />
-  );
+  useLocation.mockReturnValue({pathname: '/report/1', search: '?returnTo=/dashboard/1/edit'});
+  const node = shallow(<ReportEdit {...props} />);
 
   await node.find(EntityNameForm).prop('onSave')();
 
@@ -296,12 +306,8 @@ it('should go back to a custom route after saving if provided as URL Search Para
 });
 
 it('should go back to a custom route after canceling if provided as URL Search Param', async () => {
-  const node = shallow(
-    <ReportEdit
-      {...props}
-      location={{pathname: '/report/1', search: '?returnTo=/dashboard/1/edit'}}
-    />
-  );
+  useLocation.mockReturnValue({pathname: '/report/1', search: '?returnTo=/dashboard/1/edit'});
+  const node = shallow(<ReportEdit {...props} />);
 
   node.find(EntityNameForm).prop('onCancel')({preventDefault: jest.fn()});
 
@@ -311,8 +317,7 @@ it('should go back to a custom route after canceling if provided as URL Search P
 
 it('should show loading indicator if specified by children components', () => {
   const node = shallow(<ReportEdit {...props} />);
-  node.setState({shouldAutoReloadPreview: true});
-
+  node.find('.updatePreview').simulate('toggle', true);
   node.find(ReportControlPanel).prop('setLoading')(true);
 
   expect(node.find('Loading')).toExist();
@@ -325,9 +330,11 @@ it('should show loading indicator if specified by children components', () => {
 it('should pass the error to reportRenderer if evaluation fails', async () => {
   const testError = {status: 400, message: 'testError', reportDefinition: report};
   const mightFail = (promise, cb, err) => err(testError);
-
-  const node = shallow(<ReportEdit {...props} mightFail={mightFail} />);
-  await node.instance().loadReport(undefined, report);
+  useErrorHandling.mockReturnValueOnce({
+    mightFail,
+  });
+  const node = shallow(<ReportEdit {...props} />);
+  await node.find(ReportRenderer).prop('loadReport')(undefined, {...report, name: 'change'});
 
   expect(node.find(ReportRenderer).prop('error')).toEqual(testError);
 });
@@ -337,7 +344,6 @@ it('should show update preview switch disabled by default', () => {
 
   const updateSwicth = node.find('.updatePreview');
 
-  expect(node.state().shouldAutoReloadPreview).toBe(false);
   expect(sessionStorage.getItem).toHaveBeenCalledWith('shouldAutoReloadPreview');
   expect(updateSwicth.prop('labelText')).toBe('Update preview automatically');
   expect(updateSwicth.prop('toggled')).toBe(false);
@@ -346,13 +352,10 @@ it('should show update preview switch disabled by default', () => {
 
 it('should turn off automatic update when switch is toggled', () => {
   const node = shallow(<ReportEdit {...props} />);
-  node.setState({shouldAutoReloadPreview: true});
 
-  const updateSwicth = node.find('.updatePreview');
+  node.find('.updatePreview').simulate('toggle', false);
 
-  updateSwicth.simulate('toggle', false);
-
-  expect(node.state().shouldAutoReloadPreview).toBe(false);
+  expect(node.find('.updatePreview').prop('toggled')).toBe(false);
   expect(sessionStorage.setItem).toHaveBeenCalledWith('shouldAutoReloadPreview', false);
   expect(node.find('.RunPreviewButton')).toExist();
 });
@@ -361,27 +364,24 @@ it('should use sessionStorage value to set the preview toggle', () => {
   window.sessionStorage.getItem.mockReturnValueOnce('true');
   const node = shallow(<ReportEdit {...props} />);
 
-  expect(node.state().shouldAutoReloadPreview).toBe(true);
+  expect(node.find('.updatePreview').prop('toggled')).toBe(true);
   expect(node.find('.RunPreviewButton')).not.toExist();
 });
 
-it('should re-evalueate report on reload button click', () => {
+it('should re-evalueate report on run button click', () => {
   const node = shallow(<ReportEdit {...props} />);
-  const spy = jest.spyOn(node.instance(), 'reEvaluateReport');
 
-  node.setState({shouldAutoReloadPreview: false});
+  node.find('.updatePreview').simulate('toggle', false);
+  const runButton = node.find('.RunPreviewButton');
+  runButton.simulate('click');
 
-  const reloadButton = node.find('.RunPreviewButton');
-  reloadButton.simulate('click');
-
-  expect(spy).toHaveBeenCalledWith(props.report.data);
-  expect(evaluateReport).toHaveBeenCalled();
+  expect(evaluateReport).toHaveBeenCalledWith(props.report, [], {});
 });
 
 it('should not call evaluateReport when auto update is off', () => {
   evaluateReport.mockClear();
   const node = shallow(<ReportEdit {...props} />);
-  node.setState({shouldAutoReloadPreview: false});
+  node.find('.updatePreview').simulate('toggle', false);
 
   node.find(ReportControlPanel).prop('updateReport')({processDefinitionKey: {$set: 'b'}}, true);
 
@@ -391,10 +391,10 @@ it('should not call evaluateReport when auto update is off', () => {
 it('should update description', async () => {
   const node = shallow(<ReportEdit {...props} />);
 
-  node.find(EntityNameForm).prop('onDescriptionChange')('some description');
-  node.find(EntityNameForm).prop('onSave')();
+  node.find('EntityNameForm').simulate('descriptionChange', 'some description');
+  node.find('EntityNameForm').simulate('save');
 
-  expect(node.state().report.description).toEqual('some description');
+  expect(node.find('EntityNameForm').prop('description')).toEqual('some description');
   expect(track).toHaveBeenCalledWith('editDescription', {entity: 'report', entityId: '1'});
   expect(updateEntity).toHaveBeenCalledWith(
     'report/process/single',
@@ -421,16 +421,25 @@ it('should update local report copy when column rearangement is updated', () => 
   const node = shallow(<ReportEdit {...props} />);
 
   node
-    .instance()
-    .updateReport({configuration: {tableColumns: {columnOrder: {$set: ['c', 'a', 'b']}}}});
+    .find('Visualization')
+    .simulate('change', {configuration: {tableColumns: {columnOrder: {$set: ['c', 'a', 'b']}}}});
 
-  expect(node.state().frozenReport.data.configuration).toEqual({
-    tableColumns: {columnOrder: ['c', 'a', 'b']},
-  });
+  expect(evaluateReport).not.toHaveBeenCalled();
+
+  node.find('.RunPreviewButton').simulate('click');
+
+  expect(evaluateReport).toHaveBeenCalledWith(
+    {
+      ...report,
+      data: {...report.data, configuration: {tableColumns: {columnOrder: ['c', 'a', 'b']}}},
+    },
+    [],
+    {}
+  );
 });
 
 it('should hide bottom raw data panel for table reports', async () => {
-  const node = await shallow(<ReportEdit report={report} />);
+  const node = await shallow(<ReportEdit {...props} />);
 
   await node.update();
 

@@ -10,12 +10,15 @@ package io.camunda.zeebe.dynamic.config.api;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import java.util.Collection;
+import java.util.Set;
 import java.util.function.Supplier;
 
 public interface ClusterConfigurationCoordinatorSupplier {
   MemberId getDefaultCoordinator();
 
   MemberId getNextCoordinator(Collection<MemberId> members);
+
+  MemberId getNextCoordinatorExcluding(Set<MemberId> memberIds);
 
   class ClusterClusterConfigurationAwareCoordinatorSupplier
       implements ClusterConfigurationCoordinatorSupplier {
@@ -43,6 +46,13 @@ public interface ClusterConfigurationCoordinatorSupplier {
     @Override
     public MemberId getNextCoordinator(final Collection<MemberId> members) {
       return lowestMemberId(members);
+    }
+
+    @Override
+    public MemberId getNextCoordinatorExcluding(final Set<MemberId> memberIds) {
+      final var currentMembers = clusterTopologySupplier.get().members().keySet();
+      final var newMembers = currentMembers.stream().filter(m -> !memberIds.contains(m)).toList();
+      return lowestMemberId(newMembers);
     }
   }
 }

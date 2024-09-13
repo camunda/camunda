@@ -42,4 +42,9 @@ public class ResourceIdentifiers extends UnpackedObject implements DbValue {
     resourceIds.reset();
     permissions.forEach(permission -> resourceIds.add().wrap(BufferUtil.wrapString(permission)));
   }
+
+  public void addResourceIdentifiers(final List<String> resourceIdentifiers) {
+    resourceIdentifiers.forEach(
+        resourceIdentifier -> resourceIds.add().wrap(BufferUtil.wrapString(resourceIdentifier)));
+  }
 }

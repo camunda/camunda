@@ -36,20 +36,20 @@ public class AuthorizationController {
       path = "/{ownerKey}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public CompletableFuture<ResponseEntity<Object>> createAuthorization(
+  public CompletableFuture<ResponseEntity<Object>> patchAuthorization(
       @PathVariable final long ownerKey,
       @RequestBody final AuthorizationPatchRequest authorizationPatchRequest) {
 
-    return RequestMapper.toAuthorizationAssignRequest(ownerKey, authorizationPatchRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignAuthorization);
+    return RequestMapper.toAuthorizationPatchRequest(ownerKey, authorizationPatchRequest)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::patchAuthorization);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> assignAuthorization(
+  private CompletableFuture<ResponseEntity<Object>> patchAuthorization(
       final PatchAuthorizationRequest patchAuthorizationRequest) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             authorizationServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .createAuthorization(patchAuthorizationRequest));
+                .patchAuthorization(patchAuthorizationRequest));
   }
 }

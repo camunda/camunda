@@ -599,8 +599,11 @@
                 <phase>pre-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
+                  <environmentVariables>
+                    <DATABASE>opensearch</DATABASE>
+                  </environmentVariables>
                   <executable>docker-compose</executable>
-                  <workingDirectory>..</workingDirectory>
+                  <workingDirectory>../../config</workingDirectory>
                   <arguments>
                     <argument>up</argument>
                     <argument>-d</argument>
@@ -616,9 +619,12 @@
                 </goals>
                 <phase>post-integration-test</phase>
                 <configuration>
+                  <environmentVariables>
+                    <DATABASE>opensearch</DATABASE>
+                  </environmentVariables>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
-                  <workingDirectory>..</workingDirectory>
+                  <workingDirectory>../../config</workingDirectory>
                   <arguments>
                     <argument>down</argument>
                   </arguments>
@@ -660,8 +666,11 @@
                 <phase>pre-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
+                  <environmentVariables>
+                    <DATABASE>elasticsearch</DATABASE>
+                  </environmentVariables>
                   <executable>docker-compose</executable>
-                  <workingDirectory>..</workingDirectory>
+                  <workingDirectory>../../config</workingDirectory>
                   <arguments>
                     <argument>up</argument>
                     <argument>-d</argument>
@@ -677,9 +686,12 @@
                 </goals>
                 <phase>post-integration-test</phase>
                 <configuration>
+                  <environmentVariables>
+                    <DATABASE>elasticsearch</DATABASE>
+                  </environmentVariables>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
-                  <workingDirectory>..</workingDirectory>
+                  <workingDirectory>../../config</workingDirectory>
                   <arguments>
                     <argument>down</argument>
                   </arguments>

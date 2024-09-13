@@ -16,10 +16,12 @@ import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import java.util.concurrent.CompletableFuture;
@@ -47,10 +49,12 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";
   static final String CANCEL_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/cancellation";
   static final String MIGRATE_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/migration";
+  static final String MODIFY_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/modification";
 
   @Captor ArgumentCaptor<ProcessInstanceCreateRequest> createRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceCancelRequest> cancelRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceMigrateRequest> migrateRequestCaptor;
+  @Captor ArgumentCaptor<ProcessInstanceModifyRequest> modifyRequestCaptor;
   @MockBean ProcessInstanceServices processInstanceServices;
 
   @BeforeEach
@@ -714,7 +718,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             "type":"about:blank",
             "title":"INVALID_ARGUMENT",
             "status":400,
-            "detail":"At least one of [sourceElementId, targetElementId] is required.",
+            "detail":"All [sourceElementId, targetElementId] are required.",
             "instance":"/v2/process-instances/1/migration"
          }""";
 
@@ -768,6 +772,419 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     webClient
         .post()
         .uri(MIGRATE_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldModifyProcessInstance() {
+    // given
+    when(processInstanceServices.modifyProcessInstance(any(ProcessInstanceModifyRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceModificationRecord()));
+
+    final var request =
+        """
+        {
+          "activateInstructions": [
+            {
+              "elementId": "elementId",
+              "variableInstructions": [
+                {
+                  "variables": {
+                    "foo": "bar"
+                  }
+                }
+              ],
+              "ancestorElementInstanceKey": 123456
+            },
+            {
+              "elementId": "elementId2",
+              "ancestorElementInstanceKey": 654321
+            }
+          ],
+          "terminateInstructions": [
+            {
+              "elementInstanceKey": 123456
+            },
+            {
+              "elementInstanceKey": 654321
+            }
+          ],
+          "operationReference": 123
+        }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(MODIFY_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(processInstanceServices).modifyProcessInstance(modifyRequestCaptor.capture());
+    final var capturedRequest = modifyRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.activateInstructions()).isNotEmpty();
+    assertThat(capturedRequest.activateInstructions().size()).isEqualTo(2);
+    assertThat(capturedRequest.terminateInstructions()).isNotEmpty();
+    assertThat(capturedRequest.terminateInstructions().size()).isEqualTo(2);
+    assertThat(capturedRequest.operationReference()).isEqualTo(123L);
+  }
+
+  @Test
+  void shouldModifyProcessInstanceWithoutActivateInstructions() {
+    // given
+    when(processInstanceServices.modifyProcessInstance(any(ProcessInstanceModifyRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceModificationRecord()));
+
+    final var request =
+        """
+        {
+          "terminateInstructions": [
+            {
+              "elementInstanceKey": 123456
+            },
+            {
+              "elementInstanceKey": 654321
+            }
+          ],
+          "operationReference": 123
+        }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(MODIFY_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(processInstanceServices).modifyProcessInstance(modifyRequestCaptor.capture());
+    final var capturedRequest = modifyRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.activateInstructions()).isEmpty();
+    assertThat(capturedRequest.terminateInstructions()).hasSize(2);
+    assertThat(capturedRequest.operationReference()).isEqualTo(123L);
+  }
+
+  @Test
+  void shouldModifyProcessInstanceWithoutTerminateInstructions() {
+    // given
+    when(processInstanceServices.modifyProcessInstance(any(ProcessInstanceModifyRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceModificationRecord()));
+
+    final var request =
+        """
+        {
+          "activateInstructions": [
+            {
+              "elementId": "elementId",
+              "variableInstructions": [
+                {
+                  "variables": {
+                    "foo": "bar"
+                  }
+                }
+              ],
+              "ancestorElementInstanceKey": 123456
+            },
+            {
+              "elementId": "elementId2",
+              "ancestorElementInstanceKey": 654321
+            }
+          ],
+          "operationReference": 123
+        }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(MODIFY_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(processInstanceServices).modifyProcessInstance(modifyRequestCaptor.capture());
+    final var capturedRequest = modifyRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.activateInstructions()).hasSize(2);
+    assertThat(capturedRequest.terminateInstructions()).isEmpty();
+    assertThat(capturedRequest.operationReference()).isEqualTo(123L);
+  }
+
+  @Test
+  void shouldModifyProcessInstanceWithActivateInstructionsNoAncestorKey() {
+    // given
+    when(processInstanceServices.modifyProcessInstance(any(ProcessInstanceModifyRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceModificationRecord()));
+
+    final var request =
+        """
+        {
+          "activateInstructions": [
+            {
+              "elementId": "elementId"
+            },
+            {
+              "elementId": "elementId2"
+            }
+          ],
+          "terminateInstructions": [
+            {
+              "elementInstanceKey": 123456
+            },
+            {
+              "elementInstanceKey": 654321
+            }
+          ],
+          "operationReference": 123
+        }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(MODIFY_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(processInstanceServices).modifyProcessInstance(modifyRequestCaptor.capture());
+    final var capturedRequest = modifyRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.activateInstructions()).hasSize(2);
+    assertThat(capturedRequest.terminateInstructions()).hasSize(2);
+    assertThat(capturedRequest.operationReference()).isEqualTo(123L);
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceWithActivateInstructionsElementNull() {
+    // given
+    final var request =
+        """
+        {
+          "activateInstructions": [
+            {
+              "ancestorElementInstanceKey": 123456
+            },
+            {
+              "elementId": "elementId2",
+              "ancestorElementInstanceKey": 654321
+            }
+          ],
+          "terminateInstructions": [
+            {
+              "elementInstanceKey": 123456
+            },
+            {
+              "elementInstanceKey": 654321
+            }
+          ],
+          "operationReference": 123
+        }""";
+
+    final var expectedBody =
+        """
+        {
+            "type":"about:blank",
+            "title":"INVALID_ARGUMENT",
+            "status":400,
+            "detail":"No elementId provided.",
+            "instance":"/v2/process-instances/1/modification"
+         }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(MODIFY_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceWithVariableInstructionsElementNull() {
+    // given
+    final var request =
+        """
+        {
+          "activateInstructions": [
+            {
+              "elementId": "elementId",
+              "variableInstructions": [
+                {
+                  "scopeId": "scopeId"
+                }
+              ],
+              "ancestorElementInstanceKey": 123456
+            },
+            {
+              "elementId": "elementId2",
+              "ancestorElementInstanceKey": 654321
+            }
+          ],
+          "terminateInstructions": [
+            {
+              "elementInstanceKey": 123456
+            },
+            {
+              "elementInstanceKey": 654321
+            }
+          ],
+          "operationReference": 123
+        }""";
+
+    final var expectedBody =
+        """
+        {
+            "type":"about:blank",
+            "title":"INVALID_ARGUMENT",
+            "status":400,
+            "detail":"No variables provided.",
+            "instance":"/v2/process-instances/1/modification"
+         }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(MODIFY_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceWithTerminateInstructionsElementNull() {
+    // given
+    final var request =
+        """
+        {
+          "activateInstructions": [
+            {
+              "elementId": "elementId",
+              "ancestorElementInstanceKey": 123456
+            },
+            {
+              "elementId": "elementId2",
+              "ancestorElementInstanceKey": 654321
+            }
+          ],
+          "terminateInstructions": [
+            {},
+            {
+              "elementInstanceKey": 654321
+            }
+          ],
+          "operationReference": 123
+        }""";
+
+    final var expectedBody =
+        """
+        {
+            "type":"about:blank",
+            "title":"INVALID_ARGUMENT",
+            "status":400,
+            "detail":"No elementInstanceKey provided.",
+            "instance":"/v2/process-instances/1/modification"
+         }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(MODIFY_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceWithOperationReferenceNotValid() {
+    // given
+    final var request =
+        """
+        {
+          "activateInstructions": [
+            {
+              "elementId": "elementId",
+              "variableInstructions": [
+                {
+                  "variables": {
+                    "foo": "bar"
+                  }
+                }
+              ],
+              "ancestorElementInstanceKey": 123456
+            },
+            {
+              "elementId": "elementId2",
+              "ancestorElementInstanceKey": 654321
+            }
+          ],
+          "terminateInstructions": [
+            {
+              "elementInstanceKey": 123456
+            },
+            {
+              "elementInstanceKey": 654321
+            }
+          ],
+          "operationReference": -123
+        }""";
+
+    final var expectedBody =
+        """
+        {
+            "type":"about:blank",
+            "title":"INVALID_ARGUMENT",
+            "status":400,
+            "detail":"The value for operationReference is '-123' but must be > 0.",
+            "instance":"/v2/process-instances/1/modification"
+         }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(MODIFY_PROCESS_URL.formatted("1"))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)

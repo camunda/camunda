@@ -21,10 +21,14 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import java.util.List;
@@ -124,6 +128,20 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest);
   }
 
+  public CompletableFuture<ProcessInstanceModificationRecord> modifyProcessInstance(
+      final ProcessInstanceModifyRequest request) {
+    final var brokerRequest =
+        new BrokerModifyProcessInstanceRequest()
+            .setProcessInstanceKey(request.processInstanceKey())
+            .addActivationInstructions(request.activateInstructions())
+            .addTerminationInstructions(request.terminateInstructions());
+
+    if (request.operationReference() != null) {
+      brokerRequest.setOperationReference(request.operationReference());
+    }
+    return sendBrokerRequest(brokerRequest);
+  }
+
   public record ProcessInstanceCreateRequest(
       Long processDefinitionKey,
       String bpmnProcessId,
@@ -141,5 +159,11 @@ public final class ProcessInstanceServices
       Long processInstanceKey,
       Long targetProcessDefinitionKey,
       List<ProcessInstanceMigrationMappingInstruction> mappingInstructions,
+      Long operationReference) {}
+
+  public record ProcessInstanceModifyRequest(
+      Long processInstanceKey,
+      List<ProcessInstanceModificationActivateInstruction> activateInstructions,
+      List<ProcessInstanceModificationTerminateInstruction> terminateInstructions,
       Long operationReference) {}
 }

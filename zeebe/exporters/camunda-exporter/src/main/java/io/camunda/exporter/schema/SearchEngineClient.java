@@ -8,8 +8,10 @@
 package io.camunda.exporter.schema;
 
 import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
+import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
 import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
+import java.util.Map;
 import java.util.Set;
 
 public interface SearchEngineClient {
@@ -26,4 +28,7 @@ public interface SearchEngineClient {
    */
   void putMapping(
       final IndexDescriptor indexDescriptor, final Set<IndexMappingProperty> newProperties);
+
+  Map<String, IndexMapping> getMappings(
+      final String namePattern, final MappingSource mappingSource);
 }

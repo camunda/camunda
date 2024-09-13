@@ -1,0 +1,60 @@
+{
+  "customerId": 123,
+  "customer": {
+    "firstname": "Dodson",
+    "lastname": "Glenn",
+    "email": "dodsonglenn@bicol.com",
+    "phone": "+1 (975) 473-3820",
+    "address": "612 Kiely Place, Coinjock, New York, 906"
+  },
+  "disputeDetails": {
+    "disputePositions": [
+      {
+        "_id": "66c745ecca7d2cfbe029d2ea",
+        "index": 0,
+        "name": "BESTO",
+        "amount": 266.49,
+        "currency": "EUR",
+        "transactionDate": "2024-06-28T05:31:02-02:00"
+      },
+      {
+        "_id": "66c745ecb79793a37fa1d6a1",
+        "index": 1,
+        "name": "CENTREE",
+        "amount": 269.19,
+        "currency": "EUR",
+        "transactionDate": "2024-05-11T07:15:36-02:00"
+      },
+      {
+        "_id": "66c745ec57a851a321dfa38c",
+        "index": 2,
+        "name": "DEEPENDS",
+        "amount": 275.71,
+        "currency": "EUR",
+        "transactionDate": "2024-05-03T04:45:27-02:00"
+      },
+      {
+        "_id": "66c745ec02a490338e09a9dd",
+        "index": 3,
+        "name": "COMDOM",
+        "amount": 201.65,
+        "currency": "EUR",
+        "transactionDate": "2024-02-18T01:51:44-01:00"
+      },
+      {
+        "_id": "66c745ec1674b8d963b47567",
+        "index": 4,
+        "name": "EXOPLODE",
+        "amount": 208.45,
+        "currency": "EUR",
+        "transactionDate": "2024-02-24T05:14:40-01:00"
+      }
+    ],
+    "disputeId": 456,
+    "disputeAmount": {
+      "amount": 1218.49,
+      "currency": "EUR"
+    },
+    "disputeStartDate": "2024-08-307T10:00:00Z"
+  }
+}

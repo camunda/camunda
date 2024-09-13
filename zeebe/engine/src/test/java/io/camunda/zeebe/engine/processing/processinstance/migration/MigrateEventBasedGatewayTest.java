@@ -539,4 +539,82 @@ public class MigrateEventBasedGatewayTest {
         .contains("Catch events cannot be merged by process instance migration")
         .contains("Please ensure the mapping instructions target a catch event only once");
   }
+
+  @Test
+  public void shouldRejectCommandWhenMappedCatchEventChangesEventType() {
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .eventBasedGateway("gateway")
+                    .intermediateCatchEvent(
+                        "timerA", b -> b.timerWithDurationExpression("durationA"))
+                    .endEvent("A")
+                    .moveToLastGateway()
+                    .intermediateCatchEvent(
+                        "timerB", b -> b.timerWithDurationExpression("durationB"))
+                    .endEvent("B")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .eventBasedGateway("gateway2")
+                    .intermediateCatchEvent(
+                        "timerA2", b -> b.timerWithDurationExpression("durationA"))
+                    .endEvent("A2")
+                    .moveToLastGateway()
+                    .intermediateCatchEvent(
+                        "msgB2",
+                        b -> b.message(m -> m.name("msgB").zeebeCorrelationKeyExpression("key")))
+                    .endEvent("B2")
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(
+                Map.ofEntries(Map.entry("durationA", "PT5M"), Map.entry("durationB", "PT10M")))
+            .create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("gateway")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("gateway", "gateway2")
+            .addMappingInstruction("timerA", "timerA2")
+            .addMappingInstruction("timerB", "msgB2")
+            .expectRejection()
+            .migrate();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .extracting(Record::getRejectionReason)
+        .asString()
+        .contains("Expected to migrate process instance '" + processInstanceKey + "'")
+        .contains("active element with id 'gateway' has a catch event")
+        .contains(
+            "has a catch event with id 'timerB' that is mapped to a catch event with id 'msgB2'")
+        .contains("These catch events have different event types: 'TIMER' and 'MESSAGE'")
+        .contains("The event type of a catch event cannot be changed by process instance migration")
+        .contains("Please ensure the event type of the catch event remains the same")
+        .contains("or remove the mapping instruction for these catch events");
+  }
 }

@@ -51,7 +51,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  void createUserShouldReturnNoContent() {
+  void createUserShouldReturnAccepted() {
     // given
     final var dto = validCreateUserRequest();
 
@@ -73,7 +73,7 @@ public class UserControllerTest extends RestControllerTest {
         .bodyValue(dto)
         .exchange()
         .expectStatus()
-        .isNoContent();
+        .isAccepted();
 
     // then
     verify(userServices, times(1)).createUser(dto);
