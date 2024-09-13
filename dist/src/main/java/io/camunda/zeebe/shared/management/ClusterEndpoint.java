@@ -11,10 +11,16 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.Error;
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +33,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -160,6 +167,111 @@ public class ClusterEndpoint {
     } catch (final Exception error) {
       return ClusterApiUtils.mapError(error);
     }
+  }
+
+  @PatchMapping(consumes = "application/json", produces = "application/json")
+  public ResponseEntity<?> updateClusterConfiguration(
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(defaultValue = "false") final boolean force,
+      @RequestBody final ClusterConfigPatchRequest request) {
+    try {
+      final var brokers = request.getBrokers();
+      final var partitions = request.getPartitions();
+      if (force) {
+        return forceRemoveBrokers(dryRun, brokers, partitions);
+      }
+
+      if (brokers != null
+          && brokers.getCount() != null
+          && (!brokers.getAdd().isEmpty() || !brokers.getRemove().isEmpty())) {
+        return invalidRequest(
+            "Cannot change brokers count and add/remove brokers at the same time. Specify either the newPartitionCount or brokers to add and remove.");
+      }
+
+      final Optional<Integer> newPartitionCount =
+          partitions != null ? Optional.ofNullable(partitions.getCount()) : Optional.empty();
+      final Optional<Integer> newReplicationFactor =
+          partitions != null
+              ? Optional.ofNullable(partitions.getReplicationFactor())
+              : Optional.empty();
+
+      final boolean isScale = brokers != null && brokers.getCount() != null;
+      if (isScale) {
+        final var scaleRequest =
+            new ClusterScaleRequest(
+                Optional.of(brokers.getCount()), newPartitionCount, newReplicationFactor, dryRun);
+        return ClusterApiUtils.mapOperationResponse(
+            requestSender.scaleCluster(scaleRequest).join());
+      } else {
+        return patchCluster(dryRun, request, brokers, newPartitionCount, newReplicationFactor);
+      }
+
+    } catch (final Exception error) {
+      return ClusterApiUtils.mapError(error);
+    }
+  }
+
+  private ResponseEntity<?> patchCluster(
+      final boolean dryRun,
+      final ClusterConfigPatchRequest request,
+      final ClusterConfigPatchRequestBrokers brokers,
+      final Optional<Integer> newPartitionCount,
+      final Optional<Integer> newReplicationFactor) {
+    final Set<MemberId> brokersToAdd =
+        brokers != null
+            ? request.getBrokers().getAdd().stream()
+                .map(String::valueOf)
+                .map(MemberId::from)
+                .collect(Collectors.toSet())
+            : Set.of();
+    final Set<MemberId> brokersToRemove =
+        brokers != null
+            ? request.getBrokers().getRemove().stream()
+                .map(String::valueOf)
+                .map(MemberId::from)
+                .collect(Collectors.toSet())
+            : Set.of();
+    final var patchRequest =
+        new ClusterPatchRequest(
+            brokersToAdd, brokersToRemove, newPartitionCount, newReplicationFactor, dryRun);
+
+    return ClusterApiUtils.mapOperationResponse(requestSender.patchCluster(patchRequest).join());
+  }
+
+  private ResponseEntity<?> forceRemoveBrokers(
+      final boolean dryRun,
+      final ClusterConfigPatchRequestBrokers brokers,
+      final ClusterConfigPatchRequestPartitions partitions) {
+    if (brokers != null) {
+      if (brokers.getCount() != null) {
+        return invalidRequest("Cannot force change the broker count.");
+      }
+      if (!brokers.getAdd().isEmpty()) {
+        return invalidRequest("Cannot force add brokers");
+      }
+    }
+    if (partitions != null) {
+      if (partitions.getCount() != null) {
+        return invalidRequest("Cannot force change the partition count.");
+      }
+      if (partitions.getReplicationFactor() != null) {
+        return invalidRequest("Cannot force change the replication factor.");
+      }
+    }
+
+    if (brokers != null && brokers.getRemove().isEmpty()) {
+      return invalidRequest("Must provide a set of brokers to force remove.");
+    }
+
+    final var forceRemoveRequest =
+        new ForceRemoveBrokersRequest(
+            brokers.getRemove().stream()
+                .map(String::valueOf)
+                .map(MemberId::from)
+                .collect(Collectors.toSet()),
+            dryRun);
+    return ClusterApiUtils.mapOperationResponse(
+        requestSender.forceRemoveBrokers(forceRemoveRequest).join());
   }
 
   @PostMapping(
