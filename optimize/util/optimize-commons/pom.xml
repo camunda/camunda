@@ -13,6 +13,19 @@
 
   <dependencies>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-connect</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-plugin</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
     <!-- REST -->
     <dependency>
       <groupId>jakarta.validation</groupId>
@@ -214,6 +227,14 @@
     <dependency>
       <groupId>jakarta.ws.rs</groupId>
       <artifactId>jakarta.ws.rs-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <!-- TODO: remove when Zeebe parent becomes Optimize's one -->
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-jetty12</artifactId>
+      <version>3.9.1</version>
+      <scope>test</scope>
     </dependency>
 
   </dependencies>

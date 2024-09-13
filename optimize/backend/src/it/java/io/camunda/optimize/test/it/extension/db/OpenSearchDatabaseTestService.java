@@ -60,6 +60,7 @@ import io.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import io.camunda.optimize.test.it.extension.MockServerUtil;
 import io.camunda.optimize.test.repository.TestIndexRepositoryOS;
 import io.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
+import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -814,8 +815,10 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
         "Creating OS Client with host {} and port {}", osConfig.getHost(), osConfig.getHttpPort());
     prefixAwareOptimizeOpenSearchClient =
         new OptimizeOpenSearchClient(
-            OpenSearchClientBuilder.buildOpenSearchClientFromConfig(configurationService),
-            OpenSearchClientBuilder.buildOpenSearchAsyncClientFromConfig(configurationService),
+            OpenSearchClientBuilder.buildOpenSearchClientFromConfig(
+                configurationService, new PluginRepository()),
+            OpenSearchClientBuilder.buildOpenSearchAsyncClientFromConfig(
+                configurationService, new PluginRepository()),
             new OptimizeIndexNameService(configurationService, DatabaseType.OPENSEARCH));
     adjustClusterSettings();
     CLIENT_CACHE.put(clientKey, prefixAwareOptimizeOpenSearchClient);
