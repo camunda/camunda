@@ -21,7 +21,7 @@ import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.cache.FlowNodeInstanceTreePathCache;
 import io.camunda.operate.zeebeimport.cache.TreePathCacheMetricsImpl;
-import io.camunda.operate.zeebeimport.v8_4.processors.fni.FNITransformer;
+import io.camunda.operate.zeebeimport.v8_5.processors.fni.FNITransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
