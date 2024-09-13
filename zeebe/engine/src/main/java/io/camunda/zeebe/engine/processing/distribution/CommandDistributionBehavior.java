@@ -196,16 +196,11 @@ public final class CommandDistributionBehavior {
   }
 
   private void handleContinuationCommand(final long key, final CommandDistributionRecord record) {
-    final var intent = record.getIntent();
-    final var value = record.getCommandValue();
-
-    commandWriter.appendFollowUpCommand(key, intent, value);
-
     commandDistributionContinuation.reset();
     commandDistributionContinuation.setQueueId(record.getQueueId());
     commandDistributionContinuation.setPartitionId(currentPartitionId);
-    stateWriter.appendFollowUpEvent(
-        key, CommandDistributionIntent.CONTINUATION_COMPLETED, commandDistributionContinuation);
+    commandWriter.appendFollowUpCommand(
+        key, CommandDistributionIntent.CONTINUE, commandDistributionContinuation);
   }
 
   private void startDistributing(

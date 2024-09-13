@@ -338,4 +338,22 @@ public class DbDistributionState implements MutableDistributionState {
           return true;
         });
   }
+
+  @Override
+  public CommandDistributionRecord getContinuationRecord(final String queue, final long key) {
+    queueId.wrapString(queue);
+    continuationKey.wrapLong(key);
+
+    final var persistedCommandDistribution =
+        continuationCommandColumnFamily.get(continuationByQueueKey);
+    if (persistedCommandDistribution == null) {
+      return null;
+    }
+
+    return new CommandDistributionRecord()
+        .setQueueId(queue)
+        .setValueType(persistedCommandDistribution.getValueType())
+        .setIntent(persistedCommandDistribution.getIntent())
+        .setCommandValue(persistedCommandDistribution.getCommandValue());
+  }
 }

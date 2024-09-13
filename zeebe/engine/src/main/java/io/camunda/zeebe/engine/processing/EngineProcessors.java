@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistri
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionAcknowledgeProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionContinueProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionFinishProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
@@ -414,14 +415,19 @@ public final class EngineProcessors {
         new CommandRedistributor(
             scheduledTaskStateFactory.get().getDistributionState(), interPartitionCommandSender));
 
+    final var distributionState = processingState.getDistributionState();
     typedRecordProcessors.onCommand(
         ValueType.COMMAND_DISTRIBUTION,
         CommandDistributionIntent.ACKNOWLEDGE,
         new CommandDistributionAcknowledgeProcessor(
-            commandDistributionBehavior, processingState.getDistributionState(), writers));
+            commandDistributionBehavior, distributionState, writers));
     typedRecordProcessors.onCommand(
         ValueType.COMMAND_DISTRIBUTION,
         CommandDistributionIntent.FINISH,
         new CommandDistributionFinishProcessor(writers, commandDistributionBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.COMMAND_DISTRIBUTION,
+        CommandDistributionIntent.CONTINUE,
+        new CommandDistributionContinueProcessor(distributionState, writers));
   }
 }
