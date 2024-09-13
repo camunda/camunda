@@ -199,7 +199,8 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   // did not have this field, so we require custom logic to get their index settings.
   // Once all indices have this field specified, this method can be removed
   public GetIndicesSettingsResponse getOldIndexSettings() throws IOException {
-    final Request request = new Request(HttpGet.METHOD_NAME, "/optimize*/_settings");
+    final String endpoint = "/" + indexNameService.getIndexPrefix() + "*/_settings";
+    final Request request = new Request(HttpGet.METHOD_NAME, endpoint);
     request.setOptions(transportOptionsProvider.getRequestOptions());
     final Response response = restClient.performRequest(request);
     final Map<String, Map> responseContentAsMap =
