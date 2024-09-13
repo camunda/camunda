@@ -72,7 +72,7 @@ jobs:
       branch: ${{ github.head_ref || github.ref_name }}
       command: mvn -f operate/qa/integration-tests verify -P operateItStage1 -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
       test-type: Integration Tests
-      runner-type: gcp-core-32-default
+      runner-type: gcp-core-32-longrunning
 
   run-opensearch-tests:
     name: Operate Backend Opensearch ITs
