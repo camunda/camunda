@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.protocol.rest.PriorityValueFilter;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -176,15 +175,16 @@ class UserTaskQueryTest {
   }
 
   @Test
-  public void shouldRetrieveTaskByPriority() {
-    final var resultDefaultTenant =
-        camundaClient
-            .newUserTaskQuery()
-            .filter(f -> f.priority(new PriorityValueFilter().eq(30)))
-            .send()
-            .join();
-    assertThat(resultDefaultTenant.items().size()).isEqualTo(1);
-    assertThat(resultDefaultTenant.items().getFirst().getPriority()).isEqualTo(30);
+  public void retrievedTasksShouldIncludePriority() {
+    final var resultDefaultPriority =
+        camundaClient.newUserTaskQuery().filter(f -> f.bpmnProcessId("process-2")).send().join();
+    assertThat(resultDefaultPriority.items().size()).isEqualTo(1);
+    assertThat(resultDefaultPriority.items().getFirst().getPriority()).isEqualTo(50);
+
+    final var resultDefinedPriority =
+        camundaClient.newUserTaskQuery().filter(f -> f.bpmnProcessId("process-3")).send().join();
+    assertThat(resultDefinedPriority.items().size()).isEqualTo(1);
+    assertThat(resultDefinedPriority.items().getFirst().getPriority()).isEqualTo(30);
   }
 
   private static void deployProcess(
