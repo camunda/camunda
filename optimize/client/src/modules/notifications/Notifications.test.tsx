@@ -44,7 +44,5 @@ it('should accept React element error', async () => {
 
   await showError(<h1>test</h1>);
 
-  const config = node.find('Notification').prop<Config>('config');
-  const testText = shallow(<div>{config?.text}</div>);
-  expect(testText.find('h1')).toExist();
+  expect(node.find('Notification').dive().find('h1')).toExist();
 });
