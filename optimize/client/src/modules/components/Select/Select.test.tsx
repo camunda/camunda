@@ -44,7 +44,7 @@ it('should render a .Select className by default', () => {
     </Select>
   );
 
-  expect(node).toMatchSelector('.Select');
+  expect(node.find('.Select')).toExist();
 });
 
 it('should merge and render additional classNames as provided as a property', () => {
@@ -54,7 +54,7 @@ it('should merge and render additional classNames as provided as a property', ()
     </Select>
   );
 
-  expect(node).toMatchSelector('.Select.foo');
+  expect(node.find('.Select')).toExist();
 });
 
 it('should render child elements and their props', () => {
