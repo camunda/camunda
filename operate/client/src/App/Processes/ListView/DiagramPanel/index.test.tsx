@@ -30,8 +30,6 @@ import {useEffect, act} from 'react';
 import {Paths} from 'modules/Routes';
 import {batchModificationStore} from 'modules/stores/batchModification';
 
-jest.mock('modules/feature-flags', () => ({IS_VERSION_TAG_ENABLED: true}));
-
 jest.mock('modules/utils/bpmn');
 
 function getWrapper(initialPath: string = Paths.dashboard()) {

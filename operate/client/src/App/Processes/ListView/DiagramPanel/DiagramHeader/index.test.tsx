@@ -9,8 +9,6 @@
 import {render, screen} from 'modules/testing-library';
 import {DiagramHeader} from '.';
 
-jest.mock('modules/feature-flags', () => ({IS_VERSION_TAG_ENABLED: true}));
-
 jest.mock('modules/stores/processInstances', () => ({
   processInstancesStore: {
     state: {},
