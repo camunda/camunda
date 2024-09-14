@@ -1,4 +1,4 @@
-name: "test c8run on linux"
+name: "build c8run on mac x86"
 
 on:
   push:
@@ -8,18 +8,13 @@ on:
 
 jobs:
   test_c8run:
-    name: Test deploying camunda platform on c8run
-    runs-on: ubuntu-latest
+    name: Build c8run on mac os
+    runs-on: [macos-latest, arm]
     steps:
-
-      - name: disable and stop mono-xsp4.service
-        run: |
-             sudo systemctl stop mono-xsp4.service || true
-             sudo systemctl disable mono-xsp4.service || true
-             sudo killall mono || true
-             sudo killall xsp4 || true
-
       - uses: actions/checkout@v4
+
+      - name: print architecture
+        run: arch
 
       - name: make a package
         run: ./package.sh
@@ -28,8 +23,6 @@ jobs:
       - name: Run c8run
         run: nohup ./start.sh &
         working-directory: ./c8run
-        env:
-          JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
 
       - name: Sleep 2 mins
         run: sleep 120
