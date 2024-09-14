@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - "c8run/**"
-      - ".github/workflows/test-c8run.yaml"
+      - ".github/workflows/c8run-mac-x86-build.yaml"
 
 jobs:
   test_c8run:

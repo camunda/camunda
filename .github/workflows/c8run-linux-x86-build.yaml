@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - "c8run/**"
-      - ".github/workflows/test-c8run.yaml"
+      - ".github/workflows/c8run-linux-x86-build.yaml"
 
 jobs:
   test_c8run:
@@ -20,6 +20,9 @@ jobs:
              sudo killall xsp4 || true
 
       - uses: actions/checkout@v4
+
+      - name: print architecture
+        run: arch
 
       - name: make a package
         run: ./package.sh
