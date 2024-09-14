@@ -18,7 +18,7 @@ jobs:
         working-directory: .\c8run
 
       - name: Run c8run
-        run: nohup .\c8run.exe start &
+        run: .\c8run.exe start
         working-directory: .\c8run
 
       - uses: actions/setup-node@v4
