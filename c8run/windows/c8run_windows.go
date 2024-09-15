@@ -165,7 +165,11 @@ func main() {
 		parseCommandLineOptions(os.Args[2:], &settings)
 	}
 
+        javaHome := os.Getenv("JAVA_HOME")
 	javaBinary := "java"
+        if javaHome != "" {
+	        javaBinary = filepath.join(javaHome, "bin", "java")
+        }
 
 	if baseCommand == "start" {
 
