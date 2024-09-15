@@ -168,7 +168,7 @@ func main() {
         javaHome := os.Getenv("JAVA_HOME")
 	javaBinary := "java"
         if javaHome != "" {
-	        javaBinary = filepath.join(javaHome, "bin", "java")
+	        javaBinary = filepath.Join(javaHome, "bin", "java")
         }
 
 	if baseCommand == "start" {
