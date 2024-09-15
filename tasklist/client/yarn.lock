@@ -937,10 +937,10 @@
   dependencies:
     "@monaco-editor/loader" "^1.4.0"
 
-"@mswjs/interceptors@^0.35.3":
-  version "0.35.3"
-  resolved "https://registry.yarnpkg.com/@mswjs/interceptors/-/interceptors-0.35.3.tgz#9b549ce4ffff8cd6f5af1f5c90eaf3a845226ff3"
-  integrity sha512-/7DWMTsCh5Ur4yT1f6Vql48VHXkOSPXOMMBWk67lSpymHOxyNuoAA0RBKi77J/9jL7UQzzsBI2ZGjDw/vbSJFw==
+"@mswjs/interceptors@^0.35.6":
+  version "0.35.6"
+  resolved "https://registry.yarnpkg.com/@mswjs/interceptors/-/interceptors-0.35.6.tgz#66c522036bc01fa6be87b46b49cc378b837bf510"
+  integrity sha512-PpD687w7qLxVMK176bpQjbzU9O0VC75QnBK5U1lKd29s4hIuxfTItUD6raNKyQ6BN8b64/8HE34RuYTkwH9uPQ==
   dependencies:
     "@open-draft/deferred-promise" "^2.2.0"
     "@open-draft/logger" "^0.3.0"
@@ -4428,16 +4428,16 @@ ms@2.1.2:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.2.tgz#d09d1f357b443f493382a8eb3ccd183872ae6009"
   integrity sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==
 
-msw@2.4.6:
-  version "2.4.6"
-  resolved "https://registry.yarnpkg.com/msw/-/msw-2.4.6.tgz#b1cf163faed2d9fe10df2bef660926df8a4c0adc"
-  integrity sha512-flx3DIP3+a81vvEY1lCmZVFKVYVcDiizNHg6mHYc2+F2xU+4LmZ6P2eYZUGEFoJWqA3yRWS70pJa0riFVTb5FQ==
+msw@2.4.7:
+  version "2.4.7"
+  resolved "https://registry.yarnpkg.com/msw/-/msw-2.4.7.tgz#b82a7a2e6c990d4a4512d58ae03a6b7cc8956d82"
+  integrity sha512-lLfwzRjTQhaYaoJq600wCFAmjLQnI7JI2VnUDmqj6icZbxgClwJqaJW2/++kkeQvKKoI8rG8NRFMutoG8+LT7w==
   dependencies:
     "@bundled-es-modules/cookie" "^2.0.0"
     "@bundled-es-modules/statuses" "^1.0.1"
     "@bundled-es-modules/tough-cookie" "^0.1.6"
     "@inquirer/confirm" "^3.0.0"
-    "@mswjs/interceptors" "^0.35.3"
+    "@mswjs/interceptors" "^0.35.6"
     "@open-draft/until" "^2.1.0"
     "@types/cookie" "^0.6.0"
     "@types/statuses" "^2.0.4"
