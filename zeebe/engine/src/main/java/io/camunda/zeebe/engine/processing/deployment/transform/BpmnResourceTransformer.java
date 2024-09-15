@@ -73,7 +73,9 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
 
   @Override
   public Either<Failure, Void> createMetadata(
-      final DeploymentResource resource, final DeploymentRecord deployment) {
+      final DeploymentResource resource,
+      final DeploymentRecord deployment,
+      final DeploymentResourceContext context) {
 
     return readProcessDefinition(resource)
         .flatMap(
@@ -100,7 +102,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                         })
                     .map(
                         ok -> {
-                          createProcessMetadata(deployment, resource, definition);
+                          createProcessMetadata(deployment, resource, definition, context);
                           return null;
                         });
 
@@ -183,7 +185,8 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   private void createProcessMetadata(
       final DeploymentRecord deploymentEvent,
       final DeploymentResource deploymentResource,
-      final BpmnModelInstance definition) {
+      final BpmnModelInstance definition,
+      final DeploymentResourceContext context) {
     for (final Process process : getExecutableProcesses(definition)) {
       final String bpmnProcessId = process.getId();
       final String tenantId = deploymentEvent.getTenantId();
@@ -217,6 +220,10 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
             .setKey(keyGenerator.nextKey())
             .setVersion(processState.getNextProcessVersion(bpmnProcessId, tenantId))
             .setDeploymentKey(deploymentEvent.getDeploymentKey());
+      }
+
+      if (context instanceof final BpmnElementsWithDeploymentBinding elements) {
+        elements.addFromProcess(process);
       }
     }
   }

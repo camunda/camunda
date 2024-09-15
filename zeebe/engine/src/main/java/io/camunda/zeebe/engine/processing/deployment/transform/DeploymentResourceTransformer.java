@@ -20,11 +20,14 @@ interface DeploymentResourceTransformer {
    *
    * @param resource the resource to transform
    * @param deployment the deployment to add the deployed resource to
+   * @param context optional parameter to store additional information
    * @return either {@link Either.Right} if the resource is transformed successfully, or {@link
    *     Either.Left} if the transformation failed
    */
   Either<Failure, Void> createMetadata(
-      final DeploymentResource resource, final DeploymentRecord deployment);
+      final DeploymentResource resource,
+      final DeploymentRecord deployment,
+      final DeploymentResourceContext context);
 
   /**
    * Step 2 of transforming the given resource: The transformer should update the previously created
@@ -33,7 +36,8 @@ interface DeploymentResourceTransformer {
    *
    * @param resource the resource to transform
    * @param deployment the deployment record containing the metadata created in {@link
-   *     DeploymentResourceTransformer#createMetadata(DeploymentResource, DeploymentRecord)}
+   *     DeploymentResourceTransformer#createMetadata(DeploymentResource, DeploymentRecord,
+   *     DeploymentResourceContext)}
    */
   void writeRecords(DeploymentResource resource, DeploymentRecord deployment);
 }

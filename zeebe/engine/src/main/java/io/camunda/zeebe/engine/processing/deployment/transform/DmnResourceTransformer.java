@@ -68,7 +68,9 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
 
   @Override
   public Either<Failure, Void> createMetadata(
-      final DeploymentResource resource, final DeploymentRecord deployment) {
+      final DeploymentResource resource,
+      final DeploymentRecord deployment,
+      final DeploymentResourceContext context) {
 
     final var dmnResource = new ByteArrayInputStream(resource.getResource());
     final var parsedDrg = decisionEngine.parse(dmnResource);
