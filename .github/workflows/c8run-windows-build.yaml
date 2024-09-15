@@ -18,7 +18,7 @@ jobs:
         working-directory: .\c8run
 
       - name: Set env
-        run: echo "JAVA_HOME=$(echo $JAVA_HOME_21_X64)" >> $env:$GITHUB_ENV
+        run: echo "JAVA_HOME=$(echo $JAVA_HOME_21_X64)" >> $GITHUB_ENV
 
       - name: Run c8run
         run: .\c8run.exe start
