@@ -425,7 +425,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public PublishMessageCommandStep1 newPublishMessageCommand() {
     return new PublishMessageCommandImpl(
-        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+        asyncStub,
+        config,
+        jsonMapper,
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config.preferRestOverGrpc());
   }
 
   @Override

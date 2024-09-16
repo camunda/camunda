@@ -28,7 +28,7 @@ public class RestGatewayPaths {
   private static final String URL_USER_TASK_UNASSIGNMENT =
       REST_API_PATH + "/user-tasks/%s/assignee";
   private static final String URL_USER_TASK_UPDATE = REST_API_PATH + "/user-tasks/%s";
-  private static final String URL_MESSAGE_CORRELATION = REST_API_PATH + "/message/correlation";
+  private static final String URL_MESSAGE_PUBLICATION = REST_API_PATH + "/messages/publication";
   private static final String URL_CLOCK_PIN = REST_API_PATH + "/clock";
   private static final String URL_CLOCK_RESET = REST_API_PATH + "/clock/reset";
   private static final String URL_INCIDENT_RESOLUTION = REST_API_PATH + "/incidents/%s/resolution";
@@ -84,8 +84,11 @@ public class RestGatewayPaths {
     return String.format(URL_USER_TASK_UPDATE, userTaskKey);
   }
 
-  public static String getMessageCorrelationUrl() {
-    return URL_MESSAGE_CORRELATION;
+  /**
+   * @return message publication request URL
+   */
+  public static String getMessagePublicationUrl() {
+    return URL_MESSAGE_PUBLICATION;
   }
 
   /**

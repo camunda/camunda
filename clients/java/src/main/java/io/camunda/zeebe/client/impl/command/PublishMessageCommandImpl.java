@@ -25,7 +25,11 @@ import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1.PublishMes
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep3;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.PublishMessageResponseImpl;
+import io.camunda.zeebe.client.protocol.rest.MessagePublicationRequest;
+import io.camunda.zeebe.client.protocol.rest.MessagePublicationResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -33,50 +37,73 @@ import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class PublishMessageCommandImpl extends CommandWithVariables<PublishMessageCommandImpl>
     implements PublishMessageCommandStep1, PublishMessageCommandStep2, PublishMessageCommandStep3 {
 
   private final GatewayStub asyncStub;
   private final Predicate<StatusCode> retryPredicate;
-  private final PublishMessageRequest.Builder builder;
+  private final PublishMessageRequest.Builder grpcRequestObjectBuilder;
   private Duration requestTimeout;
+  private boolean useRest;
+  private final HttpClient httpClient;
+  private final RequestConfig.Builder httpRequestConfig;
+  private final MessagePublicationRequest httpRequestObject = new MessagePublicationRequest();
 
   public PublishMessageCommandImpl(
       final GatewayStub asyncStub,
       final ZeebeClientConfiguration configuration,
       final JsonMapper jsonMapper,
-      final Predicate<StatusCode> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate,
+      final HttpClient httpClient,
+      final boolean preferRestOverGrpc) {
     super(jsonMapper);
     this.asyncStub = asyncStub;
     this.retryPredicate = retryPredicate;
-    builder = PublishMessageRequest.newBuilder();
+    grpcRequestObjectBuilder = PublishMessageRequest.newBuilder();
     requestTimeout = configuration.getDefaultRequestTimeout();
-    builder.setTimeToLive(configuration.getDefaultMessageTimeToLive().toMillis());
+    grpcRequestObjectBuilder.setTimeToLive(configuration.getDefaultMessageTimeToLive().toMillis());
     tenantId(configuration.getDefaultTenantId());
+    this.httpClient = httpClient;
+    httpRequestConfig = httpClient.newRequestConfig();
+    useRest = preferRestOverGrpc;
   }
 
   @Override
   protected PublishMessageCommandImpl setVariablesInternal(final String variables) {
-    builder.setVariables(variables);
+    grpcRequestObjectBuilder.setVariables(variables);
+    // This check is mandatory. Without it, gRPC requests can fail unnecessarily.
+    // gRPC and REST handle setting variables differently:
+    // - For gRPC commands, we only check if the JSON is valid and forward it to the engine.
+    //    The engine checks if the provided String can be transformed into a Map, if not it
+    //    throws an error.
+    // - For REST commands, users have to provide a valid JSON Object String.
+    //    Otherwise, the client throws an exception already.
+    if (useRest) {
+      httpRequestObject.setVariables(objectMapper.fromJsonAsMap(variables));
+    }
     return this;
   }
 
   @Override
   public PublishMessageCommandStep3 messageId(final String messageId) {
-    builder.setMessageId(messageId);
+    grpcRequestObjectBuilder.setMessageId(messageId);
+    httpRequestObject.setMessageId(messageId);
     return this;
   }
 
   @Override
   public PublishMessageCommandStep3 timeToLive(final Duration timeToLive) {
-    builder.setTimeToLive(timeToLive.toMillis());
+    grpcRequestObjectBuilder.setTimeToLive(timeToLive.toMillis());
+    httpRequestObject.setTimeToLive(timeToLive.toMillis());
     return this;
   }
 
   @Override
   public PublishMessageCommandStep3 correlationKey(final String correlationKey) {
-    builder.setCorrelationKey(correlationKey);
+    grpcRequestObjectBuilder.setCorrelationKey(correlationKey);
+    httpRequestObject.setCorrelationKey(correlationKey);
     return this;
   }
 
@@ -87,42 +114,78 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
 
   @Override
   public PublishMessageCommandStep2 messageName(final String messageName) {
-    builder.setName(messageName);
+    grpcRequestObjectBuilder.setName(messageName);
+    httpRequestObject.setName(messageName);
     return this;
   }
 
   @Override
   public PublishMessageCommandStep3 tenantId(final String tenantId) {
-    builder.setTenantId(tenantId);
+    grpcRequestObjectBuilder.setTenantId(tenantId);
+    httpRequestObject.setTenantId(tenantId);
     return this;
   }
 
   @Override
   public FinalCommandStep<PublishMessageResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
   public ZeebeFuture<PublishMessageResponse> send() {
-    final PublishMessageRequest request = builder.build();
+    if (useRest) {
+      return sendRestRequest();
+    } else {
+      return sendGrpcRequest();
+    }
+  }
+
+  private ZeebeFuture<PublishMessageResponse> sendRestRequest() {
+    final HttpZeebeFuture<PublishMessageResponse> result = new HttpZeebeFuture<>();
+    final PublishMessageResponseImpl response = new PublishMessageResponseImpl();
+    httpClient.post(
+        "/messages/publication",
+        objectMapper.toJson(httpRequestObject),
+        httpRequestConfig.build(),
+        MessagePublicationResponse.class,
+        response::setResponse,
+        result);
+    return result;
+  }
+
+  private ZeebeFuture<PublishMessageResponse> sendGrpcRequest() {
+    final PublishMessageRequest request = grpcRequestObjectBuilder.build();
     final RetriableClientFutureImpl<
             PublishMessageResponse, GatewayOuterClass.PublishMessageResponse>
         future =
             new RetriableClientFutureImpl<>(
                 PublishMessageResponseImpl::new,
                 retryPredicate,
-                streamObserver -> send(request, streamObserver));
+                streamObserver -> sendGrpcRequest(request, streamObserver));
 
-    send(request, future);
+    sendGrpcRequest(request, future);
     return future;
   }
 
-  private void send(
+  private void sendGrpcRequest(
       final PublishMessageRequest request,
       final StreamObserver<GatewayOuterClass.PublishMessageResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .publishMessage(request, streamObserver);
+  }
+
+  @Override
+  public PublishMessageCommandStep1 useRest() {
+    useRest = true;
+    return this;
+  }
+
+  @Override
+  public PublishMessageCommandStep1 useGrpc() {
+    useRest = false;
+    return this;
   }
 }
