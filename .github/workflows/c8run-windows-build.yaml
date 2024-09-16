@@ -17,15 +17,19 @@ jobs:
         run: .\package.bat
         working-directory: .\c8run
 
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '22'
+
       - name: Set env
-        run: echo "JAVA_HOME=$env:JAVA_HOME_21_X64" >> $env:GITHUB_ENV
+        run: echo "JAVA_HOME=$env:JAVA_HOME_22_x64" >> $env:GITHUB_ENV
 
       - name: Run c8run
         run: .\c8run.exe start
         working-directory: .\c8run
         shell: cmd
-        env:
-          JAVA_VERSION: "21.0.4"
 
       - uses: actions/setup-node@v4
         with:
