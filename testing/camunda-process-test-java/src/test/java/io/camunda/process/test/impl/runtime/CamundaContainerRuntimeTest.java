@@ -89,7 +89,7 @@ public class CamundaContainerRuntimeTest {
     // then
     assertThat(runtime).isNotNull();
     assertThat(runtime.getElasticsearchContainer()).isEqualTo(elasticsearchContainer);
-    assertThat(runtime.getZeebeContainer()).isEqualTo(camundaContainer);
+    assertThat(runtime.getCamundaContainer()).isEqualTo(camundaContainer);
     assertThat(runtime.getOperateContainer()).isEqualTo(operateContainer);
     assertThat(runtime.getTasklistContainer()).isEqualTo(tasklistContainer);
     assertThat(runtime.getConnectorsContainer()).isEqualTo(connectorsContainer);

@@ -185,7 +185,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
     LOGGER.info("Camunda container runtime started in {}", startupTime);
   }
 
-  public CamundaContainer getZeebeContainer() {
+  public CamundaContainer getCamundaContainer() {
     return camundaContainer;
   }
 

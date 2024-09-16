@@ -78,7 +78,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     final CamundaProcessTestContext camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
-            containerRuntime.getZeebeContainer(),
+            containerRuntime.getCamundaContainer(),
             containerRuntime.getConnectorsContainer(),
             createdClients::add);
 

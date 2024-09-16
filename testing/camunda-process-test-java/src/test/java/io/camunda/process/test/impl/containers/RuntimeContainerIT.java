@@ -71,7 +71,7 @@ public class RuntimeContainerIT {
   @Test
   void shouldConnectWithZeebeClient() {
     // given
-    final CamundaContainer camundaContainer = runtime.getZeebeContainer();
+    final CamundaContainer camundaContainer = runtime.getCamundaContainer();
 
     // when
     final ZeebeClient zeebeClient =
@@ -196,7 +196,7 @@ public class RuntimeContainerIT {
   }
 
   private static ZeebeClient createZeebeClient(final CamundaContainerRuntime runtime) {
-    final CamundaContainer camundaContainer = runtime.getZeebeContainer();
+    final CamundaContainer camundaContainer = runtime.getCamundaContainer();
     return ZeebeClient.newClientBuilder()
         .usePlaintext()
         .grpcAddress(camundaContainer.getGrpcApiAddress())

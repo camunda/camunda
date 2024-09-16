@@ -79,7 +79,7 @@ public class ExecutionListenerTest {
   @BeforeEach
   void configureMocks() {
     when(camundaContainerRuntimeBuilder.build()).thenReturn(camundaContainerRuntime);
-    when(camundaContainerRuntime.getZeebeContainer()).thenReturn(camundaContainer);
+    when(camundaContainerRuntime.getCamundaContainer()).thenReturn(camundaContainer);
     when(camundaContainer.getGrpcApiAddress()).thenReturn(GRPC_API_ADDRESS);
     when(camundaContainer.getRestApiAddress()).thenReturn(REST_API_ADDRESS);
 
