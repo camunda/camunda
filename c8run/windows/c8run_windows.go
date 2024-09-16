@@ -186,7 +186,7 @@ func main() {
 				fmt.Println("Java needs to be installed. Please install JDK " + strconv.Itoa(expectedJavaVersion) + " or newer.")
 				os.Exit(1)
 			}
-                        fmt.Println("Java version output\n" + javaVersionOutput + "\n" + stderr.String())
+                        fmt.Println("Java version output\n" + javaVersionOutput + "\n" + stderr.String() + "\n" + javaVersionOutputSplit[0])
 
 			output := javaVersionOutputSplit[1]
 			os.Setenv("JAVA_VERSION", output)
