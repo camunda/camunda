@@ -97,7 +97,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
       final Network network, final CamundaContainerRuntimeBuilder builder) {
     final CamundaContainer container =
         containerFactory
-            .createZeebeContainer(
+            .createCamundaContainer(
                 builder.getZeebeDockerImageName(), builder.getZeebeDockerImageVersion())
             .withLogConsumer(createContainerLogger(builder.getZeebeLoggerName()))
             .withNetwork(network)

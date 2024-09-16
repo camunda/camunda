@@ -74,7 +74,7 @@ public class CamundaContainerRuntimeTest {
   void configureMocks() {
     when(containerFactory.createElasticsearchContainer(any(), any()))
         .thenReturn(elasticsearchContainer);
-    when(containerFactory.createZeebeContainer(any(), any())).thenReturn(camundaContainer);
+    when(containerFactory.createCamundaContainer(any(), any())).thenReturn(camundaContainer);
     when(containerFactory.createOperateContainer(any(), any())).thenReturn(operateContainer);
     when(containerFactory.createTasklistContainer(any(), any())).thenReturn(tasklistContainer);
     when(containerFactory.createConnectorsContainer(any(), any())).thenReturn(connectorsContainer);
@@ -139,7 +139,7 @@ public class CamundaContainerRuntimeTest {
             ContainerRuntimeDefaults.ELASTICSEARCH_DOCKER_IMAGE_NAME,
             ContainerRuntimeDefaults.ELASTICSEARCH_DOCKER_IMAGE_VERSION);
     verify(containerFactory)
-        .createZeebeContainer(
+        .createCamundaContainer(
             ContainerRuntimeDefaults.ZEEBE_DOCKER_IMAGE_NAME,
             ContainerRuntimeDefaults.ZEEBE_DOCKER_IMAGE_VERSION);
     verify(containerFactory)
@@ -175,7 +175,7 @@ public class CamundaContainerRuntimeTest {
         .build();
 
     // then
-    verify(containerFactory).createZeebeContainer(dockerImageName, dockerImageVersion);
+    verify(containerFactory).createCamundaContainer(dockerImageName, dockerImageVersion);
     verify(camundaContainer).withEnv(EXPECTED_ENV_VARS);
     verify(camundaContainer).addExposedPort(100);
     verify(camundaContainer).addExposedPort(200);
