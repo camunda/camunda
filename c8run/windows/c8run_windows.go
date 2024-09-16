@@ -177,7 +177,9 @@ func main() {
 		if javaVersion == "" {
 			javaVersionCmd := exec.Command(javaBinary + " --version")
 			var out strings.Builder
+                        var stderr strings.Builder
 			javaVersionCmd.Stdout = &out
+			javaVersionCmd.Stderr = &stderr
 			javaVersionCmd.Run()
                         javaVersionOutput := out.String()
 			javaVersionOutputSplit := strings.Split(javaVersionOutput, " ")
@@ -185,7 +187,7 @@ func main() {
 				fmt.Println("Java needs to be installed. Please install JDK " + strconv.Itoa(expectedJavaVersion) + " or newer.")
 				os.Exit(1)
 			}
-                        fmt.Println("Java version output\n" + javaVersionOutput)
+                        fmt.Println("Java version output\n" + javaVersionOutput + "\n" + stderr.String())
 
 			output := javaVersionOutputSplit[1]
 			os.Setenv("JAVA_VERSION", output)
