@@ -8,9 +8,11 @@
 package io.camunda.service.query.filter;
 
 import static io.camunda.service.query.filter.DecisionInstanceSearchQueryStub.KEY;
+import static io.camunda.service.search.filter.FilterBuilders.dateValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.entities.DecisionInstanceEntity;
@@ -19,6 +21,9 @@ import io.camunda.service.search.query.DecisionInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.util.StubbedCamundaSearchClient;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -201,5 +206,40 @@ class DecisionInstanceFilterTest {
     assertThat(searchQueryResult.items()).hasSize(1);
     final DecisionInstanceEntity item = searchQueryResult.items().get(0);
     assertThat(item.key()).isEqualTo(KEY);
+  }
+
+  @Test
+  void shouldQueryByEvaluationDate() {
+    // given
+    final var decisionInstanceFilter =
+        FilterBuilders.decisionInstance(
+            f ->
+                f.evaluationDate(
+                    dateValue(
+                        d ->
+                            d.after(
+                                    OffsetDateTime.of(
+                                        LocalDateTime.of(2024, 1, 2, 3, 4, 5), ZoneOffset.UTC))
+                                .before(
+                                    OffsetDateTime.of(
+                                        LocalDateTime.of(2024, 2, 3, 4, 5, 6), ZoneOffset.UTC)))));
+    final var searchQuery =
+        SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.filter(decisionInstanceFilter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchRangeQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("evaluationDate");
+              assertThat(t.gte()).isEqualTo("2024-01-02T03:04:05.000+0000");
+              assertThat(t.lt()).isEqualTo("2024-02-03T04:05:06.000+0000");
+            });
   }
 }
