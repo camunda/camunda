@@ -845,12 +845,12 @@ paths:
     post:
       tags:
         - Flow node Instance
-      summary: Query flow node instances (experimental)
+      summary: Query flow node instances (alpha)
       description: |
         Search for flow node instances based on given criteria.
 
         :::note
-        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        This endpoint is alpha and not enabled on Camunda clusters out of the box.
         See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
         for further details.
         :::
