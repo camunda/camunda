@@ -181,22 +181,22 @@ public class ClusterEndpoint {
         return forceRemoveBrokers(dryRun, brokers, partitions);
       }
 
-      if (brokers != null
-          && brokers.getCount() != null
-          && ((brokers.getAdd() != null || !brokers.getAdd().isEmpty())
-              || (brokers.getRemove() != null || !brokers.getRemove().isEmpty()))) {
+      final boolean isScale = brokers != null && brokers.getCount() != null;
+      final boolean shouldAddBrokers =
+          brokers != null && brokers.getAdd() != null && !brokers.getAdd().isEmpty();
+      final boolean shouldRemoveBrokers =
+          brokers != null && brokers.getRemove() != null && !brokers.getRemove().isEmpty();
+      if (isScale && (shouldAddBrokers || shouldRemoveBrokers)) {
         return invalidRequest(
-            "Cannot change brokers count and add/remove brokers at the same time. Specify either the newPartitionCount or brokers to add and remove.");
+            "Cannot change brokers count and add/remove brokers at the same time. Specify either the new brokers count or brokers to add and remove.");
       }
 
       final Optional<Integer> newPartitionCount =
-          partitions != null ? Optional.ofNullable(partitions.getCount()) : Optional.empty();
+          Optional.ofNullable(partitions).map(ClusterConfigPatchRequestPartitions::getCount);
       final Optional<Integer> newReplicationFactor =
-          partitions != null
-              ? Optional.ofNullable(partitions.getReplicationFactor())
-              : Optional.empty();
+          Optional.ofNullable(partitions)
+              .map(ClusterConfigPatchRequestPartitions::getReplicationFactor);
 
-      final boolean isScale = brokers != null && brokers.getCount() != null;
       if (isScale) {
         final var scaleRequest =
             new ClusterScaleRequest(
