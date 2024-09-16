@@ -30,35 +30,6 @@ Using Camunda 8, you can:
 
 [Learn more at camunda.com](https://camunda.com/platform/).
 
-## Release Lifecycle
-
-Our release cadence within major releases is a minor release every six months, with an alpha release on each of the five months between minor releases. Releases happen on the second Tuesday of the month, Berlin time (CET).
-
-Minor releases are supported with patches for eighteen months after their release.
-
-Here is a diagram illustrating the lifecycle of minor releases over a 27-month period:
-
-```
-2024                       2025                                2026
-Ap Ma Ju Ju Au Se Oc No De Ja Fe Ma Ap Ma Ju Ju Au Se Oc No De Ja Fe Ma Ap Ma Ju
-8.5--------------------------------------------------|
-                  8.6--------------------------------------------------|
-                                    8.7-----------------------------------------
-                                                      8.8-----------------------
-                                                                        8.9-----
-1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27
-```
-
-Here is a diagram illustrating the release schedule of the five alpha releases prior to an upcoming minor release over a 7-month period:
-
-```
-2024                                2025
-Oct       Nov          Dec          Jan          Feb          Mar          Apr
-8.6-----------------------------------------------------------------------------
-          8.6-alpha1   8.6-alpha2   8.6-alpha3   8.6-alpha4   8.6-alpha5   8.7--
-1         2            3            4            5            6            7
-```
-
 ## Status
 
 To learn more about what we're currently working on, check the [GitHub issues](https://github.com/camunda/camunda/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc) and the [latest commits](https://github.com/camunda/camunda/commits/main).
@@ -118,3 +89,7 @@ The Zeebe Gateway Protocol (API) as published in the
 under the [Camunda License 1.0](/licenses/CAMUNDA-LICENSE-1.0.txt). Using gRPC tooling to generate stubs for
 the protocol does not constitute creating a derivative work under the Camunda License 1.0 and no licensing restrictions are imposed on the
 resulting stub code by the Camunda License 1.0.
+
+## Release Lifecycle
+
+Please refer to our [Release Policy](https://camunda.com/release-policy/) to learn about our release cadence, support periods, etc.
