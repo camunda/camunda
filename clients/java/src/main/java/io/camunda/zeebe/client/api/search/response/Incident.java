@@ -21,13 +21,17 @@ public interface Incident {
 
   Long getProcessDefinitionKey();
 
+  String getBpmnProcessId();
+
   Long getProcessInstanceKey();
 
   String getType();
 
+  String getMessage();
+
   String getFlowNodeId();
 
-  String getFlowNodeInstanceId();
+  Long getFlowNodeInstanceKey();
 
   String getCreationTime();
 
@@ -35,11 +39,7 @@ public interface Incident {
 
   Long getJobKey();
 
-  Boolean getHasActiveOperation();
+  String getTreePath();
 
-  Operation getOperation();
-
-  ProcessInstanceReference getProcessInstanceReference();
-
-  DecisionInstanceReference getDecisionInstanceReference();
+  String getTenantId();
 }

@@ -13,6 +13,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.service.IncidentServices;
 import io.camunda.service.entities.IncidentEntity;
+import io.camunda.service.entities.IncidentEntity.ErrorType;
+import io.camunda.service.entities.IncidentEntity.IncidentState;
 import io.camunda.service.search.filter.IncidentFilter;
 import io.camunda.service.search.query.IncidentQuery;
 import io.camunda.service.search.query.SearchQueryResult;
@@ -40,15 +42,17 @@ public class IncidentQueryControllerTest extends RestControllerTest {
               {
                   "key": 5,
                   "processDefinitionKey": 23,
+                  "bpmnProcessId": "complexProcess",
                   "processInstanceKey": 42,
-                  "type": "type",
+                  "type": "JOB_NO_RETRIES",
+                  "message": "No retries left.",
                   "flowNodeId": "flowNodeId",
-                  "flowNodeInstanceId": "flowNodeInstanceId",
+                  "flowNodeInstanceKey": 17,
                   "creationTime": "2024-05-23T23:05:00.000+0000",
-                  "state": "state",
-                  "jobKey": 5,
-                  "tenantId": "tenantId",
-                  "hasActiveOperation": false
+                  "state": "ACTIVE",
+                  "jobKey": 101,
+                  "treePath":"PI_42/FN_flowNodeId/FNI_17",
+                  "tenantId": "tenantId"
               }
           ],
           "page": {
@@ -68,20 +72,17 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                   new IncidentEntity(
                       5L,
                       23L,
+                      "complexProcess",
                       42L,
-                      "type",
+                      ErrorType.JOB_NO_RETRIES,
+                      "No retries left.",
                       "flowNodeId",
-                      "flowNodeInstanceId",
+                      17L,
                       "2024-05-23T23:05:00.000+0000",
-                      "state",
-                      5L,
-                      "tenantId",
-                      false,
-                      null, /*new OperationEntity(
-                            "id", "batchOperationId", "type", "state", "errorMessage", "2024"),*/
-                      null, /*new ProcessInstanceReference(
-                            "instanceId", "processDefinitionId", "processDefinitionName"),*/
-                      null /*new DecisionInstanceReference("instanceId", "decisionName")*/)))
+                      IncidentState.ACTIVE,
+                      101L,
+                      "PI_42/FN_flowNodeId/FNI_17",
+                      "tenantId")))
           .sortValues(new Object[] {"v"})
           .build();
 

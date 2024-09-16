@@ -42,7 +42,7 @@ public class IncidentSortTest {
         new TestArguments("tenantId", SortOrder.ASC, s -> s.tenantId().asc()),
         new TestArguments("jobKey", SortOrder.ASC, s -> s.jobKey().asc()),
         new TestArguments("flowNodeId", SortOrder.ASC, s -> s.flowNodeId().asc()),
-        new TestArguments("flowNodeInstanceId", SortOrder.ASC, s -> s.flowNodeInstanceId().asc()),
+        new TestArguments("flowNodeInstanceKey", SortOrder.ASC, s -> s.flowNodeInstancekey().asc()),
         new TestArguments(
             "processDefinitionKey", SortOrder.ASC, s -> s.processDefinitionKey().asc()),
         new TestArguments("processInstanceKey", SortOrder.ASC, s -> s.processInstanceKey().asc()),

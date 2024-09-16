@@ -212,46 +212,4 @@ public final class IncidentFilterTest {
               assertThat(t.value().stringValue()).isEqualTo("ERROR");
             });
   }
-
-  @Test
-  public void shouldQueryByHasActiveOperation() {
-    final var filter = FilterBuilders.incident(f -> f.hasActiveOperation(true));
-    final var searchQuery = SearchQueryBuilders.incidentSearchQuery(q -> q.filter(filter));
-
-    // when
-    services.search(searchQuery);
-
-    // then
-    final var searchRequest = client.getSingleSearchRequest();
-
-    final var queryVariant = searchRequest.query().queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            t -> {
-              assertThat(t.field()).isEqualTo("hasActiveOperation");
-              assertThat(t.value().booleanValue()).isEqualTo(true);
-            });
-  }
-
-  @Test
-  public void shouldQueryByFlowNodeInstanceId() {
-    final var filter = FilterBuilders.incident(f -> f.flowNodeInstanceIds("flowNodeInstance-23"));
-    final var searchQuery = SearchQueryBuilders.incidentSearchQuery(q -> q.filter(filter));
-
-    // when
-    services.search(searchQuery);
-
-    // then
-    final var searchRequest = client.getSingleSearchRequest();
-
-    final var queryVariant = searchRequest.query().queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            t -> {
-              assertThat(t.field()).isEqualTo("flowNodeInstanceId");
-              assertThat(t.value().stringValue()).isEqualTo("flowNodeInstance-23");
-            });
-  }
 }

@@ -35,6 +35,11 @@ public record IncidentSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
+    public Builder bpmnProcessId() {
+      currentOrdering = new FieldSorting("bpmnProcessId", null);
+      return this;
+    }
+
     public Builder processInstanceKey() {
       currentOrdering = new FieldSorting("processInstanceKey", null);
       return this;
@@ -50,8 +55,8 @@ public record IncidentSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
-    public Builder flowNodeInstanceId() {
-      currentOrdering = new FieldSorting("flowNodeInstanceId", null);
+    public Builder flowNodeInstancekey() {
+      currentOrdering = new FieldSorting("flowNodeInstanceKey", null);
       return this;
     }
 
