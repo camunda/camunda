@@ -180,7 +180,7 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
    */
   public CamundaProcessTestExtension withCamundaVersion(final String camundaVersion) {
     containerRuntimeBuilder
-        .withZeebeDockerImageVersion(camundaVersion)
+        .withCamundaDockerImageVersion(camundaVersion)
         .withOperateDockerImageVersion(camundaVersion)
         .withTasklistDockerImageVersion(camundaVersion)
         .withConnectorsDockerImageVersion(camundaVersion);
@@ -194,7 +194,7 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
    * @return the extension builder
    */
   public CamundaProcessTestExtension withZeebeDockerImageName(final String dockerImageName) {
-    containerRuntimeBuilder.withZeebeDockerImageName(dockerImageName);
+    containerRuntimeBuilder.withCamundaDockerImageName(dockerImageName);
     return this;
   }
 
@@ -205,7 +205,7 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
    * @return the extension builder
    */
   public CamundaProcessTestExtension withZeebeEnv(final Map<String, String> envVars) {
-    containerRuntimeBuilder.withZeebeEnv(envVars);
+    containerRuntimeBuilder.withCamundaEnv(envVars);
     return this;
   }
 
@@ -217,7 +217,7 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
    * @return the extension builder
    */
   public CamundaProcessTestExtension withZeebeEnv(final String name, final String value) {
-    containerRuntimeBuilder.withZeebeEnv(name, value);
+    containerRuntimeBuilder.withCamundaEnv(name, value);
     return this;
   }
 
@@ -228,7 +228,7 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
    * @return the extension builder
    */
   public CamundaProcessTestExtension withZeebeExposedPort(final int port) {
-    containerRuntimeBuilder.withZeebeExposedPort(port);
+    containerRuntimeBuilder.withCamundaExposedPort(port);
     return this;
   }
 

@@ -165,13 +165,13 @@ public class CamundaContainerRuntimeTest {
     // when
     CamundaContainerRuntime.newBuilder()
         .withContainerFactory(containerFactory)
-        .withZeebeDockerImageName(dockerImageName)
-        .withZeebeDockerImageVersion(dockerImageVersion)
-        .withZeebeEnv(ENV_VARS)
-        .withZeebeEnv(ADDITIONAL_ENV_VAR_KEY, ADDITIONAL_ENV_VAR_VALUE)
-        .withZeebeExposedPort(100)
-        .withZeebeExposedPort(200)
-        .withZeebeLogger("custom-logger")
+        .withCamundaDockerImageName(dockerImageName)
+        .withCamundaDockerImageVersion(dockerImageVersion)
+        .withCamundaEnv(ENV_VARS)
+        .withCamundaEnv(ADDITIONAL_ENV_VAR_KEY, ADDITIONAL_ENV_VAR_VALUE)
+        .withCamundaExposedPort(100)
+        .withCamundaExposedPort(200)
+        .withCamundaLogger("custom-logger")
         .build();
 
     // then

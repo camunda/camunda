@@ -207,18 +207,18 @@ public class JunitExtensionTest {
     extension.beforeEach(extensionContext);
 
     // then
-    verify(camundaContainerRuntimeBuilder).withZeebeDockerImageVersion(camundaVersion);
+    verify(camundaContainerRuntimeBuilder).withCamundaDockerImageVersion(camundaVersion);
     verify(camundaContainerRuntimeBuilder).withOperateDockerImageVersion(camundaVersion);
     verify(camundaContainerRuntimeBuilder).withTasklistDockerImageVersion(camundaVersion);
     verify(camundaContainerRuntimeBuilder).withConnectorsDockerImageVersion(camundaVersion);
 
-    verify(camundaContainerRuntimeBuilder).withZeebeDockerImageName(zeebeDockerImageName);
+    verify(camundaContainerRuntimeBuilder).withCamundaDockerImageName(zeebeDockerImageName);
 
-    verify(camundaContainerRuntimeBuilder).withZeebeEnv(zeebeEnvVars);
-    verify(camundaContainerRuntimeBuilder).withZeebeEnv("env-3", "test-3");
+    verify(camundaContainerRuntimeBuilder).withCamundaEnv(zeebeEnvVars);
+    verify(camundaContainerRuntimeBuilder).withCamundaEnv("env-3", "test-3");
 
-    verify(camundaContainerRuntimeBuilder).withZeebeExposedPort(100);
-    verify(camundaContainerRuntimeBuilder).withZeebeExposedPort(200);
+    verify(camundaContainerRuntimeBuilder).withCamundaExposedPort(100);
+    verify(camundaContainerRuntimeBuilder).withCamundaExposedPort(200);
   }
 
   @Test

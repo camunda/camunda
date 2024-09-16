@@ -240,13 +240,13 @@ public class ExecutionListenerTest {
     listener.beforeTestMethod(testContext);
 
     // then
-    verify(camundaContainerRuntimeBuilder).withZeebeDockerImageVersion("8.6.0-custom");
+    verify(camundaContainerRuntimeBuilder).withCamundaDockerImageVersion("8.6.0-custom");
     verify(camundaContainerRuntimeBuilder).withOperateDockerImageVersion("8.6.0-custom");
     verify(camundaContainerRuntimeBuilder).withTasklistDockerImageVersion("8.6.0-custom");
-    verify(camundaContainerRuntimeBuilder).withZeebeDockerImageName("custom-zeebe");
-    verify(camundaContainerRuntimeBuilder).withZeebeEnv(zeebeEnvVars);
-    verify(camundaContainerRuntimeBuilder).withZeebeExposedPort(100);
-    verify(camundaContainerRuntimeBuilder).withZeebeExposedPort(200);
+    verify(camundaContainerRuntimeBuilder).withCamundaDockerImageName("custom-zeebe");
+    verify(camundaContainerRuntimeBuilder).withCamundaEnv(zeebeEnvVars);
+    verify(camundaContainerRuntimeBuilder).withCamundaExposedPort(100);
+    verify(camundaContainerRuntimeBuilder).withCamundaExposedPort(200);
   }
 
   @Test

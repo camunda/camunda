@@ -98,14 +98,14 @@ public class CamundaContainerRuntime implements AutoCloseable {
     final CamundaContainer container =
         containerFactory
             .createCamundaContainer(
-                builder.getZeebeDockerImageName(), builder.getZeebeDockerImageVersion())
-            .withLogConsumer(createContainerLogger(builder.getZeebeLoggerName()))
+                builder.getCamundaDockerImageName(), builder.getCamundaDockerImageVersion())
+            .withLogConsumer(createContainerLogger(builder.getCamundaLoggerName()))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_ZEEBE)
             .withElasticsearchExporter(ELASTICSEARCH_URL)
-            .withEnv(builder.getZeebeEnvVars());
+            .withEnv(builder.getCamundaEnvVars());
 
-    builder.getZeebeExposedPorts().forEach(container::addExposedPort);
+    builder.getCamundaExposedPorts().forEach(container::addExposedPort);
 
     return container;
   }
