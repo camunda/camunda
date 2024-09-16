@@ -182,12 +182,11 @@ func main() {
 			javaVersionCmd.Run()
                         javaVersionOutput := out.String()
 			javaVersionOutputSplit := strings.Split(javaVersionOutput, " ")
-			if len(javaVersionOutputSplit) == 0 {
+			if len(javaVersionOutputSplit) < 2 {
 				fmt.Println("Java needs to be installed. Please install JDK " + strconv.Itoa(expectedJavaVersion) + " or newer.")
+				fmt.Println("If java is already installed, try explicitly setting JAVA_HOME and JAVA_VERSION")
 				os.Exit(1)
 			}
-                        fmt.Println("Java version output\n" + javaVersionOutput + "\n" + stderr.String())
-
 			output := javaVersionOutputSplit[1]
 			os.Setenv("JAVA_VERSION", output)
 			javaVersion = output
