@@ -369,6 +369,7 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
     } else {
       commandDistributionBehavior
           .withKey(distributionKey)
+          .unordered()
           .forPartition(processMessageSubscriptionRecord.getSubscriptionPartitionId())
           .distribute(
               ValueType.MESSAGE_SUBSCRIPTION,
