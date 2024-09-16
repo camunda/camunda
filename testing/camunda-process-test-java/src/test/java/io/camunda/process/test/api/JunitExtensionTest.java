@@ -189,16 +189,16 @@ public class JunitExtensionTest {
   void shouldConfigureRuntime() throws Exception {
     // given
     final String camundaVersion = "camunda-version";
-    final String zeebeDockerImageName = "zeebe-docker-image-name";
-    final Map<String, String> zeebeEnvVars = new HashMap<>();
-    zeebeEnvVars.put("env-1", "test-1");
-    zeebeEnvVars.put("env-2", "test-2");
+    final String camundaDockerImageName = "camunda-docker-image-name";
+    final Map<String, String> camundaEnvVars = new HashMap<>();
+    camundaEnvVars.put("env-1", "test-1");
+    camundaEnvVars.put("env-2", "test-2");
 
     final CamundaProcessTestExtension extension =
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder)
             .withCamundaVersion(camundaVersion)
-            .withCamundaDockerImageName(zeebeDockerImageName)
-            .withCamundaEnv(zeebeEnvVars)
+            .withCamundaDockerImageName(camundaDockerImageName)
+            .withCamundaEnv(camundaEnvVars)
             .withCamundaEnv("env-3", "test-3")
             .withCamundaExposedPort(100)
             .withCamundaExposedPort(200);
@@ -212,9 +212,9 @@ public class JunitExtensionTest {
     verify(camundaContainerRuntimeBuilder).withTasklistDockerImageVersion(camundaVersion);
     verify(camundaContainerRuntimeBuilder).withConnectorsDockerImageVersion(camundaVersion);
 
-    verify(camundaContainerRuntimeBuilder).withCamundaDockerImageName(zeebeDockerImageName);
+    verify(camundaContainerRuntimeBuilder).withCamundaDockerImageName(camundaDockerImageName);
 
-    verify(camundaContainerRuntimeBuilder).withCamundaEnv(zeebeEnvVars);
+    verify(camundaContainerRuntimeBuilder).withCamundaEnv(camundaEnvVars);
     verify(camundaContainerRuntimeBuilder).withCamundaEnv("env-3", "test-3");
 
     verify(camundaContainerRuntimeBuilder).withCamundaExposedPort(100);
