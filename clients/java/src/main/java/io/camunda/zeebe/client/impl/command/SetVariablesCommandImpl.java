@@ -23,7 +23,10 @@ import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1.SetVariablesCommandStep2;
 import io.camunda.zeebe.client.api.response.SetVariablesResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.SetVariablesResponseImpl;
+import io.camunda.zeebe.client.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
@@ -34,52 +37,83 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class SetVariablesCommandImpl
     implements SetVariablesCommandStep1, SetVariablesCommandStep2 {
 
   private final GatewayStub asyncStub;
-  private final Builder builder;
+  private final Builder grpcRequestObjectBuilder;
   private final JsonMapper jsonMapper;
   private final Predicate<StatusCode> retryPredicate;
   private Duration requestTimeout;
+  private boolean useRest;
+  private final HttpClient httpClient;
+  private final RequestConfig.Builder httpRequestConfig;
+  private final SetVariableRequest httpRequestObject = new SetVariableRequest();
+  private final long elementInstanceKey;
 
   public SetVariablesCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
       final long elementInstanceKey,
       final Duration requestTimeout,
-      final Predicate<StatusCode> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate,
+      final HttpClient httpClient,
+      final boolean preferRestOverGrpc) {
     this.asyncStub = asyncStub;
     this.jsonMapper = jsonMapper;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
-    builder = SetVariablesRequest.newBuilder();
-    builder.setElementInstanceKey(elementInstanceKey);
+    grpcRequestObjectBuilder = SetVariablesRequest.newBuilder();
+    grpcRequestObjectBuilder.setElementInstanceKey(elementInstanceKey);
+    this.httpClient = httpClient;
+    httpRequestConfig = httpClient.newRequestConfig();
+    useRest = preferRestOverGrpc;
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   @Override
   public FinalCommandStep<SetVariablesResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
   public ZeebeFuture<SetVariablesResponse> send() {
-    final SetVariablesRequest request = builder.build();
+    if (useRest) {
+      return sendRestRequest();
+    } else {
+      return sendGrpcRequest();
+    }
+  }
+
+  private ZeebeFuture<SetVariablesResponse> sendRestRequest() {
+    final HttpZeebeFuture<SetVariablesResponse> result = new HttpZeebeFuture<>();
+    httpClient.put(
+        "/element-instances/" + elementInstanceKey + "/variables",
+        jsonMapper.toJson(httpRequestObject),
+        httpRequestConfig.build(),
+        result);
+    return result;
+  }
+
+  private ZeebeFuture<SetVariablesResponse> sendGrpcRequest() {
+    final SetVariablesRequest request = grpcRequestObjectBuilder.build();
 
     final RetriableClientFutureImpl<SetVariablesResponse, GatewayOuterClass.SetVariablesResponse>
         future =
             new RetriableClientFutureImpl<>(
                 SetVariablesResponseImpl::new,
                 retryPredicate,
-                streamObserver -> send(request, streamObserver));
+                streamObserver -> sendGrpcRequest(request, streamObserver));
 
-    send(request, future);
+    sendGrpcRequest(request, future);
     return future;
   }
 
-  private void send(
+  private void sendGrpcRequest(
       final SetVariablesRequest request,
       final StreamObserver<GatewayOuterClass.SetVariablesResponse> streamObserver) {
     asyncStub
@@ -89,7 +123,8 @@ public final class SetVariablesCommandImpl
 
   @Override
   public SetVariablesCommandStep2 local(final boolean local) {
-    builder.setLocal(local);
+    grpcRequestObjectBuilder.setLocal(local);
+    httpRequestObject.setLocal(local);
     return this;
   }
 
@@ -117,13 +152,36 @@ public final class SetVariablesCommandImpl
   }
 
   private SetVariablesCommandStep2 setVariables(final String jsonDocument) {
-    builder.setVariables(jsonDocument);
+    grpcRequestObjectBuilder.setVariables(jsonDocument);
+    // This check is mandatory. Without it, gRPC requests can fail unnecessarily.
+    // gRPC and REST handle setting variables differently:
+    // - For gRPC commands, we only check if the JSON is valid and forward it to the engine.
+    //    The engine checks if the provided String can be transformed into a Map, if not it
+    //    throws an error.
+    // - For REST commands, users have to provide a valid JSON Object String.
+    //    Otherwise, the client throws an exception already.
+    if (useRest) {
+      httpRequestObject.setVariables(jsonMapper.fromJsonAsMap(jsonDocument));
+    }
     return this;
   }
 
   @Override
   public SetVariablesCommandStep2 operationReference(final long operationReference) {
-    builder.setOperationReference(operationReference);
+    grpcRequestObjectBuilder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
+  public SetVariablesCommandStep1 useRest() {
+    useRest = true;
+    return this;
+  }
+
+  @Override
+  public SetVariablesCommandStep1 useGrpc() {
+    useRest = false;
     return this;
   }
 }
