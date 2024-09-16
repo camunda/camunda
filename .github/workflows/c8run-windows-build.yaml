@@ -24,6 +24,8 @@ jobs:
         run: .\c8run.exe start
         working-directory: .\c8run
         shell: cmd
+        env:
+          JAVA_VERSION: "21.0.4"
 
       - uses: actions/setup-node@v4
         with:
