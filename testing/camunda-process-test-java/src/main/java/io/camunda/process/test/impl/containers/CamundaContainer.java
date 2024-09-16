@@ -27,7 +27,7 @@ import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy.Mode;
 import org.testcontainers.utility.DockerImageName;
 
-public class ZeebeContainer extends GenericContainer<ZeebeContainer> {
+public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
   private static final Duration DEFAULT_STARTUP_TIMEOUT = Duration.ofMinutes(1);
   private static final String ZEEBE_READY_ENDPOINT = "/ready";
@@ -35,7 +35,7 @@ public class ZeebeContainer extends GenericContainer<ZeebeContainer> {
   private static final String ZEEBE_ELASTICSEARCH_EXPORTER_CLASSNAME =
       "io.camunda.zeebe.exporter.ElasticsearchExporter";
 
-  public ZeebeContainer(final DockerImageName dockerImageName) {
+  public CamundaContainer(final DockerImageName dockerImageName) {
     super(dockerImageName);
     applyDefaultConfiguration();
   }
@@ -52,7 +52,7 @@ public class ZeebeContainer extends GenericContainer<ZeebeContainer> {
             ContainerRuntimePorts.ZEEBE_REST_API);
   }
 
-  public ZeebeContainer withElasticsearchExporter(final String url) {
+  public CamundaContainer withElasticsearchExporter(final String url) {
     withEnv(
         ContainerRuntimeEnvs.ZEEBE_ENV_ELASTICSEARCH_CLASSNAME,
         ZEEBE_ELASTICSEARCH_EXPORTER_CLASSNAME);

@@ -15,11 +15,11 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.containers.TasklistContainer;
-import io.camunda.process.test.impl.containers.ZeebeContainer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.stream.Stream;
@@ -54,7 +54,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
   private final ContainerFactory containerFactory;
 
   private final Network network;
-  private final ZeebeContainer zeebeContainer;
+  private final CamundaContainer camundaContainer;
   private final ElasticsearchContainer elasticsearchContainer;
   private final OperateContainer operateContainer;
   private final TasklistContainer tasklistContainer;
@@ -69,7 +69,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
     network = Network.newNetwork();
 
     elasticsearchContainer = createElasticsearchContainer(network, builder);
-    zeebeContainer = createZeebeContainer(network, builder);
+    camundaContainer = createZeebeContainer(network, builder);
     operateContainer = createOperateContainer(network, builder);
     tasklistContainer = createTasklistContainer(network, builder);
     connectorsContainer = createConnectorsContainer(network, builder);
@@ -93,9 +93,9 @@ public class CamundaContainerRuntime implements AutoCloseable {
     return container;
   }
 
-  private ZeebeContainer createZeebeContainer(
+  private CamundaContainer createZeebeContainer(
       final Network network, final CamundaContainerRuntimeBuilder builder) {
-    final ZeebeContainer container =
+    final CamundaContainer container =
         containerFactory
             .createZeebeContainer(
                 builder.getZeebeDockerImageName(), builder.getZeebeDockerImageVersion())
@@ -172,7 +172,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
     final Instant startTime = Instant.now();
 
     elasticsearchContainer.start();
-    Stream.of(zeebeContainer, operateContainer, tasklistContainer)
+    Stream.of(camundaContainer, operateContainer, tasklistContainer)
         .parallel()
         .forEach(GenericContainer::start);
 
@@ -185,8 +185,8 @@ public class CamundaContainerRuntime implements AutoCloseable {
     LOGGER.info("Camunda container runtime started in {}", startupTime);
   }
 
-  public ZeebeContainer getZeebeContainer() {
-    return zeebeContainer;
+  public CamundaContainer getZeebeContainer() {
+    return camundaContainer;
   }
 
   public ElasticsearchContainer getElasticsearchContainer() {
@@ -214,7 +214,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
       connectorsContainer.stop();
     }
 
-    Stream.of(zeebeContainer, operateContainer, tasklistContainer)
+    Stream.of(camundaContainer, operateContainer, tasklistContainer)
         .parallel()
         .forEach(GenericContainer::stop);
 

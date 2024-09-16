@@ -20,9 +20,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.OperateContainer;
-import io.camunda.process.test.impl.containers.ZeebeContainer;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -51,7 +51,7 @@ public class JunitExtensionTest {
   private CamundaContainerRuntimeBuilder camundaContainerRuntimeBuilder;
 
   @Mock private CamundaContainerRuntime camundaContainerRuntime;
-  @Mock private ZeebeContainer zeebeContainer;
+  @Mock private CamundaContainer camundaContainer;
   @Mock private OperateContainer operateContainer;
   @Mock private ConnectorsContainer connectorsContainer;
 
@@ -66,9 +66,9 @@ public class JunitExtensionTest {
   @BeforeEach
   void configureMocks() {
     when(camundaContainerRuntimeBuilder.build()).thenReturn(camundaContainerRuntime);
-    when(camundaContainerRuntime.getZeebeContainer()).thenReturn(zeebeContainer);
-    when(zeebeContainer.getGrpcApiAddress()).thenReturn(GRPC_API_ADDRESS);
-    when(zeebeContainer.getRestApiAddress()).thenReturn(REST_API_ADDRESS);
+    when(camundaContainerRuntime.getZeebeContainer()).thenReturn(camundaContainer);
+    when(camundaContainer.getGrpcApiAddress()).thenReturn(GRPC_API_ADDRESS);
+    when(camundaContainer.getRestApiAddress()).thenReturn(REST_API_ADDRESS);
 
     when(camundaContainerRuntime.getOperateContainer()).thenReturn(operateContainer);
     when(operateContainer.getHost()).thenReturn("my-host");

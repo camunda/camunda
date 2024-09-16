@@ -17,8 +17,8 @@ package io.camunda.process.test.impl.extension;
 
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.impl.client.ZeebeManagementClient;
+import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
-import io.camunda.process.test.impl.containers.ZeebeContainer;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
@@ -28,20 +28,20 @@ import java.util.function.Consumer;
 
 public class CamundaProcessTestContextImpl implements CamundaProcessTestContext {
 
-  private final ZeebeContainer zeebeContainer;
+  private final CamundaContainer camundaContainer;
   private final ConnectorsContainer connectorsContainer;
   private final Consumer<ZeebeClient> clientCreationCallback;
   private final ZeebeManagementClient zeebeManagementClient;
 
   public CamundaProcessTestContextImpl(
-      final ZeebeContainer zeebeContainer,
+      final CamundaContainer camundaContainer,
       final ConnectorsContainer connectorsContainer,
       final Consumer<ZeebeClient> clientCreationCallback) {
-    this.zeebeContainer = zeebeContainer;
+    this.camundaContainer = camundaContainer;
     this.connectorsContainer = connectorsContainer;
     this.clientCreationCallback = clientCreationCallback;
 
-    zeebeManagementClient = new ZeebeManagementClient(zeebeContainer.getMonitoringApiAddress());
+    zeebeManagementClient = new ZeebeManagementClient(camundaContainer.getMonitoringApiAddress());
   }
 
   @Override
@@ -67,12 +67,12 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public URI getZeebeGrpcAddress() {
-    return zeebeContainer.getGrpcApiAddress();
+    return camundaContainer.getGrpcApiAddress();
   }
 
   @Override
   public URI getZeebeRestAddress() {
-    return zeebeContainer.getRestApiAddress();
+    return camundaContainer.getRestApiAddress();
   }
 
   @Override

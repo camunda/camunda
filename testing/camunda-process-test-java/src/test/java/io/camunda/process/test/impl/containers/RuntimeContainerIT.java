@@ -71,14 +71,14 @@ public class RuntimeContainerIT {
   @Test
   void shouldConnectWithZeebeClient() {
     // given
-    final ZeebeContainer zeebeContainer = runtime.getZeebeContainer();
+    final CamundaContainer camundaContainer = runtime.getZeebeContainer();
 
     // when
     final ZeebeClient zeebeClient =
         ZeebeClient.newClientBuilder()
             .usePlaintext()
-            .grpcAddress(zeebeContainer.getGrpcApiAddress())
-            .restAddress(zeebeContainer.getRestApiAddress())
+            .grpcAddress(camundaContainer.getGrpcApiAddress())
+            .restAddress(camundaContainer.getRestApiAddress())
             .build();
 
     // then
@@ -196,11 +196,11 @@ public class RuntimeContainerIT {
   }
 
   private static ZeebeClient createZeebeClient(final CamundaContainerRuntime runtime) {
-    final ZeebeContainer zeebeContainer = runtime.getZeebeContainer();
+    final CamundaContainer camundaContainer = runtime.getZeebeContainer();
     return ZeebeClient.newClientBuilder()
         .usePlaintext()
-        .grpcAddress(zeebeContainer.getGrpcApiAddress())
-        .restAddress(zeebeContainer.getRestApiAddress())
+        .grpcAddress(camundaContainer.getGrpcApiAddress())
+        .restAddress(camundaContainer.getRestApiAddress())
         .build();
   }
 
