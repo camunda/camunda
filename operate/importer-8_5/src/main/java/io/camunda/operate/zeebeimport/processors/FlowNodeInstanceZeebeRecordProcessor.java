@@ -41,6 +41,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.commons.lang3.concurrent.ConcurrentException;
+import org.apache.commons.lang3.concurrent.ConcurrentInitializer;
+import org.apache.commons.lang3.concurrent.LazyInitializer;
+import org.apache.commons.lang3.function.FailableSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -53,14 +57,8 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(FlowNodeInstanceZeebeRecordProcessor.class);
   private static final Set<String> AI_START_STATES = Set.of(ELEMENT_ACTIVATING.name());
-
-  private FNITransformer fniTransformer;
-  // treePath by flowNodeInstanceKey caches
-  private final FlowNodeStore flowNodeStore;
+  private final ConcurrentInitializer<FNITransformer> fniTransformerLazy;
   private final FlowNodeInstanceTemplate flowNodeInstanceTemplate;
-  private final PartitionHolder partitionHolder;
-  private final int flowNodeTreeCacheSize;
-  private final Metrics metrics;
 
   public FlowNodeInstanceZeebeRecordProcessor(
       final FlowNodeStore flowNodeStore,
@@ -68,32 +66,50 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       final OperateProperties operateProperties,
       final PartitionHolder partitionHolder,
       final Metrics metrics) {
+
     this.flowNodeInstanceTemplate = flowNodeInstanceTemplate;
-    flowNodeTreeCacheSize = operateProperties.getImporter().getFlowNodeTreeCacheSize();
-    this.partitionHolder = partitionHolder;
-    this.flowNodeStore = flowNodeStore;
-    this.metrics = metrics;
+    final var flowNodeTreeCacheSize = operateProperties.getImporter().getFlowNodeTreeCacheSize();
+    fniTransformerLazy =
+        LazyInitializer.<FNITransformer>builder()
+            .setInitializer(
+                createFNITransformerSupplier(
+                    flowNodeStore, partitionHolder, metrics, flowNodeTreeCacheSize))
+            .get();
   }
 
-  private FNITransformer lazyLoadFNITransformer() {
-    if (fniTransformer != null) {
-      return fniTransformer;
+  private static FailableSupplier<FNITransformer, Exception> createFNITransformerSupplier(
+      final FlowNodeStore flowNodeStore,
+      final PartitionHolder partitionHolder,
+      final Metrics metrics,
+      final int flowNodeTreeCacheSize) {
+    return () -> {
+      // We create the FNITransformer lazy, as the partition holder doesn't hold the
+      // partitionIds right on start.
+      //
+      // When first accessed on importing, we can be sure that we can also request
+      // the partitions.
+      final var partitionIds = partitionHolder.getPartitionIds();
+
+      // treePath by flowNodeInstanceKey caches
+      final FlowNodeInstanceTreePathCache treePathCache =
+          new FlowNodeInstanceTreePathCache(
+              partitionIds,
+              flowNodeTreeCacheSize,
+              flowNodeStore::findParentTreePathFor,
+              new TreePathCacheMetricsImpl(partitionIds, metrics));
+      return new FNITransformer(treePathCache);
+    };
+  }
+
+  private FNITransformer getFNITransformer() {
+    try {
+      return fniTransformerLazy.get();
+    } catch (final ConcurrentException e) {
+      // we do not expect any exception as our instance supplier defined is not throwing any
+      // exception. If we catch this here there is something weird going on, so passing it on
+      throw new RuntimeException(
+          "Expected to retrieve FNITransformer without an error, bot caught one.", e);
     }
-
-    // We create the FNITransformer lazy, as partition holder didn't hold the partitionIds right on
-    // start. The chances are higher that when we start importing we can also request the
-    // partitions.
-
-    final var partitionIds = partitionHolder.getPartitionIds();
-    // treePath by flowNodeInstanceKey caches
-    final FlowNodeInstanceTreePathCache treePathCache =
-        new FlowNodeInstanceTreePathCache(
-            partitionIds,
-            flowNodeTreeCacheSize,
-            flowNodeStore::findParentTreePathFor,
-            new TreePathCacheMetricsImpl(partitionIds, metrics));
-    fniTransformer = new FNITransformer(treePathCache);
-    return fniTransformer;
   }
 
   public void processIncidentRecord(final Record record, final BatchRequest batchRequest)
@@ -137,7 +153,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       for (final Record<ProcessInstanceRecordValue> record : wiRecords) {
 
         if (shouldProcessProcessInstanceRecord(record)) {
-          fniEntity = lazyLoadFNITransformer().toFlowNodeInstanceEntity(record, fniEntity);
+          fniEntity = getFNITransformer().toFlowNodeInstanceEntity(record, fniEntity);
         }
       }
       if (fniEntity != null) {
