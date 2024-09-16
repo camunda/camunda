@@ -3675,6 +3675,13 @@ components:
             not occur within the requestTimeout, the request will be closed. Disabled by default.
           type: boolean
           default: false
+        fetchVariables:
+          description: |
+            List of variables names to be included in the response.
+            If empty, all visible variables in the root scope will be returned.
+          type: array
+          items:
+            type: string
         requestTimeout:
           description: |
             Timeout (in ms) the request waits for the process to complete. By default or

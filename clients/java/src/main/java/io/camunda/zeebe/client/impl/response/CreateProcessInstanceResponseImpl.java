@@ -16,15 +16,18 @@
 package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
 public final class CreateProcessInstanceResponseImpl implements ProcessInstanceEvent {
 
-  private final long processDefinitionKey;
-  private final String bpmnProcessId;
-  private final int version;
-  private final long processInstanceKey;
-  private final String tenantId;
+  private long processDefinitionKey;
+  private String bpmnProcessId;
+  private int version;
+  private long processInstanceKey;
+  private String tenantId;
+
+  public CreateProcessInstanceResponseImpl() {}
 
   public CreateProcessInstanceResponseImpl(
       final GatewayOuterClass.CreateProcessInstanceResponse response) {
@@ -33,6 +36,16 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
     version = response.getVersion();
     processInstanceKey = response.getProcessInstanceKey();
     tenantId = response.getTenantId();
+  }
+
+  public CreateProcessInstanceResponseImpl setResponse(
+      final CreateProcessInstanceResponse response) {
+    processDefinitionKey = response.getProcessKey();
+    bpmnProcessId = response.getBpmnProcessId();
+    version = response.getVersion();
+    processInstanceKey = response.getProcessInstanceKey();
+    tenantId = response.getTenantId();
+    return this;
   }
 
   @Override

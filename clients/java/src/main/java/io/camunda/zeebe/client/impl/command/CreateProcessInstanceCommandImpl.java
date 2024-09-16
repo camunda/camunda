@@ -26,6 +26,8 @@ import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.Cre
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.CreateProcessInstanceResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -37,6 +39,7 @@ import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CreateProcessInstanceCommandImpl
     extends CommandWithVariables<CreateProcessInstanceCommandImpl>
@@ -45,23 +48,33 @@ public final class CreateProcessInstanceCommandImpl
         CreateProcessInstanceCommandStep3 {
 
   private final GatewayStub asyncStub;
-  private final Builder builder;
+  private final Builder grpcRequestObjectBuilder;
   private final Predicate<StatusCode> retryPredicate;
   private final JsonMapper jsonMapper;
   private Duration requestTimeout;
+  private boolean useRest;
+  private HttpClient httpClient;
+  private RequestConfig.Builder httpRequestConfig;
+  private final io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest
+      httpRequestObject = new io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest();
 
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
       final ZeebeClientConfiguration config,
-      final Predicate<StatusCode> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate,
+      final HttpClient httpClient,
+      final boolean preferRestOverGrpc) {
     super(jsonMapper);
     this.asyncStub = asyncStub;
     requestTimeout = config.getDefaultRequestTimeout();
     this.retryPredicate = retryPredicate;
     this.jsonMapper = jsonMapper;
-    builder = CreateProcessInstanceRequest.newBuilder();
+    grpcRequestObjectBuilder = CreateProcessInstanceRequest.newBuilder();
     tenantId(config.getDefaultTenantId());
+    this.httpClient = httpClient;
+    httpRequestConfig = httpClient.newRequestConfig();
+    useRest = preferRestOverGrpc;
   }
 
   /**
@@ -85,45 +98,67 @@ public final class CreateProcessInstanceCommandImpl
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
     this.jsonMapper = jsonMapper;
-    builder = CreateProcessInstanceRequest.newBuilder();
+    grpcRequestObjectBuilder = CreateProcessInstanceRequest.newBuilder();
     tenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Override
   protected CreateProcessInstanceCommandImpl setVariablesInternal(final String variables) {
-    builder.setVariables(variables);
+    grpcRequestObjectBuilder.setVariables(variables);
+    // This check is mandatory. Without it, gRPC requests can fail unnecessarily.
+    // gRPC and REST handle setting variables differently:
+    // - For gRPC commands, we only check if the JSON is valid and forward it to the engine.
+    //    The engine checks if the provided String can be transformed into a Map, if not it
+    //    throws an error.
+    // - For REST commands, users have to provide a valid JSON Object String.
+    //    Otherwise, the client throws an exception already.
+    if (useRest) {
+      httpRequestObject.setVariables(jsonMapper.fromJsonAsMap(variables));
+    }
     return this;
   }
 
   @Override
   public CreateProcessInstanceCommandStep3 startBeforeElement(final String elementId) {
-    builder.addStartInstructions(
+    grpcRequestObjectBuilder.addStartInstructions(
         ProcessInstanceCreationStartInstruction.newBuilder().setElementId(elementId).build());
-
+    httpRequestObject.addStartInstructionsItem(
+        new io.camunda.zeebe.client.protocol.rest.ProcessInstanceCreationStartInstruction()
+            .elementId(elementId));
     return this;
   }
 
   @Override
   public CreateProcessInstanceWithResultCommandStep1 withResult() {
     return new CreateProcessInstanceWithResultCommandImpl(
-        jsonMapper, asyncStub, builder, retryPredicate, requestTimeout);
+        jsonMapper,
+        asyncStub,
+        grpcRequestObjectBuilder,
+        retryPredicate,
+        requestTimeout,
+        httpClient,
+        useRest,
+        httpRequestObject);
   }
 
   @Override
   public CreateProcessInstanceCommandStep2 bpmnProcessId(final String id) {
-    builder.setBpmnProcessId(id);
+    grpcRequestObjectBuilder.setBpmnProcessId(id);
+    httpRequestObject.setBpmnProcessId(id);
     return this;
   }
 
   @Override
   public CreateProcessInstanceCommandStep3 processDefinitionKey(final long processDefinitionKey) {
-    builder.setProcessDefinitionKey(processDefinitionKey);
+    grpcRequestObjectBuilder.setProcessDefinitionKey(processDefinitionKey);
+    httpRequestObject.setProcessDefinitionKey(processDefinitionKey);
     return this;
   }
 
   @Override
   public CreateProcessInstanceCommandStep3 version(final int version) {
-    builder.setVersion(version);
+    grpcRequestObjectBuilder.setVersion(version);
+    httpRequestObject.setVersion(version);
     return this;
   }
 
@@ -135,34 +170,69 @@ public final class CreateProcessInstanceCommandImpl
   @Override
   public FinalCommandStep<ProcessInstanceEvent> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
   public ZeebeFuture<ProcessInstanceEvent> send() {
-    final CreateProcessInstanceRequest request = builder.build();
+    if (useRest) {
+      return sendRestRequest();
+    } else {
+      return sendGrpcRequest();
+    }
+  }
+
+  private ZeebeFuture<ProcessInstanceEvent> sendRestRequest() {
+    final HttpZeebeFuture<ProcessInstanceEvent> result = new HttpZeebeFuture<>();
+    final CreateProcessInstanceResponseImpl response = new CreateProcessInstanceResponseImpl();
+    httpClient.post(
+        "/process-instances",
+        jsonMapper.toJson(httpRequestObject),
+        httpRequestConfig.build(),
+        io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceResponse.class,
+        response::setResponse,
+        result);
+    return result;
+  }
+
+  private ZeebeFuture<ProcessInstanceEvent> sendGrpcRequest() {
+    final CreateProcessInstanceRequest request = grpcRequestObjectBuilder.build();
 
     final RetriableClientFutureImpl<ProcessInstanceEvent, CreateProcessInstanceResponse> future =
         new RetriableClientFutureImpl<>(
             CreateProcessInstanceResponseImpl::new,
             retryPredicate,
-            streamObserver -> send(request, streamObserver));
+            streamObserver -> sendGrpcRequest(request, streamObserver));
 
-    send(request, future);
+    sendGrpcRequest(request, future);
     return future;
   }
 
   @Override
   public CreateProcessInstanceCommandStep3 tenantId(final String tenantId) {
-    builder.setTenantId(tenantId);
+    grpcRequestObjectBuilder.setTenantId(tenantId);
+    httpRequestObject.setTenantId(tenantId);
     return this;
   }
 
-  private void send(
+  private void sendGrpcRequest(
       final CreateProcessInstanceRequest request,
       final StreamObserver<GatewayOuterClass.CreateProcessInstanceResponse> future) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .createProcessInstance(request, future);
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep1 useRest() {
+    useRest = true;
+    return this;
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep1 useGrpc() {
+    useRest = false;
+    return this;
   }
 }

@@ -94,7 +94,8 @@ public final class ProcessInstanceServices
             .setVersion(request.version())
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()))
-            .setInstructions(request.startInstructions());
+            .setInstructions(request.startInstructions())
+            .setFetchVariables(request.fetchVariables());
 
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
@@ -151,7 +152,8 @@ public final class ProcessInstanceServices
       Boolean awaitCompletion,
       Long requestTimeout,
       Long operationReference,
-      List<ProcessInstanceCreationStartInstruction> startInstructions) {}
+      List<ProcessInstanceCreationStartInstruction> startInstructions,
+      List<String> fetchVariables) {}
 
   public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}
 

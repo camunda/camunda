@@ -483,7 +483,8 @@ public class RequestMapper {
                             new io.camunda.zeebe.protocol.impl.record.value.processinstance
                                     .ProcessInstanceCreationStartInstruction()
                                 .setElementId(instruction.getElementId()))
-                    .toList()));
+                    .toList(),
+                request.getFetchVariables()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceCancelRequest> toCancelProcessInstance(

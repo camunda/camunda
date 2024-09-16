@@ -18,20 +18,25 @@ package io.camunda.zeebe.client.impl.response;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
+import io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import java.util.Map;
 
 public final class CreateProcessInstanceWithResultResponseImpl implements ProcessInstanceResult {
 
-  private final JsonMapper jsonMapper;
-  private final long processDefinitionKey;
-  private final String bpmnProcessId;
-  private final int version;
-  private final long processInstanceKey;
-  private final String tenantId;
-  private final String variables;
+  private JsonMapper jsonMapper;
+  private long processDefinitionKey;
+  private String bpmnProcessId;
+  private int version;
+  private long processInstanceKey;
+  private String tenantId;
+  private String variables;
 
   private Map<String, Object> variablesAsMap;
+
+  public CreateProcessInstanceWithResultResponseImpl(final JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
+  }
 
   public CreateProcessInstanceWithResultResponseImpl(
       final JsonMapper jsonMapper, final CreateProcessInstanceWithResultResponse response) {
@@ -115,5 +120,16 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
         + tenantId
         + '\''
         + '}';
+  }
+
+  public CreateProcessInstanceWithResultResponseImpl setResponse(
+      final CreateProcessInstanceResponse response) {
+    processDefinitionKey = response.getProcessKey();
+    bpmnProcessId = response.getBpmnProcessId();
+    version = response.getVersion();
+    processInstanceKey = response.getProcessInstanceKey();
+    tenantId = response.getTenantId();
+    variables = jsonMapper.toJson(response.getVariables());
+    return this;
   }
 }
