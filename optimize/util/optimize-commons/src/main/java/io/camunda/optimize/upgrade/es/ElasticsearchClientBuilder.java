@@ -16,7 +16,10 @@ import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.ElasticSearchConfiguration;
 import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
+import io.camunda.search.connect.plugin.PluginConfiguration;
+import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -24,10 +27,13 @@ import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import javax.net.ssl.SSLContext;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
+import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
@@ -49,9 +55,11 @@ public class ElasticsearchClientBuilder {
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchClientBuilder.class);
 
   public static ElasticsearchClient build(
-      final ConfigurationService configurationService, final ObjectMapper objectMapper) {
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper,
+      final PluginRepository pluginRepository) {
     transportOptions = getTransportOptions(configurationService);
-    return getElasticsearchClient(restClient(configurationService), objectMapper);
+    return getElasticsearchClient(restClient(configurationService, pluginRepository), objectMapper);
   }
 
   public static String getCurrentESVersion(
@@ -60,10 +68,16 @@ public class ElasticsearchClientBuilder {
     return esClient.withTransportOptions(requestOptions).info().version().number();
   }
 
-  public static RestClient restClient(final ConfigurationService configurationService) {
+  public static RestClient restClient(
+      final ConfigurationService configurationService, final PluginRepository pluginRepository) {
+    final List<PluginConfiguration> plugins =
+        extractPluginConfigs(configurationService.getElasticSearchConfiguration());
+    pluginRepository.load(plugins);
     if (configurationService.getElasticSearchConfiguration().getSecuritySSLEnabled()) {
       logger.info("Setting up https rest client connection");
-      final RestClientBuilder builder = buildDefaultRestClient(configurationService, HTTPS);
+      final RestClientBuilder builder =
+          buildDefaultRestClient(
+              configurationService, HTTPS, pluginRepository.asRequestInterceptor());
       try {
 
         final SSLContext sslContext;
@@ -83,14 +97,16 @@ public class ElasticsearchClientBuilder {
 
         builder.setHttpClientConfigCallback(
             createHttpClientConfigCallback(configurationService, sslContext));
-      } catch (Exception e) {
-        String message = "Could not build secured Elasticsearch client.";
+      } catch (final Exception e) {
+        final String message = "Could not build secured Elasticsearch client.";
         throw new OptimizeRuntimeException(message, e);
       }
       return builder.build();
     } else {
       logger.info("Setting up http rest client connection");
-      return buildDefaultRestClient(configurationService, HTTP).build();
+      return buildDefaultRestClient(
+              configurationService, HTTP, pluginRepository.asRequestInterceptor())
+          .build();
     }
   }
 
@@ -100,10 +116,16 @@ public class ElasticsearchClientBuilder {
   }
 
   private static RestClientBuilder.HttpClientConfigCallback createHttpClientConfigCallback(
-      final ConfigurationService configurationService, final SSLContext sslContext) {
+      final ConfigurationService configurationService,
+      final SSLContext sslContext,
+      final HttpRequestInterceptor... requestInterceptors) {
     return httpClientBuilder -> {
       buildCredentialsProviderIfConfigured(configurationService)
           .ifPresent(httpClientBuilder::setDefaultCredentialsProvider);
+
+      for (final HttpRequestInterceptor interceptor : requestInterceptors) {
+        httpClientBuilder.addInterceptorLast(interceptor);
+      }
 
       httpClientBuilder.setSSLContext(sslContext);
 
@@ -127,7 +149,9 @@ public class ElasticsearchClientBuilder {
   }
 
   private static RestClientBuilder buildDefaultRestClient(
-      final ConfigurationService configurationService, final String protocol) {
+      final ConfigurationService configurationService,
+      final String protocol,
+      final HttpRequestInterceptor... requestInterceptors) {
     final RestClientBuilder restClientBuilder =
         RestClient.builder(buildElasticsearchConnectionNodes(configurationService, protocol))
             .setRequestConfigCallback(
@@ -145,7 +169,7 @@ public class ElasticsearchClientBuilder {
     }
 
     restClientBuilder.setHttpClientConfigCallback(
-        createHttpClientConfigCallback(configurationService));
+        createHttpClientConfigCallback(configurationService, null, requestInterceptors));
 
     return restClientBuilder;
   }
@@ -249,5 +273,16 @@ public class ElasticsearchClientBuilder {
     final TransportOptionsProvider transportOptionsProvider =
         new TransportOptionsProvider(configurationService);
     return transportOptionsProvider.getTransportOptions();
+  }
+
+  private static List<PluginConfiguration> extractPluginConfigs(
+      final ElasticSearchConfiguration esConfig) {
+    final Map<String, PluginConfiguration> pluginConfigs = esConfig.getInterceptorPlugins();
+    if (pluginConfigs != null) {
+      return pluginConfigs.values().stream()
+          .filter(plugin -> StringUtils.isNotBlank(plugin.id()))
+          .toList();
+    }
+    return List.of();
   }
 }

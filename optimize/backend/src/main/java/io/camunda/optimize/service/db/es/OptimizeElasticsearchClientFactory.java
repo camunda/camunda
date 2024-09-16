@@ -19,6 +19,7 @@ import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder;
+import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.IOException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -34,20 +35,21 @@ public class OptimizeElasticsearchClientFactory {
       final ConfigurationService configurationService,
       final OptimizeIndexNameService optimizeIndexNameService,
       final ElasticSearchSchemaManager elasticSearchSchemaManager,
-      final BackoffCalculator backoffCalculator)
+      final BackoffCalculator backoffCalculator,
+      final PluginRepository pluginRepository)
       throws IOException {
     log.info("Initializing Elasticsearch rest client...");
     final TransportOptionsProvider transportOptionsProvider =
         new TransportOptionsProvider(configurationService);
-    ElasticsearchClient build =
-        ElasticsearchClientBuilder.build(configurationService, OPTIMIZE_MAPPER);
+    final ElasticsearchClient build =
+        ElasticsearchClientBuilder.build(configurationService, OPTIMIZE_MAPPER, pluginRepository);
 
     waitForElasticsearch(build, backoffCalculator, transportOptionsProvider.getTransportOptions());
     log.info("Elasticsearch client has successfully been started");
 
     final OptimizeElasticsearchClient prefixedClient =
         new OptimizeElasticsearchClient(
-            ElasticsearchClientBuilder.restClient(configurationService),
+            ElasticsearchClientBuilder.restClient(configurationService, pluginRepository),
             OPTIMIZE_MAPPER,
             build,
             optimizeIndexNameService,
