@@ -20,6 +20,7 @@ import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
+import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
@@ -36,6 +37,7 @@ import io.camunda.service.entities.DecisionRequirementsEntity;
 import io.camunda.service.entities.FlowNodeInstanceEntity;
 import io.camunda.service.entities.FormEntity;
 import io.camunda.service.entities.IncidentEntity;
+import io.camunda.service.entities.ProcessInstanceEntity;
 import io.camunda.service.entities.UserEntity;
 import io.camunda.service.entities.UserTaskEntity;
 import io.camunda.service.entities.VariableEntity;
@@ -46,6 +48,7 @@ import io.camunda.service.search.query.DecisionRequirementsQuery;
 import io.camunda.service.search.query.FlowNodeInstanceQuery;
 import io.camunda.service.search.query.FormQuery;
 import io.camunda.service.search.query.IncidentQuery;
+import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.UserQuery;
 import io.camunda.service.search.query.UserTaskQuery;
@@ -62,6 +65,7 @@ public class ElasticsearchSearchClient implements DocumentCamundaSearchClient,
     FlowNodeInstanceSearchClient,
     FormSearchClient,
     IncidentSearchClient,
+    ProcessInstanceSearchClient,
     UserTaskSearchClient,
     UserSearchClient,
     VariableSearchClient {
@@ -148,6 +152,14 @@ public class ElasticsearchSearchClient implements DocumentCamundaSearchClient,
     final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
         authentication);
     return executor.search(filter, IncidentEntity.class);
+  }
+
+  @Override
+  public Either<Exception, SearchQueryResult<ProcessInstanceEntity>> searchProcessInstances(
+      final ProcessInstanceQuery filter, final Authentication authentication) {
+    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
+        authentication);
+    return executor.search(filter, ProcessInstanceEntity.class);
   }
 
   @Override

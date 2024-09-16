@@ -30,8 +30,4 @@ public class OpenSearchSearchClientConfiguration {
     return new OpensearchSearchClient(elasticsearch);
   }
 
-//  @Bean
-//  public ProcessInstanceSearchClient processSearchClient(final SearchClientProperties configuration) {
-//    return OSSearchClientProvider.createOpensearchProcessInstanceSearchClient(configuration);
-//  }
 }

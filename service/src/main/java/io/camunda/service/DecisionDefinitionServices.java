@@ -10,8 +10,6 @@ package io.camunda.service;
 import static io.camunda.service.search.query.SearchQueryBuilders.decisionDefinitionSearchQuery;
 import static io.camunda.service.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
 
-import io.camunda.search.clients.AuthorizationSearchClient;
-import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.service.entities.DecisionDefinitionEntity;

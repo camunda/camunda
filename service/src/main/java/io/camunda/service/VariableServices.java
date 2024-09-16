@@ -7,7 +7,6 @@
  */
 package io.camunda.service;
 
-import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.service.entities.VariableEntity;
 import io.camunda.service.exception.SearchQueryExecutionException;

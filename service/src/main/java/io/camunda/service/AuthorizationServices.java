@@ -8,8 +8,6 @@
 package io.camunda.service;
 
 import io.camunda.search.clients.AuthorizationSearchClient;
-import io.camunda.search.clients.CamundaSearchClient;
-import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.service.entities.AuthorizationEntity;
 import io.camunda.service.exception.SearchQueryExecutionException;
 import io.camunda.service.search.core.SearchQueryService;

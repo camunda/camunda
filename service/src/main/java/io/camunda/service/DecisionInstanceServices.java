@@ -9,7 +9,6 @@ package io.camunda.service;
 
 import static io.camunda.service.search.query.SearchQueryBuilders.decisionInstanceSearchQuery;
 
-import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.service.entities.DecisionInstanceEntity;
 import io.camunda.service.exception.SearchQueryExecutionException;

@@ -7,7 +7,6 @@
  */
 package io.camunda.service.search.core;
 
-import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.ApiServices;
 import io.camunda.service.search.query.SearchQueryBase;
 import io.camunda.service.search.query.SearchQueryResult;

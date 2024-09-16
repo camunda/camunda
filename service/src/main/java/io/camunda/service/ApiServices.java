@@ -7,7 +7,6 @@
  */
 package io.camunda.service;
 
-import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;

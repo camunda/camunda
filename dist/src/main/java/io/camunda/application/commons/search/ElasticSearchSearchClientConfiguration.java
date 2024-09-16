@@ -8,9 +8,7 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
-import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.connect.es.ElasticsearchConnector;
-import io.camunda.search.es.clients.ElasticsearchProcessInstanceSearchClient;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -27,16 +25,11 @@ import org.springframework.context.annotation.Configuration;
 public class ElasticSearchSearchClientConfiguration {
 
   @Bean
-  public ElasticsearchSearchClient elasticsearchClient(final SearchClientProperties configuration) {
+  public ElasticsearchSearchClient elasticsearchSearchClient(
+      final SearchClientProperties configuration) {
     final var connector = new ElasticsearchConnector(configuration);
     final var elasticsearch = connector.createClient();
     return new ElasticsearchSearchClient(elasticsearch);
   }
 
-//  @Bean
-  public ProcessInstanceSearchClient processSearchClient(final SearchClientProperties configuration) {
-    final var connector = new ElasticsearchConnector(configuration);
-    final var elasticsearch = connector.createClient();
-    return new ElasticsearchProcessInstanceSearchClient(elasticsearch);
-  }
 }

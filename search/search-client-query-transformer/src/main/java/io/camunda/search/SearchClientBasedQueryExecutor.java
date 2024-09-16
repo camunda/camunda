@@ -7,7 +7,6 @@
  */
 package io.camunda.search;
 
-import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.transformers.ServiceTransformers;
 import io.camunda.search.transformers.filter.AuthenticationTransformer;
@@ -59,7 +58,7 @@ public final class SearchClientBasedQueryExecutor {
 
   private <T extends FilterBase, S extends SortOption>
   TypedSearchQueryTransformer<T, S> getSearchQueryRequestTransformer(
-          final TypedSearchQuery<T, S> query) {
+      final TypedSearchQuery<T, S> query) {
     return transformers.getTypedSearchQueryTransformer(query.getClass());
   }
 
