@@ -43,7 +43,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   private void applyDefaultConfiguration() {
     withNetwork(Network.SHARED)
         .waitingFor(newDefaultWaitStrategy())
-        .withEnv(ContainerRuntimeEnvs.ZEEBE_ENV_CLOCK_CONTROLLED, "true")
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_CLOCK_CONTROLLED, "true")
         .addExposedPorts(
             ContainerRuntimePorts.CAMUNDA_GATEWAY_API,
             ContainerRuntimePorts.CAMUNDA_COMMAND_API,
@@ -54,10 +54,10 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
   public CamundaContainer withElasticsearchExporter(final String url) {
     withEnv(
-        ContainerRuntimeEnvs.ZEEBE_ENV_ELASTICSEARCH_CLASSNAME,
+        ContainerRuntimeEnvs.CAMUNDA_ENV_ELASTICSEARCH_CLASSNAME,
         ZEEBE_ELASTICSEARCH_EXPORTER_CLASSNAME);
-    withEnv(ContainerRuntimeEnvs.ZEEBE_ENV_ELASTICSEARCH_ARGS_URL, url);
-    withEnv(ContainerRuntimeEnvs.ZEEBE_ENV_ELASTICSEARCH_ARGS_BULK_SIZE, "1");
+    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ELASTICSEARCH_ARGS_URL, url);
+    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ELASTICSEARCH_ARGS_BULK_SIZE, "1");
     return this;
   }
 

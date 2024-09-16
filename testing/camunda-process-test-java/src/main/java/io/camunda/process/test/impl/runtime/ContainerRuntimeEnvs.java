@@ -17,14 +17,14 @@ package io.camunda.process.test.impl.runtime;
 
 public class ContainerRuntimeEnvs {
 
-  // Zeebe
-  public static final String ZEEBE_ENV_ELASTICSEARCH_CLASSNAME =
+  // Camunda
+  public static final String CAMUNDA_ENV_ELASTICSEARCH_CLASSNAME =
       "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME";
-  public static final String ZEEBE_ENV_ELASTICSEARCH_ARGS_URL =
+  public static final String CAMUNDA_ENV_ELASTICSEARCH_ARGS_URL =
       "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL";
-  public static final String ZEEBE_ENV_ELASTICSEARCH_ARGS_BULK_SIZE =
+  public static final String CAMUNDA_ENV_ELASTICSEARCH_ARGS_BULK_SIZE =
       "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE";
-  public static final String ZEEBE_ENV_CLOCK_CONTROLLED = "ZEEBE_CLOCK_CONTROLLED";
+  public static final String CAMUNDA_ENV_CLOCK_CONTROLLED = "ZEEBE_CLOCK_CONTROLLED";
 
   // Elasticsearch
   public static final String ELASTICSEARCH_ENV_XPACK_SECURITY_ENABLED = "xpack.security.enabled";
