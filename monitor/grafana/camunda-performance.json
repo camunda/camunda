@@ -1039,7 +1039,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 35
+            "y": 2
           },
           "id": 22,
           "options": {
@@ -1142,7 +1142,7 @@
             "h": 3,
             "w": 8,
             "x": 0,
-            "y": 40
+            "y": 7
           },
           "id": 45,
           "maxDataPoints": 100,
@@ -1222,7 +1222,7 @@
             "h": 3,
             "w": 8,
             "x": 8,
-            "y": 40
+            "y": 7
           },
           "id": 44,
           "maxDataPoints": 100,
@@ -1301,7 +1301,7 @@
             "h": 3,
             "w": 8,
             "x": 16,
-            "y": 40
+            "y": 7
           },
           "id": 25,
           "maxDataPoints": 100,
@@ -1411,7 +1411,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 43
+            "y": 10
           },
           "id": 13,
           "maxDataPoints": 100,
@@ -1439,11 +1439,11 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.5, sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.5, sum(rate(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "p50 (avg)",
+              "legendFormat": "p50",
               "range": true,
               "refId": "A"
             },
@@ -1453,7 +1453,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.99, sum(rate(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p99",
@@ -1466,7 +1466,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.90, sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.90, sum(rate(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p90",
@@ -1551,7 +1551,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 43
+            "y": 10
           },
           "id": 24,
           "maxDataPoints": 100,
@@ -1579,7 +1579,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.5, sum(increase(zeebe_exporting_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.5, sum(rate(zeebe_exporting_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "p50 (avg)",
@@ -1592,7 +1592,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum(increase(zeebe_exporting_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.99, sum(rate(zeebe_exporting_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p99",
@@ -1605,7 +1605,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.90, sum(increase(zeebe_exporting_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.90, sum(rate(zeebe_exporting_latency_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p90",
@@ -1690,7 +1690,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 48
+            "y": 15
           },
           "id": 46,
           "maxDataPoints": 100,
@@ -1803,7 +1803,7 @@
             "h": 9,
             "w": 6,
             "x": 0,
-            "y": 53
+            "y": 20
           },
           "id": 30,
           "maxDataPoints": 100,
@@ -1831,7 +1831,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum(increase(zeebe_stream_processor_processing_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.50, sum(rate(zeebe_stream_processor_processing_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "p50",
@@ -1844,7 +1844,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum(increase(zeebe_stream_processor_processing_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.99, sum(rate(zeebe_stream_processor_processing_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p99",
@@ -1857,7 +1857,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.90, sum(increase(zeebe_stream_processor_processing_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.90, sum(rate(zeebe_stream_processor_processing_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p90",
@@ -1942,7 +1942,7 @@
             "h": 9,
             "w": 6,
             "x": 6,
-            "y": 53
+            "y": 20
           },
           "id": 31,
           "maxDataPoints": 100,
@@ -1970,7 +1970,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum(increase(zeebe_exporter_exporting_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.50, sum(rate(zeebe_exporter_exporting_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "p50",
@@ -1983,7 +1983,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum(increase(zeebe_exporter_exporting_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.99, sum(rate(zeebe_exporter_exporting_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p99",
@@ -1996,7 +1996,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.90, sum(increase(zeebe_exporter_exporting_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.90, sum(rate(zeebe_exporter_exporting_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p90",
@@ -2079,7 +2079,7 @@
             "h": 9,
             "w": 6,
             "x": 12,
-            "y": 53
+            "y": 20
           },
           "id": 40,
           "options": {
@@ -2107,7 +2107,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.5, sum(increase(zeebe_elasticsearch_exporter_flush_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.5, sum(rate(zeebe_elasticsearch_exporter_flush_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "instant": false,
               "legendFormat": "p50",
               "range": true,
@@ -2119,7 +2119,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.9, sum(increase(zeebe_elasticsearch_exporter_flush_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.9, sum(rate(zeebe_elasticsearch_exporter_flush_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p90",
@@ -2132,7 +2132,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum(increase(zeebe_elasticsearch_exporter_flush_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.99, sum(rate(zeebe_elasticsearch_exporter_flush_latency_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p99",
@@ -2219,7 +2219,7 @@
             "h": 9,
             "w": 6,
             "x": 18,
-            "y": 53
+            "y": 20
           },
           "id": 33,
           "options": {
@@ -2247,7 +2247,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.5, sum(increase(zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.5, sum(rate(zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "instant": false,
               "legendFormat": "p50",
               "range": true,
@@ -2259,7 +2259,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum(increase(zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.99, sum(rate(zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p99",
@@ -2272,7 +2272,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.90, sum(increase(zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.90, sum(rate(zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
               "instant": false,
               "legendFormat": "p90",
@@ -2347,7 +2347,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 62
+            "y": 29
           },
           "id": 47,
           "options": {
@@ -2451,7 +2451,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 62
+            "y": 29
           },
           "id": 48,
           "options": {
@@ -2555,7 +2555,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 62
+            "y": 29
           },
           "id": 49,
           "options": {
@@ -2656,7 +2656,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 70
+            "y": 37
           },
           "id": 51,
           "options": {
@@ -2745,7 +2745,7 @@
             "h": 3,
             "w": 24,
             "x": 0,
-            "y": 36
+            "y": 46
           },
           "id": 23,
           "maxDataPoints": 100,
@@ -2822,7 +2822,7 @@
             "h": 3,
             "w": 8,
             "x": 0,
-            "y": 39
+            "y": 49
           },
           "id": 16,
           "maxDataPoints": 100,
@@ -2899,7 +2899,7 @@
             "h": 3,
             "w": 8,
             "x": 8,
-            "y": 39
+            "y": 49
           },
           "id": 18,
           "maxDataPoints": 100,
@@ -2976,7 +2976,7 @@
             "h": 3,
             "w": 8,
             "x": 16,
-            "y": 39
+            "y": 49
           },
           "id": 20,
           "maxDataPoints": 100,
@@ -3041,7 +3041,7 @@
             "h": 3,
             "w": 8,
             "x": 0,
-            "y": 42
+            "y": 52
           },
           "id": 35,
           "options": {
@@ -3115,7 +3115,7 @@
             "h": 3,
             "w": 8,
             "x": 8,
-            "y": 42
+            "y": 52
           },
           "id": 34,
           "maxDataPoints": 100,
@@ -3183,7 +3183,7 @@
             "h": 3,
             "w": 8,
             "x": 16,
-            "y": 42
+            "y": 52
           },
           "id": 43,
           "links": [],
@@ -3248,7 +3248,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 45
+            "y": 55
           },
           "id": 41,
           "links": [],
