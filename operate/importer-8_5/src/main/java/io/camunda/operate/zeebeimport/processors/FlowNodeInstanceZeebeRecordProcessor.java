@@ -108,7 +108,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       // we do not expect any exception as our instance supplier defined is not throwing any
       // exception. If we catch this here there is something weird going on, so passing it on
       throw new RuntimeException(
-          "Expected to retrieve FNITransformer without an error, bot caught one.", e);
+          "Expected to retrieve FNITransformer without an error, but caught one.", e);
     }
   }
 
