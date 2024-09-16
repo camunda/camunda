@@ -7,12 +7,20 @@
  */
 
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
+const {CycloneDxWebpackPlugin} = require('@cyclonedx/webpack-plugin');
+
+/** @type {import('@cyclonedx/webpack-plugin').CycloneDxWebpackPluginOptions} */
+const cycloneDxWebpackPluginOptions = {
+  specVersion: '1.5',
+  outputLocation: './bom',
+};
 
 module.exports = function override(config, env) {
   config.plugins.push(
     new MonacoWebpackPlugin({
       languages: ['json'],
     }),
+    new CycloneDxWebpackPlugin(cycloneDxWebpackPluginOptions),
   );
   return config;
 };

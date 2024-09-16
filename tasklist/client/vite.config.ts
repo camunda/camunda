@@ -14,10 +14,13 @@ import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import svgr from 'vite-plugin-svgr';
 import browserslistToEsbuild from 'browserslist-to-esbuild';
+import sbom from 'rollup-plugin-sbom';
+
+const PLUGINS = [react(), tsconfigPaths(), svgr()];
 
 export default defineConfig(({mode}) => ({
   base: mode === 'production' ? './' : undefined,
-  plugins: [react(), tsconfigPaths(), svgr()],
+  plugins: mode === 'sbom' ? [...PLUGINS, sbom()] : PLUGINS,
   server: {
     port: 3000,
     open: true,
