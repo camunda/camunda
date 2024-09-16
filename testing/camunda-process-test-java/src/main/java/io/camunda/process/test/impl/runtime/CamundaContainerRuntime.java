@@ -43,9 +43,9 @@ public class CamundaContainerRuntime implements AutoCloseable {
   private static final String ELASTICSEARCH_URL =
       "http://" + NETWORK_ALIAS_ELASTICSEARCH + ":" + ContainerRuntimePorts.ELASTICSEARCH_REST_API;
 
-  private static final String ZEEBE_GRPC_API =
+  private static final String CAMUNDA_GRPC_API =
       NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
-  private static final String ZEEBE_REST_API =
+  private static final String CAMUNDA_REST_API =
       NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_REST_API;
 
   private static final String OPERATE_REST_API =
@@ -69,7 +69,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
     network = Network.newNetwork();
 
     elasticsearchContainer = createElasticsearchContainer(network, builder);
-    camundaContainer = createZeebeContainer(network, builder);
+    camundaContainer = createCamundaContainer(network, builder);
     operateContainer = createOperateContainer(network, builder);
     tasklistContainer = createTasklistContainer(network, builder);
     connectorsContainer = createConnectorsContainer(network, builder);
@@ -93,7 +93,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
     return container;
   }
 
-  private CamundaContainer createZeebeContainer(
+  private CamundaContainer createCamundaContainer(
       final Network network, final CamundaContainerRuntimeBuilder builder) {
     final CamundaContainer container =
         containerFactory
@@ -120,7 +120,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
             .withLogConsumer(createContainerLogger(builder.getOperateLoggerName()))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_OPERATE)
-            .withZeebeGrpcApi(ZEEBE_GRPC_API)
+            .withZeebeGrpcApi(CAMUNDA_GRPC_API)
             .withElasticsearchUrl(ELASTICSEARCH_URL)
             .withEnv(builder.getOperateEnvVars());
 
@@ -139,7 +139,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
             .withLogConsumer(createContainerLogger(builder.getTasklistLoggerName()))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_TASKLIST)
-            .withZeebeApi(ZEEBE_GRPC_API, ZEEBE_REST_API)
+            .withZeebeApi(CAMUNDA_GRPC_API, CAMUNDA_REST_API)
             .withElasticsearchUrl(ELASTICSEARCH_URL)
             .withEnv(builder.getTasklistEnvVars());
 
@@ -157,7 +157,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
             .withLogConsumer(createContainerLogger(builder.getConnectorsLoggerName()))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_CONNECTORS)
-            .withZeebeGrpcApi(ZEEBE_GRPC_API)
+            .withZeebeGrpcApi(CAMUNDA_GRPC_API)
             .withOperateApi(OPERATE_REST_API)
             .withEnv(builder.getConnectorsSecrets())
             .withEnv(builder.getConnectorsEnvVars());
