@@ -13,6 +13,7 @@ import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import java.time.ZoneId;
 import java.util.Optional;
+import java.util.Set;
 import lombok.Data;
 
 @Data
@@ -22,6 +23,7 @@ public class ReportEvaluationContext<R extends ReportDefinitionDto<?>> {
   private PaginationDto pagination;
   private boolean isCsvExport;
   private boolean isJsonExport;
+  private Set<String> hiddenFlowNodeIds;
 
   // used in the context of combined reports to establish identical bucket sizes/ranges across all
   // single reports
@@ -37,12 +39,13 @@ public class ReportEvaluationContext<R extends ReportDefinitionDto<?>> {
   @SuppressWarnings(UNCHECKED_CAST)
   public static <R extends ReportDefinitionDto<?>> ReportEvaluationContext<R> fromReportEvaluation(
       final ReportEvaluationInfo evaluationInfo) {
-    ReportEvaluationContext<R> context = new ReportEvaluationContext<>();
+    final ReportEvaluationContext<R> context = new ReportEvaluationContext<>();
     context.setReportDefinition((R) evaluationInfo.getReport());
     context.setTimezone(evaluationInfo.getTimezone());
     context.setPagination(evaluationInfo.getPagination().orElse(null));
     context.setCsvExport(evaluationInfo.isCsvExport());
     context.setJsonExport(evaluationInfo.isJsonExport());
+    context.setHiddenFlowNodeIds(evaluationInfo.getHiddenFlowNodeIds());
     return context;
   }
 }

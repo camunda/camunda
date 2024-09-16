@@ -105,6 +105,86 @@
 //   }
 //
 //   @Test
+//   public void testCollapsedNodesAreExcludedWhenUnsavedReportViewedViewedAsHeatmap()
+//       throws IOException {
+//     // given
+//     String bpmnXml =
+//         BpmnModelUtil.getResourceFileAsString("/test/data/visible_and_collapsed_subprocess.bpmn");
+//     ProcessInstanceEngineDto processInstanceEngineDto =
+//         engineIntegrationExtension.deployAndStartProcess(BpmnModelUtil.parseBpmnModel(bpmnXml));
+//     importAllEngineEntitiesFromScratch();
+//
+//     // when
+//     final ProcessReportDataDto reportData =
+//         TemplatedProcessReportDataBuilder.createReportData()
+//             .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+//             .setProcessDefinitionVersions(
+//                 List.of(processInstanceEngineDto.getProcessDefinitionVersion()))
+//             .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+//             .build();
+//     reportData.getConfiguration().setXml(bpmnXml);
+//     reportData.setVisualization(ProcessVisualization.HEAT);
+//     final ReportResultResponseDto<List<MapResultEntryDto>> result =
+//         reportClient.evaluateMapReport(reportData).getResult();
+//
+//     // then
+//     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
+//     // The flow nodes from the collapsed subprocess are not included
+//     assertThat(resultData).hasSize(7);
+//     final List<String> resultLabels = resultData.stream().map(MapResultEntryDto::getLabel).toList();
+//     assertThat(resultLabels)
+//         .containsExactlyInAnyOrder(
+//             "Start",
+//             "Visible Subprocess",
+//             "visibleStart",
+//             "visibleUserTask",
+//             "visibleEnd",
+//             "Collapsed Subprocess",
+//             "end");
+//   }
+//
+//   @Test
+//   public void testCollapsedNodesAreExcludedWhenSavedReportViewedViewedAsHeatmap()
+//       throws IOException {
+//     // given
+//     String bpmnXml =
+//         BpmnModelUtil.getResourceFileAsString("/test/data/visible_and_collapsed_subprocess.bpmn");
+//     ProcessInstanceEngineDto processInstanceEngineDto =
+//         engineIntegrationExtension.deployAndStartProcess(BpmnModelUtil.parseBpmnModel(bpmnXml));
+//     importAllEngineEntitiesFromScratch();
+//
+//     // when
+//     final ProcessReportDataDto reportData =
+//         TemplatedProcessReportDataBuilder.createReportData()
+//             .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+//             .setProcessDefinitionVersions(
+//                 List.of(processInstanceEngineDto.getProcessDefinitionVersion()))
+//             .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+//             .build();
+//     reportData.getConfiguration().setXml(bpmnXml);
+//     reportData.setVisualization(ProcessVisualization.HEAT);
+//     String reportId = reportClient.createSingleProcessReport(reportData);
+//
+//     final ReportResultResponseDto<List<MapResultEntryDto>> result =
+//         reportClient.evaluateReport(reportId).getResult();
+//
+//     // then
+//     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
+//     // The flow nodes from the collapsed subprocess are not included
+//     assertThat(resultData).hasSize(7);
+//     final List<String> resultLabels = resultData.stream().map(MapResultEntryDto::getLabel).toList();
+//     assertThat(resultLabels)
+//         .containsExactlyInAnyOrder(
+//             "Start",
+//             "Visible Subprocess",
+//             "visibleStart",
+//             "visibleUserTask",
+//             "visibleEnd",
+//             "Collapsed Subprocess",
+//             "end");
+//   }
+//
+//   @Test
 //   public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
 //     // given
 //     ProcessInstanceEngineDto firstProcess = deployAndStartSimpleServiceTaskProcess();

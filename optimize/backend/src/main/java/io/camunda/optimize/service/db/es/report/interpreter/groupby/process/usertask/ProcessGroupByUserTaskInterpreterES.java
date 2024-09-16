@@ -63,10 +63,10 @@ public class ProcessGroupByUserTaskInterpreterES extends AbstractGroupByUserTask
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
       final BoolQuery boolQuery,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    Aggregation aggregation =
+    final Aggregation aggregation =
         Aggregation.of(
             a -> {
-              Aggregation.Builder.ContainerBuilder terms =
+              final Aggregation.Builder.ContainerBuilder terms =
                   a.terms(
                       t ->
                           t.field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID)
@@ -103,13 +103,13 @@ public class ProcessGroupByUserTaskInterpreterES extends AbstractGroupByUserTask
                               context, userTaskSubAggregations));
 
               final Map<String, String> userTaskNames = getUserTaskNames(context.getReportData());
-              List<GroupByResult> groupedData = new ArrayList<>();
-              for (StringTermsBucket b : userTasksAggregation.buckets().array()) {
+              final List<GroupByResult> groupedData = new ArrayList<>();
+              for (final StringTermsBucket b : userTasksAggregation.buckets().array()) {
                 final String userTaskKey = b.key().stringValue();
                 if (userTaskNames.containsKey(userTaskKey)) {
                   final List<CompositeCommandResult.DistributedByResult> singleResult =
                       distributedByInterpreter.retrieveResult(response, b.aggregations(), context);
-                  String label = userTaskNames.get(userTaskKey);
+                  final String label = userTaskNames.get(userTaskKey);
                   groupedData.add(
                       GroupByResult.createGroupByResult(userTaskKey, label, singleResult));
                   userTaskNames.remove(userTaskKey);
@@ -117,6 +117,7 @@ public class ProcessGroupByUserTaskInterpreterES extends AbstractGroupByUserTask
               }
 
               addMissingGroupByResults(userTaskNames, groupedData, context);
+              removeHiddenModelElements(groupedData, context);
 
               compositeCommandResult.setGroupBySorting(
                   context
@@ -144,6 +145,15 @@ public class ProcessGroupByUserTaskInterpreterES extends AbstractGroupByUserTask
               groupedData.add(
                   GroupByResult.createGroupByResult(
                       key, value, distributedByInterpreter.createEmptyResult(context))));
+    }
+  }
+
+  private void removeHiddenModelElements(
+      final List<GroupByResult> groupedData,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    if (context.getHiddenFlowNodeIds() != null) {
+      groupedData.removeIf(
+          dataPoint -> context.getHiddenFlowNodeIds().contains(dataPoint.getKey()));
     }
   }
 

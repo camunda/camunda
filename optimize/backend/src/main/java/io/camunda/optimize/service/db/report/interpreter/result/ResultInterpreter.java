@@ -17,7 +17,7 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 public class ResultInterpreter {
   public static CommandEvaluationResult interpret(
-      ExecutionContext executionContext, CompositeCommandResult result) {
+      final ExecutionContext executionContext, final CompositeCommandResult result) {
     return switch (getReportResultType(executionContext)) {
       case HYPER_MAP -> result.transformToHyperMap();
       case MAP -> result.transformToMap();
@@ -26,12 +26,11 @@ public class ResultInterpreter {
     };
   }
 
-  private static ReportResultType getReportResultType(ExecutionContext executionContext) {
-    ReportResultType reportResultType;
-    if (executionContext.getPlan() instanceof DecisionExecutionPlan decisionExecutionPlan) {
+  private static ReportResultType getReportResultType(final ExecutionContext executionContext) {
+    if (executionContext.getPlan() instanceof final DecisionExecutionPlan decisionExecutionPlan) {
       return decisionExecutionPlan.getResultType();
     }
-    if (executionContext.getPlan() instanceof ProcessExecutionPlan processExecutionPlan) {
+    if (executionContext.getPlan() instanceof final ProcessExecutionPlan processExecutionPlan) {
       return processExecutionPlan.getResultType();
     }
     throw new OptimizeRuntimeException(

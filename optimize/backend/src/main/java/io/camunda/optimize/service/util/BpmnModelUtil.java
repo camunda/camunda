@@ -9,8 +9,12 @@ package io.camunda.optimize.service.util;
 
 import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -18,13 +22,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.bpmn.instance.BaseElement;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.Process;
+import org.camunda.bpm.model.bpmn.instance.SubProcess;
 import org.camunda.bpm.model.bpmn.instance.UserTask;
 
 @Slf4j
@@ -82,11 +90,50 @@ public class BpmnModelUtil {
     return result;
   }
 
-  public static Map<String, String> extractFlowNodeNames(final List<FlowNodeDataDto> flowNodes) {
+  public static Map<String, String> extractFlowNodeNames(final List<FlowNodeDataDto> flowNodeData) {
     final Map<String, String> flowNodeNames = new HashMap<>();
-    for (final FlowNodeDataDto flowNode : flowNodes) {
+    for (final FlowNodeDataDto flowNode : flowNodeData) {
       flowNodeNames.put(flowNode.getId(), flowNode.getName());
     }
     return flowNodeNames;
+  }
+
+  public static Set<String> getCollapsedSubprocessElementIds(final String xmlString) {
+    final BpmnModelInstance bpmnModelInstance = parseBpmnModel(xmlString);
+    final Map<String, Set<String>> flowNodeIdsBySubprocessId =
+        bpmnModelInstance.getModelElementsByType(SubProcess.class).stream()
+            .collect(
+                Collectors.toMap(
+                    BaseElement::getId,
+                    subProcess ->
+                        subProcess.getFlowElements().stream()
+                            .map(BaseElement::getId)
+                            .collect(Collectors.toSet())));
+    return bpmnModelInstance.getDefinitions().getBpmDiagrams().stream()
+        .flatMap(
+            diagram ->
+                diagram.getBpmnPlane().getDiagramElements().stream()
+                    .filter(
+                        element ->
+                            flowNodeIdsBySubprocessId.containsKey(
+                                element.getAttributeValue("bpmnElement"))))
+        .filter(
+            subProcessElement ->
+                !Boolean.parseBoolean(subProcessElement.getAttributeValue("isExpanded")))
+        .flatMap(
+            collapsedSubProcess ->
+                flowNodeIdsBySubprocessId
+                    .getOrDefault(collapsedSubProcess.getAttributeValue("bpmnElement"), Set.of())
+                    .stream())
+        .collect(Collectors.toSet());
+  }
+
+  public static String getResourceFileAsString(final String fileName) throws IOException {
+    try (final InputStream is = BpmnModelUtil.class.getResourceAsStream(fileName)) {
+      try (final InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8);
+          final BufferedReader reader = new BufferedReader(isr)) {
+        return reader.lines().collect(Collectors.joining());
+      }
+    }
   }
 }

@@ -24,8 +24,10 @@ import io.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResul
 import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
@@ -37,6 +39,7 @@ import io.camunda.optimize.service.exceptions.OptimizeException;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import io.camunda.optimize.service.exceptions.evaluation.TooManyBucketsException;
+import io.camunda.optimize.service.identity.CollapsedSubprocessNodesService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.ValidationHelper;
 import io.camunda.optimize.service.variable.ProcessVariableService;
@@ -66,6 +69,7 @@ public abstract class ReportEvaluationHandler {
   private final CombinedReportEvaluator combinedReportEvaluator;
   private final ProcessVariableService processVariableService;
   private final DefinitionService definitionService;
+  private final CollapsedSubprocessNodesService collapsedSubprocessNodesService;
 
   public AuthorizedReportEvaluationResult evaluateReport(
       final ReportEvaluationInfo evaluationInfo) {
@@ -124,9 +128,9 @@ public abstract class ReportEvaluationHandler {
       } else if (processReportData.isInstantPreviewReport()
           && !reportEvaluationInfo.isSharedReport()) {
         // Same logic as above, but just for the single process definition in the report
-        String key =
+        final String key =
             ((SingleReportDataDto) reportEvaluationInfo.getReport().getData()).getDefinitionKey();
-        List<ReportDataDefinitionDto> definitionForInstantPreviewReport =
+        final List<ReportDataDefinitionDto> definitionForInstantPreviewReport =
             definitionService
                 .getDefinitionWithAvailableTenants(
                     DefinitionType.PROCESS, key, reportEvaluationInfo.getUserId())
@@ -185,7 +189,7 @@ public abstract class ReportEvaluationHandler {
         resultList, instanceCount, combinedReportDefinitionDto);
   }
 
-  private boolean isProcessMapOrNumberResult(SingleReportEvaluationResult<?> reportResult) {
+  private boolean isProcessMapOrNumberResult(final SingleReportEvaluationResult<?> reportResult) {
     final ResultType resultType = reportResult.getFirstCommandResult().getType();
     return ResultType.MAP.equals(resultType) || ResultType.NUMBER.equals(resultType);
   }
@@ -195,8 +199,8 @@ public abstract class ReportEvaluationHandler {
     final CombinedReportDefinitionRequestDto combinedReportDefinitionDto =
         (CombinedReportDefinitionRequestDto) evaluationInfo.getReport();
     final String userId = evaluationInfo.getUserId();
-    List<String> singleReportIds = combinedReportDefinitionDto.getData().getReportIds();
-    List<SingleProcessReportDefinitionRequestDto> foundSingleReports =
+    final List<String> singleReportIds = combinedReportDefinitionDto.getData().getReportIds();
+    final List<SingleProcessReportDefinitionRequestDto> foundSingleReports =
         reportService.getAllSingleProcessReportsForIdsOmitXml(singleReportIds).stream()
             .filter(reportDefinition -> getAuthorizedRole(userId, reportDefinition).isPresent())
             .peek(
@@ -219,15 +223,16 @@ public abstract class ReportEvaluationHandler {
   private ReportEvaluationResult evaluateSingleReportWithErrorCheck(
       final ReportEvaluationInfo evaluationInfo, final RoleType currentUserRole) {
     addAdditionalFiltersForReport(evaluationInfo, evaluationInfo.getReport());
+    addHiddenFlowNodeIds(evaluationInfo);
     try {
-      ReportEvaluationContext<SingleReportDefinitionDto<SingleReportDataDto>> context =
+      final ReportEvaluationContext<SingleReportDefinitionDto<SingleReportDataDto>> context =
           ReportEvaluationContext.fromReportEvaluation(evaluationInfo);
       return singleReportEvaluator.evaluate(context);
-    } catch (OptimizeException | OptimizeValidationException e) {
+    } catch (final OptimizeException | OptimizeValidationException e) {
       final AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
           new AuthorizedReportDefinitionResponseDto(evaluationInfo.getReport(), currentUserRole);
       throw new ReportEvaluationException(authorizedReportDefinitionDto, e);
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       if (isTooManyBucketsException(e)) {
         final AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
             new AuthorizedReportDefinitionResponseDto(evaluationInfo.getReport(), currentUserRole);
@@ -245,6 +250,19 @@ public abstract class ReportEvaluationHandler {
     } else {
       addAdditionalFiltersForAuthorizedReport(
           evaluationInfo.getUserId(), reportDefinition, evaluationInfo.getAdditionalFilters());
+    }
+  }
+
+  private void addHiddenFlowNodeIds(final ReportEvaluationInfo evaluationInfo) {
+    if (evaluationInfo.getReport().getData()
+            instanceof final ProcessReportDataDto processReportDataDto
+        && processReportDataDto.getVisualization() == ProcessVisualization.HEAT
+        && Optional.ofNullable(processReportDataDto.getConfiguration())
+            .map(SingleReportConfigurationDto::getXml)
+            .isPresent()) {
+      evaluationInfo.setHiddenFlowNodeIds(
+          collapsedSubprocessNodesService.getCollapsedSubprocessNodeIdsForReport(
+              processReportDataDto));
     }
   }
 
@@ -274,9 +292,10 @@ public abstract class ReportEvaluationHandler {
   private void addAdditionalFiltersForReport(
       final ReportDefinitionDto<?> reportDefinitionDto,
       final AdditionalProcessReportEvaluationFilterDto additionalFilters,
-      Supplier<List<ProcessVariableNameResponseDto>> varNameSupplier) {
+      final Supplier<List<ProcessVariableNameResponseDto>> varNameSupplier) {
     if (additionalFilters != null && !CollectionUtils.isEmpty(additionalFilters.getFilter())) {
-      if (reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto definitionDto) {
+      if (reportDefinitionDto
+          instanceof final SingleProcessReportDefinitionRequestDto definitionDto) {
         final EnumMap<VariableType, Set<String>> variableFiltersByTypeForReport;
         // We only fetch the variable filter values if a variable filter is present
         if (additionalFilters.getFilter().stream()
