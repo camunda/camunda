@@ -56,7 +56,17 @@ class TaskFormView {
 
   async selectDropdownValue(value: string) {
     await this.selectDropdown.click();
-    await this.page.getByText(value).click({timeout: 40000});
+
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        await this.page.getByText(value).click({timeout: 40000});
+        break;
+      } catch (error) {
+        console.log(`Retry ${4 - retries} - Element click failed: ${error}`);
+        retries--;
+      }
+    }
   }
 
   async selectTaglistValues(values: string[]) {
