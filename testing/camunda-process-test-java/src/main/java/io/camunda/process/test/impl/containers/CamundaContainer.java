@@ -30,9 +30,9 @@ import org.testcontainers.utility.DockerImageName;
 public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
   private static final Duration DEFAULT_STARTUP_TIMEOUT = Duration.ofMinutes(1);
-  private static final String ZEEBE_READY_ENDPOINT = "/ready";
+  private static final String READY_ENDPOINT = "/ready";
 
-  private static final String ZEEBE_ELASTICSEARCH_EXPORTER_CLASSNAME =
+  private static final String ELASTICSEARCH_EXPORTER_CLASSNAME =
       "io.camunda.zeebe.exporter.ElasticsearchExporter";
 
   public CamundaContainer(final DockerImageName dockerImageName) {
@@ -55,7 +55,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   public CamundaContainer withElasticsearchExporter(final String url) {
     withEnv(
         ContainerRuntimeEnvs.CAMUNDA_ENV_ELASTICSEARCH_CLASSNAME,
-        ZEEBE_ELASTICSEARCH_EXPORTER_CLASSNAME);
+        ELASTICSEARCH_EXPORTER_CLASSNAME);
     withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ELASTICSEARCH_ARGS_URL, url);
     withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ELASTICSEARCH_ARGS_BULK_SIZE, "1");
     return this;
@@ -63,7 +63,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
   public static HttpWaitStrategy newDefaultBrokerReadyCheck() {
     return new HttpWaitStrategy()
-        .forPath(ZEEBE_READY_ENDPOINT)
+        .forPath(READY_ENDPOINT)
         .forPort(ContainerRuntimePorts.CAMUNDA_MONITORING_API)
         .forStatusCodeMatching(status -> status >= 200 && status < 300)
         .withReadTimeout(Duration.ofSeconds(10));
