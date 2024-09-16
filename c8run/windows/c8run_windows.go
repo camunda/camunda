@@ -172,7 +172,6 @@ func main() {
         }
 
 	if baseCommand == "start" {
-
 		javaVersion := os.Getenv("JAVA_VERSION")
 		if javaVersion == "" {
 			javaVersionCmd := exec.Command(javaBinary + " --version")
