@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter;
 
-import io.camunda.exporter.schema.descriptors.IndexDescriptor;
-import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.List;
 
 /**

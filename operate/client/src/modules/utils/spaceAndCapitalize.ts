@@ -5,16 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.schema.descriptors;
 
-public interface IndexDescriptor {
-  String getFullQualifiedName();
+import capitalize from 'lodash/capitalize';
 
-  String getAlias();
+const spaceAndCapitalize = (str: string) => {
+  return capitalize(str.replace(/[-_]/gi, ' '));
+};
 
-  String getIndexName();
-
-  String getMappingsClasspathFilename();
-
-  String getAllVersionsIndexNameRegexPattern();
-}
+export {spaceAndCapitalize};

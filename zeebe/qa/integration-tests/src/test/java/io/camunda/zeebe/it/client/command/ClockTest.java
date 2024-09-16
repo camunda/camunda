@@ -40,7 +40,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 class ClockTest {
 
   private static final long FIXED_TIME = 4366239393222L; // Sat May 12 2108 04:16:33 GMT+0000
-  private static final Instant FIXED_INSTANT = Instant.ofEpochMilli(FIXED_TIME);
+  private static final Instant FUTURE_FIXED_INSTANT = Instant.ofEpochMilli(FIXED_TIME);
+  private static final Instant PAST_FIXED_INSTANT = Instant.parse("2024-08-15T14:00:00Z");
   private static final Duration DELTA = Duration.ofSeconds(1);
 
   @AutoCloseResource private ZeebeClient client;
@@ -67,7 +68,7 @@ class ClockTest {
   @Test
   void shouldPinClockToInstant() {
     // when
-    client.newClockPinCommand().time(FIXED_INSTANT).send().join();
+    client.newClockPinCommand().time(FUTURE_FIXED_INSTANT).send().join();
 
     // then
     assertClockPinned(c -> assertThat(c).hasTime(FIXED_TIME));
@@ -134,7 +135,7 @@ class ClockTest {
             Bpmn.createExecutableProcess("simple_process").startEvent().endEvent().done());
 
     // and: pin the clock to a fixed time
-    client.newClockPinCommand().time(FIXED_INSTANT).send().join();
+    client.newClockPinCommand().time(FUTURE_FIXED_INSTANT).send().join();
 
     // when: create a process instance while clock is pinned
     final long firstProcessInstanceKey =
@@ -149,7 +150,7 @@ class ClockTest {
           final Instant processCompletedInstant = Instant.ofEpochMilli(r.getTimestamp());
           assertThat(processCompletedInstant)
               .as("Process should complete at the pinned time")
-              .isEqualTo(FIXED_INSTANT);
+              .isEqualTo(FUTURE_FIXED_INSTANT);
         });
 
     // when: reset the clock back to the current system time
@@ -171,6 +172,97 @@ class ClockTest {
   }
 
   @Test
+  void shouldTriggerIntermediateTimerEventDefinedInThePast() {
+    // given
+    final Instant timerInstant = PAST_FIXED_INSTANT.plus(Duration.ofDays(5));
+
+    // when: pin the clock to a time before the timer event
+    client.newClockPinCommand().time(PAST_FIXED_INSTANT).send().join();
+
+    // deploy a process with an intermediate timer event set to the past date
+    final long processDefinitionKey =
+        resourcesHelper.deployProcess(
+            Bpmn.createExecutableProcess("process_with_timer_event_in_past")
+                .startEvent()
+                .intermediateCatchEvent("timerEvent")
+                .timerWithDate(timerInstant.toString())
+                .endEvent()
+                .done());
+    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+
+    // then: ensure the timer event is activated when the clock is pinned to a time before the timer
+    assertElementRecordInState(
+        processInstanceKey,
+        "timerEvent",
+        ProcessInstanceIntent.ELEMENT_ACTIVATED,
+        r ->
+            assertThatTimestampIsEqualToInstant(
+                r.getTimestamp(),
+                PAST_FIXED_INSTANT,
+                "Timer event should be activated at the time set before the timer"));
+
+    // when: pin the clock to the exact timer time
+    client.newClockPinCommand().time(timerInstant).send().join();
+
+    // then: ensure the timer event completes when the clock is pinned to the timer time
+    assertElementRecordInState(
+        processInstanceKey,
+        "timerEvent",
+        ProcessInstanceIntent.ELEMENT_COMPLETED,
+        r ->
+            assertThatTimestampIsEqualToInstant(
+                r.getTimestamp(),
+                timerInstant,
+                "Timer event should complete at the pinned timer time"));
+  }
+
+  @Test
+  void shouldTriggerIntermediateTimerEventBasedOnDuration() {
+    // given
+    final Duration timerDuration = Duration.ofMinutes(20);
+    final Instant timerInstant = PAST_FIXED_INSTANT.plus(timerDuration);
+
+    // when: pin the clock to the time in the past before the timer duration
+    client.newClockPinCommand().time(PAST_FIXED_INSTANT).send().join();
+
+    // deploy a process with an intermediate timer event based on duration
+    final long processDefinitionKey =
+        resourcesHelper.deployProcess(
+            Bpmn.createExecutableProcess("process_with_timer_event_based_on_duration")
+                .startEvent()
+                .intermediateCatchEvent("timerEvent")
+                .timerWithDuration(timerDuration)
+                .endEvent()
+                .done());
+    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+
+    // then: ensure the timer event is activated when the clock is pinned to a time in the past
+    assertElementRecordInState(
+        processInstanceKey,
+        "timerEvent",
+        ProcessInstanceIntent.ELEMENT_ACTIVATED,
+        r ->
+            assertThatTimestampIsEqualToInstant(
+                r.getTimestamp(),
+                PAST_FIXED_INSTANT,
+                "Timer event should be activated at the instant in the past"));
+
+    // when: pin the clock to the timer's calculated completion time (instant + duration)
+    client.newClockPinCommand().time(timerInstant).send().join();
+
+    // then: ensure the timer event completes when the clock reaches the calculated timer time
+    assertElementRecordInState(
+        processInstanceKey,
+        "timerEvent",
+        ProcessInstanceIntent.ELEMENT_COMPLETED,
+        r ->
+            assertThatTimestampIsEqualToInstant(
+                r.getTimestamp(),
+                timerInstant,
+                "Timer event should complete at the pinned timer duration"));
+  }
+
+  @Test
   void shouldTriggerIntermediateTimerEventWhenClockPinnedToFutureTime() {
     // given: deploy a process with intermediate timer event set to date in future
     final long processDefinitionKey =
@@ -178,7 +270,7 @@ class ClockTest {
             Bpmn.createExecutableProcess("process_with_timer_event_in_future")
                 .startEvent()
                 .intermediateCatchEvent("timerEvent")
-                .timerWithDate(FIXED_INSTANT.toString())
+                .timerWithDate(FUTURE_FIXED_INSTANT.toString())
                 .endEvent()
                 .done());
 
@@ -195,7 +287,7 @@ class ClockTest {
                 r.getTimestamp(), "Timer event should be activated near the current time"));
 
     // when: pin the clock to the timer date
-    client.newClockPinCommand().time(FIXED_INSTANT).send().join();
+    client.newClockPinCommand().time(FUTURE_FIXED_INSTANT).send().join();
 
     // then
     assertElementRecordInState(
@@ -204,7 +296,9 @@ class ClockTest {
         ProcessInstanceIntent.ELEMENT_COMPLETED,
         r ->
             assertThatTimestampIsEqualToInstant(
-                r.getTimestamp(), FIXED_INSTANT, "Timer event should complete at the pinned time"));
+                r.getTimestamp(),
+                FUTURE_FIXED_INSTANT,
+                "Timer event should complete at the pinned time"));
   }
 
   @Test
@@ -214,12 +308,12 @@ class ClockTest {
         resourcesHelper.deployProcess(
             Bpmn.createExecutableProcess("process_with_timer_start_event_in_future")
                 .startEvent("timerStartEvent")
-                .timerWithDate(FIXED_INSTANT.toString())
+                .timerWithDate(FUTURE_FIXED_INSTANT.toString())
                 .endEvent()
                 .done());
 
     // when: pin the clock to the timer date
-    client.newClockPinCommand().time(FIXED_INSTANT).send().join();
+    client.newClockPinCommand().time(FUTURE_FIXED_INSTANT).send().join();
 
     // then
     final long processInstanceKey = getProcessInstanceKey(processDefinitionKey);
@@ -230,7 +324,7 @@ class ClockTest {
         r ->
             assertThatTimestampIsEqualToInstant(
                 r.getTimestamp(),
-                FIXED_INSTANT,
+                FUTURE_FIXED_INSTANT,
                 "Timer start event should complete at the pinned time"));
   }
 
@@ -243,7 +337,7 @@ class ClockTest {
                 .startEvent()
                 .serviceTask("boundary_event_owner", t -> t.zeebeJobType("service_task"))
                 .boundaryEvent(
-                    "boundary_timer_event", t -> t.timerWithDate(FIXED_INSTANT.toString()))
+                    "boundary_timer_event", t -> t.timerWithDate(FUTURE_FIXED_INSTANT.toString()))
                 .endEvent("boundary_end")
                 .moveToActivity("boundary_event_owner")
                 .endEvent("main_end")
@@ -262,7 +356,7 @@ class ClockTest {
                 r.getTimestamp(), "Service task should be activated near the current time"));
 
     // when: pin the clock to the timer date
-    final Instant futureInstant = FIXED_INSTANT.plus(Duration.ofHours(1));
+    final Instant futureInstant = FUTURE_FIXED_INSTANT.plus(Duration.ofHours(1));
     client.newClockPinCommand().time(futureInstant).send().join();
 
     // then

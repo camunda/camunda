@@ -5,15 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.schema.descriptors;
 
-import java.util.List;
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
 
-public interface IndexTemplateDescriptor extends IndexDescriptor {
+const {deployProcesses, createSingleInstance} = zeebeGrpcApi;
 
-  String getIndexPattern();
+const setup = async () => {
+  await deployProcesses(['processWithListener.bpmn']);
+  const instance = await createSingleInstance('processWithListener', 1);
 
-  String getTemplateName();
+  return {instance};
+};
 
-  List<String> getComposedOf();
-}
+export {setup};

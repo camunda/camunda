@@ -8,8 +8,8 @@
 package io.camunda.exporter.schema;
 
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
-import io.camunda.exporter.schema.descriptors.IndexDescriptor;
-import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
