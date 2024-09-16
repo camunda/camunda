@@ -21,6 +21,11 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerEvaluateDecisionRequest;
+import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 public final class DecisionDefinitionServices
@@ -84,5 +89,18 @@ public final class DecisionDefinitionServices
                 new NotFoundException(
                     "DecisionRequirements with decisionRequirementsKey=%d cannot be found"
                         .formatted(decisionRequirementsKey)));
+  }
+
+  public CompletableFuture<BrokerResponse<DecisionEvaluationRecord>> evaluateDecision(
+      final String definitionId,
+      final Long definitionKey,
+      final Map<String, Object> variables,
+      final String tenantId) {
+    return sendBrokerRequestWithFullResponse(
+        new BrokerEvaluateDecisionRequest()
+            .setDecisionId(definitionId)
+            .setDecisionKey(definitionKey)
+            .setVariables(getDocumentOrEmpty(variables))
+            .setTenantId(tenantId));
   }
 }
