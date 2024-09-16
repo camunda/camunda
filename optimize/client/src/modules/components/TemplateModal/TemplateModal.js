@@ -12,14 +12,7 @@ import classnames from 'classnames';
 import deepEqual from 'fast-deep-equal';
 import {Button, Column, Grid} from '@carbon/react';
 
-import {
-  Modal,
-  DefinitionSelection,
-  BPMNDiagram,
-  DiagramScrollLock,
-  Tooltip,
-  Button as LegacyButton,
-} from 'components';
+import {Modal, DefinitionSelection, BPMNDiagram, DiagramScrollLock, Tooltip} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {useErrorHandling} from 'hooks';
@@ -199,7 +192,8 @@ export default function TemplateModal({
                         align="left"
                       >
                         <div>
-                          <LegacyButton
+                          <Button
+                            kind="tertiary"
                             className={classnames({
                               active:
                                 !disabled?.(selectedDefinitions) && deepEqual(template, config),
@@ -221,7 +215,7 @@ export default function TemplateModal({
                             {templateDescription && (
                               <div className="description">{templateDescription}</div>
                             )}
-                          </LegacyButton>
+                          </Button>
                         </div>
                       </Tooltip>
                     );

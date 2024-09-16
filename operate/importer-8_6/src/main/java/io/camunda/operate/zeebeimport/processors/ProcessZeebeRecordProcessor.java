@@ -96,7 +96,6 @@ public class ProcessZeebeRecordProcessor {
             .setKey(process.getProcessDefinitionKey())
             .setBpmnProcessId(process.getBpmnProcessId())
             .setVersion(process.getVersion())
-            .setVersionTag(process.getVersionTag())
             .setTenantId(tenantOrDefault(process.getTenantId()));
 
     final byte[] byteArray = process.getResource();
@@ -106,6 +105,10 @@ public class ProcessZeebeRecordProcessor {
 
     final String resourceName = process.getResourceName();
     processEntity.setResourceName(resourceName);
+
+    if (!process.getVersionTag().isEmpty()) {
+      processEntity.setVersionTag(process.getVersionTag());
+    }
 
     final Optional<ProcessEntity> diagramData =
         xmlUtil.extractDiagramData(byteArray, process.getBpmnProcessId());

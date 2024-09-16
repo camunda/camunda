@@ -27,9 +27,12 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
+import java.util.function.Consumer;
 
 /**
  * @author Sebastian Menski
@@ -214,5 +217,20 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
     header.setValue(value);
 
     return myself;
+  }
+
+  public B zeebeTaskListener(final Consumer<TaskListenerBuilder> taskListenerBuilderConsumer) {
+    final ZeebeTaskListener listener = createTaskListenerElement();
+    listener.setRetries(ZeebeTaskListener.DEFAULT_RETRIES);
+
+    final TaskListenerBuilder builder = new TaskListenerBuilder(listener, myself);
+    taskListenerBuilderConsumer.accept(builder);
+    return myself;
+  }
+
+  private ZeebeTaskListener createTaskListenerElement() {
+    final ZeebeTaskListeners taskListeners =
+        myself.getCreateSingleExtensionElement(ZeebeTaskListeners.class);
+    return myself.createChild(taskListeners, ZeebeTaskListener.class);
   }
 }

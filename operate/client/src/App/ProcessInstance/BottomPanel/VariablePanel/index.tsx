@@ -6,18 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {useEffect} from 'react';
 import {variablesStore} from 'modules/stores/variables';
 import {TabView} from 'modules/components/TabView';
+import {processInstanceListenersStore} from 'modules/stores/processInstanceListeners';
+import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {InputOutputMappings} from './InputOutputMappings';
 import {VariablesContent} from './VariablesContent';
-import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
+import {Listeners} from './Listeners';
+import {WarningFilled} from './styled';
 
 const VariablePanel = observer(function VariablePanel() {
   const {processInstanceId = ''} = useProcessInstancePageParams();
+
+  const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
+
+  const {fetchListeners, state, listenersFailureCount, hasFlowNodeListeners} =
+    processInstanceListenersStore;
+  const {listeners} = state;
 
   useEffect(() => {
     variablesStore.init(processInstanceId);
@@ -26,6 +35,16 @@ const VariablePanel = observer(function VariablePanel() {
       variablesStore.reset();
     };
   }, [processInstanceId]);
+
+  useEffect(() => {
+    if (flowNodeId) {
+      fetchListeners({
+        fetchType: 'initial',
+        processInstanceId: processInstanceId,
+        payload: {flowNodeId},
+      });
+    }
+  }, [fetchListeners, processInstanceId, flowNodeId]);
 
   return (
     <TabView
@@ -55,8 +74,24 @@ const VariablePanel = observer(function VariablePanel() {
                 content: <InputOutputMappings type="Output" />,
                 onClick: variablesStore.stopPolling,
               },
+              ...(hasFlowNodeListeners
+                ? [
+                    {
+                      id: 'listeners',
+                      testId: 'listeners-tab-button',
+                      ...(listenersFailureCount && {
+                        labelIcon: <WarningFilled />,
+                      }),
+                      label: 'Listeners',
+                      content: <Listeners listeners={listeners} />,
+                      removePadding: true,
+                      onClick: variablesStore.stopPolling,
+                    },
+                  ]
+                : []),
             ]),
       ]}
+      key={`tabview-has-listeners-${hasFlowNodeListeners}`}
     />
   );
 });

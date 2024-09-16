@@ -54,6 +54,17 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
+  public static FlowNodeInstanceSearchQueryResponse toFlownodeInstanceSearchQueryResponse(
+      final SearchQueryResult<FlowNodeInstanceEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new FlowNodeInstanceSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toFlownodeInstance)
+                .orElseGet(Collections::emptyList));
+  }
+
   public static UserTaskSearchQueryResponse toUserTaskSearchQueryResponse(
       final SearchQueryResult<UserTaskEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -171,6 +182,28 @@ public final class SearchQueryResponseMapper {
   private static List<DecisionRequirementsItem> toDecisionRequirements(
       final List<DecisionRequirementsEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionRequirements).toList();
+  }
+
+  private static List<FlowNodeInstanceItem> toFlownodeInstance(
+      final List<FlowNodeInstanceEntity> instances) {
+    return instances.stream().map(SearchQueryResponseMapper::toFlowNodeInstance).toList();
+  }
+
+  private static FlowNodeInstanceItem toFlowNodeInstance(final FlowNodeInstanceEntity instance) {
+    return new FlowNodeInstanceItem()
+        .flowNodeInstanceKey(instance.key())
+        .flowNodeId(instance.flowNodeId())
+        .flowNodeName(instance.flowNodeName())
+        .processDefinitionKey(instance.processDefinitionKey())
+        .processInstanceKey(instance.processInstanceKey())
+        .incidentKey(instance.incidentKey())
+        .incident(instance.incident())
+        .startDate(instance.startDate())
+        .endDate(instance.endDate())
+        .state(instance.state())
+        .treePath(instance.treePath())
+        .type(instance.type())
+        .tenantId(instance.tenantId());
   }
 
   private static DecisionDefinitionItem toDecisionDefinition(final DecisionDefinitionEntity d) {

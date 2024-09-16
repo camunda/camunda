@@ -60,7 +60,9 @@ export const nameEditField = Selector('.EntityNameForm .name-input input');
 export const typeahead = Selector('.Typeahead');
 export const typeaheadOption = (text) => typeahead.find('.DropdownOption').withText(text);
 export const notification = Selector('.Notification');
-export const notificationCloseButton = notification.find('.close');
+export const notificationCloseButton = notification.find(
+  '.cds--actionable-notification__close-button'
+);
 export const shareButton = Selector('.share-button button');
 export const shareSwitch = Selector('.ShareEntity .cds--toggle__switch');
 export const shareHeader = Selector('.Sharing .header');
@@ -81,3 +83,4 @@ export const kpiFilterButton = Selector('.filterTile .actions > button');
 export const kpiTemplateSelection = Selector('input#KpiSelectionComboBox');
 export const emptyStateAdd = Selector('.EmptyState .cds--btn--primary');
 export const processItem = listItemLink('process', true);
+export const templateOption = (text) => Selector('.Modal .templateContainer button').withText(text);

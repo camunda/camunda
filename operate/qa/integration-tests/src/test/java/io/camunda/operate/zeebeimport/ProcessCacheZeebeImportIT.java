@@ -78,4 +78,22 @@ public class ProcessCacheZeebeImportIT extends OperateZeebeAbstractIT {
 
     verify(processCache, times(1)).putToCache(any(), any());
   }
+
+  @Test
+  public void testProcessVersionTagReturned() {
+    // has versionTag
+    final Long processDefinitionKey1 =
+        ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
+    // has no versionTag
+    final Long processDefinitionKey2 =
+        ZeebeTestUtil.deployProcess(zeebeClient, null, "processWithGateway.bpmn");
+
+    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
+    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
+
+    String demoProcessVersionTag = processCache.getProcessVersionTag(processDefinitionKey1);
+    assertThat(demoProcessVersionTag).isEqualTo("demo-tag_v1");
+    demoProcessVersionTag = processCache.getProcessVersionTag(processDefinitionKey2);
+    assertThat(demoProcessVersionTag).isNull();
+  }
 }

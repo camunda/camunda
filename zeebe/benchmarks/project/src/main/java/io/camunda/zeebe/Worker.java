@@ -98,15 +98,20 @@ public class Worker extends App {
 
         final boolean messagePublishedSuccessfully = publishMessage(client, correlationKey);
         if (!messagePublishedSuccessfully) {
-          // - On issues with publishing a message we need to retry the job
-          // - thus is to make sure our message gets published
-          // - otherwise our process might get stuck
-          // - failing the job makes it immediately available again
-          jobClient
-              .newFailCommand(job)
-              .retries(job.getRetries())
-              .errorMessage("Message publish failed.")
-              .send();
+          // Instead of failing the job, we simply let the job time out, so someone else has to
+          // pick up the job later. This might delay the individual process instance, but overall it
+          // has a lesser impact, as we can work on a different job in the meantime, keeping up the
+          // throughput.
+          //
+          // It might be that one partition has currently some struggle due to restarts or role
+          // changes, chances are low that this affects all partitions.
+          //
+          // This might cause issues for the current job to publish a message, but we are sending
+          // messages via correlation key,   based on the process instance payload.
+          //
+          // On the next job/message published the chances are (partition count - 1 / partition
+          // count) that we hit another partition where it works without issues.
+
           return;
         }
       }
