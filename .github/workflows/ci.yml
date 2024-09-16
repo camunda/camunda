@@ -508,10 +508,6 @@ jobs:
         uses: ./.github/actions/setup-maven
         with:
           secrets: ${{ toJSON(secrets) }}
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
-        with:
-          secrets: ${{ toJSON(secrets) }}
       - name: Read Java/version info
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
