@@ -182,7 +182,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "1-kube_pod_container_status_ready{namespace=~\"$namespace\",pod!~\"leader.*\"}",
+              "expr": "1-kube_pod_container_status_ready{namespace=~\"$namespace\",pod!~\"leader-balancer.*\"}",
               "format": "time_series",
               "hide": false,
               "instant": false,
@@ -193,6 +193,162 @@
             }
           ],
           "title": "Pod readiness",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Shows general throughput of processing, writing, exporting and importing together",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "opacity",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 7
+          },
+          "id": 12,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "10.4.0",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_stream_processor_records_total{namespace=~\"$namespace\",partition=~\"$partition\", action=~\"processed\"}[$__rate_interval]))",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "Processed commands",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\", action=\"exported\"}[$__rate_interval]))",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "Exported records",
+              "range": true,
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(operate_events_processed_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\", status=\"succeeded\"}[$__rate_interval]))",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "Imported records",
+              "range": true,
+              "refId": "C"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_stream_processor_records_total{namespace=~\"$namespace\",partition=~\"$partition\", action=~\"written\"}[$__rate_interval]))",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "Written records",
+              "range": true,
+              "refId": "D"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\", action=\"skipped\"}[$__rate_interval]))",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "Exporting skipped",
+              "range": true,
+              "refId": "E"
+            }
+          ],
+          "title": "Throughput per type",
           "type": "timeseries"
         },
         {
@@ -225,7 +381,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 7
+            "y": 13
           },
           "id": 38,
           "options": {
@@ -251,7 +407,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "max(zeebe_log_appender_last_appended_position{namespace=~\"$namespace\", partition=~\"$partition\"}) - max (zeebe_stream_processor_last_processed_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
+              "expr": "max(max(zeebe_log_appender_last_appended_position{namespace=~\"$namespace\", partition=~\"$partition\"}) by(partition) - max (zeebe_stream_processor_last_processed_position{namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition))",
               "instant": false,
               "interval": "",
               "legendFormat": "Partition {{partition}}",
@@ -259,7 +415,7 @@
               "refId": "A"
             }
           ],
-          "title": "Number of records not processed",
+          "title": "Processing Queue size",
           "type": "stat"
         },
         {
@@ -294,7 +450,7 @@
             "h": 5,
             "w": 8,
             "x": 8,
-            "y": 7
+            "y": 13
           },
           "id": 37,
           "options": {
@@ -319,15 +475,16 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "max (zeebe_log_appender_last_committed_position{namespace=~\"$namespace\", partition=~\"$partition\"})  - max (zeebe_exporter_last_exported_position{namespace=~\"$namespace\", partition=~\"$partition\", exporter=\"elasticsearch\"}) ",
+              "expr": "max(max (zeebe_log_appender_last_committed_position{namespace=~\"$namespace\", partition=~\"$partition\"}) by(partition) - max (zeebe_exporter_last_exported_position{namespace=~\"$namespace\", partition=~\"$partition\", exporter=\"elasticsearch\"}) by(partition))",
               "format": "time_series",
+              "hide": false,
               "instant": false,
               "interval": "",
-              "legendFormat": "Exporter {{partition}}",
+              "legendFormat": "__auto",
               "refId": "A"
             }
           ],
-          "title": "Number of records not exported",
+          "title": "Exporting Queue size",
           "type": "stat"
         },
         {
@@ -335,7 +492,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Shows how many records are not exported yet.",
+          "description": "Shows the current import queue size, how many import bulks are in flight and need to be processed ",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -351,7 +508,7 @@
                   },
                   {
                     "color": "red",
-                    "value": 1000
+                    "value": 80
                   }
                 ]
               }
@@ -362,9 +519,9 @@
             "h": 5,
             "w": 8,
             "x": 16,
-            "y": 7
+            "y": 13
           },
-          "id": 39,
+          "id": 50,
           "options": {
             "colorMode": "value",
             "graphMode": "area",
@@ -387,115 +544,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "max (zeebe_log_appender_last_committed_position{namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition) - max (operate_import_position_update_seconds_max{namespace=~\"$namespace\", partition=~\"$partition\", exporter=\"elasticsearch\"}) by (partition)",
-              "format": "time_series",
-              "instant": false,
-              "interval": "",
-              "legendFormat": "Exporter {{partition}}",
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "",
-              "hide": false,
-              "instant": false,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "Number of records not imported",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 6,
-            "w": 24,
-            "x": 0,
-            "y": 12
-          },
-          "id": 50,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "sum(operate_import_queue_size{namespace=~\"$namespace\"} ) by (type)",
+              "expr": "sum(operate_import_queue_size{namespace=~\"$namespace\"}) ",
               "instant": false,
               "legendFormat": "__auto",
               "range": true,
@@ -503,7 +552,7 @@
             }
           ],
           "title": "Import queue size",
-          "type": "timeseries"
+          "type": "stat"
         },
         {
           "datasource": {
@@ -612,110 +661,6 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "Documents/s",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ops"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 9,
-            "w": 12,
-            "x": 12,
-            "y": 18
-          },
-          "id": 41,
-          "links": [],
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max",
-                "min"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "10.1.5",
-          "targets": [
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
-              "editorMode": "code",
-              "exemplar": true,
-              "expr": "avg(rate(elasticsearch_indices_indexing_index_total{namespace=~\"$namespace\"}[$__rate_interval])) by (name)",
-              "format": "time_series",
-              "interval": "",
-              "intervalFactor": 1,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Documents Indexed Rate",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "description": "The average percentage of CPU periods where the container ran but was throttled (stopped from running the whole CPU period).\n\n\ncontainer_cpu_cfs_periods_total -\nNumber of elapsed enforcement period intervals\ncontainer_cpu_cfs_throttled_periods_total -\nNumber of throttled period intervals\t\n\nhttps://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md\nhttps://stackoverflow.com/a/67316429/2165134\nhttps://www.youtube.com/watch?v=UE7QX98-kO0",
           "fieldConfig": {
             "defaults": {
@@ -772,10 +717,10 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
+            "h": 9,
             "w": 12,
-            "x": 0,
-            "y": 27
+            "x": 12,
+            "y": 18
           },
           "id": 42,
           "options": {
@@ -809,147 +754,6 @@
             }
           ],
           "title": "CPU Throttling (AVG)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 2,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "decimals": 2,
-              "mappings": [],
-              "min": 0,
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "reqps"
-            },
-            "overrides": [
-              {
-                "matcher": {
-                  "id": "byValue",
-                  "options": {
-                    "op": "gte",
-                    "reducer": "allIsZero",
-                    "value": 0
-                  }
-                },
-                "properties": [
-                  {
-                    "id": "custom.hideFrom",
-                    "value": {
-                      "legend": true,
-                      "tooltip": true,
-                      "viz": false
-                    }
-                  }
-                ]
-              },
-              {
-                "matcher": {
-                  "id": "byValue",
-                  "options": {
-                    "op": "gte",
-                    "reducer": "allIsNull",
-                    "value": 0
-                  }
-                },
-                "properties": [
-                  {
-                    "id": "custom.hideFrom",
-                    "value": {
-                      "legend": true,
-                      "tooltip": true,
-                      "viz": false
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 27
-          },
-          "id": 43,
-          "links": [],
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "right",
-              "showLegend": false
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
-            }
-          },
-          "pluginVersion": "10.1.5",
-          "targets": [
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
-              "editorMode": "code",
-              "exemplar": true,
-              "expr": "avg(rate(elasticsearch_index_stats_indexing_index_total{namespace=~\"$namespace\"}[5m])) by (index)",
-              "hide": false,
-              "interval": "",
-              "legendFormat": "{{index}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "indexing",
           "type": "timeseries"
         },
         {
@@ -1015,10 +819,10 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 5,
+            "h": 7,
             "w": 12,
             "x": 0,
-            "y": 34
+            "y": 27
           },
           "id": 29,
           "options": {
@@ -1118,10 +922,10 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 5,
+            "h": 7,
             "w": 12,
             "x": 12,
-            "y": 34
+            "y": 27
           },
           "id": 28,
           "options": {
@@ -1155,161 +959,6 @@
             }
           ],
           "title": "Elasticsearch disk usage",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
-          },
-          "description": "Shows general throughput of processing, writing, exporting and importing together",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "opacity",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "links": [],
-              "mappings": [],
-              "min": 0,
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 6,
-            "w": 24,
-            "x": 0,
-            "y": 39
-          },
-          "id": 12,
-          "options": {
-            "legend": {
-              "calcs": [
-                "last"
-              ],
-              "displayMode": "list",
-              "placement": "right",
-              "showLegend": true,
-              "width": 250
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
-            }
-          },
-          "pluginVersion": "10.4.0",
-          "targets": [
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(zeebe_stream_processor_records_total{namespace=~\"$namespace\",partition=~\"$partition\", action=~\"processed\"}[$__rate_interval]))",
-              "format": "time_series",
-              "interval": "",
-              "intervalFactor": 1,
-              "legendFormat": "Processed commands",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\", action=\"exported\"}[$__rate_interval]))",
-              "hide": false,
-              "instant": false,
-              "legendFormat": "Exported records",
-              "range": true,
-              "refId": "B"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(operate_events_processed_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (status)",
-              "hide": false,
-              "instant": false,
-              "legendFormat": "Imported records",
-              "range": true,
-              "refId": "C"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(zeebe_stream_processor_records_total{namespace=~\"$namespace\",partition=~\"$partition\", action=~\"written\"}[$__rate_interval]))",
-              "hide": false,
-              "instant": false,
-              "legendFormat": "Written records",
-              "range": true,
-              "refId": "D"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "$DS_PROMETHEUS"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\", action=\"skipped\"}[$__rate_interval]))",
-              "hide": false,
-              "instant": false,
-              "legendFormat": "Exporting skipped",
-              "range": true,
-              "refId": "E"
-            }
-          ],
-          "title": "Throughput per type",
           "type": "timeseries"
         }
       ],
@@ -1390,7 +1039,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 2
+            "y": 35
           },
           "id": 22,
           "options": {
@@ -1447,7 +1096,7 @@
               "refId": "C"
             }
           ],
-          "title": "Latency (avg)",
+          "title": "General Latency (avg)",
           "type": "timeseries"
         },
         {
@@ -1493,7 +1142,7 @@
             "h": 3,
             "w": 8,
             "x": 0,
-            "y": 7
+            "y": 40
           },
           "id": 45,
           "maxDataPoints": 100,
@@ -1527,7 +1176,7 @@
               "refId": "A"
             }
           ],
-          "title": "Write-to-Processing latency in seconds (avg)",
+          "title": "Write-to-Processing latency (avg)",
           "type": "stat"
         },
         {
@@ -1535,7 +1184,7 @@
             "type": "prometheus",
             "uid": "$DS_PROMETHEUS"
           },
-          "description": "The average latency/duration it takes from writing a record to exporting it.",
+          "description": "The average latency it takes from writing a record to exporting it.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1573,7 +1222,7 @@
             "h": 3,
             "w": 8,
             "x": 8,
-            "y": 7
+            "y": 40
           },
           "id": 44,
           "maxDataPoints": 100,
@@ -1606,7 +1255,7 @@
               "refId": "A"
             }
           ],
-          "title": "Write-to-Exporting latency in seconds (avg)",
+          "title": "Write-to-Exporting latency (avg)",
           "type": "stat"
         },
         {
@@ -1652,7 +1301,7 @@
             "h": 3,
             "w": 8,
             "x": 16,
-            "y": 7
+            "y": 40
           },
           "id": 25,
           "maxDataPoints": 100,
@@ -1685,7 +1334,7 @@
               "refId": "A"
             }
           ],
-          "title": "Write-to-Importing latency in seconds (avg)",
+          "title": "Write-to-Importing latency (avg)",
           "type": "stat"
         },
         {
@@ -1693,7 +1342,7 @@
             "type": "prometheus",
             "uid": "$DS_PROMETHEUS"
           },
-          "description": "Takes the avg of all processed records per second over the given time range.",
+          "description": "The latency of writing the record to processing it in seconds.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1762,7 +1411,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 10
+            "y": 43
           },
           "id": 13,
           "maxDataPoints": 100,
@@ -1825,7 +1474,7 @@
               "refId": "C"
             }
           ],
-          "title": "Write-to-Processing latency in seconds (avg)",
+          "title": "Write-to-Processing latency",
           "type": "timeseries"
         },
         {
@@ -1833,7 +1482,7 @@
             "type": "prometheus",
             "uid": "$DS_PROMETHEUS"
           },
-          "description": "The average latency/duration it takes from writing a record to exporting it.",
+          "description": "The latency it takes from writing a record to exporting it.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1902,7 +1551,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 10
+            "y": 43
           },
           "id": 24,
           "maxDataPoints": 100,
@@ -1964,7 +1613,7 @@
               "refId": "C"
             }
           ],
-          "title": "Write-to-Exporting latency in seconds (avg)",
+          "title": "Write-to-Exporting latency",
           "type": "timeseries"
         },
         {
@@ -2041,7 +1690,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 15
+            "y": 48
           },
           "id": 46,
           "maxDataPoints": 100,
@@ -2077,7 +1726,7 @@
               "refId": "A"
             }
           ],
-          "title": "Write-to-Importing latency in seconds (avg)",
+          "title": "Write-to-Importing latency (avg)",
           "type": "timeseries"
         },
         {
@@ -2154,7 +1803,7 @@
             "h": 9,
             "w": 6,
             "x": 0,
-            "y": 20
+            "y": 53
           },
           "id": 30,
           "maxDataPoints": 100,
@@ -2293,7 +1942,7 @@
             "h": 9,
             "w": 6,
             "x": 6,
-            "y": 20
+            "y": 53
           },
           "id": 31,
           "maxDataPoints": 100,
@@ -2430,7 +2079,7 @@
             "h": 9,
             "w": 6,
             "x": 12,
-            "y": 20
+            "y": 53
           },
           "id": 40,
           "options": {
@@ -2570,7 +2219,7 @@
             "h": 9,
             "w": 6,
             "x": 18,
-            "y": 20
+            "y": 53
           },
           "id": 33,
           "options": {
@@ -2698,7 +2347,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 29
+            "y": 62
           },
           "id": 47,
           "options": {
@@ -2802,7 +2451,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 29
+            "y": 62
           },
           "id": 48,
           "options": {
@@ -2906,7 +2555,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 29
+            "y": 62
           },
           "id": 49,
           "options": {
@@ -3007,7 +2656,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 37
+            "y": 70
           },
           "id": 51,
           "options": {
@@ -3096,7 +2745,7 @@
             "h": 3,
             "w": 24,
             "x": 0,
-            "y": 90
+            "y": 36
           },
           "id": 23,
           "maxDataPoints": 100,
@@ -3131,7 +2780,7 @@
               "refId": "A"
             }
           ],
-          "title": "Completed Processes in avg overtime per sec",
+          "title": "Completed Processes per second",
           "type": "stat"
         },
         {
@@ -3173,7 +2822,7 @@
             "h": 3,
             "w": 8,
             "x": 0,
-            "y": 93
+            "y": 39
           },
           "id": 16,
           "maxDataPoints": 100,
@@ -3208,7 +2857,7 @@
               "refId": "A"
             }
           ],
-          "title": "Processed Records in avg overtime per sec",
+          "title": "Processed Records",
           "type": "stat"
         },
         {
@@ -3250,7 +2899,7 @@
             "h": 3,
             "w": 8,
             "x": 8,
-            "y": 93
+            "y": 39
           },
           "id": 18,
           "maxDataPoints": 100,
@@ -3285,7 +2934,7 @@
               "refId": "A"
             }
           ],
-          "title": "Exported Records in avg overtime per sec",
+          "title": "Exported Records",
           "type": "stat"
         },
         {
@@ -3327,7 +2976,7 @@
             "h": 3,
             "w": 8,
             "x": 16,
-            "y": 93
+            "y": 39
           },
           "id": 20,
           "maxDataPoints": 100,
@@ -3362,7 +3011,7 @@
               "refId": "A"
             }
           ],
-          "title": "Imported Records in avg overtime per sec",
+          "title": "Imported Records",
           "type": "stat"
         },
         {
@@ -3392,7 +3041,7 @@
             "h": 3,
             "w": 8,
             "x": 0,
-            "y": 96
+            "y": 42
           },
           "id": 35,
           "options": {
@@ -3424,7 +3073,7 @@
               "refId": "A"
             }
           ],
-          "title": "Elasticsearch export/flush records per second",
+          "title": "Elasticsearch exporter flushed records",
           "type": "stat"
         },
         {
@@ -3466,7 +3115,7 @@
             "h": 3,
             "w": 8,
             "x": 8,
-            "y": 96
+            "y": 42
           },
           "id": 34,
           "maxDataPoints": 100,
@@ -3501,7 +3150,140 @@
               "refId": "A"
             }
           ],
-          "title": "Elasticsearch Exporter Flush rate per second (avg)",
+          "title": "Elasticsearch Exporter Flush rate",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 2,
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 8,
+            "x": 16,
+            "y": 42
+          },
+          "id": 43,
+          "links": [],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "10.1.5",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "exemplar": true,
+              "expr": "sum(rate(elasticsearch_index_stats_indexing_index_total{namespace=~\"$namespace\"}[$__rate_interval]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "{{index}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Elasticsearch Document Indexing rate",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 24,
+            "x": 0,
+            "y": 45
+          },
+          "id": 41,
+          "links": [],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "10.1.5",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "exemplar": true,
+              "expr": "avg(rate(elasticsearch_indices_indexing_index_total{namespace=~\"$namespace\"}[$__rate_interval])) by (name)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Documents Indexed Rate per node",
           "type": "stat"
         }
       ],
@@ -3644,6 +3426,6 @@
   "timezone": "",
   "title": "Camunda Performance",
   "uid": "camunda-benchmarks",
-  "version": 11,
+  "version": 14,
   "weekStart": ""
 }
