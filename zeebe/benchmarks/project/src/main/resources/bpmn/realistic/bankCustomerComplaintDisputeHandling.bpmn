@@ -51,7 +51,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="=&#34;dispute_unsuccessful&#34;" target="type" />
         </zeebe:ioMapping>
-        <zeebe:taskDefinition type="customer_notification" />
+        <zeebe:taskDefinition type="inform_about_failed_claim" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0cceqh3</bpmn:incoming>
       <bpmn:outgoing>Flow_1cvob8y</bpmn:outgoing>
@@ -259,7 +259,7 @@
     </bpmn:userTask>
     <bpmn:sendTask id="Activity_1u3hrzx" name="Inform customer about successful claim">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="customer_notification" />
+        <zeebe:taskDefinition type="inform_about_successful_claim" />
         <zeebe:ioMapping>
           <zeebe:input source="=&#34;dispute_successful&#34;" target="type" />
         </zeebe:ioMapping>
