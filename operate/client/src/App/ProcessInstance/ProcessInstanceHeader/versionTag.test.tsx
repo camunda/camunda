@@ -23,9 +23,8 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {IS_VERSION_TAG_ENABLED} from 'modules/feature-flags';
 
-(IS_VERSION_TAG_ENABLED ? describe : describe.skip)('InstanceHeader', () => {
+describe('InstanceHeader', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
     mockFetchProcessXML().withSuccess(mockProcessXML);
