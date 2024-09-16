@@ -10,36 +10,60 @@ import {type PluginOption, defineConfig, transformWithEsbuild} from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
 import {readdirSync} from 'node:fs';
-import sbom from 'rollup-plugin-sbom';
-
-const PLUGINS: PluginOption[] = [
-  {
-    name: 'treat-js-files-as-jsx',
-    async transform(code, id) {
-      if (!id.match(/src\/.*\.js$/)) return null;
-
-      // Use the exposed transform from vite, instead of directly
-      // transforming with esbuild
-      return transformWithEsbuild(code, id, {
-        loader: 'jsx',
-        jsx: 'automatic',
-      });
-    },
-  },
-  react(),
-  svgr({
-    svgrOptions: {exportType: 'default', ref: true, svgo: false, titleProp: true},
-    include: '**/*.svg',
-  }),
-];
+import license from 'rollup-plugin-license';
+import path from 'node:path';
 
 export default defineConfig(({mode}) => ({
   base: '',
   build: {
     // The backend only allow public resources inside the static folder
     assetsDir: 'static',
+    rollupOptions: {
+      plugins: license({
+        thirdParty: {
+          output:
+            mode === 'sbom'
+              ? {
+                  file: path.join(__dirname, 'dist', 'dependencies.csv'),
+                  encoding: 'utf-8',
+                  template(dependencies) {
+                    return dependencies
+                      .map(
+                        (dependency) =>
+                          `"${dependency.name}","${dependency.version}","${dependency.license}"`
+                      )
+                      .join('\n');
+                  },
+                }
+              : path.resolve(__dirname, './dist/static/vendor.LICENSE.txt'),
+        },
+      }) as PluginOption,
+    },
   },
-  plugins: mode === 'sbom' ? [...PLUGINS, sbom() as PluginOption] : PLUGINS,
+  esbuild: {
+    banner: '/*! licenses: /static/vendor.LICENSE.txt */',
+    legalComments: 'none',
+  },
+  plugins: [
+    {
+      name: 'treat-js-files-as-jsx',
+      async transform(code, id) {
+        if (!id.match(/src\/.*\.js$/)) return null;
+
+        // Use the exposed transform from vite, instead of directly
+        // transforming with esbuild
+        return transformWithEsbuild(code, id, {
+          loader: 'jsx',
+          jsx: 'automatic',
+        });
+      },
+    },
+    react(),
+    svgr({
+      svgrOptions: {exportType: 'default', ref: true, svgo: false, titleProp: true},
+      include: '**/*.svg',
+    }),
+  ],
   optimizeDeps: {
     force: true,
     esbuildOptions: {

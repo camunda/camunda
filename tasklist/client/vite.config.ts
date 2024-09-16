@@ -14,13 +14,12 @@ import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import svgr from 'vite-plugin-svgr';
 import browserslistToEsbuild from 'browserslist-to-esbuild';
-import sbom from 'rollup-plugin-sbom';
-
-const PLUGINS = [react(), tsconfigPaths(), svgr()];
+import license from 'rollup-plugin-license';
+import path from 'node:path';
 
 export default defineConfig(({mode}) => ({
   base: mode === 'production' ? './' : undefined,
-  plugins: mode === 'sbom' ? [...PLUGINS, sbom()] : PLUGINS,
+  plugins: [react(), tsconfigPaths(), svgr()],
   server: {
     port: 3000,
     open: true,
@@ -37,9 +36,32 @@ export default defineConfig(({mode}) => ({
         index:
           mode === 'visual-regression' ? './index.html' : './index.prod.html',
       },
+      plugins: license({
+        thirdParty: {
+          output:
+            mode === 'sbom'
+              ? {
+                  file: path.join(__dirname, 'build', 'dependencies.csv'),
+                  encoding: 'utf-8',
+                  template(dependencies) {
+                    return dependencies
+                      .map(
+                        (dependency) =>
+                          `"${dependency.name}","${dependency.version}","${dependency.license}"`,
+                      )
+                      .join('\n');
+                  },
+                }
+              : path.resolve(__dirname, './build/assets/vendor.LICENSE.txt'),
+        },
+      }),
     },
     target: browserslistToEsbuild(),
     sourcemap: true,
+  },
+  esbuild: {
+    banner: '/*! licenses: /assets/vendor.LICENSE.txt */',
+    legalComments: 'none',
   },
   test: {
     globals: true,

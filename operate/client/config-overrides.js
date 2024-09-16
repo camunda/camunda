@@ -7,20 +7,25 @@
  */
 
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
-const {CycloneDxWebpackPlugin} = require('@cyclonedx/webpack-plugin');
-
-/** @type {import('@cyclonedx/webpack-plugin').CycloneDxWebpackPluginOptions} */
-const cycloneDxWebpackPluginOptions = {
-  specVersion: '1.5',
-  outputLocation: './bom',
-};
+const LicensePlugin = require('webpack-license-plugin');
+const DepencencyCSVConverterWebpackPlugin = require('./DepencencyCSVConverterWebpackPlugin');
 
 module.exports = function override(config, env) {
   config.plugins.push(
     new MonacoWebpackPlugin({
       languages: ['json'],
     }),
-    new CycloneDxWebpackPlugin(cycloneDxWebpackPluginOptions),
+    new DepencencyCSVConverterWebpackPlugin({
+      inputFile: 'dependencies.json',
+    }),
+    new LicensePlugin({
+      outputFilename: 'dependencies.json',
+      excludedPackageTest: (packageName) => {
+        return (
+          packageName.startsWith('bpmn-js') || packageName.startsWith('dmn-js')
+        );
+      },
+    }),
   );
   return config;
 };
