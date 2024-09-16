@@ -23,7 +23,7 @@ public enum CommandDistributionIntent implements Intent {
   FINISHED(4),
   ENQUEUED(5),
   CONTINUATION_REQUESTED(6),
-  CONTINUATION_COMPLETED(7),
+  CONTINUED(7),
   FINISH(8),
   CONTINUE(9);
 
@@ -47,7 +47,7 @@ public enum CommandDistributionIntent implements Intent {
       case FINISHED:
       case ENQUEUED:
       case CONTINUATION_REQUESTED:
-      case CONTINUATION_COMPLETED:
+      case CONTINUED:
         return true;
       default:
         return false;
@@ -71,7 +71,7 @@ public enum CommandDistributionIntent implements Intent {
       case 6:
         return CONTINUATION_REQUESTED;
       case 7:
-        return CONTINUATION_COMPLETED;
+        return CONTINUED;
       case 8:
         return FINISH;
       case 9:

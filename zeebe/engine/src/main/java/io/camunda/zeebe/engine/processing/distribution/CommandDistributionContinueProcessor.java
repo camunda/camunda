@@ -41,7 +41,6 @@ public class CommandDistributionContinueProcessor
     final var continuationCommand = continuationRecord.getCommandValue();
     commandWriter.appendFollowUpCommand(key, intent, continuationCommand);
 
-    stateWriter.appendFollowUpEvent(
-        key, CommandDistributionIntent.CONTINUATION_COMPLETED, distributionRecord);
+    stateWriter.appendFollowUpEvent(key, CommandDistributionIntent.CONTINUED, distributionRecord);
   }
 }

@@ -12,12 +12,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 
-public class CommandDistributionContinuationCompletedApplier
+public class CommandDistributionContinuedApplier
     implements TypedEventApplier<CommandDistributionIntent, CommandDistributionRecord> {
   final MutableDistributionState distributionState;
 
-  public CommandDistributionContinuationCompletedApplier(
-      final MutableDistributionState distributionState) {
+  public CommandDistributionContinuedApplier(final MutableDistributionState distributionState) {
     this.distributionState = distributionState;
   }
 
