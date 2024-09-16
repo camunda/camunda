@@ -144,7 +144,7 @@
     <version.jakarta-activation>2.1.3</version.jakarta-activation>
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
     <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
-    <version.jna-platform>5.14.0</version.jna-platform>
+    <version.jna-platform>5.15.0</version.jna-platform>
 
     <version.commons-io>2.16.1</version.commons-io>
     <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
@@ -179,7 +179,7 @@
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.41.1</version.nimbus-jose-jwt>
     <version.keycloak>25.0.5</version.keycloak>
-    <version.jna>5.14.0</version.jna>
+    <version.jna>5.15.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
     <!-- GraphQL dependencies -->
