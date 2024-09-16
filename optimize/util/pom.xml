@@ -13,7 +13,6 @@
     <name>Optimize Util</name>
 
     <modules>
-        <module>dependency-doc-creation</module>
         <module>optimize-commons</module>
     </modules>
 </project>
