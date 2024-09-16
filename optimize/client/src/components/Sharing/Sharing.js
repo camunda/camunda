@@ -16,7 +16,7 @@ import {
   ReportRenderer,
   DashboardRenderer,
   Icon,
-  LoadingIndicator,
+  Loading,
   ErrorPage,
   EntityName,
   LastModifiedInfo,
@@ -99,7 +99,7 @@ export function Sharing() {
   }, [performEvaluation, id, type]);
 
   if (loading) {
-    return <LoadingIndicator />;
+    return <Loading />;
   }
 
   if (!evaluationResult || !hasValidType(type)) {
@@ -131,9 +131,8 @@ export function Sharing() {
                     <LastModifiedInfo entity={evaluationResult} />
                   )
                 }
-              >
-                {evaluationResult.name}
-              </EntityName>
+                name={evaluationResult.name}
+              />
             )}
             {header !== 'titleOnly' && (
               <Link

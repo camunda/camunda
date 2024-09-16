@@ -8,15 +8,9 @@
 package io.camunda.optimize.service.db.schema.index;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_BOOLEAN;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_DATE;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_NESTED;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_OBJECT;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_TEXT;
 
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.query.dashboard.BaseDashboardDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
@@ -24,8 +18,6 @@ import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTile
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class DashboardIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -74,117 +66,47 @@ public abstract class DashboardIndex<TBuilder> extends DefaultIndexMappingCreato
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    XContentBuilder newBuilder =
-        xContentBuilder
-            .startObject(ID)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(NAME)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(DESCRIPTION)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
-            .field("index", false)
-            .endObject()
-            .startObject(LAST_MODIFIED)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-            .field("format", OPTIMIZE_DATE_FORMAT)
-            .endObject()
-            .startObject(CREATED)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-            .field("format", OPTIMIZE_DATE_FORMAT)
-            .endObject()
-            .startObject(OWNER)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(LAST_MODIFIER)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(REFRESH_RATE_SECONDS)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(TILES)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
-            .startObject("properties");
-    addNestedReportsField(newBuilder)
-        .endObject()
-        .endObject()
-        .startObject(COLLECTION_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(MANAGEMENT_DASHBOARD)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
-        .endObject()
-        .startObject(INSTANT_PREVIEW_DASHBOARD)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
-        .endObject()
-        .startObject(AVAILABLE_FILTERS)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-        .startObject("properties")
-        .startObject(FILTER_TYPE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(FILTER_DATA)
-        .field("enabled", false)
-        .endObject()
-        .endObject()
-        .endObject();
-    // @formatter:on
-    return newBuilder;
-  }
-
-  private XContentBuilder addNestedReportsField(XContentBuilder builder) throws IOException {
-    // @formatter:off
-    XContentBuilder newBuilder =
-        builder
-            .startObject(REPORT_ID)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(REPORT_TILE_TYPE)
-            .field(REPORT_TILE_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(POSITION)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
-            .startObject("properties");
-    addNestedPositionField(newBuilder)
-        .endObject()
-        .endObject()
-        .startObject(DIMENSION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
-        .startObject("properties");
-    addNestedDimensionField(newBuilder)
-        .endObject()
-        .endObject()
-        .startObject(CONFIGURATION)
-        .field("enabled", false)
-        .endObject();
-    // @formatter:on
-    return newBuilder;
-  }
-
-  private XContentBuilder addNestedPositionField(XContentBuilder builder) throws IOException {
-    // @formatter:off
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
     return builder
-        .startObject(X_POSITION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(Y_POSITION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject();
-    // @formatter:on
-  }
-
-  private XContentBuilder addNestedDimensionField(XContentBuilder builder) throws IOException {
-    // @formatter:off
-    return builder
-        .startObject(WIDTH)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject()
-        .startObject(HEIGHT)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject();
-    // @formatter:on
+        .properties(ID, p -> p.keyword(k -> k))
+        .properties(NAME, p -> p.keyword(k -> k))
+        .properties(DESCRIPTION, p -> p.text(k -> k.index(false)))
+        .properties(LAST_MODIFIED, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
+        .properties(CREATED, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
+        .properties(OWNER, p -> p.keyword(k -> k))
+        .properties(LAST_MODIFIER, p -> p.keyword(k -> k))
+        .properties(REFRESH_RATE_SECONDS, p -> p.keyword(k -> k))
+        .properties(
+            TILES,
+            p ->
+                p.nested(
+                    k ->
+                        k.properties(REPORT_ID, np -> np.keyword(nk -> nk))
+                            .properties(REPORT_TILE_TYPE, np -> np.keyword(nk -> nk))
+                            .properties(CONFIGURATION, np -> np.object(nk -> nk.enabled(false)))
+                            .properties(
+                                POSITION,
+                                np ->
+                                    np.nested(
+                                        nk ->
+                                            nk.properties(X_POSITION, q -> q.keyword(kk -> kk))
+                                                .properties(Y_POSITION, q -> q.keyword(kk -> kk))))
+                            .properties(
+                                DIMENSION,
+                                np ->
+                                    np.nested(
+                                        nk ->
+                                            nk.properties(WIDTH, q -> q.keyword(kk -> kk))
+                                                .properties(HEIGHT, q -> q.keyword(kk -> kk))))))
+        .properties(COLLECTION_ID, p -> p.keyword(k -> k))
+        .properties(MANAGEMENT_DASHBOARD, p -> p.boolean_(k -> k))
+        .properties(INSTANT_PREVIEW_DASHBOARD, p -> p.boolean_(k -> k))
+        .properties(
+            AVAILABLE_FILTERS,
+            p ->
+                p.object(
+                    k ->
+                        k.properties(FILTER_TYPE, np -> np.keyword(nk -> nk))
+                            .properties(FILTER_DATA, np -> np.object(nk -> nk.enabled(false)))));
   }
 }

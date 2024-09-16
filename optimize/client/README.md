@@ -1,4 +1,6 @@
 # Camunda Optimize Frontend
+For an overview of the frontend application, please refer to the [FRONTEND_OVERVIEW.md](./FRONTEND_OVERVIEW.md) document.
+
 
 ## Requirements
 

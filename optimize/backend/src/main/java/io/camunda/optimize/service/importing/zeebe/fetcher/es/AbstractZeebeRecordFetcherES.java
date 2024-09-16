@@ -8,10 +8,14 @@
 package io.camunda.optimize.service.importing.zeebe.fetcher.es;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.INDEX_NOT_FOUND_EXCEPTION_TYPE;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.CountRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -21,16 +25,8 @@ import io.camunda.optimize.service.importing.page.PositionBasedImportPage;
 import io.camunda.optimize.service.importing.zeebe.fetcher.AbstractZeebeRecordFetcher;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.context.annotation.Conditional;
 
 @Slf4j
@@ -53,39 +49,41 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
   @Override
   protected List<T> fetchZeebeRecordsForPrefixAndPartitionFrom(
       final PositionBasedImportPage positionBasedImportPage) throws Exception {
-
-    SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
-            .query(getRecordQuery(positionBasedImportPage))
-            .size(getDynamicBatchSize())
-            .sort(getSortField(positionBasedImportPage), SortOrder.ASC);
-    final SearchRequest searchRequest =
-        new SearchRequest(getIndexAlias())
-            .source(searchSourceBuilder)
-            .routing(String.valueOf(partitionId))
-            .requestCache(false);
-
-    SearchResponse searchResponse = esClient.searchWithoutPrefixing(searchRequest);
-    if (searchResponse.getFailedShards() > 0
-        || (searchResponse.getTotalShards()
-            > (searchResponse.getFailedShards() + searchResponse.getSuccessfulShards()))) {
+    final SearchResponse<T> searchResponse =
+        esClient.searchWithoutPrefixing(
+            SearchRequest.of(
+                s ->
+                    s.index(getIndexAlias())
+                        .query(getRecordQuery(positionBasedImportPage))
+                        .size(getDynamicBatchSize())
+                        .sort(
+                            ss ->
+                                ss.field(
+                                    f ->
+                                        f.field(getSortField(positionBasedImportPage))
+                                            .order(SortOrder.Asc)))
+                        .routing(String.valueOf(partitionId))
+                        .requestCache(false)),
+            getRecordDtoClass());
+    if (!searchResponse.shards().failures().isEmpty()
+        || (searchResponse.shards().total().intValue()
+            > (searchResponse.shards().failed().intValue()
+                + searchResponse.shards().successful().intValue()))) {
       throw new OptimizeRuntimeException("Not all shards could be searched successfully");
     }
     return ElasticsearchReaderUtil.mapHits(
-        searchResponse.getHits(), getRecordDtoClass(), objectMapper);
+        searchResponse.hits(), getRecordDtoClass(), objectMapper);
   }
 
   @Override
   protected boolean isZeebeInstanceIndexNotFoundException(final Exception e) {
-    if (e instanceof ElasticsearchStatusException) {
-      return Arrays.stream(e.getSuppressed())
-          .map(Throwable::getMessage)
-          .anyMatch(msg -> msg.contains(INDEX_NOT_FOUND_EXCEPTION_TYPE));
+    if (e instanceof ElasticsearchException) {
+      return e.getMessage().contains(INDEX_NOT_FOUND_EXCEPTION_TYPE);
     }
     return false;
   }
 
-  private BoolQueryBuilder getRecordQuery(final PositionBasedImportPage positionBasedImportPage) {
+  private Query getRecordQuery(final PositionBasedImportPage positionBasedImportPage) {
     // We use the position query if no record with sequences have been imported yet, or if we know
     // that there is data to be
     // imported that Optimize is not catching in its sequence query. This can happen in the event
@@ -108,9 +106,11 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
       return false;
     }
     final CountRequest countRequest =
-        new CountRequest(getIndexAlias())
-            .query(buildPositionQuery(positionBasedImportPage))
-            .routing(String.valueOf(partitionId));
+        CountRequest.of(
+            c ->
+                c.index(getIndexAlias())
+                    .query(buildPositionQuery(positionBasedImportPage))
+                    .routing(String.valueOf(partitionId)));
     try {
       log.info(
           "Using the position query to see if there are new records in the {} index on partition {}",
@@ -144,27 +144,49 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
     return false;
   }
 
-  private BoolQueryBuilder buildPositionQuery(
-      final PositionBasedImportPage positionBasedImportPage) {
+  private Query buildPositionQuery(final PositionBasedImportPage positionBasedImportPage) {
     log.trace(
         "using position query for records of {} on partition {}",
         getBaseIndexName(),
         getPartitionId());
-    return boolQuery()
-        .must(termQuery(ZeebeRecordDto.Fields.partitionId, partitionId))
-        .must(rangeQuery(ZeebeRecordDto.Fields.position).gt(positionBasedImportPage.getPosition()));
+    return Query.of(
+        q ->
+            q.bool(
+                m ->
+                    m.must(
+                            u ->
+                                u.range(
+                                    r ->
+                                        r.field(ZeebeRecordDto.Fields.position)
+                                            .gt(
+                                                JsonData.of(
+                                                    positionBasedImportPage.getPosition()))))
+                        .must(
+                            u ->
+                                u.term(
+                                    r ->
+                                        r.field(ZeebeRecordDto.Fields.partitionId)
+                                            .value(partitionId)))));
   }
 
-  private BoolQueryBuilder buildSequenceQuery(
-      final PositionBasedImportPage positionBasedImportPage) {
+  private Query buildSequenceQuery(final PositionBasedImportPage positionBasedImportPage) {
     log.trace(
         "using sequence query for records of {} on partition {}",
         getBaseIndexName(),
         getPartitionId());
-    return boolQuery()
-        .must(
-            rangeQuery(ZeebeRecordDto.Fields.sequence)
-                .gt(positionBasedImportPage.getSequence())
-                .lte(positionBasedImportPage.getSequence() + getDynamicBatchSize()));
+    return Query.of(
+        q ->
+            q.bool(
+                m ->
+                    m.must(
+                        u ->
+                            u.range(
+                                r ->
+                                    r.field(ZeebeRecordDto.Fields.sequence)
+                                        .gt(JsonData.of(positionBasedImportPage.getSequence()))
+                                        .lte(
+                                            JsonData.of(
+                                                positionBasedImportPage.getSequence()
+                                                    + getDynamicBatchSize()))))));
   }
 }

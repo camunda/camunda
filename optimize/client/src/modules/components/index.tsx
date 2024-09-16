@@ -9,9 +9,6 @@
 export {Tabs} from './Tabs';
 export {Icon} from './Icon';
 export {ActionItem} from './ActionItem';
-export {Input} from './Input';
-export {LabeledInput} from './LabeledInput';
-export {Labeled} from './Labeled';
 export {Tooltip} from './Tooltip';
 export {Modal} from './Modal';
 export {Select} from './Select';
@@ -19,7 +16,6 @@ export {TextEditor} from './TextEditor';
 export {PageTitle} from './PageTitle';
 export {EntityDescription} from './EntityDescription';
 export {EntityNameForm} from './EntityNameForm';
-export {LoadingIndicator} from './LoadingIndicator';
 export {DocsLink} from './DocsLink';
 export {UserTypeahead} from './UserTypeahead';
 export {BPMNDiagram, ClickBehavior} from './BPMNDiagram';
@@ -48,8 +44,6 @@ export {Loading} from './Loading';
 export {EntityList} from './EntityList';
 export {EmptyState} from './EmptyState';
 
-export type {InputProps} from './Input';
-export type {LabeledProps} from './Labeled';
 export type {User} from './UserTypeahead';
 export type {Canvas, ModdleElement, RegistryElement} from './BPMNDiagram';
 export type {TooltipProps} from './Tooltip';

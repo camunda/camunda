@@ -9,12 +9,17 @@ package io.camunda.optimize.service.db.es.writer;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_SHARE_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.REPORT_SHARE_INDEX_NAME;
-import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
+import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch.core.DeleteResponse;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import io.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeDeleteRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeIndexRequestBuilderES;
 import io.camunda.optimize.service.db.writer.SharingWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.IdGenerator;
@@ -23,12 +28,6 @@ import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.DocWriteResponse;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.delete.DeleteResponse;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -47,15 +46,16 @@ public class SharingWriterES implements SharingWriter {
     final String id = IdGenerator.getNextId();
     createSharingDto.setId(id);
     try {
-      final IndexRequest request =
-          new IndexRequest(REPORT_SHARE_INDEX_NAME)
-              .id(id)
-              .source(objectMapper.writeValueAsString(createSharingDto), XContentType.JSON)
-              .setRefreshPolicy(IMMEDIATE);
+      IndexResponse indexResponse =
+          esClient.index(
+              OptimizeIndexRequestBuilderES.of(
+                  i ->
+                      i.optimizeIndex(esClient, REPORT_SHARE_INDEX_NAME)
+                          .id(id)
+                          .document(createSharingDto)
+                          .refresh(Refresh.True)));
 
-      final IndexResponse indexResponse = esClient.index(request);
-
-      if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED)) {
+      if (!indexResponse.result().equals(Result.Created)) {
         final String message =
             "Could not write report share to Elasticsearch. "
                 + "Maybe the connection to Elasticsearch got lost?";
@@ -81,15 +81,16 @@ public class SharingWriterES implements SharingWriter {
     final String id = IdGenerator.getNextId();
     createSharingDto.setId(id);
     try {
-      final IndexRequest request =
-          new IndexRequest(DASHBOARD_SHARE_INDEX_NAME)
-              .id(id)
-              .source(objectMapper.writeValueAsString(createSharingDto), XContentType.JSON)
-              .setRefreshPolicy(IMMEDIATE);
+      IndexResponse indexResponse =
+          esClient.index(
+              OptimizeIndexRequestBuilderES.of(
+                  i ->
+                      i.optimizeIndex(esClient, DASHBOARD_SHARE_INDEX_NAME)
+                          .id(id)
+                          .document(createSharingDto)
+                          .refresh(Refresh.True)));
 
-      final IndexResponse indexResponse = esClient.index(request);
-
-      if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED)) {
+      if (!indexResponse.result().equals(Result.Created)) {
         final String message =
             "Could not write dashboard share to Elasticsearch. "
                 + "Maybe the connection to Elasticsearch got lost?";
@@ -113,16 +114,17 @@ public class SharingWriterES implements SharingWriter {
   public void updateDashboardShare(final DashboardShareRestDto updatedShare) {
     final String id = updatedShare.getId();
     try {
-      final IndexRequest request =
-          new IndexRequest(DASHBOARD_SHARE_INDEX_NAME)
-              .id(id)
-              .source(objectMapper.writeValueAsString(updatedShare), XContentType.JSON)
-              .setRefreshPolicy(IMMEDIATE);
+      IndexResponse indexResponse =
+          esClient.index(
+              OptimizeIndexRequestBuilderES.of(
+                  i ->
+                      i.optimizeIndex(esClient, DASHBOARD_SHARE_INDEX_NAME)
+                          .id(id)
+                          .document(updatedShare)
+                          .refresh(Refresh.True)));
 
-      final IndexResponse indexResponse = esClient.index(request);
-
-      if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED)
-          && !indexResponse.getResult().equals(DocWriteResponse.Result.UPDATED)) {
+      if (!indexResponse.result().equals(Result.Created)
+          && !indexResponse.result().equals(Result.Updated)) {
         final String message = "Could not write dashboard share to Elasticsearch.";
         log.error(message);
         throw new OptimizeRuntimeException(message);
@@ -145,19 +147,22 @@ public class SharingWriterES implements SharingWriter {
   @Override
   public void deleteReportShare(final String shareId) {
     log.debug("Deleting report share with id [{}]", shareId);
-    final DeleteRequest request =
-        new DeleteRequest(REPORT_SHARE_INDEX_NAME).id(shareId).setRefreshPolicy(IMMEDIATE);
-
     final DeleteResponse deleteResponse;
     try {
-      deleteResponse = esClient.delete(request);
+      deleteResponse =
+          esClient.delete(
+              OptimizeDeleteRequestBuilderES.of(
+                  d ->
+                      d.optimizeIndex(esClient, REPORT_SHARE_INDEX_NAME)
+                          .id(shareId)
+                          .refresh(Refresh.True)));
     } catch (final IOException e) {
       final String reason = String.format("Could not delete report share with id [%s].", shareId);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (!deleteResponse.getResult().equals(DocWriteResponse.Result.DELETED)) {
+    if (!deleteResponse.result().equals(Result.Deleted)) {
       final String message =
           String.format(
               "Could not delete report share with id [%s]. Report share does not exist. "
@@ -171,12 +176,15 @@ public class SharingWriterES implements SharingWriter {
   @Override
   public void deleteDashboardShare(final String shareId) {
     log.debug("Deleting dashboard share with id [{}]", shareId);
-    final DeleteRequest request =
-        new DeleteRequest(DASHBOARD_SHARE_INDEX_NAME).id(shareId).setRefreshPolicy(IMMEDIATE);
-
     final DeleteResponse deleteResponse;
     try {
-      deleteResponse = esClient.delete(request);
+      deleteResponse =
+          esClient.delete(
+              OptimizeDeleteRequestBuilderES.of(
+                  d ->
+                      d.optimizeIndex(esClient, DASHBOARD_SHARE_INDEX_NAME)
+                          .id(shareId)
+                          .refresh(Refresh.True)));
     } catch (final IOException e) {
       final String reason =
           String.format("Could not delete dashboard share with id [%s].", shareId);
@@ -184,7 +192,7 @@ public class SharingWriterES implements SharingWriter {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (!deleteResponse.getResult().equals(DocWriteResponse.Result.DELETED)) {
+    if (!deleteResponse.result().equals(Result.Deleted)) {
       final String message =
           String.format(
               "Could not delete dashboard share with id [%s]. Dashboard share does not exist. "

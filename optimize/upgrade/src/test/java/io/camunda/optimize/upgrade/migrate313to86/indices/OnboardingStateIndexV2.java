@@ -7,11 +7,13 @@
  */
 package io.camunda.optimize.upgrade.migrate313to86.indices;
 
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
+import co.elastic.clients.elasticsearch.indices.IndexSettings.Builder;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
-public class OnboardingStateIndexV2 extends DefaultIndexMappingCreator<XContentBuilder> {
+public class OnboardingStateIndexV2 extends DefaultIndexMappingCreator<Builder> {
 
   public static final int VERSION = 2;
 
@@ -26,27 +28,19 @@ public class OnboardingStateIndexV2 extends DefaultIndexMappingCreator<XContentB
   }
 
   @Override
-  public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
     // @formatter:off
-    return xContentBuilder
-        .startObject("id")
-        .field("type", "keyword")
-        .endObject()
-        .startObject("key")
-        .field("type", "keyword")
-        .endObject()
-        .startObject("userId")
-        .field("type", "keyword")
-        .endObject()
-        .startObject("seen")
-        .field("type", "boolean")
-        .endObject();
+    return builder
+        .properties("id", p -> p.keyword(k -> k))
+        .properties("key", p -> p.keyword(k -> k))
+        .properties("userId", p -> p.keyword(k -> k))
+        .properties("seen", p -> p.boolean_(k -> k));
     // @formatter:on
   }
 
   @Override
-  public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder)
-      throws IOException {
-    return contentBuilder.field(key, value);
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder builder) throws IOException {
+    return builder.numberOfShards(Integer.toString(value));
   }
 }

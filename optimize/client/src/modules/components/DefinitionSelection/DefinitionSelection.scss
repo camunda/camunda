@@ -1,6 +1,16 @@
 .DefinitionSelection {
   width: 100%;
 
+  .LoadingDefinitions {
+    display: inline-block;
+    width: 100%;
+    vertical-align: middle;
+
+    > div {
+      block-size: 2rem;
+    }
+  }
+
   .popoverContent {
     max-width: max-content;
   }

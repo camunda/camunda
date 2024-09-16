@@ -203,6 +203,7 @@ public class OpenSearchClientBuilder {
   }
 
   public static String getCurrentOSVersion(final OpenSearchClient osClient) throws IOException {
+    // The request options is a placeholder for the eventual OpenSearch implementation
     return osClient.info().version().number();
   }
 

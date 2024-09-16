@@ -39,16 +39,24 @@ jest.mock('hooks', () => ({
 }));
 
 const props = {
+  open: true,
   availableTenants: [null, 'engineering'],
   definitionKey: '',
   onChange: jest.fn(),
   onClose: jest.fn(),
 };
 
-it('should load all variables for the specified definition', () => {
+it('should load all variables when opening the modal for the specified definition', () => {
   const processDefinitionKey = '123';
-  const node = shallow(<RenameVariablesModal {...props} definitionKey={processDefinitionKey} />);
+  const node = shallow(
+    <RenameVariablesModal {...props} open={false} definitionKey={processDefinitionKey} />
+  );
 
+  runLastEffect();
+
+  expect(loadVariables).not.toHaveBeenCalled();
+
+  node.setProps({open: true});
   runLastEffect();
 
   expect(node.find(Table).prop<JSX.Element[][]>('body')[0]?.[2]?.props.value).toBe('existingLabel');

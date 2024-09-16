@@ -183,7 +183,7 @@ export default function TemplateModal({
                     return (
                       <Tooltip
                         key={idx}
-                        content={
+                        title={
                           disabled?.(selectedDefinitions)
                             ? getDisableStateText(selectedDefinitions)
                             : undefined

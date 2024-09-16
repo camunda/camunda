@@ -316,7 +316,26 @@
       <version>1.13.4</version>
     </dependency>
 
+    <!--Lucene dependencies-->
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-core</artifactId>
+      <version>${lucene.version}</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>*</artifactId>
+          <groupId>*</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
     <!--Test dependencies-->
+    <dependency>
+      <groupId>com.tdunning</groupId>
+      <artifactId>t-digest</artifactId>
+      <version>3.3</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-test-container</artifactId>
@@ -567,9 +586,10 @@
                     <OS_VERSION>${opensearch.test.version}</OS_VERSION>
                   </environmentVariables>
                   <skip>${skip.docker}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>-f</argument>
                     <argument>${docker.compose.file}</argument>
                     <argument>--profile</argument>
@@ -589,9 +609,10 @@
                 </goals>
                 <configuration>
                   <skip>${skip.docker}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>-f</argument>
                     <argument>${docker.compose.file}</argument>
                     <argument>rm</argument>

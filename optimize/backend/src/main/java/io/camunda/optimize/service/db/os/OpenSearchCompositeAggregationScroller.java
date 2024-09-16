@@ -7,8 +7,11 @@
  */
 package io.camunda.optimize.service.db.os;
 
+import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
+
 import io.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -93,32 +96,52 @@ public class OpenSearchCompositeAggregationScroller {
             .aggregations(aggregations)
             .size(requestSize);
 
-    final SearchResponse searchResponse =
-        osClient.search(searchRequestBuilder, SimpleDefinitionDto.class, errorMessage);
+    try {
+      final SearchResponse searchResponse =
+          osClient.search(searchRequestBuilder, SimpleDefinitionDto.class, errorMessage);
 
-    final CompositeAggregate compositeAggregationResult =
-        extractCompositeAggregationResult(searchResponse);
+      final CompositeAggregate compositeAggregationResult =
+          extractCompositeAggregationResult(searchResponse);
 
-    Map<String, String> convertedCompositeBucketConsumer =
-        compositeAggregationResult.afterKey().entrySet().stream()
-            // Below is a workaround for a known java issue
-            // https://bugs.openjdk.org/browse/JDK-8148463
-            .collect(
-                HashMap::new,
-                (m, v) -> m.put(v.getKey(), v.getValue().to(String.class)),
-                HashMap::putAll);
+      Map<String, String> safeAfterKeyMap =
+          compositeAggregationResult.afterKey().entrySet().stream()
+              // Below is a workaround for a known java issue
+              // https://bugs.openjdk.org/browse/JDK-8148463
+              .collect(
+                  HashMap::new,
+                  (m, v) -> m.put(v.getKey(), v.getValue().to(String.class)),
+                  HashMap::putAll);
 
-    aggregations =
-        updateAfterKeyInCompositeAggregation(convertedCompositeBucketConsumer, aggregations);
+      aggregations = updateAfterKeyInCompositeAggregation(safeAfterKeyMap, aggregations);
 
-    return compositeAggregationResult.buckets().array();
+      return compositeAggregationResult.buckets().array();
+    } catch (RuntimeException e) {
+      if (isInstanceIndexNotFoundException(e)) {
+        log.info(
+            "Was not able to get next page of {} aggregation because at least one instance from {} does not exist.",
+            pathToAggregation.getLast(),
+            indices);
+        return Collections.emptyList();
+      }
+      throw e;
+    }
   }
 
   private HashMap<String, Aggregation> updateAfterKeyInCompositeAggregation(
-      Map<String, String> convertedCompositeBucketConsumer, Map<String, Aggregation> currentAgg) {
+      Map<String, String> safeAfterKeyMap, Map<String, Aggregation> currentAgg) {
+    return updateAfterKeyInCompositeAggregation(safeAfterKeyMap, currentAgg, false);
+  }
+
+  private HashMap<String, Aggregation> updateAfterKeyInCompositeAggregation(
+      Map<String, String> safeAfterKeyMap,
+      Map<String, Aggregation> currentAgg,
+      boolean isFromNested) {
     HashMap<String, Aggregation> newAggregations = new HashMap<>();
 
-    // find aggregation response
+    if (safeAfterKeyMap.isEmpty()) {
+      return new HashMap<>(currentAgg);
+    }
+
     for (String aggPath : pathToAggregation) {
       Aggregation agg = currentAgg.get(aggPath);
       if (agg != null) {
@@ -128,14 +151,25 @@ public class OpenSearchCompositeAggregationScroller {
                   .nested(new NestedAggregation.Builder().path(agg.nested().path()).build())
                   .aggregations(
                       updateAfterKeyInCompositeAggregation(
-                          convertedCompositeBucketConsumer, agg.aggregations()))
+                          safeAfterKeyMap, agg.aggregations(), true))
                   .build();
           newAggregations.put(aggPath, newNestedAgg);
         } else if (agg.isComposite()) {
-          newAggregations.put(
-              aggPath,
-              updateCompositeAggregation(convertedCompositeBucketConsumer, agg.composite())
-                  ._toAggregation());
+          CompositeAggregation newAgg =
+              updateCompositeAggregation(agg.composite(), safeAfterKeyMap);
+          if (isFromNested) {
+            newAggregations.put(aggPath, newAgg._toAggregation());
+          } else {
+            Aggregation upgradeAgg =
+                Aggregation.of(
+                    a -> {
+                      if (agg.aggregations() != null) {
+                        a.aggregations(agg.aggregations());
+                      }
+                      return a.composite(newAgg);
+                    });
+            newAggregations.put(aggPath, upgradeAgg);
+          }
         }
       }
     }
@@ -143,13 +177,13 @@ public class OpenSearchCompositeAggregationScroller {
   }
 
   private CompositeAggregation updateCompositeAggregation(
-      Map<String, String> convertedCompositeBucketConsumer,
-      CompositeAggregation prevCompositeAggregation) {
-    // find aggregation and adjust after key for next invocation
+      CompositeAggregation prevCompositeAggregation, Map<String, String> safeAfterKeyMap) {
     return new CompositeAggregation.Builder()
         .sources(prevCompositeAggregation.sources())
         .size(prevCompositeAggregation.size())
-        .after(convertedCompositeBucketConsumer)
+        .name(prevCompositeAggregation.name())
+        .meta(prevCompositeAggregation.meta())
+        .after(safeAfterKeyMap)
         .build();
   }
 
