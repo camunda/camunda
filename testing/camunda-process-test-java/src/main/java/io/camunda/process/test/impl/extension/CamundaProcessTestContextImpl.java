@@ -54,8 +54,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder()
             .usePlaintext()
-            .grpcAddress(getZeebeGrpcAddress())
-            .restAddress(getZeebeRestAddress());
+            .grpcAddress(getCamundaGrpcAddress())
+            .restAddress(getCamundaRestAddress());
 
     modifier.accept(builder);
 
@@ -66,12 +66,12 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
-  public URI getZeebeGrpcAddress() {
+  public URI getCamundaGrpcAddress() {
     return camundaContainer.getGrpcApiAddress();
   }
 
   @Override
-  public URI getZeebeRestAddress() {
+  public URI getCamundaRestAddress() {
     return camundaContainer.getRestApiAddress();
   }
 

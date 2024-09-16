@@ -142,8 +142,8 @@ public class ExecutionListenerTest {
     final CamundaProcessTestContext camundaProcessTestContext =
         camundaProcessTestContextArgumentCaptor.getValue();
     assertThat(camundaProcessTestContext).isNotNull();
-    assertThat(camundaProcessTestContext.getZeebeGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
-    assertThat(camundaProcessTestContext.getZeebeRestAddress()).isEqualTo(REST_API_ADDRESS);
+    assertThat(camundaProcessTestContext.getCamundaGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
+    assertThat(camundaProcessTestContext.getCamundaRestAddress()).isEqualTo(REST_API_ADDRESS);
     assertThat(camundaProcessTestContext.getConnectorsAddress())
         .isEqualTo(connectorsRestApiAddress);
 
