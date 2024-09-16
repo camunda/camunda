@@ -201,7 +201,7 @@ func main() {
 		}
 		javaMajorVersion := versionSplit[0]
 		javaMajorVersionInt, _ := strconv.Atoi(javaMajorVersion)
-		if javaMajorVersionInt <= expectedJavaVersion {
+		if javaMajorVersionInt < expectedJavaVersion {
 			fmt.Print("You must use at least JDK " + strconv.Itoa(expectedJavaVersion) + " to start Camunda Platform Run.\n")
 			os.Exit(1)
 		}
