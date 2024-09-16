@@ -437,7 +437,7 @@ public final class SearchQueryRequestMapper {
         case "creationTime" -> builder.creationTime();
         case "processInstanceKey" -> builder.processInstanceKey();
         case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "flowNodeInstanceId" -> builder.flowNodeInstanceId();
+        case "flowNodeInstanceKey" -> builder.flowNodeInstancekey();
         case "flowNodeId" -> builder.flowNodeId();
         case "jobKey" -> builder.jobKey();
         case "tenantId" -> builder.tenantId();

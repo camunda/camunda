@@ -25,6 +25,7 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
@@ -86,7 +87,44 @@ public class IncidentQueryControllerTest extends RestControllerTest {
           .sortValues(new Object[] {"v"})
           .build();
 
-  static final String INCIDENT_SEARCH_URL = "/v2/incidents/search";
+  static final String EXPECTED_GET_RESPONSE =
+      """
+    {
+                  "key": 5,
+                  "processDefinitionKey": 23,
+                  "bpmnProcessId": "complexProcess",
+                  "processInstanceKey": 42,
+                  "type": "JOB_NO_RETRIES",
+                  "message": "No retries left.",
+                  "flowNodeId": "flowNodeId",
+                  "flowNodeInstanceKey": 17,
+                  "creationTime": "2024-05-23T23:05:00.000+0000",
+                  "state": "ACTIVE",
+                  "jobKey": 101,
+                  "treePath":"PI_42/FN_flowNodeId/FNI_17",
+                  "tenantId": "tenantId"
+              }
+  """;
+
+  static final Optional<IncidentEntity> GET_QUERY_RESULT =
+      Optional.of(
+          new IncidentEntity(
+              5L,
+              23L,
+              "complexProcess",
+              42L,
+              ErrorType.JOB_NO_RETRIES,
+              "No retries left.",
+              "flowNodeId",
+              17L,
+              "2024-05-23T23:05:00.000+0000",
+              IncidentState.ACTIVE,
+              101L,
+              "PI_42/FN_flowNodeId/FNI_17",
+              "tenantId"));
+
+  static final String INCIDENT_URL = "/v2/incidents/";
+  static final String INCIDENT_SEARCH_URL = INCIDENT_URL + "search";
 
   @MockBean IncidentServices incidentServices;
 
@@ -230,5 +268,23 @@ public class IncidentQueryControllerTest extends RestControllerTest {
             new IncidentQuery.Builder()
                 .sort(new IncidentSort.Builder().key().asc().build())
                 .build());
+  }
+
+  @Test
+  void shouldGetIncidentByKey() {
+    when(incidentServices.getByKey(any(Long.class))).thenReturn(GET_QUERY_RESULT);
+    // when / then
+    webClient
+        .get()
+        .uri(INCIDENT_URL + "23")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON_UTF8_VALUE)
+        .expectBody()
+        .json(EXPECTED_GET_RESPONSE);
+
+    verify(incidentServices).getByKey(23L);
   }
 }

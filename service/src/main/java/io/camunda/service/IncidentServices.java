@@ -19,6 +19,7 @@ import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -46,6 +47,14 @@ public class IncidentServices
   @Override
   public IncidentServices withAuthentication(final Authentication authentication) {
     return new IncidentServices(brokerClient, searchClient, transformers, authentication);
+  }
+
+  public Optional<IncidentEntity> getByKey(final Long key) {
+    final SearchQueryResult<IncidentEntity> result =
+        executor.search(
+            SearchQueryBuilders.incidentSearchQuery().filter(f -> f.keys(key)).build(),
+            IncidentEntity.class);
+    return result.items().stream().findFirst();
   }
 
   public CompletableFuture<IncidentRecord> resolveIncident(final long incidentKey) {
