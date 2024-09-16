@@ -26,9 +26,11 @@ import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.StateCode;
 import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
 import java.time.Duration;
+import java.util.concurrent.CompletionException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -44,7 +46,7 @@ final class S3RestoreAcceptanceIT {
   private static final MinioContainer MINIO =
       new MinioContainer().withDomain("minio.local", BUCKET_NAME);
 
-  @TestZeebe(awaitCompleteTopology = false)
+  @TestZeebe
   private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
           .withProperty("management.endpoints.web.exposure.include", "*")
@@ -77,6 +79,9 @@ final class S3RestoreAcceptanceIT {
       client.createBucket(cfg -> cfg.bucket(BUCKET_NAME)).join();
     }
   }
+
+  @BeforeEach
+  void beforeEach() {}
 
   @Test
   void shouldRunRestore() {
@@ -145,7 +150,7 @@ final class S3RestoreAcceptanceIT {
       restore.withBackupId(1234).withBrokerConfig(this::configureBackupStore);
 
       // then
-      assertThatExceptionOfType(IllegalStateException.class)
+      assertThatExceptionOfType(CompletionException.class)
           .isThrownBy(() -> restore.start())
           .havingRootCause()
           .isInstanceOf(BackupNotFoundException.class);
