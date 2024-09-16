@@ -27,7 +27,7 @@ import org.springframework.context.annotation.Configuration;
 public class CamundaContainerRuntimeConfiguration {
 
   private String camundaVersion = ContainerRuntimeDefaults.CAMUNDA_VERSION;
-  private String zeebeDockerImageName = ContainerRuntimeDefaults.ZEEBE_DOCKER_IMAGE_NAME;
+  private String zeebeDockerImageName = ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME;
   private Map<String, String> zeebeEnvVars = Collections.emptyMap();
   private List<Integer> zeebeExposedPorts = Collections.emptyList();
 

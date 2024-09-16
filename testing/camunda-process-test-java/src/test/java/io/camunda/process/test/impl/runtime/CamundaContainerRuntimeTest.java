@@ -140,8 +140,8 @@ public class CamundaContainerRuntimeTest {
             ContainerRuntimeDefaults.ELASTICSEARCH_DOCKER_IMAGE_VERSION);
     verify(containerFactory)
         .createCamundaContainer(
-            ContainerRuntimeDefaults.ZEEBE_DOCKER_IMAGE_NAME,
-            ContainerRuntimeDefaults.ZEEBE_DOCKER_IMAGE_VERSION);
+            ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME,
+            ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION);
     verify(containerFactory)
         .createOperateContainer(
             ContainerRuntimeDefaults.OPERATE_DOCKER_IMAGE_NAME,

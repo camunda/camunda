@@ -25,8 +25,8 @@ public class CamundaContainerRuntimeBuilder {
 
   private ContainerFactory containerFactory = new ContainerFactory();
 
-  private String zeebeDockerImageName = ContainerRuntimeDefaults.ZEEBE_DOCKER_IMAGE_NAME;
-  private String zeebeDockerImageVersion = ContainerRuntimeDefaults.ZEEBE_DOCKER_IMAGE_VERSION;
+  private String zeebeDockerImageName = ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME;
+  private String zeebeDockerImageVersion = ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION;
 
   private String elasticsearchDockerImageName =
       ContainerRuntimeDefaults.ELASTICSEARCH_DOCKER_IMAGE_NAME;
@@ -54,7 +54,7 @@ public class CamundaContainerRuntimeBuilder {
   private final List<Integer> tasklistExposedPorts = new ArrayList<>();
   private final List<Integer> connectorsExposedPorts = new ArrayList<>();
 
-  private String zeebeLoggerName = ContainerRuntimeDefaults.ZEEBE_LOGGER_NAME;
+  private String zeebeLoggerName = ContainerRuntimeDefaults.CAMUNDA_LOGGER_NAME;
   private String elasticsearchLoggerName = ContainerRuntimeDefaults.ELASTICSEARCH_LOGGER_NAME;
   private String operateLoggerName = ContainerRuntimeDefaults.OPERATE_LOGGER_NAME;
   private String tasklistLoggerName = ContainerRuntimeDefaults.TASKLIST_LOGGER_NAME;
