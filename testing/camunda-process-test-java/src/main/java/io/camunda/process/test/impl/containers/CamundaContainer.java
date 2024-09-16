@@ -45,11 +45,11 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         .waitingFor(newDefaultWaitStrategy())
         .withEnv(ContainerRuntimeEnvs.ZEEBE_ENV_CLOCK_CONTROLLED, "true")
         .addExposedPorts(
-            ContainerRuntimePorts.ZEEBE_GATEWAY_API,
-            ContainerRuntimePorts.ZEEBE_COMMAND_API,
-            ContainerRuntimePorts.ZEEBE_INTERNAL_API,
-            ContainerRuntimePorts.ZEEBE_MONITORING_API,
-            ContainerRuntimePorts.ZEEBE_REST_API);
+            ContainerRuntimePorts.CAMUNDA_GATEWAY_API,
+            ContainerRuntimePorts.CAMUNDA_COMMAND_API,
+            ContainerRuntimePorts.CAMUNDA_INTERNAL_API,
+            ContainerRuntimePorts.CAMUNDA_MONITORING_API,
+            ContainerRuntimePorts.CAMUNDA_REST_API);
   }
 
   public CamundaContainer withElasticsearchExporter(final String url) {
@@ -64,7 +64,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   public static HttpWaitStrategy newDefaultBrokerReadyCheck() {
     return new HttpWaitStrategy()
         .forPath(ZEEBE_READY_ENDPOINT)
-        .forPort(ContainerRuntimePorts.ZEEBE_MONITORING_API)
+        .forPort(ContainerRuntimePorts.CAMUNDA_MONITORING_API)
         .forStatusCodeMatching(status -> status >= 200 && status < 300)
         .withReadTimeout(Duration.ofSeconds(10));
   }
@@ -77,11 +77,11 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   }
 
   public int getGrpcApiPort() {
-    return getMappedPort(ContainerRuntimePorts.ZEEBE_GATEWAY_API);
+    return getMappedPort(ContainerRuntimePorts.CAMUNDA_GATEWAY_API);
   }
 
   public int getRestApiPort() {
-    return getMappedPort(ContainerRuntimePorts.ZEEBE_REST_API);
+    return getMappedPort(ContainerRuntimePorts.CAMUNDA_REST_API);
   }
 
   public URI getGrpcApiAddress() {
@@ -101,6 +101,6 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   }
 
   public int getMonitoringApiPort() {
-    return getMappedPort(ContainerRuntimePorts.ZEEBE_MONITORING_API);
+    return getMappedPort(ContainerRuntimePorts.CAMUNDA_MONITORING_API);
   }
 }

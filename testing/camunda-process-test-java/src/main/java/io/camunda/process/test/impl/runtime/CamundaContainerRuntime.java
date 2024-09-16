@@ -44,9 +44,9 @@ public class CamundaContainerRuntime implements AutoCloseable {
       "http://" + NETWORK_ALIAS_ELASTICSEARCH + ":" + ContainerRuntimePorts.ELASTICSEARCH_REST_API;
 
   private static final String ZEEBE_GRPC_API =
-      NETWORK_ALIAS_ZEEBE + ":" + ContainerRuntimePorts.ZEEBE_GATEWAY_API;
+      NETWORK_ALIAS_ZEEBE + ":" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
   private static final String ZEEBE_REST_API =
-      NETWORK_ALIAS_ZEEBE + ":" + ContainerRuntimePorts.ZEEBE_REST_API;
+      NETWORK_ALIAS_ZEEBE + ":" + ContainerRuntimePorts.CAMUNDA_REST_API;
 
   private static final String OPERATE_REST_API =
       "http://" + NETWORK_ALIAS_OPERATE + ":" + ContainerRuntimePorts.OPERATE_REST_API;
