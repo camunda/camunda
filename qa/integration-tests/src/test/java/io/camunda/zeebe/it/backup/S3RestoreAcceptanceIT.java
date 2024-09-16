@@ -29,6 +29,7 @@ import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -44,7 +45,7 @@ final class S3RestoreAcceptanceIT {
   private static final MinioContainer MINIO =
       new MinioContainer().withDomain("minio.local", BUCKET_NAME);
 
-  @TestZeebe(awaitCompleteTopology = false)
+  @TestZeebe
   private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
           .withProperty("management.endpoints.web.exposure.include", "*")
@@ -77,6 +78,9 @@ final class S3RestoreAcceptanceIT {
       client.createBucket(cfg -> cfg.bucket(BUCKET_NAME)).join();
     }
   }
+
+  @BeforeEach
+  void beforeEach() {}
 
   @Test
   void shouldRunRestore() {
