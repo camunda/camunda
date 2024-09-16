@@ -210,7 +210,7 @@
         <bpmn:sequenceFlow id="Flow_1f05uvq" sourceRef="Activity_1ys0vez" targetRef="Gateway_1p7bkh1" />
         <bpmn:serviceTask id="Activity_1ys0vez" name="Get vendor info">
           <bpmn:extensionElements>
-            <zeebe:taskDefinition type="dispute_process_request_proof_from_vendor" />
+            <zeebe:taskDefinition type="dispute_process_request_get_vendor_info" />
             <zeebe:properties>
               <zeebe:property name="camundaModeler:exampleOutputJson" value="{&#10;  &#34;vendor_claim_frequency&#34;: 15&#10;}" />
             </zeebe:properties>
