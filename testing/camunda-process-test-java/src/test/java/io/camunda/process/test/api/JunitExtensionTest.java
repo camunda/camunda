@@ -197,11 +197,11 @@ public class JunitExtensionTest {
     final CamundaProcessTestExtension extension =
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder)
             .withCamundaVersion(camundaVersion)
-            .withZeebeDockerImageName(zeebeDockerImageName)
-            .withZeebeEnv(zeebeEnvVars)
-            .withZeebeEnv("env-3", "test-3")
-            .withZeebeExposedPort(100)
-            .withZeebeExposedPort(200);
+            .withCamundaDockerImageName(zeebeDockerImageName)
+            .withCamundaEnv(zeebeEnvVars)
+            .withCamundaEnv("env-3", "test-3")
+            .withCamundaExposedPort(100)
+            .withCamundaExposedPort(200);
 
     // when
     extension.beforeEach(extensionContext);

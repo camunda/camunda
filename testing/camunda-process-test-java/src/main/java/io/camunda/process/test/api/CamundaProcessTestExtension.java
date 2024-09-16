@@ -188,46 +188,46 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   }
 
   /**
-   * Configure the Zeebe Docker image name of the runtime.
+   * Configure the Camunda Docker image name of the runtime.
    *
    * @param dockerImageName the Docker image name to use
    * @return the extension builder
    */
-  public CamundaProcessTestExtension withZeebeDockerImageName(final String dockerImageName) {
+  public CamundaProcessTestExtension withCamundaDockerImageName(final String dockerImageName) {
     containerRuntimeBuilder.withCamundaDockerImageName(dockerImageName);
     return this;
   }
 
   /**
-   * Add environment variables to the Zeebe runtime.
+   * Add environment variables to the Camunda runtime.
    *
    * @param envVars environment variables to add
    * @return the extension builder
    */
-  public CamundaProcessTestExtension withZeebeEnv(final Map<String, String> envVars) {
+  public CamundaProcessTestExtension withCamundaEnv(final Map<String, String> envVars) {
     containerRuntimeBuilder.withCamundaEnv(envVars);
     return this;
   }
 
   /**
-   * Add an environment variable to the Zeebe runtime.
+   * Add an environment variable to the Camunda runtime.
    *
    * @param name the variable name
    * @param value the variable value
    * @return the extension builder
    */
-  public CamundaProcessTestExtension withZeebeEnv(final String name, final String value) {
+  public CamundaProcessTestExtension withCamundaEnv(final String name, final String value) {
     containerRuntimeBuilder.withCamundaEnv(name, value);
     return this;
   }
 
   /**
-   * Add an exposed port to the Zeebe runtime.
+   * Add an exposed port to the Camunda runtime.
    *
    * @param port the port to add
    * @return the extension builder
    */
-  public CamundaProcessTestExtension withZeebeExposedPort(final int port) {
+  public CamundaProcessTestExtension withCamundaExposedPort(final int port) {
     containerRuntimeBuilder.withCamundaExposedPort(port);
     return this;
   }
