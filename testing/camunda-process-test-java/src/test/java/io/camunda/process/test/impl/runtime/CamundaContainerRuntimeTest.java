@@ -157,9 +157,9 @@ public class CamundaContainerRuntimeTest {
   }
 
   @Test
-  void shouldConfigureZeebeContainer() {
+  void shouldConfigureCamundaContainer() {
     // given
-    final String dockerImageName = "custom-zeebe";
+    final String dockerImageName = "custom-camunda";
     final String dockerImageVersion = "8.6.0-custom";
 
     // when
