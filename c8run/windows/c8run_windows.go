@@ -179,12 +179,15 @@ func main() {
 			var out strings.Builder
 			javaVersionCmd.Stdout = &out
 			javaVersionCmd.Run()
-			javaVersionOutputSplit := strings.Split(out.String(), " ")
+                        javaVersionOutput := out.String()
+			javaVersionOutputSplit := strings.Split(javaVersionOutput, " ")
 			if len(javaVersionOutputSplit) == 0 {
 				fmt.Println("Java needs to be installed. Please install JDK " + strconv.Itoa(expectedJavaVersion) + " or newer.")
 				os.Exit(1)
 			}
-			output := strings.Split(out.String(), " ")[1]
+                        fmt.Println("Java version output\n" + javaVersionOutput)
+
+			output := javaVersionOutputSplit[1]
 			os.Setenv("JAVA_VERSION", output)
 			javaVersion = output
 		}
