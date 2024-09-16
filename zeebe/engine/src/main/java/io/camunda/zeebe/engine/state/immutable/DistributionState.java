@@ -85,6 +85,22 @@ public interface DistributionState {
    */
   Optional<String> getQueueIdForDistribution(long distributionKey);
 
+  /**
+   * Returns whether there are any queued distributions for the given queue.
+   *
+   * @param queue the queue to look up
+   * @return true if there are queued distributions for the given queue, otherwise false
+   */
+  boolean hasQueuedDistributions(String queue);
+
+  /** Visits each continuation command registered for the given queue. */
+  void forEachContinuationCommand(String queue, ContinuationCommandVisitor consumer);
+
+  /**
+   * Returns the continuation command for the given key and queue or null if no such command exists.
+   */
+  CommandDistributionRecord getContinuationRecord(String queue, long key);
+
   /** This visitor can visit pending distributions of {@link CommandDistributionRecord}. */
   @FunctionalInterface
   interface PendingDistributionVisitor {
@@ -96,5 +112,11 @@ public interface DistributionState {
      * @param pendingDistribution The pending distribution itself as command distribution record
      */
     void visit(final long distributionKey, final CommandDistributionRecord pendingDistribution);
+  }
+
+  @FunctionalInterface
+  interface ContinuationCommandVisitor {
+    /** Visits a registered continuation command. */
+    void visit(final long key);
   }
 }
