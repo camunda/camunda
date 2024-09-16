@@ -32,7 +32,8 @@ export default function TemplateModal({
   initialDefinitions = [],
   trackingEventName,
 }) {
-  const firstTemplate = templateGroups[1].templates[0];
+  console.log({templateGroups});
+  const firstTemplate = templateGroups[1]?.templates[0] || templateGroups[0]?.templates[0];
   const [name, setName] = useState(t(entity + '.templates.' + firstTemplate.name));
   const [description, setDescription] = useState(
     getDescription(entity, firstTemplate.name, firstTemplate.disableDescription)

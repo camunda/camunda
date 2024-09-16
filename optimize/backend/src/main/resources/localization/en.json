@@ -1469,7 +1469,8 @@
     "importFileInvalid": "Import failed because the provided file was invalid. Only JSON files exported from Optimize can be imported.",
     "importDescriptionInvalid": "Import failed because the provided description was invalid. Must be null or not greater than 400 characters.",
     "invalidAlertEmailAddresses": "Users with the following email addresses are not available for receiving alerts: {invalidAlertEmails}",
-    "payloadTooLarge": "The request payload is too large."
+    "payloadTooLarge": "The request payload is too large.",
+    "reportNotSupportedForOpenSearch": "This type of report is currently not supported for OpenSearch."
   },
   "textEditor": {
     "toolbar": {
