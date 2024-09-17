@@ -98,5 +98,22 @@ class TaskFormView {
 
     return mapped;
   }
+  async waitUntilLocatorIsVisible(locator: Locator, page: Page): Promise<void> {
+    let elapsedTime = 0;
+    const maxWaitTimeSeconds: number = 120000;
+
+    while (elapsedTime < maxWaitTimeSeconds) {
+      const element = await locator;
+
+      if (await element.isVisible()) {
+        return;
+      }
+
+      await page.reload();
+      await page.waitForTimeout(10 * 1000);
+      // Update the elapsed time
+      elapsedTime += 10000;
+    }
+  }
 }
 export {TaskFormView};
