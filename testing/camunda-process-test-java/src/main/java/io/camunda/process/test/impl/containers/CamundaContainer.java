@@ -34,6 +34,9 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
   private static final String ACTIVE_SPRING_PROFILES = "operate,tasklist,broker,dev,dev-data,auth";
 
+  private static final String GRPC_API = "localhost:" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
+  private static final String REST_API = "localhost:" + ContainerRuntimePorts.CAMUNDA_REST_API;
+
   private static final String ELASTICSEARCH_EXPORTER_CLASSNAME =
       "io.camunda.zeebe.exporter.ElasticsearchExporter";
   private static final String ELASTICSEARCH_BULK_SIZE = "1";
@@ -49,10 +52,13 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         .waitingFor(newDefaultWaitStrategy())
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_SPRING_PROFILES_ACTIVE, ACTIVE_SPRING_PROFILES)
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_CLOCK_CONTROLLED, "true")
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ZEEBE_GATEWAYADDRESS, GRPC_API)
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_CSRF_PREVENTION_ENABLED, "false")
         .withEnv(
             ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_IMPORTER_READERBACKOFF,
             IMPORTER_READER_BACKOFF)
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBE_GATEWAYADDRESS, GRPC_API)
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBE_RESTADDRESS, REST_API)
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_CSRF_PREVENTION_ENABLED, "false")
         .withEnv(
             ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_IMPORTER_READERBACKOFF,
@@ -80,17 +86,6 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
     withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ELASTICSEARCH_URL, url);
     withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBEELASTICSEARCH_URL, url);
 
-    return this;
-  }
-
-  public CamundaContainer withZeebeApi(final String networkAlias) {
-    final String zeebeGrpcApi = networkAlias + ":" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
-    final String zeebeRestApi = networkAlias + ":" + ContainerRuntimePorts.CAMUNDA_REST_API;
-
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ZEEBE_GATEWAYADDRESS, zeebeGrpcApi);
-
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBE_GATEWAYADDRESS, zeebeGrpcApi);
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBE_RESTADDRESS, zeebeRestApi);
     return this;
   }
 

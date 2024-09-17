@@ -89,7 +89,6 @@ public class CamundaContainerRuntime implements AutoCloseable {
             .withLogConsumer(createContainerLogger(builder.getCamundaLoggerName()))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_CAMUNDA)
-            .withZeebeApi(NETWORK_ALIAS_CAMUNDA)
             .withElasticsearchUrl(ELASTICSEARCH_URL)
             .withEnv(builder.getCamundaEnvVars());
 
