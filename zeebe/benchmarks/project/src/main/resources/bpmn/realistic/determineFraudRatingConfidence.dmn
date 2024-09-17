@@ -14,7 +14,7 @@
       </input>
       <input id="InputClause_16ezqsg" label="dispute amount">
         <inputExpression id="LiteralExpression_1ihjohf" typeRef="number">
-          <text>disputePosition.amount</text>
+          <text>disputeDetails.disputeAmount.amount</text>
         </inputExpression>
       </input>
       <output id="Output_1" label="fraud rating score" name="fraud_rating_score" typeRef="number" />
