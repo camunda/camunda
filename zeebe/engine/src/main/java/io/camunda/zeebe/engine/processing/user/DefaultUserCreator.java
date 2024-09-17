@@ -11,6 +11,7 @@ import static java.util.Optional.*;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -29,13 +30,13 @@ public final class DefaultUserCreator implements StreamProcessorLifecycleAware, 
   public static final String DEFAULT_USER_PASSWORD = "demo";
   public static final String DEFAULT_USER_EMAIL = "demo@demo.com";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
-  private final MutableProcessingState processingState;
+  private final UserState userState;
   private final EngineConfiguration config;
   private final BCryptPasswordEncoder passwordEncoder;
 
   public DefaultUserCreator(
       final MutableProcessingState processingState, final EngineConfiguration config) {
-    this.processingState = processingState;
+    userState = processingState.getUserState();
     this.config = config;
     passwordEncoder = new BCryptPasswordEncoder();
   }
@@ -64,7 +65,7 @@ public final class DefaultUserCreator implements StreamProcessorLifecycleAware, 
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    ofNullable(processingState.getUserState().getUser(DEFAULT_USER_USERNAME))
+    ofNullable(userState.getUser(DEFAULT_USER_USERNAME))
         .ifPresentOrElse(
             user -> {
               LOG.debug("Default user already exists, skipping creation");
