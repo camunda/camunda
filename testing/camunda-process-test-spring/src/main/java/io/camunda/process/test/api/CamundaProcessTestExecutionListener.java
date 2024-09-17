@@ -126,11 +126,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     containerRuntimeBuilder
         .withCamundaDockerImageVersion(runtimeConfiguration.getCamundaVersion())
-        .withCamundaDockerImageName(runtimeConfiguration.getZeebeDockerImageName())
-        .withCamundaEnv(runtimeConfiguration.getZeebeEnvVars());
+        .withCamundaDockerImageName(runtimeConfiguration.getCamundaDockerImageName())
+        .withCamundaEnv(runtimeConfiguration.getCamundaEnvVars());
 
     runtimeConfiguration
-        .getZeebeExposedPorts()
+        .getCamundaExposedPorts()
         .forEach(containerRuntimeBuilder::withCamundaExposedPort);
 
     containerRuntimeBuilder

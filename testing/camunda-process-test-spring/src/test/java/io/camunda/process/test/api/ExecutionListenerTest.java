@@ -223,9 +223,9 @@ public class ExecutionListenerTest {
     final CamundaContainerRuntimeConfiguration runtimeConfiguration =
         new CamundaContainerRuntimeConfiguration();
     runtimeConfiguration.setCamundaVersion("8.6.0-custom");
-    runtimeConfiguration.setZeebeDockerImageName("custom-zeebe");
-    runtimeConfiguration.setZeebeEnvVars(zeebeEnvVars);
-    runtimeConfiguration.setZeebeExposedPorts(List.of(100, 200));
+    runtimeConfiguration.setCamundaDockerImageName("custom-zeebe");
+    runtimeConfiguration.setCamundaEnvVars(zeebeEnvVars);
+    runtimeConfiguration.setCamundaExposedPorts(List.of(100, 200));
 
     when(applicationContext.getBean(CamundaContainerRuntimeConfiguration.class))
         .thenReturn(runtimeConfiguration);
