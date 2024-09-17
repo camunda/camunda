@@ -394,6 +394,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
               dnsResolverGroup =
                   new DnsAddressResolverGroup(
                       new DnsNameResolverBuilder(clientGroup.next())
+                          .consolidateCacheSize(128)
                           .dnsQueryLifecycleObserverFactory(
                               new BiDnsQueryLifecycleObserverFactory(
                                   ignored -> metrics,
