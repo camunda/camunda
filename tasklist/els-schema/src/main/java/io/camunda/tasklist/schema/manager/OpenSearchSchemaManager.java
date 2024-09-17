@@ -276,25 +276,11 @@ public class OpenSearchSchemaManager implements SchemaManager {
     }
   }
 
-  private TypeMapping getMappings(final String json) {
-    final ObjectMapper objectMapper = new ObjectMapper();
-    JsonNode indexAsJSONNode = null;
-    final String jsonNew =
-        "{\"mappings\": "
-            + json.replace("TypeMapping: ", "")
-            .replace("\"match_mapping_type\":[\"string\"]", "\"match_mapping_type\":\"string\"")
-            .replace("\"path_match\":[\"*\"]", "\"path_match\":\"*\"")
-            + "}";
-    try {
-      indexAsJSONNode = objectMapper.readTree(new StringReader(jsonNew));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-
+  private TypeMapping getMappings(final JsonNode mappingsAsJSON) {
+    final JsonbJsonpMapper jsonpMapper = new JsonbJsonpMapper();
     final JsonParser jsonParser =
-        JsonProvider.provider()
-            .createParser(new StringReader(indexAsJSONNode.get("mappings").toPrettyString()));
-    return TypeMapping._DESERIALIZER.deserialize(jsonParser, new JsonbJsonpMapper());
+        JsonProvider.provider().createParser(new StringReader(mappingsAsJSON.toPrettyString()));
+    return TypeMapping._DESERIALIZER.deserialize(jsonParser, jsonpMapper);
   }
 
   public void createIndexLifeCyclesIfNotExist() {
