@@ -20,10 +20,12 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -903,5 +905,112 @@ public class MigrateMultiInstanceBodyTest {
                 .findAny())
         .describedAs("Expect that the process instance is continued in the target process")
         .isPresent();
+  }
+
+  @Test
+  public void shouldRaiseIncidentOnCompletionAfterChangingOutputCollection() {
+    // given
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .serviceTask(
+                        "serviceTask1",
+                        t ->
+                            t.zeebeJobType("A")
+                                .multiInstance(
+                                    b ->
+                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                            .zeebeInputElement("index")
+                                            .zeebeOutputElementExpression("index")
+                                            .zeebeOutputCollection("results")))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask(
+                        "serviceTask2",
+                        t ->
+                            t.zeebeJobType("A")
+                                .multiInstance(
+                                    b ->
+                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                            .zeebeInputElement("index")
+                                            .zeebeOutputElementExpression("index")
+                                            .zeebeOutputCollection("results2")))
+                    .endEvent("multi_instance_target_process_end")
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(sourceProcessId).create();
+
+    final var jobs =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("A")
+            .limit(3)
+            .toList();
+
+    engine.job().withKey(jobs.getFirst().getKey()).complete();
+
+    final var resultsVariable =
+        RecordingExporter.variableRecords(VariableIntent.UPDATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("results")
+            .withValue("[1,null,null]")
+            .getFirst();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("serviceTask1", "serviceTask2")
+        .migrate();
+
+    // then
+    // after migrating, we can complete one of the still active jobs
+    engine.job().withKey(jobs.get(1).getKey()).complete();
+
+    // but that raises an incident
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    Assertions.assertThat(incident.getValue())
+        .hasErrorMessage(
+            "Expected the output collection variable 'results2' to be of type list, but it was NIL");
+
+    // we can resolve the incident by creating the new output collection variable 'results2'
+    engine
+        .variables()
+        .ofScope(resultsVariable.getValue().getScopeKey())
+        .withDocument("{\"results2\": [1, null, null]}")
+        .withUpdateSemantic(VariableDocumentUpdateSemantic.LOCAL)
+        .update();
+
+    // and when we resolve the incident
+    engine.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then the new output collection can be filled correctly
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("results2")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the second entry is collected as output")
+        .hasValue("[1,2,null]");
   }
 }
