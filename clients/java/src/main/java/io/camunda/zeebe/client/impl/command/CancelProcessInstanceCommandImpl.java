@@ -16,11 +16,14 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.CancelProcessInstanceResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.CancelProcessInstanceResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -30,6 +33,7 @@ import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CancelProcessInstanceCommandImpl implements CancelProcessInstanceCommandStep1 {
 
@@ -37,28 +41,63 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
   private final Builder builder;
   private final Predicate<StatusCode> retryPredicate;
   private Duration requestTimeout;
+  private boolean useRest;
+  private final long processInstanceKey;
+  private final JsonMapper jsonMapper;
+  private final RequestConfig.Builder httpRequestConfig;
+  private final io.camunda.zeebe.client.protocol.rest.CancelProcessInstanceRequest
+      httpRequestObject;
+  private final HttpClient httpClient;
 
   public CancelProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
       final long processInstanceKey,
       final Duration requestTimeout,
-      final Predicate<StatusCode> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate,
+      final HttpClient httpClient,
+      final boolean preferRestOverGrpc,
+      final JsonMapper jsonMapper) {
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
     builder = CancelProcessInstanceRequest.newBuilder();
     builder.setProcessInstanceKey(processInstanceKey);
+    useRest = preferRestOverGrpc;
+    this.processInstanceKey = processInstanceKey;
+    this.jsonMapper = jsonMapper;
+    httpRequestConfig = httpClient.newRequestConfig();
+    httpRequestObject = new io.camunda.zeebe.client.protocol.rest.CancelProcessInstanceRequest();
+    this.httpClient = httpClient;
   }
 
   @Override
   public FinalCommandStep<CancelProcessInstanceResponse> requestTimeout(
       final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
   public ZeebeFuture<CancelProcessInstanceResponse> send() {
+    if (useRest) {
+      return sendRestRequest();
+    } else {
+      return sendGrpcRequest();
+    }
+  }
+
+  private ZeebeFuture<CancelProcessInstanceResponse> sendRestRequest() {
+    final HttpZeebeFuture<CancelProcessInstanceResponse> result = new HttpZeebeFuture<>();
+    httpClient.post(
+        "/process-instances/" + processInstanceKey + "/cancellation",
+        jsonMapper.toJson(httpRequestObject),
+        httpRequestConfig.build(),
+        result);
+    return result;
+  }
+
+  public ZeebeFuture<CancelProcessInstanceResponse> sendGrpcRequest() {
     final CancelProcessInstanceRequest request = builder.build();
 
     final RetriableClientFutureImpl<
@@ -67,13 +106,13 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
             new RetriableClientFutureImpl<>(
                 CancelProcessInstanceResponseImpl::new,
                 retryPredicate,
-                streamObserver -> send(request, streamObserver));
+                streamObserver -> sendGrpcRequest(request, streamObserver));
 
-    send(request, future);
+    sendGrpcRequest(request, future);
     return future;
   }
 
-  private void send(
+  private void sendGrpcRequest(
       final CancelProcessInstanceRequest request,
       final StreamObserver<GatewayOuterClass.CancelProcessInstanceResponse> future) {
     asyncStub
@@ -84,6 +123,18 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
   @Override
   public CancelProcessInstanceCommandStep1 operationReference(final long operationReference) {
     builder.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
+  public CancelProcessInstanceCommandStep1 useRest() {
+    useRest = true;
+    return this;
+  }
+
+  @Override
+  public CancelProcessInstanceCommandStep1 useGrpc() {
+    useRest = false;
     return this;
   }
 }

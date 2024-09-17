@@ -393,7 +393,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
         asyncStub,
         processInstanceKey,
         config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config.preferRestOverGrpc(),
+        jsonMapper);
   }
 
   @Override
