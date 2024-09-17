@@ -9,6 +9,7 @@ package io.camunda.optimize.rest;
 
 import static io.camunda.optimize.rest.SharingRestService.SHARE_PATH;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.optimize.dto.optimize.SettingsDto;
 import io.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
@@ -47,7 +48,6 @@ import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.ElasticsearchStatusException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -117,15 +117,15 @@ public class PublicApiRestService {
       return jsonReportResultExportService.getJsonForEvaluatedReportResult(
           reportId, timezone, PaginationScrollableDto.fromPaginationRequest(paginationRequestDto));
       // TODO this would be handled in the OPT-7236
-    } catch (ElasticsearchStatusException e) {
+    } catch (ElasticsearchException e) {
       // In case the user provides a parsable but invalid scroll id (e.g. scroll id was earlier
       // valid, but now
       // expired) the message from ElasticSearch is a bit cryptic. Therefore, we extract the useful
       // information so
       // that the user gets an appropriate response.
-      throw Optional.ofNullable(e.getCause())
-          .filter(pag -> pag.getMessage().contains("search_context_missing_exception"))
-          .map(pag -> (Exception) new BadRequestException(pag.getMessage()))
+      throw Optional.ofNullable(e.response().error().causedBy())
+          .filter(pag -> pag.type().contains("search_context_missing_exception"))
+          .map(pag -> (Exception) new BadRequestException(pag.reason()))
           // In case the exception happened for another reason, just re-throw it as is
           .orElse(e);
     }

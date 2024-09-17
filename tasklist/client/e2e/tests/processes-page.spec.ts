@@ -123,15 +123,15 @@ test.describe('process page', () => {
     });
 
     await processesPage.startProcessButton.click();
-    await page.getByLabel('Client Name*').fill('Jon');
-    await page.getByLabel('Client Address*').fill('Earth');
-    await taskFormView.fillDateField('Invoice Date*', '1/1/3000');
-    await taskFormView.fillDateField('Due Date*', '1/2/3000');
-    await page.getByLabel('Invoice Number*').fill('123');
+    await page.getByRole('textbox', {name: 'Client Name'}).fill('Jon');
+    await page.getByRole('textbox', {name: 'Client Address'}).fill('Earth');
+    await taskFormView.fillDatetimeField('Invoice Date', '1/1/3000');
+    await taskFormView.fillDatetimeField('Due Date', '1/2/3000');
     await taskFormView.selectDropdownOption(
       'USD - United States Dollar',
       'EUR - Euro',
     );
+    await page.getByRole('textbox', {name: 'Invoice Number'}).fill('123');
     await page.getByRole('button', {name: /add new/i}).click();
     await taskFormView.forEachDynamicListItem(
       page.getByLabel('Item Name*'),
@@ -160,7 +160,6 @@ test.describe('process page', () => {
 
     await processesPage.tasksTab.click();
     await tasksPage.openTask('processStartedByForm_user_task');
-    await tasksPage.assignToMeButton.click();
     await expect(
       page.getByText('{"name":"jon","address":"earth"}'),
     ).toBeVisible();
@@ -173,7 +172,7 @@ test.describe('process page', () => {
         '[{"itemName":"laptop1","unitPrice":11,"quantity":21},{"itemName":"laptop2","unitPrice":12,"quantity":22}]',
       ),
     ).toBeVisible();
-
+    await tasksPage.assignToMeButton.click();
     await tasksPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
   });

@@ -9,24 +9,9 @@ package io.camunda.zeebe.gateway.rest;
 
 import static java.util.Optional.ofNullable;
 
-import io.camunda.service.entities.DecisionDefinitionEntity;
-import io.camunda.service.entities.DecisionRequirementsEntity;
-import io.camunda.service.entities.ProcessInstanceEntity;
-import io.camunda.service.entities.UserEntity;
-import io.camunda.service.entities.UserTaskEntity;
+import io.camunda.service.entities.*;
 import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsItem;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.ProblemDetail;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
-import io.camunda.zeebe.gateway.protocol.rest.UserResponse;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.util.Either;
 import java.util.Arrays;
 import java.util.Collections;
@@ -69,6 +54,17 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
+  public static FlowNodeInstanceSearchQueryResponse toFlownodeInstanceSearchQueryResponse(
+      final SearchQueryResult<FlowNodeInstanceEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new FlowNodeInstanceSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toFlownodeInstance)
+                .orElseGet(Collections::emptyList));
+  }
+
   public static UserTaskSearchQueryResponse toUserTaskSearchQueryResponse(
       final SearchQueryResult<UserTaskEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -102,6 +98,17 @@ public final class SearchQueryResponseMapper {
     return response;
   }
 
+  public static IncidentSearchQueryResponse toIncidentSearchQueryResponse(
+      final SearchQueryResult<IncidentEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new IncidentSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toIncidents)
+                .orElseGet(Collections::emptyList));
+  }
+
   private static SearchQueryPageResponse toSearchQueryPageResponse(
       final SearchQueryResult<?> result) {
     return new SearchQueryPageResponse()
@@ -117,14 +124,54 @@ public final class SearchQueryResponseMapper {
 
   private static ProcessInstanceItem toProcessInstance(final ProcessInstanceEntity p) {
     return new ProcessInstanceItem()
-        .tenantId(p.tenantId())
         .key(p.key())
+        .processName(p.processName())
         .processVersion(p.processVersion())
         .bpmnProcessId(p.bpmnProcessId())
-        .parentKey(p.parentKey())
+        .parentKey(p.parentProcessInstanceKey())
         .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())
         .startDate(p.startDate())
-        .endDate(p.endDate());
+        .endDate(p.endDate())
+        .state((p.state() == null) ? null : ProcessInstanceItem.StateEnum.fromValue(p.state()))
+        .incident(p.incident())
+        .hasActiveOperation(p.hasActiveOperation())
+        .processDefinitionKey(p.processDefinitionKey())
+        .tenantId(p.tenantId())
+        .rootInstanceId(p.rootInstanceId())
+        .operations(toOperations(p.operations()))
+        .callHierarchy(toCallHierarchy(p.callHierarchy()));
+  }
+
+  private static List<OperationItem> toOperations(final List<OperationEntity> instances) {
+    if (instances == null) {
+      return null;
+    }
+    return instances.stream().map(SearchQueryResponseMapper::toOperation).toList();
+  }
+
+  private static OperationItem toOperation(final OperationEntity o) {
+    return new OperationItem()
+        .id(o.id())
+        .batchOperationId(o.batchOperationId())
+        .type((o.type() == null) ? null : (OperationItem.TypeEnum.fromValue(o.type())))
+        .state((o.state() == null) ? null : (OperationItem.StateEnum.fromValue(o.state())))
+        .errorMessage(o.errorMessage())
+        .completedDate(o.completedDate());
+  }
+
+  private static List<ProcessInstanceReferenceItem> toCallHierarchy(
+      final List<ProcessInstanceReference> instances) {
+    if (instances == null) {
+      return null;
+    }
+    return instances.stream().map(SearchQueryResponseMapper::toCallHierarchy).toList();
+  }
+
+  private static ProcessInstanceReferenceItem toCallHierarchy(final ProcessInstanceReference p) {
+    return new ProcessInstanceReferenceItem()
+        .instanceId(p.instanceId())
+        .processDefinitionId(p.processDefinitionId())
+        .processDefinitionName(p.processDefinitionName());
   }
 
   private static List<DecisionDefinitionItem> toDecisionDefinitions(
@@ -135,6 +182,28 @@ public final class SearchQueryResponseMapper {
   private static List<DecisionRequirementsItem> toDecisionRequirements(
       final List<DecisionRequirementsEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionRequirements).toList();
+  }
+
+  private static List<FlowNodeInstanceItem> toFlownodeInstance(
+      final List<FlowNodeInstanceEntity> instances) {
+    return instances.stream().map(SearchQueryResponseMapper::toFlowNodeInstance).toList();
+  }
+
+  private static FlowNodeInstanceItem toFlowNodeInstance(final FlowNodeInstanceEntity instance) {
+    return new FlowNodeInstanceItem()
+        .flowNodeInstanceKey(instance.key())
+        .flowNodeId(instance.flowNodeId())
+        .flowNodeName(instance.flowNodeName())
+        .processDefinitionKey(instance.processDefinitionKey())
+        .processInstanceKey(instance.processInstanceKey())
+        .incidentKey(instance.incidentKey())
+        .incident(instance.incident())
+        .startDate(instance.startDate())
+        .endDate(instance.endDate())
+        .state(instance.state())
+        .treePath(instance.treePath())
+        .type(instance.type())
+        .tenantId(instance.tenantId());
   }
 
   private static DecisionDefinitionItem toDecisionDefinition(final DecisionDefinitionEntity d) {
@@ -161,6 +230,28 @@ public final class SearchQueryResponseMapper {
 
   private static List<UserTaskItem> toUserTasks(final List<UserTaskEntity> tasks) {
     return tasks.stream().map(SearchQueryResponseMapper::toUserTask).toList();
+  }
+
+  private static List<IncidentItem> toIncidents(final List<IncidentEntity> incidents) {
+    return incidents.stream().map(SearchQueryResponseMapper::toIncident).toList();
+  }
+
+  private static IncidentItem toIncident(final IncidentEntity t) {
+    return new IncidentItem()
+        .key(t.key())
+        .processDefinitionKey(t.processDefinitionKey())
+        .processInstanceKey(t.processInstanceKey())
+        .type(t.type())
+        .flowNodeId(t.flowNodeId())
+        .flowNodeInstanceId(t.flowNodeInstanceId())
+        .creationTime(t.creationTime())
+        .state(t.state())
+        .jobKey(t.jobKey())
+        .tenantId(t.tenantId())
+        .hasActiveOperation(t.hasActiveOperation())
+        .lastOperation(null /*new OperationItem()*/)
+        .rootCauseInstance(null /*new ProcessInstanceReferenceItem()*/)
+        .rootCauseDecision(null /*new DecisionInstanceReferenceItem()*/);
   }
 
   private static UserTaskItem toUserTask(final UserTaskEntity t) {
@@ -195,8 +286,9 @@ public final class SearchQueryResponseMapper {
   public static Either<ProblemDetail, UserResponse> toUser(final UserEntity user) {
     return Either.right(
         new UserResponse()
-            .username(user.value().username())
-            .email(user.value().email())
-            .name(user.value().name()));
+            .key(user.key())
+            .username(user.username())
+            .email(user.email())
+            .name(user.name()));
   }
 }

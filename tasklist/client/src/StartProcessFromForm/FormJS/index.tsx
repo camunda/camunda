@@ -10,7 +10,7 @@ import {useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {FormManager} from 'modules/formManager';
 import {Variable} from 'modules/types';
-import {InlineLoadingStatus} from '@carbon/react';
+import {InlineLoadingStatus, Layer} from '@carbon/react';
 import {tracking} from 'modules/tracking';
 import {PoweredBy} from 'modules/components/PoweredBy';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
@@ -53,35 +53,37 @@ const FormJS: React.FC<Props> = ({
     <div className={styles.container}>
       <div className={styles.formContainer}>
         {schema === null ? null : (
-          <FormJSRenderer
-            schema={schema}
-            handleSubmit={handleSubmit}
-            onMount={(formManager) => {
-              formManagerRef.current = formManager;
-            }}
-            onImportError={() => {
-              setIsSchemaValid(false);
-              onImportError();
-              tracking.track({
-                eventName: 'public-start-form-invalid-form-schema',
-              });
-            }}
-            onRender={() => {
-              setIsSchemaValid(true);
-            }}
-            onSubmitStart={() => {
-              setSubmissionState('active');
-            }}
-            onSubmitSuccess={() => {
-              setSubmissionState('finished');
-            }}
-            onSubmitError={() => {
-              setSubmissionState('error');
-            }}
-            onValidationError={() => {
-              setSubmissionState('inactive');
-            }}
-          />
+          <Layer>
+            <FormJSRenderer
+              schema={schema}
+              handleSubmit={handleSubmit}
+              onMount={(formManager) => {
+                formManagerRef.current = formManager;
+              }}
+              onImportError={() => {
+                setIsSchemaValid(false);
+                onImportError();
+                tracking.track({
+                  eventName: 'public-start-form-invalid-form-schema',
+                });
+              }}
+              onRender={() => {
+                setIsSchemaValid(true);
+              }}
+              onSubmitStart={() => {
+                setSubmissionState('active');
+              }}
+              onSubmitSuccess={() => {
+                setSubmissionState('finished');
+              }}
+              onSubmitError={() => {
+                setSubmissionState('error');
+              }}
+              onValidationError={() => {
+                setSubmissionState('inactive');
+              }}
+            />
+          </Layer>
         )}
       </div>
       <div className={styles.submitButtonRow}>

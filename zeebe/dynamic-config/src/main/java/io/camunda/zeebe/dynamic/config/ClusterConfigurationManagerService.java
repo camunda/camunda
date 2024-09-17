@@ -59,7 +59,8 @@ public final class ClusterConfigurationManagerService
       final Path dataRootDirectory,
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService memberShipService,
-      final ClusterConfigurationGossiperConfig config) {
+      final ClusterConfigurationGossiperConfig config,
+      final boolean enablePartitionScaling) {
     this.memberShipService = memberShipService;
     try {
       FileUtil.ensureDirectoryExists(dataRootDirectory);
@@ -93,7 +94,10 @@ public final class ClusterConfigurationManagerService
             communicationService,
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                configurationChangeCoordinator, localMemberId, managerActor));
+                configurationChangeCoordinator,
+                localMemberId,
+                managerActor,
+                enablePartitionScaling));
 
     clusterConfigurationManager.setConfigurationGossiper(
         clusterConfigurationGossiper::updateClusterConfiguration);

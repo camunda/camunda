@@ -7,11 +7,6 @@
  */
 
 import styled from 'styled-components';
-import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
-
-const PanelHeader = styled(BasePanelHeader)`
-  padding-right: 0;
-`;
 
 const Section = styled.section`
   height: 100%;
@@ -19,4 +14,4 @@ const Section = styled.section`
   flex-direction: column;
 `;
 
-export {PanelHeader, Section};
+export {Section};

@@ -9,14 +9,19 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {getOptimizeProfile} from 'config';
-
 import DefinitionEditor from './DefinitionEditor';
-import {DefinitionList} from './DefinitionList';
+import DefinitionList from './DefinitionList';
 import {loadTenants} from './service';
 
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useLocation: jest.fn(() => ({
+    pathname: '/optimize/reports/process',
+  })),
+}));
+
 jest.mock('config', () => ({
-  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+  getOptimizeProfile: jest.fn().mockReturnValue('ccsm'),
   areTenantsAvailable: jest.fn().mockReturnValue(true),
   getMaxNumDataSourcesForReport: jest.fn().mockReturnValue(10),
 }));
@@ -45,8 +50,6 @@ jest.mock('./service', () => ({
 }));
 
 const props = {
-  mightFail: (data, cb) => cb(data),
-  location: '',
   type: 'process',
   definitions: [
     {
@@ -84,7 +87,6 @@ it('should show the only tenant in self managed mode', async () => {
       tenants: [{id: '<defaut>', name: 'Default'}],
     },
   ]);
-  getOptimizeProfile.mockReturnValueOnce('ccsm');
   const node = shallow(
     <DefinitionList
       {...props}

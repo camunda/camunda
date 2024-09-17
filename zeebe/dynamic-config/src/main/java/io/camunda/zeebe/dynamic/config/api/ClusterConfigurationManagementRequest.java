@@ -35,12 +35,31 @@ public sealed interface ClusterConfigurationManagementRequest {
   record ReassignPartitionsRequest(Set<MemberId> members, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
-  record ScaleRequest(Set<MemberId> members, Optional<Integer> newReplicationFactor, boolean dryRun)
+  record BrokerScaleRequest(
+      Set<MemberId> members, Optional<Integer> newReplicationFactor, boolean dryRun)
       implements ClusterConfigurationManagementRequest {
-    public ScaleRequest(final Set<MemberId> members, final boolean dryRun) {
+    public BrokerScaleRequest(final Set<MemberId> members, final boolean dryRun) {
       this(members, Optional.empty(), dryRun);
     }
   }
+
+  record ClusterScaleRequest(
+      Optional<Integer> newClusterSize,
+      Optional<Integer> newPartitionCount,
+      Optional<Integer> newReplicationFactor,
+      boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
+
+  record ClusterPatchRequest(
+      Set<MemberId> membersToAdd,
+      Set<MemberId> membersToRemove,
+      Optional<Integer> newPartitionCount,
+      Optional<Integer> newReplicationFactor,
+      boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
+
+  record ForceRemoveBrokersRequest(Set<MemberId> membersToRemove, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
 
   record ExporterDisableRequest(String exporterId, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}

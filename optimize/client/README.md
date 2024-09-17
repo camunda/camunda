@@ -1,4 +1,6 @@
 # Camunda Optimize Frontend
+For an overview of the frontend application, please refer to the [FRONTEND_OVERVIEW.md](./FRONTEND_OVERVIEW.md) document.
+
 
 ## Requirements
 
@@ -43,7 +45,7 @@ AUTH0_USEREMAIL=
 AUTH0_USERPASSWORD=
 ```
 
-Retrieve the credentials from the [vault](https://vault.int.camunda.com/ui/vault/secrets/secret/show/products/optimize/ci/jenkins) and paste them into the .env file you have just created
+Retrieve the credentials from the [vault](https://vault.int.camunda.com/ui/vault/secrets/secret/show/products/optimize/ci/camunda-optimize) and paste them into the .env file you have just created
 
 ## Development server
 

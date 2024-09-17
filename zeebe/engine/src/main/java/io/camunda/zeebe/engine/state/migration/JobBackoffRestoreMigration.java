@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-
 public class JobBackoffRestoreMigration implements MigrationTask {
 
   @Override
@@ -18,7 +15,7 @@ public class JobBackoffRestoreMigration implements MigrationTask {
   }
 
   @Override
-  public boolean needsToRun(final ProcessingState processingState) {
+  public boolean needsToRun(final MigrationTaskContext context) {
     // The migration should run everytime, as there is no fast way to detect if a failed job need to
     // be migrated.
     // The only way to do it is retrieve the failed job twice, but this is too time-consuming
@@ -27,7 +24,7 @@ public class JobBackoffRestoreMigration implements MigrationTask {
   }
 
   @Override
-  public void runMigration(final MutableProcessingState processingState) {
-    processingState.getJobState().restoreBackoff();
+  public void runMigration(final MutableMigrationTaskContext context) {
+    context.processingState().getJobState().restoreBackoff();
   }
 }

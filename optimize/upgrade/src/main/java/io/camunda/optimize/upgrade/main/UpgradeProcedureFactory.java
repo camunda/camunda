@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.upgrade.main;
 
-import static io.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
+import static io.camunda.optimize.upgrade.db.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
 
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.service.UpgradeStepLogService;
@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 public class UpgradeProcedureFactory {
   public static UpgradeProcedure create(final UpgradeExecutionDependencies upgradeDependencies) {
     return new UpgradeProcedure(
-        upgradeDependencies.esClient(),
+        upgradeDependencies.databaseClient(),
         new UpgradeValidationService(),
         createSchemaUpgradeClient(upgradeDependencies),
         new UpgradeStepLogService());

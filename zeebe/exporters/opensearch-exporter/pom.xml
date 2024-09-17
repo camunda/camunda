@@ -28,7 +28,13 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-plugins</artifactId>
+      <artifactId>camunda-search-client-connect</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-plugin</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -59,11 +65,6 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.prometheus</groupId>
-      <artifactId>simpleclient</artifactId>
     </dependency>
 
     <dependency>
@@ -104,6 +105,11 @@
     <dependency>
       <groupId>io.github.acm19</groupId>
       <artifactId>aws-request-signing-apache-interceptor</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
     </dependency>
 
     <!-- Test dependencies -->
@@ -170,6 +176,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-jackson</artifactId>
       <scope>test</scope>
     </dependency>
@@ -187,10 +199,11 @@
     </dependency>
 
     <dependency>
-      <groupId>net.bytebuddy</groupId>
-      <artifactId>byte-buddy</artifactId>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock</artifactId>
       <scope>test</scope>
     </dependency>
+
   </dependencies>
 
   <build>

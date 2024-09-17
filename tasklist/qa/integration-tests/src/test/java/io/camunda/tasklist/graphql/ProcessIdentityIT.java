@@ -8,6 +8,7 @@
 package io.camunda.tasklist.graphql;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.graphql.spring.boot.test.GraphQLResponse;
@@ -65,6 +66,9 @@ public class ProcessIdentityIT extends IdentityTester {
         tester.getAllProcessesWithBearerAuth(query, generateTasklistToken());
     assertTrue(response.isOk());
     assertEquals("3", response.get("$.data.processes.length()"));
-    assertEquals("Simple process", response.get("$.data.processes[0].name"));
+    assertFalse(
+        response
+            .getList("$.data.processes[?(@.name=='Simple process')].name", String.class)
+            .isEmpty());
   }
 }

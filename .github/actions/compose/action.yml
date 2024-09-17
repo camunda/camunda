@@ -1,6 +1,6 @@
 name: Compose
 description: |
-  Compose Wrapper for elasticsearch / cambpm container
+  Compose Wrapper for elasticsearch container
 inputs:
   compose_file:
     description: "Full path to the compose file"
@@ -12,7 +12,7 @@ inputs:
     description: "Additional flags to pass to the compose command"
     required: false
   timeout:
-    description: "Timeout for the healthcheck"
+    description: "Timeout for the healthcheck (in seconds)"
     required: false
     default: "300"
 runs:

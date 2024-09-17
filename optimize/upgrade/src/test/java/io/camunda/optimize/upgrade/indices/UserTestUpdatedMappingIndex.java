@@ -7,11 +7,12 @@
  */
 package io.camunda.optimize.upgrade.indices;
 
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
-public class UserTestUpdatedMappingIndex extends DefaultIndexMappingCreator<XContentBuilder> {
+public class UserTestUpdatedMappingIndex extends DefaultIndexMappingCreator<IndexSettings.Builder> {
 
   private static final int VERSION = 2;
 
@@ -26,22 +27,16 @@ public class UserTestUpdatedMappingIndex extends DefaultIndexMappingCreator<XCon
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    return xContentBuilder
-        .startObject("password")
-        .field("type", "keyword")
-        .endObject()
-        .startObject("username")
-        .field("type", "keyword")
-        .endObject()
-        .startObject("email")
-        .field("type", "keyword")
-        .endObject();
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+    return builder
+        .properties("password", p -> p.keyword(k -> k))
+        .properties("username", p -> p.keyword(k -> k))
+        .properties("email", p -> p.keyword(k -> k));
   }
 
   @Override
-  public XContentBuilder addStaticSetting(
-      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
-    return contentBuilder.field(key, value);
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder builder) throws IOException {
+    return builder.numberOfShards(Integer.toString(value));
   }
 }

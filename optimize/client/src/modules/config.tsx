@@ -47,7 +47,7 @@ export type UiConfig = {
   tenantsAvailable: boolean;
   optimizeVersion: string;
   optimizeDocsVersion: string;
-  optimizeProfile: 'platform' | 'cloud' | 'ccsm';
+  optimizeProfile: 'cloud' | 'ccsm';
   enterpriseMode: boolean;
   webappsEndpoints: WebappEndpoints;
   webappsLinks: WebappLinks;

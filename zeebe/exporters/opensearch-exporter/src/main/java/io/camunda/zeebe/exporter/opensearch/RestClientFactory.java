@@ -7,13 +7,8 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
-import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.AwsConfiguration;
-import io.camunda.zeebe.util.ReflectUtil;
-import io.camunda.zeebe.util.jar.ExternalJarClassLoader;
-import io.camunda.zeebe.util.jar.ThreadContextUtil;
 import io.github.acm19.aws.interceptor.http.AwsRequestSigningApacheInterceptor;
-import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -46,8 +41,9 @@ final class RestClientFactory {
    * comma separated list of "host:port" formatted strings. Authentication is supported only as
    * basic auth; if there is no authentication present, then nothing is configured for it.
    */
-  static RestClient of(final OpensearchExporterConfiguration config) {
-    return of(config, false);
+  static RestClient of(
+      final OpensearchExporterConfiguration config, final HttpRequestInterceptor... interceptors) {
+    return of(config, false, interceptors);
   }
 
   /**
@@ -61,12 +57,16 @@ final class RestClientFactory {
    * @return the created {@link RestClient}
    */
   static RestClient of(
-      final OpensearchExporterConfiguration config, final boolean allowAllSelfSignedCertificates) {
-    return INSTANCE.createRestClient(config, allowAllSelfSignedCertificates);
+      final OpensearchExporterConfiguration config,
+      final boolean allowAllSelfSignedCertificates,
+      final HttpRequestInterceptor... interceptors) {
+    return INSTANCE.createRestClient(config, allowAllSelfSignedCertificates, interceptors);
   }
 
   private RestClient createRestClient(
-      final OpensearchExporterConfiguration config, final boolean allowAllSelfSignedCertificates) {
+      final OpensearchExporterConfiguration config,
+      final boolean allowAllSelfSignedCertificates,
+      final HttpRequestInterceptor... interceptors) {
     final HttpHost[] httpHosts = parseUrl(config);
     final RestClientBuilder builder =
         RestClient.builder(httpHosts)
@@ -75,7 +75,7 @@ final class RestClientFactory {
                     b.setConnectTimeout(config.requestTimeoutMs)
                         .setSocketTimeout(config.requestTimeoutMs))
             .setHttpClientConfigCallback(
-                b -> configureHttpClient(config, b, allowAllSelfSignedCertificates));
+                b -> configureHttpClient(config, b, allowAllSelfSignedCertificates, interceptors));
 
     return builder.build();
   }
@@ -83,7 +83,8 @@ final class RestClientFactory {
   private HttpAsyncClientBuilder configureHttpClient(
       final OpensearchExporterConfiguration config,
       final HttpAsyncClientBuilder builder,
-      final boolean allowAllSelfSignedCertificates) {
+      final boolean allowAllSelfSignedCertificates,
+      final HttpRequestInterceptor... interceptors) {
     // use single thread for rest client
     builder.setDefaultIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(1).build());
 
@@ -102,8 +103,8 @@ final class RestClientFactory {
     }
 
     log.trace("Attempt to load interceptor plugins");
-    if (config.getInterceptorPlugins() != null) {
-      loadInterceptorPlugins(config, builder);
+    for (final var interceptor : interceptors) {
+      builder.addInterceptorLast(interceptor);
     }
 
     if (allowAllSelfSignedCertificates) {
@@ -119,46 +120,6 @@ final class RestClientFactory {
     }
 
     return builder;
-  }
-
-  private void loadInterceptorPlugins(
-      final OpensearchExporterConfiguration config, final HttpAsyncClientBuilder builder) {
-    log.trace("Plugins detected to be not empty {}", config.getInterceptorPlugins());
-
-    final var interceptors = config.getInterceptorPlugins();
-    interceptors.forEach(
-        (id, interceptor) -> {
-          log.trace("Attempting to register {}", interceptor.getId());
-          try {
-            // WARNING! Due to the nature of interceptors, by the moment they (interceptors)
-            // are executed, the below class loader will close the JAR file hence
-            // to avoid NoClassDefFoundError we must not close this class loader.
-            final var classLoader =
-                ExternalJarClassLoader.ofPath(Paths.get(interceptor.getJarPath()));
-
-            final var pluginClass = classLoader.loadClass(interceptor.getClassName());
-            final var plugin = ReflectUtil.newInstance(pluginClass);
-
-            if (plugin instanceof final DatabaseCustomHeaderSupplier dchs) {
-              log.trace(
-                  "Plugin {} appears to be a DB Header Provider. Registering with interceptor",
-                  interceptor.getId());
-              builder.addInterceptorLast(
-                  (HttpRequestInterceptor)
-                      (httpRequest, httpContext) -> {
-                        final var customHeader =
-                            ThreadContextUtil.supplyWithClassLoader(
-                                dchs::getElasticsearchCustomHeader, classLoader);
-                        httpRequest.addHeader(customHeader.key(), customHeader.value());
-                      });
-            } else {
-              throw new RuntimeException(
-                  "Unknown type of interceptor plugin or wrong class specified");
-            }
-          } catch (final Exception e) {
-            throw new RuntimeException("Failed to load interceptor plugin due to exception", e);
-          }
-        });
   }
 
   private void setupBasicAuthentication(

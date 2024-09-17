@@ -140,7 +140,7 @@ public class ProcessDefinitionControllerIT {
   @Test
   public void shouldReturnProcessDefinitionForByKeyAsJSON() throws Exception {
     final String expectedJSONContent =
-        "{\"key\":0,\"name\":\"name-0\",\"version\":0,\"bpmnProcessId\":\"bpmnProcessId-0\"}";
+        "{\"key\":0,\"name\":\"name-0\",\"version\":0,\"versionTag\":\"v0\",\"bpmnProcessId\":\"bpmnProcessId-0\"}";
     // given
     final List<ProcessDefinition> processDefinitions = createProcessDefinitionsOf(1);
     when(processDefinitionDao.byKey(0L)).thenReturn(processDefinitions.get(0));
@@ -218,7 +218,8 @@ public class ProcessDefinitionControllerIT {
               .setBpmnProcessId("bpmnProcessId-" + i)
               .setName("name-" + i)
               .setKey(i)
-              .setVersion(i));
+              .setVersion(i)
+              .setVersionTag("v" + i));
     }
     return processDefinitions;
   }

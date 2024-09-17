@@ -9,7 +9,8 @@ package io.camunda.zeebe.engine.state.migration.to_8_3;
 
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.migration.MigrationTask;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.migration.MigrationTaskContext;
+import io.camunda.zeebe.engine.state.migration.MutableMigrationTaskContext;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
 public final class MultiTenancyMessageStateMigration implements MigrationTask {
@@ -20,13 +21,13 @@ public final class MultiTenancyMessageStateMigration implements MigrationTask {
   }
 
   @Override
-  public boolean needsToRun(final ProcessingState processingState) {
-    return hasPublishedMessagesInDeprecatedCF(processingState);
+  public boolean needsToRun(final MigrationTaskContext context) {
+    return hasPublishedMessagesInDeprecatedCF(context.processingState());
   }
 
   @Override
-  public void runMigration(final MutableProcessingState processingState) {
-    final var migrationState = processingState.getMigrationState();
+  public void runMigration(final MutableMigrationTaskContext context) {
+    final var migrationState = context.processingState().getMigrationState();
     migrationState.migrateMessageStateForMultiTenancy();
   }
 

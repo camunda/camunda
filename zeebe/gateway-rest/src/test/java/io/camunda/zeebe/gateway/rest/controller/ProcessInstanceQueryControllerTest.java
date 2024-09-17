@@ -36,16 +36,20 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
       """
       {
           "items": [
-              {
-                  "tenantId": "t",
-                  "key": 0,
-                  "processVersion": 1,
-                  "bpmnProcessId": "b",
-                  "parentKey": 2,
-                  "parentFlowNodeInstanceKey": 3,
-                  "startDate": "s",
-                  "endDate": "e"
-              }
+            {
+              "key": 123,
+              "processName": "Demo Process",
+              "processVersion": 5,
+              "bpmnProcessId": "demoProcess",
+              "parentKey": 555,
+              "parentFlowNodeInstanceKey": 789,
+              "startDate": "2024-01-01T00:00:00Z",
+              "state": "ACTIVE",
+              "incident": false,
+              "hasActiveOperation": false,
+              "processDefinitionKey": 777,
+              "tenantId": "default"
+            }
           ],
           "page": {
               "totalItems": 1,
@@ -55,16 +59,31 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               ]
           }
       }""";
-
-  static final SearchQueryResult<ProcessInstanceEntity> SEARCH_QUERY_RESULT =
+  private static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
+  private static final SearchQueryResult<ProcessInstanceEntity> SEARCH_QUERY_RESULT =
       new Builder<ProcessInstanceEntity>()
           .total(1L)
-          .items(List.of(new ProcessInstanceEntity("t", 0L, 1, "b", 2L, 3L, "s", "e")))
+          .items(
+              List.of(
+                  new ProcessInstanceEntity(
+                      123L,
+                      "Demo Process",
+                      5,
+                      "demoProcess",
+                      555L,
+                      789L,
+                      "2024-01-01T00:00:00Z",
+                      null,
+                      "ACTIVE",
+                      false,
+                      false,
+                      777L,
+                      "default",
+                      null,
+                      null,
+                      null)))
           .sortValues(new Object[] {"v"})
           .build();
-
-  static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
-
   @MockBean ProcessInstanceServices processInstanceServices;
 
   @BeforeEach
@@ -118,7 +137,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldSearchProcessInstancesWithSorting() {
+  void shouldSearchProcessInstancessWithSorting() {
     // given
     when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
         .thenReturn(SEARCH_QUERY_RESULT);
@@ -127,15 +146,12 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         {
             "sort": [
                 {
-                    "field": "processInstanceKey",
+                    "field": "bpmnProcessId",
                     "order": "desc"
                 },
                 {
-                    "field": "startDate",
+                    "field": "processDefinitionKey",
                     "order": "asc"
-                },
-                {
-                    "field": "endDate"
                 }
             ]
         }""";
@@ -159,11 +175,9 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             new ProcessInstanceQuery.Builder()
                 .sort(
                     new ProcessInstanceSort.Builder()
-                        .processInstanceKey()
+                        .bpmnProcessId()
                         .desc()
-                        .startDate()
-                        .asc()
-                        .endDate()
+                        .processDefinitionKey()
                         .asc()
                         .build())
                 .build());
@@ -177,7 +191,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         {
             "sort": [
                 {
-                    "field": "processInstanceKey",
+                    "field": "bpmnProcessId",
                     "order": "dsc"
                 }
             ]
@@ -219,7 +233,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         {
             "sort": [
                 {
-                    "field": "tenantId",
+                    "field": "unknownField",
                     "order": "asc"
                 }
             ]
@@ -231,7 +245,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           "type": "about:blank",
           "title": "INVALID_ARGUMENT",
           "status": 400,
-          "detail": "Unknown sortBy: tenantId.",
+          "detail": "Unknown sortBy: unknownField.",
           "instance": "%s"
         }""",
             PROCESS_INSTANCES_SEARCH_URL);
@@ -273,6 +287,46 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           "title": "INVALID_ARGUMENT",
           "status": 400,
           "detail": "Sort field must not be null.",
+          "instance": "%s"
+        }""",
+            PROCESS_INSTANCES_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+  }
+
+  @Test
+  void shouldInvalidateProcessInstancesSearchQueryWithConflictingPagination() {
+    // given
+    final var request =
+        """
+        {
+            "page": {
+                "searchAfter": ["a"],
+                "searchBefore": ["b"]
+            }
+        }""";
+    final var expectedResponse =
+        String.format(
+            """
+        {
+          "type": "about:blank",
+          "title": "INVALID_ARGUMENT",
+          "status": 400,
+          "detail": "Both searchAfter and searchBefore cannot be set at the same time.",
           "instance": "%s"
         }""",
             PROCESS_INSTANCES_SEARCH_URL);

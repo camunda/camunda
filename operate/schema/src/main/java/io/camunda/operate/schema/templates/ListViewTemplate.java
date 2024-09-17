@@ -20,6 +20,7 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
   public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String PROCESS_VERSION = "processVersion";
+  public static final String PROCESS_VERSION_TAG = "processVersionTag";
   public static final String PROCESS_KEY = "processDefinitionKey";
   public static final String PROCESS_NAME = "processName";
   public static final String START_DATE = "startDate";

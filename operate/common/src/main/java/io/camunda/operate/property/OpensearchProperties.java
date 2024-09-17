@@ -10,9 +10,10 @@ package io.camunda.operate.property;
 import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
 
 import io.camunda.operate.connect.OperateDateTimeFormatter;
+import io.camunda.search.connect.plugin.PluginConfiguration;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Map;
+import java.util.List;
 import java.util.function.Function;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -44,9 +45,11 @@ public class OpensearchProperties {
 
   private int bulkRequestMaxSizeInBytes = BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT;
 
+  private boolean awsEnabled = false;
+
   @NestedConfigurationProperty private SslProperties ssl;
 
-  @NestedConfigurationProperty private Map<String, InterceptorPluginProperty> interceptorPlugins;
+  private List<PluginConfiguration> interceptorPlugins;
 
   public String getClusterName() {
     return clusterName;
@@ -162,6 +165,15 @@ public class OpensearchProperties {
     this.connectTimeout = connectTimeout;
   }
 
+  public boolean isAwsEnabled() {
+    return awsEnabled;
+  }
+
+  public OpensearchProperties setAwsEnabled(final boolean awsEnabled) {
+    this.awsEnabled = awsEnabled;
+    return this;
+  }
+
   public SslProperties getSsl() {
     return ssl;
   }
@@ -178,12 +190,11 @@ public class OpensearchProperties {
     this.bulkRequestMaxSizeInBytes = bulkRequestMaxSizeInBytes;
   }
 
-  public Map<String, InterceptorPluginProperty> getInterceptorPlugins() {
+  public List<PluginConfiguration> getInterceptorPlugins() {
     return interceptorPlugins;
   }
 
-  public void setInterceptorPlugins(
-      final Map<String, InterceptorPluginProperty> interceptorPlugins) {
+  public void setInterceptorPlugins(final List<PluginConfiguration> interceptorPlugins) {
     this.interceptorPlugins = interceptorPlugins;
   }
 }

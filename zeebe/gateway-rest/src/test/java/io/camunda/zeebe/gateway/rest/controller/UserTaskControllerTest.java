@@ -53,12 +53,18 @@ public class UserTaskControllerTest extends RestControllerTest {
     return Stream.of("/v1/user-tasks", "/v2/user-tasks");
   }
 
-  static Stream<Pair<RejectionType, String>> rejectionsAndUrls() {
+  static Stream<Pair<RejectionType, String>> invalidArgumentAndUrls() {
     return urls()
         .flatMap(
             url ->
-                Stream.of(RejectionType.INVALID_ARGUMENT, RejectionType.ALREADY_EXISTS)
-                    .flatMap(r -> Stream.of(Pair.of(r, url))));
+                Stream.of(RejectionType.INVALID_ARGUMENT).flatMap(r -> Stream.of(Pair.of(r, url))));
+  }
+
+  static Stream<Pair<RejectionType, String>> alreadyExistsAndUrls() {
+    return urls()
+        .flatMap(
+            url ->
+                Stream.of(RejectionType.ALREADY_EXISTS).flatMap(r -> Stream.of(Pair.of(r, url))));
   }
 
   static Stream<Pair<RejectionType, String>> exceptionsAndUrls() {
@@ -772,7 +778,7 @@ RFC 3339, section 5.6.",
   }
 
   @ParameterizedTest
-  @MethodSource("rejectionsAndUrls")
+  @MethodSource("invalidArgumentAndUrls")
   public void shouldYieldBadRequestWhenRejectionOfInput(
       final Pair<RejectionType, String> parameters) {
     // given
@@ -806,6 +812,49 @@ RFC 3339, section 5.6.",
         .exchange()
         .expectStatus()
         .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+
+    Mockito.verify(userTaskServices).completeUserTask(1L, Map.of(), "");
+  }
+
+  @ParameterizedTest
+  @MethodSource("alreadyExistsAndUrls")
+  public void shouldYieldConflictWhenRejectionOfInput(
+      final Pair<RejectionType, String> parameters) {
+    // given
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaServiceException(
+                    new BrokerRejection(
+                        UserTaskIntent.COMPLETE, 1L, parameters.getLeft(), "Just an error"))));
+
+    final var expectedBody =
+        """
+        {
+          "type": "about:blank",
+          "status": 409,
+          "title": "%s",
+          "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
+          "instance": "%s"
+        }"""
+            .formatted(
+                parameters.getLeft().name(),
+                parameters.getLeft(),
+                parameters.getRight() + "/1/completion");
+
+    // when / then
+    webClient
+        .post()
+        .uri(parameters.getRight() + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.CONFLICT)
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()

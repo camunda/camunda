@@ -6,17 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const http = require('http');
-const WebSocket = require('ws');
-const opn = require('opn');
-const ansiHTML = require('ansi-html');
-const path = require('path');
-const fs = require('fs');
+import {createServer as _createServer} from 'http';
+import {WebSocketServer} from 'ws';
+import opn from 'opn';
+import ansiHTML from 'ansi-html';
+import {parse, join, extname as _extname, dirname} from 'path';
+import {realpathSync, readFile} from 'fs';
+import {fileURLToPath} from 'url';
 
-module.exports = function createServer({showLogsInTerminal}, {restartBackend}) {
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+export default function createServer({showLogsInTerminal}, {restartBackend}) {
   let addLog;
 
-  const server = http.createServer(async (request, response) => {
+  const server = _createServer(async (request, response) => {
     if (request.url === '/api/restartBackend') {
       addLog('--------- BACKEND RESTART INITIATED ---------', 'backend');
       restartBackend();
@@ -25,18 +28,18 @@ module.exports = function createServer({showLogsInTerminal}, {restartBackend}) {
       return;
     }
 
-    var filename = path.parse(request.url).base || 'index.html';
+    var filename = parse(request.url).base || 'index.html';
     var filePath;
 
     try {
-      filePath = fs.realpathSync(path.join(__dirname, filename));
+      filePath = realpathSync(join(__dirname, filename));
     } catch (error) {
       response.writeHead(500);
       response.end('Internal server error', 'utf-8');
       return;
     }
 
-    var extname = String(path.extname(filePath)).toLowerCase();
+    var extname = String(_extname(filePath)).toLowerCase();
     var mimeTypes = {
       '.html': 'text/html',
       '.js': 'text/javascript',
@@ -51,7 +54,7 @@ module.exports = function createServer({showLogsInTerminal}, {restartBackend}) {
       return;
     }
 
-    fs.readFile(filePath, function (error, content) {
+    readFile(filePath, function (error, content) {
       if (error) {
         if (error.code === 'ENOENT') {
           response.writeHead(404, {'Content-Type': contentType});
@@ -86,7 +89,7 @@ module.exports = function createServer({showLogsInTerminal}, {restartBackend}) {
   console.log('Please check http://localhost:8100 for server logs!');
 
   return {addLog};
-};
+}
 
 function createWebSocketServer(server) {
   const connectedSockets = [];
@@ -96,7 +99,7 @@ function createWebSocketServer(server) {
     docker: [],
   };
 
-  const wss = new WebSocket.Server({server});
+  const wss = new WebSocketServer({server});
   wss.on('connection', function connection(ws) {
     try {
       connectedSockets.push(ws);

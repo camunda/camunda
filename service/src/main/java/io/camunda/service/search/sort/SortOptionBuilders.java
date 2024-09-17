@@ -34,8 +34,25 @@ public final class SortOptionBuilders {
     return new DecisionRequirementsSort.Builder();
   }
 
+  public static DecisionInstanceSort.Builder decisionInstance() {
+    return new DecisionInstanceSort.Builder();
+  }
+
+  public static FlowNodeInstanceSort.Builder flownodeInstance() {
+    return new FlowNodeInstanceSort.Builder();
+  }
+
+  public static FlowNodeInstanceSort flownodeInstance(
+      final Function<FlowNodeInstanceSort.Builder, ObjectBuilder<FlowNodeInstanceSort>> fn) {
+    return fn.apply(flownodeInstance()).build();
+  }
+
   public static UserSort.Builder user() {
     return new UserSort.Builder();
+  }
+
+  public static AuthorizationSort.Builder authorization() {
+    return new AuthorizationSort.Builder();
   }
 
   public static ProcessInstanceSort processInstance(
@@ -64,7 +81,26 @@ public final class SortOptionBuilders {
     return fn.apply(decisionRequirements()).build();
   }
 
+  public static DecisionInstanceSort decisionInstance(
+      final Function<DecisionInstanceSort.Builder, ObjectBuilder<DecisionInstanceSort>> fn) {
+    return fn.apply(decisionInstance()).build();
+  }
+
   public static UserSort user(final Function<UserSort.Builder, ObjectBuilder<UserSort>> fn) {
     return fn.apply(user()).build();
+  }
+
+  public static IncidentSort.Builder incident() {
+    return new IncidentSort.Builder();
+  }
+
+  public static IncidentSort incident(
+      final Function<IncidentSort.Builder, ObjectBuilder<IncidentSort>> fn) {
+    return fn.apply(incident()).build();
+  }
+
+  public static AuthorizationSort authorization(
+      final Function<AuthorizationSort.Builder, ObjectBuilder<AuthorizationSort>> fn) {
+    return fn.apply(authorization()).build();
   }
 }

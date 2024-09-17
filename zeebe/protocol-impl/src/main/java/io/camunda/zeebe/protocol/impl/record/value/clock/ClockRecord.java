@@ -12,8 +12,10 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 
 public final class ClockRecord extends UnifiedRecordValue implements ClockRecordValue {
-  // depending on the intent, the value may be a timestamp (epoch milliseconds) or an offset (in
-  // milliseconds)
+
+  // depending on the intent, the value may be a:
+  // - timestamp (epoch milliseconds)
+  // - offset (in milliseconds)
   private final LongProperty timeProperty = new LongProperty("time", 0);
 
   public ClockRecord() {

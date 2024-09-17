@@ -17,7 +17,7 @@ package io.camunda.zeebe;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
 import io.camunda.zeebe.config.AppCfg;
@@ -25,33 +25,32 @@ import io.camunda.zeebe.config.WorkerCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.Tags;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Worker extends App {
-  private static final Logger THROTTLED_LOGGER =
-      new ThrottledLogger(LoggerFactory.getLogger(Worker.class), Duration.ofSeconds(5));
+
+  public static final Logger LOGGER = LoggerFactory.getLogger(Worker.class);
+  private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
   private final AppCfg appCfg;
+  private final WorkerCfg workerCfg;
 
   Worker(final AppCfg appCfg) {
     this.appCfg = appCfg;
+    workerCfg = appCfg.getWorker();
   }
 
   @Override
   public void run() {
-    final WorkerCfg workerCfg = appCfg.getWorker();
     final String jobType = workerCfg.getJobType();
     final long completionDelay = workerCfg.getCompletionDelay().toMillis();
     final boolean isStreamEnabled = workerCfg.isStreamEnabled();
     final var variables = readVariables(workerCfg.getPayloadPath());
     final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(10_000);
-    final BlockingDeque<DelayedCommand> delayedCommands = new LinkedBlockingDeque<>(10_000);
     final ZeebeClient client = createZeebeClient();
     final JobWorkerMetrics metrics =
         JobWorkerMetrics.micrometer()
@@ -64,22 +63,7 @@ public class Worker extends App {
         client
             .newWorker()
             .jobType(jobType)
-            .handler(
-                (jobClient, job) -> {
-                  final var command =
-                      jobClient.newCompleteCommand(job.getKey()).variables(variables);
-                  if (workerCfg.isCompleteJobsAsync()) {
-                    delayedCommands.addLast(
-                        new DelayedCommand(Instant.now().plusMillis(completionDelay), command));
-                  } else {
-                    try {
-                      Thread.sleep(completionDelay);
-                    } catch (final Exception e) {
-                      THROTTLED_LOGGER.error("Exception on sleep", e);
-                    }
-                    requestFutures.add(command.send());
-                  }
-                })
+            .handler(handleJob(client, variables, completionDelay, requestFutures))
             .streamEnabled(isStreamEnabled)
             .metrics(metrics)
             .open();
@@ -87,20 +71,98 @@ public class Worker extends App {
     final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
     responseChecker.start();
 
-    final var asyncJobCompleter = new DelayedCommandSender(delayedCommands, requestFutures);
-    if (workerCfg.isCompleteJobsAsync()) {
-      asyncJobCompleter.start();
-    }
-
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread(
                 () -> {
                   worker.close();
                   client.close();
-                  asyncJobCompleter.close();
                   responseChecker.close();
                 }));
+  }
+
+  private JobHandler handleJob(
+      final ZeebeClient client,
+      final String variables,
+      final long completionDelay,
+      final BlockingQueue<Future<?>> requestFutures) {
+    return (jobClient, job) -> {
+      // we record the start handling time to better calculate the completion delay
+      // as when we send a message we already have a delay due to waiting on the response
+      final long startHandlingTime = System.currentTimeMillis();
+
+      if (workerCfg.isSendMessage()) {
+
+        final var correlationKey =
+            job.getVariable(workerCfg.getCorrelationKeyVariableName()).toString();
+
+        final boolean messagePublishedSuccessfully = publishMessage(client, correlationKey);
+        if (!messagePublishedSuccessfully) {
+          // Instead of failing the job, we simply let the job time out, so someone else has to
+          // pick up the job later. This might delay the individual process instance, but overall it
+          // has a lesser impact, as we can work on a different job in the meantime, keeping up the
+          // throughput.
+          //
+          // It might be that one partition has currently some struggle due to restarts or role
+          // changes, chances are low that this affects all partitions.
+          //
+          // This might cause issues for the current job to publish a message, but we are sending
+          // messages via correlation key,   based on the process instance payload.
+          //
+          // On the next job/message published the chances are (partition count - 1 / partition
+          // count) that we hit another partition where it works without issues.
+
+          return;
+        }
+      }
+
+      final var command = jobClient.newCompleteCommand(job.getKey()).variables(variables);
+      addDelayToCompletion(completionDelay, startHandlingTime);
+      requestFutures.add(command.send());
+    };
+  }
+
+  private boolean publishMessage(final ZeebeClient client, final String correlationKey) {
+    final var messageName = workerCfg.getMessageName();
+
+    LOGGER.debug("Publish message '{}' with correlation key '{}'", messageName, correlationKey);
+    final var messageSendFuture =
+        client
+            .newPublishMessageCommand()
+            .messageName(messageName)
+            .correlationKey(correlationKey)
+            .send();
+
+    try {
+      messageSendFuture.get(10, TimeUnit.SECONDS);
+      return true;
+    } catch (final Exception ex) {
+      THROTTLED_LOGGER.error(
+          "Exception on publishing a message with name {} and correlationKey {}",
+          messageName,
+          correlationKey,
+          ex);
+      return false;
+    }
+  }
+
+  private static void addDelayToCompletion(
+      final long completionDelay, final long startHandlingTime) {
+    try {
+      final var elapsedTime = System.currentTimeMillis() - startHandlingTime;
+      if (elapsedTime < completionDelay) {
+        final long sleepTime = completionDelay - elapsedTime;
+        LOGGER.debug("Sleep for {} ms", sleepTime);
+        Thread.sleep(sleepTime);
+      } else {
+        LOGGER.debug(
+            "Skip sleep. Elapsed time {} is larger then {} completion delay.",
+            elapsedTime,
+            completionDelay);
+      }
+    } catch (final Exception e) {
+      THROTTLED_LOGGER.error("Exception on sleep with completion delay {}", completionDelay, e);
+    }
   }
 
   private ZeebeClient createZeebeClient() {
@@ -129,24 +191,5 @@ public class Worker extends App {
 
   public static void main(final String[] args) {
     createApp(Worker::new);
-  }
-
-  static final class DelayedCommand {
-
-    private final Instant expiration;
-    private final FinalCommandStep<?> command;
-
-    public DelayedCommand(final Instant expiration, final FinalCommandStep<?> command) {
-      this.expiration = expiration;
-      this.command = command;
-    }
-
-    public boolean hasExpired() {
-      return Instant.now().isAfter(expiration);
-    }
-
-    public FinalCommandStep<?> getCommand() {
-      return command;
-    }
   }
 }

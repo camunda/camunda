@@ -22,7 +22,7 @@ public class UserRecordStream extends ExporterRecordStream<UserRecordValue, User
     return new UserRecordStream(wrappedStream);
   }
 
-  public UserRecordStream withUsernameKey(final String usernameKey) {
-    return valueFilter(v -> v.getUsername().equals(usernameKey));
+  public UserRecordStream withUsername(final String username) {
+    return valueFilter(v -> v.getUsername().equals(username));
   }
 }

@@ -37,7 +37,8 @@ public class TestElasticsearchConnector extends ElasticsearchConnector
   @Override
   protected HttpAsyncClientBuilder configureHttpClient(
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
-      final ElasticsearchProperties elsConfig) {
+      final ElasticsearchProperties elsConfig,
+      final HttpRequestInterceptor... interceptors) {
     httpAsyncClientBuilder.addInterceptorFirst(
         new HttpRequestInterceptor() {
 

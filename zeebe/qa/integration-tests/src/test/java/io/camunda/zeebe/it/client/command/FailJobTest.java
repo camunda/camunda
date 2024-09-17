@@ -49,17 +49,6 @@ public final class FailJobTest {
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
-  //  private String jobType;
-  //  private long jobKey;
-  //
-  //  @Before
-  //  public void init() {
-  //    jobType = helper.getJobType();
-  //    CLIENT_RULE.createSingleJob(jobType);
-  //
-  //    jobKey = activateJob().getKey();
-  //  }
-
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   public void shouldFailJobWithRemainingRetries(final boolean useRest, final TestInfo testInfo) {

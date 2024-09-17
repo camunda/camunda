@@ -214,6 +214,9 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: Build and push to Zeebe gcr.io registry
         uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
           push: true

@@ -84,6 +84,9 @@
 			"processVersion": {
 				"type": "long"
 			},
+      "processVersionTag": {
+        "type": "keyword"
+      },
 			"bpmnProcessId": {
 				"type": "keyword"
 			},

@@ -80,6 +80,8 @@ jobs:
       env:
         OPTIMIZE_IMAGE_TAG: ${{ env.DOCKER_TAG }}
         ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+        ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
+        IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
 
     - name: Wait for Optimize to start
       run: ./.github/optimize/scripts/wait-for.sh http://localhost:8090/ready

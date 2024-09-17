@@ -39,6 +39,11 @@ public class ContainerFactory {
     return new TasklistContainer(asDockerImageName(imageName, imageVersion));
   }
 
+  public ConnectorsContainer createConnectorsContainer(
+      final String imageName, final String imageVersion) {
+    return new ConnectorsContainer(asDockerImageName(imageName, imageVersion));
+  }
+
   private static DockerImageName asDockerImageName(
       final String imageName, final String imageVersion) {
     return DockerImageName.parse(imageName).withTag(imageVersion);

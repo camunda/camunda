@@ -31,7 +31,8 @@ export default defineConfig(({mode}) => ({
     outDir: 'build',
     rollupOptions: {
       input: {
-        index: './index.prod.html',
+        index:
+          mode === 'visual-regression' ? './index.html' : './index.prod.html',
       },
     },
     target: browserslistToEsbuild(),

@@ -30,7 +30,8 @@ public class OldRoutesRedirectionControllerIT extends TasklistIntegrationTest {
   }
 
   static Stream<String> redirectionTestDataProvider() {
-    return Stream.of("", "/processes", "/login", "/123456", "/processes/order/start");
+    return Stream.of(
+        "", "/processes", "/login", "/123456", "/processes/order/start", "/new/process_id");
   }
 
   @ParameterizedTest
@@ -44,7 +45,7 @@ public class OldRoutesRedirectionControllerIT extends TasklistIntegrationTest {
   }
 
   static Stream<String> notFoundTestDataProvider() {
-    return Stream.of("/v1/user-tasks", "/decisions", "/a12345");
+    return Stream.of("/v1/user-tasks", "/decisions", "/a12345", "/new");
   }
 
   @ParameterizedTest

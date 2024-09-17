@@ -88,6 +88,7 @@ message TopologyChangeOperation {
     MemberRemoveOperation memberRemove = 8;
     PartitionDisableExporterOperation partitionDisableExporter = 9;
     PartitionEnableExporterOperation partitionEnableExporter = 10;
+    PartitionBootstrapOperation partitionBootstrap = 11;
   }
 }
 
@@ -126,6 +127,11 @@ message PartitionEnableExporterOperation {
   optional string initializeFrom = 3;
 }
 
+message PartitionBootstrapOperation {
+  int32 partitionId = 1;
+  int32 priority = 2;
+}
+
 message MemberJoinOperation {}
 
 message MemberLeaveOperation {}
@@ -140,6 +146,7 @@ enum State {
   ACTIVE = 2;
   LEAVING = 3;
   LEFT = 4;
+  BOOTSTRAPPING = 5;
 }
 
 enum ChangeStatus {

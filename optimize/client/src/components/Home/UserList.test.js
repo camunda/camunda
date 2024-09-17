@@ -19,7 +19,7 @@ import EditUserModal from './modals/EditUserModal';
 import UserListWithErrorHandling from './UserList';
 
 jest.mock('config', () => ({
-  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+  getOptimizeProfile: jest.fn().mockReturnValue('ccsm'),
 }));
 
 jest.mock('./service', () => ({
@@ -102,7 +102,6 @@ it('should modify the user role', () => {
 });
 
 it('should pass optimize environment to addUserModal', async () => {
-  getOptimizeProfile.mockReturnValueOnce('ccsm');
   const node = await shallow(<UserList {...props} />);
 
   node.find(EntityList).prop('action').props.onClick({});

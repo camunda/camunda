@@ -9,8 +9,10 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
+import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -37,6 +39,16 @@ public class MessageController {
   }
 
   @PostMapping(
+      path = "/publication",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public CompletableFuture<ResponseEntity<Object>> publishMessage(
+      @RequestBody final MessagePublicationRequest publicationRequest) {
+    return RequestMapper.toMessagePublicationRequest(publicationRequest)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::publishMessage);
+  }
+
+  @PostMapping(
       path = "/correlation",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -55,5 +67,15 @@ public class MessageController {
                 .withAuthentication(RequestMapper.getAuthentication())
                 .correlateMessage(correlationRequest),
         ResponseMapper::toMessageCorrelationResponse);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> publishMessage(
+      final PublicationMessageRequest request) {
+    return RequestMapper.executeServiceMethod(
+        () ->
+            messageServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .publishMessage(request),
+        ResponseMapper::toMessagePublicationResponse);
   }
 }

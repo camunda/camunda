@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.slf4j.Logger;
@@ -46,6 +47,8 @@ public class JobZeebeRecordProcessorOpenSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(JobZeebeRecordProcessorOpenSearch.class);
 
+  private static final Pattern EMBEDDED_FORMS_PATTERN = Pattern.compile("^camunda-forms:bpmn:.*");
+
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
@@ -54,7 +57,7 @@ public class JobZeebeRecordProcessorOpenSearch {
 
   @Autowired private FormStore formStore;
 
-  public void processJobRecord(Record record, List<BulkOperation> operations) {
+  public void processJobRecord(final Record record, final List<BulkOperation> operations) {
     final JobRecordValueImpl recordValue = (JobRecordValueImpl) record.getValue();
     if (recordValue.getType().equals(Protocol.USER_TASK_JOB_TYPE)) {
       if (record.getIntent() != null
@@ -65,7 +68,7 @@ public class JobZeebeRecordProcessorOpenSearch {
     // else skip task
   }
 
-  private BulkOperation persistTask(Record record, JobRecordValueImpl recordValue) {
+  private BulkOperation persistTask(final Record record, final JobRecordValueImpl recordValue) {
     final String processDefinitionId = String.valueOf(recordValue.getProcessDefinitionKey());
     final TaskEntity entity =
         new TaskEntity()
@@ -111,7 +114,8 @@ public class JobZeebeRecordProcessorOpenSearch {
               entity.setIsFormEmbedded(false);
             },
             () -> {
-              entity.setIsFormEmbedded(true);
+              entity.setIsFormEmbedded(
+                  formKey != null && EMBEDDED_FORMS_PATTERN.matcher(formKey).matches());
               entity.setFormVersion(null);
               entity.setFormId(null);
             });
@@ -127,7 +131,7 @@ public class JobZeebeRecordProcessorOpenSearch {
     if (candidateGroups != null) {
       try {
         entity.setCandidateGroups(objectMapper.readValue(candidateGroups, String[].class));
-      } catch (JsonProcessingException e) {
+      } catch (final JsonProcessingException e) {
         LOGGER.warn(
             String.format(
                 "Candidate groups can't be parsed from %s: %s", candidateGroups, e.getMessage()),
@@ -141,7 +145,7 @@ public class JobZeebeRecordProcessorOpenSearch {
     if (candidateUsers != null) {
       try {
         entity.setCandidateUsers(objectMapper.readValue(candidateUsers, String[].class));
-      } catch (JsonProcessingException e) {
+      } catch (final JsonProcessingException e) {
         LOGGER.warn(
             String.format(
                 "Candidate users can't be parsed from %s: %s", candidateUsers, e.getMessage()),
@@ -182,7 +186,7 @@ public class JobZeebeRecordProcessorOpenSearch {
     return getTaskQuery(entity, intent);
   }
 
-  private BulkOperation getTaskQuery(TaskEntity entity, Intent intent) {
+  private BulkOperation getTaskQuery(final TaskEntity entity, final Intent intent) {
     LOGGER.debug("Task instance: id {}", entity.getId());
     final Map<String, Object> updateFields = new HashMap<>();
     if (intent == Intent.MIGRATED) {

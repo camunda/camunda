@@ -32,4 +32,7 @@ public class ContainerRuntimePorts {
 
   // Tasklist
   public static final int TASKLIST_REST_API = 8080;
+
+  // Connectors
+  public static final int CONNECTORS_REST_API = 8080;
 }

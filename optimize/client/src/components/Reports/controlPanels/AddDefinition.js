@@ -12,7 +12,7 @@ import {Button, InlineNotification} from '@carbon/react';
 import {Add} from '@carbon/icons-react';
 
 import {Modal, Checklist} from 'components';
-import {withErrorHandling} from 'HOC';
+import {useErrorHandling} from 'hooks';
 import {getCollection, getRandomId, loadDefinitions} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
@@ -22,11 +22,12 @@ import {loadTenants} from './service';
 
 import './AddDefinition.scss';
 
-export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
+export function AddDefinition({location, definitions, type, onAdd}) {
   const [reportDataSourceLimit, setReportDataSourceLimit] = useState(100);
   const [availableDefinitions, setAvailableDefinitions] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDefinitions, setSelectedDefinitions] = useState([]);
+  const {mightFail} = useErrorHandling();
 
   const collection = getCollection(location.pathname);
   const isDefinitionLimitReached =
@@ -156,4 +157,4 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
   );
 }
 
-export default withRouter(withErrorHandling(AddDefinition));
+export default withRouter(AddDefinition);

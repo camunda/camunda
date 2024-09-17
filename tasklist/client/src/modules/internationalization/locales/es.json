@@ -57,7 +57,7 @@
     "taskDetailsNewVariableNameFieldLabel": "Nombre",
     "notificationActionButtonLabel": "Acción",
     "nativeNotificationOneNewTaskAssigned": "1 tarea está asignada a usted.",
-    "nativeNotificationMultipleTasksAssigned": "{{numTasks}} tareas están asignadas a usted.",
+    "nativeNotificationMultipleTasksAssigned": "{{count}} tareas están asignadas a usted.",
     "nativeNotificationFiftyOrMoreTasksAssigned": "50+ tareas están asignadas a usted.",
     "nativeNotificationNewTasksMessageBody": "Haga clic aquí para ver los detalles.",
     "processesFirstTimeModalAriaLabel": "Inicie su proceso a demanda",

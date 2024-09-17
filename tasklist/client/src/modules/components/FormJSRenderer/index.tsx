@@ -7,7 +7,6 @@
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {Layer} from '@carbon/react';
 import {Variable} from 'modules/types';
 import {FormManager} from 'modules/formManager';
 import {mergeVariables} from './mergeVariables';
@@ -193,9 +192,9 @@ const FormJSRenderer: React.FC<Props> = ({
 
   return (
     <>
-      <Layer className={styles.layer}>
+      <div className={styles.container}>
         <div ref={formContainerRef} className={styles.formRoot} />
-      </Layer>
+      </div>
       {invalidFields !== undefined ? (
         <ValidationMessage
           fieldIds={invalidFields.ids}

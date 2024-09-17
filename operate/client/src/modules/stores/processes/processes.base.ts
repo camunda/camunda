@@ -229,7 +229,17 @@ class ProcessesBase extends NetworkReconnectionHandler {
     const bpmnProcessId = selectedProcess?.bpmnProcessId;
     const processName = selectedProcess?.name ?? bpmnProcessId ?? 'Process';
 
-    return {key: selectedProcess?.key, bpmnProcessId, processName, version};
+    const versionTag = selectedProcess?.processes.find((process) => {
+      return process.version.toString() === version;
+    })?.versionTag;
+
+    return {
+      key: selectedProcess?.key,
+      bpmnProcessId,
+      processName,
+      version,
+      versionTag,
+    };
   };
 
   reset() {

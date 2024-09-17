@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +36,6 @@ public class JobZeebeRecordProcessor {
 
   private static final Set<String> JOB_EVENTS = new HashSet<>();
   private static final Set<String> FAILED_JOB_EVENTS = new HashSet<>();
-  private static final String ID_PATTERN = "%s_%s";
 
   static {
     JOB_EVENTS.add(JobIntent.CREATED.name());
@@ -48,7 +48,7 @@ public class JobZeebeRecordProcessor {
     JOB_EVENTS.add(JobIntent.MIGRATED.name());
 
     FAILED_JOB_EVENTS.add(JobIntent.FAILED.name());
-    JOB_EVENTS.add(JobIntent.ERROR_THROWN.name());
+    FAILED_JOB_EVENTS.add(JobIntent.ERROR_THROWN.name());
   }
 
   @Autowired private JobTemplate jobTemplate;
@@ -59,26 +59,34 @@ public class JobZeebeRecordProcessor {
       final boolean concurrencyMode)
       throws PersistenceException {
     LOGGER.debug("Importing Job records.");
-    for (final List<Record<JobRecordValue>> jobRecords : records.values()) {
-      processLastRecord(
-          jobRecords,
-          JOB_EVENTS,
-          rethrowConsumer(
-              record -> {
-                final JobRecordValue recordValue = (JobRecordValue) record.getValue();
-                processJob(record, recordValue, batchRequest, concurrencyMode);
-              }));
+    for (final List<Record<JobRecordValue>> flowNodeJobRecords : records.values()) {
+      final Map<Long, List<Record<JobRecordValue>>> groupedByJobKey =
+          flowNodeJobRecords.stream()
+              .collect(Collectors.groupingBy(jobRecord -> jobRecord.getKey()));
+      for (final List<Record<JobRecordValue>> jobRecords : groupedByJobKey.values()) {
+        processLastRecord(
+            jobRecords,
+            JOB_EVENTS,
+            rethrowConsumer(
+                record -> {
+                  final JobRecordValue recordValue = (JobRecordValue) record.getValue();
+                  processJob(record, recordValue, batchRequest, concurrencyMode);
+                }));
+      }
     }
   }
 
   private <T extends RecordValue> void processLastRecord(
-      final List<Record<T>> records,
+      final List<Record<JobRecordValue>> records,
       final Set<String> events,
       final Consumer<Record<? extends RecordValue>> recordProcessor) {
     if (records.size() >= 1) {
       for (int i = records.size() - 1; i >= 0; i--) {
         final String intentStr = records.get(i).getIntent().name();
         if (events.contains(intentStr)) {
+          if (i > 0 && FAILED_JOB_EVENTS.contains(intentStr)) {
+            recordProcessor.accept(records.get(i - 1));
+          }
           recordProcessor.accept(records.get(i));
           break;
         }
@@ -108,7 +116,8 @@ public class JobZeebeRecordProcessor {
             .setErrorCode(recordValue.getErrorCode())
             .setEndTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
             .setCustomHeaders(recordValue.getCustomHeaders())
-            .setJobKind(recordValue.getJobKind().name());
+            .setJobKind(recordValue.getJobKind().name())
+            .setFlowNodeId(recordValue.getElementId());
 
     if (recordValue.getJobListenerEventType() != null) {
       jobEntity.setListenerEventType(recordValue.getJobListenerEventType().name());
@@ -117,14 +126,15 @@ public class JobZeebeRecordProcessor {
     if (jobDeadline >= 0) {
       jobEntity.setDeadline(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(jobDeadline)));
     }
-    // only set flowNodeId for CREATED because incidents can overwrite it
-    if (record.getIntent().name().equals(JobIntent.CREATED.name())) {
-      jobEntity.setFlowNodeId(recordValue.getElementId());
-    }
-    if (FAILED_JOB_EVENTS.contains(record.getIntent().name()) && recordValue.getRetries() > 0) {
-      jobEntity.setJobFailedWithRetriesLeft(true);
-    } else {
-      jobEntity.setJobFailedWithRetriesLeft(false);
+
+    if (FAILED_JOB_EVENTS.contains(record.getIntent().name())) {
+      // set flowNodeId to null to not overwrite it (because zeebe puts an error message there)
+      jobEntity.setFlowNodeId(null);
+      if (recordValue.getRetries() > 0) {
+        jobEntity.setJobFailedWithRetriesLeft(true);
+      } else {
+        jobEntity.setJobFailedWithRetriesLeft(false);
+      }
     }
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(FLOW_NODE_ID, jobEntity.getFlowNodeId());

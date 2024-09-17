@@ -25,8 +25,7 @@ public final record UserTaskFilter(
     List<Long> processDefinitionKeys,
     List<String> candidateUsers,
     List<String> candidateGroups,
-    List<String> tenantIds,
-    ComparableValueFilter priority)
+    List<String> tenantIds)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
@@ -40,7 +39,6 @@ public final record UserTaskFilter(
     private List<String> candidateUsers;
     private List<String> candidateGroups;
     private List<String> tenantIds;
-    private ComparableValueFilter priority;
 
     public Builder keys(final Long... values) {
       return keys(collectValuesAsList(values));
@@ -132,11 +130,6 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder priority(final ComparableValueFilter value) {
-      priority = value;
-      return this;
-    }
-
     @Override
     public UserTaskFilter build() {
       return new UserTaskFilter(
@@ -149,8 +142,7 @@ public final record UserTaskFilter(
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUsers, Collections.emptyList()),
           Objects.requireNonNullElse(candidateGroups, Collections.emptyList()),
-          Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
-          priority);
+          Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
     }
   }
 }

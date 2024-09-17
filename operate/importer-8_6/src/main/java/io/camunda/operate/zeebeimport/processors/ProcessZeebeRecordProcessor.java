@@ -83,6 +83,7 @@ public class ProcessZeebeRecordProcessor {
       final Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(ListViewTemplate.PROCESS_NAME, processEntity.getName());
       updateFields.put(ListViewTemplate.PROCESS_VERSION, processEntity.getVersion());
+      updateFields.put(ListViewTemplate.PROCESS_VERSION_TAG, processEntity.getVersion());
       batchRequest.update(
           listViewTemplate.getFullQualifiedName(), processInstanceKey.toString(), updateFields);
     }
@@ -104,6 +105,10 @@ public class ProcessZeebeRecordProcessor {
 
     final String resourceName = process.getResourceName();
     processEntity.setResourceName(resourceName);
+
+    if (!process.getVersionTag().isEmpty()) {
+      processEntity.setVersionTag(process.getVersionTag());
+    }
 
     final Optional<ProcessEntity> diagramData =
         xmlUtil.extractDiagramData(byteArray, process.getBpmnProcessId());

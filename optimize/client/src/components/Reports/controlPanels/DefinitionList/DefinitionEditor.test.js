@@ -19,7 +19,7 @@ import DiagramModal from './DiagramModal';
 import {DefinitionEditor} from './DefinitionEditor';
 import {loadVersions} from './service';
 
-jest.mock('config', () => ({getOptimizeProfile: jest.fn().mockReturnValue('platform')}));
+jest.mock('config', () => ({getOptimizeProfile: jest.fn().mockReturnValue('ccsm')}));
 
 jest.mock('services', () => {
   return {
@@ -74,7 +74,6 @@ it('should show available tenants for the given definition and versions', () => 
 });
 
 it('should show the readonly TenantInfo in self managed mode', async () => {
-  getOptimizeProfile.mockReturnValueOnce('ccsm');
   const tenant = {id: '<default>', name: 'Default'};
   const node = shallow(<DefinitionEditor {...props} tenantInfo={[tenant]} />);
 

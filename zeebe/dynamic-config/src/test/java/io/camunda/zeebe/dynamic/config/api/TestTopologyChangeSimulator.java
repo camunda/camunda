@@ -33,7 +33,7 @@ final class TestTopologyChangeSimulator {
       final var applier = topologyChangeSimulator.getApplier(operation);
       final var init = applier.init(newTopology);
       if (init.isLeft()) {
-        fail("Failed to init operation ", init.getLeft());
+        fail("Failed to init operation '%s' : '%s'", operation, init.getLeft());
       }
       newTopology = init.get().apply(newTopology);
       newTopology = newTopology.advanceConfigurationChange(applier.apply().join());

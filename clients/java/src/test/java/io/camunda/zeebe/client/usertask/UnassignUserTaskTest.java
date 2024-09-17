@@ -15,11 +15,10 @@
  */
 package io.camunda.zeebe.client.usertask;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static io.camunda.zeebe.client.util.assertions.LoggedRequestAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
-import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.util.ClientRestTest;
@@ -35,9 +34,9 @@ public final class UnassignUserTaskTest extends ClientRestTest {
     client.newUserTaskUnassignCommand(123L).send().join();
 
     // then
-    final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getMethod()).isEqualTo(RequestMethod.DELETE);
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getUserTaskUnassignmentUrl(123L));
+    assertThat(RestGatewayService.getLastRequest())
+        .hasMethod(RequestMethod.DELETE)
+        .hasUrl(RestGatewayPaths.getUserTaskUnassignmentUrl(123L));
   }
 
   @Test

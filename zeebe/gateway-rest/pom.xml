@@ -26,6 +26,12 @@
   </properties>
 
   <dependencies>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
+
     <!-- required to guarantee the protocol is processed earlier during the build -->
     <dependency>
       <groupId>io.camunda</groupId>
@@ -89,6 +95,11 @@
       <artifactId>zeebe-cluster-config</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>document-api</artifactId>
+    </dependency>
+
     <!-- rest api dependencies -->
     <dependency>
       <groupId>org.springframework</groupId>
@@ -133,6 +144,11 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-validator</groupId>
+      <artifactId>commons-validator</artifactId>
     </dependency>
 
     <dependency>
@@ -279,12 +295,6 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <!-- required due to ArchUnit presence -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -313,6 +323,12 @@
     <dependency>
       <groupId>com.tngtech.archunit</groupId>
       <artifactId>archunit-junit5-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.xmlunit</groupId>
+      <artifactId>xmlunit-core</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -361,6 +377,7 @@
           <usedDependencies>
             <!-- Needed to run tests -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
+            <dependency>org.xmlunit:xmlunit-core</dependency>
             <!-- Used for OpenAPI generation -->
             <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
           </usedDependencies>

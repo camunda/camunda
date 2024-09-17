@@ -18,7 +18,8 @@ package io.camunda.zeebe.client.api.command;
 import io.camunda.zeebe.client.api.response.UpdateTimeoutJobResponse;
 import java.time.Duration;
 
-public interface UpdateTimeoutJobCommandStep1 {
+public interface UpdateTimeoutJobCommandStep1
+    extends CommandWithCommunicationApiStep<UpdateTimeoutJobCommandStep1> {
 
   /**
    * Set the timeout of this job.

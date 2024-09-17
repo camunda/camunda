@@ -63,26 +63,9 @@ export default function NodeSelection({
             return;
           }
 
-          const viewer = new Viewer();
-          await viewer.importXML(xml);
-
-          const flowNodes = new Set<string>();
-          viewer
-            .get<RegistryElement[]>('elementRegistry')
-            .filter((element) => element.businessObject.$instanceOf('bpmn:FlowNode'))
-            .map((element) => element.businessObject)
-            .forEach((element) => flowNodes.add(element.id));
-          const allFlowNodes = Array.from(flowNodes);
-
-          let preExistingValues: string[] = [];
-          if (filterData?.data.operator === 'not in') {
-            preExistingValues = allFlowNodes.filter((id) => !filterData?.data.values?.includes(id));
-          } else {
-            preExistingValues = allFlowNodes.filter((id) => filterData?.data.values?.includes(id));
-          }
-
+          const allFlowNodes = await getAllFlowNodes(xml);
           setAllFlowNodes(allFlowNodes);
-          setSelectedNodes(preExistingValues.length ? preExistingValues : allFlowNodes);
+          setSelectedNodes(getSelectedFlowNodes(filterData, allFlowNodes, applyTo.identifier));
           setXml(xml);
           setApplyTo(applyTo);
         },
@@ -168,4 +151,38 @@ export default function NodeSelection({
       </Modal.Footer>
     </Modal>
   );
+}
+
+async function getAllFlowNodes(xml: string) {
+  const viewer = new Viewer();
+  await viewer.importXML(xml);
+
+  const flowNodesSet = new Set<string>();
+  viewer
+    .get<RegistryElement[]>('elementRegistry')
+    .filter((element) => element.businessObject.$instanceOf('bpmn:FlowNode'))
+    .map((element) => element.businessObject)
+    .forEach((element) => flowNodesSet.add(element.id));
+
+  return Array.from(flowNodesSet);
+}
+
+function getSelectedFlowNodes(
+  filterData: FilterProps<'executedFlowNodes'>['filterData'],
+  allFlowNodes: string[],
+  selectedDefinitionId: string
+): string[] {
+  // preselect all flow nodes for new filter/definition
+  if (!filterData?.data || !filterData.appliedTo.includes(selectedDefinitionId)) {
+    return allFlowNodes;
+  }
+
+  const {operator, values} = filterData?.data;
+  return allFlowNodes.filter((nodeId) => {
+    if (operator === 'in') {
+      return values?.includes(nodeId);
+    } else {
+      return !values?.includes(nodeId);
+    }
+  });
 }

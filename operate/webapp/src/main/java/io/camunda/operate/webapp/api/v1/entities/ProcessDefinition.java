@@ -19,12 +19,14 @@ public class ProcessDefinition {
   public static final String KEY = ProcessIndex.KEY,
       NAME = ProcessIndex.NAME,
       VERSION = ProcessIndex.VERSION,
+      VERSION_TAG = ProcessIndex.VERSION_TAG,
       BPMN_PROCESS_ID = ProcessIndex.BPMN_PROCESS_ID,
       TENANT_ID = ProcessIndex.TENANT_ID;
 
   private Long key;
   private String name;
   private Integer version;
+  private String versionTag;
   private String bpmnProcessId;
   private String tenantId;
 
@@ -41,7 +43,7 @@ public class ProcessDefinition {
     return name;
   }
 
-  public ProcessDefinition setName(String name) {
+  public ProcessDefinition setName(final String name) {
     this.name = name;
     return this;
   }
@@ -50,8 +52,17 @@ public class ProcessDefinition {
     return version;
   }
 
-  public ProcessDefinition setVersion(int version) {
+  public ProcessDefinition setVersion(final int version) {
     this.version = version;
+    return this;
+  }
+
+  public String getVersionTag() {
+    return versionTag;
+  }
+
+  public ProcessDefinition setVersionTag(final String versionTag) {
+    this.versionTag = versionTag;
     return this;
   }
 
@@ -59,7 +70,7 @@ public class ProcessDefinition {
     return bpmnProcessId;
   }
 
-  public ProcessDefinition setBpmnProcessId(String bpmnProcessId) {
+  public ProcessDefinition setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -68,18 +79,18 @@ public class ProcessDefinition {
     return tenantId;
   }
 
-  public ProcessDefinition setTenantId(String tenantId) {
+  public ProcessDefinition setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, name, version, bpmnProcessId, tenantId);
+    return Objects.hash(key, name, version, versionTag, bpmnProcessId, tenantId);
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -90,6 +101,7 @@ public class ProcessDefinition {
     return Objects.equals(key, that.key)
         && Objects.equals(name, that.name)
         && Objects.equals(version, that.version)
+        && Objects.equals(versionTag, that.versionTag)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(tenantId, that.tenantId);
   }
@@ -104,6 +116,9 @@ public class ProcessDefinition {
         + '\''
         + ", version="
         + version
+        + '\''
+        + ", versionTag="
+        + versionTag
         + ", bpmnProcessId='"
         + bpmnProcessId
         + '\''

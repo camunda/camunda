@@ -50,6 +50,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     config.getData().getDisk().getFreeSpace().setProcessing(DataSize.ofMegabytes(128));
     config.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
 
+    config.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
+    config.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
+
     //noinspection resource
     withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.BROKER);
   }

@@ -36,6 +36,7 @@ test.describe('variables and incidents', () => {
                 name: 'order-process',
                 version: 1,
                 bpmnProcessId: 'order-process',
+                versionTag: null,
               },
             ],
             tenantId: '<default>',

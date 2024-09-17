@@ -41,7 +41,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -211,7 +210,6 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
-  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithTimerBefore() {
     // given
@@ -310,7 +308,6 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
-  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithTimerAfter() {
     // given
@@ -715,7 +712,6 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
-  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithNonInterruptingTimerBefore() {
     // given

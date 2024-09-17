@@ -26,7 +26,6 @@ import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
 import {notificationsStore} from 'modules/stores/notifications';
 import {authenticationStore} from 'modules/stores/authentication';
 import {processStore} from 'modules/stores/process';
-import {IS_VERSION_TAG_ENABLED} from 'modules/feature-flags';
 import {VersionTag} from './styled';
 
 const headerColumns = [
@@ -84,7 +83,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
   } = processStore;
 
   useEffect(() => {
-    if (IS_VERSION_TAG_ENABLED && processId !== undefined) {
+    if (processId !== undefined) {
       processStore.fetchProcess(processId);
     }
   }, [processId]);
@@ -95,7 +94,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
 
   if (
     processInstance === null ||
-    (IS_VERSION_TAG_ENABLED && ['fetching', 'initial'].includes(status)) ||
+    ['fetching', 'initial'].includes(status) ||
     !processInstanceDetailsDiagramStore.areDiagramDefinitionsAvailable
   ) {
     return <Skeleton headerColumns={skeletonColumns} />;
@@ -119,7 +118,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
   )} version ${processVersion}" instances${
     isMultiTenancyEnabled ? ` - ${tenantName}` : ''
   }`;
-  const hasVersionTag = IS_VERSION_TAG_ENABLED && !isNil(versionTag);
+  const hasVersionTag = !isNil(versionTag);
 
   return (
     <InstanceHeader

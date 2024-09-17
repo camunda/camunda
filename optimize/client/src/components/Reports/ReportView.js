@@ -93,7 +93,7 @@ export default function ReportView({report, error, loadReport}) {
       <div className="reportHeader">
         <div className="head">
           <div className="info">
-            <EntityName details={<ReportDetails report={report} />}>{name}</EntityName>
+            <EntityName details={<ReportDetails report={report} />} name={name} />
             {description && <EntityDescription description={description} />}
           </div>
           <div className="tools">

@@ -20,6 +20,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.containers.ZeebeContainer;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
@@ -52,6 +53,7 @@ public class JunitExtensionTest {
   @Mock private CamundaContainerRuntime camundaContainerRuntime;
   @Mock private ZeebeContainer zeebeContainer;
   @Mock private OperateContainer operateContainer;
+  @Mock private ConnectorsContainer connectorsContainer;
 
   @Mock private ExtensionContext extensionContext;
   @Mock private TestInstances testInstances;
@@ -71,6 +73,8 @@ public class JunitExtensionTest {
     when(camundaContainerRuntime.getOperateContainer()).thenReturn(operateContainer);
     when(operateContainer.getHost()).thenReturn("my-host");
     when(operateContainer.getRestApiPort()).thenReturn(100);
+
+    when(camundaContainerRuntime.getConnectorsContainer()).thenReturn(connectorsContainer);
 
     when(extensionContext.getRequiredTestInstances()).thenReturn(testInstances);
     when(testInstances.getAllInstances()).thenReturn(Collections.singletonList(this));
@@ -97,6 +101,9 @@ public class JunitExtensionTest {
   @Test
   void shouldInjectContext() throws Exception {
     // given
+    final URI connectorsRestApiAddress = URI.create("http://my-host:300");
+    when(connectorsContainer.getRestApiAddress()).thenReturn(connectorsRestApiAddress);
+
     final CamundaProcessTestExtension extension =
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder);
 
@@ -107,6 +114,8 @@ public class JunitExtensionTest {
     assertThat(camundaProcessTestContext).isNotNull();
     assertThat(camundaProcessTestContext.getZeebeGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
     assertThat(camundaProcessTestContext.getZeebeRestAddress()).isEqualTo(REST_API_ADDRESS);
+    assertThat(camundaProcessTestContext.getConnectorsAddress())
+        .isEqualTo(connectorsRestApiAddress);
   }
 
   @Test
@@ -201,6 +210,7 @@ public class JunitExtensionTest {
     verify(camundaContainerRuntimeBuilder).withZeebeDockerImageVersion(camundaVersion);
     verify(camundaContainerRuntimeBuilder).withOperateDockerImageVersion(camundaVersion);
     verify(camundaContainerRuntimeBuilder).withTasklistDockerImageVersion(camundaVersion);
+    verify(camundaContainerRuntimeBuilder).withConnectorsDockerImageVersion(camundaVersion);
 
     verify(camundaContainerRuntimeBuilder).withZeebeDockerImageName(zeebeDockerImageName);
 
@@ -209,5 +219,40 @@ public class JunitExtensionTest {
 
     verify(camundaContainerRuntimeBuilder).withZeebeExposedPort(100);
     verify(camundaContainerRuntimeBuilder).withZeebeExposedPort(200);
+  }
+
+  @Test
+  void shouldConfigureConnectors() throws Exception {
+    // given
+    final String connectorsVersion = "connector-version";
+    final String connectorsDockerImageName = "connectors-docker-image-name";
+    final Map<String, String> connectorsEnvVars = new HashMap<>();
+    connectorsEnvVars.put("env-1", "test-1");
+    connectorsEnvVars.put("env-2", "test-2");
+
+    final CamundaProcessTestExtension extension =
+        new CamundaProcessTestExtension(camundaContainerRuntimeBuilder)
+            .withConnectorsEnabled(true)
+            .withConnectorsDockerImageName(connectorsDockerImageName)
+            .withConnectorsDockerImageVersion(connectorsVersion)
+            .withConnectorsEnv(connectorsEnvVars)
+            .withConnectorsEnv("env-3", "test-3")
+            .withConnectorsSecret("secret-1", "1")
+            .withConnectorsSecret("secret-2", "2");
+
+    // when
+    extension.beforeEach(extensionContext);
+
+    // then
+    verify(camundaContainerRuntimeBuilder).withConnectorsEnabled(true);
+
+    verify(camundaContainerRuntimeBuilder).withConnectorsDockerImageName(connectorsDockerImageName);
+    verify(camundaContainerRuntimeBuilder).withConnectorsDockerImageVersion(connectorsVersion);
+
+    verify(camundaContainerRuntimeBuilder).withConnectorsEnv(connectorsEnvVars);
+    verify(camundaContainerRuntimeBuilder).withConnectorsEnv("env-3", "test-3");
+
+    verify(camundaContainerRuntimeBuilder).withConnectorsSecret("secret-1", "1");
+    verify(camundaContainerRuntimeBuilder).withConnectorsSecret("secret-2", "2");
   }
 }

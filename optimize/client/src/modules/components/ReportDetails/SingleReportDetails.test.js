@@ -19,7 +19,7 @@ import {loadTenants} from './service';
 
 import {SingleReportDetails} from './SingleReportDetails';
 
-jest.mock('config', () => ({getOptimizeProfile: jest.fn().mockReturnValue('platform')}));
+jest.mock('config', () => ({getOptimizeProfile: jest.fn().mockReturnValue('ccsm')}));
 
 jest.mock('./service', () => ({
   loadTenants: jest.fn().mockReturnValue([
@@ -102,7 +102,6 @@ it('should show the only tenant in self managed', async () => {
       tenants: [{id: 'sales', name: 'Sales'}],
     },
   ]);
-  getOptimizeProfile.mockReturnValueOnce('ccsm');
   const node = shallow(<SingleReportDetails {...props} report={oneTenant} />);
 
   await runAllEffects();

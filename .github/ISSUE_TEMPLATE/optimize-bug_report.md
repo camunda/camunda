@@ -59,12 +59,6 @@ Is this bug reproducible?
 
 ### Review
 
-#### Review Resources
-
-<!-- When in review, the resources to be used for review should be listed here) -->
-- Feature PR: {Link to PR targeting the main branch}
-- Preview environments: {Link(s) to preview environments}
-
 #### Engineering Review
 
 - [ ] All code targeting the main branch has been reviewed by at least one Engineer

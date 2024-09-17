@@ -151,6 +151,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
     streamProcessingComposite.pauseProcessing(partitionId);
   }
 
+  public void banInstanceInNewTransaction(final int partitionId, final long processInstanceKey) {
+    streamProcessingComposite.banInstanceInNewTransaction(partitionId, processInstanceKey);
+  }
+
   public void resumeProcessing(final int partitionId) {
     streamProcessingComposite.resumeProcessing(partitionId);
   }

@@ -30,6 +30,7 @@ import io.camunda.optimize.service.db.os.ExtendedOpenSearchClient;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.OpenSearchConfiguration;
 import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import io.camunda.optimize.service.util.mapper.CustomAuthorizedReportDefinitionDeserializer;
 import io.camunda.optimize.service.util.mapper.CustomCollectionEntityDeserializer;
@@ -38,6 +39,8 @@ import io.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import io.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import io.camunda.optimize.service.util.mapper.CustomReportDefinitionDeserializer;
 import io.camunda.optimize.service.util.mapper.ObjectMapperFactory;
+import io.camunda.search.connect.plugin.PluginConfiguration;
+import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -53,6 +56,7 @@ import java.security.cert.CertificateFactory;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.List;
 import javax.net.ssl.SSLContext;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.auth.AuthScope;
@@ -64,6 +68,7 @@ import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.HttpRequestInterceptor;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.util.Timeout;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
@@ -90,18 +95,35 @@ public class OpenSearchClientBuilder {
   private static final Logger log = LoggerFactory.getLogger(OpenSearchClientBuilder.class);
 
   public static ExtendedOpenSearchClient buildOpenSearchClientFromConfig(
-      final ConfigurationService configurationService) {
-    return new ExtendedOpenSearchClient(buildOpenSearchTransport(configurationService));
+      final ConfigurationService configurationService, final PluginRepository pluginRepo) {
+    final var plugins = extractPluginConfigs(configurationService.getOpenSearchConfiguration());
+    log.trace("Loading plugins while building extended client: {}", plugins);
+    pluginRepo.load(plugins);
+    return new ExtendedOpenSearchClient(buildOpenSearchTransport(configurationService, pluginRepo));
   }
 
   public static OpenSearchAsyncClient buildOpenSearchAsyncClientFromConfig(
-      final ConfigurationService configurationService) {
-    return new OpenSearchAsyncClient(buildOpenSearchTransport(configurationService));
+      final ConfigurationService configurationService, final PluginRepository pluginRepo) {
+    final var plugins = extractPluginConfigs(configurationService.getOpenSearchConfiguration());
+    log.trace("Loading plugins while building async client: {}", plugins);
+    pluginRepo.load(plugins);
+    return new OpenSearchAsyncClient(buildOpenSearchTransport(configurationService, pluginRepo));
+  }
+
+  private static List<PluginConfiguration> extractPluginConfigs(
+      final OpenSearchConfiguration osConfig) {
+    final var pluginConfigs = osConfig.getInterceptorPlugins();
+    if (pluginConfigs != null) {
+      return pluginConfigs.values().stream()
+          .filter(plugin -> StringUtils.isNotBlank(plugin.id()))
+          .toList();
+    }
+    return List.of();
   }
 
   private static OpenSearchTransport getAwsTransport(final ConfigurationService osConfig) {
     final String region = new DefaultAwsRegionProviderChain().getRegion();
-    SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder().build();
+    final SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder().build();
     return new AwsSdk2Transport(
         httpClient,
         osConfig.getOpenSearchConfiguration().getFirstConnectionNode().getHost(),
@@ -111,21 +133,25 @@ public class OpenSearchClientBuilder {
             .build());
   }
 
-  private static boolean isAws() {
-    AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
-    try {
-      credentialsProvider.resolveCredentials();
-      log.info("AWS Credentials can be resolved. Use AWS OpenSearch");
-      return true;
-    } catch (Exception e) {
-      log.info("Use standard OpenSearch since AWS not configured ({}) ", e.getMessage());
-      return false;
+  private static boolean useAwsCredentials(final ConfigurationService configurationService) {
+    if (configurationService.getOpenSearchConfiguration().getConnection().getAwsEnabled()) {
+      final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
+      try {
+        credentialsProvider.resolveCredentials();
+        log.info("AWS Credentials can be resolved. Use AWS OpenSearch");
+        return true;
+      } catch (final Exception e) {
+        log.info("Use standard OpenSearch since AWS not configured ({}) ", e.getMessage());
+        return false;
+      }
     }
+    log.info("AWS Credentials are disabled. Using basic auth.");
+    return false;
   }
 
   private static OpenSearchTransport buildOpenSearchTransport(
-      final ConfigurationService configurationService) {
-    if (isAws()) {
+      final ConfigurationService configurationService, final PluginRepository pluginRepo) {
+    if (useAwsCredentials(configurationService)) {
       return getAwsTransport(configurationService);
     }
     final HttpHost[] hosts = buildOpenSearchConnectionNodes(configurationService);
@@ -134,7 +160,8 @@ public class OpenSearchClientBuilder {
 
     builder.setHttpClientConfigCallback(
         httpClientBuilder -> {
-          configureHttpClient(httpClientBuilder, configurationService);
+          configureHttpClient(
+              httpClientBuilder, configurationService, pluginRepo.asRequestInterceptor());
           return httpClientBuilder;
         });
 
@@ -199,6 +226,7 @@ public class OpenSearchClientBuilder {
   }
 
   public static String getCurrentOSVersion(final OpenSearchClient osClient) throws IOException {
+    // The request options is a placeholder for the eventual OpenSearch implementation
     return osClient.info().version().number();
   }
 
@@ -352,8 +380,14 @@ public class OpenSearchClientBuilder {
 
   private static HttpAsyncClientBuilder configureHttpClient(
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
-      final ConfigurationService configurationService) {
+      final ConfigurationService configurationService,
+      final HttpRequestInterceptor... requestInterceptors) {
     setupAuthentication(httpAsyncClientBuilder, configurationService);
+
+    for (final HttpRequestInterceptor interceptor : requestInterceptors) {
+      httpAsyncClientBuilder.addRequestInterceptorLast(interceptor);
+    }
+
     if (Boolean.TRUE.equals(
         configurationService.getOpenSearchConfiguration().getSecuritySSLEnabled())) {
       setupSSLContext(httpAsyncClientBuilder, configurationService);

@@ -9,17 +9,14 @@ package io.camunda.optimize.service.util;
 
 import static io.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll;
 import static io.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToLatest;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.service.DefinitionService;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 
 @AllArgsConstructor
 public class NestedDefinitionQueryBuilder {
@@ -29,27 +26,46 @@ public class NestedDefinitionQueryBuilder {
   private final String versionField;
   private final String tenantIdField;
 
-  public QueryBuilder createNestedDocDefinitionQuery(
+  public Query.Builder createNestedDocDefinitionQueryBuilder(
       final String definitionKey,
       final List<String> definitionVersions,
       final List<String> tenantIds,
       final DefinitionService definitionService) {
-    final BoolQueryBuilder query = boolQuery();
-    query.filter(
+    final Query.Builder builder = new Query.Builder();
+    final BoolQuery.Builder queryBuilder = new BoolQuery.Builder();
+    queryBuilder.filter(
         DefinitionQueryUtilES.createTenantIdQuery(nestedFieldReference(tenantIdField), tenantIds));
-    query.filter(termQuery(nestedFieldReference(definitionKeyField), definitionKey));
+    queryBuilder.filter(
+        f -> f.term(t -> t.field(nestedFieldReference(definitionKeyField)).value(definitionKey)));
     if (isDefinitionVersionSetToLatest(definitionVersions)) {
-      query.filter(
-          termsQuery(
-              nestedFieldReference(versionField),
-              definitionService.getLatestVersionToKey(DefinitionType.PROCESS, definitionKey)));
+      queryBuilder.filter(
+          f ->
+              f.terms(
+                  t ->
+                      t.field(nestedFieldReference(versionField))
+                          .terms(
+                              tt ->
+                                  tt.value(
+                                      List.of(
+                                          FieldValue.of(
+                                              definitionService.getLatestVersionToKey(
+                                                  DefinitionType.PROCESS, definitionKey)))))));
     } else if (!isDefinitionVersionSetToAll(definitionVersions)) {
-      query.filter(termsQuery(nestedFieldReference(versionField), definitionVersions));
+      queryBuilder.filter(
+          f ->
+              f.terms(
+                  t ->
+                      t.field(nestedFieldReference(versionField))
+                          .terms(
+                              tt ->
+                                  tt.value(
+                                      definitionVersions.stream().map(FieldValue::of).toList()))));
     } else if (definitionVersions.isEmpty()) {
       // if no version is set just return empty results
-      query.mustNot(matchAllQuery());
+      queryBuilder.mustNot(m -> m.matchAll(r -> r));
     }
-    return query;
+    builder.bool(queryBuilder.build());
+    return builder;
   }
 
   private String nestedFieldReference(final String fieldName) {

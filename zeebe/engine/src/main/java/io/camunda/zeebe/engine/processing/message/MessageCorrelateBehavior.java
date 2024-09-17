@@ -40,9 +40,8 @@ public final class MessageCorrelateBehavior {
     this.commandSender = commandSender;
   }
 
-  public Subscriptions correlateToMessageStartEvents(final MessageData messageData) {
-    final var correlatingSubscriptions = new Subscriptions();
-
+  public void correlateToMessageStartEvents(
+      final MessageData messageData, final Subscriptions correlatingSubscriptions) {
     startEventSubscriptionState.visitSubscriptionsByMessageName(
         messageData.tenantId(),
         messageData.messageName(),
@@ -70,12 +69,10 @@ public final class MessageCorrelateBehavior {
             correlatingSubscriptions.add(subscriptionRecord);
           }
         });
-
-    return correlatingSubscriptions;
   }
 
-  public Subscriptions correlateToMessageEvents(final MessageData messageData) {
-    final var correlatingSubscriptions = new Subscriptions();
+  public void correlateToMessageEvents(
+      final MessageData messageData, final Subscriptions correlatingSubscriptions) {
 
     messageSubscriptionState.visitSubscriptions(
         messageData.tenantId(),
@@ -100,21 +97,25 @@ public final class MessageCorrelateBehavior {
                 correlatingSubscription);
 
             correlatingSubscriptions.add(correlatingSubscription);
-
-            commandSender.correlateProcessMessageSubscription(
-                correlatingSubscription.getProcessInstanceKey(),
-                correlatingSubscription.getElementInstanceKey(),
-                correlatingSubscription.getBpmnProcessIdBuffer(),
-                messageData.messageName(),
-                messageData.messageKey(),
-                messageData.variables(),
-                messageData.correlationKey(),
-                messageData.tenantId());
           }
 
           return true;
         });
-    return correlatingSubscriptions;
+  }
+
+  public void sendCorrelateCommands(
+      final MessageData messageData, final Subscriptions correlatingSubscriptions) {
+    correlatingSubscriptions.visitSubscriptions(
+        subscription ->
+            commandSender.correlateProcessMessageSubscription(
+                subscription.getProcessInstanceKey(),
+                subscription.getElementInstanceKey(),
+                subscription.getBpmnProcessId(),
+                messageData.messageName(),
+                messageData.messageKey(),
+                messageData.variables(),
+                messageData.correlationKey(),
+                messageData.tenantId()));
   }
 
   public record MessageData(

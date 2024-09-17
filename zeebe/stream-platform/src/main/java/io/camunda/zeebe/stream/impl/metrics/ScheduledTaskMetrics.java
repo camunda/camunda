@@ -9,7 +9,6 @@ package io.camunda.zeebe.stream.impl.metrics;
 
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
@@ -32,36 +31,24 @@ public interface ScheduledTaskMetrics {
 
       @Override
       public void observeScheduledTaskExecution(final long delay) {}
-
-      @Override
-      public void close() {}
     };
   }
 
-  static ScheduledTaskMetrics of(final MeterRegistry registry, final int partition) {
-    return new ScheduledTaskMetricsImpl(registry, partition);
+  static ScheduledTaskMetrics of(final MeterRegistry registry) {
+    return new ScheduledTaskMetricsImpl(registry);
   }
-
-  void close();
 
   final class ScheduledTaskMetricsImpl implements ScheduledTaskMetrics {
     private final LongAdder scheduledTasksCounter = new LongAdder();
     private final Timer scheduledTaskDelay;
-    private final Gauge scheduledTasksGauge;
-    private final MeterRegistry registry;
 
-    private ScheduledTaskMetricsImpl(final MeterRegistry registry, final int partition) {
-      this.registry = registry;
-      final var tags = Tags.of("partition", String.valueOf(partition));
-      scheduledTasksGauge =
-          Gauge.builder("zeebe.processing.scheduling.tasks", scheduledTasksCounter, LongAdder::sum)
-              .tags(tags)
-              .description("The number of currently scheduled tasks")
-              .register(registry);
+    private ScheduledTaskMetricsImpl(final MeterRegistry registry) {
+      Gauge.builder("zeebe.processing.scheduling.tasks", scheduledTasksCounter, LongAdder::sum)
+          .description("The number of currently scheduled tasks")
+          .register(registry);
       scheduledTaskDelay =
           Timer.builder("zeebe.processing.scheduling.delay")
               .description("The delay of scheduled tasks")
-              .tags(tags)
               .publishPercentileHistogram()
               .register(registry);
     }
@@ -79,14 +66,6 @@ public interface ScheduledTaskMetrics {
     @Override
     public void observeScheduledTaskExecution(final long delay) {
       scheduledTaskDelay.record(delay, TimeUnit.MILLISECONDS);
-    }
-
-    @Override
-    public void close() {
-      scheduledTasksGauge.close();
-      scheduledTaskDelay.close();
-      registry.remove(scheduledTasksGauge);
-      registry.remove(scheduledTaskDelay);
     }
   }
 }

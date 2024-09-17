@@ -22,11 +22,6 @@ import java.util.Objects;
 import java.util.Set;
 import lombok.Getter;
 import org.apache.tika.utils.StringUtils;
-import org.elasticsearch.action.search.ClearScrollRequest;
-import org.elasticsearch.action.search.ClearScrollResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
 
 public abstract class DatabaseClient implements ConfigurationReloadable {
 
@@ -52,17 +47,13 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
 
   public abstract void deleteIndex(final String indexAlias);
 
+  public abstract void refresh(final String indexPattern);
+
   public abstract <T> long count(final String[] indexNames, final T query) throws IOException;
 
-  // todo will be handle in the OPT-7469
-  public abstract SearchResponse scroll(final SearchScrollRequest scrollRequest) throws IOException;
+  public abstract List<String> getAllIndexNames() throws IOException;
 
-  // todo will be handle in the OPT-7469
-  public abstract SearchResponse search(final SearchRequest searchRequest) throws IOException;
-
-  // todo will be handle in the OPT-7469
-  public abstract ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest)
-      throws IOException;
+  public abstract List<String> addPrefixesToIndices(String... indexes);
 
   public abstract String getDatabaseVersion() throws IOException;
 
@@ -85,14 +76,29 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
 
   public abstract DatabaseType getDatabaseVendor();
 
-  protected String[] convertToPrefixedAliasNames(final String[] indices) {
+  public String[] convertToPrefixedAliasNames(final String[] indices) {
     return Arrays.stream(indices).map(this::convertToPrefixedAliasName).toArray(String[]::new);
   }
 
-  protected String convertToPrefixedAliasName(final String index) {
+  public static String[] convertToPrefixedAliasNames(
+      final String[] indices, DatabaseClient client) {
+    return Arrays.stream(indices)
+        .map(i -> convertToPrefixedAliasName(i, client))
+        .toArray(String[]::new);
+  }
+
+  public String convertToPrefixedAliasName(final String index) {
     final boolean hasExcludePrefix = '-' == index.charAt(0);
     final String rawIndexName = hasExcludePrefix ? index.substring(1) : index;
     final String prefixedIndexName = indexNameService.getOptimizeIndexAliasForIndex(rawIndexName);
+    return hasExcludePrefix ? "-" + prefixedIndexName : prefixedIndexName;
+  }
+
+  public static String convertToPrefixedAliasName(final String index, DatabaseClient client) {
+    final boolean hasExcludePrefix = '-' == index.charAt(0);
+    final String rawIndexName = hasExcludePrefix ? index.substring(1) : index;
+    final String prefixedIndexName =
+        client.indexNameService.getOptimizeIndexAliasForIndex(rawIndexName);
     return hasExcludePrefix ? "-" + prefixedIndexName : prefixedIndexName;
   }
 
@@ -139,6 +145,8 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
     }
     return true;
   }
+
+  public abstract void deleteIndexByRawIndexNames(String... indexNames);
 
   private String generateErrorMessageForValidationImportRequestDto(
       final RequestType type, final String fieldName) {

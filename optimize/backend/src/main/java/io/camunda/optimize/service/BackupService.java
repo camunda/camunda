@@ -7,12 +7,20 @@
  */
 package io.camunda.optimize.service;
 
+import static io.camunda.optimize.dto.optimize.rest.SnapshotState.FAILED;
+import static io.camunda.optimize.dto.optimize.rest.SnapshotState.INCOMPATIBLE;
+import static io.camunda.optimize.dto.optimize.rest.SnapshotState.IN_PROGRESS;
+import static io.camunda.optimize.dto.optimize.rest.SnapshotState.PARTIAL;
+import static io.camunda.optimize.dto.optimize.rest.SnapshotState.SUCCESS;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 
+import co.elastic.clients.elasticsearch._types.ShardFailure;
+import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
 import io.camunda.optimize.dto.optimize.BackupState;
 import io.camunda.optimize.dto.optimize.rest.BackupInfoDto;
 import io.camunda.optimize.dto.optimize.rest.SnapshotInfoDto;
+import io.camunda.optimize.dto.optimize.rest.SnapshotState;
 import io.camunda.optimize.service.db.reader.BackupReader;
 import io.camunda.optimize.service.db.writer.BackupWriter;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
@@ -27,9 +35,6 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.snapshots.SnapshotInfo;
-import org.elasticsearch.snapshots.SnapshotShardFailure;
-import org.elasticsearch.snapshots.SnapshotState;
 import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
@@ -58,7 +63,8 @@ public class BackupService {
             entry ->
                 getSingleBackupInfo(
                     entry.getKey(),
-                    entry.getValue().stream().collect(groupingBy(SnapshotInfo::state))))
+                    entry.getValue().stream()
+                        .collect(groupingBy(s -> SnapshotState.fromValue(s.state())))))
         .toList();
   }
 
@@ -67,7 +73,7 @@ public class BackupService {
     return getSingleBackupInfo(
         backupId,
         backupReader.getOptimizeSnapshotsForBackupId(backupId).stream()
-            .collect(groupingBy(SnapshotInfo::state)));
+            .collect(groupingBy(s -> SnapshotState.fromValue(s.state()))));
   }
 
   private BackupInfoDto getSingleBackupInfo(
@@ -89,10 +95,8 @@ public class BackupService {
       failureReason =
           String.format(
               "The following snapshots failed: [%s]",
-              snapshotInfosPerState
-                  .getOrDefault(SnapshotState.FAILED, Collections.emptyList())
-                  .stream()
-                  .map(snapshotInfo -> snapshotInfo.snapshot().getSnapshotId().getName())
+              snapshotInfosPerState.getOrDefault(FAILED, Collections.emptyList()).stream()
+                  .map(snapshotInfo -> snapshotInfo.snapshot())
                   .collect(joining(", ")));
     }
     return new BackupInfoDto(
@@ -104,12 +108,13 @@ public class BackupService {
             .map(
                 snapshotInfo ->
                     new SnapshotInfoDto(
-                        snapshotInfo.snapshot().getSnapshotId().getName(),
-                        snapshotInfo.state(),
+                        snapshotInfo.snapshot(),
+                        SnapshotState.fromValue(snapshotInfo.state()),
                         OffsetDateTime.ofInstant(
-                            Instant.ofEpochMilli(snapshotInfo.startTime()), ZoneId.systemDefault()),
-                        snapshotInfo.shardFailures().stream()
-                            .map(SnapshotShardFailure::toString)
+                            Instant.ofEpochMilli(snapshotInfo.startTime().toEpochMilli()),
+                            ZoneId.systemDefault()),
+                        snapshotInfo.shards().failures().stream()
+                            .map(ShardFailure::toString)
                             .toList()))
             .toList());
   }
@@ -121,19 +126,17 @@ public class BackupService {
 
   private BackupState determineBackupState(
       final Map<SnapshotState, List<SnapshotInfo>> snapshotInfosPerState) {
-    if (snapshotInfosPerState.getOrDefault(SnapshotState.SUCCESS, Collections.emptyList()).size()
+    if (snapshotInfosPerState.getOrDefault(SUCCESS, Collections.emptyList()).size()
         == EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP) {
       return BackupState.COMPLETED;
-    } else if (snapshotInfosPerState.get(SnapshotState.FAILED) != null
-        || snapshotInfosPerState.get(SnapshotState.PARTIAL) != null) {
+    } else if (snapshotInfosPerState.get(FAILED) != null
+        || snapshotInfosPerState.get(PARTIAL) != null) {
       return BackupState.FAILED;
-    } else if (snapshotInfosPerState.get(SnapshotState.INCOMPATIBLE) != null) {
+    } else if (snapshotInfosPerState.get(INCOMPATIBLE) != null) {
       return BackupState.INCOMPATIBLE;
-    } else if (snapshotInfosPerState.get(SnapshotState.IN_PROGRESS) != null) {
+    } else if (snapshotInfosPerState.get(IN_PROGRESS) != null) {
       return BackupState.IN_PROGRESS;
-    } else if (snapshotInfosPerState
-            .getOrDefault(SnapshotState.SUCCESS, Collections.emptyList())
-            .size()
+    } else if (snapshotInfosPerState.getOrDefault(SUCCESS, Collections.emptyList()).size()
         < EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP) {
       return BackupState.INCOMPLETE;
     } else {

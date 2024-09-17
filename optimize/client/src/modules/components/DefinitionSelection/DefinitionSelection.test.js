@@ -10,7 +10,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import {ComboBox} from '@carbon/react';
 
-import {LoadingIndicator, TenantInfo} from 'components';
+import {TenantInfo} from 'components';
 import {getCollection, loadDefinitions} from 'services';
 import {getOptimizeProfile} from 'config';
 
@@ -21,7 +21,7 @@ import {loadVersions, loadTenants} from './service';
 import MultiDefinitionSelection from './MultiDefinitionSelection';
 
 jest.mock('config', () => ({
-  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+  getOptimizeProfile: jest.fn().mockReturnValue('ccsm'),
   getMaxNumDataSourcesForReport: jest.fn().mockReturnValue(10),
 }));
 
@@ -111,7 +111,7 @@ it('should render without crashing', () => {
 it('should display a loading indicator', () => {
   const node = shallow(<DefinitionSelection {...props} />);
 
-  expect(node.find(LoadingIndicator)).toExist();
+  expect(node.find('.LoadingDefinitions')).toExist();
 });
 
 it('should initially load all definitions', () => {
@@ -447,7 +447,6 @@ it('should invoke onChange from MultiDefinitionSelection if selectedDefinitions 
 });
 
 it('should display the readonly tenantInfo component in self managed mode', async () => {
-  getOptimizeProfile.mockReturnValueOnce('ccsm');
   loadTenants.mockReturnValueOnce([
     {
       tenants: [

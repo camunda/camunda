@@ -10,9 +10,11 @@ package io.camunda.search.es.transformers.search;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.SourceConfig;
 import co.elastic.clients.json.JsonData;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.sort.SearchSortOptions;
+import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import java.util.Arrays;
@@ -49,12 +51,21 @@ public final class SearchRequestTransformer
       builder.searchAfter(of(searchAfter));
     }
 
+    if (value.source() != null) {
+      builder.source(of(value.source()));
+    }
+
     return builder.build();
   }
 
   private List<SortOptions> of(final List<SearchSortOptions> values) {
     final var sortTransformer = getSortOptionsTransformer();
     return values.stream().map(sortTransformer::apply).collect(Collectors.toList());
+  }
+
+  private SourceConfig of(final SearchSourceConfig value) {
+    final var sourceTransformer = getSourceConfigTransformer();
+    return sourceTransformer.apply(value);
   }
 
   private List<FieldValue> of(final Object[] values) {

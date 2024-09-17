@@ -14,10 +14,10 @@ import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,106 +38,145 @@ public class AuthorizationStateTest {
   void shouldReturnNullIfNoAuthorizationForOwnerAndResourceExists() {
     // when
     final var persistedAuth =
-        authorizationState.getPermissions(
-            "owner" + UUID.randomUUID(), AuthorizationOwnerType.USER, "resource", "resource-type");
+        authorizationState.getResourceIdentifiers(
+            1L, AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
     // then
     assertThat(persistedAuth).isNull();
   }
 
-  @DisplayName(
-      "should create authorization if an authorization for the owner and resource pair does not exist")
   @Test
-  void shouldCreateIfUsernameDoesNotExist() {
+  void shouldCreatePermissions() {
+    // given
+    final var ownerKey = 1L;
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceIds = List.of("foo", "bar");
+
     // when
-    final AuthorizationRecord authorizationRecord =
-        new AuthorizationRecord()
-            .setOwnerKey("owner" + UUID.randomUUID())
-            .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceKey("resource")
-            .setResourceType("resourceType")
-            .setPermissions(List.of("write:*"));
-    authorizationState.createAuthorization(authorizationRecord);
+    authorizationState.createOrAddPermission(ownerKey, resourceType, permissionType, resourceIds);
 
     // then
-    final var persistedAuthorization =
-        authorizationState.getPermissions(
-            authorizationRecord.getOwnerKey(),
-            authorizationRecord.getOwnerType(),
-            authorizationRecord.getResourceKey(),
-            authorizationRecord.getResourceType());
-    assertThat(persistedAuthorization.getPermissions())
-        .isEqualTo(authorizationRecord.getPermissions());
+    final var resourceIdentifiers =
+        authorizationState
+            .getResourceIdentifiers(ownerKey, resourceType, permissionType)
+            .getResourceIdentifiers();
+    assertThat(resourceIdentifiers).containsExactly("foo", "bar");
   }
 
-  @DisplayName(
-      "should throw an exception when an authorization for owner and resource pair already exist")
   @Test
-  void shouldThrowExceptionInCreateIfUsernameDoesNotExist() {
-    final var owner = "owner" + UUID.randomUUID();
+  void shouldUpdatePermissionsIfAlreadyExists() {
     // given
-    final AuthorizationRecord authorizationRecord =
-        new AuthorizationRecord()
-            .setAuthorizationKey(1L)
-            .setOwnerKey(owner)
-            .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceKey("my-resource-key")
-            .setResourceType("process-definition")
-            .setPermissions(List.of("write:*"));
-    authorizationState.createAuthorization(authorizationRecord);
+    final var ownerKey = 1L;
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceIds = List.of("foo", "bar");
+    authorizationState.createOrAddPermission(ownerKey, resourceType, permissionType, resourceIds);
 
-    // when/then
-    assertThatThrownBy(() -> authorizationState.createAuthorization(authorizationRecord))
+    // when
+    authorizationState.createOrAddPermission(
+        ownerKey, resourceType, permissionType, List.of("baz"));
+
+    // then
+    final var resourceIdentifiers =
+        authorizationState
+            .getResourceIdentifiers(ownerKey, resourceType, permissionType)
+            .getResourceIdentifiers();
+    assertThat(resourceIdentifiers).containsExactly("foo", "bar", "baz");
+  }
+
+  @Test
+  void shouldStorePermissionsByOwnerKey() {
+    // given
+    final var ownerKey1 = 1L;
+    final var ownerKey2 = 2L;
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.CREATE;
+    authorizationState.createOrAddPermission(
+        ownerKey1, resourceType, permissionType, List.of("foo"));
+    authorizationState.createOrAddPermission(
+        ownerKey2, resourceType, permissionType, List.of("bar"));
+
+    // when
+    final var resourceIds1 =
+        authorizationState.getResourceIdentifiers(ownerKey1, resourceType, permissionType);
+    final var resourceIds2 =
+        authorizationState.getResourceIdentifiers(ownerKey2, resourceType, permissionType);
+
+    // then
+    assertThat(resourceIds1).isNotEqualTo(resourceIds2);
+  }
+
+  @Test
+  void shouldStorePermissionsByResourceType() {
+    // given
+    final var ownerKey = 1L;
+    final var resourceType1 = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType2 = AuthorizationResourceType.JOB;
+    final var permissionType = PermissionType.CREATE;
+    authorizationState.createOrAddPermission(
+        ownerKey, resourceType1, permissionType, List.of("foo"));
+    authorizationState.createOrAddPermission(
+        ownerKey, resourceType2, permissionType, List.of("bar"));
+
+    // when
+    final var resourceIds1 =
+        authorizationState.getResourceIdentifiers(ownerKey, resourceType1, permissionType);
+    final var resourceIds2 =
+        authorizationState.getResourceIdentifiers(ownerKey, resourceType2, permissionType);
+
+    // then
+    assertThat(resourceIds1).isNotEqualTo(resourceIds2);
+  }
+
+  @Test
+  void shouldStorePermissionsByPermissionType() {
+    // given
+    final var ownerKey = 1L;
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType1 = PermissionType.CREATE;
+    final var permissionType2 = PermissionType.UPDATE;
+    authorizationState.createOrAddPermission(
+        ownerKey, resourceType, permissionType1, List.of("foo"));
+    authorizationState.createOrAddPermission(
+        ownerKey, resourceType, permissionType2, List.of("bar"));
+
+    // when
+    final var resourceIds1 =
+        authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType1);
+    final var resourceIds2 =
+        authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType2);
+
+    // then
+    assertThat(resourceIds1).isNotEqualTo(resourceIds2);
+  }
+
+  @Test
+  void shouldInsertOwnerTypeByKey() {
+    // given
+    final var ownerKey = 1L;
+    final var ownerType = AuthorizationOwnerType.USER;
+
+    // when
+    authorizationState.insertOwnerTypeByKey(ownerKey, ownerType);
+
+    // then
+    final var persistedOwnerType = authorizationState.getOwnerType(ownerKey);
+    assertThat(persistedOwnerType).contains(ownerType);
+  }
+
+  @Test
+  void shouldNotInsertOwnerTypeByKeyTwice() {
+    // given
+    final var ownerKey = 1L;
+    final var ownerType = AuthorizationOwnerType.USER;
+
+    // when
+    authorizationState.insertOwnerTypeByKey(ownerKey, ownerType);
+
+    // then
+    assertThatThrownBy(() -> authorizationState.insertOwnerTypeByKey(ownerKey, ownerType))
         .isInstanceOf(ZeebeDbInconsistentException.class)
         .hasMessageContaining(
-            "Key DbCompositeKey{first=DbCompositeKey{first="
-                + owner
-                + ", second="
-                + AuthorizationOwnerType.GROUP
-                + "}, second=DbCompositeKey{first=my-resource-key, second=process-definition}} in ColumnFamily AUTHORIZATIONS_BY_USERNAME_AND_PERMISSION already exists");
-  }
-
-  @DisplayName("should return the correct authorization")
-  @Test
-  void shouldReturnCorrectAuthorization() {
-    // given
-    final AuthorizationRecord authorizationRecordOne =
-        new AuthorizationRecord()
-            .setAuthorizationKey(1L)
-            .setOwnerKey("owner" + UUID.randomUUID())
-            .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceKey("resource")
-            .setResourceType("resourceType")
-            .setPermissions(List.of("read:*"));
-    authorizationState.createAuthorization(authorizationRecordOne);
-
-    final AuthorizationRecord authorizationRecordTwo =
-        new AuthorizationRecord()
-            .setAuthorizationKey(2L)
-            .setOwnerKey("owner" + UUID.randomUUID())
-            .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceKey("resource")
-            .setResourceType("resourceType")
-            .setPermissions(List.of("write:*"));
-    authorizationState.createAuthorization(authorizationRecordTwo);
-
-    final var authorizationOne =
-        authorizationState.getPermissions(
-            authorizationRecordOne.getOwnerKey(),
-            authorizationRecordOne.getOwnerType(),
-            authorizationRecordOne.getResourceKey(),
-            authorizationRecordOne.getResourceType());
-
-    final var authorizationTwo =
-        authorizationState.getPermissions(
-            authorizationRecordTwo.getOwnerKey(),
-            authorizationRecordTwo.getOwnerType(),
-            authorizationRecordTwo.getResourceKey(),
-            authorizationRecordTwo.getResourceType());
-
-    assertThat(authorizationOne).isNotEqualTo(authorizationTwo);
-    assertThat(authorizationOne.getPermissions())
-        .isEqualTo(authorizationRecordOne.getPermissions());
-    assertThat(authorizationTwo.getPermissions())
-        .isEqualTo(authorizationRecordTwo.getPermissions());
+            "Key DbLong{1} in ColumnFamily OWNER_TYPE_BY_OWNER_KEY already exists");
   }
 }

@@ -13,7 +13,7 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.sort.SearchSortOptions;
 import io.camunda.search.clients.sort.SortOrder;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.query.filter.DecisionDefinitionSearchQueryStub;
+import io.camunda.service.query.filter.UserTaskSearchQueryStub;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.sort.UserTaskSort;
 import io.camunda.service.util.StubbedCamundaSearchClient;
@@ -27,7 +27,7 @@ public class PrioritySortTest {
   @BeforeEach
   public void before() {
     client = new StubbedCamundaSearchClient();
-    new DecisionDefinitionSearchQueryStub().registerWith(client);
+    new UserTaskSearchQueryStub().registerWith(client);
     services = new UserTaskServices(null, client);
   }
 

@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.migration.to_8_5;
 
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.migration.MigrationTask;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.migration.MigrationTaskContext;
+import io.camunda.zeebe.engine.state.migration.MutableMigrationTaskContext;
 
 public class ColumnFamilyPrefixCorrectionMigration implements MigrationTask {
 
@@ -19,13 +19,13 @@ public class ColumnFamilyPrefixCorrectionMigration implements MigrationTask {
   }
 
   @Override
-  public boolean needsToRun(final ProcessingState processingState) {
+  public boolean needsToRun(final MigrationTaskContext context) {
     return true;
   }
 
   @Override
-  public void runMigration(final MutableProcessingState processingState) {
-    final var migrationState = processingState.getMigrationState();
+  public void runMigration(final MutableMigrationTaskContext context) {
+    final var migrationState = context.processingState().getMigrationState();
     migrationState.correctColumnFamilyPrefix();
   }
 }

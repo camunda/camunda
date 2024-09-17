@@ -46,6 +46,14 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-impl</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>document-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>document-store</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -55,6 +63,11 @@
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
     </dependency>
 
     <dependency>

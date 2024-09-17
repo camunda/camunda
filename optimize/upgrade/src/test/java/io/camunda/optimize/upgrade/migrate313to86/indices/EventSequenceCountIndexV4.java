@@ -7,23 +7,25 @@
  */
 package io.camunda.optimize.upgrade.migrate313to86.indices;
 
+import co.elastic.clients.elasticsearch._types.mapping.Property;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
-public class EventSequenceCountIndexV4 extends DefaultIndexMappingCreator<XContentBuilder> {
+public class EventSequenceCountIndexV4 extends DefaultIndexMappingCreator<IndexSettings.Builder> {
 
   @Override
-  public XContentBuilder addStaticSetting(
-      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
-    return contentBuilder.field(key, value);
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder builder) throws IOException {
+    return builder.numberOfShards(Integer.toString(value));
   }
 
   @Override
-  public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
     // only include sample field since this index is used for deletion IT
     // @formatter:off
-    return xContentBuilder.startObject("ID").field("type", "keyword").endObject();
+    return builder.properties("ID", Property.of(p -> p.keyword(t -> t)));
     // @formatter:on
   }
 

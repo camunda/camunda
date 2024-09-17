@@ -82,6 +82,7 @@ public class EventZeebeRecordProcessor {
     PROCESS_INSTANCE_STATES.add(ELEMENT_TERMINATED.name());
 
     PROCESS_MESSAGE_SUBSCRIPTION_STATES.add(ProcessMessageSubscriptionIntent.CREATED.name());
+    PROCESS_MESSAGE_SUBSCRIPTION_STATES.add(ProcessMessageSubscriptionIntent.MIGRATED.name());
   }
 
   @Autowired private EventTemplate eventTemplate;

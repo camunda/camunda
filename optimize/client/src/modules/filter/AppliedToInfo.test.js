@@ -64,7 +64,7 @@ it('should not show label when there is only one process', () => {
 it('should show list of all running processes in tooltip', () => {
   const filter = {appliedTo: ['all']};
   const node = shallow(<AppliedToInfo filter={filter} definitions={definitions} />);
-  const tooltipContent = shallow(node.find('Tooltip').prop('content'));
+  const tooltipContent = shallow(node.find('Tooltip').prop('label'));
 
   expect(tooltipContent.find('ul')).toIncludeText('def 1');
   expect(tooltipContent.find('ul')).toIncludeText('def 2');
@@ -74,7 +74,7 @@ it('should show list of all running processes in tooltip', () => {
 it('should show list of one running processes in tooltip', () => {
   const filter = {appliedTo: ['def1']};
   const node = shallow(<AppliedToInfo filter={filter} definitions={definitions} />);
-  const tooltipContent = shallow(node.find('Tooltip').prop('content'));
+  const tooltipContent = shallow(node.find('Tooltip').prop('label'));
 
   expect(tooltipContent.find('ul')).toIncludeText('def 1');
   expect(tooltipContent.find('ul')).not.toIncludeText('def 2');

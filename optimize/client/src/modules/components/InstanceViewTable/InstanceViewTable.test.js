@@ -28,6 +28,7 @@ jest.mock('services', () => ({
 }));
 
 jest.mock('hooks', () => ({
+  ...jest.requireActual('hooks'),
   useErrorHandling: jest.fn(() => ({
     mightFail: jest.fn((data, cb) => cb(data)),
   })),

@@ -19,12 +19,31 @@ import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRe
 
 public interface ProcessInstanceSort extends SearchRequestSort<ProcessInstanceSort> {
 
-  /** Sort by process instance key. */
-  ProcessInstanceSort processInstanceKey();
+  ProcessInstanceSort key();
 
-  /** Sort by process instance start date. */
+  ProcessInstanceSort processName();
+
+  ProcessInstanceSort processVersion();
+
+  ProcessInstanceSort bpmnProcessId();
+
+  ProcessInstanceSort parentProcessInstanceKey();
+
+  ProcessInstanceSort parentFlowNodeInstanceKey();
+
   ProcessInstanceSort startDate();
 
-  /** Sort by process instance end date. */
   ProcessInstanceSort endDate();
+
+  ProcessInstanceSort state();
+
+  ProcessInstanceSort incident();
+
+  ProcessInstanceSort hasActiveOperation();
+
+  ProcessInstanceSort processDefinitionKey();
+
+  ProcessInstanceSort tenantId();
+
+  ProcessInstanceSort rootInstanceId();
 }

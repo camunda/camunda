@@ -10,7 +10,6 @@ import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {getWebappEndpoints} from 'config';
-import {LoadingIndicator} from 'components';
 
 import RawDataTable from './RawDataTable';
 import processRawData from './processRawData';
@@ -150,5 +149,5 @@ it('should show loading indicator when loading camunda endpoints', () => {
 
   runAllEffects();
 
-  expect(node.find(LoadingIndicator)).toBeDefined();
+  expect(node.find('Loading')).toBeDefined();
 });

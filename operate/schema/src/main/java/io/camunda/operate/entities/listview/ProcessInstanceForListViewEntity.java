@@ -22,6 +22,7 @@ public class ProcessInstanceForListViewEntity
   private Long processDefinitionKey;
   private String processName;
   private Integer processVersion;
+  private String processVersionTag;
   private String bpmnProcessId;
 
   private OffsetDateTime startDate;
@@ -52,8 +53,8 @@ public class ProcessInstanceForListViewEntity
     return getKey();
   }
 
-  public ProcessInstanceForListViewEntity setProcessInstanceKey(Long processInstanceKey) {
-    this.setKey(processInstanceKey);
+  public ProcessInstanceForListViewEntity setProcessInstanceKey(final Long processInstanceKey) {
+    setKey(processInstanceKey);
     return this;
   }
 
@@ -61,7 +62,7 @@ public class ProcessInstanceForListViewEntity
     return processDefinitionKey;
   }
 
-  public ProcessInstanceForListViewEntity setProcessDefinitionKey(Long processDefinitionKey) {
+  public ProcessInstanceForListViewEntity setProcessDefinitionKey(final Long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
@@ -70,7 +71,7 @@ public class ProcessInstanceForListViewEntity
     return processName;
   }
 
-  public ProcessInstanceForListViewEntity setProcessName(String processName) {
+  public ProcessInstanceForListViewEntity setProcessName(final String processName) {
     this.processName = processName;
     return this;
   }
@@ -79,8 +80,17 @@ public class ProcessInstanceForListViewEntity
     return processVersion;
   }
 
-  public ProcessInstanceForListViewEntity setProcessVersion(Integer processVersion) {
+  public ProcessInstanceForListViewEntity setProcessVersion(final Integer processVersion) {
     this.processVersion = processVersion;
+    return this;
+  }
+
+  public String getProcessVersionTag() {
+    return processVersionTag;
+  }
+
+  public ProcessInstanceForListViewEntity setProcessVersionTag(final String processVersionTag) {
+    this.processVersionTag = processVersionTag;
     return this;
   }
 
@@ -88,7 +98,7 @@ public class ProcessInstanceForListViewEntity
     return startDate;
   }
 
-  public ProcessInstanceForListViewEntity setStartDate(OffsetDateTime startDate) {
+  public ProcessInstanceForListViewEntity setStartDate(final OffsetDateTime startDate) {
     this.startDate = startDate;
     return this;
   }
@@ -97,7 +107,7 @@ public class ProcessInstanceForListViewEntity
     return endDate;
   }
 
-  public ProcessInstanceForListViewEntity setEndDate(OffsetDateTime endDate) {
+  public ProcessInstanceForListViewEntity setEndDate(final OffsetDateTime endDate) {
     this.endDate = endDate;
     return this;
   }
@@ -106,7 +116,7 @@ public class ProcessInstanceForListViewEntity
     return state;
   }
 
-  public ProcessInstanceForListViewEntity setState(ProcessInstanceState state) {
+  public ProcessInstanceForListViewEntity setState(final ProcessInstanceState state) {
     this.state = state;
     return this;
   }
@@ -115,7 +125,8 @@ public class ProcessInstanceForListViewEntity
     return batchOperationIds;
   }
 
-  public ProcessInstanceForListViewEntity setBatchOperationIds(List<String> batchOperationIds) {
+  public ProcessInstanceForListViewEntity setBatchOperationIds(
+      final List<String> batchOperationIds) {
     this.batchOperationIds = batchOperationIds;
     return this;
   }
@@ -124,7 +135,7 @@ public class ProcessInstanceForListViewEntity
     return bpmnProcessId;
   }
 
-  public ProcessInstanceForListViewEntity setBpmnProcessId(String bpmnProcessId) {
+  public ProcessInstanceForListViewEntity setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -134,7 +145,7 @@ public class ProcessInstanceForListViewEntity
   }
 
   public ProcessInstanceForListViewEntity setParentProcessInstanceKey(
-      Long parentProcessInstanceKey) {
+      final Long parentProcessInstanceKey) {
     this.parentProcessInstanceKey = parentProcessInstanceKey;
     return this;
   }
@@ -144,7 +155,7 @@ public class ProcessInstanceForListViewEntity
   }
 
   public ProcessInstanceForListViewEntity setParentFlowNodeInstanceKey(
-      Long parentFlowNodeInstanceKey) {
+      final Long parentFlowNodeInstanceKey) {
     this.parentFlowNodeInstanceKey = parentFlowNodeInstanceKey;
     return this;
   }
@@ -153,7 +164,7 @@ public class ProcessInstanceForListViewEntity
     return treePath;
   }
 
-  public ProcessInstanceForListViewEntity setTreePath(String treePath) {
+  public ProcessInstanceForListViewEntity setTreePath(final String treePath) {
     this.treePath = treePath;
     return this;
   }
@@ -162,7 +173,7 @@ public class ProcessInstanceForListViewEntity
     return incident;
   }
 
-  public ProcessInstanceForListViewEntity setIncident(boolean incident) {
+  public ProcessInstanceForListViewEntity setIncident(final boolean incident) {
     this.incident = incident;
     return this;
   }
@@ -171,7 +182,7 @@ public class ProcessInstanceForListViewEntity
     return tenantId;
   }
 
-  public ProcessInstanceForListViewEntity setTenantId(String tenantId) {
+  public ProcessInstanceForListViewEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -180,7 +191,7 @@ public class ProcessInstanceForListViewEntity
     return joinRelation;
   }
 
-  public ProcessInstanceForListViewEntity setJoinRelation(ListViewJoinRelation joinRelation) {
+  public ProcessInstanceForListViewEntity setJoinRelation(final ListViewJoinRelation joinRelation) {
     this.joinRelation = joinRelation;
     return this;
   }
@@ -189,7 +200,7 @@ public class ProcessInstanceForListViewEntity
     return sortValues;
   }
 
-  public ProcessInstanceForListViewEntity setSortValues(Object[] sortValues) {
+  public ProcessInstanceForListViewEntity setSortValues(final Object[] sortValues) {
     this.sortValues = sortValues;
     return this;
   }
@@ -201,6 +212,28 @@ public class ProcessInstanceForListViewEntity
   public ProcessInstanceForListViewEntity setPosition(final Long position) {
     this.position = position;
     return this;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        processDefinitionKey,
+        processName,
+        processVersion,
+        processVersionTag,
+        bpmnProcessId,
+        startDate,
+        endDate,
+        state,
+        batchOperationIds,
+        parentProcessInstanceKey,
+        parentFlowNodeInstanceKey,
+        treePath,
+        incident,
+        tenantId,
+        joinRelation,
+        position);
   }
 
   @Override
@@ -219,6 +252,7 @@ public class ProcessInstanceForListViewEntity
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processName, that.processName)
         && Objects.equals(processVersion, that.processVersion)
+        && Objects.equals(processVersionTag, that.processVersionTag)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(startDate, that.startDate)
         && Objects.equals(endDate, that.endDate)
@@ -230,26 +264,5 @@ public class ProcessInstanceForListViewEntity
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(joinRelation, that.joinRelation)
         && Objects.equals(position, that.position);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        processDefinitionKey,
-        processName,
-        processVersion,
-        bpmnProcessId,
-        startDate,
-        endDate,
-        state,
-        batchOperationIds,
-        parentProcessInstanceKey,
-        parentFlowNodeInstanceKey,
-        treePath,
-        incident,
-        tenantId,
-        joinRelation,
-        position);
   }
 }

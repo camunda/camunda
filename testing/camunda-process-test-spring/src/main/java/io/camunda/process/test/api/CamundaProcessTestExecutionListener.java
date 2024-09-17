@@ -78,7 +78,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     final CamundaProcessTestContext camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
-            containerRuntime.getZeebeContainer(), createdClients::add);
+            containerRuntime.getZeebeContainer(),
+            containerRuntime.getConnectorsContainer(),
+            createdClients::add);
 
     client = createClient(testContext, camundaProcessTestContext);
 
@@ -132,6 +134,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     runtimeConfiguration
         .getZeebeExposedPorts()
         .forEach(containerRuntimeBuilder::withZeebeExposedPort);
+
+    containerRuntimeBuilder
+        .withConnectorsEnabled(runtimeConfiguration.isConnectorsEnabled())
+        .withConnectorsDockerImageName(runtimeConfiguration.getConnectorsDockerImageName())
+        .withConnectorsDockerImageVersion(runtimeConfiguration.getConnectorsDockerImageVersion())
+        .withConnectorsEnv(runtimeConfiguration.getConnectorsEnvVars())
+        .withConnectorsSecrets(runtimeConfiguration.getConnectorsSecrets());
 
     return containerRuntimeBuilder.build();
   }
