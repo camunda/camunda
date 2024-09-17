@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   test:
-    runs-on: gcp-core-16-longrunning
+    runs-on: gcp-core-32-longrunning
     services:
       elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:8.15.1
