@@ -11,7 +11,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
@@ -35,9 +34,7 @@ public final class DecisionInstanceFilterTransformer
   public SearchQuery toSearchQuery(final DecisionInstanceFilter filter) {
     final var keysQuery = getKeysQuery(filter.keys());
     final var statesQuery = getStatesQuery(filter.states());
-    final var evaluationDateBeforeQuery =
-        getEvaluationDateBeforeQuery(filter.evaluationDateBefore());
-    final var evaluationDateAfterQuery = getEvaluationDateAfterQuery(filter.evaluationDateAfter());
+    final var evaluationDateQuery = getEvaluationDateQuery(filter.evaluationDate());
     final var evaluationFailuresQuery = getEvaluationFailuresQuery(filter.evaluationFailures());
     final var processDefinitionKeysQuery =
         getProcessDefinitionKeysQuery(filter.processDefinitionKeys());
@@ -52,8 +49,7 @@ public final class DecisionInstanceFilterTransformer
     return and(
         keysQuery,
         statesQuery,
-        evaluationDateBeforeQuery,
-        evaluationDateAfterQuery,
+        evaluationDateQuery,
         evaluationFailuresQuery,
         processDefinitionKeysQuery,
         processInstanceKeysQuery,
@@ -78,15 +74,7 @@ public final class DecisionInstanceFilterTransformer
     return stringTerms("state", states != null ? states.stream().map(Enum::name).toList() : null);
   }
 
-  private SearchQuery getEvaluationDateBeforeQuery(final DateValueFilter filter) {
-    if (filter != null) {
-      final var transformer = transformers.getFilterTransformer(DateValueFilter.class);
-      return transformer.apply(new DateFieldFilter("evaluationDate", filter));
-    }
-    return null;
-  }
-
-  private SearchQuery getEvaluationDateAfterQuery(final DateValueFilter filter) {
+  private SearchQuery getEvaluationDateQuery(final DateValueFilter filter) {
     if (filter != null) {
       final var transformer = transformers.getFilterTransformer(DateValueFilter.class);
       return transformer.apply(new DateFieldFilter("evaluationDate", filter));
@@ -128,14 +116,6 @@ public final class DecisionInstanceFilterTransformer
     return stringTerms(
         "decisionType",
         decisionTypes != null ? decisionTypes.stream().map(Enum::name).toList() : null);
-  }
-
-  private SearchQuery getEvaluatedQuery(final Boolean evaluated) {
-    return evaluated != null ? term("evaluated", evaluated) : null;
-  }
-
-  private SearchQuery getFailedQuery(final Boolean failed) {
-    return failed != null ? term("failed", failed) : null;
   }
 
   private SearchQuery getTenantIdsQuery(final List<String> tenantIds) {

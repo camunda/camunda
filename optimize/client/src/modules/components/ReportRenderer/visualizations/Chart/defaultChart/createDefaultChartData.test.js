@@ -208,3 +208,89 @@ it('should sort all values according the first measure labels', () => {
   expect(chartData.datasets[0].data).toEqual([10, 20]);
   expect(chartData.datasets[1].data).toEqual([22, 11]);
 });
+
+it('should properly match values to labels for measure with different labels', () => {
+  const result = {
+    measures: [
+      {
+        property: 'frequency',
+        data: [
+          {key: 'foo', value: 10, label: 'label1'},
+          {key: 'bar', value: 20, label: 'label2'},
+        ],
+      },
+      {
+        property: 'duration',
+        data: [
+          {key: 'foo', value: 22, label: 'label1'},
+          {key: 'bar', value: 11, label: 'label2'},
+        ],
+      },
+    ],
+  };
+
+  const chartData = createDefaultChartData({
+    report: {
+      result,
+      data: {
+        configuration: {
+          color: 'testColor',
+          measureVisualizations: {frequency: 'line', duration: 'bar'},
+        },
+        groupBy: {
+          type: '',
+          value: '',
+          view: {properties: ['duration'], entity: 'flowNode'},
+        },
+        view: {properties: ['frequency', 'duration'], entity: 'flowNode'},
+      },
+    },
+  });
+
+  expect(chartData.labels).toEqual(['label1', 'label2']);
+  expect(chartData.datasets[0].data).toEqual([10, 20]);
+  expect(chartData.datasets[1].data).toEqual([22, 11]);
+});
+
+it('should properly match values to labels for two measures with same labels', () => {
+  const result = {
+    measures: [
+      {
+        property: 'frequency',
+        data: [
+          {key: 'foo', value: 10, label: 'label1'},
+          {key: 'bar', value: 20, label: 'label1'},
+        ],
+      },
+      {
+        property: 'duration',
+        data: [
+          {key: 'foo', value: 22, label: 'label1'},
+          {key: 'bar', value: 11, label: 'label1'},
+        ],
+      },
+    ],
+  };
+
+  const chartData = createDefaultChartData({
+    report: {
+      result,
+      data: {
+        configuration: {
+          color: 'testColor',
+          measureVisualizations: {frequency: 'line', duration: 'bar'},
+        },
+        groupBy: {
+          type: '',
+          value: '',
+          view: {properties: ['duration'], entity: 'flowNode'},
+        },
+        view: {properties: ['frequency', 'duration'], entity: 'flowNode'},
+      },
+    },
+  });
+
+  expect(chartData.labels).toEqual(['label1', 'label1']);
+  expect(chartData.datasets[0].data).toEqual([10, 20]);
+  expect(chartData.datasets[1].data).toEqual([22, 11]);
+});

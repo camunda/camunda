@@ -7,9 +7,7 @@
  */
 
 import {useState, useEffect} from 'react';
-import classnames from 'classnames';
 
-import {Labeled} from 'components';
 import {t} from 'translation';
 import {formatters} from 'services';
 import {areTenantsAvailable} from 'config';
@@ -18,10 +16,8 @@ import './TenantInfo.scss';
 
 export default function TenantInfo({
   tenant,
-  useCarbonVariant,
 }: {
   tenant: {id: string; name?: string};
-  useCarbonVariant?: boolean;
 }): JSX.Element | null {
   const [tenantsAvailable, setTenantsAvailable] = useState(false);
 
@@ -36,12 +32,8 @@ export default function TenantInfo({
   }
 
   return (
-    <div className={classnames('TenantInfo', {useCarbonVariant})}>
-      {useCarbonVariant ? (
-        <div className="cds--label">{t('common.tenant.label')}</div>
-      ) : (
-        <Labeled label={t('common.tenant.label')} />
-      )}
+    <div className="TenantInfo">
+      <div className="cds--label">{t('common.tenant.label')}</div>
       <p className="tenantName">{formatters.formatTenantName(tenant)}</p>
     </div>
   );

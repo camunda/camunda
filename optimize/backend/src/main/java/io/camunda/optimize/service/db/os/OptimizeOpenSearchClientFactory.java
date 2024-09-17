@@ -16,6 +16,7 @@ import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.IOException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -33,14 +34,15 @@ public class OptimizeOpenSearchClientFactory {
       final ConfigurationService configurationService,
       final OptimizeIndexNameService optimizeIndexNameService,
       final OpenSearchSchemaManager openSearchSchemaManager,
-      final BackoffCalculator backoffCalculator)
+      final BackoffCalculator backoffCalculator,
+      final PluginRepository pluginRepository)
       throws IOException {
 
     log.info("Creating OpenSearch connection...");
     final ExtendedOpenSearchClient openSearchClient =
-        buildOpenSearchClientFromConfig(configurationService);
+        buildOpenSearchClientFromConfig(configurationService, pluginRepository);
     final OpenSearchAsyncClient openSearchAsyncClient =
-        buildOpenSearchAsyncClientFromConfig(configurationService);
+        buildOpenSearchAsyncClientFromConfig(configurationService, pluginRepository);
     waitForOpenSearch(openSearchClient, backoffCalculator);
     log.info("OpenSearch cluster successfully started");
 

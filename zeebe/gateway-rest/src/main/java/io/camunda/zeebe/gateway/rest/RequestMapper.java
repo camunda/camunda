@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClo
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
 import static io.camunda.zeebe.gateway.rest.validator.ElementRequestValidator.validateVariableRequest;
+import static io.camunda.zeebe.gateway.rest.validator.EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
@@ -57,6 +58,7 @@ import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
+import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
@@ -97,6 +99,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.multipart.MultipartFile;
 
 public class RequestMapper {
@@ -283,7 +286,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, CreateUserRequest> toCreateUserRequest(
-      final UserRequest request) {
+      final UserRequest request, final PasswordEncoder passwordEncoder) {
     return getResult(
         validateUserCreateRequest(request),
         () ->
@@ -291,7 +294,7 @@ public class RequestMapper {
                 request.getUsername(),
                 request.getName(),
                 request.getEmail(),
-                request.getPassword()));
+                passwordEncoder.encode(request.getPassword())));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
@@ -518,6 +521,18 @@ public class RequestMapper {
                 request.getOperationReference()));
   }
 
+  public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
+      final EvaluateDecisionRequest request) {
+    return getResult(
+        validateEvaluateDecisionRequest(request),
+        () ->
+            new DecisionEvaluationRequest(
+                getStringOrEmpty(request, EvaluateDecisionRequest::getDecisionId),
+                getLongOrDefault(request, EvaluateDecisionRequest::getDecisionKey, -1L),
+                getMapOrEmpty(request, EvaluateDecisionRequest::getVariables),
+                getStringOrEmpty(request, EvaluateDecisionRequest::getTenantId)));
+  }
+
   private static List<ProcessInstanceModificationActivateInstruction>
       mapProcessInstanceModificationActivateInstruction(
           final List<ModifyProcessInstanceActivateInstruction> instructions) {
@@ -603,4 +618,7 @@ public class RequestMapper {
 
   public record BroadcastSignalRequest(
       String signalName, Map<String, Object> variables, String tenantId) {}
+
+  public record DecisionEvaluationRequest(
+      String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
 }

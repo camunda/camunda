@@ -226,8 +226,6 @@ public class ConfigurationServiceTest {
         "CAMUNDA_OPTIMIZE_UI_MAX_NUM_REPORT_DATA_SOURCES",
         String.valueOf(CUSTOM_MAX_REPORT_DATASOURCE));
     environmentVariablesExtension.set(
-        "CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
-    environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
     environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(CUSTOM_CONTAINER_HTTPS_PORT));
@@ -301,7 +299,6 @@ public class ConfigurationServiceTest {
     System.setProperty(
         "CAMUNDA_OPTIMIZE_UI_MAX_NUM_REPORT_DATA_SOURCES",
         String.valueOf(CUSTOM_MAX_REPORT_DATASOURCE));
-    System.setProperty("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
     System.setProperty(
@@ -375,8 +372,6 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_UI_MAX_NUM_REPORT_DATA_SOURCES",
         String.valueOf(CUSTOM_MAX_REPORT_DATASOURCE));
-    environmentVariablesExtension.set(
-        "CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(true));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME", "wrong");
     environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(1233));
@@ -438,7 +433,6 @@ public class ConfigurationServiceTest {
     System.setProperty(
         "CAMUNDA_OPTIMIZE_UI_MAX_NUM_REPORT_DATA_SOURCES",
         String.valueOf(CUSTOM_MAX_REPORT_DATASOURCE));
-    System.setProperty("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
     System.setProperty("CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME", CUSTOM_REPOSITORY_NAME);
     System.setProperty(
         "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
@@ -525,7 +519,6 @@ public class ConfigurationServiceTest {
     System.setProperty(
         "CAMUNDA_OPTIMIZE_UI_MAX_NUM_REPORT_DATA_SOURCES",
         String.valueOf(CUSTOM_MAX_REPORT_DATASOURCE));
-    System.setProperty("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
     System.setProperty("CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME", CUSTOM_REPOSITORY_NAME);
     System.setProperty(
         "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
@@ -761,7 +754,6 @@ public class ConfigurationServiceTest {
         .isEqualTo(CUSTOM_ES_SSL_ENABLED);
     assertThat(underTest.getSharingEnabled()).isEqualTo(CUSTOM_SHARING_ENABLED);
     assertThat(underTest.getUiConfiguration().isLogoutHidden()).isEqualTo(CUSTOM_UI_LOGOUT_HIDDEN);
-    assertThat(underTest.getDataArchiveConfiguration().isEnabled()).isFalse();
 
     assertThat(underTest.getContainerHttpPort())
         .isPresent()

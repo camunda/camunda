@@ -7,11 +7,13 @@
  */
 package io.camunda.optimize.upgrade.migrate313to86.indices;
 
+import co.elastic.clients.elasticsearch._types.mapping.Property;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
-public class LicenseIndexV3 extends DefaultIndexMappingCreator<XContentBuilder> {
+public class LicenseIndexV3 extends DefaultIndexMappingCreator<IndexSettings.Builder> {
 
   @Override
   public String getIndexName() {
@@ -24,19 +26,15 @@ public class LicenseIndexV3 extends DefaultIndexMappingCreator<XContentBuilder> 
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+  public TypeMapping.Builder addProperties(TypeMapping.Builder builder) {
     // @formatter:off
-    return xContentBuilder
-        .startObject("license")
-        .field("type", "text")
-        .field("index", false)
-        .endObject();
+    return builder.properties("license", Property.of(p -> p.text(t -> t.index(false))));
     // @formatter:on
   }
 
   @Override
-  public XContentBuilder addStaticSetting(
-      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
-    return contentBuilder.field(key, value);
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder builder) throws IOException {
+    return builder.numberOfShards(Integer.toString(value));
   }
 }

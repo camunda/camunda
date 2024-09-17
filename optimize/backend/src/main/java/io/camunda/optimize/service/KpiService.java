@@ -39,8 +39,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.Runni
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import io.camunda.optimize.rest.mapper.ReportRestMapper;
-import io.camunda.optimize.service.db.es.report.PlainReportEvaluationHandler;
-import io.camunda.optimize.service.db.es.report.ReportEvaluationInfo;
+import io.camunda.optimize.service.db.report.PlainReportEvaluationHandler;
+import io.camunda.optimize.service.db.report.ReportEvaluationInfo;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.ValidationHelper;
 import java.time.ZoneId;

@@ -18,7 +18,6 @@ import {
   DescriptionTitle,
   DescriptionData,
 } from './styled';
-import {IS_VERSION_TAG_ENABLED} from 'modules/feature-flags';
 
 type ProcessDetails = {
   bpmnProcessId?: string;
@@ -68,7 +67,7 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
               </DescriptionData>
             </Description>
 
-            {hasVersionTag && IS_VERSION_TAG_ENABLED && (
+            {hasVersionTag && (
               <Description>
                 <DescriptionTitle>Version tag</DescriptionTitle>
                 <DescriptionData title={versionTag}>

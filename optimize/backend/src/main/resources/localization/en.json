@@ -211,7 +211,7 @@
     "displayName": "Display name",
     "displayNamePlaceholder": "Add optional display name",
     "noSources": "No data sources",
-    "copyTooltip": "Copy {entity} to compare and analyze variants.<br/><a href='{docsLink}' target='_blank' rel='noopener noreferrer'>Documentation</a>",
+    "copyTooltip": "Copy {entity} to compare and analyze variants.<br/><a class='cds--link' href='{docsLink}' target='_blank' rel='noopener noreferrer'>Documentation</a>",
     "templates": {
       "blank": "Blank report",
       "analyzeSharesAsPieChart": "Analyze shares as pie chart",
@@ -773,7 +773,7 @@
     "edit": "Edit alert",
     "recipient": "Recipient",
     "description": "\"{name}\" has a value {aboveOrBelow} {thresholdValue}",
-    "emailWarning": "The email notification service is not configured. Optimize won't be able to inform you about critical values. Please check out the <a href='{docsLink}'>Optimize documentation</a> on how to enable the notification service.",
+    "emailWarning": "The email notification service is not configured. Optimize won't be able to inform you about critical values. Please check out the <a class='cds--link' href='{docsLink}'>Optimize documentation</a> on how to enable the notification service.",
     "form": {
       "name": "Alert name",
       "report": "When report",
@@ -1357,7 +1357,7 @@
     "csvLimit": {
       "Warning": "Warning: CSV will not contain all requested data",
       "info": "This download will contain the first {exportLimit} of {totalCount} records. Filter your data, or ask your administrator to increase the system limit to resolve this issue.",
-      "exportApi": "You can also use the <a href='{docsLink}'>data export API</a> to export larger amounts of data from Optimize."
+      "exportApi": "You can also use the <a class='cds--link' href='{docsLink}'>data export API</a> to export larger amounts of data from Optimize."
     },
     "unit": {
       "automatic": "automatic",
@@ -1468,7 +1468,8 @@
     "importDefinitionForbidden": "Import failed because you are not authorized to access some of the required definitions for the imported entity.",
     "importFileInvalid": "Import failed because the provided file was invalid. Only JSON files exported from Optimize can be imported.",
     "importDescriptionInvalid": "Import failed because the provided description was invalid. Must be null or not greater than 400 characters.",
-    "invalidAlertEmailAddresses": "Users with the following email addresses are not available for receiving alerts: {invalidAlertEmails}"
+    "invalidAlertEmailAddresses": "Users with the following email addresses are not available for receiving alerts: {invalidAlertEmails}",
+    "payloadTooLarge": "The request payload is too large."
   },
   "textEditor": {
     "toolbar": {

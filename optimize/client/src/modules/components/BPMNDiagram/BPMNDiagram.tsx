@@ -18,7 +18,7 @@ import classnames from 'classnames';
 
 import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
 import {themed, ThemeContextProps} from 'theme';
-import {LoadingIndicator} from 'components';
+import {Loading} from 'components';
 import {isReactElement} from 'services';
 
 import ZoomControls from './ZoomControls';
@@ -99,7 +99,7 @@ export class BPMNDiagram extends Component<BPMNDiagramProps, BPMNDiagramState> {
             (child) => child && isReactElement(child) && cloneElement(child, {viewer: this.viewer})
           )}
         {loaded && xml && <ZoomControls zoom={this.zoom} fit={this.fitDiagram} />}
-        {(!loaded || loading) && <LoadingIndicator className="diagramLoading" />}
+        {(!loaded || loading) && <Loading />}
         {!xml && emptyText && <div className="emptyText">{emptyText}</div>}
       </div>
     );

@@ -30,13 +30,13 @@
   "devDependencies": {
     "@types/event-source-polyfill": "1.0.5",
     "@types/node": "20.16.5",
-    "@types/react": "18.3.5",
+    "@types/react": "18.3.7",
     "@types/react-dom": "18.3.0",
     "@types/react-transition-group": "4.4.11",
-    "@typescript-eslint/eslint-plugin": "8.5.0",
-    "@typescript-eslint/parser": "8.5.0",
+    "@typescript-eslint/eslint-plugin": "8.6.0",
+    "@typescript-eslint/parser": "8.6.0",
     "@vitejs/plugin-react": "4.3.1",
-    "eslint": "8.57.0",
+    "eslint": "8.57.1",
     "eslint-plugin-react-hooks": "4.6.2",
     "eslint-plugin-react-refresh": "0.4.12",
     "event-source-polyfill": "1.0.31",
@@ -44,7 +44,7 @@
     "prettier": "3.3.3",
     "sass": "1.78.0",
     "typescript": "5.6.2",
-    "vite": "5.4.5"
+    "vite": "5.4.6"
   },
   "packageManager": "yarn@4.3.1"
 }

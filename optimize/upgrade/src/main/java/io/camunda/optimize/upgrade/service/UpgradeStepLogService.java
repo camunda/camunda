@@ -7,31 +7,37 @@
  */
 package io.camunda.optimize.upgrade.service;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME;
-
 import io.camunda.optimize.service.security.util.LocalDateUtil;
-import io.camunda.optimize.upgrade.es.SchemaUpgradeClient;
+import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
+import io.camunda.optimize.upgrade.es.SchemaUpgradeClientES;
 import io.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
+import io.camunda.optimize.upgrade.es.index.UpdateLogEntryIndexES;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 
 public class UpgradeStepLogService {
 
-  public void initializeOrUpdate(final SchemaUpgradeClient schemaUpgradeClient) {
-    schemaUpgradeClient.createOrUpdateIndex(new UpdateLogEntryIndex());
+  public void initializeOrUpdate(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
+    if (schemaUpgradeClient instanceof SchemaUpgradeClientES esClient) {
+      esClient.createOrUpdateIndex(new UpdateLogEntryIndexES());
+    }
+    // TODO when the OS schema client exists, do the same as above here
   }
 
-  @SneakyThrows
   public void recordAppliedStep(
-      final SchemaUpgradeClient schemaUpgradeClient, final UpgradeStepLogEntryDto logEntryDto) {
+      final SchemaUpgradeClient<?, ?> schemaUpgradeClient,
+      final UpgradeStepLogEntryDto logEntryDto) {
     logEntryDto.setAppliedDate(LocalDateUtil.getCurrentDateTime().toInstant());
-    schemaUpgradeClient.upsert(UPDATE_LOG_ENTRY_INDEX_NAME, logEntryDto.getId(), logEntryDto);
+    schemaUpgradeClient.upsert(UpdateLogEntryIndex.INDEX_NAME, logEntryDto.getId(), logEntryDto);
+    if (schemaUpgradeClient instanceof SchemaUpgradeClientES esClient) {
+      esClient.upsert(UpdateLogEntryIndex.INDEX_NAME, logEntryDto.getId(), logEntryDto);
+    }
+    // TODO when the OS schema client exists, do the same as above here
   }
 
   public Map<String, UpgradeStepLogEntryDto> getAllAppliedStepsForUpdateToById(
-      final SchemaUpgradeClient schemaUpgradeClient, final String targetOptimizeVersion) {
+      final SchemaUpgradeClient<?, ?> schemaUpgradeClient, final String targetOptimizeVersion) {
     return schemaUpgradeClient.getAppliedUpdateStepsForTargetVersion(targetOptimizeVersion).stream()
         .collect(Collectors.toMap(UpgradeStepLogEntryDto::getId, Function.identity()));
   }

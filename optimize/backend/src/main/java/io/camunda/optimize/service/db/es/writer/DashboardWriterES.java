@@ -12,13 +12,26 @@ import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES
 import static io.camunda.optimize.service.db.schema.index.DashboardIndex.COLLECTION_ID;
 import static io.camunda.optimize.service.db.schema.index.DashboardIndex.MANAGEMENT_DASHBOARD;
 import static io.camunda.optimize.service.db.schema.index.DashboardIndex.TILES;
-import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.ScriptLanguage;
+import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.DeleteResponse;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
+import co.elastic.clients.elasticsearch.core.UpdateResponse;
+import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeDeleteRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeIndexRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES;
 import io.camunda.optimize.service.db.schema.index.DashboardIndex;
 import io.camunda.optimize.service.db.writer.DashboardWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -27,25 +40,10 @@ import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.search.join.ScoreMode;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.DocWriteResponse;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.delete.DeleteResponse;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.index.query.NestedQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
-import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -86,15 +84,16 @@ public class DashboardWriterES implements DashboardWriter {
     dashboardDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     final String dashboardId = dashboardDefinitionDto.getId();
     try {
-      final IndexRequest request =
-          new IndexRequest(DASHBOARD_INDEX_NAME)
-              .id(dashboardId)
-              .source(objectMapper.writeValueAsString(dashboardDefinitionDto), XContentType.JSON)
-              .setRefreshPolicy(IMMEDIATE);
+      final IndexResponse indexResponse =
+          esClient.index(
+              OptimizeIndexRequestBuilderES.of(
+                  i ->
+                      i.optimizeIndex(esClient, DASHBOARD_INDEX_NAME)
+                          .id(dashboardId)
+                          .document(dashboardDefinitionDto)
+                          .refresh(Refresh.True)));
 
-      final IndexResponse indexResponse = esClient.index(request);
-
-      if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED)) {
+      if (!indexResponse.result().equals(Result.Created)) {
         final String message =
             "Could not write dashboard to Elasticsearch. "
                 + "Maybe the connection to Elasticsearch was lost?";
@@ -115,17 +114,19 @@ public class DashboardWriterES implements DashboardWriter {
   public void updateDashboard(final DashboardDefinitionUpdateDto dashboard, final String id) {
     log.debug("Updating dashboard with id [{}] in Elasticsearch", id);
     try {
-      final UpdateRequest request =
-          new UpdateRequest()
-              .index(DASHBOARD_INDEX_NAME)
-              .id(id)
-              .doc(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
-              .setRefreshPolicy(IMMEDIATE)
-              .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      final UpdateResponse<DashboardDefinitionUpdateDto> updateResponse =
+          esClient.update(
+              new OptimizeUpdateRequestBuilderES<
+                      DashboardDefinitionUpdateDto, DashboardDefinitionUpdateDto>()
+                  .optimizeIndex(esClient, DASHBOARD_INDEX_NAME)
+                  .id(id)
+                  .doc(dashboard)
+                  .refresh(Refresh.True)
+                  .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+                  .build(),
+              DashboardDefinitionUpdateDto.class);
 
-      final UpdateResponse updateResponse = esClient.update(request);
-
-      if (updateResponse.getShardInfo().getFailed() > 0) {
+      if (!updateResponse.shards().failures().isEmpty()) {
         log.error(
             "Was not able to update dashboard with id [{}] and name [{}].",
             id,
@@ -139,7 +140,7 @@ public class DashboardWriterES implements DashboardWriter {
               id, dashboard.getName());
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
-    } catch (final ElasticsearchStatusException e) {
+    } catch (final ElasticsearchException e) {
       final String errorMessage =
           String.format(
               "Was not able to update dashboard with id [%s] and name [%s]. Dashboard does not exist!",
@@ -155,17 +156,29 @@ public class DashboardWriterES implements DashboardWriter {
     log.info("Removing {}}.", updateItem);
 
     final Script removeReportFromDashboardScript =
-        new Script(
-            ScriptType.INLINE,
-            Script.DEFAULT_SCRIPT_LANG,
-            "ctx._source.tiles.removeIf(report -> report.id.equals(params.idToRemove))",
-            Collections.singletonMap("idToRemove", reportId));
+        Script.of(
+            s ->
+                s.inline(
+                    i ->
+                        i.lang(ScriptLanguage.Painless)
+                            .params("idToRemove", JsonData.of(reportId))
+                            .source(
+                                "ctx._source.tiles.removeIf(report -> report.id.equals(params.idToRemove))")));
 
-    final NestedQueryBuilder query =
-        QueryBuilders.nestedQuery(
-            TILES,
-            QueryBuilders.termQuery(TILES + "." + DashboardIndex.REPORT_ID, reportId),
-            ScoreMode.None);
+    final Query query =
+        Query.of(
+            q ->
+                q.nested(
+                    n ->
+                        n.path(TILES)
+                            .scoreMode(ChildScoreMode.None)
+                            .query(
+                                Query.of(
+                                    qq ->
+                                        qq.term(
+                                            t ->
+                                                t.field(TILES + "." + DashboardIndex.REPORT_ID)
+                                                    .value(reportId))))));
 
     ElasticsearchWriterUtil.tryUpdateByQueryRequest(
         esClient, updateItem, removeReportFromDashboardScript, query, DASHBOARD_INDEX_NAME);
@@ -173,9 +186,10 @@ public class DashboardWriterES implements DashboardWriter {
 
   @Override
   public void deleteDashboardsOfCollection(final String collectionId) {
+
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
         esClient,
-        QueryBuilders.termQuery(COLLECTION_ID, collectionId),
+        Query.of(q -> q.term(t -> t.field(COLLECTION_ID).value(collectionId))),
         String.format("dashboards of collection with ID [%s]", collectionId),
         true,
         DASHBOARD_INDEX_NAME);
@@ -184,19 +198,22 @@ public class DashboardWriterES implements DashboardWriter {
   @Override
   public void deleteDashboard(final String dashboardId) {
     log.debug("Deleting dashboard with id [{}]", dashboardId);
-    final DeleteRequest request =
-        new DeleteRequest(DASHBOARD_INDEX_NAME).id(dashboardId).setRefreshPolicy(IMMEDIATE);
-
     final DeleteResponse deleteResponse;
     try {
-      deleteResponse = esClient.delete(request);
+      deleteResponse =
+          esClient.delete(
+              OptimizeDeleteRequestBuilderES.of(
+                  d ->
+                      d.optimizeIndex(esClient, DASHBOARD_INDEX_NAME)
+                          .id(dashboardId)
+                          .refresh(Refresh.True)));
     } catch (final IOException e) {
       final String reason = String.format("Could not delete dashboard with id [%s].", dashboardId);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (!deleteResponse.getResult().equals(DeleteResponse.Result.DELETED)) {
+    if (!deleteResponse.result().equals(Result.Deleted)) {
       final String message =
           String.format(
               "Could not delete dashboard with id [%s]. Dashboard does not exist. "
@@ -209,9 +226,10 @@ public class DashboardWriterES implements DashboardWriter {
 
   @Override
   public void deleteManagementDashboard() {
+
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
         esClient,
-        QueryBuilders.termQuery(MANAGEMENT_DASHBOARD, true),
+        Query.of(q -> q.term(t -> t.field(MANAGEMENT_DASHBOARD).value(true))),
         "Management Dashboard",
         true,
         DASHBOARD_INDEX_NAME);

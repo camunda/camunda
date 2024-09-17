@@ -104,7 +104,7 @@ exports[`should show a loading indicator while stuff is loading 1`] = `
 <div
   className="Statistics"
 >
-  <LoadingIndicator />
+  <Loading />
 </div>
 `;
 

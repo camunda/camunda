@@ -8,7 +8,13 @@
 
 import {shallow} from 'enzyme';
 import {ComponentProps} from 'react';
-import {DataTable, TableBatchActions, TableContainer, TableHeader} from '@carbon/react';
+import {
+  DataTable,
+  TableBatchActions,
+  TableContainer,
+  TableHeader,
+  TableToolbarContent,
+} from '@carbon/react';
 
 import EntityList from './EntityList';
 
@@ -202,4 +208,14 @@ it('should render description', () => {
 
   node.setProps({description: 'description'});
   expect(node.find(DataTable).dive().find(TableContainer).prop('description')).toBe('description');
+});
+
+it('should render action and pass disabled and tabIndex props', () => {
+  const node = shallow(<EntityList {...props} headers={['Name']} />);
+  const dataTable = node.find(DataTable).dive();
+
+  expect(dataTable.find(TableToolbarContent).childAt(1).props()).toMatchObject({
+    disabled: false,
+    tabIndex: 0,
+  });
 });

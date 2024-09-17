@@ -11,7 +11,7 @@ import React, {useState} from 'react';
 import {
   BPMNDiagram,
   TargetValueBadge,
-  LoadingIndicator,
+  Loading,
   HeatmapOverlay,
   Select,
   DownloadButton,
@@ -46,7 +46,7 @@ export default function Heatmap({report, context}) {
   const alwaysShow = isDuration ? alwaysShowAbsolute : alwaysShowAbsolute || alwaysShowRelative;
 
   if (!xml || !result) {
-    return <LoadingIndicator />;
+    return <Loading />;
   }
 
   const resultObj = formatters.objectifyResult(

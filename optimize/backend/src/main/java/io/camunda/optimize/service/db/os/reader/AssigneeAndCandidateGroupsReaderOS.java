@@ -32,11 +32,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregationSource;
+import org.opensearch.client.opensearch._types.aggregations.CompositeTermsAggregationSource;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation.Builder;
-import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -102,7 +101,7 @@ public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateG
             TERMS_AGG,
             new CompositeAggregationSource.Builder()
                 .terms(
-                    new TermsAggregation.Builder()
+                    new CompositeTermsAggregationSource.Builder()
                         .field(getUserTaskFieldPath(userTaskFieldName))
                         .build())
                 .build()));
@@ -115,13 +114,6 @@ public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateG
         AggregationDSL.withSubaggregations(
             nestedAgg,
             Collections.singletonMap(COMPOSITE_AGG, assigneeCompositeAgg._toAggregation()));
-
-    final SearchRequest.Builder searchRequest =
-        new SearchRequest.Builder()
-            .query(filterQuery)
-            .aggregations(Map.of(NESTED_USER_TASKS_AGG, userTasksAgg))
-            .index(indexName)
-            .size(0);
 
     final List<String> termsBatch = new ArrayList<>();
     final OpenSearchCompositeAggregationScroller compositeAggregationScroller =

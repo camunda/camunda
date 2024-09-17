@@ -8,7 +8,6 @@
 
 import {Selector} from 'testcafe';
 
-export const typeaheadInput = Selector('.Modal .Typeahead .Input');
 export const multiSelect = Selector('.Modal.is-visible .cds--multi-select');
 export const multiSelectClearBtn = multiSelect.find('.cds--tag__close-icon');
 export const multiSelectOption = (text) =>

@@ -21,12 +21,14 @@ import org.opensearch.client.opensearch._types.aggregations.Buckets;
 import org.opensearch.client.opensearch._types.aggregations.CalendarInterval;
 import org.opensearch.client.opensearch._types.aggregations.CardinalityAggregation;
 import org.opensearch.client.opensearch._types.aggregations.ChildrenAggregation;
-import org.opensearch.client.opensearch._types.aggregations.CompositeAggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregationSource;
+import org.opensearch.client.opensearch._types.aggregations.CompositeTermsAggregationSource;
 import org.opensearch.client.opensearch._types.aggregations.DateHistogramAggregation;
+import org.opensearch.client.opensearch._types.aggregations.FieldDateMath;
 import org.opensearch.client.opensearch._types.aggregations.FiltersAggregation;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
 import org.opensearch.client.opensearch._types.aggregations.ParentAggregation;
+import org.opensearch.client.opensearch._types.aggregations.ReverseNestedAggregation;
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregation;
 import org.opensearch.client.opensearch._types.aggregations.ValueCountAggregation;
@@ -82,6 +84,18 @@ public interface AggregationDSL {
                 .keyed(keyed));
   }
 
+  static FieldDateMath fieldDateMath(double value) {
+    return FieldDateMath.of(b -> b.value(value));
+  }
+
+  static FieldDateMath fieldDateMath(String value) {
+    return FieldDateMath.of(b -> b.expr(value));
+  }
+
+  static Aggregation filterAggregation(final Query query) {
+    return Aggregation.of(a -> a.filter(query));
+  }
+
   static FiltersAggregation filtersAggregation(final Map<String, Query> queries) {
     return FiltersAggregation.of(a -> a.filters(Buckets.of(b -> b.keyed(queries))));
   }
@@ -101,6 +115,25 @@ public interface AggregationDSL {
 
   static TopHitsAggregation topHitsAggregation(final int size, final SortOptions... sortOptions) {
     return TopHitsAggregation.of(a -> a.size(size).sort(List.of(sortOptions)));
+  }
+
+  static Aggregation withSubaggregations(
+      final Aggregation aggregation, final Map<String, Aggregation> aggregations) {
+    if (aggregation.isDateHistogram()) {
+      return withSubaggregations(aggregation.dateHistogram(), aggregations);
+    } else if (aggregation.isNested()) {
+      return withSubaggregations(aggregation.nested(), aggregations);
+    } else if (aggregation.isFilter()) {
+      return withSubaggregations(aggregation.filter(), aggregations);
+    } else if (aggregation.isFilters()) {
+      return withSubaggregations(aggregation.filters(), aggregations);
+    } else if (aggregation.isChildren()) {
+      return withSubaggregations(aggregation.children(), aggregations);
+    } else if (aggregation.isTerms()) {
+      return withSubaggregations(aggregation.terms(), aggregations);
+    } else {
+      throw new OptimizeRuntimeException("Unsupported aggregation type: " + aggregation);
+    }
   }
 
   static Aggregation withSubaggregations(
@@ -129,6 +162,11 @@ public interface AggregationDSL {
   }
 
   static Aggregation withSubaggregations(
+      final ReverseNestedAggregation aggregation, final Map<String, Aggregation> aggregations) {
+    return Aggregation.of(a -> a.reverseNested(aggregation).aggregations(aggregations));
+  }
+
+  static Aggregation withSubaggregations(
       final TermsAggregation aggregation, final Map<String, Aggregation> aggregations) {
     return Aggregation.of(a -> a.terms(aggregation).aggregations(aggregations));
   }
@@ -141,13 +179,8 @@ public interface AggregationDSL {
     return ChildrenAggregation.of(c -> c.type(type));
   }
 
-  static CompositeAggregation compositeAggregation(
-      final List<Map<String, CompositeAggregationSource>> sources, final int size) {
-    return CompositeAggregation.of(a -> a.sources(sources));
-  }
-
   static CompositeAggregationSource compositeTermsAggregationSource(
-      final TermsAggregation aggregation) {
+      final CompositeTermsAggregationSource aggregation) {
     return CompositeAggregationSource.of(a -> a.terms(aggregation));
   }
 }

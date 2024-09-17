@@ -373,7 +373,7 @@ public final class ZeebeAssertHelper {
     final UserRecordValue user =
         RecordingExporter.userRecords()
             .withIntent(UserIntent.CREATED)
-            .withUsernameKey(username)
+            .withUsername(username)
             .getFirst()
             .getValue();
 

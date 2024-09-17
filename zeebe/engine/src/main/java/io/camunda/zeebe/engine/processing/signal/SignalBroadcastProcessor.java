@@ -89,7 +89,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
             activateElement(subscriptionRecord, signalRecord.getVariablesBuffer());
           }
         });
-    commandDistributionBehavior.withKey(eventKey).distribute(command);
+    commandDistributionBehavior.withKey(eventKey).unordered().distribute(command);
   }
 
   @Override

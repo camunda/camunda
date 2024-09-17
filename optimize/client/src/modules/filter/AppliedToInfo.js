@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
-import {Tooltip} from 'components';
+import {Tooltip} from '@carbon/react';
+
 import {t} from 'translation';
 
 import './AppliedToInfo.scss';
@@ -36,7 +36,7 @@ export default function AppliedToInfo({filter, definitions}) {
 
   return (
     <Tooltip
-      content={
+      label={
         <div className="appliesTo">
           {t('common.filter.list.appliedTo')}:
           <ul>
@@ -46,7 +46,8 @@ export default function AppliedToInfo({filter, definitions}) {
           </ul>
         </div>
       }
-      position="bottom"
+      align="bottom"
+      autoAlign
     >
       <p className="appliedTo">{innerText}</p>
     </Tooltip>

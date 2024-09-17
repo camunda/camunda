@@ -7,11 +7,11 @@
  */
 package io.camunda.optimize.service.db.schema.index;
 
+import co.elastic.clients.elasticsearch._types.mapping.Property;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class BusinessKeyIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -31,15 +31,9 @@ public abstract class BusinessKeyIndex<TBuilder> extends DefaultIndexMappingCrea
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return xContentBuilder
-        .startObject(PROCESS_INSTANCE_ID)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(BUSINESS_KEY)
-        .field("type", "keyword")
-        .endObject();
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+    return builder
+        .properties(PROCESS_INSTANCE_ID, Property.of(p -> p.keyword(k -> k)))
+        .properties(BUSINESS_KEY, Property.of(p -> p.keyword(k -> k)));
   }
 }
