@@ -30,13 +30,14 @@ import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 public class MigrateMultiInstanceBodyTest {
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -48,7 +49,7 @@ public class MigrateMultiInstanceBodyTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -82,7 +83,7 @@ public class MigrateMultiInstanceBodyTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     final var processInstanceKey =
-        engine
+        ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
             .withVariable("jobTypes", Arrays.asList("a", "b", "c"))
@@ -98,7 +99,7 @@ public class MigrateMultiInstanceBodyTest {
         .containsExactly("a", "b", "c");
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -156,9 +157,9 @@ public class MigrateMultiInstanceBodyTest {
             tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "b"),
             tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "c"));
 
-    engine.job().ofInstance(processInstanceKey).withType("a").complete();
-    engine.job().ofInstance(processInstanceKey).withType("b").complete();
-    engine.job().ofInstance(processInstanceKey).withType("c").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("a").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("b").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("c").complete();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -180,7 +181,7 @@ public class MigrateMultiInstanceBodyTest {
     final String targetMessageName = helper.getMessageName() + 2;
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -220,7 +221,7 @@ public class MigrateMultiInstanceBodyTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     final var processInstanceKey =
-        engine
+        ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
             .withVariable("keys", Arrays.asList("a", "b", "c"))
@@ -236,7 +237,7 @@ public class MigrateMultiInstanceBodyTest {
         .containsExactly("a", "b", "c");
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -300,9 +301,9 @@ public class MigrateMultiInstanceBodyTest {
         .containsExactly(
             tuple(targetProcessId, "a"), tuple(targetProcessId, "b"), tuple(targetProcessId, "c"));
 
-    engine.message().withName(sourceMessageName).withCorrelationKey("a").publish();
-    engine.message().withName(sourceMessageName).withCorrelationKey("b").publish();
-    engine.message().withName(sourceMessageName).withCorrelationKey("c").publish();
+    ENGINE.message().withName(sourceMessageName).withCorrelationKey("a").publish();
+    ENGINE.message().withName(sourceMessageName).withCorrelationKey("b").publish();
+    ENGINE.message().withName(sourceMessageName).withCorrelationKey("c").publish();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -322,7 +323,7 @@ public class MigrateMultiInstanceBodyTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -363,7 +364,7 @@ public class MigrateMultiInstanceBodyTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -374,7 +375,7 @@ public class MigrateMultiInstanceBodyTest {
         .hasSize(3);
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -440,7 +441,7 @@ public class MigrateMultiInstanceBodyTest {
             .limit(3)
             .toList();
 
-    jobs.forEach(job -> engine.job().withKey(job.getKey()).complete());
+    jobs.forEach(job -> ENGINE.job().withKey(job.getKey()).complete());
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -461,7 +462,7 @@ public class MigrateMultiInstanceBodyTest {
     final String childProcessId = helper.getBpmnProcessId() + "_source_child";
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -500,7 +501,7 @@ public class MigrateMultiInstanceBodyTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -518,7 +519,7 @@ public class MigrateMultiInstanceBodyTest {
             .toList();
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -561,7 +562,7 @@ public class MigrateMultiInstanceBodyTest {
 
     childProcessInstances.forEach(
         instance ->
-            engine
+            ENGINE
                 .job()
                 .ofInstance(instance.getValue().getProcessInstanceKey())
                 .withType("A")
@@ -585,7 +586,7 @@ public class MigrateMultiInstanceBodyTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -619,7 +620,7 @@ public class MigrateMultiInstanceBodyTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     final var processInstanceKey =
-        engine
+        ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
             .withVariable("jobTypes", Arrays.asList("a", "b", "c"))
@@ -634,7 +635,7 @@ public class MigrateMultiInstanceBodyTest {
         .extracting(JobRecordValue::getType)
         .containsExactly("a", "b", "c");
 
-    engine.job().ofInstance(processInstanceKey).withType("a").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("a").complete();
 
     assertThat(
             RecordingExporter.jobRecords(JobIntent.COMPLETED)
@@ -646,7 +647,7 @@ public class MigrateMultiInstanceBodyTest {
         .isPresent();
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -702,8 +703,8 @@ public class MigrateMultiInstanceBodyTest {
             tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "b"),
             tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "c"));
 
-    engine.job().ofInstance(processInstanceKey).withType("b").complete();
-    engine.job().ofInstance(processInstanceKey).withType("c").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("b").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("c").complete();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -723,7 +724,7 @@ public class MigrateMultiInstanceBodyTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -760,7 +761,7 @@ public class MigrateMultiInstanceBodyTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     final var jobs =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -769,7 +770,7 @@ public class MigrateMultiInstanceBodyTest {
             .limit(3)
             .toList();
 
-    engine.job().withKey(jobs.getFirst().getKey()).complete();
+    ENGINE.job().withKey(jobs.getFirst().getKey()).complete();
 
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
@@ -777,7 +778,7 @@ public class MigrateMultiInstanceBodyTest {
             .getFirst();
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -794,10 +795,10 @@ public class MigrateMultiInstanceBodyTest {
         .isNotNull();
 
     // after migrating, we can successfully resolve the incident
-    engine.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
     // and complete the two still active jobs without problems
-    jobs.stream().skip(1).forEach(job -> engine.job().withKey(job.getKey()).complete());
+    jobs.stream().skip(1).forEach(job -> ENGINE.job().withKey(job.getKey()).complete());
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -817,7 +818,7 @@ public class MigrateMultiInstanceBodyTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -857,7 +858,7 @@ public class MigrateMultiInstanceBodyTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     final var jobs =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -866,7 +867,7 @@ public class MigrateMultiInstanceBodyTest {
             .limit(3)
             .toList();
 
-    engine.job().withKey(jobs.getFirst().getKey()).complete();
+    ENGINE.job().withKey(jobs.getFirst().getKey()).complete();
 
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
@@ -874,7 +875,7 @@ public class MigrateMultiInstanceBodyTest {
             .getFirst();
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -891,10 +892,10 @@ public class MigrateMultiInstanceBodyTest {
         .isNotNull();
 
     // after migrating, we can successfully resolve the incident
-    engine.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
     // and complete the two still active jobs without problems
-    jobs.stream().skip(1).forEach(job -> engine.job().withKey(job.getKey()).complete());
+    jobs.stream().skip(1).forEach(job -> ENGINE.job().withKey(job.getKey()).complete());
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -914,7 +915,7 @@ public class MigrateMultiInstanceBodyTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(sourceProcessId)
@@ -952,7 +953,7 @@ public class MigrateMultiInstanceBodyTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     final var processInstanceKey =
-        engine.processInstance().ofBpmnProcessId(sourceProcessId).create();
+        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
 
     final var jobs =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -961,7 +962,7 @@ public class MigrateMultiInstanceBodyTest {
             .limit(3)
             .toList();
 
-    engine.job().withKey(jobs.getFirst().getKey()).complete();
+    ENGINE.job().withKey(jobs.getFirst().getKey()).complete();
 
     final var resultsVariable =
         RecordingExporter.variableRecords(VariableIntent.UPDATED)
@@ -971,7 +972,7 @@ public class MigrateMultiInstanceBodyTest {
             .getFirst();
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -981,7 +982,7 @@ public class MigrateMultiInstanceBodyTest {
 
     // then
     // after migrating, we can complete one of the still active jobs
-    engine.job().withKey(jobs.get(1).getKey()).complete();
+    ENGINE.job().withKey(jobs.get(1).getKey()).complete();
 
     // but that raises an incident
     final var incident =
@@ -993,7 +994,7 @@ public class MigrateMultiInstanceBodyTest {
             "Expected the output collection variable 'results2' to be of type list, but it was NIL");
 
     // we can resolve the incident by creating the new output collection variable 'results2'
-    engine
+    ENGINE
         .variables()
         .ofScope(resultsVariable.getValue().getScopeKey())
         .withDocument("{\"results2\": [1, null, null]}")
@@ -1001,7 +1002,7 @@ public class MigrateMultiInstanceBodyTest {
         .update();
 
     // and when we resolve the incident
-    engine.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
     // then the new output collection can be filled correctly
     Assertions.assertThat(
