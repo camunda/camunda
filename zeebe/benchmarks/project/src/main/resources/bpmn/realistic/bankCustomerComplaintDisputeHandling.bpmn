@@ -57,6 +57,11 @@
       <bpmn:outgoing>Flow_1cvob8y</bpmn:outgoing>
     </bpmn:sendTask>
     <bpmn:subProcess id="Activity_199882v" name="Document Request Process">
+      <bpmn:extensionElements>
+        <zeebe:ioMapping>
+          <zeebe:input source="=null" target="correlationKey" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_15wpx65</bpmn:incoming>
       <bpmn:outgoing>Flow_06bdzt7</bpmn:outgoing>
       <bpmn:startEvent id="Event_1g0dyzc" name="documents required">
@@ -138,6 +143,11 @@
         <bpmn:outgoing>Flow_16in312</bpmn:outgoing>
       </bpmn:startEvent>
       <bpmn:subProcess id="Activity_03cktkd" name="Vendor fraud claim validation">
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:input source="=null" target="correlationKey" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
         <bpmn:incoming>Flow_16in312</bpmn:incoming>
         <bpmn:outgoing>Flow_1y2i3of</bpmn:outgoing>
         <bpmn:multiInstanceLoopCharacteristics>
