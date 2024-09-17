@@ -337,10 +337,17 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, PublicationMessageRequest> toMessagePublicationRequest(
-      final MessagePublicationRequest messagePublicationRequest) {
-    return getResult(
-        validateMessagePublicationRequest(messagePublicationRequest),
-        () ->
+      final MessagePublicationRequest messagePublicationRequest, final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(messagePublicationRequest.getTenantId(), multiTenancyEnabled, "Correlate Message")
+            .flatMap(
+                tenantId ->
+                    validateMessagePublicationRequest(messagePublicationRequest)
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)));
+
+    return validationResponse.map(
+        tenantId ->
             new PublicationMessageRequest(
                 messagePublicationRequest.getName(),
                 messagePublicationRequest.getCorrelationKey(),
@@ -348,8 +355,7 @@ public class RequestMapper {
                 getStringOrEmpty(
                     messagePublicationRequest, MessagePublicationRequest::getMessageId),
                 getMapOrEmpty(messagePublicationRequest, MessagePublicationRequest::getVariables),
-                getStringOrEmpty(
-                    messagePublicationRequest, MessagePublicationRequest::getTenantId)));
+                tenantId));
   }
 
   public static Either<ProblemDetail, ResourceDeletionRequest> toResourceDeletion(
