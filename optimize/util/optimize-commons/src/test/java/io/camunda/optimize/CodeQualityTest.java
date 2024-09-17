@@ -1,33 +1,61 @@
 package io.camunda.optimize;
 
-import java.lang.annotation.Annotation;
-import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldNameConstants;
-import org.junit.jupiter.api.Assertions;
+import java.io.File;
+import java.nio.file.Files;
+import lombok.SneakyThrows;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.reflections.Reflections;
-import org.reflections.scanners.Scanners;
 
 public class CodeQualityTest {
   @Test
-  public void testNoClassesWithAnnotation() {
-    Reflections reflections = new Reflections("io.camunda.optimize", Scanners.TypesAnnotated);
-    Set<Class<?>> allClasses = reflections.getSubTypesOf(Object.class);
+  @SneakyThrows
+  public void testNoForbiddenAnnotationUsed() {
+    File thisFilePath =
+        new File(
+            CodeQualityTest.class
+                .getProtectionDomain()
+                .getCodeSource()
+                .getLocation()
+                .toURI()
+                .getPath());
 
-    Class<? extends Annotation>[] forbiddenAnnotations = new Class[] {
-        NoArgsConstructor.class,
-        AllArgsConstructor.class,
-        RequiredArgsConstructor.class,
-        FieldNameConstants.class
-    };
+    File optimizeDirectory = thisFilePath // test-classes
+        .getParentFile() // target
+        .getParentFile() // optimize-commons
+        .getParentFile() // util
+        .getParentFile(); // optimize
 
-    for (Class<?> clazz : allClasses) {
-      for (Class<? extends Annotation> forbiddenAnnotation : forbiddenAnnotations) {
-        if (clazz.isAnnotationPresent(forbiddenAnnotation)) {
-          Assertions.fail("Class " + clazz.getName() + " is annotated with forbidden annotation @" + forbiddenAnnotation.getSimpleName());
+    checkForForbiddenAnnotations(optimizeDirectory);
+  }
+
+  private static String[] forbiddenAnnotations = {
+      "@NoArgsConstructor",
+      "@AllArgsConstructor",
+      "@RequiredArgsConstructor",
+      "@FieldNameConstants"
+  };
+
+  @SneakyThrows
+  private static void checkForForbiddenAnnotations(File currentDirectory) {
+    if(currentDirectory == null || !currentDirectory.isDirectory()) {
+      return;
+    }
+
+    String currentDirectoryName = currentDirectory.getName();
+    if(currentDirectoryName.equals(".") || currentDirectoryName.equals("..")) {
+      return;
+    }
+
+    File[] entries = currentDirectory.listFiles();
+    for(File entry : entries) {
+      if(entry.isDirectory()) {
+        checkForForbiddenAnnotations(entry);
+      } else if(!entry.getName().endsWith("CodeQualityTest.java") && entry.getName().endsWith(".java")) {
+        String fileContent = new String(Files.readAllBytes(entry.toPath()));
+        for(String forbiddenAnnotation : forbiddenAnnotations) {
+          if(fileContent.contains(forbiddenAnnotation)) {
+            Assertions.fail("file " + entry.getAbsolutePath() + " contains forbidden annotation " + forbiddenAnnotation);
+          }
         }
       }
     }
