@@ -34,6 +34,7 @@ public class RestGatewayPaths {
   private static final String URL_INCIDENT_RESOLUTION = REST_API_PATH + "/incidents/%s/resolution";
   private static final String URL_CANCEL_PROCESS =
       REST_API_PATH + "/process-instances/%s/cancellation";
+  private static final String URL_BROADCAST_SIGNAL = REST_API_PATH + "/signals/broadcast";
 
   /**
    * @return the topology request URL
@@ -109,5 +110,9 @@ public class RestGatewayPaths {
 
   public static String getCancelProcessUrl(final long processInstanceKey) {
     return String.format(URL_CANCEL_PROCESS, processInstanceKey);
+  }
+
+  public static String getBroadcastSignalUrl() {
+    return URL_BROADCAST_SIGNAL;
   }
 }

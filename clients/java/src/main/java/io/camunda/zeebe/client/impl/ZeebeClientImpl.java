@@ -429,7 +429,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public BroadcastSignalCommandStep1 newBroadcastSignalCommand() {
     return new BroadcastSignalCommandImpl(
-        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+        asyncStub,
+        config,
+        jsonMapper,
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config.preferRestOverGrpc());
   }
 
   @Override
