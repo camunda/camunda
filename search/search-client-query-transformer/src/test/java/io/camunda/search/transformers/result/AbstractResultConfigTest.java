@@ -7,22 +7,21 @@
  */
 package io.camunda.search.transformers.result;
 
-import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.transformers.ServiceTransformers;
 import io.camunda.service.search.filter.FilterBase;
 import io.camunda.service.search.query.TypedSearchQuery;
-import io.camunda.service.search.sort.SearchSortOptions;
 import io.camunda.service.search.sort.SortOption;
-import java.util.List;
 
 public class AbstractResultConfigTest {
 
   private final ServiceTransformers transformers = ServiceTransformers.newInstance();
 
   protected SearchSourceConfig transformRequest(
-      TypedSearchQuery<? extends FilterBase, ? extends SortOption> request
-  ) {
-    return transformers.getTypedSearchQueryTransformer(request.getClass()).apply((TypedSearchQuery<FilterBase, SortOption>) request).source();
+      final TypedSearchQuery<? extends FilterBase, ? extends SortOption> request) {
+    return transformers
+        .getTypedSearchQueryTransformer(request.getClass())
+        .apply((TypedSearchQuery<FilterBase, SortOption>) request)
+        .source();
   }
 }

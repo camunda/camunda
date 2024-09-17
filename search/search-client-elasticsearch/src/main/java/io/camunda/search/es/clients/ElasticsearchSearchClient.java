@@ -101,40 +101,41 @@ public class ElasticsearchSearchClient implements DocumentCamundaSearchClient,
   @Override
   public Either<Exception, SearchQueryResult<AuthorizationEntity>> searchAuthorizations(
       final AuthorizationQuery filter, final Authentication authentication) {
-    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
-        authentication);
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, AuthorizationEntity.class);
   }
 
   @Override
   public Either<Exception, SearchQueryResult<DecisionDefinitionEntity>> searchDecisionDefinitions(
       final DecisionDefinitionQuery filter, final Authentication authentication) {
-    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
-        authentication);
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, DecisionDefinitionEntity.class);
   }
 
   @Override
   public Either<Exception, SearchQueryResult<DecisionInstanceEntity>> searchDecisionInstances(
       final DecisionInstanceQuery filter, final Authentication authentication) {
-    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
-        authentication);
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, DecisionInstanceEntity.class);
   }
 
   @Override
-  public Either<Exception, SearchQueryResult<DecisionRequirementsEntity>> searchDecisionRequirements(
+  public Either<Exception, SearchQueryResult<DecisionRequirementsEntity>>
+  searchDecisionRequirements(
       final DecisionRequirementsQuery filter, final Authentication authentication) {
-    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
-        authentication);
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, DecisionRequirementsEntity.class);
   }
 
   @Override
   public Either<Exception, SearchQueryResult<FlowNodeInstanceEntity>> searchFlowNodeInstances(
       final FlowNodeInstanceQuery filter, final Authentication authentication) {
-    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
-        authentication);
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, FlowNodeInstanceEntity.class);
   }
 
@@ -149,40 +150,40 @@ public class ElasticsearchSearchClient implements DocumentCamundaSearchClient,
   @Override
   public Either<Exception, SearchQueryResult<IncidentEntity>> searchIncidents(
       final IncidentQuery filter, final Authentication authentication) {
-    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
-        authentication);
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, IncidentEntity.class);
   }
 
   @Override
   public Either<Exception, SearchQueryResult<ProcessInstanceEntity>> searchProcessInstances(
       final ProcessInstanceQuery filter, final Authentication authentication) {
-    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
-        authentication);
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, ProcessInstanceEntity.class);
   }
 
   @Override
-  public Either<Exception, SearchQueryResult<UserEntity>> searchUsers(final UserQuery filter,
-      final Authentication authentication) {
-    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
-        authentication);
+  public Either<Exception, SearchQueryResult<UserEntity>> searchUsers(
+      final UserQuery filter, final Authentication authentication) {
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, UserEntity.class);
   }
 
   @Override
   public Either<Exception, SearchQueryResult<UserTaskEntity>> searchUserTasks(
       final UserTaskQuery filter, final Authentication authentication) {
-    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
-        authentication);
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, UserTaskEntity.class);
   }
 
   @Override
   public Either<Exception, SearchQueryResult<VariableEntity>> searchVariables(
       final VariableQuery filter, final Authentication authentication) {
-    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
-        authentication);
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, VariableEntity.class);
   }
 

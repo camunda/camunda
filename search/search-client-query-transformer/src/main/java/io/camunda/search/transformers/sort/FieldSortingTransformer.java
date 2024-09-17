@@ -10,10 +10,10 @@ package io.camunda.search.transformers.sort;
 import static io.camunda.service.search.sort.SortOptionsBuilders.reverseOrder;
 import static io.camunda.service.search.sort.SortOptionsBuilders.sortOptions;
 
+import io.camunda.search.transformers.ServiceTransformer;
 import io.camunda.service.search.sort.SearchSortOptions;
 import io.camunda.service.search.sort.SortOption.FieldSorting;
 import io.camunda.service.search.sort.SortOrder;
-import io.camunda.search.transformers.ServiceTransformer;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
 import java.util.List;

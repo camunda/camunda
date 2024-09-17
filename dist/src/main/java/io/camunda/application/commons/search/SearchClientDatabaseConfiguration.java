@@ -20,7 +20,5 @@ import org.springframework.context.annotation.Configuration;
 public class SearchClientDatabaseConfiguration {
 
   @ConfigurationProperties("camunda.database")
-  public static final class SearchClientProperties extends ConnectConfiguration {
-
-  }
+  public static final class SearchClientProperties extends ConnectConfiguration {}
 }

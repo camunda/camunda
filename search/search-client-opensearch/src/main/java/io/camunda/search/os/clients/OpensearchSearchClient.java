@@ -99,16 +99,16 @@ public class OpensearchSearchClient implements DocumentCamundaSearchClient,
   @Override
   public Either<Exception, SearchQueryResult<AuthorizationEntity>> searchAuthorizations(
       final AuthorizationQuery filter, final Authentication authentication) {
-    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
-        authentication);
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, AuthorizationEntity.class);
   }
 
   @Override
   public Either<Exception, SearchQueryResult<DecisionDefinitionEntity>> searchDecisionDefinitions(
       final DecisionDefinitionQuery filter, final Authentication authentication) {
-    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
-        authentication);
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, DecisionDefinitionEntity.class);
   }
 
@@ -153,26 +153,26 @@ public class OpensearchSearchClient implements DocumentCamundaSearchClient,
   }
 
   @Override
-  public Either<Exception, SearchQueryResult<UserEntity>> searchUsers(final UserQuery filter,
-      final Authentication authentication) {
-    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
-        authentication);
+  public Either<Exception, SearchQueryResult<UserEntity>> searchUsers(
+      final UserQuery filter, final Authentication authentication) {
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, UserEntity.class);
   }
 
   @Override
   public Either<Exception, SearchQueryResult<UserTaskEntity>> searchUserTasks(
       final UserTaskQuery filter, final Authentication authentication) {
-    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
-        authentication);
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, UserTaskEntity.class);
   }
 
   @Override
   public Either<Exception, SearchQueryResult<VariableEntity>> searchVariables(
       final VariableQuery filter, final Authentication authentication) {
-    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
-        authentication);
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, VariableEntity.class);
   }
 

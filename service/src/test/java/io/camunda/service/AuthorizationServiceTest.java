@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class AuthorizationServiceTest {
+
   private AuthorizationServices<AuthorizationRecord> services;
   private AuthorizationSearchClient client;
 
@@ -35,7 +36,7 @@ public class AuthorizationServiceTest {
   @Test
   public void emptyQueryReturnsAllResults() {
     // given
-    var result = mock(SearchQueryResult.class);
+    final var result = mock(SearchQueryResult.class);
     when(client.searchAuthorizations(any(), any())).thenReturn(Either.right(result));
 
     final AuthorizationFilter filter = new AuthorizationFilter.Builder().build();

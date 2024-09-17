@@ -20,7 +20,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>search-client-query-transformer</artifactId>
+      <artifactId>camunda-search-client-query-transformer</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-service-domain</artifactId>
     </dependency>
 
     <dependency>

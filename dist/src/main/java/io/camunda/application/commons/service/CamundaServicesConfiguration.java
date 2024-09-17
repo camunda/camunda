@@ -51,101 +51,68 @@ public class CamundaServicesConfiguration {
   public JobServices<JobActivationResponse> jobServices(
       final BrokerClient brokerClient,
       final ActivateJobsHandler<JobActivationResponse> activateJobsHandler) {
-    return new JobServices<>(
-        brokerClient, activateJobsHandler, null);
+    return new JobServices<>(brokerClient, activateJobsHandler, null);
   }
 
   @Bean
   public DecisionDefinitionServices decisionDefinitionServices(
       final BrokerClient brokerClient,
       final DecisionDefinitionSearchClient decisionDefinitionSearchClient,
-      final DecisionRequirementSearchClient decisionRequirementSearchClient
-  ) {
-    return new DecisionDefinitionServices(brokerClient,
-        decisionDefinitionSearchClient,
-        decisionRequirementSearchClient,
-        null);
+      final DecisionRequirementSearchClient decisionRequirementSearchClient) {
+    return new DecisionDefinitionServices(
+        brokerClient, decisionDefinitionSearchClient, decisionRequirementSearchClient, null);
   }
 
   @Bean
   public DecisionInstanceServices decisionInstanceServices(
       final BrokerClient brokerClient,
-      final DecisionInstanceSearchClient decisionInstanceSearchClient
-  ) {
-    return new DecisionInstanceServices(brokerClient,
-        decisionInstanceSearchClient,
-        null);
+      final DecisionInstanceSearchClient decisionInstanceSearchClient) {
+    return new DecisionInstanceServices(brokerClient, decisionInstanceSearchClient, null);
   }
 
   @Bean
   public ProcessInstanceServices processInstanceServices(
       final BrokerClient brokerClient,
-      final ProcessInstanceSearchClient processInstanceSearchClient
-  ) {
-    return new ProcessInstanceServices(brokerClient,
-        processInstanceSearchClient,
-        null);
+      final ProcessInstanceSearchClient processInstanceSearchClient) {
+    return new ProcessInstanceServices(brokerClient, processInstanceSearchClient, null);
   }
 
   @Bean
   public DecisionRequirementsServices decisionRequirementsServices(
       final BrokerClient brokerClient,
-      final DecisionRequirementSearchClient decisionRequirementSearchClient
-  ) {
-    return new DecisionRequirementsServices(brokerClient,
-        decisionRequirementSearchClient,
-        null);
+      final DecisionRequirementSearchClient decisionRequirementSearchClient) {
+    return new DecisionRequirementsServices(brokerClient, decisionRequirementSearchClient, null);
   }
 
   @Bean
   public FlowNodeInstanceServices flownodeInstanceServices(
       final BrokerClient brokerClient,
-      final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient
-  ) {
-    return new FlowNodeInstanceServices(brokerClient,
-        flowNodeInstanceSearchClient,
-        null);
+      final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient) {
+    return new FlowNodeInstanceServices(brokerClient, flowNodeInstanceSearchClient, null);
   }
 
   @Bean
   public IncidentServices incidentServices(
-      final BrokerClient brokerClient,
-      final IncidentSearchClient incidentSearchClient
-  ) {
-    return new IncidentServices(brokerClient,
-        incidentSearchClient,
-        null);
+      final BrokerClient brokerClient, final IncidentSearchClient incidentSearchClient) {
+    return new IncidentServices(brokerClient, incidentSearchClient, null);
   }
-
 
   @Bean
   public UserServices userServices(
-      final BrokerClient brokerClient,
-      final UserSearchClient userSearchClient
-  ) {
-    return new UserServices(brokerClient,
-        userSearchClient,
-        null);
+      final BrokerClient brokerClient, final UserSearchClient userSearchClient) {
+    return new UserServices(brokerClient, userSearchClient, null);
   }
 
   @Bean
   public UserTaskServices userTaskServices(
-      final BrokerClient brokerClient,
-      final UserTaskSearchClient userTaskSearchClient
-  ) {
-    return new UserTaskServices(brokerClient,
-        userTaskSearchClient,
-        null);
+      final BrokerClient brokerClient, final UserTaskSearchClient userTaskSearchClient) {
+    return new UserTaskServices(brokerClient, userTaskSearchClient, null);
   }
 
   @Bean
   public VariableServices variableServices(
-      final BrokerClient brokerClient,
-      final VariableSearchClient variableSearchClient
-  ) {
-    return new VariableServices(brokerClient,
-        variableSearchClient,
-        null);
+      final BrokerClient brokerClient, final VariableSearchClient variableSearchClient) {
+    return new VariableServices(brokerClient, variableSearchClient, null);
   }
 
   @Bean
@@ -159,11 +126,9 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  public AuthorizationServices authorizationServices(final BrokerClient brokerClient,
-      final AuthorizationSearchClient authorizationSearchClient) {
-    return new AuthorizationServices(brokerClient,
-        authorizationSearchClient,
-        null);
+  public AuthorizationServices authorizationServices(
+      final BrokerClient brokerClient, final AuthorizationSearchClient authorizationSearchClient) {
+    return new AuthorizationServices(brokerClient, authorizationSearchClient, null);
   }
 
   @Bean

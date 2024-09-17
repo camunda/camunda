@@ -19,9 +19,7 @@ import java.util.concurrent.CompletableFuture;
 
 public final class MessageServices extends ApiServices<MessageServices> {
 
-  public MessageServices(
-      final BrokerClient brokerClient,
-      final Authentication authentication) {
+  public MessageServices(final BrokerClient brokerClient, final Authentication authentication) {
     super(brokerClient, authentication);
   }
 

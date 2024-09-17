@@ -18,8 +18,8 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.util.Either;
 import org.opensearch.client.opensearch.OpenSearchClient;
 
-public final class OpensearchProcessInstanceSearchClient extends OpensearchSearchClient implements
-    ProcessInstanceSearchClient {
+public final class OpensearchProcessInstanceSearchClient extends OpensearchSearchClient
+    implements ProcessInstanceSearchClient {
 
   public OpensearchProcessInstanceSearchClient(final OpenSearchClient client) {
     this(client, new OpensearchTransformers());
@@ -33,9 +33,8 @@ public final class OpensearchProcessInstanceSearchClient extends OpensearchSearc
   @Override
   public Either<Exception, SearchQueryResult<ProcessInstanceEntity>> searchProcessInstances(
       final ProcessInstanceQuery filter, final Authentication authentication) {
-    final var executor = new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(),
-        authentication);
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, ProcessInstanceEntity.class);
   }
-
 }

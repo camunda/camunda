@@ -27,9 +27,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     this(brokerClient, null);
   }
 
-  public DocumentServices(
-      final BrokerClient brokerClient,
-      final Authentication authentication) {
+  public DocumentServices(final BrokerClient brokerClient, final Authentication authentication) {
     super(brokerClient, authentication);
   }
 

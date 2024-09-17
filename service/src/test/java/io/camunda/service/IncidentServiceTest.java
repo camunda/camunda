@@ -34,7 +34,7 @@ public final class IncidentServiceTest {
   @Test
   public void shouldReturnIncident() {
     // given
-    var result = mock(SearchQueryResult.class);
+    final var result = mock(SearchQueryResult.class);
     when(client.searchIncidents(any(), any())).thenReturn(Either.right(result));
 
     final var searchQuery = SearchQueryBuilders.incidentSearchQuery().build();

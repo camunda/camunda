@@ -17,10 +17,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnRestGatewayEnabled
-@ConditionalOnProperty(
-    prefix = "camunda.database",
-    name = "type",
-    havingValue = "opensearch")
+@ConditionalOnProperty(prefix = "camunda.database", name = "type", havingValue = "opensearch")
 public class OpenSearchSearchClientConfiguration {
 
   @Bean
@@ -29,5 +26,4 @@ public class OpenSearchSearchClientConfiguration {
     final var elasticsearch = connector.createClient();
     return new OpensearchSearchClient(elasticsearch);
   }
-
 }

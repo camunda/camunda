@@ -22,10 +22,7 @@ public interface DocumentCamundaSearchClient {
       final SearchQueryRequest searchRequest, final Class<T> documentClass);
 
   default <T> Either<Exception, SearchQueryResponse<T>> search(
-      final Function<Builder, ObjectBuilder<SearchQueryRequest>> fn,
-      final Class<T> documentClass) {
+      final Function<Builder, ObjectBuilder<SearchQueryRequest>> fn, final Class<T> documentClass) {
     return search(searchRequest(fn), documentClass);
   }
-
-
 }

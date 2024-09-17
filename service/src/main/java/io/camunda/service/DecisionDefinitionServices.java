@@ -48,7 +48,11 @@ public final class DecisionDefinitionServices
 
   @Override
   public DecisionDefinitionServices withAuthentication(final Authentication authentication) {
-    return new DecisionDefinitionServices(brokerClient, decisionDefinitionSearchClient, decisionRequirementSearchClient, authentication);
+    return new DecisionDefinitionServices(
+        brokerClient,
+        decisionDefinitionSearchClient,
+        decisionRequirementSearchClient,
+        authentication);
   }
 
   @Override
@@ -76,7 +80,9 @@ public final class DecisionDefinitionServices
             q ->
                 q.filter(f -> f.decisionRequirementsKeys(decisionRequirementsKey))
                     .resultConfig(r -> r.xml().include()));
-    return decisionRequirementSearchClient.searchDecisionRequirements(decisionRequirementsQuery, authentication).get()
+    return decisionRequirementSearchClient
+        .searchDecisionRequirements(decisionRequirementsQuery, authentication)
+        .get()
         .items()
         .stream()
         .findFirst()

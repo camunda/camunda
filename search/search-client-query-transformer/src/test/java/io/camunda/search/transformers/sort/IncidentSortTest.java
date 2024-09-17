@@ -47,8 +47,8 @@ public class IncidentSortTest extends AbstractSortTransformerTest {
       final SortOrder sortOrder,
       final Function<IncidentSort.Builder, ObjectBuilder<IncidentSort>> fn) {
     // when
-    var request = SearchQueryBuilders.incidentSearchQuery(q -> q.sort(fn));
-    var sort = transformRequest(request);
+    final var request = SearchQueryBuilders.incidentSearchQuery(q -> q.sort(fn));
+    final var sort = transformRequest(request);
 
     // then
     Assertions.assertThat(sort).hasSize(2);

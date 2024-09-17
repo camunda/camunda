@@ -65,8 +65,8 @@ class SearchClientBasedQueryExecutorTest {
     final var searchAllQuery = new ProcessInstanceQuery.Builder().build();
 
     // And our search client returns stuff
-    final SearchQueryResponse<ProcessInstanceEntity> processInstanceEntityResponse = createProcessInstanceEntityResponse(
-        demoProcessInstance);
+    final SearchQueryResponse<ProcessInstanceEntity> processInstanceEntityResponse =
+        createProcessInstanceEntityResponse(demoProcessInstance);
 
     when(searchClient.search(any(SearchQueryRequest.class), any(Class.class)))
         .thenReturn(Either.right(processInstanceEntityResponse));

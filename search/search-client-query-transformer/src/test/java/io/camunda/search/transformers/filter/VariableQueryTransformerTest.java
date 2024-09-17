@@ -5,7 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.transformers.filter;import static org.assertj.core.api.Assertions.assertThat;
+package io.camunda.search.transformers.filter;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
@@ -25,7 +27,7 @@ public final class VariableQueryTransformerTest extends AbstractTransformerTest 
             (v) -> v.variable(new VariableValueFilter.Builder().name("foo").build()));
 
     // when
-    var searchRequest = transformQuery(variableFilter);
+    final var searchRequest = transformQuery(variableFilter);
 
     // then
     // verify that the search request has been constructed properly
@@ -51,7 +53,7 @@ public final class VariableQueryTransformerTest extends AbstractTransformerTest 
     final var variableFilter = FilterBuilders.variable((v) -> v.scopeKeys(4503599627370497L));
 
     // when
-    var searchRequest = transformQuery(variableFilter);
+    final var searchRequest = transformQuery(variableFilter);
 
     // then
     final var queryVariant = searchRequest.queryOption();

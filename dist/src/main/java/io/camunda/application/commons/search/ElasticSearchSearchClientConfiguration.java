@@ -31,5 +31,4 @@ public class ElasticSearchSearchClientConfiguration {
     final var elasticsearch = connector.createClient();
     return new ElasticsearchSearchClient(elasticsearch);
   }
-
 }

@@ -9,7 +9,6 @@ package io.camunda.search.transformers.sort;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.sort.SearchSortOptions;
@@ -20,15 +19,15 @@ import org.junit.jupiter.api.Test;
 
 public class UserTaskSortTest extends AbstractSortTransformerTest {
 
-
   @Test
   public void shouldSortByPriority() {
     // given
-    var request = SearchQueryBuilders.userTaskSearchQuery(
+    final var request =
+        SearchQueryBuilders.userTaskSearchQuery(
             u -> u.sort(UserTaskSort.of(s -> s.priority().asc())));
 
     // when
-    var sort = transformRequest(request);
+    final var sort = transformRequest(request);
 
     // then
     assertThat(sort).hasSize(2);
@@ -57,7 +56,7 @@ public class UserTaskSortTest extends AbstractSortTransformerTest {
             (q) -> q.filter(userTaskStateFilter).sort((s) -> s.creationDate().asc()));
 
     // when
-    var sort = transformRequest(request);
+    final var sort = transformRequest(request);
 
     // then
     Assertions.assertThat(sort).isNotNull();
@@ -83,7 +82,7 @@ public class UserTaskSortTest extends AbstractSortTransformerTest {
             (q) -> q.filter(userTaskStateFilter).sort((s) -> s.completionDate().desc()));
 
     // when
-    var sort = transformRequest(request);
+    final var sort = transformRequest(request);
 
     // then
     Assertions.assertThat(sort).isNotNull();

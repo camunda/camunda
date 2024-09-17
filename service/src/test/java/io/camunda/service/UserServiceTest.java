@@ -35,7 +35,7 @@ public class UserServiceTest {
   @Test
   public void shouldEmptyQueryReturnUsers() {
     // given
-    var result = mock(SearchQueryResult.class);
+    final var result = mock(SearchQueryResult.class);
     when(client.searchUsers(any(), any())).thenReturn(Either.right(result));
 
     final UserFilter filter = new UserFilter.Builder().build();

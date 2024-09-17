@@ -14,14 +14,15 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.clients.types.TypedValue;
+import io.camunda.search.transformers.ServiceTransformers;
 import io.camunda.service.search.filter.VariableFilter;
 import io.camunda.service.search.filter.VariableValueFilter;
-import io.camunda.search.transformers.ServiceTransformers;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class VariableFilterTransformer implements FilterTransformer<VariableFilter> {
+
   private final ServiceTransformers transformers;
   private final VariableValueFilterTransformer variableValueFilterTransformer;
 

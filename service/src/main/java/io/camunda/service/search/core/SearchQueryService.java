@@ -17,8 +17,7 @@ public abstract class SearchQueryService<T extends ApiServices<T>, Q extends Sea
     extends ApiServices<T> {
 
   protected SearchQueryService(
-      final BrokerClient brokerClient,
-      final Authentication authentication) {
+      final BrokerClient brokerClient, final Authentication authentication) {
     super(brokerClient, authentication);
   }
 

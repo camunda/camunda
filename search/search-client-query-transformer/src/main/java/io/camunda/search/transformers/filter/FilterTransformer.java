@@ -8,13 +8,14 @@
 package io.camunda.search.transformers.filter;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.service.search.filter.FilterBase;
 import io.camunda.search.transformers.ServiceTransformer;
+import io.camunda.service.search.filter.FilterBase;
 import java.util.List;
 
 public interface FilterTransformer<T extends FilterBase>
     extends ServiceTransformer<T, SearchQuery> {
 
+  @Override
   default SearchQuery apply(final T filter) {
     return toSearchQuery(filter);
   }

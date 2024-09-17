@@ -36,8 +36,7 @@ public final class JobServices<T> extends ApiServices<JobServices<T>> {
 
   @Override
   public JobServices<T> withAuthentication(final Authentication authentication) {
-    return new JobServices<>(
-        brokerClient, activateJobsHandler, authentication);
+    return new JobServices<>(brokerClient, activateJobsHandler, authentication);
   }
 
   public void activateJobs(

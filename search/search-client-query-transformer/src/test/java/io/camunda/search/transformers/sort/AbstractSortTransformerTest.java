@@ -19,8 +19,10 @@ public class AbstractSortTransformerTest {
   private final ServiceTransformers transformers = ServiceTransformers.newInstance();
 
   protected List<SearchSortOptions> transformRequest(
-      TypedSearchQuery<? extends FilterBase, ? extends SortOption> request
-  ) {
-    return transformers.getTypedSearchQueryTransformer(request.getClass()).apply((TypedSearchQuery<FilterBase, SortOption>) request).sort();
+      TypedSearchQuery<? extends FilterBase, ? extends SortOption> request) {
+    return transformers
+        .getTypedSearchQueryTransformer(request.getClass())
+        .apply((TypedSearchQuery<FilterBase, SortOption>) request)
+        .sort();
   }
 }

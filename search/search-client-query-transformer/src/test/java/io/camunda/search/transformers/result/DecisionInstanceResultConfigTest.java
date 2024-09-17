@@ -17,9 +17,10 @@ class DecisionInstanceResultConfigTest extends AbstractResultConfigTest {
   @Test
   void shouldSourceConfigIncludeEvaluatedInputs() {
     // when
-    var source = transformRequest(
-        SearchQueryBuilders.decisionInstanceSearchQuery(
-            q -> q.resultConfig(r -> r.evaluatedInputs().include())));
+    final var source =
+        transformRequest(
+            SearchQueryBuilders.decisionInstanceSearchQuery(
+                q -> q.resultConfig(r -> r.evaluatedInputs().include())));
 
     // then
     assertThat(source.sourceFilter().includes()).containsExactly("evaluatedInputs");
@@ -29,9 +30,10 @@ class DecisionInstanceResultConfigTest extends AbstractResultConfigTest {
   @Test
   void shouldSourceConfigIncludeEvaluatedOutputs() {
     // when
-    var source = transformRequest(
-        SearchQueryBuilders.decisionInstanceSearchQuery(
-            q -> q.resultConfig(r -> r.evaluatedOutputs().exclude())));
+    final var source =
+        transformRequest(
+            SearchQueryBuilders.decisionInstanceSearchQuery(
+                q -> q.resultConfig(r -> r.evaluatedOutputs().exclude())));
 
     // then
     assertThat(source.sourceFilter().excludes()).containsExactly("evaluatedOutputs");
@@ -41,9 +43,12 @@ class DecisionInstanceResultConfigTest extends AbstractResultConfigTest {
   @Test
   void shouldSourceConfigExcludeEvaluatedInputsAndEvaluatedOutputs() {
     // when
-    var source = transformRequest(
-        SearchQueryBuilders.decisionInstanceSearchQuery(
-            q -> q.resultConfig(r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())));
+    final var source =
+        transformRequest(
+            SearchQueryBuilders.decisionInstanceSearchQuery(
+                q ->
+                    q.resultConfig(
+                        r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())));
 
     // then
     assertThat(source.sourceFilter().excludes())

@@ -20,7 +20,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class DecisionInstanceSortTest  extends AbstractSortTransformerTest {
+class DecisionInstanceSortTest extends AbstractSortTransformerTest {
 
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
@@ -44,8 +44,8 @@ class DecisionInstanceSortTest  extends AbstractSortTransformerTest {
       final SortOrder sortOrder,
       final Function<DecisionInstanceSort.Builder, ObjectBuilder<DecisionInstanceSort>> fn) {
     // when
-    var request = SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.sort(fn));
-    var sort = transformRequest(request);
+    final var request = SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.sort(fn));
+    final var sort = transformRequest(request);
 
     // then
     assertThat(sort).hasSize(2);

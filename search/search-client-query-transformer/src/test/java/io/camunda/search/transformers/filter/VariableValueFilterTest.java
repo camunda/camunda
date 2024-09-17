@@ -5,7 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.transformers.filter;import static org.assertj.core.api.Assertions.assertThat;
+package io.camunda.search.transformers.filter;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.service.search.filter.VariableValueFilter.Builder;
 import org.junit.jupiter.api.Test;

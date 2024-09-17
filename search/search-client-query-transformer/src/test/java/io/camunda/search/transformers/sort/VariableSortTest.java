@@ -29,7 +29,7 @@ public class VariableSortTest extends AbstractSortTransformerTest {
             (q) -> q.filter(variableFilter).sort((s) -> s.value().asc()));
 
     // when
-    var sort = transformRequest(request);
+    final var sort = transformRequest(request);
 
     // then
     Assertions.assertThat(sort).isNotNull();

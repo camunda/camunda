@@ -16,9 +16,7 @@ import java.util.concurrent.CompletableFuture;
 
 public final class ClockServices extends ApiServices<ClockServices> {
 
-  public ClockServices(
-      final BrokerClient brokerClient,
-      final Authentication authentication) {
+  public ClockServices(final BrokerClient brokerClient, final Authentication authentication) {
     super(brokerClient, authentication);
   }
 

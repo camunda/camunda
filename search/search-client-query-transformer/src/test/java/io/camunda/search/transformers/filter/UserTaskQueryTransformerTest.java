@@ -145,8 +145,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldQueryByProcessInstanceKey() {
     // given
-    final var filter =
-        FilterBuilders.userTask((f) -> f.processInstanceKeys(12345L));
+    final var filter = FilterBuilders.userTask((f) -> f.processInstanceKeys(12345L));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -171,8 +170,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldQueryByProcessDefinitionKey() {
     // given
-    final var filter =
-        FilterBuilders.userTask((f) -> f.processDefinitionKeys(123L));
+    final var filter = FilterBuilders.userTask((f) -> f.processDefinitionKeys(123L));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -197,8 +195,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldQueryByBpmnProcessId() {
     // given
-    final var filter =
-        FilterBuilders.userTask((f) -> f.bpmnProcessIds("bpmnProcess1"));
+    final var filter = FilterBuilders.userTask((f) -> f.bpmnProcessIds("bpmnProcess1"));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -223,8 +220,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldQueryByCandidateUsers() {
     // given
-    final var filter =
-        FilterBuilders.userTask((f) -> f.candidateUsers("candidateUser1"));
+    final var filter = FilterBuilders.userTask((f) -> f.candidateUsers("candidateUser1"));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -249,8 +245,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldQueryByCandidateGroups() {
     // given
-    final var filter =
-        FilterBuilders.userTask((f) -> f.candidateGroups("candidateGroup1"));
+    final var filter = FilterBuilders.userTask((f) -> f.candidateGroups("candidateGroup1"));
 
     // when
     final var searchRequest = transformQuery(filter);

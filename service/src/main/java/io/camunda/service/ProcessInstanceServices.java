@@ -46,16 +46,14 @@ public final class ProcessInstanceServices
   public ProcessInstanceServices(
       final BrokerClient brokerClient,
       final ProcessInstanceSearchClient processInstanceSearchClient,
-      final Authentication authentication
-  ) {
+      final Authentication authentication) {
     super(brokerClient, authentication);
     this.processInstanceSearchClient = processInstanceSearchClient;
   }
 
   @Override
   public ProcessInstanceServices withAuthentication(final Authentication authentication) {
-    return new ProcessInstanceServices(brokerClient, processInstanceSearchClient,
-        authentication);
+    return new ProcessInstanceServices(brokerClient, processInstanceSearchClient, authentication);
   }
 
   @Override

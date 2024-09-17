@@ -42,8 +42,8 @@ public class DecisionDefinitionSortTest extends AbstractSortTransformerTest {
       final SortOrder sortOrder,
       final Function<DecisionDefinitionSort.Builder, ObjectBuilder<DecisionDefinitionSort>> fn) {
     // when
-    var request = SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.sort(fn));
-    var sort = transformRequest(request);
+    final var request = SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.sort(fn));
+    final var sort = transformRequest(request);
 
     // then
     assertThat(sort).hasSize(2);

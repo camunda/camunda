@@ -66,7 +66,8 @@ import java.util.Map;
 
 public final class ServiceTransformers {
 
-  private final Map<Class<?>, io.camunda.search.transformers.ServiceTransformer<?, ?>> transformers = new HashMap<>();
+  private final Map<Class<?>, io.camunda.search.transformers.ServiceTransformer<?, ?>>
+      transformers = new HashMap<>();
 
   private ServiceTransformers() {
   }

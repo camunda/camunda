@@ -118,7 +118,6 @@ public final class DecisionDefinitionServiceTest {
         .isEqualTo("DecisionRequirements with decisionRequirementsKey=1 cannot be found");
   }
 
-
   @Test
   public void shouldGetDecisionDefinitionByKey() {
     // given
@@ -135,6 +134,4 @@ public final class DecisionDefinitionServiceTest {
     // then
     assertThat(decisionDefinition.key()).isEqualTo(42L);
   }
-
-
 }

@@ -36,16 +36,15 @@ public final class SearchClientBasedQueryExecutor {
     this.authentication = authentication;
   }
 
-  public <T extends FilterBase, S extends SortOption, R> Either<Exception, SearchQueryResult<R>> search(
-      final TypedSearchQuery<T, S> query, final Class<R> documentClass) {
+  public <T extends FilterBase, S extends SortOption, R>
+      Either<Exception, SearchQueryResult<R>> search(
+          final TypedSearchQuery<T, S> query, final Class<R> documentClass) {
     final var authCheck = getAuthenticationCheckIfPresent();
     final var transformer = getSearchQueryRequestTransformer(query);
     final var searchRequest = transformer.applyWithAuthentication(query, authCheck);
 
     final SearchQueryResultTransformer<R> responseTransformer = getSearchResultTransformer();
-    return searchClient
-        .search(searchRequest, documentClass)
-        .map(responseTransformer::apply);
+    return searchClient.search(searchRequest, documentClass).map(responseTransformer::apply);
   }
 
   private SearchQuery getAuthenticationCheckIfPresent() {
@@ -57,8 +56,8 @@ public final class SearchClientBasedQueryExecutor {
   }
 
   private <T extends FilterBase, S extends SortOption>
-  TypedSearchQueryTransformer<T, S> getSearchQueryRequestTransformer(
-      final TypedSearchQuery<T, S> query) {
+      TypedSearchQueryTransformer<T, S> getSearchQueryRequestTransformer(
+          final TypedSearchQuery<T, S> query) {
     return transformers.getTypedSearchQueryTransformer(query.getClass());
   }
 

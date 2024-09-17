@@ -17,9 +17,10 @@ public class DecisionRequirementsResultConfigTest extends AbstractResultConfigTe
   @Test
   public void shouldSourceConfigIncludeXml() {
     // when
-    var source = transformRequest(
-        SearchQueryBuilders.decisionRequirementsSearchQuery(
-            q -> q.resultConfig(r -> r.xml().include())));
+    final var source =
+        transformRequest(
+            SearchQueryBuilders.decisionRequirementsSearchQuery(
+                q -> q.resultConfig(r -> r.xml().include())));
 
     // then
     assertThat(source.sourceFilter().includes()).containsExactly("xml");
@@ -29,9 +30,10 @@ public class DecisionRequirementsResultConfigTest extends AbstractResultConfigTe
   @Test
   public void shouldSourceConfigExcludeXml() {
     // when
-    var source = transformRequest(
-        SearchQueryBuilders.decisionRequirementsSearchQuery(
-            q -> q.resultConfig(r -> r.xml().exclude())));
+    final var source =
+        transformRequest(
+            SearchQueryBuilders.decisionRequirementsSearchQuery(
+                q -> q.resultConfig(r -> r.xml().exclude())));
 
     // then
     assertThat(source.sourceFilter().excludes()).containsExactly("xml");

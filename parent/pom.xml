@@ -846,7 +846,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>search-client-query-transformer</artifactId>
+        <artifactId>camunda-search-client-query-transformer</artifactId>
         <version>${project.version}</version>
       </dependency>
 

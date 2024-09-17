@@ -17,8 +17,7 @@ import java.util.concurrent.CompletableFuture;
 public class ElementInstanceServices extends ApiServices<ElementInstanceServices> {
 
   public ElementInstanceServices(
-      final BrokerClient brokerClient,
-      final Authentication authentication) {
+      final BrokerClient brokerClient, final Authentication authentication) {
     super(brokerClient, authentication);
   }
 

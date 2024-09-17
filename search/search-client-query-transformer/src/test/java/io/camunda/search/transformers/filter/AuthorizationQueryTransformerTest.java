@@ -5,7 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.transformers.filter;import static org.assertj.core.api.Assertions.assertThat;
+package io.camunda.search.transformers.filter;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.service.search.filter.AuthorizationFilter;
@@ -29,8 +31,8 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
     // given
     final var filter = FilterBuilders.authorization(fn);
 
-    //when
-    var searchRequest = transformQuery(filter);
+    // when
+    final var searchRequest = transformQuery(filter);
 
     // then
     final var queryVariant = searchRequest.queryOption();

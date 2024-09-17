@@ -34,12 +34,13 @@ public class AuthorizationServices<T>
       final AuthorizationSearchClient authorizationSearchClient,
       final Authentication authentication) {
     super(brokerClient, authentication);
-   this.authorizationSearchClient = authorizationSearchClient;
+    this.authorizationSearchClient = authorizationSearchClient;
   }
 
   @Override
   public AuthorizationServices<T> withAuthentication(final Authentication authentication) {
-    return new AuthorizationServices<>(brokerClient, this.authorizationSearchClient, authentication);
+    return new AuthorizationServices<>(
+        brokerClient, this.authorizationSearchClient, authentication);
   }
 
   @Override

@@ -25,9 +25,7 @@ public abstract class ApiServices<T extends ApiServices<T>> {
   protected final BrokerClient brokerClient;
   protected final Authentication authentication;
 
-  protected ApiServices(
-      final BrokerClient brokerClient,
-      final Authentication authentication) {
+  protected ApiServices(final BrokerClient brokerClient, final Authentication authentication) {
     this.brokerClient = brokerClient;
     this.authentication = authentication;
   }

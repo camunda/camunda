@@ -5,7 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.transformers.filter;import static org.assertj.core.api.Assertions.assertThat;
+package io.camunda.search.transformers.filter;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.service.search.filter.FilterBuilders;
@@ -30,7 +32,7 @@ public class UserQueryTransformerTest extends AbstractTransformerTest {
     final var userFilter = FilterBuilders.user(fn);
 
     // when
-    var searchRequest = transformQuery(userFilter);
+    final var searchRequest = transformQuery(userFilter);
 
     // then
     final var queryVariant = searchRequest.queryOption();

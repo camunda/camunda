@@ -17,9 +17,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class SignalServices extends ApiServices<SignalServices> {
 
-  public SignalServices(
-      final BrokerClient brokerClient,
-      final Authentication authentication) {
+  public SignalServices(final BrokerClient brokerClient, final Authentication authentication) {
     super(brokerClient, authentication);
   }
 

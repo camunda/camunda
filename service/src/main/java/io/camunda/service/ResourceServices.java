@@ -18,9 +18,7 @@ import java.util.concurrent.CompletableFuture;
 
 public final class ResourceServices extends ApiServices<ResourceServices> {
 
-  public ResourceServices(
-      final BrokerClient brokerClient,
-      final Authentication authentication) {
+  public ResourceServices(final BrokerClient brokerClient, final Authentication authentication) {
     super(brokerClient, authentication);
   }
 

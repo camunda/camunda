@@ -62,8 +62,8 @@ public class ProcessInstanceSortTest extends AbstractSortTransformerTest {
       final SortOrder sortOrder,
       final Function<ProcessInstanceSort.Builder, ObjectBuilder<ProcessInstanceSort>> fn) {
     // when
-    var request = SearchQueryBuilders.processInstanceSearchQuery(q -> q.sort(fn));
-    var sort = transformRequest(request);
+    final var request = SearchQueryBuilders.processInstanceSearchQuery(q -> q.sort(fn));
+    final var sort = transformRequest(request);
 
     // then
     assertThat(sort).hasSize(2);
@@ -91,7 +91,7 @@ public class ProcessInstanceSortTest extends AbstractSortTransformerTest {
 
     @Override
     public Object[] get() {
-      return new Object[]{field, sortOrder, fn};
+      return new Object[] {field, sortOrder, fn};
     }
   }
 }

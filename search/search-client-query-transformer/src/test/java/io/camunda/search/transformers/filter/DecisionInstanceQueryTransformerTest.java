@@ -1,4 +1,6 @@
-package io.camunda.search.transformers.filter;/*
+package io.camunda.search.transformers.filter;
+
+/*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
@@ -203,5 +205,4 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
               assertThat(t.lt()).isEqualTo("2024-02-03T04:05:06.000+0000");
             });
   }
-
 }
