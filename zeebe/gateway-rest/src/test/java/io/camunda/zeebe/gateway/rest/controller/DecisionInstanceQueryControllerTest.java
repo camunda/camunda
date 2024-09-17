@@ -52,7 +52,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                        "processDefinitionKey": 2251799813688736,
                        "processInstanceKey": 6755399441058457,
                        "decisionKey": 123456,
-                       "dmnDecisionId": "ddi",
+                       "dmnDecisionId": "di",
                        "dmnDecisionName": "ddn",
                        "decisionVersion": 0,
                        "decisionType": "DECISION_TABLE",
@@ -81,8 +81,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                       2251799813688736L,
                       6755399441058457L,
                       "bpi",
+                      "di",
                       "123456",
-                      "ddi",
                       "ddn",
                       0,
                       DecisionInstanceType.DECISION_TABLE,
@@ -143,8 +143,9 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   @ParameterizedTest
   @MethodSource("provideQueryParameters")
   void shouldReturnDecisionInstances(
-      String apiQuery,
-      Function<DecisionInstanceQuery.Builder, ObjectBuilder<DecisionInstanceQuery>> expectedQuery) {
+      final String apiQuery,
+      final Function<DecisionInstanceQuery.Builder, ObjectBuilder<DecisionInstanceQuery>>
+          expectedQuery) {
     // given
     when(decisionInstanceServices.search(
             SearchQueryBuilders.decisionInstanceSearchQuery(expectedQuery)))

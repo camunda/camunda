@@ -46,12 +46,12 @@ public class DecisionInstanceQueryController {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionInstanceSearchQueryResponse(decisionInstances));
     } catch (final Exception e) {
-      REST_LOGGER.warn("An exception occurred in searchDecisionDefinitions.", e);
+      REST_LOGGER.warn("An exception occurred in searchDecisionInstances.", e);
       final var problemDetail =
           RestErrorMapper.createProblemDetail(
               HttpStatus.INTERNAL_SERVER_ERROR,
               e.getMessage(),
-              "Failed to execute Decision Definition Search Query.");
+              "Failed to execute Decision Instance Search Query.");
       return RestErrorMapper.mapProblemToResponse(problemDetail);
     }
   }

@@ -96,7 +96,7 @@ public final class DecisionInstanceFilterTransformer
 
   private SearchQuery getDecisionKeysQuery(final List<Long> decisionKeys) {
     return stringTerms(
-        "decisionId",
+        "decisionDefinitionId",
         decisionKeys != null ? decisionKeys.stream().map(String::valueOf).toList() : null);
   }
 

@@ -319,8 +319,8 @@ public final class SearchQueryResponseMapper {
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(entity.processDefinitionKey())
         .processInstanceKey(entity.processInstanceKey())
-        .decisionKey(Long.valueOf(entity.decisionId()))
-        .dmnDecisionId(entity.decisionDefinitionId())
+        .decisionKey(Long.valueOf(entity.decisionDefinitionId()))
+        .dmnDecisionId(entity.decisionId())
         .dmnDecisionName(entity.decisionName())
         .decisionVersion(entity.decisionVersion())
         .decisionType(
