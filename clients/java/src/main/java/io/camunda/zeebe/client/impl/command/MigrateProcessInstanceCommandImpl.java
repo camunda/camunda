@@ -16,6 +16,8 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
@@ -23,7 +25,10 @@ import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1.Mi
 import io.camunda.zeebe.client.api.command.MigrationPlan;
 import io.camunda.zeebe.client.api.response.MigrateProcessInstanceResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.MigrateProcessInstanceResponseImpl;
+import io.camunda.zeebe.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceRequest;
@@ -34,6 +39,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class MigrateProcessInstanceCommandImpl
     implements MigrateProcessInstanceCommandStep1, MigrateProcessInstanceCommandFinalStep {
@@ -43,16 +49,33 @@ public final class MigrateProcessInstanceCommandImpl
   private final GatewayStub asyncStub;
   private final Predicate<StatusCode> retryPredicate;
   private Duration requestTimeout;
+  private final HttpClient httpClient;
+  private final RequestConfig.Builder httpRequestConfig;
+  private final io.camunda.zeebe.client.protocol.rest.MigrateProcessInstanceRequest
+      httpRequestObject;
+  private boolean useRest;
+  private final long processInstanceKey;
+  private final JsonMapper jsonMapper;
 
   public MigrateProcessInstanceCommandImpl(
       final long processInstanceKey,
       final GatewayStub asyncStub,
       final Duration requestTimeout,
-      final Predicate<StatusCode> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate,
+      final HttpClient httpClient,
+      final ZeebeClientConfiguration config,
+      final JsonMapper jsonMapper) {
     requestBuilder.setProcessInstanceKey(processInstanceKey);
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
+    this.httpClient = httpClient;
+    httpRequestConfig = httpClient.newRequestConfig();
+    httpRequestObject = new io.camunda.zeebe.client.protocol.rest.MigrateProcessInstanceRequest();
+    useRest = config.preferRestOverGrpc();
+    this.processInstanceKey = processInstanceKey;
+    this.jsonMapper = jsonMapper;
+    requestTimeout(config.getDefaultRequestTimeout());
   }
 
   @Override
@@ -62,6 +85,7 @@ public final class MigrateProcessInstanceCommandImpl
         MigrateProcessInstanceRequest.MigrationPlan.newBuilder()
             .setTargetProcessDefinitionKey(targetProcessDefinitionKey)
             .build());
+    httpRequestObject.setTargetProcessDefinitionKey(targetProcessDefinitionKey);
     return this;
   }
 
@@ -79,7 +103,20 @@ public final class MigrateProcessInstanceCommandImpl
         MigrateProcessInstanceRequest.MigrationPlan.newBuilder()
             .setTargetProcessDefinitionKey(migrationPlan.getTargetProcessDefinitionKey())
             .addAllMappingInstructions(mappingInstructions));
+    buildRequestObject(migrationPlan);
     return this;
+  }
+
+  private void buildRequestObject(final MigrationPlan migrationPlan) {
+    httpRequestObject.setTargetProcessDefinitionKey(migrationPlan.getTargetProcessDefinitionKey());
+    httpRequestObject.setMappingInstructions(
+        migrationPlan.getMappingInstructions().stream()
+            .map(
+                mappingInstruction ->
+                    new MigrateProcessInstanceMappingInstruction()
+                        .sourceElementId(mappingInstruction.getSourceElementId())
+                        .targetElementId(mappingInstruction.getTargetElementId()))
+            .collect(Collectors.toList()));
   }
 
   @Override
@@ -88,6 +125,10 @@ public final class MigrateProcessInstanceCommandImpl
     requestBuilder
         .getMigrationPlanBuilder()
         .addMappingInstructions(buildMappingInstruction(sourceElementId, targetElementId));
+    httpRequestObject.addMappingInstructionsItem(
+        new MigrateProcessInstanceMappingInstruction()
+            .sourceElementId(sourceElementId)
+            .targetElementId(targetElementId));
     return this;
   }
 
@@ -95,11 +136,30 @@ public final class MigrateProcessInstanceCommandImpl
   public FinalCommandStep<MigrateProcessInstanceResponse> requestTimeout(
       final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
   public ZeebeFuture<MigrateProcessInstanceResponse> send() {
+    if (useRest) {
+      return sendRestRequest();
+    } else {
+      return sendGrpcRequest();
+    }
+  }
+
+  private ZeebeFuture<MigrateProcessInstanceResponse> sendRestRequest() {
+    final HttpZeebeFuture<MigrateProcessInstanceResponse> result = new HttpZeebeFuture<>();
+    httpClient.post(
+        "/process-instances/" + processInstanceKey + "/migration",
+        jsonMapper.toJson(httpRequestObject),
+        httpRequestConfig.build(),
+        result);
+    return result;
+  }
+
+  private ZeebeFuture<MigrateProcessInstanceResponse> sendGrpcRequest() {
     final MigrateProcessInstanceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<
@@ -108,14 +168,14 @@ public final class MigrateProcessInstanceCommandImpl
             new RetriableClientFutureImpl<>(
                 MigrateProcessInstanceResponseImpl::new,
                 retryPredicate,
-                streamObserver -> send(request, streamObserver));
+                streamObserver -> sendGrpcRequest(request, streamObserver));
 
-    send(request, future);
+    sendGrpcRequest(request, future);
 
     return future;
   }
 
-  private void send(
+  private void sendGrpcRequest(
       final MigrateProcessInstanceRequest request,
       final StreamObserver<GatewayOuterClass.MigrateProcessInstanceResponse> streamObserver) {
     asyncStub
@@ -137,6 +197,19 @@ public final class MigrateProcessInstanceCommandImpl
   @Override
   public MigrateProcessInstanceCommandFinalStep operationReference(final long operationReference) {
     requestBuilder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
+  public MigrateProcessInstanceCommandStep1 useRest() {
+    useRest = true;
+    return this;
+  }
+
+  @Override
+  public MigrateProcessInstanceCommandStep1 useGrpc() {
+    useRest = false;
     return this;
   }
 }
