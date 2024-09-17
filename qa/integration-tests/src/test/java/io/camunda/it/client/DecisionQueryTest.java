@@ -34,21 +34,27 @@ import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-public class DecisionQueryTest {
+class DecisionQueryTest {
   private static final List<Decision> DEPLOYED_DECISIONS = new ArrayList<>();
   private static final List<DecisionRequirements> DEPLOYED_DECISION_REQUIREMENTS =
       new ArrayList<>();
   private static ZeebeClient zeebeClient;
 
-  @TestZeebe
-  private static TestStandaloneCamunda testStandaloneCamunda = new TestStandaloneCamunda();
+  @TestZeebe(initMethod = "initTestStandaloneCamunda")
+  private static TestStandaloneCamunda testStandaloneCamunda;
+
+  @SuppressWarnings("unused")
+  static void initTestStandaloneCamunda() {
+    testStandaloneCamunda = new TestStandaloneCamunda();
+  }
 
   @BeforeAll
-  public static void setup() {
+  static void beforeAll() {
     zeebeClient = testStandaloneCamunda.newClientBuilder().build();
     Stream.of(
             "decision/decision_model.dmn",
@@ -62,6 +68,12 @@ public class DecisionQueryTest {
             });
 
     waitForDecisionsBeingExported();
+  }
+
+  @AfterAll
+  static void afterAll() {
+    DEPLOYED_DECISIONS.clear();
+    DEPLOYED_DECISION_REQUIREMENTS.clear();
   }
 
   @Test
