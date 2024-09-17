@@ -18,6 +18,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilde
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
+import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,7 +31,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class UpgradeUtil {
 
-  public static UpgradeExecutionDependencies createUpgradeDependencies(DatabaseType databaseType) {
+  public static UpgradeExecutionDependencies createUpgradeDependencies(
+      final DatabaseType databaseType) {
     return createUpgradeDependenciesWithAdditionalConfigLocation(databaseType, (String[]) null);
   }
 
@@ -53,9 +55,10 @@ public class UpgradeUtil {
         new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH);
     final OptimizeElasticsearchClient esClient =
         new OptimizeElasticsearchClient(
-            ElasticsearchClientBuilder.restClient(configurationService),
+            ElasticsearchClientBuilder.restClient(configurationService, new PluginRepository()),
             OPTIMIZE_MAPPER,
-            ElasticsearchClientBuilder.build(configurationService, OPTIMIZE_MAPPER),
+            ElasticsearchClientBuilder.build(
+                configurationService, OPTIMIZE_MAPPER, new PluginRepository()),
             indexNameService,
             new TransportOptionsProvider(configurationService));
     final ElasticSearchMetadataService metadataService =
