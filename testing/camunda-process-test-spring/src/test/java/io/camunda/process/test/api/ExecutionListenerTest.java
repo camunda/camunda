@@ -214,7 +214,7 @@ public class ExecutionListenerTest {
   @Test
   void shouldConfigureRuntime() throws Exception {
     // given
-    final Map<String, String> zeebeEnvVars =
+    final Map<String, String> camundaEnvVars =
         Map.ofEntries(entry("env-1", "test-1"), entry("env-2", "test-2"));
 
     final CamundaProcessTestExecutionListener listener =
@@ -223,8 +223,8 @@ public class ExecutionListenerTest {
     final CamundaContainerRuntimeConfiguration runtimeConfiguration =
         new CamundaContainerRuntimeConfiguration();
     runtimeConfiguration.setCamundaVersion("8.6.0-custom");
-    runtimeConfiguration.setCamundaDockerImageName("custom-zeebe");
-    runtimeConfiguration.setCamundaEnvVars(zeebeEnvVars);
+    runtimeConfiguration.setCamundaDockerImageName("custom-camunda");
+    runtimeConfiguration.setCamundaEnvVars(camundaEnvVars);
     runtimeConfiguration.setCamundaExposedPorts(List.of(100, 200));
 
     when(applicationContext.getBean(CamundaContainerRuntimeConfiguration.class))
@@ -235,8 +235,8 @@ public class ExecutionListenerTest {
 
     // then
     verify(camundaContainerRuntimeBuilder).withCamundaDockerImageVersion("8.6.0-custom");
-    verify(camundaContainerRuntimeBuilder).withCamundaDockerImageName("custom-zeebe");
-    verify(camundaContainerRuntimeBuilder).withCamundaEnv(zeebeEnvVars);
+    verify(camundaContainerRuntimeBuilder).withCamundaDockerImageName("custom-camunda");
+    verify(camundaContainerRuntimeBuilder).withCamundaEnv(camundaEnvVars);
     verify(camundaContainerRuntimeBuilder).withCamundaExposedPort(100);
     verify(camundaContainerRuntimeBuilder).withCamundaExposedPort(200);
   }
