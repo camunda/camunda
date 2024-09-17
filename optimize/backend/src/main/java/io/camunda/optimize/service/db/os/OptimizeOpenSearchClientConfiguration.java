@@ -12,6 +12,7 @@ import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import io.camunda.search.connect.plugin.PluginRepository;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ public class OptimizeOpenSearchClientConfiguration {
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService optimizeIndexNameService;
   private final OpenSearchSchemaManager openSearchSchemaManager;
+  private final PluginRepository pluginRepository = new PluginRepository();
 
   @Bean(destroyMethod = "close")
   public OptimizeOpenSearchClient optimizeOpenSearchClient(
@@ -38,6 +40,10 @@ public class OptimizeOpenSearchClientConfiguration {
   public OptimizeOpenSearchClient createOptimizeOpenSearchClient(
       final BackoffCalculator backoffCalculator) {
     return OptimizeOpenSearchClientFactory.create(
-        configurationService, optimizeIndexNameService, openSearchSchemaManager, backoffCalculator);
+        configurationService,
+        optimizeIndexNameService,
+        openSearchSchemaManager,
+        backoffCalculator,
+        pluginRepository);
   }
 }

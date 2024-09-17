@@ -23,6 +23,7 @@ export type RequestPayload = {
 };
 
 export interface ErrorResponse extends Response {
+  status: number;
   message: string;
 }
 
@@ -154,6 +155,12 @@ function processBody(body: unknown): string {
 
 async function parseError(error: ErrorResponse): Promise<ErrorResponse | Record<string, unknown>> {
   let message: ReactNode = error.message || 'Unknown error';
+
+  if (error.status === 413) {
+    // This error is thrown by the nginx and it is a HTML response.
+    // We need to handle it based on the status code.
+    return {status: error.status, message: t('apiErrors.payloadTooLarge')};
+  }
 
   if (typeof error.json !== 'function') {
     return {status: error.status, message};

@@ -7,33 +7,33 @@
  */
 package io.camunda.optimize.service.db.es.writer;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static io.camunda.optimize.service.db.writer.DatabaseWriterUtil.createFieldUpdateScriptParams;
 import static io.camunda.optimize.service.db.writer.DatabaseWriterUtil.createUpdateFieldsScript;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 
+import co.elastic.clients.elasticsearch._types.Conflicts;
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.ScriptLanguage;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
+import co.elastic.clients.elasticsearch.core.UpdateByQueryRequest;
+import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import io.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.upgrade.es.TaskResponse;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.HttpGet;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
-import org.elasticsearch.index.query.AbstractQueryBuilder;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -43,52 +43,93 @@ public class ElasticsearchWriterUtil {
 
   public static Script createFieldUpdateScript(
       final Set<String> fields, final Object entityDto, final ObjectMapper objectMapper) {
-    final Map<String, Object> params =
+    final Map<String, String> params =
         createFieldUpdateScriptParams(fields, entityDto, objectMapper);
     return createDefaultScriptWithPrimitiveParams(
         createUpdateFieldsScript(params.keySet()), params);
   }
 
-  public static Script createDefaultScriptWithPrimitiveParams(
-      final String inlineUpdateScript, final Map<String, Object> params) {
-    return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, inlineUpdateScript, params);
+  public static <T> Script createDefaultScriptWithPrimitiveParams(
+      final String inlineUpdateScript, final Map<String, T> params) {
+    return Script.of(
+        b ->
+            b.inline(
+                i ->
+                    i.lang(ScriptLanguage.Painless)
+                        .source(inlineUpdateScript)
+                        .params(
+                            params.entrySet().stream()
+                                .collect(
+                                    Collectors.toMap(
+                                        Map.Entry::getKey, e -> JsonData.of(e.getValue()))))));
+  }
+
+  public static Script createDefaultScriptWithJsonParams(
+      final String inlineUpdateScript, final Map<String, JsonData> params) {
+    return Script.of(
+        b ->
+            b.inline(
+                i -> i.lang(ScriptLanguage.Painless).source(inlineUpdateScript).params(params)));
   }
 
   public static Script createDefaultScriptWithSpecificDtoParams(
-      final String inlineUpdateScript,
-      final Map<String, Object> params,
-      final ObjectMapper objectMapper) {
-    return new Script(
-        ScriptType.INLINE,
-        Script.DEFAULT_SCRIPT_LANG,
-        inlineUpdateScript,
-        DatabaseWriterUtil.mapParamsForScriptCreation(params, objectMapper));
+      final String inlineUpdateScript, final Map<String, Object> params) {
+    return Script.of(
+        b ->
+            b.inline(
+                i -> {
+                  i.lang(ScriptLanguage.Painless).source(inlineUpdateScript);
+                  if (params != null) {
+                    i.params(
+                        params.entrySet().stream()
+                            .collect(
+                                Collectors.toMap(
+                                    Map.Entry::getKey, e -> JsonData.of(e.getValue()))));
+                  }
+                  return i;
+                }));
+  }
+
+  public static Script createDefaultScriptWithSpecificDtoStringParams(
+      final String inlineUpdateScript, final Map<String, String> params) {
+    return Script.of(
+        b ->
+            b.inline(
+                i ->
+                    i.lang(ScriptLanguage.Painless)
+                        .source(inlineUpdateScript)
+                        .params(
+                            params.entrySet().stream()
+                                .collect(
+                                    Collectors.toMap(
+                                        Map.Entry::getKey, e -> JsonData.of(e.getValue()))))));
   }
 
   public static Script createDefaultScript(final String inlineUpdateScript) {
-    return new Script(
-        ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, inlineUpdateScript, Collections.emptyMap());
+    return Script.of(
+        b -> b.inline(i -> i.lang(ScriptLanguage.Painless).source(inlineUpdateScript)));
   }
 
   public static boolean tryUpdateByQueryRequest(
       OptimizeElasticsearchClient esClient,
       String updateItemIdentifier,
       Script updateScript,
-      AbstractQueryBuilder filterQuery,
+      Query filterQuery,
       String... indices) {
     log.debug("Updating {}", updateItemIdentifier);
-    UpdateByQueryRequest request =
-        new UpdateByQueryRequest(indices)
-            .setQuery(filterQuery)
-            .setAbortOnVersionConflict(false)
-            .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
-            .setScript(updateScript)
-            .setRefresh(true);
-    esClient.applyIndexPrefixes(request);
+    UpdateByQueryRequest updateByQueryRequest =
+        UpdateByQueryRequest.of(
+            b ->
+                b.index(esClient.addPrefixesToIndices(indices))
+                    .query(filterQuery)
+                    .conflicts(Conflicts.Proceed)
+                    .script(updateScript)
+                    .waitForCompletion(false)
+                    .refresh(true));
 
     final String taskId;
     try {
-      taskId = esClient.submitUpdateTask(request).getTask();
+      taskId = esClient.submitUpdateTask(updateByQueryRequest).task();
     } catch (IOException e) {
       final String errorMessage =
           String.format(
@@ -114,27 +155,29 @@ public class ElasticsearchWriterUtil {
 
   public static boolean tryDeleteByQueryRequest(
       OptimizeElasticsearchClient esClient,
-      AbstractQueryBuilder<?> queryBuilder,
+      final Query query,
       String deletedItemIdentifier,
       final boolean refresh,
       String... indices) {
     log.debug("Deleting {}", deletedItemIdentifier);
 
     DeleteByQueryRequest request =
-        new DeleteByQueryRequest(indices)
-            .setAbortOnVersionConflict(false)
-            .setQuery(queryBuilder)
-            .setRefresh(refresh);
-    esClient.applyIndexPrefixes(request);
+        DeleteByQueryRequest.of(
+            b ->
+                b.index(esClient.addPrefixesToIndices(indices))
+                    .query(query)
+                    .refresh(refresh)
+                    .waitForCompletion(false)
+                    .conflicts(Conflicts.Proceed));
 
     final String taskId;
     try {
-      taskId = esClient.submitDeleteTask(request).getTask();
+      taskId = esClient.submitDeleteTask(request).task();
     } catch (IOException e) {
       final String errorMessage =
           String.format(
               "Could not create delete task for [%s] with query [%s]!",
-              deletedItemIdentifier, queryBuilder);
+              deletedItemIdentifier, query);
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }

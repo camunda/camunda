@@ -25,6 +25,8 @@ import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistri
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionAcknowledgeProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionContinueProcessor;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionFinishProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
@@ -203,7 +205,12 @@ public final class EngineProcessors {
         typedRecordProcessors, processingState, bpmnBehaviors, writers);
 
     UserProcessors.addUserProcessors(
-        keyGenerator, typedRecordProcessors, processingState, writers, commandDistributionBehavior);
+        keyGenerator,
+        typedRecordProcessors,
+        processingState,
+        writers,
+        commandDistributionBehavior,
+        config);
 
     ClockProcessors.addClockProcessors(
         typedRecordProcessors, writers, keyGenerator, clock, commandDistributionBehavior);
@@ -413,12 +420,19 @@ public final class EngineProcessors {
         new CommandRedistributor(
             scheduledTaskStateFactory.get().getDistributionState(), interPartitionCommandSender));
 
-    final var commandDistributionAcknowledgeProcessor =
-        new CommandDistributionAcknowledgeProcessor(
-            commandDistributionBehavior, processingState.getDistributionState(), writers);
+    final var distributionState = processingState.getDistributionState();
     typedRecordProcessors.onCommand(
         ValueType.COMMAND_DISTRIBUTION,
         CommandDistributionIntent.ACKNOWLEDGE,
-        commandDistributionAcknowledgeProcessor);
+        new CommandDistributionAcknowledgeProcessor(
+            commandDistributionBehavior, distributionState, writers));
+    typedRecordProcessors.onCommand(
+        ValueType.COMMAND_DISTRIBUTION,
+        CommandDistributionIntent.FINISH,
+        new CommandDistributionFinishProcessor(writers, commandDistributionBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.COMMAND_DISTRIBUTION,
+        CommandDistributionIntent.CONTINUE,
+        new CommandDistributionContinueProcessor(distributionState, writers));
   }
 }

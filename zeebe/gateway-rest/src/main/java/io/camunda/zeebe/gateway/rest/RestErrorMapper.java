@@ -7,7 +7,11 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import io.camunda.document.api.DocumentError.DocumentNotFound;
+import io.camunda.document.api.DocumentError.InvalidInput;
+import io.camunda.document.api.DocumentError.OperationNotSupported;
 import io.camunda.service.CamundaServiceException;
+import io.camunda.service.DocumentServices.DocumentException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
@@ -71,6 +75,8 @@ public class RestErrorMapper {
         yield cse.getCause() != null ? mapErrorToProblem(cse.getCause(), rejectionMapper) : null;
       case final BrokerErrorException bee:
         yield mapBrokerErrorToProblem(bee.getError(), error);
+      case final DocumentException de:
+        yield mapDocumentHandlingExceptionToProblem(de);
       case final BrokerRejectionException bre:
         REST_GATEWAY_LOGGER.trace(
             "Expected to handle REST request, but the broker rejected it", error);
@@ -173,5 +179,21 @@ public class RestErrorMapper {
         createProblemDetail(
             HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e.getClass().getName());
     return mapProblemToResponse(problemDetail);
+  }
+
+  public static ProblemDetail mapDocumentHandlingExceptionToProblem(final DocumentException e) {
+    final var status =
+        switch (e.getDocumentError()) {
+          case final DocumentNotFound ignored -> HttpStatus.NOT_FOUND;
+          case final InvalidInput ignored -> HttpStatus.BAD_REQUEST;
+          case final OperationNotSupported ignored -> HttpStatus.NOT_IMPLEMENTED;
+          default -> HttpStatus.INTERNAL_SERVER_ERROR;
+        };
+    return createProblemDetail(status, e.getMessage(), e.getDocumentError().getClass().getName());
+  }
+
+  public static ResponseEntity<Object> mapDocumentHandlingExceptionToResponse(
+      final DocumentException e) {
+    return mapProblemToResponse(mapDocumentHandlingExceptionToProblem(e));
   }
 }

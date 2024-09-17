@@ -179,7 +179,7 @@ public final class DeploymentCreateProcessor
         key, DeploymentIntent.CREATED, recordWithoutResource, command);
     stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, recordWithoutResource);
 
-    distributionBehavior.withKey(key).distribute(command);
+    distributionBehavior.withKey(key).unordered().distribute(command);
   }
 
   private void processDistributedRecord(final TypedRecord<DeploymentRecord> command) {

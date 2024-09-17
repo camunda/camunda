@@ -34,6 +34,10 @@ public final class FilterBuilders {
     return new DecisionRequirementsFilter.Builder();
   }
 
+  public static DecisionInstanceFilter.Builder decisionInstance() {
+    return new DecisionInstanceFilter.Builder();
+  }
+
   public static FlowNodeInstanceFilter.Builder flownodeInstance() {
     return new FlowNodeInstanceFilter.Builder();
   }
@@ -73,6 +77,11 @@ public final class FilterBuilders {
       final Function<DecisionRequirementsFilter.Builder, ObjectBuilder<DecisionRequirementsFilter>>
           fn) {
     return fn.apply(decisionRequirements()).build();
+  }
+
+  public static DecisionInstanceFilter decisionInstance(
+      final Function<DecisionInstanceFilter.Builder, ObjectBuilder<DecisionInstanceFilter>> fn) {
+    return fn.apply(new DecisionInstanceFilter.Builder()).build();
   }
 
   public static UserFilter user(final Function<UserFilter.Builder, ObjectBuilder<UserFilter>> fn) {

@@ -9,9 +9,11 @@ package io.camunda.optimize.service.db.es.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.SETTINGS_INDEX_NAME;
 
+import co.elastic.clients.elasticsearch.core.GetResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.SettingsDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeGetRequestBuilderES;
 import io.camunda.optimize.service.db.reader.SettingsReader;
 import io.camunda.optimize.service.db.schema.index.SettingsIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -21,8 +23,6 @@ import java.io.IOException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -40,13 +40,15 @@ public class SettingsReaderES implements SettingsReader {
   public Optional<SettingsDto> getSettings() {
     log.debug("Fetching Optimize Settings");
 
-    final GetRequest getRequest = new GetRequest(SETTINGS_INDEX_NAME).id(SettingsIndex.ID);
-
     SettingsDto result = null;
     try {
-      final GetResponse getResponse = esClient.get(getRequest);
-      if (getResponse.isExists()) {
-        result = objectMapper.readValue(getResponse.getSourceAsString(), SettingsDto.class);
+      final GetResponse<SettingsDto> getResponse =
+          esClient.get(
+              OptimizeGetRequestBuilderES.of(
+                  g -> g.optimizeIndex(esClient, SETTINGS_INDEX_NAME).id(SettingsIndex.ID)),
+              SettingsDto.class);
+      if (getResponse.found()) {
+        result = getResponse.source();
         if (result.getSharingEnabled().isEmpty()) {
           result.setSharingEnabled(configurationService.getSharingEnabled());
         }

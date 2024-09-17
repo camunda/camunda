@@ -9,8 +9,10 @@ package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationAssignRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
+import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
 import static io.camunda.zeebe.gateway.rest.validator.ElementRequestValidator.validateVariableRequest;
+import static io.camunda.zeebe.gateway.rest.validator.EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
@@ -28,9 +30,10 @@ import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.v
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserCreateRequest;
 
+import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
-import io.camunda.service.DocumentServices.DocumentMetadataModel;
+import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
@@ -53,7 +56,9 @@ import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
+import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
@@ -94,6 +99,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.multipart.MultipartFile;
 
 public class RequestMapper {
@@ -272,8 +278,15 @@ public class RequestMapper {
         () -> new DocumentCreateRequest(documentId, storeId, inputStream, internalMetadata));
   }
 
+  public static Either<ProblemDetail, DocumentLinkParams> toDocumentLinkParams(
+      final DocumentLinkRequest documentLinkRequest) {
+    return getResult(
+        validateDocumentLinkParams(documentLinkRequest),
+        () -> new DocumentLinkParams(ZonedDateTime.parse(documentLinkRequest.getExpiresAt())));
+  }
+
   public static Either<ProblemDetail, CreateUserRequest> toCreateUserRequest(
-      final UserRequest request) {
+      final UserRequest request, final PasswordEncoder passwordEncoder) {
     return getResult(
         validateUserCreateRequest(request),
         () ->
@@ -281,7 +294,7 @@ public class RequestMapper {
                 request.getUsername(),
                 request.getName(),
                 request.getEmail(),
-                request.getPassword()));
+                passwordEncoder.encode(request.getPassword())));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
@@ -407,7 +420,7 @@ public class RequestMapper {
 
     if (metadata == null) {
       return new DocumentMetadataModel(
-          file.getContentType(), file.getOriginalFilename(), null, Map.of());
+          file.getContentType(), file.getOriginalFilename(), null, file.getSize(), Map.of());
     }
     final ZonedDateTime expiresAt;
     if (metadata.getExpiresAt() == null || metadata.getExpiresAt().isBlank()) {
@@ -421,7 +434,7 @@ public class RequestMapper {
         Optional.ofNullable(metadata.getContentType()).orElse(file.getContentType());
 
     return new DocumentMetadataModel(
-        contentType, fileName, expiresAt, metadata.getAdditionalProperties());
+        contentType, fileName, expiresAt, file.getSize(), metadata.getAdditionalProperties());
   }
 
   private static DeployResourcesRequest createDeployResourceRequest(
@@ -506,6 +519,18 @@ public class RequestMapper {
                                     terminateInstruction.getElementInstanceKey()))
                     .toList(),
                 request.getOperationReference()));
+  }
+
+  public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
+      final EvaluateDecisionRequest request) {
+    return getResult(
+        validateEvaluateDecisionRequest(request),
+        () ->
+            new DecisionEvaluationRequest(
+                getStringOrEmpty(request, EvaluateDecisionRequest::getDecisionId),
+                getLongOrDefault(request, EvaluateDecisionRequest::getDecisionKey, -1L),
+                getMapOrEmpty(request, EvaluateDecisionRequest::getVariables),
+                getStringOrEmpty(request, EvaluateDecisionRequest::getTenantId)));
   }
 
   private static List<ProcessInstanceModificationActivateInstruction>
@@ -593,4 +618,7 @@ public class RequestMapper {
 
   public record BroadcastSignalRequest(
       String signalName, Map<String, Object> variables, String tenantId) {}
+
+  public record DecisionEvaluationRequest(
+      String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
 }

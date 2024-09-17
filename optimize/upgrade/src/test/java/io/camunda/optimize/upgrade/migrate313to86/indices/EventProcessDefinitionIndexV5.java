@@ -7,16 +7,16 @@
  */
 package io.camunda.optimize.upgrade.migrate313to86.indices;
 
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex;
 import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
-public class EventProcessDefinitionIndexV5 extends ProcessDefinitionIndex<XContentBuilder> {
+public class EventProcessDefinitionIndexV5 extends ProcessDefinitionIndex<IndexSettings.Builder> {
 
   @Override
-  public XContentBuilder addStaticSetting(
-      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
-    return contentBuilder.field(key, value);
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder builder) throws IOException {
+    return builder.numberOfShards(Integer.toString(value));
   }
 
   @Override

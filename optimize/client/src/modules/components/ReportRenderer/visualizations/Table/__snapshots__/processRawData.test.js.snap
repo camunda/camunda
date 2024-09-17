@@ -51,13 +51,13 @@ Object {
       "foo",
       "12",
       "",
-      <ForwardRef(Button)
+      <Button
         className="ObjectViewBtn"
-        link={true}
+        kind="ghost"
         onClick={[Function]}
       >
         View
-      </ForwardRef(Button)>,
+      </Button>,
       "--",
       "2s",
     ],

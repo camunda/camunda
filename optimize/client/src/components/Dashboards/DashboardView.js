@@ -166,9 +166,8 @@ export function DashboardView(props) {
             <div className="info">
               <EntityName
                 details={<LastModifiedInfo entity={{lastModified, lastModifier, owner}} />}
-              >
-                {name}
-              </EntityName>
+                name={name}
+              />
               {description && <EntityDescription description={description} />}
             </div>
             <div className="tools">

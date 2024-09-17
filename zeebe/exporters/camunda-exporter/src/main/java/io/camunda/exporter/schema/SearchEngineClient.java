@@ -9,8 +9,8 @@ package io.camunda.exporter.schema;
 
 import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
 import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
-import io.camunda.exporter.schema.descriptors.IndexDescriptor;
-import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Map;
 import java.util.Set;
 

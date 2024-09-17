@@ -7,15 +7,14 @@
  */
 package io.camunda.optimize.upgrade.migrate313to86.indices;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
-
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import java.io.IOException;
 import java.util.Locale;
-import org.elasticsearch.xcontent.XContentBuilder;
 
-public class ProcessInstanceArchiveIndexV8 extends DefaultIndexMappingCreator<XContentBuilder> {
+public class ProcessInstanceArchiveIndexV8
+    extends DefaultIndexMappingCreator<IndexSettings.Builder> {
   public static final int VERSION = 8; // same as current processInstanceIndexVersion
 
   private final String indexName;
@@ -39,17 +38,14 @@ public class ProcessInstanceArchiveIndexV8 extends DefaultIndexMappingCreator<XC
   }
 
   @Override
-  public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder)
-      throws IOException {
-    return contentBuilder.field(key, value);
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder builder) throws IOException {
+    return builder.numberOfShards(Integer.toString(value));
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
     // adding just one field since this Index exists to test index deletion only
-    return xContentBuilder
-        .startObject("processDefinitionKey")
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .endObject();
+    return builder.properties("processDefinitionKey", p -> p.keyword(k -> k));
   }
 }

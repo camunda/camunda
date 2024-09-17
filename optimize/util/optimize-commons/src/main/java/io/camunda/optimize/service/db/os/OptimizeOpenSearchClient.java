@@ -30,51 +30,22 @@ import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
+import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.search.ClearScrollRequest;
-import org.elasticsearch.action.search.ClearScrollResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.Aggregation;
-import org.elasticsearch.search.aggregations.bucket.terms.DoubleTerms;
-import org.elasticsearch.search.aggregations.bucket.terms.LongTerms;
-import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
-import org.elasticsearch.search.aggregations.bucket.terms.RareTermsAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.terms.SignificantTermsAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.terms.StringTerms;
-import org.elasticsearch.search.aggregations.metrics.AvgAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.CardinalityAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.ExtendedStatsAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.GeoBoundsAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.GeoCentroidAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.MaxAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.MinAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.ParsedTopHits;
-import org.elasticsearch.search.aggregations.metrics.PercentileRanksAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.PercentilesAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.StatsAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.SumAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.TopHitsAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.ValueCountAggregationBuilder;
-import org.elasticsearch.xcontent.ContextParser;
-import org.elasticsearch.xcontent.DeprecationHandler;
-import org.elasticsearch.xcontent.NamedXContentRegistry;
-import org.elasticsearch.xcontent.ParseField;
-import org.elasticsearch.xcontent.XContentParser;
-import org.elasticsearch.xcontent.json.JsonXContent;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -84,6 +55,7 @@ import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryVariant;
@@ -98,6 +70,7 @@ import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.MgetResponse;
+import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.ScrollResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -109,6 +82,7 @@ import org.opensearch.client.opensearch.core.bulk.BulkOperationBase;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
+import org.opensearch.client.opensearch.core.mget.MultiGetOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 import org.opensearch.client.opensearch.indices.GetAliasRequest;
@@ -128,7 +102,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   @Getter private OpenSearchAsyncClient openSearchAsyncClient;
 
   @Getter private RichOpenSearchClient richOpenSearchClient;
-  @Getter private List<NamedXContentRegistry.Entry> defaultNamedXContents;
 
   public OptimizeOpenSearchClient(
       final ExtendedOpenSearchClient openSearchClient,
@@ -139,7 +112,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     this.openSearchAsyncClient = openSearchAsyncClient;
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
-    initNamedContents();
   }
 
   private static String getHintForErrorMsg(final boolean containsNestedDocumentLimitErrorMessage) {
@@ -210,9 +182,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     close();
     final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
     openSearchClient =
-        OpenSearchClientBuilder.buildOpenSearchClientFromConfig(configurationService);
+        OpenSearchClientBuilder.buildOpenSearchClientFromConfig(
+            configurationService, new PluginRepository());
     openSearchAsyncClient =
-        OpenSearchClientBuilder.buildOpenSearchAsyncClientFromConfig(configurationService);
+        OpenSearchClientBuilder.buildOpenSearchAsyncClientFromConfig(
+            configurationService, new PluginRepository());
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
     indexNameService = context.getBean(OptimizeIndexNameService.class);
@@ -339,41 +313,38 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   @Override
+  public void refresh(String indexPattern) {
+    getRichOpenSearchClient().index().refresh(indexPattern);
+  }
+
+  @Override
   public <T> long count(final String[] indexNames, final T query) throws IOException {
     return count(
         indexNames, query, "Could not execute count request for " + Arrays.toString(indexNames));
   }
 
-  @Override
-  public org.elasticsearch.action.search.SearchResponse scroll(
-      final SearchScrollRequest scrollRequest) throws IOException {
-    // todo will be handle in the OPT-7469
-    return new org.elasticsearch.action.search.SearchResponse(null);
-  }
-
-  @Override
-  public org.elasticsearch.action.search.SearchResponse search(
-      final org.elasticsearch.action.search.SearchRequest searchRequest) throws IOException {
-    // TODO this is a temporary implementation, here we are extracting the json query from the
-    // search request and performing a low-level request to OpenSearch
-    final String jsonQuery = searchRequest.source().toString();
-    final String[] indicesToQuery = searchRequest.indices();
-    final String response =
-        getOpenSearchClient()
-            .arbitraryRequestAsString(
-                "POST",
-                "/"
-                    + indexNameService.getOptimizeIndexAliasForIndex(indicesToQuery[0])
-                    + "/_search",
-                jsonQuery);
-    return getSearchResponseFromJson(response);
-  }
-
-  @Override
-  public ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest)
+  public <R> ScrollResponse<R> scroll(final ScrollRequest scrollRequest, Class<R> entityClass)
       throws IOException {
-    // todo will be handle in the OPT-7469
-    return new ClearScrollResponse(null);
+    return richOpenSearchClient.doc().scroll(scrollRequest, entityClass);
+  }
+
+  public <R> Map<String, Aggregate> scrollWith(
+      final SearchResponse<R> response,
+      final Consumer<List<Hit<R>>> hitsConsumer,
+      final Class<R> clazz,
+      final int limit) {
+    return safe(
+        () ->
+            richOpenSearchClient.doc().scrollWith(null, response, hitsConsumer, null, clazz, limit),
+        e -> format("Could not scroll through entries for class [%s].", clazz.getSimpleName()),
+        log);
+  }
+
+  public <T> MgetResponse<T> mget(
+      final Class<T> responseType,
+      final String errorMessage,
+      final List<MultiGetOperation> operations) {
+    return richOpenSearchClient.doc().mget(responseType, e -> errorMessage, operations);
   }
 
   @Override
@@ -477,6 +448,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return openSearchClient.indices().getAlias(getAliasesRequest);
   }
 
+  @Override
+  public List<String> getAllIndexNames() throws IOException {
+    return new ArrayList<>(getRichOpenSearchClient().index().getIndexNamesWithRetries("*"));
+  }
+
   public <T> long count(final String[] indexNames, final T query, final String errorMessage) {
     if (query instanceof QueryVariant || query instanceof Query) {
       final Query osQuery;
@@ -491,8 +467,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     } else {
       // TODO this is a temporary implementation, here we are extracting the json query from the
       // search request and performing a low-level request to OpenSearch
-      if (query instanceof final BoolQueryBuilder elasticSearchBuilder) {
-        final String jsonQuery = "{\"query\":" + elasticSearchBuilder + "}";
+      if (query instanceof co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery.Builder) {
+        final String jsonQuery = "{\"query\":" + query + "}";
         return Arrays.stream(indexNames)
             .mapToLong(
                 indexName -> {
@@ -543,11 +519,21 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return richOpenSearchClient.doc().mget(responseType, e -> errorMessage, indexesToEntitiesId);
   }
 
+  @Override
+  public List<String> addPrefixesToIndices(String... indexes) {
+    return List.of();
+  }
+
   public <T> SearchResponse<T> search(
       final SearchRequest.Builder requestBuilder,
       final Class<T> responseType,
       final String errorMessage) {
     return richOpenSearchClient.doc().search(requestBuilder, responseType, e -> errorMessage);
+  }
+
+  public <T> SearchResponse<T> searchUnsafe(
+      final SearchRequest request, final Class<T> responseType) throws IOException {
+    return richOpenSearchClient.doc().unsafeSearch(request, responseType);
   }
 
   public <R> List<R> searchValues(
@@ -846,6 +832,14 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return taskStatus.updated() > 0L;
   }
 
+  @Override
+  public void deleteIndexByRawIndexNames(final String... indexNames) {
+    final String indexNamesString = Arrays.toString(indexNames);
+    log.debug("Deleting indices [{}].", indexNamesString);
+    richOpenSearchClient.index().deleteIndicesWithRetries(indexNames);
+    log.debug("Successfully deleted index [{}].", indexNamesString);
+  }
+
   private void waitUntilTaskIsFinished(final String taskId, final String taskItemIdentifier) {
     final BackoffCalculator backoffCalculator = new BackoffCalculator(1000, 10);
     boolean finished = false;
@@ -882,64 +876,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         throw new OptimizeRuntimeException(
             format("Error while trying to read Opensearch task (ID: %s) progress!", taskId), e);
       }
-    }
-  }
-
-  private void initNamedContents() {
-    final Map<String, ContextParser<Object, ? extends Aggregation>> map = new HashMap<>();
-    map.put(TopHitsAggregationBuilder.NAME, (p, c) -> ParsedTopHits.fromXContent(p, (String) c));
-    map.put(AvgAggregationBuilder.NAME, (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    map.put(SumAggregationBuilder.NAME, (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    map.put(MinAggregationBuilder.NAME, (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    map.put(MaxAggregationBuilder.NAME, (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    map.put(StatsAggregationBuilder.NAME, (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    map.put(
-        ExtendedStatsAggregationBuilder.NAME,
-        (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    map.put(
-        ValueCountAggregationBuilder.NAME, (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    map.put(
-        PercentilesAggregationBuilder.NAME,
-        (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    map.put(
-        PercentileRanksAggregationBuilder.NAME,
-        (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    map.put(
-        CardinalityAggregationBuilder.NAME,
-        (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    map.put(
-        GeoBoundsAggregationBuilder.NAME, (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    map.put(
-        GeoCentroidAggregationBuilder.NAME,
-        (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    map.put(
-        SignificantTermsAggregationBuilder.NAME,
-        (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    map.put(
-        RareTermsAggregationBuilder.NAME, (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    map.put(DoubleTerms.NAME, (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    map.put(LongTerms.NAME, (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    map.put(StringTerms.NAME, (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-    defaultNamedXContents =
-        map.entrySet().stream()
-            .map(
-                entry ->
-                    new NamedXContentRegistry.Entry(
-                        Aggregation.class, new ParseField(entry.getKey()), entry.getValue()))
-            .toList();
-  }
-
-  private org.elasticsearch.action.search.SearchResponse getSearchResponseFromJson(
-      final String jsonResponse) {
-    try {
-      final NamedXContentRegistry registry = new NamedXContentRegistry(defaultNamedXContents);
-      final DeprecationHandler deprecationHandler = DeprecationHandler.THROW_UNSUPPORTED_OPERATION;
-      final XContentParser parser =
-          JsonXContent.jsonXContent.createParser(registry, deprecationHandler, jsonResponse);
-      return org.elasticsearch.action.search.SearchResponse.fromXContent(parser);
-    } catch (final Exception e) {
-      log.warn("exception while de-serializing response " + e.getMessage());
-      return null;
     }
   }
 }

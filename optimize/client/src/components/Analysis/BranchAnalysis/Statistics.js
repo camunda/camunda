@@ -12,7 +12,7 @@ import {Chart as ChartRenderer} from 'chart.js';
 
 import {t} from 'translation';
 import {getFlowNodeNames, getDiagramElementsBetween} from 'services';
-import {LoadingIndicator} from 'components';
+import {Loading} from 'components';
 
 import {loadCorrelationData} from './service';
 
@@ -95,7 +95,7 @@ export default class Statistics extends React.Component {
     if (this.props.gateway && this.props.endEvent && !this.state.data) {
       return (
         <div className="Statistics">
-          <LoadingIndicator />
+          <Loading />
         </div>
       );
     }

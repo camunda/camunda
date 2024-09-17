@@ -64,7 +64,7 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
     stateWriter.appendFollowUpEvent(key, UserIntent.UPDATED, updatedUser);
     responseWriter.writeEventOnCommand(key, UserIntent.UPDATED, updatedUser, command);
 
-    distributionBehavior.withKey(key).distribute(command);
+    distributionBehavior.withKey(key).unordered().distribute(command);
   }
 
   @Override

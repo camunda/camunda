@@ -7,11 +7,11 @@
  */
 
 import {parseISO} from 'date-fns';
+import {Button} from '@carbon/react';
 
 import {format} from 'dates';
 import {formatters} from 'services';
 import {t} from 'translation';
-import {Button} from 'components';
 
 import {
   cockpitLink,
@@ -148,7 +148,7 @@ function getVariableValues(variableKeys, variableValues, onVariableClick) {
       return (
         <Button
           className="ObjectViewBtn"
-          link
+          kind="ghost"
           onClick={() => {
             onVariableClick(entry);
           }}
