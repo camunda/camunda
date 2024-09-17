@@ -30,6 +30,7 @@ import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
+import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -181,9 +182,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     close();
     final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
     openSearchClient =
-        OpenSearchClientBuilder.buildOpenSearchClientFromConfig(configurationService);
+        OpenSearchClientBuilder.buildOpenSearchClientFromConfig(
+            configurationService, new PluginRepository());
     openSearchAsyncClient =
-        OpenSearchClientBuilder.buildOpenSearchAsyncClientFromConfig(configurationService);
+        OpenSearchClientBuilder.buildOpenSearchAsyncClientFromConfig(
+            configurationService, new PluginRepository());
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
     indexNameService = context.getBean(OptimizeIndexNameService.class);
