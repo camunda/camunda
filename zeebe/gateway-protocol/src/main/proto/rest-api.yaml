@@ -1528,7 +1528,7 @@ paths:
         - name: incidentKey
           in: path
           required: true
-          description: The assigned ke of the incident, which acts as a unique identifier for this incident.
+          description: The assigned key of the incident, which acts as a unique identifier for this incident.
           schema:
             type: integer
             format: int64
@@ -1539,7 +1539,6 @@ paths:
           content:
             application/json:
               schema:
-                type: object
                 $ref: "#/components/schemas/IncidentItem"
         "400":
           description: >
@@ -2116,16 +2115,21 @@ components:
         key:
           type: integer
           format: int64
+          description: The assigned key, which acts as a unique identifier for this incident.
         processDefinitionKey:
           type: integer
           format: int64
+          description: The process definition key associated to this incident.
         bpmnProcessId:
           type: string
+          description: The bpmn process id associated to this incident.
         processInstanceKey:
           type: integer
           format: int64
+          description: The process instance key associated to this incident.
         errorType:
           type: string
+          description: Incident error type with a defined set of values.
           enum:
             - UNSPECIFIED
             - UNKNOWN
@@ -2141,16 +2145,21 @@ components:
             - FORM_NOT_FOUND
         errorMessage:
           type: string
+          description: Error message which describes the error in more detail.
         flowNodeId:
           type: string
+          description: The flow node id associated to this incident.
         flowNodeInstanceKey:
           type: integer
           format: int64
+          description: The flow node instance key associated to this incident.
         creationTime:
           type: string
+          description: Date of incident creation.
           format: date-time
         state:
           type: string
+          description: State of this incident with a defined set of values.
           enum:
             - ACTIVE
             - MIGRATED
@@ -2159,9 +2168,12 @@ components:
         jobKey:
           type: integer
           format: int64
+          description: The job key, if exists, associated with this incident.
         treePath:
           type: string
+          description: The path from process instance via flow node ids and flow node instance keys leading to this incident.
         tenantId:
+          description: The tenant id of the incident.
           type: string
     IncidentSearchQueryResponse:
       allOf:
@@ -2178,16 +2190,21 @@ components:
         key:
           type: integer
           format: int64
+          description: The assigned key, which acts as a unique identifier for this incident.
         processDefinitionKey:
           type: integer
           format: int64
+          description: The process definition key associated to this incident.
         bpmnProcessId:
           type: string
+          description: The bpmn process id associated to this incident.
         processInstanceKey:
           type: integer
           format: int64
+          description: The process instance key associated to this incident.
         errorType:
           type: string
+          description: Incident error type with a defined set of values.
           enum:
             - UNSPECIFIED
             - UNKNOWN
@@ -2203,16 +2220,21 @@ components:
             - FORM_NOT_FOUND
         errorMessage:
           type: string
+          description: Error message which describes the error in more detail.
         flowNodeId:
           type: string
+          description: The flow node id associated to this incident.
         flowNodeInstanceKey:
           type: integer
           format: int64
+          description: The flow node instance key associated to this incident.
         creationTime:
           type: string
+          description: Date of incident creation.
           format: date-time
         state:
           type: string
+          description: State of this incident with a defined set of values.
           enum:
           - ACTIVE
           - MIGRATED
@@ -2220,10 +2242,13 @@ components:
           - PENDING
         jobKey:
           type: integer
+          description: The job key, if exists, associated with this incident.
           format: int64
         treePath:
           type: string
+          description: The path from process instance via flow node ids and flow node instance keys leading to this incident.
         tenantId:
+          description: The tenant id of the incident.
           type: string
     OperationItem:
       description: " Operation"

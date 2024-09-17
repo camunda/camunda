@@ -15,6 +15,8 @@ import io.camunda.service.IncidentServices;
 import io.camunda.service.entities.IncidentEntity;
 import io.camunda.service.entities.IncidentEntity.ErrorType;
 import io.camunda.service.entities.IncidentEntity.IncidentState;
+import io.camunda.service.exception.NotFoundException;
+import io.camunda.service.search.filter.DateValueFilter;
 import io.camunda.service.search.filter.IncidentFilter;
 import io.camunda.service.search.query.IncidentQuery;
 import io.camunda.service.search.query.SearchQueryResult;
@@ -25,7 +27,6 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
@@ -45,8 +46,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                   "processDefinitionKey": 23,
                   "bpmnProcessId": "complexProcess",
                   "processInstanceKey": 42,
-                  "type": "JOB_NO_RETRIES",
-                  "message": "No retries left.",
+                  "errorType": "JOB_NO_RETRIES",
+                  "errorMessage": "No retries left.",
                   "flowNodeId": "flowNodeId",
                   "flowNodeInstanceKey": 17,
                   "creationTime": "2024-05-23T23:05:00.000+0000",
@@ -94,8 +95,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                   "processDefinitionKey": 23,
                   "bpmnProcessId": "complexProcess",
                   "processInstanceKey": 42,
-                  "type": "JOB_NO_RETRIES",
-                  "message": "No retries left.",
+                  "errorType": "JOB_NO_RETRIES",
+                  "errorMessage": "No retries left.",
                   "flowNodeId": "flowNodeId",
                   "flowNodeInstanceKey": 17,
                   "creationTime": "2024-05-23T23:05:00.000+0000",
@@ -106,22 +107,21 @@ public class IncidentQueryControllerTest extends RestControllerTest {
               }
   """;
 
-  static final Optional<IncidentEntity> GET_QUERY_RESULT =
-      Optional.of(
-          new IncidentEntity(
-              5L,
-              23L,
-              "complexProcess",
-              42L,
-              ErrorType.JOB_NO_RETRIES,
-              "No retries left.",
-              "flowNodeId",
-              17L,
-              "2024-05-23T23:05:00.000+0000",
-              IncidentState.ACTIVE,
-              101L,
-              "PI_42/FN_flowNodeId/FNI_17",
-              "tenantId"));
+  static final IncidentEntity GET_QUERY_RESULT =
+      new IncidentEntity(
+          5L,
+          23L,
+          "complexProcess",
+          42L,
+          ErrorType.JOB_NO_RETRIES,
+          "No retries left.",
+          "flowNodeId",
+          17L,
+          "2024-05-23T23:05:00.000+0000",
+          IncidentState.ACTIVE,
+          101L,
+          "PI_42/FN_flowNodeId/FNI_17",
+          "tenantId");
 
   static final String INCIDENT_URL = "/v2/incidents/";
   static final String INCIDENT_SEARCH_URL = INCIDENT_URL + "search";
@@ -183,17 +183,19 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         """
         {
           "filter":{
-            "tenantId": "t",
-            "flowNodeId": "fni",
-            "flowNodeInstanceId": "fnii",
-            "jobKey": 1,
-            "key": 2,
-            "processDefinitionKey": 3,
-            "processInstanceKey": 4,
-            "state": "s",
-            "type": "ty",
-            "hasActiveOperation": true,
-            "creationTime": "2024-05-23T23:05:00+00:00"
+            "key": 5,
+            "processDefinitionKey": 23,
+            "bpmnProcessId": "complexProcess",
+            "processInstanceKey": 42,
+            "errorType": "JOB_NO_RETRIES",
+            "errorMessage": "No retries left.",
+            "flowNodeId": "flowNodeId",
+            "flowNodeInstanceKey": 17,
+            "creationTime": "2024-05-23T23:05:00.000+00:00",
+            "state": "ACTIVE",
+            "jobKey": 101,
+            "treePath":"PI_42/FN_flowNodeId/FNI_17",
+            "tenantId": "tenantId"
           }
         }
         """;
@@ -220,15 +222,23 @@ public class IncidentQueryControllerTest extends RestControllerTest {
             new IncidentQuery.Builder()
                 .filter(
                     new IncidentFilter.Builder()
-                        .tenantIds("t")
-                        .flowNodeIds("fni")
+                        .keys(5L)
+                        .processDefinitionKeys(23L)
+                        .bpmnProcessIds("complexProcess")
+                        .processInstanceKeys(42L)
+                        .errorTypes(ErrorType.JOB_NO_RETRIES)
+                        .errorMessages("No retries left.")
+                        .flowNodeIds("flowNodeId")
                         .flowNodeInstanceKeys(17L)
-                        .jobKeys(1L)
-                        .keys(2L)
-                        .processDefinitionKeys(3L)
-                        .processInstanceKeys(4L)
+                        .creationTime(
+                            new DateValueFilter.Builder()
+                                .before(creationTime)
+                                .after(creationTime)
+                                .build())
                         .states(IncidentState.ACTIVE)
-                        .errorTypes(ErrorType.IO_MAPPING_ERROR)
+                        .jobKeys(101L)
+                        .treePaths("PI_42/FN_flowNodeId/FNI_17")
+                        .tenantIds("tenantId")
                         .build())
                 .build());
   }
@@ -285,5 +295,31 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_GET_RESPONSE);
 
     verify(incidentServices).getByKey(23L);
+  }
+
+  @Test
+  void shouldThrowNotFoundIfKeyNotExistsForGetIncidentByKey() {
+    when(incidentServices.getByKey(any(Long.class))).thenThrow(new NotFoundException(""));
+    // when / then
+    webClient
+        .get()
+        .uri(INCIDENT_URL + "5")
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
+        .expectBody()
+        .json(
+            """
+          {
+              "type":"about:blank",
+              "title":"NOT_FOUND",
+              "status":404,
+              "instance":"/v2/incidents/5"
+          }
+        """);
+
+    verify(incidentServices).getByKey(5L);
   }
 }

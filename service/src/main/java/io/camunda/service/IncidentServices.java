@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.entities.IncidentEntity;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.search.query.IncidentQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
@@ -19,7 +20,6 @@ import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -49,12 +49,19 @@ public class IncidentServices
     return new IncidentServices(brokerClient, searchClient, transformers, authentication);
   }
 
-  public Optional<IncidentEntity> getByKey(final Long key) {
+  public IncidentEntity getByKey(final Long key) {
     final SearchQueryResult<IncidentEntity> result =
         executor.search(
             SearchQueryBuilders.incidentSearchQuery().filter(f -> f.keys(key)).build(),
             IncidentEntity.class);
-    return result.items().stream().findFirst();
+    if (result.total() < 1) {
+      throw new NotFoundException(String.format("Incident with key %d not found", key));
+    } else if (result.total() > 1) {
+      throw new CamundaServiceException(
+          String.format("Found Incident with key %d more than once", key));
+    } else {
+      return result.items().stream().findFirst().orElseThrow();
+    }
   }
 
   public CompletableFuture<IncidentRecord> resolveIncident(final long incidentKey) {

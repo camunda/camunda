@@ -59,7 +59,7 @@ public class IncidentQueryController {
     try {
       return ResponseEntity.ok()
           .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
-          .body(incidentServices.getByKey(incidentKey).orElseThrow());
+          .body(incidentServices.getByKey(incidentKey));
     } catch (final NotFoundException nfe) {
       final var problemDetail =
           RestErrorMapper.createProblemDetail(

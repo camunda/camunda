@@ -439,14 +439,17 @@ public final class SearchQueryRequestMapper {
     } else {
       switch (field) {
         case "key" -> builder.key();
-        case "type" -> builder.type();
-        case "state" -> builder.state();
-        case "creationTime" -> builder.creationTime();
-        case "processInstanceKey" -> builder.processInstanceKey();
         case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "flowNodeInstanceKey" -> builder.flowNodeInstancekey();
+        case "bpmnProcessId" -> builder.bpmnProcessId();
+        case "processInstanceKey" -> builder.processInstanceKey();
+        case "errorType" -> builder.errorType();
+        case "errorMessage" -> builder.errorMessage();
         case "flowNodeId" -> builder.flowNodeId();
+        case "flowNodeInstanceKey" -> builder.flowNodeInstanceKey();
+        case "creationTime" -> builder.creationTime();
+        case "state" -> builder.state();
         case "jobKey" -> builder.jobKey();
+        case "treePath" -> builder.treePath();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

@@ -44,7 +44,8 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
 
   @Override
   public IncidentFilter bpmnProcessId(final String value) {
-    return null;
+    filter.setBpmnProcessId(value);
+    return this;
   }
 
   @Override

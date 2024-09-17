@@ -39,16 +39,20 @@ public class IncidentSortTest {
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
         new TestArguments("key", SortOrder.ASC, s -> s.key().asc()),
-        new TestArguments("tenantId", SortOrder.ASC, s -> s.tenantId().asc()),
-        new TestArguments("jobKey", SortOrder.ASC, s -> s.jobKey().asc()),
-        new TestArguments("flowNodeId", SortOrder.ASC, s -> s.flowNodeId().asc()),
-        new TestArguments("flowNodeInstanceKey", SortOrder.ASC, s -> s.flowNodeInstancekey().asc()),
         new TestArguments(
             "processDefinitionKey", SortOrder.ASC, s -> s.processDefinitionKey().asc()),
+        new TestArguments("bpmnProcessId", SortOrder.ASC, s -> s.bpmnProcessId().asc()),
         new TestArguments("processInstanceKey", SortOrder.ASC, s -> s.processInstanceKey().asc()),
-        new TestArguments("creationTime", SortOrder.DESC, s -> s.creationTime().desc()),
+        new TestArguments("errorType", SortOrder.ASC, s -> s.errorType().asc()),
+        new TestArguments("errorMessage", SortOrder.ASC, s -> s.errorMessage().asc()),
+        new TestArguments("flowNodeId", SortOrder.ASC, s -> s.flowNodeId().asc()),
+        new TestArguments("flowNodeInstanceKey", SortOrder.ASC, s -> s.flowNodeInstanceKey().asc()),
+        new TestArguments("tenantId", SortOrder.ASC, s -> s.tenantId().asc()),
+        new TestArguments("creationTime", SortOrder.ASC, s -> s.creationTime().asc()),
         new TestArguments("state", SortOrder.ASC, s -> s.state().asc()),
-        new TestArguments("type", SortOrder.ASC, s -> s.type().asc()));
+        new TestArguments("jobKey", SortOrder.ASC, s -> s.jobKey().asc()),
+        new TestArguments("treePath", SortOrder.ASC, s -> s.treePath().asc()),
+        new TestArguments("tenantId", SortOrder.ASC, s -> s.tenantId().asc()));
   }
 
   @ParameterizedTest

@@ -18,6 +18,8 @@ package io.camunda.zeebe.client.incident;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest;
+import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest.ErrorTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest.StateEnum;
 import io.camunda.zeebe.client.protocol.rest.IncidentSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
@@ -48,13 +50,17 @@ public class SearchIncidentTest extends ClientRestTest {
             f ->
                 f.key(1L)
                     .processDefinitionKey(2L)
+                    .bpmnProcessId("complexProcess")
                     .processInstanceKey(3L)
-                    .tenantId("tenant")
+                    .errorType("CALLED_DECISION_ERROR")
+                    .errorMessage("Can't decide")
                     .flowNodeId("flowNode")
                     .flowNodeInstanceKey(4L)
+                    .creationTime("2024-05-23T23:05:00.000+000")
+                    .state("ACTIVE")
                     .jobKey(5L)
-                    .state("state")
-                    .errorType("type"))
+                    .treePath("PI_3/FN_flowNode/FNI_4")
+                    .tenantId("tenant"))
         .send()
         .join();
     // then
@@ -63,13 +69,17 @@ public class SearchIncidentTest extends ClientRestTest {
     final IncidentFilterRequest filter = request.getFilter();
     assertThat(filter.getKey()).isEqualTo(1L);
     assertThat(filter.getProcessDefinitionKey()).isEqualTo(2L);
+    assertThat(filter.getBpmnProcessId()).isEqualTo("complexProcess");
     assertThat(filter.getProcessInstanceKey()).isEqualTo(3L);
-    assertThat(filter.getTenantId()).isEqualTo("tenant");
+    assertThat(filter.getErrorType()).isEqualTo(ErrorTypeEnum.CALLED_DECISION_ERROR);
+    assertThat(filter.getErrorMessage()).isEqualTo("Can't decide");
     assertThat(filter.getFlowNodeId()).isEqualTo("flowNode");
     assertThat(filter.getFlowNodeInstanceKey()).isEqualTo(4L);
+    assertThat(filter.getCreationTime()).isEqualTo("2024-05-23T23:05:00.000+000");
+    assertThat(filter.getState()).isEqualTo(StateEnum.ACTIVE);
     assertThat(filter.getJobKey()).isEqualTo(5L);
-    assertThat(filter.getState()).isEqualTo("state");
-    assertThat(filter.getErrorMessage()).isEqualTo("type");
+    assertThat(filter.getTreePath()).isEqualTo("PI_3/FN_flowNode/FNI_4");
+    assertThat(filter.getTenantId()).isEqualTo("tenant");
   }
 
   @Test
