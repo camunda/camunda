@@ -23,11 +23,11 @@ import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import io.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory;
 import io.camunda.optimize.upgrade.es.SchemaUpgradeClientES;
+import io.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import jakarta.ws.rs.NotSupportedException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import io.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SchemaUpgradeClientFactory {

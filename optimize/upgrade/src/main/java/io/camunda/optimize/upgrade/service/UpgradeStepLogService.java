@@ -12,11 +12,11 @@ import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.es.SchemaUpgradeClientES;
 import io.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
 import io.camunda.optimize.upgrade.es.index.UpdateLogEntryIndexES;
+import io.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
+import io.camunda.optimize.upgrade.os.index.UpdateLogEntryIndexOS;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import io.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
-import io.camunda.optimize.upgrade.os.index.UpdateLogEntryIndexOS;
 
 public class UpgradeStepLogService {
 
