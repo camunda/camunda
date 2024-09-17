@@ -137,7 +137,7 @@ public class SchemaUpgradeClientESReindexTest {
   public void testReindexSkippedDueToEqualDocCount() throws IOException {
     // given
     final String index1 = "index1";
-    final String index2 = "index1";
+    final String index2 = "index2";
 
     mockCountResponseFromIndex(index1, 1L);
     mockCountResponseFromIndex(index2, 1L);
