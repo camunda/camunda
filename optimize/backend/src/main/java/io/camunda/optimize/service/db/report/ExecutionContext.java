@@ -53,6 +53,10 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
   // have a value for that variable
   private Set<String> allVariablesNames = new HashSet<>();
 
+  // For heatmap reports, we exclude the collapsed subprocess data from being visualised. The keys
+  // for these nodes are calculated up front and removed during result retrieval
+  private Set<String> hiddenFlowNodeIds = new HashSet<>();
+
   private FilterContext filterContext;
 
   public <R extends ReportDefinitionDto<D>> ExecutionContext(
@@ -63,13 +67,14 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
   public <R extends ReportDefinitionDto<D>> ExecutionContext(
       final ReportEvaluationContext<? extends R> reportEvaluationContext, final P plan) {
     this.plan = plan;
-    this.reportData = reportEvaluationContext.getReportDefinition().getData();
-    this.timezone = reportEvaluationContext.getTimezone();
-    this.combinedRangeMinMaxStats = reportEvaluationContext.getCombinedRangeMinMaxStats();
-    this.pagination = reportEvaluationContext.getPagination();
-    this.isCsvExport = reportEvaluationContext.isCsvExport();
-    this.filterContext = createFilterContext(reportEvaluationContext);
-    this.isJsonExport = reportEvaluationContext.isJsonExport();
+    reportData = reportEvaluationContext.getReportDefinition().getData();
+    timezone = reportEvaluationContext.getTimezone();
+    combinedRangeMinMaxStats = reportEvaluationContext.getCombinedRangeMinMaxStats();
+    pagination = reportEvaluationContext.getPagination();
+    isCsvExport = reportEvaluationContext.isCsvExport();
+    filterContext = createFilterContext(reportEvaluationContext);
+    isJsonExport = reportEvaluationContext.isJsonExport();
+    hiddenFlowNodeIds = reportEvaluationContext.getHiddenFlowNodeIds();
   }
 
   public SingleReportConfigurationDto getReportConfiguration() {
@@ -81,7 +86,7 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
   }
 
   public void setAllDistributedByKeys(final Set<String> allDistributedByKeys) {
-    this.allDistributedByKeysAndLabels =
+    allDistributedByKeysAndLabels =
         allDistributedByKeys.stream().collect(toMap(Function.identity(), Function.identity()));
   }
 

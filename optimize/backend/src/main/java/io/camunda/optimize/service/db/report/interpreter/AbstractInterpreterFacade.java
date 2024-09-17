@@ -23,12 +23,12 @@ public class AbstractInterpreterFacade<CRITERION, INTERPRETER> {
 
   public AbstractInterpreterFacade(
       final List<INTERPRETER> interpreters,
-      final Function<INTERPRETER, Set<CRITERION>> critereaExtractor) {
-    this.interpretersMap =
+      final Function<INTERPRETER, Set<CRITERION>> criteriaExtractor) {
+    interpretersMap =
         interpreters.stream()
             .flatMap(
                 interpreter ->
-                    (critereaExtractor.apply(interpreter).stream()
+                    (criteriaExtractor.apply(interpreter).stream()
                         .map(criterion -> ImmutablePair.of(criterion, interpreter))))
             .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
   }
