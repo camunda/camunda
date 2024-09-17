@@ -414,7 +414,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public EvaluateDecisionCommandStep1 newEvaluateDecisionCommand() {
     return new EvaluateDecisionCommandImpl(
-        asyncStub, jsonMapper, config, credentialsProvider::shouldRetryRequest);
+        asyncStub, jsonMapper, config, credentialsProvider::shouldRetryRequest, httpClient);
   }
 
   @Override

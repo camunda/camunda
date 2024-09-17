@@ -330,7 +330,7 @@ public final class ResponseMapper {
             matchedRuleValue ->
                 new MatchedDecisionRuleItem()
                     .ruleId(matchedRuleValue.getRuleId())
-                    .ruleIndex(String.valueOf(matchedRuleValue.getRuleIndex()))
+                    .ruleIndex(matchedRuleValue.getRuleIndex())
                     .evaluatedOutputs(
                         buildEvaluatedOutputs(matchedRuleValue.getEvaluatedOutputs())))
         .toList();

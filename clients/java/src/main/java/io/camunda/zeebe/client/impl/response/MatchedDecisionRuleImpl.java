@@ -19,16 +19,24 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionOutput;
 import io.camunda.zeebe.client.api.response.MatchedDecisionRule;
+import io.camunda.zeebe.client.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MatchedDecisionRuleImpl implements MatchedDecisionRule {
 
-  @JsonIgnore private final JsonMapper jsonMapper;
+  @JsonIgnore private JsonMapper jsonMapper;
   private final String ruleId;
   private final int ruleIndex;
   private final List<EvaluatedDecisionOutput> evaluatedOutputs = new ArrayList<>();
+
+  public MatchedDecisionRuleImpl(final MatchedDecisionRuleItem ruleItem) {
+    ruleId = ruleItem.getRuleId();
+    ruleIndex = ruleItem.getRuleIndex();
+    buildDecisionOutput(ruleItem);
+  }
 
   public MatchedDecisionRuleImpl(
       final JsonMapper jsonMapper, final GatewayOuterClass.MatchedDecisionRule matchedRule) {
@@ -40,6 +48,16 @@ public class MatchedDecisionRuleImpl implements MatchedDecisionRule {
     matchedRule.getEvaluatedOutputsList().stream()
         .map(evaluatedOutput -> new EvaluatedDecisionOutputImpl(jsonMapper, evaluatedOutput))
         .forEach(evaluatedOutputs::add);
+  }
+
+  private void buildDecisionOutput(final MatchedDecisionRuleItem ruleItem) {
+    if (ruleItem.getEvaluatedOutputs() == null) {
+      return;
+    }
+    evaluatedOutputs.addAll(
+        ruleItem.getEvaluatedOutputs().stream()
+            .map(EvaluatedDecisionOutputImpl::new)
+            .collect(Collectors.toList()));
   }
 
   @Override
