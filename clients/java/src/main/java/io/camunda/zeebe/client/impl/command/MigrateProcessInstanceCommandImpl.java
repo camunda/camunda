@@ -60,14 +60,13 @@ public final class MigrateProcessInstanceCommandImpl
   public MigrateProcessInstanceCommandImpl(
       final long processInstanceKey,
       final GatewayStub asyncStub,
-      final Duration requestTimeout,
       final Predicate<StatusCode> retryPredicate,
       final HttpClient httpClient,
       final ZeebeClientConfiguration config,
       final JsonMapper jsonMapper) {
     requestBuilder.setProcessInstanceKey(processInstanceKey);
     this.asyncStub = asyncStub;
-    this.requestTimeout = requestTimeout;
+    requestTimeout = config.getDefaultRequestTimeout();
     this.retryPredicate = retryPredicate;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -75,7 +74,7 @@ public final class MigrateProcessInstanceCommandImpl
     useRest = config.preferRestOverGrpc();
     this.processInstanceKey = processInstanceKey;
     this.jsonMapper = jsonMapper;
-    requestTimeout(config.getDefaultRequestTimeout());
+    requestTimeout(requestTimeout);
   }
 
   @Override

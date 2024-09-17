@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
@@ -51,20 +52,20 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
       final long resourceKey,
       final GatewayStub asyncStub,
       final Predicate<StatusCode> retryPredicate,
-      final Duration requestTimeout,
       final HttpClient httpClient,
-      final boolean preferRestOverGrpc,
+      final ZeebeClientConfiguration config,
       final JsonMapper jsonMapper) {
     this.asyncStub = asyncStub;
     this.retryPredicate = retryPredicate;
     requestBuilder.setResourceKey(resourceKey);
-    this.requestTimeout = requestTimeout;
+    requestTimeout = config.getDefaultRequestTimeout();
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     httpRequestObject = new io.camunda.zeebe.client.protocol.rest.DeleteResourceRequest();
-    useRest = preferRestOverGrpc;
+    useRest = config.preferRestOverGrpc();
     this.resourceKey = resourceKey;
     this.jsonMapper = jsonMapper;
+    requestTimeout(requestTimeout);
   }
 
   @Override

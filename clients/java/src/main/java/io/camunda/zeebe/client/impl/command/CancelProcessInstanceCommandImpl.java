@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
@@ -52,22 +53,22 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
   public CancelProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
       final long processInstanceKey,
-      final Duration requestTimeout,
       final Predicate<StatusCode> retryPredicate,
       final HttpClient httpClient,
-      final boolean preferRestOverGrpc,
+      final ZeebeClientConfiguration config,
       final JsonMapper jsonMapper) {
     this.asyncStub = asyncStub;
-    this.requestTimeout = requestTimeout;
+    requestTimeout = config.getDefaultRequestTimeout();
     this.retryPredicate = retryPredicate;
     builder = CancelProcessInstanceRequest.newBuilder();
     builder.setProcessInstanceKey(processInstanceKey);
-    useRest = preferRestOverGrpc;
+    useRest = config.preferRestOverGrpc();
     this.processInstanceKey = processInstanceKey;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
     httpRequestObject = new io.camunda.zeebe.client.protocol.rest.CancelProcessInstanceRequest();
     this.httpClient = httpClient;
+    requestTimeout(requestTimeout);
   }
 
   @Override

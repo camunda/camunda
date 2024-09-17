@@ -53,21 +53,20 @@ public final class BroadcastSignalCommandImpl
 
   public BroadcastSignalCommandImpl(
       final GatewayStub asyncStub,
-      final ZeebeClientConfiguration configuration,
+      final ZeebeClientConfiguration config,
       final JsonMapper jsonMapper,
       final Predicate<StatusCode> retryPredicate,
-      final HttpClient httpClient,
-      final boolean preferRestOverGrpc) {
+      final HttpClient httpClient) {
     super(jsonMapper);
     this.asyncStub = asyncStub;
     this.retryPredicate = retryPredicate;
     grpcRequestObjectBuilder = BroadcastSignalRequest.newBuilder();
-    requestTimeout = configuration.getDefaultRequestTimeout();
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     httpRequestObject = new SignalBroadcastRequest();
-    useRest = preferRestOverGrpc;
-    tenantId(configuration.getDefaultTenantId());
+    useRest = config.preferRestOverGrpc();
+    tenantId(config.getDefaultTenantId());
+    requestTimeout(config.getDefaultRequestTimeout());
   }
 
   @Override

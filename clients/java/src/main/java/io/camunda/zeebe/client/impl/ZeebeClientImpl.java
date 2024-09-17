@@ -383,7 +383,6 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new MigrateProcessInstanceCommandImpl(
         processInstanceKey,
         asyncStub,
-        config.getDefaultRequestTimeout(),
         credentialsProvider::shouldRetryRequest,
         httpClient,
         config,
@@ -395,10 +394,9 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new CancelProcessInstanceCommandImpl(
         asyncStub,
         processInstanceKey,
-        config.getDefaultRequestTimeout(),
         credentialsProvider::shouldRetryRequest,
         httpClient,
-        config.preferRestOverGrpc(),
+        config,
         jsonMapper);
   }
 
@@ -436,8 +434,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
         config,
         jsonMapper,
         credentialsProvider::shouldRetryRequest,
-        httpClient,
-        config.preferRestOverGrpc());
+        httpClient);
   }
 
   @Override
@@ -496,9 +493,8 @@ public final class ZeebeClientImpl implements ZeebeClient {
         resourceKey,
         asyncStub,
         credentialsProvider::shouldRetryRequest,
-        config.getDefaultRequestTimeout(),
         httpClient,
-        config.preferRestOverGrpc(),
+        config,
         jsonMapper);
   }
 
