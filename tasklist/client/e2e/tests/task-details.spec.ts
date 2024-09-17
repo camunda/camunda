@@ -577,7 +577,7 @@ test.describe('task details page', () => {
       console.log('Form not loaded:' + error);
       await sleep(10000);
       await page.reload();
-      await expect(taskFormView.form).toBeVisible();
+      await expect(taskFormView.form).toBeVisible({timeout: 10000});
     }
     await expect(taskFormView.nameInput).toBeVisible();
     await taskFormView.nameInput.fill('Ben');
