@@ -205,6 +205,14 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
         if (index != null) {
           final Map analysis = (Map) index.get("analysis");
           if (analysis != null) {
+            Map analyzer = (Map) ((Map) analysis.get("analyzer")).get("is_present_analyzer");
+            if (!List.class.isInstance(analyzer.get("filter"))) {
+              analyzer.put("filter", List.of(analyzer.get("filter")));
+            }
+            Map lowercaseNgram = (Map) ((Map) analysis.get("analyzer")).get("lowercase_ngram");
+            if (!List.class.isInstance(lowercaseNgram.get("filter"))) {
+              lowercaseNgram.put("filter", List.of(lowercaseNgram.get("filter")));
+            }
             final Map tokenizer = (Map) analysis.get("tokenizer");
             if (tokenizer != null) {
               final Map ngramTokenizer = (Map) tokenizer.get("ngram_tokenizer");
