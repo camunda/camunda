@@ -11,25 +11,35 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import io.atomix.cluster.messaging.MessagingException.ConnectionClosed;
 import io.camunda.service.CamundaServiceException;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.security.auth.Authentication;
+import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
+import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.msgpack.spec.MsgpackException;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.netty.channel.ConnectTimeoutException;
+import java.net.ConnectException;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
+import org.springframework.web.servlet.View;
 import reactor.core.publisher.Mono;
 
 @WebMvcTest(UserTaskController.class)
@@ -38,6 +48,7 @@ public class ErrorMapperTest extends RestControllerTest {
   private static final String USER_TASKS_BASE_URL = "/v1/user-tasks";
 
   @MockBean UserTaskServices userTaskServices;
+  @Autowired private View error;
 
   @BeforeEach
   void setUp() {
@@ -230,5 +241,294 @@ public class ErrorMapperTest extends RestControllerTest {
         .isEqualTo(expectedBody);
 
     Mockito.verifyNoInteractions(userTaskServices);
+  }
+
+  @Test
+  public void shouldReturnBadGatewayOnTimeoutException() {
+    // given
+    final var errorMsg = "Oh noes, timeouts!";
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(CompletableFuture.failedFuture(new TimeoutException(errorMsg)));
+
+    final var request = new UserTaskCompletionRequest();
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_GATEWAY,
+            "Expected to handle REST API request, but request timed out between gateway and broker: "
+                + errorMsg);
+    expectedBody.setTitle(TimeoutException.class.getName());
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskCompletionRequest.class)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.BAD_GATEWAY)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  public void shouldReturnBadGatewayOnConnectionClosed() {
+    // given
+    final var errorMsg = "Oh noes, connection closed!";
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(CompletableFuture.failedFuture(new ConnectionClosed(errorMsg)));
+
+    final var request = new UserTaskCompletionRequest();
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_GATEWAY,
+            "Expected to handle REST API request, but the connection was cut prematurely with the broker; "
+                + "the request may or may not have been accepted, and may not be safe to retry: "
+                + errorMsg);
+    expectedBody.setTitle(ConnectionClosed.class.getName());
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskCompletionRequest.class)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.BAD_GATEWAY)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  public void shouldReturnServiceUnavailableOnConnectTimeoutException() {
+    // given
+    final var errorMsg = "Oh noes, connection timeouts!";
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(CompletableFuture.failedFuture(new ConnectTimeoutException(errorMsg)));
+
+    final var request = new UserTaskCompletionRequest();
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "Expected to handle REST API request, but a connection timeout exception occurred: "
+                + errorMsg);
+    expectedBody.setTitle(ConnectTimeoutException.class.getName());
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskCompletionRequest.class)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  public void shouldReturnServiceUnavailableOnConnectException() {
+    // given
+    final var errorMsg = "Oh noes, connection timeouts!";
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(CompletableFuture.failedFuture(new ConnectException(errorMsg)));
+
+    final var request = new UserTaskCompletionRequest();
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "Expected to handle REST API request, but there was a connection error with one of the brokers: "
+                + errorMsg);
+    expectedBody.setTitle(ConnectException.class.getName());
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskCompletionRequest.class)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  public void shouldReturnServiceUnavailableOnPartitionNotFoundException() {
+    // given
+    final var errorMsg =
+        "Expected to execute command on partition 1, but either it does not exist, or the gateway is not yet aware of it";
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(CompletableFuture.failedFuture(new PartitionNotFoundException(1)));
+
+    final var request = new UserTaskCompletionRequest();
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "Expected to handle REST API request, but request could not be delivered: Expected to execute command on partition 1, but either it does not exist, or the gateway is not yet aware of it");
+    expectedBody.setTitle(PartitionNotFoundException.class.getName());
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskCompletionRequest.class)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  public void shouldReturnBadRequestOnMsgpackException() {
+    // given
+    final var errorMsg = "Oh noes, msg parsing!";
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(CompletableFuture.failedFuture(new MsgpackException(errorMsg)));
+
+    final var request = new UserTaskCompletionRequest();
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST,
+            "Expected to handle REST API request, but messagepack property was invalid: "
+                + errorMsg);
+    expectedBody.setTitle(MsgpackException.class.getName());
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskCompletionRequest.class)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  public void shouldReturnBadRequestOnJsonParseException() {
+    // given
+    final var errorMsg = "Oh noes, json parsing!";
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(CompletableFuture.failedFuture(new JsonParseException(errorMsg)));
+
+    final var request = new UserTaskCompletionRequest();
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST,
+            "Expected to handle REST API request, but JSON property was invalid: " + errorMsg);
+    expectedBody.setTitle(JsonParseException.class.getName());
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskCompletionRequest.class)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  public void shouldReturnBadRequestOnIllegalArgumentException() {
+    // given
+    final var errorMsg = "Oh noes, illegal arguments!";
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(CompletableFuture.failedFuture(new IllegalArgumentException(errorMsg)));
+
+    final var request = new UserTaskCompletionRequest();
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST,
+            "Expected to handle REST API request, but JSON property was invalid: " + errorMsg);
+    expectedBody.setTitle(IllegalArgumentException.class.getName());
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskCompletionRequest.class)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  public void shouldReturnTooManyRequestsOnRequestRetriesExhaustedException() {
+    // given
+    final var errorMsg =
+        "Expected to execute the command on one of the partitions, but all failed; there are no more partitions available to retry. "
+            + "Please try again. If the error persists contact your zeebe operator";
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(CompletableFuture.failedFuture(new RequestRetriesExhaustedException()));
+
+    final var request = new UserTaskCompletionRequest();
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.TOO_MANY_REQUESTS,
+            "Expected to handle REST API request, but all retries have been exhausted: "
+                + errorMsg);
+    expectedBody.setTitle(RequestRetriesExhaustedException.class.getName());
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskCompletionRequest.class)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.TOO_MANY_REQUESTS)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
   }
 }
