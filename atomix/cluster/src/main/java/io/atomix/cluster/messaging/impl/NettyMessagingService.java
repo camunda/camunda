@@ -367,6 +367,20 @@ public final class NettyMessagingService implements ManagedMessagingService {
         .thenCompose(ok -> bootstrapServer())
         .thenRun(
             () -> {
+<<<<<<< HEAD:atomix/cluster/src/main/java/io/atomix/cluster/messaging/impl/NettyMessagingService.java
+=======
+              final var metrics = new NettyDnsMetrics();
+              dnsResolverGroup =
+                  new DnsAddressResolverGroup(
+                      new DnsNameResolverBuilder(clientGroup.next())
+                          .consolidateCacheSize(128)
+                          .dnsQueryLifecycleObserverFactory(
+                              new BiDnsQueryLifecycleObserverFactory(
+                                  ignored -> metrics,
+                                  new LoggingDnsQueryLifeCycleObserverFactory()))
+                          .socketChannelType(clientChannelClass)
+                          .channelType(clientDataGramChannelClass));
+>>>>>>> e22f9034 (fix: merge concurrent resolves for up to 128 hostnames):zeebe/atomix/cluster/src/main/java/io/atomix/cluster/messaging/impl/NettyMessagingService.java
               timeoutExecutor =
                   Executors.newSingleThreadScheduledExecutor(
                       new DefaultThreadFactory("netty-messaging-timeout-"));

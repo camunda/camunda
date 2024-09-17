@@ -193,7 +193,25 @@ public class NettyUnicastService implements ManagedUnicastService {
   public CompletableFuture<UnicastService> start() {
     group = new NioEventLoopGroup(0, namedThreads("netty-unicast-event-nio-client-%d", log));
     return bootstrap()
+<<<<<<< HEAD:atomix/cluster/src/main/java/io/atomix/cluster/messaging/impl/NettyUnicastService.java
         .thenRun(() -> started.set(true))
+=======
+        .thenRun(
+            () -> {
+              final var metrics = new NettyDnsMetrics();
+              started.set(true);
+              dnsAddressResolverGroup =
+                  new DnsAddressResolverGroup(
+                      new DnsNameResolverBuilder(group.next())
+                          .consolidateCacheSize(128)
+                          .dnsQueryLifecycleObserverFactory(
+                              new BiDnsQueryLifecycleObserverFactory(
+                                  ignored -> metrics,
+                                  new LoggingDnsQueryLifeCycleObserverFactory()))
+                          .socketChannelType(NioSocketChannel.class)
+                          .channelType(NioDatagramChannel.class));
+            })
+>>>>>>> e22f9034 (fix: merge concurrent resolves for up to 128 hostnames):zeebe/atomix/cluster/src/main/java/io/atomix/cluster/messaging/impl/NettyUnicastService.java
         .thenApply(
             v -> {
               log.info(
