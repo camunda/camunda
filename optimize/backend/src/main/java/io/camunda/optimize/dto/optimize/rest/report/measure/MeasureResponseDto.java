@@ -22,7 +22,6 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 @Data
 @AllArgsConstructor
@@ -37,7 +36,6 @@ import lombok.experimental.SuperBuilder;
   @JsonSubTypes.Type(value = NumberMeasureResponseDto.class, name = NUMBER_RESULT_TYPE),
   @JsonSubTypes.Type(value = RawDataMeasureResponseDto.class, name = RAW_RESULT_TYPE),
 })
-@SuperBuilder
 public class MeasureResponseDto<T> {
   private ViewProperty property;
   private AggregationDto aggregationType;

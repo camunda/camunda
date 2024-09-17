@@ -586,7 +586,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                       createAssigneeOperationDto(
                           getExpectedIdFromRecords(exportedEvents, ASSIGNED),
                           UNCLAIM_OPERATION_TYPE,
-                          ASSIGNEE_ID,
+                          null,
                           getTimestampForAssignedUserTaskEvents(exportedEvents))));
               assertThat(savedInstance.getFlowNodeInstances())
                   // only userTask was imported because all other records were removed
@@ -819,7 +819,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                 getTimestampForZeebeAssignEvents(exportedEvents, assigneeId1)),
             createAssigneeOperationDto(
                 getExpectedIdFromAssignRecordsWithAssigneeId(exportedEvents, ""),
-                CLAIM_OPERATION_TYPE,
+                UNCLAIM_OPERATION_TYPE,
                 null,
                 getTimestampForZeebeUnassignEvent(exportedEvents)),
             createAssigneeOperationDto(
