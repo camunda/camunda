@@ -33,6 +33,7 @@ import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import io.camunda.optimize.util.ZeebeBpmnModels;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -67,7 +68,11 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
               assertThat(importedDef.getKey()).isEqualTo(deployedProcess.getBpmnProcessId());
               assertThat(importedDef.getVersion())
                   .isEqualTo(String.valueOf(deployedProcess.getVersion()));
-              assertThat(importedDef.getVersionTag()).isNull();
+              if (isZeebeVersionPre86()) {
+                assertThat(importedDef.getVersionTag()).isNull();
+              } else {
+                assertThat(importedDef.getVersionTag()).isEqualTo(ZeebeBpmnModels.VERSION_TAG);
+              }
               assertThat(importedDef.getType()).isEqualTo(DefinitionType.PROCESS);
 
               assertThat(importedDef.getBpmn20Xml()).isEqualTo(Bpmn.convertToString(simpleProcess));

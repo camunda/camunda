@@ -13,6 +13,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import io.camunda.exporter.clients.elasticsearch.ElasticsearchClientFactory;
 import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
+import io.camunda.exporter.entities.AuthorizationEntity;
 import io.camunda.exporter.entities.UserEntity;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -20,9 +21,14 @@ import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -93,5 +99,44 @@ final class CamundaExporterIT {
             record.getValue().getEmail(),
             record.getValue().getName(),
             record.getValue().getUsername());
+  }
+
+  @Test
+  void shouldExportAuthorizationRecord() throws IOException {
+    // given
+    final Record<AuthorizationRecordValue> record = factory.generateRecord(ValueType.AUTHORIZATION);
+
+    // when
+    exporter.export(record);
+
+    // then
+    final String id = String.valueOf(record.getKey());
+    final var response =
+        testClient.get(b -> b.id(id).index("authorizations"), AuthorizationEntity.class);
+    assertThat(response)
+        .extracting(GetResponse::index, GetResponse::id)
+        .containsExactly("authorizations", id);
+
+    assertThat(response.source())
+        .describedAs("Authorization entity is updated correctly from the authorization record")
+        .extracting(
+            AuthorizationEntity::getOwnerKey,
+            AuthorizationEntity::getOwnerType,
+            AuthorizationEntity::getResourceType,
+            AuthorizationEntity::getPermissionValues)
+        .containsExactly(
+            record.getValue().getOwnerKey(),
+            record.getValue().getOwnerType(),
+            record.getValue().getResourceType(),
+            extractPermissions(record.getValue()));
+  }
+
+  private Map<PermissionType, List<String>> extractPermissions(
+      final AuthorizationRecordValue record) {
+    return record.getPermissions().stream()
+        .collect(
+            Collectors.toMap(
+                AuthorizationRecordValue.PermissionValue::getPermissionType,
+                AuthorizationRecordValue.PermissionValue::getResourceIds));
   }
 }

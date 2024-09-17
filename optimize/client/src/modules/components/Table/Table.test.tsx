@@ -180,8 +180,7 @@ it('should invoke fetchData when the page is change', async () => {
 });
 
 it('should go to the last page if data changes in a way that current page is empty', async () => {
-  const spy = jest.fn();
-  const node = mount(<Table head={['a']} body={[]} fetchData={spy} totalEntries={100} />);
+  const node = mount(<Table head={['a']} body={[]} totalEntries={100} />);
 
   await act(async () => {
     await runAllEffects();
@@ -191,11 +190,10 @@ it('should go to the last page if data changes in a way that current page is emp
       runAllEffects();
     }
 
-    spy.mockClear();
     node.setProps({totalEntries: 50});
     runAllEffects();
 
-    expect(spy).toHaveBeenCalledWith({pageIndex: 4, pageSize: 20});
+    expect(node.find('.cds--pagination__text').at(2).text()).toBe('page 3 of 3');
   });
 });
 

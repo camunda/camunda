@@ -205,21 +205,25 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNoEventSubprocessInSource(
         sourceProcessDefinition,
         elementInstanceRecord,
-        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER));
+        EnumSet.of(
+            BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL, BpmnEventType.ERROR));
     requireNoEventSubprocessInTarget(
         targetProcessDefinition,
         targetElementId,
         elementInstanceRecord,
-        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER));
+        EnumSet.of(
+            BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL, BpmnEventType.ERROR));
     requireNoBoundaryEventInSource(
         sourceProcessDefinition,
         elementInstanceRecord,
-        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL));
+        EnumSet.of(
+            BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL, BpmnEventType.ERROR));
     requireNoBoundaryEventInTarget(
         targetProcessDefinition,
         targetElementId,
         elementInstanceRecord,
-        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL));
+        EnumSet.of(
+            BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL, BpmnEventType.ERROR));
     requireMappedCatchEventsToStayAttachedToSameElement(
         processInstanceKey,
         sourceProcessDefinition,
@@ -229,6 +233,12 @@ public class ProcessInstanceMigrationMigrateProcessor
         sourceElementIdToTargetElementId);
     requireNoDuplicateTargetsInCatchEventMappings(
         processInstanceKey, sourceProcessDefinition, elementId, sourceElementIdToTargetElementId);
+    requireNoCatchEventMappingToChangeEventType(
+        processInstanceKey,
+        sourceElementIdToTargetElementId,
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        elementId);
     requireNoConcurrentCommand(eventScopeInstanceState, elementInstance, processInstanceKey);
 
     stateWriter.appendFollowUpEvent(

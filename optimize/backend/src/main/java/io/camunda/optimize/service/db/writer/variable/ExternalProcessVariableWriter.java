@@ -14,7 +14,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
@@ -35,7 +34,7 @@ public class ExternalProcessVariableWriter {
         String.format("external variables with timestamp older than %s", timestamp);
     log.info("Deleting {}", deletedItemIdentifier);
     taskRepository.executeWithTaskMonitoring(
-        DeleteByQueryAction.NAME,
+        "indices:data/write/delete/byquery",
         () ->
             variableRepository.deleteExternalVariablesIngestedBefore(
                 timestamp, deletedItemIdentifier),

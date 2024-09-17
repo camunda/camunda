@@ -3,7 +3,7 @@ module github.com/camunda/camunda/clients/go/v8
 go 1.21
 
 require (
-	github.com/docker/docker v27.2.0+incompatible
+	github.com/docker/docker v27.2.1+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/golang/mock v1.6.0
@@ -15,7 +15,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.33.0
 	golang.org/x/net v0.29.0
 	golang.org/x/oauth2 v0.23.0
-	google.golang.org/grpc v1.66.0
+	google.golang.org/grpc v1.66.2
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v3 v3.0.1
 )

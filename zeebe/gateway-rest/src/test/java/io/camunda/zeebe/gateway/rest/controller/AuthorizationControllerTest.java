@@ -61,7 +61,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   }
 
   @Test
-  void createAuthorizationShouldReturnNoContent() {
+  void patchAuthorizationShouldReturnNoContent() {
     final var ownerKey = 1L;
     final var action = ActionEnum.ADD;
     final var resourceIds = List.of("permission1", "permission2");
@@ -85,7 +85,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             .setResourceType(AuthorizationResourceType.valueOf(request.getResourceType().name()))
             .addPermission(permission);
 
-    when(authorizationServices.createAuthorization(any(PatchAuthorizationRequest.class)))
+    when(authorizationServices.patchAuthorization(any(PatchAuthorizationRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(authorizationRecord));
 
     webClient
@@ -99,7 +99,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .isNoContent();
 
     final var captor = ArgumentCaptor.forClass(PatchAuthorizationRequest.class);
-    verify(authorizationServices, times(1)).createAuthorization(captor.capture());
+    verify(authorizationServices, times(1)).patchAuthorization(captor.capture());
     final var capturedRequest = captor.getValue();
     assertEquals(capturedRequest.ownerKey(), authorizationRecord.getOwnerKey());
     assertEquals(capturedRequest.action(), authorizationRecord.getAction());
@@ -111,7 +111,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   }
 
   @Test
-  void createAuthorizationThrowsExceptionWhenServiceThrowsException() {
+  void patchAuthorizationThrowsExceptionWhenServiceThrowsException() {
     final var ownerKey = 1L;
     final var action = ActionEnum.ADD;
     final var resourceIds = List.of("permission1", "permission2");
@@ -125,11 +125,11 @@ public class AuthorizationControllerTest extends RestControllerTest {
             .resourceType(ResourceTypeEnum.DEPLOYMENT)
             .permissions(List.of(permissions));
 
-    when(authorizationServices.createAuthorization(any(PatchAuthorizationRequest.class)))
+    when(authorizationServices.patchAuthorization(any(PatchAuthorizationRequest.class)))
         .thenThrow(
             new CamundaServiceException(
                 new BrokerRejection(
-                    AuthorizationIntent.CREATE,
+                    AuthorizationIntent.ADD_PERMISSION,
                     1L,
                     RejectionType.ALREADY_EXISTS,
                     "Authorization already exists")));
@@ -153,7 +153,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("provideInvalidRequests")
-  public void createAuthorizationShouldReturnBadRequest(
+  public void patchAuthorizationShouldReturnBadRequest(
       final AuthorizationPatchRequest request, final String errorMessage) {
     final var ownerKey = 1L;
     final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);

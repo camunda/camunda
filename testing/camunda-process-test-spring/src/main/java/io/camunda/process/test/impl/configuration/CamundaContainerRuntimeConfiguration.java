@@ -31,6 +31,13 @@ public class CamundaContainerRuntimeConfiguration {
   private Map<String, String> zeebeEnvVars = Collections.emptyMap();
   private List<Integer> zeebeExposedPorts = Collections.emptyList();
 
+  private boolean connectorsEnabled = false;
+  private String connectorsDockerImageName = ContainerRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_NAME;
+  private String connectorsDockerImageVersion =
+      ContainerRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_VERSION;
+  private Map<String, String> connectorsEnvVars = Collections.emptyMap();
+  private Map<String, String> connectorsSecrets = Collections.emptyMap();
+
   public String getCamundaVersion() {
     return camundaVersion;
   }
@@ -61,5 +68,45 @@ public class CamundaContainerRuntimeConfiguration {
 
   public void setZeebeExposedPorts(final List<Integer> zeebeExposedPorts) {
     this.zeebeExposedPorts = zeebeExposedPorts;
+  }
+
+  public boolean isConnectorsEnabled() {
+    return connectorsEnabled;
+  }
+
+  public void setConnectorsEnabled(final boolean connectorsEnabled) {
+    this.connectorsEnabled = connectorsEnabled;
+  }
+
+  public String getConnectorsDockerImageName() {
+    return connectorsDockerImageName;
+  }
+
+  public void setConnectorsDockerImageName(final String connectorsDockerImageName) {
+    this.connectorsDockerImageName = connectorsDockerImageName;
+  }
+
+  public String getConnectorsDockerImageVersion() {
+    return connectorsDockerImageVersion;
+  }
+
+  public void setConnectorsDockerImageVersion(final String connectorsDockerImageVersion) {
+    this.connectorsDockerImageVersion = connectorsDockerImageVersion;
+  }
+
+  public Map<String, String> getConnectorsEnvVars() {
+    return connectorsEnvVars;
+  }
+
+  public void setConnectorsEnvVars(final Map<String, String> connectorsEnvVars) {
+    this.connectorsEnvVars = connectorsEnvVars;
+  }
+
+  public Map<String, String> getConnectorsSecrets() {
+    return connectorsSecrets;
+  }
+
+  public void setConnectorsSecrets(final Map<String, String> connectorsSecrets) {
+    this.connectorsSecrets = connectorsSecrets;
   }
 }

@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.Engine;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -320,6 +322,14 @@ public final class TestStreams {
   public void pauseProcessing(final String streamName) {
     streamContextMap.get(streamName).streamProcessor.pauseProcessing().join();
     LOG.info("Paused processing for stream {}", streamName);
+  }
+
+  public void banInstanceInNewTransaction(
+      final String streamName, final int partitionId, final long processInstanceKey) {
+    final ZeebeDb zeebeDbLocal = streamContextMap.get(streamName).zeebeDb;
+    final TransactionContext context = zeebeDbLocal.createContext();
+    new DbBannedInstanceState(zeebeDbLocal, context, partitionId)
+        .banProcessInstance(processInstanceKey);
   }
 
   public void resumeProcessing(final String streamName) {

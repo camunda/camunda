@@ -26,18 +26,23 @@ public record UserSort(List<FieldSorting> orderings) implements SortOption {
   public static final class Builder extends AbstractBuilder<Builder>
       implements ObjectBuilder<UserSort> {
 
+    public Builder key() {
+      currentOrdering = new FieldSorting("key", null);
+      return this;
+    }
+
     public Builder username() {
-      currentOrdering = new FieldSorting("value.username", null);
+      currentOrdering = new FieldSorting("username", null);
       return this;
     }
 
     public Builder name() {
-      currentOrdering = new FieldSorting("value.name", null);
+      currentOrdering = new FieldSorting("name", null);
       return this;
     }
 
     public Builder email() {
-      currentOrdering = new FieldSorting("value.email", null);
+      currentOrdering = new FieldSorting("email", null);
       return this;
     }
 

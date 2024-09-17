@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.distribution;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
@@ -39,6 +40,7 @@ import java.util.Set;
 public final class CommandDistributionBehavior {
 
   private final DistributionState distributionState;
+  private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
   private final RoutingInfo routingInfo;
@@ -55,6 +57,8 @@ public final class CommandDistributionBehavior {
       new CommandDistributionRecord();
   private final CommandDistributionRecord commandDistributionAcknowledge =
       new CommandDistributionRecord();
+  private final CommandDistributionRecord commandDistributionContinuation =
+      new CommandDistributionRecord();
 
   public CommandDistributionBehavior(
       final DistributionState distributionState,
@@ -63,6 +67,7 @@ public final class CommandDistributionBehavior {
       final RoutingInfo routingInfo,
       final InterPartitionCommandSender partitionCommandSender) {
     this.distributionState = distributionState;
+    commandWriter = writers.command();
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
     this.routingInfo = routingInfo;
@@ -83,7 +88,7 @@ public final class CommandDistributionBehavior {
    *     completed. Additionally, the key determines the order in which the commands are distributed
    *     if they are distributed ordered, i.e. a queue is specified.
    */
-  public CommandDistributionRequestBuilder withKey(final long distributionKey) {
+  public RequestBuilder withKey(final long distributionKey) {
     return new DistributionRequest(distributionKey);
   }
 
@@ -172,16 +177,31 @@ public final class CommandDistributionBehavior {
   /**
    * If the given distribution was part of a queue, the next distribution from the queue is started.
    */
-  void distributeNextInQueue(final long finishedDistributionKey, final int partition) {
+  void distributeNextInQueue(final String queue, final int partition) {
     distributionState
-        .getQueueIdForDistribution(finishedDistributionKey)
-        .flatMap(queue -> distributionState.getNextQueuedDistributionKey(queue, partition))
+        .getNextQueuedDistributionKey(queue, partition)
         .ifPresent(
             nextDistributionKey ->
                 startDistributing(
                     partition,
                     distributionState.getCommandDistributionRecord(nextDistributionKey, partition),
                     nextDistributionKey));
+  }
+
+  void continueAfterQueue(final String queue) {
+    if (distributionState.hasQueuedDistributions(queue)) {
+      return;
+    }
+    distributionState.forEachContinuationCommand(
+        queue, key -> handleContinuationCommand(queue, key));
+  }
+
+  private void handleContinuationCommand(final String queue, final long key) {
+    commandDistributionContinuation.reset();
+    commandDistributionContinuation.setQueueId(queue);
+    commandDistributionContinuation.setPartitionId(currentPartitionId);
+    commandWriter.appendFollowUpCommand(
+        key, CommandDistributionIntent.CONTINUE, commandDistributionContinuation);
   }
 
   private void startDistributing(
@@ -248,32 +268,47 @@ public final class CommandDistributionBehavior {
         });
   }
 
-  public interface CommandDistributionRequestBuilder {
-    /**
-     * Distributes the command in an unordered way. This means that the command is sent to the
-     * receiving partitions without any guarantee of order.
-     *
-     * @return the builder
-     */
-    CommandDistributionRequestBuilder unordered();
+  private <T extends UnifiedRecordValue> void requestContinuation(
+      final String queue,
+      final long key,
+      final ValueType valueType,
+      final Intent intent,
+      final T value) {
+    final var writeImmediately = !distributionState.hasQueuedDistributions(queue);
 
-    /**
-     * Appends this command to the specified queue to be distributed in the natural sort order of
-     * the distribution key. Ordering is maintained separately for each partition the command is
-     * distributed to.
-     *
-     * @param queue the queue to append the command to.
-     */
-    CommandDistributionRequestBuilder inQueue(String queue);
+    if (writeImmediately) {
+      commandWriter.appendFollowUpCommand(key, intent, value);
+      return;
+    }
 
+    commandDistributionContinuation.reset();
+    commandDistributionContinuation.setQueueId(queue);
+    commandDistributionContinuation.setPartitionId(currentPartitionId);
+    commandDistributionContinuation.setValueType(valueType);
+    commandDistributionContinuation.setIntent(intent);
+    commandDistributionContinuation.setCommandValue(value);
+
+    stateWriter.appendFollowUpEvent(
+        key, CommandDistributionIntent.CONTINUATION_REQUESTED, commandDistributionContinuation);
+  }
+
+  public interface RequestBuilder {
+    DistributionRequestBuilder unordered();
+
+    DistributionRequestBuilder inQueue(String queue);
+
+    ContinuationRequestBuilder afterQueue(String queue);
+  }
+
+  public interface DistributionRequestBuilder {
     /** Specifies the single partition that this command will be distributed to. */
-    CommandDistributionRequestBuilder forPartition(int partition);
+    DistributionRequestBuilder forPartition(int partition);
 
     /** Specifies the partitions that this command will be distributed to. */
-    CommandDistributionRequestBuilder forPartitions(Set<Integer> partitions);
+    DistributionRequestBuilder forPartitions(Set<Integer> partitions);
 
     /** Specifies that this command will be distributed to all partitions except the local one. */
-    CommandDistributionRequestBuilder forOtherPartitions();
+    DistributionRequestBuilder forOtherPartitions();
 
     /** Distributes the command as specified. */
     <T extends UnifiedRecordValue> void distribute(TypedRecord<T> command);
@@ -283,41 +318,64 @@ public final class CommandDistributionBehavior {
         final ValueType valueType, final Intent intent, final T value);
   }
 
-  private class DistributionRequest implements CommandDistributionRequestBuilder {
-    final long distributionKey;
+  public interface ContinuationRequestBuilder {
+
+    /**
+     * Write this command once the queue is empty. If the queue is already empty, the command will
+     * be written immediately.
+     */
+    <T extends UnifiedRecordValue> void continueWith(TypedRecord<T> command);
+
+    /**
+     * Write this command once the queue is empty. If the queue is already empty, the command will
+     * be written immediately.
+     */
+    <T extends UnifiedRecordValue> void continueWith(
+        final ValueType valueType, final Intent intent, final T value);
+  }
+
+  private class DistributionRequest
+      implements RequestBuilder, DistributionRequestBuilder, ContinuationRequestBuilder {
+    final long key;
     String queue;
     Set<Integer> partitions = routingInfo.partitions();
 
-    public DistributionRequest(final long distributionKey) {
-      this.distributionKey = distributionKey;
+    public DistributionRequest(final long key) {
+      this.key = key;
     }
 
     @Override
-    public CommandDistributionRequestBuilder unordered() {
+    public DistributionRequest unordered() {
       queue = null;
       return this;
     }
 
     @Override
-    public CommandDistributionRequestBuilder inQueue(final String queue) {
+    public DistributionRequest inQueue(final String queue) {
       this.queue = Objects.requireNonNull(queue);
       return this;
     }
 
     @Override
-    public CommandDistributionRequestBuilder forPartition(final int partition) {
+    public ContinuationRequestBuilder afterQueue(final String queue) {
+      this.queue = Objects.requireNonNull(queue);
+      return this;
+    }
+
+    @Override
+    public DistributionRequestBuilder forPartition(final int partition) {
       partitions = Set.of(partition);
       return this;
     }
 
     @Override
-    public CommandDistributionRequestBuilder forPartitions(final Set<Integer> partitions) {
+    public DistributionRequestBuilder forPartitions(final Set<Integer> partitions) {
       this.partitions = Objects.requireNonNull(partitions);
       return this;
     }
 
     @Override
-    public CommandDistributionRequestBuilder forOtherPartitions() {
+    public DistributionRequestBuilder forOtherPartitions() {
       partitions = routingInfo.partitions();
       return this;
     }
@@ -325,12 +383,7 @@ public final class CommandDistributionBehavior {
     @Override
     public <T extends UnifiedRecordValue> void distribute(final TypedRecord<T> command) {
       distributeCommand(
-          queue,
-          distributionKey,
-          command.getValueType(),
-          command.getIntent(),
-          command.getValue(),
-          partitions);
+          queue, key, command.getValueType(), command.getIntent(), command.getValue(), partitions);
     }
 
     @Override
@@ -338,11 +391,23 @@ public final class CommandDistributionBehavior {
         final ValueType valueType, final Intent intent, final T value) {
       distributeCommand(
           queue,
-          distributionKey,
+          key,
           Objects.requireNonNull(valueType),
           Objects.requireNonNull(intent),
           Objects.requireNonNull(value),
           partitions);
+    }
+
+    @Override
+    public <T extends UnifiedRecordValue> void continueWith(final TypedRecord<T> command) {
+      requestContinuation(
+          queue, key, command.getValueType(), command.getIntent(), command.getValue());
+    }
+
+    @Override
+    public <T extends UnifiedRecordValue> void continueWith(
+        final ValueType valueType, final Intent intent, final T value) {
+      requestContinuation(queue, key, valueType, intent, value);
     }
   }
 }

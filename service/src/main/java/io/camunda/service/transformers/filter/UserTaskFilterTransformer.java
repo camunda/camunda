@@ -45,7 +45,6 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     final var assigneesQuery = getAssigneesQuery(filter.assignees());
     final var stateQuery = getStateQuery(filter.states());
     final var tenantQuery = getTenantQuery(filter.tenantIds());
-    final var priorityQuery = getComparableFilter(filter.priority(), "priority");
 
     // Temporary internal condition - in order to bring only Zeebe User Tasks from Tasklist Indices
     final var userTaksImplementationQuery = getUserTasksImplementationOnly();
@@ -61,8 +60,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
         processDefinitionKeyQuery,
         tenantQuery,
         userTaksImplementationQuery,
-        elementIdQuery,
-        priorityQuery);
+        elementIdQuery);
   }
 
   @Override

@@ -46,6 +46,13 @@ public class ZeebeBindingTypeValidator<T extends ModelElementInstance>
   @Override
   public void validate(final T element, final ValidationResultCollector validationResultCollector) {
     final String bindingType = element.getAttributeValue(ZeebeConstants.ATTRIBUTE_BINDING_TYPE);
+    final String versionTag = element.getAttributeValue(ZeebeConstants.ATTRIBUTE_VERSION_TAG);
+    checkValidBindingTypeValue(validationResultCollector, bindingType);
+    checkValidBindingTypeAndVersionTag(validationResultCollector, bindingType, versionTag);
+  }
+
+  private static void checkValidBindingTypeValue(
+      final ValidationResultCollector validationResultCollector, final String bindingType) {
     if (bindingType != null && !ALLOWED_BINDING_TYPES.contains(bindingType)) {
       final String message =
           String.format(
@@ -53,5 +60,32 @@ public class ZeebeBindingTypeValidator<T extends ModelElementInstance>
               ZeebeConstants.ATTRIBUTE_BINDING_TYPE, String.join(", ", ALLOWED_BINDING_TYPES));
       validationResultCollector.addError(0, message);
     }
+  }
+
+  private static void checkValidBindingTypeAndVersionTag(
+      final ValidationResultCollector validationResultCollector,
+      final String bindingType,
+      final String versionTag) {
+    if (ZeebeBindingType.versionTag.name().equals(bindingType) && isBlank(versionTag)) {
+      validationResultCollector.addError(
+          0,
+          String.format(
+              "Attribute '%s' must be present and not empty if '%s' is '%s'",
+              ZeebeConstants.ATTRIBUTE_VERSION_TAG,
+              ZeebeConstants.ATTRIBUTE_BINDING_TYPE,
+              ZeebeBindingType.versionTag));
+    } else if (!ZeebeBindingType.versionTag.name().equals(bindingType) && !isBlank(versionTag)) {
+      validationResultCollector.addError(
+          0,
+          String.format(
+              "Attribute '%s' may only be used if '%s' is '%s'",
+              ZeebeConstants.ATTRIBUTE_VERSION_TAG,
+              ZeebeConstants.ATTRIBUTE_BINDING_TYPE,
+              ZeebeBindingType.versionTag));
+    }
+  }
+
+  private static boolean isBlank(final String value) {
+    return value == null || value.trim().isEmpty();
   }
 }

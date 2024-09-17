@@ -40,12 +40,13 @@ env:
 jobs:
   integration-tests:
     name: Test
-    runs-on: [ self-hosted, linux, amd64, "16" ]
+    runs-on: gcp-perf-core-16-default
     if: ${{ !startsWith(inputs.branch, 'fe-') && !startsWith(inputs.branch, 'renovate/') }}
     strategy:
       fail-fast: false
       matrix:
         database: [ elasticsearch, opensearch ]
+
         include:
           - database: elasticsearch
             testProfile: docker-es

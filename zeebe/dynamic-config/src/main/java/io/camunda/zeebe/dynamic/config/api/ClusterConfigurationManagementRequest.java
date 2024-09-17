@@ -35,9 +35,10 @@ public sealed interface ClusterConfigurationManagementRequest {
   record ReassignPartitionsRequest(Set<MemberId> members, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
-  record ScaleRequest(Set<MemberId> members, Optional<Integer> newReplicationFactor, boolean dryRun)
+  record BrokerScaleRequest(
+      Set<MemberId> members, Optional<Integer> newReplicationFactor, boolean dryRun)
       implements ClusterConfigurationManagementRequest {
-    public ScaleRequest(final Set<MemberId> members, final boolean dryRun) {
+    public BrokerScaleRequest(final Set<MemberId> members, final boolean dryRun) {
       this(members, Optional.empty(), dryRun);
     }
   }

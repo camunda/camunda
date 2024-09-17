@@ -23,6 +23,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
+import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
@@ -55,11 +57,13 @@ import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionRequirementsQuery;
+import io.camunda.zeebe.client.api.search.query.FlownodeInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.IncidentQuery;
 import io.camunda.zeebe.client.api.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.UserTaskQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.zeebe.client.impl.command.AddPermissionsCommandImpl;
 import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
@@ -68,6 +72,7 @@ import io.camunda.zeebe.client.impl.command.ClockResetCommandImpl;
 import io.camunda.zeebe.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.CorrelateMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
+import io.camunda.zeebe.client.impl.command.CreateUserCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployResourceCommandImpl;
@@ -89,6 +94,7 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpClientFactory;
 import io.camunda.zeebe.client.impl.search.query.DecisionDefinitionQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.DecisionRequirementsQueryImpl;
+import io.camunda.zeebe.client.impl.search.query.FlowNodeInstanceQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.IncidentQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.ProcessInstanceQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.UserTaskQueryImpl;
@@ -528,6 +534,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
+  public FlownodeInstanceQuery newFlownodeInstanceQuery() {
+    return new FlowNodeInstanceQueryImpl(httpClient, jsonMapper);
+  }
+
+  @Override
   public UserTaskQuery newUserTaskQuery() {
     return new UserTaskQueryImpl(httpClient, jsonMapper);
   }
@@ -551,6 +562,16 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public IncidentQuery newIncidentQuery() {
     return new IncidentQueryImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public CreateUserCommandStep1 newUserCreateCommand() {
+    return new CreateUserCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public AddPermissionsCommandStep1 newAddPermissionsCommand(final long ownerKey) {
+    return new AddPermissionsCommandImpl(ownerKey, httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {

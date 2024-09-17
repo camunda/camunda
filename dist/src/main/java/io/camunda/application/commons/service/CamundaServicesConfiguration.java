@@ -14,11 +14,14 @@ import io.camunda.service.ClockServices;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
+import io.camunda.service.ElementInstanceServices;
+import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.MessageServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
+import io.camunda.service.SignalServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -83,6 +86,11 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
+  public FlowNodeInstanceServices flownodeInstanceServices(final CamundaServices camundaServices) {
+    return camundaServices.flownodeInstanceServices();
+  }
+
+  @Bean
   public UserServices userServices(final CamundaServices camundaServices) {
     return camundaServices.userServices();
   }
@@ -110,5 +118,15 @@ public class CamundaServicesConfiguration {
   @Bean
   public ResourceServices resourceServices(final CamundaServices camundaServices) {
     return camundaServices.resourceService();
+  }
+
+  @Bean
+  public ElementInstanceServices elementServices(final CamundaServices camundaServices) {
+    return camundaServices.elementServices();
+  }
+
+  @Bean
+  public SignalServices signalServices(final CamundaServices camundaServices) {
+    return camundaServices.signalServices();
   }
 }

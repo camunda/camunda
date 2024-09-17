@@ -11,8 +11,10 @@ import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -39,5 +41,17 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     return sendBrokerRequest(brokerRequest);
   }
 
+  public CompletableFuture<ResourceDeletionRecord> deleteResource(
+      final ResourceDeletionRequest request) {
+    final var brokerRequest =
+        new BrokerDeleteResourceRequest().setResourceKey(request.resourceKey());
+    if (request.operationReference() != null) {
+      brokerRequest.setOperationReference(request.operationReference());
+    }
+    return sendBrokerRequest(brokerRequest);
+  }
+
   public record DeployResourcesRequest(Map<String, byte[]> resources, String tenantId) {}
+
+  public record ResourceDeletionRequest(long resourceKey, Long operationReference) {}
 }

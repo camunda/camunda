@@ -12,6 +12,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -432,6 +434,10 @@ public final class RecordingExporter implements Exporter {
     return new UserRecordStream(records(ValueType.USER, UserRecordValue.class));
   }
 
+  public static UserRecordStream userRecords(final UserIntent intent) {
+    return userRecords().withIntent(intent);
+  }
+
   public static ClockRecordStream clockRecords() {
     return new ClockRecordStream(records(ValueType.CLOCK, ClockRecordValue.class));
   }
@@ -443,6 +449,10 @@ public final class RecordingExporter implements Exporter {
   public static AuthorizationRecordStream authorizationRecords() {
     return new AuthorizationRecordStream(
         records(ValueType.AUTHORIZATION, AuthorizationRecordValue.class));
+  }
+
+  public static AuthorizationRecordStream authorizationRecords(final AuthorizationIntent intent) {
+    return authorizationRecords().withIntent(intent);
   }
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {

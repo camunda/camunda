@@ -38,20 +38,30 @@ public class CamundaContainerRuntimeBuilder {
   private String tasklistDockerImageVersion =
       ContainerRuntimeDefaults.TASKLIST_DOCKER_IMAGE_VERSION;
 
+  private String connectorsDockerImageName = ContainerRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_NAME;
+  private String connectorsDockerImageVersion =
+      ContainerRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_VERSION;
+
   private final Map<String, String> zeebeEnvVars = new HashMap<>();
   private final Map<String, String> elasticsearchEnvVars = new HashMap<>();
   private final Map<String, String> operateEnvVars = new HashMap<>();
   private final Map<String, String> tasklistEnvVars = new HashMap<>();
+  private final Map<String, String> connectorsEnvVars = new HashMap<>();
 
   private final List<Integer> zeebeExposedPorts = new ArrayList<>();
   private final List<Integer> elasticsearchExposedPorts = new ArrayList<>();
   private final List<Integer> operateExposedPorts = new ArrayList<>();
   private final List<Integer> tasklistExposedPorts = new ArrayList<>();
+  private final List<Integer> connectorsExposedPorts = new ArrayList<>();
 
   private String zeebeLoggerName = ContainerRuntimeDefaults.ZEEBE_LOGGER_NAME;
   private String elasticsearchLoggerName = ContainerRuntimeDefaults.ELASTICSEARCH_LOGGER_NAME;
   private String operateLoggerName = ContainerRuntimeDefaults.OPERATE_LOGGER_NAME;
   private String tasklistLoggerName = ContainerRuntimeDefaults.TASKLIST_LOGGER_NAME;
+  private String connectorsLoggerName = ContainerRuntimeDefaults.CONNECTORS_LOGGER_NAME;
+
+  private boolean connectorsEnabled = false;
+  private final Map<String, String> connectorsSecrets = new HashMap<>();
 
   // ============ For testing =================
 
@@ -97,6 +107,18 @@ public class CamundaContainerRuntimeBuilder {
     return this;
   }
 
+  public CamundaContainerRuntimeBuilder withConnectorsDockerImageName(
+      final String dockerImageName) {
+    connectorsDockerImageName = dockerImageName;
+    return this;
+  }
+
+  public CamundaContainerRuntimeBuilder withConnectorsDockerImageVersion(
+      final String dockerImageVersion) {
+    connectorsDockerImageVersion = dockerImageVersion;
+    return this;
+  }
+
   public CamundaContainerRuntimeBuilder withZeebeEnv(final Map<String, String> envVars) {
     zeebeEnvVars.putAll(envVars);
     return this;
@@ -138,6 +160,16 @@ public class CamundaContainerRuntimeBuilder {
     return this;
   }
 
+  public CamundaContainerRuntimeBuilder withConnectorsEnv(final Map<String, String> envVars) {
+    connectorsEnvVars.putAll(envVars);
+    return this;
+  }
+
+  public CamundaContainerRuntimeBuilder withConnectorsEnv(final String name, final String value) {
+    connectorsEnvVars.put(name, value);
+    return this;
+  }
+
   public CamundaContainerRuntimeBuilder withZeebeExposedPort(final int port) {
     zeebeExposedPorts.add(port);
     return this;
@@ -158,6 +190,11 @@ public class CamundaContainerRuntimeBuilder {
     return this;
   }
 
+  public CamundaContainerRuntimeBuilder withConnectorsExposedPort(final int port) {
+    connectorsExposedPorts.add(port);
+    return this;
+  }
+
   public CamundaContainerRuntimeBuilder withZeebeLogger(final String loggerName) {
     zeebeLoggerName = loggerName;
     return this;
@@ -175,6 +212,27 @@ public class CamundaContainerRuntimeBuilder {
 
   public CamundaContainerRuntimeBuilder withTasklistLogger(final String loggerName) {
     tasklistLoggerName = loggerName;
+    return this;
+  }
+
+  public CamundaContainerRuntimeBuilder withConnectorsLogger(final String loggerName) {
+    connectorsLoggerName = loggerName;
+    return this;
+  }
+
+  public CamundaContainerRuntimeBuilder withConnectorsEnabled(final boolean enabled) {
+    connectorsEnabled = enabled;
+    return this;
+  }
+
+  public CamundaContainerRuntimeBuilder withConnectorsSecret(
+      final String name, final String value) {
+    connectorsSecrets.put(name, value);
+    return this;
+  }
+
+  public CamundaContainerRuntimeBuilder withConnectorsSecrets(final Map<String, String> secrets) {
+    connectorsSecrets.putAll(secrets);
     return this;
   }
 
@@ -210,6 +268,14 @@ public class CamundaContainerRuntimeBuilder {
     return tasklistDockerImageVersion;
   }
 
+  public String getConnectorsDockerImageName() {
+    return connectorsDockerImageName;
+  }
+
+  public String getConnectorsDockerImageVersion() {
+    return connectorsDockerImageVersion;
+  }
+
   public Map<String, String> getZeebeEnvVars() {
     return zeebeEnvVars;
   }
@@ -224,6 +290,10 @@ public class CamundaContainerRuntimeBuilder {
 
   public Map<String, String> getTasklistEnvVars() {
     return tasklistEnvVars;
+  }
+
+  public Map<String, String> getConnectorsEnvVars() {
+    return connectorsEnvVars;
   }
 
   public List<Integer> getZeebeExposedPorts() {
@@ -242,6 +312,10 @@ public class CamundaContainerRuntimeBuilder {
     return tasklistExposedPorts;
   }
 
+  public List<Integer> getConnectorsExposedPorts() {
+    return connectorsExposedPorts;
+  }
+
   public String getZeebeLoggerName() {
     return zeebeLoggerName;
   }
@@ -256,5 +330,17 @@ public class CamundaContainerRuntimeBuilder {
 
   public String getTasklistLoggerName() {
     return tasklistLoggerName;
+  }
+
+  public String getConnectorsLoggerName() {
+    return connectorsLoggerName;
+  }
+
+  public boolean isConnectorsEnabled() {
+    return connectorsEnabled;
+  }
+
+  public Map<String, String> getConnectorsSecrets() {
+    return connectorsSecrets;
   }
 }

@@ -17,8 +17,6 @@ import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupe
 import {createInstance, groupedProcessesMock} from 'modules/testUtils';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 
-jest.mock('modules/feature-flags', () => ({IS_VERSION_TAG_ENABLED: true}));
-
 const createProcessInstance = ({
   bpmnProcessId,
   version,

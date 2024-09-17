@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter;
 
+import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -16,6 +17,7 @@ import io.camunda.exporter.clients.elasticsearch.ElasticsearchClientFactory;
 import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.exporter.store.ElasticsearchBatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
@@ -115,6 +117,7 @@ public class CamundaExporter implements Exporter {
     // TODO register all handlers here
     return ExporterBatchWriter.Builder.begin()
         .withHandler(new UserRecordValueExportHandler())
+        .withHandler(new AuthorizationRecordValueExportHandler())
         .build();
   }
 
@@ -152,7 +155,7 @@ public class CamundaExporter implements Exporter {
 
   private record ElasticsearchRecordFilter() implements RecordFilter {
     // TODO include other value types to export
-    private static final Set<ValueType> VALUE_TYPES_2_EXPORT = Set.of(USER);
+    private static final Set<ValueType> VALUE_TYPES_2_EXPORT = Set.of(USER, AUTHORIZATION);
 
     @Override
     public boolean acceptType(final RecordType recordType) {

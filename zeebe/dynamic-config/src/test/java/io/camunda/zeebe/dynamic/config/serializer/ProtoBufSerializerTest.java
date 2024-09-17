@@ -12,8 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
@@ -128,6 +131,54 @@ final class ProtoBufSerializerTest {
     // then
     final var decodedRequest = protoBufSerializer.decodeExporterEnableRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(exporterEnableRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeClusterScaleRequest() {
+    // given
+    final var clusterScaleRequest =
+        new ClusterScaleRequest(Optional.of(3), Optional.of(15), Optional.of(4), true);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeClusterScaleRequest(clusterScaleRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeClusterScaleRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(clusterScaleRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeClusterPatchRequest() {
+    // given
+    final var clusterPatchRequest =
+        new ClusterPatchRequest(
+            Set.of(MemberId.from("6"), MemberId.from("7")),
+            Set.of(MemberId.from("4"), MemberId.from("5")),
+            Optional.of(10),
+            Optional.of(4),
+            true);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeClusterPatchRequest(clusterPatchRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeClusterPatchRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(clusterPatchRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeForceRemoveBrokersRequest() {
+    // given
+    final var forceRemoveBrokersRequest =
+        new ForceRemoveBrokersRequest(Set.of(MemberId.from("6"), MemberId.from("7")), true);
+
+    // when
+    final var encodedRequest =
+        protoBufSerializer.encodeForceRemoveBrokersRequest(forceRemoveBrokersRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeForceRemoveBrokersRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(forceRemoveBrokersRequest);
   }
 
   @Test

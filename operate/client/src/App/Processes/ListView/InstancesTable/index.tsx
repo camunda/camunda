@@ -37,7 +37,6 @@ import {Operations} from 'modules/components/Operations';
 import {BatchModificationFooter} from './BatchModificationFooter';
 import {useEffect} from 'react';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
-import {IS_VERSION_TAG_ENABLED} from 'modules/feature-flags';
 
 const ROW_HEIGHT = 34;
 
@@ -334,7 +333,7 @@ const InstancesTable: React.FC = observer(() => {
             header: 'Version',
             key: 'processVersion',
           },
-          ...(IS_VERSION_TAG_ENABLED && hasVersionTags
+          ...(hasVersionTags
             ? [
                 {
                   header: 'Version Tag',

@@ -16,16 +16,12 @@ import io.camunda.operate.opensearch.ExtendedOpenSearchClient;
 import io.camunda.operate.property.OpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.SslProperties;
-import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
-import io.camunda.zeebe.util.ReflectUtil;
-import io.camunda.zeebe.util.jar.ExternalJarClassLoader;
-import io.camunda.zeebe.util.jar.ThreadContextUtil;
+import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -47,6 +43,7 @@ import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.HttpRequestInterceptor;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.util.Timeout;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
@@ -83,6 +80,8 @@ public class OpensearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchConnector.class);
 
+  private PluginRepository osClientRepository = new PluginRepository();
+  private PluginRepository zeebeOsClientRepository = new PluginRepository();
   private final OperateProperties operateProperties;
 
   private final ObjectMapper objectMapper;
@@ -94,10 +93,20 @@ public class OpensearchConnector {
     this.objectMapper = objectMapper;
   }
 
+  public void setOsClientRepository(final PluginRepository osClientRepository) {
+    this.osClientRepository = osClientRepository;
+  }
+
+  public void setZeebeOsClientRepository(final PluginRepository zeebeOsClientRepository) {
+    this.zeebeOsClientRepository = zeebeOsClientRepository;
+  }
+
   @Bean
   @Primary
   public OpenSearchClient openSearchClient() {
-    final OpenSearchClient openSearchClient = createOsClient(operateProperties.getOpensearch());
+    osClientRepository.load(operateProperties.getOpensearch().getInterceptorPlugins());
+    final OpenSearchClient openSearchClient =
+        createOsClient(operateProperties.getOpensearch(), osClientRepository);
     try {
       final HealthResponse response = openSearchClient.cluster().health();
       LOGGER.info("OpenSearch cluster health: {}", response.status());
@@ -109,8 +118,9 @@ public class OpensearchConnector {
 
   @Bean
   public OpenSearchAsyncClient openSearchAsyncClient() {
+    osClientRepository.load(operateProperties.getOpensearch().getInterceptorPlugins());
     final OpenSearchAsyncClient openSearchClient =
-        createAsyncOsClient(operateProperties.getOpensearch());
+        createAsyncOsClient(operateProperties.getOpensearch(), osClientRepository);
     final CompletableFuture<HealthResponse> healthResponse;
     try {
       healthResponse = openSearchClient.cluster().health();
@@ -131,10 +141,12 @@ public class OpensearchConnector {
   @Bean("zeebeOpensearchClient")
   public OpenSearchClient zeebeOpensearchClient() {
     System.setProperty("es.set.netty.runtime.available.processors", "false");
-    return createOsClient(operateProperties.getZeebeOpensearch());
+    zeebeOsClientRepository.load(operateProperties.getZeebeOpensearch().getInterceptorPlugins());
+    return createOsClient(operateProperties.getZeebeOpensearch(), zeebeOsClientRepository);
   }
 
-  public OpenSearchAsyncClient createAsyncOsClient(final OpensearchProperties osConfig) {
+  public OpenSearchAsyncClient createAsyncOsClient(
+      final OpensearchProperties osConfig, final PluginRepository osClientRepository) {
     LOGGER.debug("Creating Async OpenSearch connection...");
     LOGGER.debug("Creating OpenSearch connection...");
     if (hasAwsCredentials()) {
@@ -146,7 +158,8 @@ public class OpensearchConnector {
 
     builder.setHttpClientConfigCallback(
         httpClientBuilder -> {
-          configureHttpClient(httpClientBuilder, osConfig);
+          configureHttpClient(
+              httpClientBuilder, osConfig, osClientRepository.asRequestInterceptor());
           return httpClientBuilder;
         });
 
@@ -202,7 +215,8 @@ public class OpensearchConnector {
     }
   }
 
-  public OpenSearchClient createOsClient(final OpensearchProperties osConfig) {
+  public OpenSearchClient createOsClient(
+      final OpensearchProperties osConfig, final PluginRepository osClientRepository) {
     LOGGER.debug("Creating OpenSearch connection...");
     if (hasAwsCredentials()) {
       return getAwsClient(osConfig);
@@ -213,7 +227,8 @@ public class OpensearchConnector {
 
     builder.setHttpClientConfigCallback(
         httpClientBuilder -> {
-          configureHttpClient(httpClientBuilder, osConfig);
+          configureHttpClient(
+              httpClientBuilder, osConfig, osClientRepository.asRequestInterceptor());
           return httpClientBuilder;
         });
 
@@ -380,57 +395,20 @@ public class OpensearchConnector {
   }
 
   protected HttpAsyncClientBuilder configureHttpClient(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder, final OpensearchProperties osConfig) {
+      final HttpAsyncClientBuilder httpAsyncClientBuilder,
+      final OpensearchProperties osConfig,
+      final HttpRequestInterceptor... requestInterceptors) {
     setupAuthentication(httpAsyncClientBuilder, osConfig);
 
     LOGGER.trace("Attempt to load interceptor plugins");
-    if (osConfig.getInterceptorPlugins() != null) {
-      loadInterceptorPlugins(httpAsyncClientBuilder, osConfig);
+    for (final HttpRequestInterceptor interceptor : requestInterceptors) {
+      httpAsyncClientBuilder.addRequestInterceptorLast(interceptor);
     }
 
     if (osConfig.getSsl() != null) {
       setupSSLContext(httpAsyncClientBuilder, osConfig.getSsl());
     }
     return httpAsyncClientBuilder;
-  }
-
-  private void loadInterceptorPlugins(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder, final OpensearchProperties osConfig) {
-    LOGGER.trace("Plugins detected to be not empty {}", osConfig.getInterceptorPlugins());
-
-    final var interceptors = osConfig.getInterceptorPlugins();
-    interceptors.forEach(
-        (id, interceptor) -> {
-          LOGGER.trace("Attempting to register {}", interceptor.getId());
-          try {
-            // WARNING! Due to the nature of interceptors, by the moment they (interceptors)
-            // are executed, the below class loader will close the JAR file hence
-            // to avoid NoClassDefFoundError we must not close this class loader.
-            final var classLoader =
-                ExternalJarClassLoader.ofPath(Paths.get(interceptor.getJarPath()));
-
-            final var pluginClass = classLoader.loadClass(interceptor.getClassName());
-            final var plugin = ReflectUtil.newInstance(pluginClass);
-
-            if (plugin instanceof final DatabaseCustomHeaderSupplier dchs) {
-              LOGGER.trace(
-                  "Plugin {} appears to be a DB Header Provider. Registering with interceptor",
-                  interceptor.getId());
-              httpAsyncClientBuilder.addRequestInterceptorLast(
-                  (httpRequest, entityDetails, httpContext) -> {
-                    final var customHeader =
-                        ThreadContextUtil.supplyWithClassLoader(
-                            dchs::getSearchDatabaseCustomHeader, classLoader);
-                    httpRequest.addHeader(customHeader.key(), customHeader.value());
-                  });
-            } else {
-              throw new RuntimeException(
-                  "Unknown type of interceptor plugin or wrong class specified");
-            }
-          } catch (final Exception e) {
-            throw new RuntimeException("Failed to load interceptor plugin due to exception", e);
-          }
-        });
   }
 
   private RequestConfig.Builder setTimeouts(

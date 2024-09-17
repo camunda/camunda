@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {runAllEffects} from 'react';
+import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {DefinitionSelection, Button, BPMNDiagram, Modal} from 'components';
+import {DefinitionSelection, BPMNDiagram, Modal} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 import {track} from 'tracking';
 
@@ -75,7 +75,7 @@ it('should show a definition selection, and a list of templates', () => {
   const node = shallow(<TemplateModal {...props} />);
 
   expect(node.find(DefinitionSelection)).toExist();
-  expect(node.find('.templateContainer').find(Button).length).toBeGreaterThan(1);
+  expect(node.find('.templateContainer').find('Button').length).toBeGreaterThan(1);
 });
 
 it('should fetch and show the bpmn diagrams when definitions are selected', async () => {
@@ -121,7 +121,7 @@ it('should include the selected parameters in the link state when creating a rep
   runAllEffects();
   await flushPromises();
 
-  node.find('.templateContainer').find(Button).at(1).simulate('click');
+  node.find('.templateContainer').find('Button').at(1).simulate('click');
 
   const confirmButton = node.find(Modal.Footer).find('Button').at(1);
 
@@ -187,7 +187,7 @@ it('should show templates with descriptions', () => {
     />
   );
 
-  expect(node.find('.templateContainer').find(Button)).toHaveClassName('hasDescription');
+  expect(node.find('.templateContainer').find('Button')).toHaveClassName('hasDescription');
   expect(node.find('.description')).toExist();
 });
 

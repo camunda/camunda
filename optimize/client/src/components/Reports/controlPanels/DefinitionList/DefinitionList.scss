@@ -22,12 +22,6 @@
     &:hover,
     &.active {
       background: var(--silver-lighten-99);
-
-      > .actions {
-        .actionBtn {
-          opacity: 1;
-        }
-      }
     }
 
     h4 {
@@ -48,14 +42,6 @@
       position: absolute;
       top: 7px;
       right: 7px;
-
-      .actionBtn {
-        opacity: 0;
-
-        &.focus-visible {
-          opacity: 1;
-        }
-      }
     }
   }
 

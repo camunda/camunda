@@ -11,7 +11,7 @@ import static io.camunda.optimize.upgrade.steps.UpgradeStepType.SCHEMA_DELETE_TE
 
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import io.camunda.optimize.upgrade.es.SchemaUpgradeClient;
+import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
@@ -43,7 +43,7 @@ public class DeleteIndexTemplateIfExistsStep extends UpgradeStep {
   }
 
   @Override
-  public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
+  public void performUpgradeStep(final SchemaUpgradeClient schemaUpgradeClient) {
     final String fullTemplateName =
         schemaUpgradeClient
             .getIndexNameService()

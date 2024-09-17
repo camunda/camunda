@@ -9,13 +9,13 @@ package io.camunda.optimize.service.db.schema.index;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
+import co.elastic.clients.elasticsearch._types.mapping.Property;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import io.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class AlertIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -52,72 +52,36 @@ public abstract class AlertIndex<TBuilder> extends DefaultIndexMappingCreator<TB
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return xContentBuilder
-        .startObject(ID)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(NAME)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(LAST_MODIFIED)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-        .endObject()
-        .startObject(CREATED)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-        .endObject()
-        .startObject(OWNER)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(LAST_MODIFIER)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(REPORT_ID)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(EMAILS)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(WEBHOOK)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(THRESHOLD_OPERATOR)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(FIX_NOTIFICATION)
-        .field("type", "boolean")
-        .endObject()
-        .startObject(THRESHOLD)
-        .field("type", "double")
-        .endObject()
-        .startObject(TRIGGERED)
-        .field("type", "boolean")
-        .endObject()
-        .startObject(CHECK_INTERVAL)
-        .field("type", "nested")
-        .startObject("properties")
-        .startObject(INTERVAL_VALUE)
-        .field("type", "integer")
-        .endObject()
-        .startObject(INTERVAL_UNIT)
-        .field("type", "keyword")
-        .endObject()
-        .endObject()
-        .endObject()
-        .startObject(REMINDER_INTERVAL)
-        .field("type", "nested")
-        .startObject("properties")
-        .startObject(INTERVAL_VALUE)
-        .field("type", "integer")
-        .endObject()
-        .startObject(INTERVAL_UNIT)
-        .field("type", "keyword")
-        .endObject()
-        .endObject()
-        .endObject();
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+    return builder
+        .properties(ID, Property.of(p -> p.keyword(k -> k)))
+        .properties(NAME, Property.of(p -> p.keyword(k -> k)))
+        .properties(LAST_MODIFIED, Property.of(p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT))))
+        .properties(CREATED, Property.of(p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT))))
+        .properties(OWNER, Property.of(p -> p.keyword(k -> k)))
+        .properties(LAST_MODIFIER, Property.of(p -> p.keyword(k -> k)))
+        .properties(REPORT_ID, Property.of(p -> p.keyword(k -> k)))
+        .properties(EMAILS, Property.of(p -> p.keyword(k -> k)))
+        .properties(WEBHOOK, Property.of(p -> p.keyword(k -> k)))
+        .properties(THRESHOLD_OPERATOR, Property.of(p -> p.keyword(k -> k)))
+        .properties(FIX_NOTIFICATION, Property.of(p -> p.boolean_(k -> k)))
+        .properties(THRESHOLD, Property.of(p -> p.double_(k -> k)))
+        .properties(TRIGGERED, Property.of(p -> p.boolean_(k -> k)))
+        .properties(
+            CHECK_INTERVAL,
+            Property.of(
+                p ->
+                    p.nested(
+                        k ->
+                            k.properties(INTERVAL_VALUE, Property.of(v -> v.integer(i -> i)))
+                                .properties(INTERVAL_UNIT, Property.of(v -> v.keyword(i -> i))))))
+        .properties(
+            REMINDER_INTERVAL,
+            Property.of(
+                p ->
+                    p.nested(
+                        k ->
+                            k.properties(INTERVAL_VALUE, Property.of(v -> v.integer(i -> i)))
+                                .properties(INTERVAL_UNIT, Property.of(v -> v.keyword(i -> i))))));
   }
 }

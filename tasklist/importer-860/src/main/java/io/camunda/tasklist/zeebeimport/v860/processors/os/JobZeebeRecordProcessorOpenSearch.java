@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.slf4j.Logger;
@@ -45,6 +46,8 @@ public class JobZeebeRecordProcessorOpenSearch {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(JobZeebeRecordProcessorOpenSearch.class);
+
+  private static final Pattern EMBEDDED_FORMS_PATTERN = Pattern.compile("^camunda-forms:bpmn:.*");
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
@@ -111,7 +114,8 @@ public class JobZeebeRecordProcessorOpenSearch {
               entity.setIsFormEmbedded(false);
             },
             () -> {
-              entity.setIsFormEmbedded(true);
+              entity.setIsFormEmbedded(
+                  formKey != null && EMBEDDED_FORMS_PATTERN.matcher(formKey).matches());
               entity.setFormVersion(null);
               entity.setFormId(null);
             });

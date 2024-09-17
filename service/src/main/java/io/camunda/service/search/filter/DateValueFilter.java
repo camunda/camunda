@@ -9,7 +9,6 @@ package io.camunda.service.search.filter;
 
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
-import java.util.Objects;
 
 public final record DateValueFilter(OffsetDateTime after, OffsetDateTime before)
     implements FilterBase {
@@ -31,7 +30,6 @@ public final record DateValueFilter(OffsetDateTime after, OffsetDateTime before)
 
     @Override
     public DateValueFilter build() {
-      Objects.requireNonNullElse(after, before);
       return new DateValueFilter(after, before);
     }
   }

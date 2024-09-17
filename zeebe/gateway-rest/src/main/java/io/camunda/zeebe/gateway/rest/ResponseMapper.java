@@ -9,7 +9,9 @@ package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.document.api.DocumentLink;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceResponse;
@@ -20,19 +22,35 @@ import io.camunda.zeebe.gateway.protocol.rest.DeploymentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentProcess;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentReference.DocumentTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionResponse;
+import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
+import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionItem;
+import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceResponse;
+import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserCreateResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
+import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
+import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.util.Collections;
 import java.util.Iterator;
@@ -100,15 +118,24 @@ public final class ResponseMapper {
                     .map(Object::toString)
                     .orElse(null))
             .fileName(internalMetadata.fileName())
+            .size(internalMetadata.size())
             .contentType(internalMetadata.contentType());
     Optional.ofNullable(internalMetadata.additionalProperties())
         .ifPresent(map -> map.forEach(externalMetadata::putAdditionalProperty));
     final var reference =
         new DocumentReference()
+            .documentType(DocumentTypeEnum.CAMUNDA)
             .documentId(response.documentId())
             .storeId(response.storeId())
             .metadata(externalMetadata);
     return new ResponseEntity<>(reference, HttpStatus.CREATED);
+  }
+
+  public static ResponseEntity<Object> toDocumentLinkResponse(final DocumentLink documentLink) {
+    final var externalDocumentLink = new io.camunda.zeebe.gateway.protocol.rest.DocumentLink();
+    externalDocumentLink.setExpiresAt(documentLink.expiresAt().toString());
+    externalDocumentLink.setUrl(documentLink.link());
+    return new ResponseEntity<>(externalDocumentLink, HttpStatus.OK);
   }
 
   public static ResponseEntity<Object> toDeployResourceResponse(
@@ -121,6 +148,16 @@ public final class ResponseMapper {
     addDeployedDecision(response, brokerResponse.decisionsMetadata());
     addDeployedDecisionRequirements(response, brokerResponse.decisionRequirementsMetadata());
     addDeployedForm(response, brokerResponse.formMetadata());
+    return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
+  public static ResponseEntity<Object> toMessagePublicationResponse(
+      final BrokerResponse<MessageRecord> brokerResponse) {
+
+    final var response =
+        new MessagePublicationResponse()
+            .key(brokerResponse.getKey())
+            .tenantId(brokerResponse.getResponse().getTenantId());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
@@ -231,6 +268,96 @@ public final class ResponseMapper {
     }
 
     return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
+  public static ResponseEntity<Object> toSignalBroadcastResponse(
+      final BrokerResponse<SignalRecord> brokerResponse) {
+    final var response =
+        new SignalBroadcastResponse()
+            .key(brokerResponse.getKey())
+            .tenantId(brokerResponse.getResponse().getTenantId());
+    return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
+  public static ResponseEntity<Object> toUserCreateResponse(final UserRecord userRecord) {
+    final var response = new UserCreateResponse().userKey(userRecord.getUserKey());
+    return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+  }
+
+  public static ResponseEntity<Object> toEvaluateDecisionResponse(
+      final BrokerResponse<DecisionEvaluationRecord> brokerResponse) {
+    final var decisionEvaluationRecord = brokerResponse.getResponse();
+    final var response =
+        new EvaluateDecisionResponse()
+            .decisionId(decisionEvaluationRecord.getDecisionId())
+            .decisionKey(decisionEvaluationRecord.getDecisionKey())
+            .decisionName(decisionEvaluationRecord.getDecisionName())
+            .decisionVersion(decisionEvaluationRecord.getDecisionVersion())
+            .decisionRequirementsId(decisionEvaluationRecord.getDecisionRequirementsId())
+            .decisionRequirementsKey(decisionEvaluationRecord.getDecisionRequirementsKey())
+            .decisionOutput(decisionEvaluationRecord.getDecisionOutput())
+            .failedDecisionId(decisionEvaluationRecord.getFailedDecisionId())
+            .failureMessage(decisionEvaluationRecord.getEvaluationFailureMessage())
+            .tenantId(decisionEvaluationRecord.getTenantId())
+            .decisionInstanceKey(brokerResponse.getKey());
+
+    buildEvaluatedDecisions(decisionEvaluationRecord, response);
+    return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
+  private static void buildEvaluatedDecisions(
+      final DecisionEvaluationRecord decisionEvaluationRecord,
+      final EvaluateDecisionResponse response) {
+    decisionEvaluationRecord.getEvaluatedDecisions().stream()
+        .map(
+            evaluatedDecision ->
+                new EvaluatedDecisionItem()
+                    .decisionKey(evaluatedDecision.getDecisionKey())
+                    .decisionId(evaluatedDecision.getDecisionId())
+                    .decisionName(evaluatedDecision.getDecisionName())
+                    .decisionVersion(evaluatedDecision.getDecisionVersion())
+                    .decisionOutput(evaluatedDecision.getDecisionOutput())
+                    .tenantId(evaluatedDecision.getTenantId())
+                    .evaluatedInputs(buildEvaluatedInputs(evaluatedDecision.getEvaluatedInputs()))
+                    .matchedRules(buildMatchedRules(evaluatedDecision.getMatchedRules())))
+        .forEach(response::addEvaluatedDecisionsItem);
+  }
+
+  private static List<MatchedDecisionRuleItem> buildMatchedRules(
+      final List<MatchedRuleValue> matchedRuleValues) {
+    return matchedRuleValues.stream()
+        .map(
+            matchedRuleValue ->
+                new MatchedDecisionRuleItem()
+                    .ruleId(matchedRuleValue.getRuleId())
+                    .ruleIndex(String.valueOf(matchedRuleValue.getRuleIndex()))
+                    .evaluatedOutputs(
+                        buildEvaluatedOutputs(matchedRuleValue.getEvaluatedOutputs())))
+        .toList();
+  }
+
+  private static List<EvaluatedDecisionOutputItem> buildEvaluatedOutputs(
+      final List<EvaluatedOutputValue> evaluatedOutputs) {
+    return evaluatedOutputs.stream()
+        .map(
+            evaluatedOutput ->
+                new EvaluatedDecisionOutputItem()
+                    .outputId(evaluatedOutput.getOutputId())
+                    .outputName(evaluatedOutput.getOutputName())
+                    .outputValue(evaluatedOutput.getOutputValue()))
+        .toList();
+  }
+
+  private static List<EvaluatedDecisionInputItem> buildEvaluatedInputs(
+      final List<EvaluatedInputValue> inputValues) {
+    return inputValues.stream()
+        .map(
+            evaluatedInputValue ->
+                new EvaluatedDecisionInputItem()
+                    .inputId(evaluatedInputValue.getInputId())
+                    .inputName(evaluatedInputValue.getInputName())
+                    .inputValue(evaluatedInputValue.getInputValue()))
+        .toList();
   }
 
   static class RestJobActivationResult implements JobActivationResult<JobActivationResponse> {

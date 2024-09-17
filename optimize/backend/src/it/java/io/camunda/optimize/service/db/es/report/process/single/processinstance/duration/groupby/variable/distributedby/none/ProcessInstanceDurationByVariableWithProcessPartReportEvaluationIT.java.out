@@ -13,7 +13,7 @@
 // import static io.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 // import static io.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 // import static
-// io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
+// io.camunda.optimize.service.db.report.interpreter.util.AggregateByDateUnitMapper.mapToChronoUnit;
 // import static io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 // import static io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 // import static

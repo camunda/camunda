@@ -62,6 +62,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.tasks.RawTaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,7 +108,7 @@ public abstract class ElasticsearchUtil {
           esClient.submitReindexTask(reindexRequest, RequestOptions.DEFAULT).getTask();
       LOGGER.debug("Reindexing started for index {}. Task id: {}", sourceIndexName, taskId);
       reindexFuture.complete(taskId);
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       reindexFuture.completeExceptionally(ex);
     }
     return reindexFuture.thenCompose(
@@ -148,7 +149,7 @@ public abstract class ElasticsearchUtil {
       final String taskId = (String) bodyMap.get("task");
       LOGGER.debug("Deletion started for index {}. Task id {}", sourceIndexName, taskId);
       deleteRequestFuture.complete(taskId);
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       deleteRequestFuture.completeExceptionally(ex);
     }
     return deleteRequestFuture.thenCompose(
@@ -156,11 +157,11 @@ public abstract class ElasticsearchUtil {
   }
 
   private static CompletableFuture<Long> checkTaskResult(
-      ThreadPoolTaskScheduler executor,
-      String taskId,
-      String sourceIndexName,
-      String operation,
-      RestHighLevelClient esClient) {
+      final ThreadPoolTaskScheduler executor,
+      final String taskId,
+      final String sourceIndexName,
+      final String operation,
+      final RestHighLevelClient esClient) {
 
     final CompletableFuture<Long> checkTaskResult = new CompletableFuture<>();
 
@@ -191,7 +192,7 @@ public abstract class ElasticsearchUtil {
                 executor.schedule(
                     this, Date.from(Instant.now().plusMillis(idleStrategy.idleTime())));
               }
-            } catch (Exception e) {
+            } catch (final Exception e) {
               checkTaskResult.completeExceptionally(e);
             }
           }
@@ -201,7 +202,7 @@ public abstract class ElasticsearchUtil {
   }
 
   private static long getTotalAffectedFromTask(
-      String sourceIndexName, String operation, RawTaskStatus status) {
+      final String sourceIndexName, final String operation, final RawTaskStatus status) {
     // parse and check task status
     final Map<String, Object> statusMap = status.toMap();
     final long total = (Integer) statusMap.get("total");
@@ -220,19 +221,20 @@ public abstract class ElasticsearchUtil {
     return total;
   }
 
-  public static SearchRequest createSearchRequest(TemplateDescriptor template) {
+  public static SearchRequest createSearchRequest(final TemplateDescriptor template) {
     return createSearchRequest(template, QueryType.ALL);
   }
 
   /* CREATE QUERIES */
 
   public static SearchRequest createSearchRequest(
-      TemplateDescriptor template, QueryType queryType) {
+      final TemplateDescriptor template, final QueryType queryType) {
     final SearchRequest searchRequest = new SearchRequest(whereToSearch(template, queryType));
     return searchRequest;
   }
 
-  private static String whereToSearch(TemplateDescriptor template, QueryType queryType) {
+  private static String whereToSearch(
+      final TemplateDescriptor template, final QueryType queryType) {
     switch (queryType) {
       case ONLY_RUNTIME:
         return template.getFullQualifiedName();
@@ -243,9 +245,9 @@ public abstract class ElasticsearchUtil {
   }
 
   public static QueryBuilder joinWithOr(
-      BoolQueryBuilder boolQueryBuilder, QueryBuilder... queries) {
+      final BoolQueryBuilder boolQueryBuilder, final QueryBuilder... queries) {
     final List<QueryBuilder> notNullQueries = throwAwayNullElements(queries);
-    for (QueryBuilder query : notNullQueries) {
+    for (final QueryBuilder query : notNullQueries) {
       boolQueryBuilder.should(query);
     }
     return boolQueryBuilder;
@@ -259,7 +261,7 @@ public abstract class ElasticsearchUtil {
    * @param queries
    * @return
    */
-  public static QueryBuilder joinWithOr(QueryBuilder... queries) {
+  public static QueryBuilder joinWithOr(final QueryBuilder... queries) {
     final List<QueryBuilder> notNullQueries = throwAwayNullElements(queries);
     switch (notNullQueries.size()) {
       case 0:
@@ -268,14 +270,14 @@ public abstract class ElasticsearchUtil {
         return notNullQueries.get(0);
       default:
         final BoolQueryBuilder boolQ = boolQuery();
-        for (QueryBuilder query : notNullQueries) {
+        for (final QueryBuilder query : notNullQueries) {
           boolQ.should(query);
         }
         return boolQ;
     }
   }
 
-  public static QueryBuilder joinWithOr(Collection<QueryBuilder> queries) {
+  public static QueryBuilder joinWithOr(final Collection<QueryBuilder> queries) {
     return joinWithOr(queries.toArray(new QueryBuilder[queries.size()]));
   }
 
@@ -287,7 +289,7 @@ public abstract class ElasticsearchUtil {
    * @param queries
    * @return
    */
-  public static QueryBuilder joinWithAnd(QueryBuilder... queries) {
+  public static QueryBuilder joinWithAnd(final QueryBuilder... queries) {
     final List<QueryBuilder> notNullQueries = throwAwayNullElements(queries);
     switch (notNullQueries.size()) {
       case 0:
@@ -296,7 +298,7 @@ public abstract class ElasticsearchUtil {
         return notNullQueries.get(0);
       default:
         final BoolQueryBuilder boolQ = boolQuery();
-        for (QueryBuilder query : notNullQueries) {
+        for (final QueryBuilder query : notNullQueries) {
           boolQ.must(query);
         }
         return boolQ;
@@ -308,7 +310,9 @@ public abstract class ElasticsearchUtil {
   }
 
   public static void processBulkRequest(
-      RestHighLevelClient esClient, BulkRequest bulkRequest, long maxBulkRequestSizeInBytes)
+      final RestHighLevelClient esClient,
+      final BulkRequest bulkRequest,
+      final long maxBulkRequestSizeInBytes)
       throws PersistenceException {
     processBulkRequest(esClient, bulkRequest, false, maxBulkRequestSizeInBytes);
   }
@@ -316,10 +320,10 @@ public abstract class ElasticsearchUtil {
   /* EXECUTE QUERY */
 
   public static void processBulkRequest(
-      RestHighLevelClient esClient,
-      BulkRequest bulkRequest,
-      boolean refreshImmediately,
-      long maxBulkRequestSizeInBytes)
+      final RestHighLevelClient esClient,
+      final BulkRequest bulkRequest,
+      final boolean refreshImmediately,
+      final long maxBulkRequestSizeInBytes)
       throws PersistenceException {
     if (bulkRequest.estimatedSizeInBytes() > maxBulkRequestSizeInBytes) {
       divideLargeBulkRequestAndProcess(
@@ -379,7 +383,7 @@ public abstract class ElasticsearchUtil {
 
   @SuppressWarnings("checkstyle:NestedIfDepth")
   private static void processLimitedBulkRequest(
-      RestHighLevelClient esClient, BulkRequest bulkRequest, boolean refreshImmediately)
+      final RestHighLevelClient esClient, BulkRequest bulkRequest, final boolean refreshImmediately)
       throws PersistenceException {
     if (bulkRequest.requests().size() > 0) {
       try {
@@ -423,7 +427,7 @@ public abstract class ElasticsearchUtil {
           }
         }
         LOGGER.debug("************* FLUSH BULK FINISH *************");
-      } catch (IOException ex) {
+      } catch (final IOException ex) {
         throw new PersistenceException(
             "Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
       }
@@ -449,35 +453,35 @@ public abstract class ElasticsearchUtil {
 
   /* MAP QUERY RESULTS */
   public static <T> List<T> mapSearchHits(
-      List<HitEntity> hits, ObjectMapper objectMapper, JavaType valueType) {
+      final List<HitEntity> hits, final ObjectMapper objectMapper, final JavaType valueType) {
     return map(hits, h -> fromSearchHit(h.getSourceAsString(), objectMapper, valueType));
   }
 
   public static <T> List<T> mapSearchHits(
-      HitEntity[] searchHits, ObjectMapper objectMapper, Class<T> clazz) {
+      final HitEntity[] searchHits, final ObjectMapper objectMapper, final Class<T> clazz) {
     return map(
         searchHits,
         (searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, clazz));
   }
 
   public static <T> List<T> mapSearchHits(
-      SearchHit[] searchHits, Function<SearchHit, T> searchHitMapper) {
+      final SearchHit[] searchHits, final Function<SearchHit, T> searchHitMapper) {
     return map(searchHits, searchHitMapper);
   }
 
   public static <T> List<T> mapSearchHits(
-      SearchHit[] searchHits, ObjectMapper objectMapper, Class<T> clazz) {
+      final SearchHit[] searchHits, final ObjectMapper objectMapper, final Class<T> clazz) {
     return map(
         searchHits,
         (searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, clazz));
   }
 
   public static <T> T fromSearchHit(
-      String searchHitString, ObjectMapper objectMapper, Class<T> clazz) {
+      final String searchHitString, final ObjectMapper objectMapper, final Class<T> clazz) {
     final T entity;
     try {
       entity = objectMapper.readValue(searchHitString, clazz);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOGGER.error(
           String.format(
               "Error while reading entity of type %s from Elasticsearch!", clazz.getName()),
@@ -491,18 +495,18 @@ public abstract class ElasticsearchUtil {
   }
 
   public static <T> List<T> mapSearchHits(
-      SearchHit[] searchHits, ObjectMapper objectMapper, JavaType valueType) {
+      final SearchHit[] searchHits, final ObjectMapper objectMapper, final JavaType valueType) {
     return map(
         searchHits,
         (searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, valueType));
   }
 
   public static <T> T fromSearchHit(
-      String searchHitString, ObjectMapper objectMapper, JavaType valueType) {
+      final String searchHitString, final ObjectMapper objectMapper, final JavaType valueType) {
     final T entity;
     try {
       entity = objectMapper.readValue(searchHitString, valueType);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOGGER.error(
           String.format(
               "Error while reading entity of type %s from Elasticsearch!", valueType.toString()),
@@ -516,34 +520,34 @@ public abstract class ElasticsearchUtil {
   }
 
   public static <T> List<T> scroll(
-      SearchRequest searchRequest,
-      Class<T> clazz,
-      ObjectMapper objectMapper,
-      RestHighLevelClient esClient)
+      final SearchRequest searchRequest,
+      final Class<T> clazz,
+      final ObjectMapper objectMapper,
+      final RestHighLevelClient esClient)
       throws IOException {
     return scroll(searchRequest, clazz, objectMapper, esClient, null, null);
   }
 
   public static <T> List<T> scroll(
-      SearchRequest searchRequest,
-      Class<T> clazz,
-      ObjectMapper objectMapper,
-      RestHighLevelClient esClient,
-      Consumer<SearchHits> searchHitsProcessor,
-      Consumer<Aggregations> aggsProcessor)
+      final SearchRequest searchRequest,
+      final Class<T> clazz,
+      final ObjectMapper objectMapper,
+      final RestHighLevelClient esClient,
+      final Consumer<SearchHits> searchHitsProcessor,
+      final Consumer<Aggregations> aggsProcessor)
       throws IOException {
     return scroll(
         searchRequest, clazz, objectMapper, esClient, null, searchHitsProcessor, aggsProcessor);
   }
 
   public static <T> List<T> scroll(
-      SearchRequest searchRequest,
-      Class<T> clazz,
-      ObjectMapper objectMapper,
-      RestHighLevelClient esClient,
-      Function<SearchHit, T> searchHitMapper,
-      Consumer<SearchHits> searchHitsProcessor,
-      Consumer<Aggregations> aggsProcessor)
+      final SearchRequest searchRequest,
+      final Class<T> clazz,
+      final ObjectMapper objectMapper,
+      final RestHighLevelClient esClient,
+      final Function<SearchHit, T> searchHitMapper,
+      final Consumer<SearchHits> searchHitsProcessor,
+      final Consumer<Aggregations> aggsProcessor)
       throws IOException {
 
     searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
@@ -585,18 +589,18 @@ public abstract class ElasticsearchUtil {
   }
 
   public static void scroll(
-      SearchRequest searchRequest,
-      Consumer<SearchHits> searchHitsProcessor,
-      RestHighLevelClient esClient)
+      final SearchRequest searchRequest,
+      final Consumer<SearchHits> searchHitsProcessor,
+      final RestHighLevelClient esClient)
       throws IOException {
     scroll(searchRequest, searchHitsProcessor, esClient, SCROLL_KEEP_ALIVE_MS);
   }
 
   public static void scroll(
-      SearchRequest searchRequest,
-      Consumer<SearchHits> searchHitsProcessor,
-      RestHighLevelClient esClient,
-      long scrollKeepAlive)
+      final SearchRequest searchRequest,
+      final Consumer<SearchHits> searchHitsProcessor,
+      final RestHighLevelClient esClient,
+      final long scrollKeepAlive)
       throws IOException {
     final var scrollKeepAliveTimeValue = TimeValue.timeValueMillis(scrollKeepAlive);
 
@@ -626,19 +630,19 @@ public abstract class ElasticsearchUtil {
   }
 
   public static void scrollWith(
-      SearchRequest searchRequest,
-      RestHighLevelClient esClient,
-      Consumer<SearchHits> searchHitsProcessor)
+      final SearchRequest searchRequest,
+      final RestHighLevelClient esClient,
+      final Consumer<SearchHits> searchHitsProcessor)
       throws IOException {
     scrollWith(searchRequest, esClient, searchHitsProcessor, null, null);
   }
 
   public static void scrollWith(
-      SearchRequest searchRequest,
-      RestHighLevelClient esClient,
-      Consumer<SearchHits> searchHitsProcessor,
-      Consumer<Aggregations> aggsProcessor,
-      Consumer<SearchHits> firstResponseConsumer)
+      final SearchRequest searchRequest,
+      final RestHighLevelClient esClient,
+      final Consumer<SearchHits> searchHitsProcessor,
+      final Consumer<Aggregations> aggsProcessor,
+      final Consumer<SearchHits> firstResponseConsumer)
       throws IOException {
 
     searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
@@ -673,21 +677,21 @@ public abstract class ElasticsearchUtil {
     clearScroll(scrollId, esClient);
   }
 
-  public static void clearScroll(String scrollId, RestHighLevelClient esClient) {
+  public static void clearScroll(final String scrollId, final RestHighLevelClient esClient) {
     if (scrollId != null) {
       // clear the scroll
       final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
       clearScrollRequest.addScrollId(scrollId);
       try {
         esClient.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOGGER.warn("Error occurred when clearing the scroll with id [{}]", scrollId);
       }
     }
   }
 
-  public static List<Long> scrollKeysToList(SearchRequest request, RestHighLevelClient esClient)
-      throws IOException {
+  public static List<Long> scrollKeysToList(
+      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
     final List<Long> result = new ArrayList<>();
 
     final Consumer<SearchHits> collectIds =
@@ -700,7 +704,8 @@ public abstract class ElasticsearchUtil {
   }
 
   public static <T> List<T> scrollFieldToList(
-      SearchRequest request, String fieldName, RestHighLevelClient esClient) throws IOException {
+      final SearchRequest request, final String fieldName, final RestHighLevelClient esClient)
+      throws IOException {
     final List<T> result = new ArrayList<>();
     final Function<SearchHit, T> searchHitFieldToString =
         (searchHit) -> (T) searchHit.getSourceAsMap().get(fieldName);
@@ -714,8 +719,8 @@ public abstract class ElasticsearchUtil {
     return result;
   }
 
-  public static Set<String> scrollIdsToSet(SearchRequest request, RestHighLevelClient esClient)
-      throws IOException {
+  public static Set<String> scrollIdsToSet(
+      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
     final Set<String> result = new HashSet<>();
 
     final Consumer<SearchHits> collectIds =
@@ -727,7 +732,7 @@ public abstract class ElasticsearchUtil {
   }
 
   public static Map<String, String> getIndexNames(
-      String aliasName, Collection<String> ids, RestHighLevelClient esClient) {
+      final String aliasName, final Collection<String> ids, final RestHighLevelClient esClient) {
 
     final Map<String, String> indexNames = new HashMap<>();
 
@@ -753,14 +758,16 @@ public abstract class ElasticsearchUtil {
                               return hit.getIndex();
                             })));
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(e.getMessage(), e);
     }
     return indexNames;
   }
 
   public static Map<String, String> getIndexNames(
-      AbstractTemplateDescriptor template, Collection<String> ids, RestHighLevelClient esClient) {
+      final AbstractTemplateDescriptor template,
+      final Collection<String> ids,
+      final RestHighLevelClient esClient) {
 
     final Map<String, String> indexNames = new HashMap<>();
 
@@ -786,14 +793,16 @@ public abstract class ElasticsearchUtil {
                               return hit.getIndex();
                             })));
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(e.getMessage(), e);
     }
     return indexNames;
   }
 
   public static Map<String, List<String>> getIndexNamesAsList(
-      AbstractTemplateDescriptor template, Collection<String> ids, RestHighLevelClient esClient) {
+      final AbstractTemplateDescriptor template,
+      final Collection<String> ids,
+      final RestHighLevelClient esClient) {
 
     final Map<String, List<String>> indexNames = new ConcurrentHashMap<>();
 
@@ -823,17 +832,25 @@ public abstract class ElasticsearchUtil {
                               return v1;
                             }));
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(e.getMessage(), e);
     }
     return indexNames;
   }
 
-  public static RequestOptions requestOptionsFor(int maxSizeInBytes) {
+  public static RequestOptions requestOptionsFor(final int maxSizeInBytes) {
     final RequestOptions.Builder options = RequestOptions.DEFAULT.toBuilder();
     options.setHttpAsyncResponseConsumerFactory(
         new HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory(maxSizeInBytes));
     return options.build();
+  }
+
+  public static SortOrder reverseOrder(final SortOrder sortOrder) {
+    if (sortOrder.equals(SortOrder.ASC)) {
+      return SortOrder.DESC;
+    } else {
+      return SortOrder.ASC;
+    }
   }
 
   private static final class DelegatingActionListener<Response>
@@ -845,16 +862,16 @@ public abstract class ElasticsearchUtil {
     private DelegatingActionListener(
         final CompletableFuture<Response> future, final Executor executor) {
       this.future = future;
-      this.executorDelegate = executor;
+      executorDelegate = executor;
     }
 
     @Override
-    public void onResponse(Response response) {
+    public void onResponse(final Response response) {
       executorDelegate.execute(() -> future.complete(response));
     }
 
     @Override
-    public void onFailure(Exception e) {
+    public void onFailure(final Exception e) {
       executorDelegate.execute(() -> future.completeExceptionally(e));
     }
   }

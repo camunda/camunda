@@ -14,6 +14,11 @@ import static io.camunda.optimize.service.util.SnapshotUtil.getAllWildcardedSnap
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch.snapshot.GetRepositoryRequest;
+import co.elastic.clients.elasticsearch.snapshot.GetSnapshotRequest;
+import co.elastic.clients.elasticsearch.snapshot.GetSnapshotResponse;
+import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.reader.BackupReader;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
@@ -25,18 +30,13 @@ import io.camunda.optimize.service.util.SnapshotUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesRequest;
-import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsRequest;
-import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
-import org.elasticsearch.snapshots.SnapshotInfo;
-import org.elasticsearch.transport.TransportException;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -58,12 +58,12 @@ public class BackupReaderES implements BackupReader {
       log.error(reason);
       throw new OptimizeConfigurationException(reason);
     } else {
-      final GetRepositoriesRequest getRepositoriesRequest =
-          new GetRepositoriesRequest().repositories(new String[] {repositoryName});
+      final GetRepositoryRequest getRepositoriesRequest =
+          GetRepositoryRequest.of(b -> b.name(repositoryName));
       try {
         esClient.verifyRepositoryExists(getRepositoriesRequest);
-      } catch (ElasticsearchStatusException e) {
-        if (e.getDetailedMessage().contains(REPOSITORY_MISSING_EXCEPTION_TYPE)) {
+      } catch (ElasticsearchException e) {
+        if (e.error().reason().contains(REPOSITORY_MISSING_EXCEPTION_TYPE)) {
           final String reason =
               String.format("No repository with name [%s] could be found.", repositoryName);
           log.error(reason, e);
@@ -76,7 +76,7 @@ public class BackupReaderES implements BackupReader {
           log.error(reason, e);
           throw new OptimizeRuntimeException(reason, e);
         }
-      } catch (IOException | TransportException e) {
+      } catch (IOException e) {
         final String reason =
             String.format(
                 "Encountered an error connecting to Elasticsearch while retrieving repository with name [%s].",
@@ -95,9 +95,7 @@ public class BackupReaderES implements BackupReader {
           String.format(
               "A backup with ID [%s] already exists. Found snapshots: [%s]",
               backupId,
-              existingSnapshots.stream()
-                  .map(snapshotInfo -> snapshotInfo.snapshotId().toString())
-                  .collect(joining(", ")));
+              existingSnapshots.stream().map(SnapshotInfo::snapshot).collect(joining(", ")));
       log.error(reason);
       throw new OptimizeConflictException(reason);
     }
@@ -108,9 +106,7 @@ public class BackupReaderES implements BackupReader {
     return getAllOptimizeSnapshots().stream()
         .collect(
             groupingBy(
-                snapshotInfo ->
-                    SnapshotUtil.getBackupIdFromSnapshotName(
-                        snapshotInfo.snapshot().getSnapshotId().getName())));
+                snapshotInfo -> SnapshotUtil.getBackupIdFromSnapshotName(snapshotInfo.snapshot())));
   }
 
   @Override
@@ -124,13 +120,14 @@ public class BackupReaderES implements BackupReader {
   }
 
   private List<SnapshotInfo> getOptimizeSnapshots(final String[] snapshots) {
-    final GetSnapshotsRequest snapshotsStatusRequest =
-        new GetSnapshotsRequest().repository(getRepositoryName()).snapshots(snapshots);
-    GetSnapshotsResponse response;
+    final GetSnapshotRequest snapshotsStatusRequest =
+        GetSnapshotRequest.of(
+            b -> b.repository(getRepositoryName()).snapshot(Arrays.stream(snapshots).toList()));
+    GetSnapshotResponse response;
     try {
       response = esClient.getSnapshots(snapshotsStatusRequest);
-    } catch (ElasticsearchStatusException e) {
-      if (e.getDetailedMessage().contains(SNAPSHOT_MISSING_EXCEPTION_TYPE)) {
+    } catch (ElasticsearchException e) {
+      if (e.error().reason().contains(SNAPSHOT_MISSING_EXCEPTION_TYPE)) {
         // no snapshot with given backupID exists
         return Collections.emptyList();
       }
@@ -140,7 +137,7 @@ public class BackupReaderES implements BackupReader {
               String.join(", ", snapshots));
       log.error(reason);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (IOException | TransportException e) {
+    } catch (IOException e) {
       final String reason =
           String.format(
               "Encountered an error connecting to Elasticsearch while retrieving snapshots with names [%s].",
@@ -148,7 +145,7 @@ public class BackupReaderES implements BackupReader {
       log.error(reason, e);
       throw new OptimizeElasticsearchConnectionException(reason, e);
     }
-    return response.getSnapshots();
+    return response.snapshots();
   }
 
   private String getRepositoryName() {

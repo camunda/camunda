@@ -7,6 +7,8 @@
  */
 
 import styled from 'styled-components';
+import {WarningFilled as BaseWarningFilled} from '@carbon/react/icons';
+import {supportError, spacing01} from '@carbon/elements';
 import {AddVariableButton as BaseAddVariableButton} from '../Variables/Footer/AddVariableButton';
 
 const EmptyMessageContainer = styled.div`
@@ -39,10 +41,16 @@ const VariablesContainer = styled.div`
   position: relative;
 `;
 
+const WarningFilled = styled(BaseWarningFilled)`
+  fill: ${supportError};
+  margin-top: ${spacing01};
+`;
+
 export {
   Content,
   EmptyMessageContainer,
   AddVariableButton,
   Form,
   VariablesContainer,
+  WarningFilled,
 };

@@ -95,6 +95,11 @@
       <artifactId>zeebe-cluster-config</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>document-api</artifactId>
+    </dependency>
+
     <!-- rest api dependencies -->
     <dependency>
       <groupId>org.springframework</groupId>
@@ -139,6 +144,11 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-validator</groupId>
+      <artifactId>commons-validator</artifactId>
     </dependency>
 
     <dependency>

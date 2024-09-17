@@ -73,6 +73,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -2508,14 +2509,16 @@ final class JsonSerializableToJsonTest {
                     .setUsername("foobar")
                     .setName("Foo Bar")
                     .setEmail("foo@bar")
-                    .setPassword("f00b4r"),
+                    .setPassword("f00b4r")
+                    .setUserType(UserType.DEFAULT),
         """
         {
           "userKey": 1,
           "username": "foobar",
           "name": "Foo Bar",
           "email": "foo@bar",
-          "password": "f00b4r"
+          "password": "f00b4r",
+          "userType": "DEFAULT"
         }
         """
       },
@@ -2537,7 +2540,8 @@ final class JsonSerializableToJsonTest {
           "username": "foobar",
           "name": "Foo Bar",
           "email": "foo@bar",
-          "password": "f00b4r"
+          "password": "f00b4r",
+          "userType": "REGULAR"
         }
         """
       },
@@ -2625,13 +2629,12 @@ final class JsonSerializableToJsonTest {
                 new AuthorizationRecord()
                     .setAction(PermissionAction.ADD)
                     .setOwnerKey(1L)
-                    .setOwnerType(AuthorizationOwnerType.USER)
                     .setResourceType(AuthorizationResourceType.DEPLOYMENT),
         """
         {
           "action": "ADD",
           "ownerKey": 1,
-          "ownerType": "USER",
+          "ownerType": "UNSPECIFIED",
           "resourceType": "DEPLOYMENT",
           "permissions": []
         }

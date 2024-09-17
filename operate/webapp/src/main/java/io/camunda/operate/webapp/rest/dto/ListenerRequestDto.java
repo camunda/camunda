@@ -8,11 +8,15 @@
 package io.camunda.operate.webapp.rest.dto;
 
 import io.camunda.operate.schema.templates.JobTemplate;
+import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
+import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import java.util.Objects;
 import java.util.Set;
 
 public class ListenerRequestDto extends PaginatedQuery<ListenerRequestDto> {
   private String flowNodeId;
+
+  public ListenerRequestDto() {}
 
   public String getFlowNodeId() {
     return flowNodeId;
@@ -26,6 +30,22 @@ public class ListenerRequestDto extends PaginatedQuery<ListenerRequestDto> {
   @Override
   protected Set<String> getValidSortByValues() {
     return Set.of(JobTemplate.TIME);
+  }
+
+  @Override
+  public ListenerRequestDto setSearchAfterOrEqual(final SortValuesWrapper[] searchAfterOrEqual) {
+    if (searchAfterOrEqual != null) {
+      throw new InvalidRequestException("SearchAfterOrEqual is not supported.");
+    }
+    return this;
+  }
+
+  @Override
+  public ListenerRequestDto setSearchBeforeOrEqual(final SortValuesWrapper[] searchBeforeOrEqual) {
+    if (searchBeforeOrEqual != null) {
+      throw new InvalidRequestException("SearchBeforeOrEqual is not supported.");
+    }
+    return this;
   }
 
   @Override

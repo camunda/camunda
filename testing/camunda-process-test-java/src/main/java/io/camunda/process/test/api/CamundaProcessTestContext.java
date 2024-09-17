@@ -52,6 +52,11 @@ public interface CamundaProcessTestContext {
   URI getZeebeRestAddress();
 
   /**
+   * @return the URI of the connectors REST API address
+   */
+  URI getConnectorsAddress();
+
+  /**
    * The current time may differ from the system time if the time was modified using {@link
    * #increaseTime(Duration)}.
    *

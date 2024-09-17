@@ -7,112 +7,59 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
-import static io.camunda.zeebe.exporter.opensearch.utils.PluginTestUtils.createCustomHeaderInterceptorJar;
-import static io.camunda.zeebe.exporter.opensearch.utils.PluginTestUtils.createPluginFromJar;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.InterceptorPlugin;
-import io.camunda.zeebe.exporter.opensearch.utils.NoopHTTPCallback;
-import io.camunda.zeebe.exporter.opensearch.utils.TestDynamicCustomHeaderInterceptor;
-import io.camunda.zeebe.exporter.opensearch.utils.TestStaticCustomHeaderInterceptor;
-import org.apache.http.HttpHost;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpRequestWrapper;
-import org.apache.http.nio.client.HttpAsyncClient;
-import org.apache.http.protocol.BasicHttpContext;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import io.camunda.plugin.search.header.CustomHeader;
+import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
+import io.camunda.search.connect.plugin.PluginConfiguration;
+import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
+import io.camunda.zeebe.exporter.test.ExporterTestContext;
+import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import org.junit.jupiter.api.Test;
-import org.opensearch.client.RestClient;
 
-public class OpensearchExporterPluginTest {
-  private static final String HTTP_CONTEXT_REQUEST_ATTRIBUTE_ID = "http.request";
+@WireMockTest
+@AutoCloseResources
+final class OpensearchExporterPluginTest {
+  private final ProtocolFactory recordFactory = new ProtocolFactory();
+  private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
+  private final ExporterTestContext context =
+      new ExporterTestContext().setConfiguration(new ExporterTestConfiguration<>("test", config));
+  private final ExporterTestController controller = new ExporterTestController();
 
-  private OpensearchExporterConfiguration configuration;
-
-  @BeforeEach
-  void beforeEach() {
-    configuration = new OpensearchExporterConfiguration();
-    configuration.url = "localhost:9200";
-  }
+  @AutoCloseResource private final OpensearchExporter exporter = new OpensearchExporter();
 
   @Test
-  public void shouldAddStaticCustomHeader() throws Exception {
+  void shouldLoadPlugins(final WireMockRuntimeInfo wmRuntimeInfo) {
     // given
-    final InterceptorPlugin plugin =
-        createPluginFromJar(
-            createCustomHeaderInterceptorJar(TestStaticCustomHeaderInterceptor.class),
-            TestStaticCustomHeaderInterceptor.class);
-    configuration.interceptorPlugins.put("my-id", plugin);
-    final RestClient client = RestClientFactory.of(configuration);
-    final var context = new BasicHttpContext();
+    final var pluginConfig = new PluginConfiguration("test", TestPlugin.class.getName(), null);
+    final var record = recordFactory.generateRecord();
+    config.interceptorPlugins.add(pluginConfig);
+    config.url = "http://localhost:" + wmRuntimeInfo.getHttpPort();
+    exporter.configure(context);
+    exporter.open(controller);
+    WireMock.stubFor(WireMock.any(WireMock.anyUrl()).willReturn(WireMock.ok()));
 
     // when
-    getHttpClient(client)
-        .execute(
-            HttpHost.create("localhost:45678"), new HttpGet(), context, NoopHTTPCallback.INSTANCE);
+    try {
+      exporter.export(record);
+    } catch (final Exception ignored) {
+      // ignore export exception since we can't really export anywhere
+    }
 
     // then
-    assertThat(
-            ((HttpRequestWrapper) context.getAttribute(HTTP_CONTEXT_REQUEST_ATTRIBUTE_ID))
-                .getFirstHeader(TestStaticCustomHeaderInterceptor.X_CUSTOM_HEADER)
-                .getValue())
-        .isEqualTo(TestStaticCustomHeaderInterceptor.X_CUSTOM_HEADER_VALUE);
+    WireMock.verify(
+        WireMock.anyRequestedFor(WireMock.anyUrl()).withHeader("foo", WireMock.equalTo("bar")));
   }
 
-  @Test
-  public void dynamicCustomHeadersShouldChange() throws Exception {
-    // given
-    final InterceptorPlugin plugin =
-        createPluginFromJar(
-            createCustomHeaderInterceptorJar(TestDynamicCustomHeaderInterceptor.class),
-            TestDynamicCustomHeaderInterceptor.class);
-    configuration.interceptorPlugins.put("my-id", plugin);
-    final RestClient client = RestClientFactory.of(configuration);
-    final var contextRequest1 = new BasicHttpContext();
-    final var contextRequest2 = new BasicHttpContext();
+  public static final class TestPlugin implements DatabaseCustomHeaderSupplier {
 
-    // when
-    getHttpClient(client)
-        .execute(
-            HttpHost.create("localhost:45678"),
-            new HttpGet(),
-            contextRequest1,
-            NoopHTTPCallback.INSTANCE);
-    getHttpClient(client)
-        .execute(
-            HttpHost.create("localhost:45678"),
-            new HttpGet(),
-            contextRequest2,
-            NoopHTTPCallback.INSTANCE);
-
-    // then
-    final HttpRequestWrapper requestWrapper1 =
-        (HttpRequestWrapper) contextRequest1.getAttribute(HTTP_CONTEXT_REQUEST_ATTRIBUTE_ID);
-    final HttpRequestWrapper requestWrapper2 =
-        (HttpRequestWrapper) contextRequest2.getAttribute(HTTP_CONTEXT_REQUEST_ATTRIBUTE_ID);
-    assertThat(requestWrapper1.getFirstHeader(TestDynamicCustomHeaderInterceptor.X_CUSTOM_HEADER))
-        .isNotEqualTo(
-            requestWrapper2.getFirstHeader(TestDynamicCustomHeaderInterceptor.X_CUSTOM_HEADER));
-  }
-
-  @Test
-  public void shouldThrowRuntimeExceptionWhenJarIsNull() {
-    // given
-    final InterceptorPlugin plugin =
-        createPluginFromJar(
-            createCustomHeaderInterceptorJar(TestStaticCustomHeaderInterceptor.class),
-            TestStaticCustomHeaderInterceptor.class);
-    plugin.setJarPath(null);
-    configuration.interceptorPlugins.put("my-id", plugin);
-
-    // when & then
-    Assertions.assertThrows(RuntimeException.class, () -> RestClientFactory.of(configuration));
-  }
-
-  private static HttpAsyncClient getHttpClient(final RestClient client) throws Exception {
-    final var field = client.getClass().getDeclaredField("client");
-    field.setAccessible(true);
-    return (HttpAsyncClient) field.get(client);
+    @Override
+    public CustomHeader getSearchDatabaseCustomHeader() {
+      return new CustomHeader("foo", "bar");
+    }
   }
 }

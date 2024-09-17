@@ -9,28 +9,30 @@ package io.camunda.optimize.service.db.es.schema;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch._types.ScriptLanguage;
+import co.elastic.clients.elasticsearch.core.GetResponse;
+import co.elastic.clients.elasticsearch.core.UpdateRequest;
+import co.elastic.clients.elasticsearch.core.UpdateResponse;
+import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.MetadataDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeGetRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES;
 import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.MetadataIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.DocWriteResponse;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
-import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -51,25 +53,30 @@ public class ElasticSearchMetadataService
       final String newInstallationId,
       final ScriptData scriptData) {
     final MetadataDto newMetadataIfAbsent = new MetadataDto(schemaVersion, newInstallationId);
-    Script updateScript =
-        new Script(
-            ScriptType.INLINE,
-            Script.DEFAULT_SCRIPT_LANG,
-            scriptData.scriptString(),
-            scriptData.params());
     try {
-      final UpdateRequest request =
-          new UpdateRequest()
-              .index(METADATA_INDEX_NAME)
-              .id(MetadataIndex.ID)
-              .script(updateScript)
-              .upsert(objectMapper.writeValueAsString(newMetadataIfAbsent), XContentType.JSON)
-              .setRefreshPolicy(IMMEDIATE)
-              .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      final UpdateRequest<MetadataDto, ?> request =
+          OptimizeUpdateRequestBuilderES.of(
+              b ->
+                  b.optimizeIndex(esClient, METADATA_INDEX_NAME)
+                      .id(MetadataIndex.ID)
+                      .script(
+                          sb ->
+                              sb.inline(
+                                  ib ->
+                                      ib.lang(ScriptLanguage.Painless)
+                                          .source(scriptData.scriptString())
+                                          .params(
+                                              scriptData.params().entrySet().stream()
+                                                  .collect(
+                                                      Collectors.toMap(
+                                                          Map.Entry::getKey,
+                                                          e -> JsonData.of(e.getValue()))))))
+                      .upsert(newMetadataIfAbsent)
+                      .refresh(Refresh.True)
+                      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
 
-      final UpdateResponse response = esClient.update(request);
-      if (!response.getResult().equals(DocWriteResponse.Result.CREATED)
-          && !response.getResult().equals(DocWriteResponse.Result.UPDATED)) {
+      final UpdateResponse<?> response = esClient.update(request, MetadataDto.class);
+      if (!response.result().equals(Result.Created) && !response.result().equals(Result.Updated)) {
         String errorMsg =
             "Metadata information was neither created nor updated. " + ERROR_MESSAGE_REQUEST;
         log.error(errorMsg);
@@ -90,15 +97,17 @@ public class ElasticSearchMetadataService
         return Optional.empty();
       }
 
-      final GetResponse getMetadataResponse =
-          esClient.get(new GetRequest(METADATA_INDEX_NAME, MetadataIndex.ID));
-      if (!getMetadataResponse.isExists()) {
+      final GetResponse<MetadataDto> getMetadataResponse =
+          esClient.get(
+              OptimizeGetRequestBuilderES.of(
+                  b -> b.optimizeIndex(esClient, METADATA_INDEX_NAME).id(MetadataIndex.ID)),
+              MetadataDto.class);
+      if (getMetadataResponse.source() == null) {
         log.warn(
             "Optimize Metadata index exists but no metadata doc was found, thus no metadata available.");
         return Optional.empty();
       }
-      return Optional.ofNullable(
-          objectMapper.readValue(getMetadataResponse.getSourceAsString(), MetadataDto.class));
+      return Optional.of(getMetadataResponse.source());
     } catch (IOException | ElasticsearchException e) {
       log.error(ERROR_MESSAGE_READING_METADATA_DOC, e);
       throw new OptimizeRuntimeException(ERROR_MESSAGE_READING_METADATA_DOC, e);

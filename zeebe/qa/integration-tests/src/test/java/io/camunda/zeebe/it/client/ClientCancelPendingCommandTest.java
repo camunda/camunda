@@ -26,9 +26,15 @@ import org.junit.jupiter.api.Test;
 @AutoCloseResources
 @ZeebeIntegration
 final class ClientCancelPendingCommandTest {
-  @TestZeebe private static final TestStandaloneBroker ZEEBE = new TestStandaloneBroker();
+  @TestZeebe(initMethod = "initTestStandaloneBroker")
+  private static TestStandaloneBroker zeebe;
 
-  @AutoCloseResource private final ZeebeClient client = ZEEBE.newClientBuilder().build();
+  @AutoCloseResource private final ZeebeClient client = zeebe.newClientBuilder().build();
+
+  @SuppressWarnings("unused")
+  static void initTestStandaloneBroker() {
+    zeebe = new TestStandaloneBroker();
+  }
 
   @Test
   void shouldCancelCommandOnFutureCancellation() {
@@ -74,7 +80,7 @@ final class ClientCancelPendingCommandTest {
   }
 
   private void awaitStreamRegistered(final String workerName) {
-    final var actuator = JobStreamActuator.of(ZEEBE);
+    final var actuator = JobStreamActuator.of(zeebe);
     Awaitility.await("until a stream with the worker name '%s' is registered".formatted(workerName))
         .untilAsserted(
             () ->
@@ -84,7 +90,7 @@ final class ClientCancelPendingCommandTest {
   }
 
   private void awaitStreamRemoved(final String workerName) {
-    final var actuator = JobStreamActuator.of(ZEEBE);
+    final var actuator = JobStreamActuator.of(zeebe);
     Awaitility.await("until no stream with worker name '%s' is registered".formatted(workerName))
         .untilAsserted(
             () ->

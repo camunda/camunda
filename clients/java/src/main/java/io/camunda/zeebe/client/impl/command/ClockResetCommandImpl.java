@@ -44,7 +44,7 @@ public class ClockResetCommandImpl implements ClockResetCommandStep1 {
   @Override
   public ZeebeFuture<ResetClockResponse> send() {
     final HttpZeebeFuture<ResetClockResponse> result = new HttpZeebeFuture<>();
-    httpClient.post("/administration/clock/reset", "", httpRequestConfig.build(), result);
+    httpClient.post("/clock/reset", "", httpRequestConfig.build(), result);
     return result;
   }
 }

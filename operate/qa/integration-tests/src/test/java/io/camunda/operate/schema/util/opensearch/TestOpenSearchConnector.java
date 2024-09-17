@@ -13,21 +13,17 @@ import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.property.OpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.util.ObservableConnector;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
-import org.apache.hc.core5.http.EntityDetails;
-import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
-import org.apache.hc.core5.http.protocol.HttpContext;
 import org.springframework.context.annotation.Conditional;
 
 @Conditional(OpensearchCondition.class)
 public class TestOpenSearchConnector extends OpensearchConnector implements ObservableConnector {
 
-  private List<Consumer<OperateTestHttpRequest>> requestListeners = new ArrayList<>();
+  private final List<Consumer<OperateTestHttpRequest>> requestListeners = new ArrayList<>();
 
   public TestOpenSearchConnector(
       final OperateProperties operateProperties, final ObjectMapper objectMapper) {
@@ -40,13 +36,11 @@ public class TestOpenSearchConnector extends OpensearchConnector implements Obse
    */
   @Override
   protected HttpAsyncClientBuilder configureHttpClient(
-      HttpAsyncClientBuilder httpAsyncClientBuilder, OpensearchProperties elsConfig) {
+      final HttpAsyncClientBuilder httpAsyncClientBuilder,
+      final OpensearchProperties elsConfig,
+      final HttpRequestInterceptor... requestInterceptors) {
     httpAsyncClientBuilder.addRequestInterceptorFirst(
-        new HttpRequestInterceptor() {
-
-          @Override
-          public void process(HttpRequest request, EntityDetails entityDetails, HttpContext context)
-              throws IOException {
+        (request, entityDetails, context) ->
             requestListeners.forEach(
                 listener ->
                     listener.accept(
@@ -61,17 +55,17 @@ public class TestOpenSearchConnector extends OpensearchConnector implements Obse
                           public String getMethod() {
                             return request.getMethod();
                           }
-                        }));
-          }
-        });
+                        })));
     return super.configureHttpClient(httpAsyncClientBuilder, elsConfig);
   }
 
-  public void addRequestListener(Consumer<OperateTestHttpRequest> listener) {
-    this.requestListeners.add(listener);
+  @Override
+  public void addRequestListener(final Consumer<OperateTestHttpRequest> listener) {
+    requestListeners.add(listener);
   }
 
+  @Override
   public void clearRequestListeners() {
-    this.requestListeners.clear();
+    requestListeners.clear();
   }
 }

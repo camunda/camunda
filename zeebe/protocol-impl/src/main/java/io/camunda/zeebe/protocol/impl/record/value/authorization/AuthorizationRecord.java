@@ -23,7 +23,8 @@ public final class AuthorizationRecord extends UnifiedRecordValue
       new EnumProperty<>("action", PermissionAction.class);
   private final LongProperty ownerKeyProp = new LongProperty("ownerKey");
   private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
-      new EnumProperty<>("ownerType", AuthorizationOwnerType.class);
+      new EnumProperty<>(
+          "ownerType", AuthorizationOwnerType.class, AuthorizationOwnerType.UNSPECIFIED);
   private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
       new EnumProperty<>("resourceType", AuthorizationResourceType.class);
   private final ArrayProperty<Permission> permissionsProp =

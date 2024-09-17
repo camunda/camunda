@@ -23,9 +23,11 @@
     <surefire-plugin.version>3.5.0</surefire-plugin.version>
 
     <!-- database config -->
-    <elasticsearch.client.version>7.17.23</elasticsearch.client.version>
-    <opensearch.client.version>2.10.1</opensearch.client.version>
-    <awssdk.version>2.27.20</awssdk.version>
+    <elasticsearch.client.version>8.13.0</elasticsearch.client.version>
+    <elasticsearch.client.test.version>7.17.24</elasticsearch.client.test.version>
+    <opensearch.client.version>2.10.4</opensearch.client.version>
+    <awssdk.version>2.28.2</awssdk.version>
+
     <!-- The default opensearch version we are going to be testing with-->
     <opensearch.test.version>2.9.0</opensearch.test.version>
     <!--The least supported elasticsearch version we should test against-->
@@ -33,27 +35,30 @@
     <!--the ElasticSearch version of the previous Optimize version -->
     <previous.optimize.elasticsearch.version>8.12.0</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
-    <elasticsearch.log4j.version>2.23.1</elasticsearch.log4j.version>
+    <elasticsearch.log4j.version>2.24.0</elasticsearch.log4j.version>
 
+    <jetty.version>12.0.13</jetty.version>
     <jackson.version>2.17.2</jackson.version>
     <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.3.1</apache.http5-client.version>
-    <apache.http5-core.version>5.2.5</apache.http5-core.version>
+    <apache.http5-core.version>5.3</apache.http5-core.version>
     <guava.version>33.3.0-jre</guava.version>
     <spring.boot.version>3.3.3</spring.boot.version>
-    <spring.version>6.1.12</spring.version>
+    <spring.version>6.1.13</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
     <netty.version>4.1.113.Final</netty.version>
     <lombok.version>1.18.34</lombok.version>
-    <logback.version>1.5.7</logback.version>
+    <logback.version>1.5.8</logback.version>
     <slf4j.version>2.0.16</slf4j.version>
     <commons.io.version>2.16.1</commons.io.version>
 
     <version.node>v20.9.0</version.node>
     <version.yarn>v1.22.19</version.yarn>
 
+    <!-- lucene config-->
+    <lucene.version>8.11.3</lucene.version>
     <!-- testing config -->
     <mockito.version>5.13.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
@@ -107,6 +112,56 @@
         <version>${jackson.version}</version>
         <scope>import</scope>
         <type>pom</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-server</artifactId>
+        <version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http2</groupId>
+        <artifactId>jetty-http2-server</artifactId>
+        <version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-alpn-java-client</artifactId>
+        <version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-alpn-java-server</artifactId>
+        <version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-alpn-server</artifactId>
+        <version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-servlet</artifactId>
+        <version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-servlets</artifactId>
+        <version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-rewrite</artifactId>
+        <version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-util</artifactId>
+        <version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.ws.rs</groupId>
+        <artifactId>jakarta.ws.rs-api</artifactId>
+        <version>${jakarta.rs-api.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -403,7 +458,10 @@
             <skipTests>${skip.unit.tests}</skipTests>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <useModulePath>false</useModulePath>
-            <argLine>--add-opens java.base/java.util=ALL-UNNAMED</argLine>
+            <argLine>
+              --add-opens java.base/java.lang=ALL-UNNAMED
+              --add-opens java.base/java.util=ALL-UNNAMED
+            </argLine>
             <systemPropertyVariables>
               <database.type>${database.type}</database.type>
             </systemPropertyVariables>
@@ -559,7 +617,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
         <configuration>
-          <release>17</release>
+          <release>${maven.compiler.target}</release>
         </configuration>
       </plugin>
     </plugins>

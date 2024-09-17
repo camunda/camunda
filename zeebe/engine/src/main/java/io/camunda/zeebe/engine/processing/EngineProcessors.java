@@ -25,9 +25,11 @@ import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistri
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionAcknowledgeProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionContinueProcessor;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionFinishProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationEventProcessors;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
@@ -40,7 +42,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorCo
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
-import io.camunda.zeebe.engine.processing.user.UserEventProcessors;
+import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskEventProcessors;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -202,13 +204,18 @@ public final class EngineProcessors {
     UserTaskEventProcessors.addUserTaskProcessors(
         typedRecordProcessors, processingState, bpmnBehaviors, writers);
 
-    UserEventProcessors.addUserProcessors(
-        keyGenerator, typedRecordProcessors, processingState, writers, commandDistributionBehavior);
+    UserProcessors.addUserProcessors(
+        keyGenerator,
+        typedRecordProcessors,
+        processingState,
+        writers,
+        commandDistributionBehavior,
+        config);
 
     ClockProcessors.addClockProcessors(
         typedRecordProcessors, writers, keyGenerator, clock, commandDistributionBehavior);
 
-    AuthorizationEventProcessors.addAuthorizationProcessors(
+    AuthorizationProcessors.addAuthorizationProcessors(
         keyGenerator, typedRecordProcessors, processingState, writers, commandDistributionBehavior);
 
     return typedRecordProcessors;
@@ -413,12 +420,19 @@ public final class EngineProcessors {
         new CommandRedistributor(
             scheduledTaskStateFactory.get().getDistributionState(), interPartitionCommandSender));
 
-    final var commandDistributionAcknowledgeProcessor =
-        new CommandDistributionAcknowledgeProcessor(
-            commandDistributionBehavior, processingState.getDistributionState(), writers);
+    final var distributionState = processingState.getDistributionState();
     typedRecordProcessors.onCommand(
         ValueType.COMMAND_DISTRIBUTION,
         CommandDistributionIntent.ACKNOWLEDGE,
-        commandDistributionAcknowledgeProcessor);
+        new CommandDistributionAcknowledgeProcessor(
+            commandDistributionBehavior, distributionState, writers));
+    typedRecordProcessors.onCommand(
+        ValueType.COMMAND_DISTRIBUTION,
+        CommandDistributionIntent.FINISH,
+        new CommandDistributionFinishProcessor(writers, commandDistributionBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.COMMAND_DISTRIBUTION,
+        CommandDistributionIntent.CONTINUE,
+        new CommandDistributionContinueProcessor(distributionState, writers));
   }
 }

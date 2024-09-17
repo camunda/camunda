@@ -14,15 +14,18 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
+import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -33,9 +36,11 @@ public class ResourceControllerTest extends RestControllerTest {
 
   static final String RESOURCES_BASE_URL = "/v2";
   static final String DEPLOY_RESOURCES_ENDPOINT = RESOURCES_BASE_URL + "/deployments";
+  static final String DELETE_RESOURCE_ENDPOINT = RESOURCES_BASE_URL + "/resources/%s/deletion";
 
   @MockBean ResourceServices resourceServices;
-  @Captor ArgumentCaptor<DeployResourcesRequest> requestCaptor;
+  @Captor ArgumentCaptor<DeployResourcesRequest> deployRequestCaptor;
+  @Captor ArgumentCaptor<ResourceDeletionRequest> deleteRequestCaptor;
 
   @BeforeEach
   void setup() {
@@ -78,8 +83,8 @@ public class ResourceControllerTest extends RestControllerTest {
             .expectStatus()
             .isOk();
 
-    verify(resourceServices).deployResources(requestCaptor.capture());
-    final var capturedRequest = requestCaptor.getValue();
+    verify(resourceServices).deployResources(deployRequestCaptor.capture());
+    final var capturedRequest = deployRequestCaptor.getValue();
     assertThat(capturedRequest.resources()).isNotEmpty();
     assertThat(capturedRequest.resources()).size().isEqualTo(1);
 
@@ -170,8 +175,8 @@ public class ResourceControllerTest extends RestControllerTest {
             .expectStatus()
             .isOk();
 
-    verify(resourceServices).deployResources(requestCaptor.capture());
-    final var capturedRequest = requestCaptor.getValue();
+    verify(resourceServices).deployResources(deployRequestCaptor.capture());
+    final var capturedRequest = deployRequestCaptor.getValue();
     assertThat(capturedRequest.resources()).isNotEmpty();
     assertThat(capturedRequest.resources()).size().isEqualTo(3);
 
@@ -230,5 +235,118 @@ public class ResourceControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isBadRequest();
+  }
+
+  @Test
+  void shouldDeleteResource() {
+    // given
+    when(resourceServices.deleteResource(any(ResourceDeletionRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new ResourceDeletionRecord()));
+
+    final var request =
+        """
+        {
+          "operationReference": 123
+        }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(DELETE_RESOURCE_ENDPOINT.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
+    final var capturedRequest = deleteRequestCaptor.getValue();
+    assertThat(capturedRequest.resourceKey()).isEqualTo(1);
+    assertThat(capturedRequest.operationReference()).isEqualTo(123L);
+  }
+
+  @Test
+  void shouldDeleteResourceWithNoBody() {
+    // given
+    when(resourceServices.deleteResource(any(ResourceDeletionRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new ResourceDeletionRecord()));
+
+    // when/then
+    webClient
+        .post()
+        .uri(DELETE_RESOURCE_ENDPOINT.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
+    final var capturedRequest = deleteRequestCaptor.getValue();
+    assertThat(capturedRequest.resourceKey()).isEqualTo(1L);
+    assertThat(capturedRequest.operationReference()).isNull();
+  }
+
+  @Test
+  void shouldDeleteResourceWithEmptyBody() {
+    // given
+    when(resourceServices.deleteResource(any(ResourceDeletionRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new ResourceDeletionRecord()));
+
+    final var request =
+        """
+        {}""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(DELETE_RESOURCE_ENDPOINT.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
+    final var capturedRequest = deleteRequestCaptor.getValue();
+    assertThat(capturedRequest.resourceKey()).isEqualTo(1);
+    assertThat(capturedRequest.operationReference()).isNull();
+  }
+
+  @Test
+  void shouldRejectDeleteResourceWithOperationReferenceNotValid() {
+    // given
+    final var request =
+        """
+        {
+          "operationReference": -123
+        }""";
+
+    final var expectedBody =
+        """
+        {
+            "type":"about:blank",
+            "title":"INVALID_ARGUMENT",
+            "status":400,
+            "detail":"The value for operationReference is '-123' but must be > 0.",
+            "instance":"/v2/resources/1/deletion"
+         }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(DELETE_RESOURCE_ENDPOINT.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
   }
 }

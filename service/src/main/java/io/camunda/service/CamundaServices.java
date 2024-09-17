@@ -57,6 +57,10 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
     return new IncidentServices(brokerClient, searchClient, transformers, authentication);
   }
 
+  public FlowNodeInstanceServices flownodeInstanceServices() {
+    return new FlowNodeInstanceServices(brokerClient, searchClient, transformers, authentication);
+  }
+
   public UserServices userServices() {
     return new UserServices(brokerClient, searchClient, transformers, authentication);
   }
@@ -79,6 +83,14 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
 
   public ResourceServices resourceService() {
     return new ResourceServices(brokerClient, searchClient, transformers, authentication);
+  }
+
+  public ElementInstanceServices elementServices() {
+    return new ElementInstanceServices(brokerClient, searchClient, transformers, authentication);
+  }
+
+  public SignalServices signalServices() {
+    return new SignalServices(brokerClient, searchClient, transformers, authentication);
   }
 
   @Override

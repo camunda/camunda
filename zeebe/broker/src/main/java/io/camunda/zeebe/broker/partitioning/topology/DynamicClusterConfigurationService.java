@@ -146,8 +146,12 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
         rootDirectory,
         brokerStartupContext.getClusterServices().getCommunicationService(),
         brokerStartupContext.getClusterServices().getMembershipService(),
-        getDefaultClusterConfigurationGossiperConfig() // TODO: allow user specified config
-        );
+        getDefaultClusterConfigurationGossiperConfig(), // TODO: allow user specified config
+        brokerStartupContext
+            .getBrokerConfiguration()
+            .getExperimental()
+            .getFeatures()
+            .isEnablePartitionScaling());
   }
 
   private ClusterConfigurationGossiperConfig getDefaultClusterConfigurationGossiperConfig() {

@@ -215,6 +215,106 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
           .extractingListContent(objectMapper, ProcessResponse.class)
           .isEmpty();
     }
+
+    @Test
+    public void searchShouldReturnLatestVersionOfProcessWithoutForm() {
+      // given
+      final String processId1 =
+          ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess.bpmn");
+      final String processId2 =
+          ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess_v2.bpmn");
+      databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+      databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId2);
+
+      final String query = "travelSearchProcess";
+
+      // when
+      final var resultStartedByFormTrue =
+          mockMvcHelper.doRequest(
+              get(TasklistURIs.PROCESSES_URL_V1)
+                  .param("query", query)
+                  .param("isStartedByForm", "true"));
+
+      final var resultStartedByFormFalse =
+          mockMvcHelper.doRequest(
+              get(TasklistURIs.PROCESSES_URL_V1)
+                  .param("query", query)
+                  .param("isStartedByForm", "false"));
+
+      final var searchAll = mockMvcHelper.doRequest(get(TasklistURIs.PROCESSES_URL_V1));
+
+      // then
+      assertThat(resultStartedByFormTrue)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, ProcessResponse.class)
+          .isEmpty();
+
+      assertThat(resultStartedByFormFalse)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, ProcessResponse.class)
+          .extracting("id", "bpmnProcessId", "version")
+          .containsExactly(tuple(processId2, "travelSearchProcess", 2));
+
+      assertThat(searchAll)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, ProcessResponse.class)
+          .extracting("id", "bpmnProcessId", "version")
+          .contains(tuple(processId2, "travelSearchProcess", 2))
+          .doesNotContain(tuple(processId1, "travelSearchProcess", 1));
+    }
+
+    @Test
+    public void searchShouldReturnLatestVersionOfProcessWithForm() {
+      // given
+      final String processId1 =
+          ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess_v2.bpmn");
+      final String processId2 =
+          ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess.bpmn");
+      databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+      databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId2);
+
+      final String query = "travelSearchProcess";
+
+      // when
+      final var resultStartedByFormTrue =
+          mockMvcHelper.doRequest(
+              get(TasklistURIs.PROCESSES_URL_V1)
+                  .param("query", query)
+                  .param("isStartedByForm", "true"));
+
+      final var resultStartedByFormFalse =
+          mockMvcHelper.doRequest(
+              get(TasklistURIs.PROCESSES_URL_V1)
+                  .param("query", query)
+                  .param("isStartedByForm", "false"));
+
+      final var searchAll = mockMvcHelper.doRequest(get(TasklistURIs.PROCESSES_URL_V1));
+
+      // then
+      assertThat(resultStartedByFormFalse)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, ProcessResponse.class)
+          .isEmpty();
+
+      assertThat(resultStartedByFormTrue)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, ProcessResponse.class)
+          .extracting("id", "bpmnProcessId", "version")
+          .containsExactly(tuple(processId2, "travelSearchProcess", 2));
+
+      assertThat(searchAll)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, ProcessResponse.class)
+          .extracting("id", "bpmnProcessId", "version")
+          .contains(tuple(processId2, "travelSearchProcess", 2))
+          .doesNotContain(tuple(processId1, "travelSearchProcess", 1));
+    }
   }
 
   @Nested

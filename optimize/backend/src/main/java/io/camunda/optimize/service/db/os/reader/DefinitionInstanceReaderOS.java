@@ -12,7 +12,7 @@ import static io.camunda.optimize.service.db.os.externalcode.client.dsl.Aggregat
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.sourceExcluded;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.stringTerms;
-import static io.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
+import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;

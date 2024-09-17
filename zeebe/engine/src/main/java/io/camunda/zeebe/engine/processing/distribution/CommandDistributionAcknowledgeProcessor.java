@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.distribution;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
@@ -27,6 +28,7 @@ public class CommandDistributionAcknowledgeProcessor
 
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final DistributionState distributionState;
+  private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
 
@@ -36,6 +38,7 @@ public class CommandDistributionAcknowledgeProcessor
       final Writers writers) {
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.distributionState = distributionState;
+    commandWriter = writers.command();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
   }
@@ -57,19 +60,20 @@ public class CommandDistributionAcknowledgeProcessor
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.ACKNOWLEDGED, recordValue);
 
-    commandDistributionBehavior.distributeNextInQueue(distributionKey, partitionId);
+    final var queueId = distributionState.getQueueIdForDistribution(distributionKey);
+    queueId.ifPresent(
+        queue -> commandDistributionBehavior.distributeNextInQueue(queue, partitionId));
 
     if (!distributionState.hasPendingDistribution(distributionKey)) {
-      // We write an empty command here as a distribution could contain a lot of data. Because of
-      // this we could exceed the max message size. As we only need the distributionKey in the
-      // FINISHED event applier an empty record will suffice here.
-      stateWriter.appendFollowUpEvent(
-          distributionKey,
-          CommandDistributionIntent.FINISHED,
+      final var finishRecord =
           new CommandDistributionRecord()
               .setPartitionId(record.getPartitionId())
               .setValueType(recordValue.getValueType())
-              .setIntent(recordValue.getIntent()));
+              .setIntent(recordValue.getIntent());
+      queueId.ifPresent(finishRecord::setQueueId);
+
+      commandWriter.appendFollowUpCommand(
+          distributionKey, CommandDistributionIntent.FINISH, finishRecord);
     }
   }
 }

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {runLastEffect, runAllEffects} from 'react';
+import {runLastEffect, runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Modal} from 'components';
@@ -14,6 +14,12 @@ import {loadDefinitions} from 'services';
 
 import {AddDefinition} from './AddDefinition';
 import {loadTenants} from './service';
+
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn().mockReturnValue({
+    mightFail: (data, cb) => cb(data),
+  }),
+}));
 
 jest.mock('./service', () => ({
   loadTenants: jest.fn().mockReturnValue(),
@@ -34,7 +40,6 @@ jest.mock('config', () => ({
 }));
 
 const props = {
-  mightFail: (data, cb) => cb(data),
   location: {pathname: ''},
   type: 'process',
   definitions: [],

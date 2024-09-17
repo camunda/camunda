@@ -44,6 +44,7 @@ public class ClockPinCommandImpl implements ClockPinCommandStep1 {
 
   @Override
   public ClockPinCommandStep1 time(final long timestamp) {
+    ArgumentUtil.ensureNotNegative("timestamp", timestamp);
     request.setTimestamp(timestamp);
     return this;
   }
@@ -51,6 +52,7 @@ public class ClockPinCommandImpl implements ClockPinCommandStep1 {
   @Override
   public ClockPinCommandStep1 time(final Instant instant) {
     ArgumentUtil.ensureNotNull("instant", instant);
+    ArgumentUtil.ensureNotBefore("instant", instant, Instant.EPOCH);
     return time(instant.toEpochMilli());
   }
 
@@ -63,8 +65,7 @@ public class ClockPinCommandImpl implements ClockPinCommandStep1 {
   @Override
   public ZeebeFuture<PinClockResponse> send() {
     final HttpZeebeFuture<PinClockResponse> result = new HttpZeebeFuture<>();
-    httpClient.put(
-        "/administration/clock", jsonMapper.toJson(request), httpRequestConfig.build(), result);
+    httpClient.put("/clock", jsonMapper.toJson(request), httpRequestConfig.build(), result);
     return result;
   }
 }

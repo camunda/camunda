@@ -29,6 +29,7 @@ import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.STATE
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ElasticsearchUtil.reverseOrder;
 import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_PROCESS_INSTANCE_ID;
 import static java.util.stream.Collectors.groupingBy;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
@@ -310,14 +311,6 @@ public class DecisionInstanceReader extends AbstractReader
       return sortBy;
     }
     return null;
-  }
-
-  private SortOrder reverseOrder(final SortOrder sortOrder) {
-    if (sortOrder.equals(SortOrder.ASC)) {
-      return SortOrder.DESC;
-    } else {
-      return SortOrder.ASC;
-    }
   }
 
   private QueryBuilder createRequestQuery(final DecisionInstanceListQueryDto query) {

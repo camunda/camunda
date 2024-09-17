@@ -10,6 +10,7 @@ package io.camunda.search.clients.query;
 import static io.camunda.util.CollectionUtil.collectValues;
 import static io.camunda.util.CollectionUtil.withoutNull;
 
+import io.camunda.search.clients.query.SearchHasParentQuery.Builder;
 import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
 import io.camunda.util.ObjectBuilder;
 import java.util.ArrayList;
@@ -297,5 +298,18 @@ public final class SearchQueryBuilders {
 
   public static SearchQuery wildcardQuery(final String field, final String value) {
     return wildcard(q -> q.field(field).value(value)).toSearchQuery();
+  }
+
+  public static SearchHasParentQuery.Builder hasParent() {
+    return new SearchHasParentQuery.Builder();
+  }
+
+  public static SearchHasParentQuery hasParent(
+      final Function<Builder, ObjectBuilder<SearchHasParentQuery>> fn) {
+    return fn.apply(hasParent()).build();
+  }
+
+  public static SearchQuery hasParentQuery(final String parent, final SearchQuery query) {
+    return hasParent(q -> q.parentType(parent).query(query)).toSearchQuery();
   }
 }

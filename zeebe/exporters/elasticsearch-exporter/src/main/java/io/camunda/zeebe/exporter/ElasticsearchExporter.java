@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -47,6 +48,7 @@ public class ElasticsearchExporter implements Exporter {
 
   private final ElasticsearchExporterMetadata exporterMetadata =
       new ElasticsearchExporterMetadata();
+  private final PluginRepository pluginRepository = new PluginRepository();
 
   private Controller controller;
   private ElasticsearchExporterConfiguration configuration;
@@ -65,6 +67,7 @@ public class ElasticsearchExporter implements Exporter {
     log.debug("Exporter configured with {}", configuration);
 
     validate(configuration);
+    pluginRepository.load(configuration.getInterceptorPlugins());
 
     context.setFilter(new ElasticsearchRecordFilter(configuration));
     indexTemplatesCreated = false;
@@ -102,6 +105,12 @@ public class ElasticsearchExporter implements Exporter {
       client.close();
     } catch (final Exception e) {
       log.warn("Failed to close elasticsearch client", e);
+    }
+
+    try {
+      pluginRepository.close();
+    } catch (final Exception e) {
+      log.warn("Failed to close plugin repository", e);
     }
 
     log.info("Exporter closed");
@@ -183,7 +192,10 @@ public class ElasticsearchExporter implements Exporter {
 
   // TODO: remove this and instead allow client to be inject-able for testing
   protected ElasticsearchClient createClient() {
-    return new ElasticsearchClient(configuration, registry);
+    return new ElasticsearchClient(
+        configuration,
+        registry,
+        RestClientFactory.of(configuration, pluginRepository.asRequestInterceptor()));
   }
 
   private void flushAndReschedule() {

@@ -10,7 +10,7 @@
 // io.camunda.optimize.service.db.es.report.process.single.processinstance.frequency.groupby.date.distributedby.none;
 //
 // import static
-// io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
+// io.camunda.optimize.service.db.report.interpreter.util.AggregateByDateUnitMapper.mapToChronoUnit;
 // import static io.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 // import static org.assertj.core.api.Assertions.assertThat;
 //

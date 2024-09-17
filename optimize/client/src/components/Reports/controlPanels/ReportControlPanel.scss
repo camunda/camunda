@@ -18,7 +18,8 @@
     @include scrollable;
 
     // This property causes scrollbar to apear over the content and not taking additional space
-    // This feature is only supported by Chrome
+    // This feature is only supported by newer browsers
+    // (see https://developer.mozilla.org/en-US/docs/Web/CSS/overflow#browser_compatibility)
     @supports (overflow-y: overlay) {
       overflow-y: overlay;
     }
@@ -31,6 +32,12 @@
 
     .cds--accordion__content {
       padding-inline: var(--cds-layout-density-padding-inline-local);
+    }
+
+    .definitionTooltip button {
+      display: flex;
+      align-items: center;
+      gap: var(--cds-spacing-02);
     }
   }
 

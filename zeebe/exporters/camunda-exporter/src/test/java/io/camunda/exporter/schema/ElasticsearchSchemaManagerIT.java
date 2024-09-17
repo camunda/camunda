@@ -16,8 +16,8 @@ import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ElasticsearchProperties;
-import io.camunda.exporter.schema.descriptors.IndexDescriptor;
 import io.camunda.exporter.utils.TestSupport;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
@@ -190,5 +190,32 @@ public class ElasticsearchSchemaManagerIT {
 
     assertThat(updatedIndex.mappings().properties().get("foo").isText()).isTrue();
     assertThat(updatedIndex.mappings().properties().get("bar").isKeyword()).isTrue();
+  }
+
+  @Test
+  void shouldReadIndexMappingsFileCorrectly() {
+    // given
+    final var index = TestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");
+
+    final var schemaManager =
+        new ElasticsearchSchemaManager(
+            searchEngineClient, List.of(), List.of(), new ElasticsearchProperties());
+
+    // when
+    final var indexMapping = schemaManager.readIndex(index);
+
+    // then
+    assertThat(indexMapping.dynamic()).isEqualTo("strict");
+
+    assertThat(indexMapping.properties())
+        .containsExactlyInAnyOrder(
+            new IndexMappingProperty.Builder()
+                .name("hello")
+                .typeDefinition(Map.of("type", "text"))
+                .build(),
+            new IndexMappingProperty.Builder()
+                .name("world")
+                .typeDefinition(Map.of("type", "keyword"))
+                .build());
   }
 }

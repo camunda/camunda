@@ -1,3 +1,11 @@
+io:
+  camunda:
+    process:
+      test:
+        connectors-enabled: true
+        connectors-secrets:
+          CONNECTORS_URL: http://connectors:8080/actuator/health/readiness
+
 logging:
   level:
     root: info

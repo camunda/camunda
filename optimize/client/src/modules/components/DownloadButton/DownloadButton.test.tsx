@@ -85,3 +85,19 @@ it('should not display the button if the user is not authorized to export csv da
 
   expect(node.find('Button')).not.toExist();
 });
+
+it('should disable the button during downloading', () => {
+  const slowRetriever = (): Promise<Blob> =>
+    new Promise((resolve) =>
+      setTimeout(() => {
+        resolve(new Blob());
+      }, 1000)
+    );
+  const node = shallow(
+    <DownloadButton fileName="testName" {...props} retriever={slowRetriever} href={undefined} />
+  );
+
+  node.find('Button').first().simulate('click');
+
+  expect(node.find('Button').first().prop('disabled')).toBe(true);
+});

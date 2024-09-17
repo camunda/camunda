@@ -162,6 +162,7 @@ public class OpensearchProcessInstanceDaoTest {
             .setParentKey(3L)
             .setParentFlowNodeInstanceKey(4L)
             .setProcessVersion(1)
+            .setProcessVersionTag("tag-v1")
             .setBpmnProcessId("bpmnId")
             .setState("state")
             .setIncident(false)
@@ -185,6 +186,8 @@ public class OpensearchProcessInstanceDaoTest {
     verify(mockQueryWrapper, times(1))
         .term(ProcessInstance.PARENT_FLOW_NODE_INSTANCE_KEY, filter.getParentFlowNodeInstanceKey());
     verify(mockQueryWrapper, times(1)).term(ProcessInstance.VERSION, filter.getProcessVersion());
+    verify(mockQueryWrapper, times(1))
+        .term(ProcessInstance.VERSION_TAG, filter.getProcessVersionTag());
     verify(mockQueryWrapper, times(1))
         .term(ProcessInstance.BPMN_PROCESS_ID, filter.getBpmnProcessId());
     verify(mockQueryWrapper, times(1)).term(ProcessInstance.STATE, filter.getState());

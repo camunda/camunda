@@ -12,7 +12,6 @@ import static java.util.Arrays.asList;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -23,14 +22,14 @@ import org.springframework.web.client.RestTemplate;
 @Profile("identity-migration")
 public class MigrationRunner implements ApplicationRunner {
 
-  final UserServices<UserRecord> userService;
+  final UserServices userService;
 
   final AuthorizationServices<AuthorizationRecord> authorizationServices;
 
   final RestTemplate restTemplate;
 
   public MigrationRunner(
-      final UserServices<UserRecord> userService,
+      final UserServices userService,
       final AuthorizationServices<AuthorizationRecord> authorizationServices) {
     this.userService = userService;
     this.authorizationServices = authorizationServices;

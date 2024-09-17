@@ -9,43 +9,77 @@ package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationAssignRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
+import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
+import static io.camunda.zeebe.gateway.rest.validator.ElementRequestValidator.validateVariableRequest;
+import static io.camunda.zeebe.gateway.rest.validator.EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
-import static io.camunda.zeebe.gateway.rest.validator.MessageCorrelateValidator.validateMessageCorrelationRequest;
+import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessageCorrelationRequest;
+import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessagePublicationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateAuthorization;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
+import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ResourceRequestValidator.validateResourceDeletion;
+import static io.camunda.zeebe.gateway.rest.validator.SignalRequestValidator.validateSignalBroadcastRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
+import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserCreateRequest;
 
+import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
-import io.camunda.service.DocumentServices.DocumentMetadataModel;
+import io.camunda.service.DocumentServices.DocumentLinkParams;
+import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
+import io.camunda.service.MessageServices.PublicationMessageRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
+import io.camunda.service.ResourceServices.ResourceDeletionRequest;
+import io.camunda.service.UserServices.CreateUserRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
+import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
+import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceActivateInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
@@ -61,9 +95,11 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.multipart.MultipartFile;
 
 public class RequestMapper {
@@ -201,7 +237,7 @@ public class RequestMapper {
                     updateRequest.getChangeset().getTimeout())));
   }
 
-  public static Either<ProblemDetail, PatchAuthorizationRequest> toAuthorizationAssignRequest(
+  public static Either<ProblemDetail, PatchAuthorizationRequest> toAuthorizationPatchRequest(
       final long ownerKey, final AuthorizationPatchRequest authorizationPatchRequest) {
     return getResult(
         validateAuthorizationAssignRequest(authorizationPatchRequest),
@@ -242,6 +278,25 @@ public class RequestMapper {
         () -> new DocumentCreateRequest(documentId, storeId, inputStream, internalMetadata));
   }
 
+  public static Either<ProblemDetail, DocumentLinkParams> toDocumentLinkParams(
+      final DocumentLinkRequest documentLinkRequest) {
+    return getResult(
+        validateDocumentLinkParams(documentLinkRequest),
+        () -> new DocumentLinkParams(ZonedDateTime.parse(documentLinkRequest.getExpiresAt())));
+  }
+
+  public static Either<ProblemDetail, CreateUserRequest> toCreateUserRequest(
+      final UserRequest request, final PasswordEncoder passwordEncoder) {
+    return getResult(
+        validateUserCreateRequest(request),
+        () ->
+            new CreateUserRequest(
+                request.getUsername(),
+                request.getName(),
+                request.getEmail(),
+                passwordEncoder.encode(request.getPassword())));
+  }
+
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
       final Supplier<CompletableFuture<BrokerResponseT>> method,
       final Function<BrokerResponseT, ResponseEntity<Object>> result) {
@@ -267,6 +322,52 @@ public class RequestMapper {
     } catch (final IOException e) {
       return Either.left(createInternalErrorProblemDetail(e, "Failed to read resources content"));
     }
+  }
+
+  public static Either<ProblemDetail, SetVariablesRequest> toVariableRequest(
+      final SetVariableRequest variableRequest, final long elementInstanceKey) {
+    return getResult(
+        validateVariableRequest(variableRequest),
+        () ->
+            new SetVariablesRequest(
+                elementInstanceKey,
+                variableRequest.getVariables(),
+                variableRequest.getLocal(),
+                variableRequest.getOperationReference()));
+  }
+
+  public static Either<ProblemDetail, PublicationMessageRequest> toMessagePublicationRequest(
+      final MessagePublicationRequest messagePublicationRequest) {
+    return getResult(
+        validateMessagePublicationRequest(messagePublicationRequest),
+        () ->
+            new PublicationMessageRequest(
+                messagePublicationRequest.getName(),
+                messagePublicationRequest.getCorrelationKey(),
+                messagePublicationRequest.getTimeToLive(),
+                getStringOrEmpty(
+                    messagePublicationRequest, MessagePublicationRequest::getMessageId),
+                getMapOrEmpty(messagePublicationRequest, MessagePublicationRequest::getVariables),
+                getStringOrEmpty(
+                    messagePublicationRequest, MessagePublicationRequest::getTenantId)));
+  }
+
+  public static Either<ProblemDetail, ResourceDeletionRequest> toResourceDeletion(
+      final long resourceKey, final DeleteResourceRequest deleteRequest) {
+    final Long operationReference =
+        deleteRequest != null ? deleteRequest.getOperationReference() : null;
+    return getResult(
+        validateResourceDeletion(deleteRequest),
+        () -> new ResourceDeletionRequest(resourceKey, operationReference));
+  }
+
+  public static Either<ProblemDetail, BroadcastSignalRequest> toBroadcastSignalRequest(
+      final SignalBroadcastRequest request) {
+    return getResult(
+        validateSignalBroadcastRequest(request),
+        () ->
+            new BroadcastSignalRequest(
+                request.getSignalName(), request.getVariables(), request.getTenantId()));
   }
 
   public static Authentication getAuthentication() {
@@ -319,7 +420,7 @@ public class RequestMapper {
 
     if (metadata == null) {
       return new DocumentMetadataModel(
-          file.getContentType(), file.getOriginalFilename(), null, Map.of());
+          file.getContentType(), file.getOriginalFilename(), null, file.getSize(), Map.of());
     }
     final ZonedDateTime expiresAt;
     if (metadata.getExpiresAt() == null || metadata.getExpiresAt().isBlank()) {
@@ -333,7 +434,7 @@ public class RequestMapper {
         Optional.ofNullable(metadata.getContentType()).orElse(file.getContentType());
 
     return new DocumentMetadataModel(
-        contentType, fileName, expiresAt, metadata.getAdditionalProperties());
+        contentType, fileName, expiresAt, file.getSize(), metadata.getAdditionalProperties());
   }
 
   private static DeployResourcesRequest createDeployResourceRequest(
@@ -373,6 +474,87 @@ public class RequestMapper {
                                     .ProcessInstanceCreationStartInstruction()
                                 .setElementId(instruction.getElementId()))
                     .toList()));
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceCancelRequest> toCancelProcessInstance(
+      final long processInstanceKey, final CancelProcessInstanceRequest request) {
+    final Long operationReference = request != null ? request.getOperationReference() : null;
+    return getResult(
+        validateCancelProcessInstanceRequest(request),
+        () -> new ProcessInstanceCancelRequest(processInstanceKey, operationReference));
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceMigrateRequest> toMigrateProcessInstance(
+      final long processInstanceKey, final MigrateProcessInstanceRequest request) {
+    return getResult(
+        validateMigrateProcessInstanceRequest(request),
+        () ->
+            new ProcessInstanceMigrateRequest(
+                processInstanceKey,
+                request.getTargetProcessDefinitionKey(),
+                request.getMappingInstructions().stream()
+                    .map(
+                        instruction ->
+                            new ProcessInstanceMigrationMappingInstruction()
+                                .setSourceElementId(instruction.getSourceElementId())
+                                .setTargetElementId(instruction.getTargetElementId()))
+                    .toList(),
+                request.getOperationReference()));
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceModifyRequest> toModifyProcessInstance(
+      final long processInstanceKey, final ModifyProcessInstanceRequest request) {
+    return getResult(
+        validateModifyProcessInstanceRequest(request),
+        () ->
+            new ProcessInstanceModifyRequest(
+                processInstanceKey,
+                mapProcessInstanceModificationActivateInstruction(
+                    request.getActivateInstructions()),
+                request.getTerminateInstructions().stream()
+                    .map(
+                        terminateInstruction ->
+                            new ProcessInstanceModificationTerminateInstruction()
+                                .setElementInstanceKey(
+                                    terminateInstruction.getElementInstanceKey()))
+                    .toList(),
+                request.getOperationReference()));
+  }
+
+  public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
+      final EvaluateDecisionRequest request) {
+    return getResult(
+        validateEvaluateDecisionRequest(request),
+        () ->
+            new DecisionEvaluationRequest(
+                getStringOrEmpty(request, EvaluateDecisionRequest::getDecisionId),
+                getLongOrDefault(request, EvaluateDecisionRequest::getDecisionKey, -1L),
+                getMapOrEmpty(request, EvaluateDecisionRequest::getVariables),
+                getStringOrEmpty(request, EvaluateDecisionRequest::getTenantId)));
+  }
+
+  private static List<ProcessInstanceModificationActivateInstruction>
+      mapProcessInstanceModificationActivateInstruction(
+          final List<ModifyProcessInstanceActivateInstruction> instructions) {
+    return instructions.stream()
+        .map(
+            instruction -> {
+              final var mappedInstruction = new ProcessInstanceModificationActivateInstruction();
+              mappedInstruction
+                  .setElementId(instruction.getElementId())
+                  .setAncestorScopeKey(instruction.getAncestorElementInstanceKey());
+              instruction.getVariableInstructions().stream()
+                  .map(
+                      variable ->
+                          new ProcessInstanceModificationVariableInstruction()
+                              .setElementId(variable.getScopeId())
+                              .setVariables(
+                                  new UnsafeBuffer(
+                                      MsgPackConverter.convertToMsgPack(variable.getVariables()))))
+                  .forEach(mappedInstruction::addVariableInstruction);
+              return mappedInstruction;
+            })
+        .toList();
   }
 
   private static <R> Map<String, Object> getMapOrEmpty(
@@ -433,4 +615,10 @@ public class RequestMapper {
   public record CompleteJobRequest(long jobKey, Map<String, Object> variables) {}
 
   public record UpdateJobRequest(long jobKey, UpdateJobChangeset changeset) {}
+
+  public record BroadcastSignalRequest(
+      String signalName, Map<String, Object> variables, String tenantId) {}
+
+  public record DecisionEvaluationRequest(
+      String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
 }
