@@ -7,12 +7,9 @@
  */
 package io.camunda.optimize.util;
 
-import lombok.experimental.UtilityClass;
-
-@UtilityClass
 public class MarkdownUtil {
 
-  public String getMarkdownForTextReport(final String markdownText) {
+  public static String getMarkdownForTextReport(final String markdownText) {
     return "{\n"
         + "         \"configuration\":{\n"
         + "            \"text\":{\n"

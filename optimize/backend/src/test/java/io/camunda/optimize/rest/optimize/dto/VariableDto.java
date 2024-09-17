@@ -10,11 +10,9 @@ package io.camunda.optimize.rest.optimize.dto;
 import java.io.Serializable;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.experimental.Accessors;
 
 @Getter
 @Setter
-@Accessors(chain = true)
 public class VariableDto implements Serializable {
 
   private String type;

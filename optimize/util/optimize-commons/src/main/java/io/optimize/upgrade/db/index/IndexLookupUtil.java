@@ -61,9 +61,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import lombok.experimental.UtilityClass;
 
-@UtilityClass
 public class IndexLookupUtil {
 
   private static final Map<String, Function<String, IndexMappingCreator>> osIndexLookupMap =
@@ -72,7 +70,7 @@ public class IndexLookupUtil {
       createElasticsearchIndexFunctionLookupMap();
 
   public static IndexMappingCreator convertIndexForDatabase(
-      IndexMappingCreator indexToConvert, DatabaseType databaseType) {
+      final IndexMappingCreator indexToConvert, final DatabaseType databaseType) {
     if (databaseType.equals(DatabaseType.ELASTICSEARCH)) {
       if (osIndexLookupMap.containsKey(indexToConvert.getClass().getSimpleName())) {
         // If the key exists in the OS lookup map, it does not need converting in this type
@@ -107,7 +105,7 @@ public class IndexLookupUtil {
 
   private static Map<String, Function<String, IndexMappingCreator>>
       createOpensearchIndexFunctionLookupMap() {
-    Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
+    final Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
     lookupMap.put(AlertIndexES.class.getSimpleName(), index -> new AlertIndexOS());
     lookupMap.put(BusinessKeyIndexES.class.getSimpleName(), index -> new BusinessKeyIndexOS());
     lookupMap.put(CollectionIndexES.class.getSimpleName(), index -> new CollectionIndexOS());
@@ -158,7 +156,7 @@ public class IndexLookupUtil {
 
   private static Map<String, Function<String, IndexMappingCreator>>
       createElasticsearchIndexFunctionLookupMap() {
-    Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
+    final Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
     // OpenSearch -> ElasticSearch Index lookup functions
     lookupMap.put(AlertIndexOS.class.getSimpleName(), index -> new AlertIndexES());
     lookupMap.put(BusinessKeyIndexOS.class.getSimpleName(), index -> new BusinessKeyIndexES());
@@ -209,7 +207,7 @@ public class IndexLookupUtil {
   }
 
   private static String getFunctionParameter(final IndexMappingCreator index) {
-    if (index instanceof DynamicIndexable dynamicIndex) {
+    if (index instanceof final DynamicIndexable dynamicIndex) {
       return dynamicIndex.getKey();
     }
     return null;
