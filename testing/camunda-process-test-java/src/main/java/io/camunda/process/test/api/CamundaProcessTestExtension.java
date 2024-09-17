@@ -155,9 +155,7 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
 
   private CamundaDataSource createDataSource(final CamundaContainerRuntime containerRuntime) {
     final CamundaContainer camundaContainer = containerRuntime.getCamundaContainer();
-    final String camundaApiEndpoint =
-        "http://" + camundaContainer.getHost() + ":" + camundaContainer.getRestApiPort();
-    return new CamundaDataSource(camundaApiEndpoint);
+    return new CamundaDataSource(camundaContainer.getRestApiAddress().toString());
   }
 
   @Override

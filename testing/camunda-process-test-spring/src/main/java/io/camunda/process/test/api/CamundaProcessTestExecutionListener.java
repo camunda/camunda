@@ -161,9 +161,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private CamundaDataSource createDataSource(final CamundaContainerRuntime containerRuntime) {
     final CamundaContainer camundaContainer = containerRuntime.getCamundaContainer();
-    final String operateApiEndpoint =
-        "http://" + camundaContainer.getHost() + ":" + camundaContainer.getRestApiPort();
-    return new CamundaDataSource(operateApiEndpoint);
+    return new CamundaDataSource(camundaContainer.getRestApiAddress().toString());
   }
 
   @Override
