@@ -761,6 +761,91 @@ public class MigrateProcessInstanceRejectionTest {
   }
 
   @Test
+  public void shouldRejectCommandWhenElementIsMovedOutsideOfMultiInstanceBody() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .subProcess(
+                        "sub1",
+                        s ->
+                            s.multiInstance(
+                                    b ->
+                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                            .zeebeInputElement("index"))
+                                .embeddedSubProcess()
+                                .startEvent()
+                                .serviceTask("task1", t -> t.zeebeJobType("task"))
+                                .endEvent()
+                                .subProcessDone())
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .subProcess(
+                        "sub2",
+                        s ->
+                            s.multiInstance(
+                                    b ->
+                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                            .zeebeInputElement("index"))
+                                .embeddedSubProcess()
+                                .startEvent()
+                                .endEvent()
+                                .subProcessDone())
+                    .serviceTask("task2", t -> t.zeebeJobType("task"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withType("task")
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(3))
+        .describedAs("Wait until all service tasks have activated")
+        .hasSize(3);
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("sub1", "sub2")
+            .addMappingInstruction("task1", "task2")
+            .expectRejection()
+            .migrate();
+
+    // then
+    assertThat(rejection)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                """
+                Expected to migrate process instance '%s' \
+                but the flow scope of active element with id 'task1' is changed. \
+                The flow scope of the active element is expected to be 'sub2' but was '%s'. \
+                The flow scope of an element cannot be changed during migration yet.""",
+                processInstanceKey, targetProcessId))
+        .hasKey(processInstanceKey);
+  }
+
+  @Test
   public void shouldRejectCommandWhenElementFlowScopeIsChangedInTargetProcessDefinitionDeeper() {
     // given
     final var deployment =
