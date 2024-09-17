@@ -30,16 +30,6 @@ public class ContainerFactory {
     return new CamundaContainer(asDockerImageName(imageName, imageVersion));
   }
 
-  public OperateContainer createOperateContainer(
-      final String imageName, final String imageVersion) {
-    return new OperateContainer(asDockerImageName(imageName, imageVersion));
-  }
-
-  public TasklistContainer createTasklistContainer(
-      final String imageName, final String imageVersion) {
-    return new TasklistContainer(asDockerImageName(imageName, imageVersion));
-  }
-
   public ConnectorsContainer createConnectorsContainer(
       final String imageName, final String imageVersion) {
     return new ConnectorsContainer(asDockerImageName(imageName, imageVersion));

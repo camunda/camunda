@@ -27,12 +27,6 @@ public class ContainerRuntimePorts {
   // Elasticsearch
   public static final int ELASTICSEARCH_REST_API = 9200;
 
-  // Operate
-  public static final int OPERATE_REST_API = 8080;
-
-  // Tasklist
-  public static final int TASKLIST_REST_API = 8080;
-
   // Connectors
   public static final int CONNECTORS_REST_API = 8080;
 }

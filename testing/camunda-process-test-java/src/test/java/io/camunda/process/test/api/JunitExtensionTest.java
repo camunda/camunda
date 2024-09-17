@@ -22,7 +22,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
-import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -52,7 +51,6 @@ public class JunitExtensionTest {
 
   @Mock private CamundaContainerRuntime camundaContainerRuntime;
   @Mock private CamundaContainer camundaContainer;
-  @Mock private OperateContainer operateContainer;
   @Mock private ConnectorsContainer connectorsContainer;
 
   @Mock private ExtensionContext extensionContext;
@@ -69,10 +67,8 @@ public class JunitExtensionTest {
     when(camundaContainerRuntime.getCamundaContainer()).thenReturn(camundaContainer);
     when(camundaContainer.getGrpcApiAddress()).thenReturn(GRPC_API_ADDRESS);
     when(camundaContainer.getRestApiAddress()).thenReturn(REST_API_ADDRESS);
-
-    when(camundaContainerRuntime.getOperateContainer()).thenReturn(operateContainer);
-    when(operateContainer.getHost()).thenReturn("my-host");
-    when(operateContainer.getRestApiPort()).thenReturn(100);
+    when(camundaContainer.getHost()).thenReturn("my-host");
+    when(camundaContainer.getRestApiPort()).thenReturn(100);
 
     when(camundaContainerRuntime.getConnectorsContainer()).thenReturn(connectorsContainer);
 
@@ -208,8 +204,6 @@ public class JunitExtensionTest {
 
     // then
     verify(camundaContainerRuntimeBuilder).withCamundaDockerImageVersion(camundaVersion);
-    verify(camundaContainerRuntimeBuilder).withOperateDockerImageVersion(camundaVersion);
-    verify(camundaContainerRuntimeBuilder).withTasklistDockerImageVersion(camundaVersion);
     verify(camundaContainerRuntimeBuilder).withConnectorsDockerImageVersion(camundaVersion);
 
     verify(camundaContainerRuntimeBuilder).withCamundaDockerImageName(camundaDockerImageName);

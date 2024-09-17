@@ -33,31 +33,20 @@ public class CamundaContainerRuntimeBuilder {
   private String elasticsearchDockerImageVersion =
       ContainerRuntimeDefaults.ELASTICSEARCH_DOCKER_IMAGE_VERSION;
 
-  private String operateDockerImageVersion = ContainerRuntimeDefaults.OPERATE_DOCKER_IMAGE_VERSION;
-
-  private String tasklistDockerImageVersion =
-      ContainerRuntimeDefaults.TASKLIST_DOCKER_IMAGE_VERSION;
-
   private String connectorsDockerImageName = ContainerRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_NAME;
   private String connectorsDockerImageVersion =
       ContainerRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_VERSION;
 
   private final Map<String, String> camundaEnvVars = new HashMap<>();
   private final Map<String, String> elasticsearchEnvVars = new HashMap<>();
-  private final Map<String, String> operateEnvVars = new HashMap<>();
-  private final Map<String, String> tasklistEnvVars = new HashMap<>();
   private final Map<String, String> connectorsEnvVars = new HashMap<>();
 
   private final List<Integer> camundaExposedPorts = new ArrayList<>();
   private final List<Integer> elasticsearchExposedPorts = new ArrayList<>();
-  private final List<Integer> operateExposedPorts = new ArrayList<>();
-  private final List<Integer> tasklistExposedPorts = new ArrayList<>();
   private final List<Integer> connectorsExposedPorts = new ArrayList<>();
 
   private String camundaLoggerName = ContainerRuntimeDefaults.CAMUNDA_LOGGER_NAME;
   private String elasticsearchLoggerName = ContainerRuntimeDefaults.ELASTICSEARCH_LOGGER_NAME;
-  private String operateLoggerName = ContainerRuntimeDefaults.OPERATE_LOGGER_NAME;
-  private String tasklistLoggerName = ContainerRuntimeDefaults.TASKLIST_LOGGER_NAME;
   private String connectorsLoggerName = ContainerRuntimeDefaults.CONNECTORS_LOGGER_NAME;
 
   private boolean connectorsEnabled = false;
@@ -95,18 +84,6 @@ public class CamundaContainerRuntimeBuilder {
     return this;
   }
 
-  public CamundaContainerRuntimeBuilder withOperateDockerImageVersion(
-      final String dockerImageVersion) {
-    operateDockerImageVersion = dockerImageVersion;
-    return this;
-  }
-
-  public CamundaContainerRuntimeBuilder withTasklistDockerImageVersion(
-      final String dockerImageVersion) {
-    tasklistDockerImageVersion = dockerImageVersion;
-    return this;
-  }
-
   public CamundaContainerRuntimeBuilder withConnectorsDockerImageName(
       final String dockerImageName) {
     connectorsDockerImageName = dockerImageName;
@@ -140,26 +117,6 @@ public class CamundaContainerRuntimeBuilder {
     return this;
   }
 
-  public CamundaContainerRuntimeBuilder withOperateEnv(final Map<String, String> envVars) {
-    operateEnvVars.putAll(envVars);
-    return this;
-  }
-
-  public CamundaContainerRuntimeBuilder withOperateEnv(final String name, final String value) {
-    operateEnvVars.put(name, value);
-    return this;
-  }
-
-  public CamundaContainerRuntimeBuilder withTasklistEnv(final Map<String, String> envVars) {
-    tasklistEnvVars.putAll(envVars);
-    return this;
-  }
-
-  public CamundaContainerRuntimeBuilder withTasklistEnv(final String name, final String value) {
-    tasklistEnvVars.put(name, value);
-    return this;
-  }
-
   public CamundaContainerRuntimeBuilder withConnectorsEnv(final Map<String, String> envVars) {
     connectorsEnvVars.putAll(envVars);
     return this;
@@ -180,16 +137,6 @@ public class CamundaContainerRuntimeBuilder {
     return this;
   }
 
-  public CamundaContainerRuntimeBuilder withOperateExposedPort(final int port) {
-    operateExposedPorts.add(port);
-    return this;
-  }
-
-  public CamundaContainerRuntimeBuilder withTasklistExposedPort(final int port) {
-    tasklistExposedPorts.add(port);
-    return this;
-  }
-
   public CamundaContainerRuntimeBuilder withConnectorsExposedPort(final int port) {
     connectorsExposedPorts.add(port);
     return this;
@@ -202,16 +149,6 @@ public class CamundaContainerRuntimeBuilder {
 
   public CamundaContainerRuntimeBuilder withElasticsearchLogger(final String loggerName) {
     elasticsearchLoggerName = loggerName;
-    return this;
-  }
-
-  public CamundaContainerRuntimeBuilder withOperateLogger(final String loggerName) {
-    operateLoggerName = loggerName;
-    return this;
-  }
-
-  public CamundaContainerRuntimeBuilder withTasklistLogger(final String loggerName) {
-    tasklistLoggerName = loggerName;
     return this;
   }
 
@@ -260,14 +197,6 @@ public class CamundaContainerRuntimeBuilder {
     return elasticsearchDockerImageVersion;
   }
 
-  public String getOperateDockerImageVersion() {
-    return operateDockerImageVersion;
-  }
-
-  public String getTasklistDockerImageVersion() {
-    return tasklistDockerImageVersion;
-  }
-
   public String getConnectorsDockerImageName() {
     return connectorsDockerImageName;
   }
@@ -284,14 +213,6 @@ public class CamundaContainerRuntimeBuilder {
     return elasticsearchEnvVars;
   }
 
-  public Map<String, String> getOperateEnvVars() {
-    return operateEnvVars;
-  }
-
-  public Map<String, String> getTasklistEnvVars() {
-    return tasklistEnvVars;
-  }
-
   public Map<String, String> getConnectorsEnvVars() {
     return connectorsEnvVars;
   }
@@ -304,14 +225,6 @@ public class CamundaContainerRuntimeBuilder {
     return elasticsearchExposedPorts;
   }
 
-  public List<Integer> getOperateExposedPorts() {
-    return operateExposedPorts;
-  }
-
-  public List<Integer> getTasklistExposedPorts() {
-    return tasklistExposedPorts;
-  }
-
   public List<Integer> getConnectorsExposedPorts() {
     return connectorsExposedPorts;
   }
@@ -322,14 +235,6 @@ public class CamundaContainerRuntimeBuilder {
 
   public String getElasticsearchLoggerName() {
     return elasticsearchLoggerName;
-  }
-
-  public String getOperateLoggerName() {
-    return operateLoggerName;
-  }
-
-  public String getTasklistLoggerName() {
-    return tasklistLoggerName;
   }
 
   public String getConnectorsLoggerName() {

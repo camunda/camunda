@@ -23,7 +23,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
-import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
@@ -58,7 +57,6 @@ public class ExecutionListenerTest {
 
   @Mock private CamundaContainerRuntime camundaContainerRuntime;
   @Mock private CamundaContainer camundaContainer;
-  @Mock private OperateContainer operateContainer;
   @Mock private ConnectorsContainer connectorsContainer;
 
   @Mock private ZeebeClientProxy zeebeClientProxy;
@@ -82,10 +80,8 @@ public class ExecutionListenerTest {
     when(camundaContainerRuntime.getCamundaContainer()).thenReturn(camundaContainer);
     when(camundaContainer.getGrpcApiAddress()).thenReturn(GRPC_API_ADDRESS);
     when(camundaContainer.getRestApiAddress()).thenReturn(REST_API_ADDRESS);
-
-    when(camundaContainerRuntime.getOperateContainer()).thenReturn(operateContainer);
-    when(operateContainer.getHost()).thenReturn("my-host");
-    when(operateContainer.getRestApiPort()).thenReturn(100);
+    when(camundaContainer.getHost()).thenReturn("my-host");
+    when(camundaContainer.getRestApiPort()).thenReturn(100);
 
     when(camundaContainerRuntime.getConnectorsContainer()).thenReturn(connectorsContainer);
 
@@ -241,8 +237,6 @@ public class ExecutionListenerTest {
 
     // then
     verify(camundaContainerRuntimeBuilder).withCamundaDockerImageVersion("8.6.0-custom");
-    verify(camundaContainerRuntimeBuilder).withOperateDockerImageVersion("8.6.0-custom");
-    verify(camundaContainerRuntimeBuilder).withTasklistDockerImageVersion("8.6.0-custom");
     verify(camundaContainerRuntimeBuilder).withCamundaDockerImageName("custom-zeebe");
     verify(camundaContainerRuntimeBuilder).withCamundaEnv(zeebeEnvVars);
     verify(camundaContainerRuntimeBuilder).withCamundaExposedPort(100);

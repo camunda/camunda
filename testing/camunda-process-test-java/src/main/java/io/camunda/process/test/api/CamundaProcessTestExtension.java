@@ -181,8 +181,6 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   public CamundaProcessTestExtension withCamundaVersion(final String camundaVersion) {
     containerRuntimeBuilder
         .withCamundaDockerImageVersion(camundaVersion)
-        .withOperateDockerImageVersion(camundaVersion)
-        .withTasklistDockerImageVersion(camundaVersion)
         .withConnectorsDockerImageVersion(camundaVersion);
     return this;
   }

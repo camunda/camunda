@@ -17,7 +17,7 @@ package io.camunda.process.test.api;
 
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
-import io.camunda.process.test.impl.containers.OperateContainer;
+import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
@@ -126,8 +126,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     containerRuntimeBuilder
         .withCamundaDockerImageVersion(runtimeConfiguration.getCamundaVersion())
-        .withOperateDockerImageVersion(runtimeConfiguration.getCamundaVersion())
-        .withTasklistDockerImageVersion(runtimeConfiguration.getCamundaVersion())
         .withCamundaDockerImageName(runtimeConfiguration.getZeebeDockerImageName())
         .withCamundaEnv(runtimeConfiguration.getZeebeEnvVars());
 
@@ -162,9 +160,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   }
 
   private CamundaDataSource createDataSource(final CamundaContainerRuntime containerRuntime) {
-    final OperateContainer operateContainer = containerRuntime.getOperateContainer();
+    final CamundaContainer camundaContainer = containerRuntime.getCamundaContainer();
     final String operateApiEndpoint =
-        "http://" + operateContainer.getHost() + ":" + operateContainer.getRestApiPort();
+        "http://" + camundaContainer.getHost() + ":" + camundaContainer.getRestApiPort();
     return new CamundaDataSource(operateApiEndpoint);
   }
 
