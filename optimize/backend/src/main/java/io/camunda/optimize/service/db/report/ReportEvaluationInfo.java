@@ -17,13 +17,11 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter(AccessLevel.PROTECTED)
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ReportEvaluationInfo {
 
   private ReportDefinitionDto<?> report;
@@ -38,6 +36,8 @@ public class ReportEvaluationInfo {
   private boolean isJsonExport;
   private boolean isSharedReport;
   private Set<String> hiddenFlowNodeIds;
+
+  private ReportEvaluationInfo() {}
 
   public void postFetchSavedReport(final ReportService reportService) {
     if (reportId != null) {

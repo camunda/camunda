@@ -16,14 +16,12 @@ import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.util.CronNormalizerUtil;
 import java.time.Period;
 import java.util.Optional;
-import lombok.AccessLevel;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CleanupConfiguration {
+
   @JsonProperty("cronTrigger")
   private String cronTrigger;
 
@@ -53,6 +51,8 @@ public class CleanupConfiguration {
     this.processDataCleanupConfiguration = processDataCleanupConfiguration;
     this.decisionCleanupConfiguration = decisionCleanupConfiguration;
   }
+
+  protected CleanupConfiguration() {}
 
   public void validate() {
     if (ttl == null) {

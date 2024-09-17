@@ -9,9 +9,7 @@ package io.camunda.optimize.dto.optimize.rest.report;
 
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 public class AuthorizedProcessReportEvaluationResponseDto<T>
     extends AuthorizedSingleReportEvaluationResponseDto<
         T, SingleProcessReportDefinitionRequestDto> {
@@ -22,4 +20,6 @@ public class AuthorizedProcessReportEvaluationResponseDto<T>
       final SingleProcessReportDefinitionRequestDto reportDefinition) {
     super(currentUserRole, reportResult, reportDefinition);
   }
+
+  public AuthorizedProcessReportEvaluationResponseDto() {}
 }

@@ -8,15 +8,18 @@
 package io.camunda.optimize.dto.optimize.query.processoverview;
 
 import io.camunda.optimize.dto.optimize.OptimizeDto;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class ProcessOwnerResponseDto implements OptimizeDto {
 
   private String id;
   private String name;
+
+  public ProcessOwnerResponseDto(String id, String name) {
+    this.id = id;
+    this.name = name;
+  }
+
+  public ProcessOwnerResponseDto() {}
 }

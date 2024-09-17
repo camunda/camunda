@@ -9,16 +9,23 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.result.raw;
 
 import io.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 import java.time.OffsetDateTime;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class RawDataFlowNodeDataDto implements RawDataInstanceDto {
+
   private String id;
   private String name;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
+
+  public RawDataFlowNodeDataDto(
+      String id, String name, OffsetDateTime startDate, OffsetDateTime endDate) {
+    this.id = id;
+    this.name = name;
+    this.startDate = startDate;
+    this.endDate = endDate;
+  }
+
+  public RawDataFlowNodeDataDto() {}
 }

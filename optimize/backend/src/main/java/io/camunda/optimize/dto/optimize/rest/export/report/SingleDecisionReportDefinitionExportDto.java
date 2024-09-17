@@ -14,16 +14,13 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecis
 import io.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import io.camunda.optimize.service.db.schema.index.report.SingleDecisionReportIndex;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class SingleDecisionReportDefinitionExportDto extends ReportDefinitionExportDto {
+
   @NotNull private DecisionReportDataDto data;
 
   public SingleDecisionReportDefinitionExportDto(
@@ -37,6 +34,12 @@ public class SingleDecisionReportDefinitionExportDto extends ReportDefinitionExp
         reportDefinition.getCollectionId());
     this.data = reportDefinition.getData();
   }
+
+  public SingleDecisionReportDefinitionExportDto(@NotNull DecisionReportDataDto data) {
+    this.data = data;
+  }
+
+  public SingleDecisionReportDefinitionExportDto() {}
 
   @Override
   public ExportEntityType getExportEntityType() {

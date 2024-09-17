@@ -9,17 +9,18 @@ package io.camunda.optimize.dto.optimize.query.dashboard.filter.data;
 
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DashboardDateFilterDataDto implements FilterDataDto {
 
   private DateFilterDataDto<?> defaultValues;
+
+  public DashboardDateFilterDataDto(DateFilterDataDto<?> defaultValues) {
+    this.defaultValues = defaultValues;
+  }
+
+  protected DashboardDateFilterDataDto() {}
 
   public static final class Fields {
 

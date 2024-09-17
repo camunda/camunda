@@ -9,15 +9,11 @@ package io.camunda.optimize.service.util.configuration.analytics;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MixpanelConfiguration {
+
   @JsonProperty("apiHost")
   private String apiHost;
 
@@ -36,15 +32,31 @@ public class MixpanelConfiguration {
   @JsonProperty("serviceAccount")
   private ServiceAccount serviceAccount;
 
+  public MixpanelConfiguration(
+      String apiHost,
+      String importPath,
+      String token,
+      String projectId,
+      TrackingProperties properties,
+      ServiceAccount serviceAccount) {
+    this.apiHost = apiHost;
+    this.importPath = importPath;
+    this.token = token;
+    this.projectId = projectId;
+    this.properties = properties;
+    this.serviceAccount = serviceAccount;
+  }
+
+  protected MixpanelConfiguration() {}
+
   @JsonIgnore
   public String getImportUrl() {
     return this.apiHost + this.importPath;
   }
 
-  @AllArgsConstructor
   @Data
-  @NoArgsConstructor(access = AccessLevel.PROTECTED)
   public static class TrackingProperties {
+
     @JsonProperty("stage")
     private String stage;
 
@@ -53,16 +65,30 @@ public class MixpanelConfiguration {
 
     @JsonProperty("clusterId")
     private String clusterId;
+
+    public TrackingProperties(String stage, String organizationId, String clusterId) {
+      this.stage = stage;
+      this.organizationId = organizationId;
+      this.clusterId = clusterId;
+    }
+
+    protected TrackingProperties() {}
   }
 
-  @AllArgsConstructor
   @Data
-  @NoArgsConstructor(access = AccessLevel.PROTECTED)
   public static class ServiceAccount {
+
     @JsonProperty("username")
     private String username;
 
     @JsonProperty("secret")
     private String secret;
+
+    public ServiceAccount(String username, String secret) {
+      this.username = username;
+      this.secret = secret;
+    }
+
+    protected ServiceAccount() {}
   }
 }

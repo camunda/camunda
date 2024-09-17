@@ -10,14 +10,10 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.filter.data
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class DurationFilterDataDto implements FilterDataDto {
 
@@ -25,4 +21,14 @@ public class DurationFilterDataDto implements FilterDataDto {
   protected DurationUnit unit;
   protected ComparisonOperator operator;
   protected boolean includeNull;
+
+  public DurationFilterDataDto(
+      Long value, DurationUnit unit, ComparisonOperator operator, boolean includeNull) {
+    this.value = value;
+    this.unit = unit;
+    this.operator = operator;
+    this.includeNull = includeNull;
+  }
+
+  public DurationFilterDataDto() {}
 }

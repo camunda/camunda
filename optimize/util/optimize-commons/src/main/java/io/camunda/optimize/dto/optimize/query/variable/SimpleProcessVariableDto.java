@@ -8,15 +8,11 @@
 package io.camunda.optimize.dto.optimize.query.variable;
 
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class SimpleProcessVariableDto {
@@ -26,6 +22,17 @@ public class SimpleProcessVariableDto {
   private String type;
   private List<String> value;
   @EqualsAndHashCode.Include private long version;
+
+  public SimpleProcessVariableDto(
+      String id, String name, String type, List<String> value, long version) {
+    this.id = id;
+    this.name = name;
+    this.type = type;
+    this.value = value;
+    this.version = version;
+  }
+
+  public SimpleProcessVariableDto() {}
 
   public static final class Fields {
 

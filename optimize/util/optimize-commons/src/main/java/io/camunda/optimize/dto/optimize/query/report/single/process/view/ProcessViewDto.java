@@ -19,9 +19,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 @Data
 public class ProcessViewDto implements Combinable {
 
@@ -45,6 +43,8 @@ public class ProcessViewDto implements Combinable {
     this.entity = entity;
     this.properties = properties;
   }
+
+  public ProcessViewDto() {}
 
   @Override
   public boolean isCombinable(final Object o) {

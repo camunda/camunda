@@ -15,14 +15,13 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DateFormatterUtil {
 
   private static final DateTimeFormatter OPTIMIZE_FORMATTER =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+
+  private DateFormatterUtil() {}
 
   public static boolean isValidOptimizeDateFormat(final String value) {
     try {

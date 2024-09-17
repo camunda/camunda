@@ -13,18 +13,28 @@ import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class ReportResultResponseDto<T> {
+
   private long instanceCount;
   private long instanceCountWithoutFilters;
   private List<MeasureResponseDto<T>> measures = new ArrayList<>();
   private PaginationDto pagination;
+
+  public ReportResultResponseDto(
+      long instanceCount,
+      long instanceCountWithoutFilters,
+      List<MeasureResponseDto<T>> measures,
+      PaginationDto pagination) {
+    this.instanceCount = instanceCount;
+    this.instanceCountWithoutFilters = instanceCountWithoutFilters;
+    this.measures = measures;
+    this.pagination = pagination;
+  }
+
+  public ReportResultResponseDto() {}
 
   public void addMeasure(MeasureResponseDto<T> measure) {
     this.measures.add(measure);

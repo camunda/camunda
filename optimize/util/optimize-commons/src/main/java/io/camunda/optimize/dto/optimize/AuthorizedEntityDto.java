@@ -7,15 +7,17 @@
  */
 package io.camunda.optimize.dto.optimize;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 // supposed to be called from entity specific subclasses only
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
 public class AuthorizedEntityDto {
+
   private RoleType currentUserRole;
+
+  protected AuthorizedEntityDto(RoleType currentUserRole) {
+    this.currentUserRole = currentUserRole;
+  }
+
+  protected AuthorizedEntityDto() {}
 }

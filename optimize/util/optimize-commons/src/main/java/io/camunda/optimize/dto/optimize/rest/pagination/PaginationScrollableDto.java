@@ -8,19 +8,22 @@
 package io.camunda.optimize.dto.optimize.rest.pagination;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@NoArgsConstructor
-@AllArgsConstructor
 public class PaginationScrollableDto extends PaginationDto {
 
   protected String scrollId;
   protected Integer scrollTimeout;
+
+  public PaginationScrollableDto(String scrollId, Integer scrollTimeout) {
+    this.scrollId = scrollId;
+    this.scrollTimeout = scrollTimeout;
+  }
+
+  public PaginationScrollableDto() {}
 
   public static PaginationScrollableDto fromPaginationDto(final PaginationDto pagination) {
     PaginationScrollableDto paginationObject = new PaginationScrollableDto();

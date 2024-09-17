@@ -7,14 +7,18 @@
  */
 package io.camunda.optimize.dto.optimize;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class FlowNodeTotalDurationDataDto {
+
   String name;
   long value;
+
+  public FlowNodeTotalDurationDataDto(String name, long value) {
+    this.name = name;
+    this.value = value;
+  }
+
+  public FlowNodeTotalDurationDataDto() {}
 }

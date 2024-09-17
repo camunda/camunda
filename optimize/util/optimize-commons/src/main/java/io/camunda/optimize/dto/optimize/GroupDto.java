@@ -11,15 +11,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.ToString;
 
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString(callSuper = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 public class GroupDto extends IdentityWithMetadataResponseDto {
@@ -38,6 +35,8 @@ public class GroupDto extends IdentityWithMetadataResponseDto {
     super(id, IdentityType.GROUP, Optional.ofNullable(name).orElse(id));
     this.memberCount = memberCount;
   }
+
+  protected GroupDto() {}
 
   @Override
   @JsonIgnore

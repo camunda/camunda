@@ -7,17 +7,20 @@
  */
 package io.camunda.optimize.dto.optimize.query.dashboard.tile;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class PositionDto {
 
   protected int x;
   protected int y;
+
+  public PositionDto(int x, int y) {
+    this.x = x;
+    this.y = y;
+  }
+
+  public PositionDto() {}
 
   public static final class Fields {
 

@@ -12,13 +12,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.camunda.optimize.dto.optimize.DataImportSourceType;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.io.Serializable;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.EXISTING_PROPERTY,
@@ -32,6 +28,13 @@ public abstract class DataSourceDto implements OptimizeDto, Serializable {
 
   private DataImportSourceType type;
   private String name;
+
+  public DataSourceDto(DataImportSourceType type, String name) {
+    this.type = type;
+    this.name = name;
+  }
+
+  public DataSourceDto() {}
 
   public static final class Fields {
 

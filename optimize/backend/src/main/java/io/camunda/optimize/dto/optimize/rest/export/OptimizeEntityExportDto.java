@@ -19,12 +19,8 @@ import io.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReport
 import io.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@NoArgsConstructor
 @Data
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -50,6 +46,21 @@ public abstract class OptimizeEntityExportDto {
   @NotNull private String name;
   private String description;
   private int sourceIndexVersion;
+
+  public OptimizeEntityExportDto(
+      @NotNull String id,
+      @NotNull ExportEntityType exportEntityType,
+      @NotNull String name,
+      String description,
+      int sourceIndexVersion) {
+    this.id = id;
+    this.exportEntityType = exportEntityType;
+    this.name = name;
+    this.description = description;
+    this.sourceIndexVersion = sourceIndexVersion;
+  }
+
+  public OptimizeEntityExportDto() {}
 
   public static final class Fields {
 

@@ -10,13 +10,16 @@ package io.camunda.optimize.dto.optimize.query.report;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class AdditionalProcessReportEvaluationFilterDto {
+
   protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
+
+  public AdditionalProcessReportEvaluationFilterDto(List<ProcessFilterDto<?>> filter) {
+    this.filter = filter;
+  }
+
+  public AdditionalProcessReportEvaluationFilterDto() {}
 }

@@ -13,12 +13,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class DecisionViewDto {
 
@@ -27,6 +23,12 @@ public class DecisionViewDto {
   public DecisionViewDto(final ViewProperty property) {
     getProperties().add(property);
   }
+
+  public DecisionViewDto(List<ViewProperty> properties) {
+    this.properties = properties;
+  }
+
+  public DecisionViewDto() {}
 
   @JsonIgnore
   public String createCommandKey() {

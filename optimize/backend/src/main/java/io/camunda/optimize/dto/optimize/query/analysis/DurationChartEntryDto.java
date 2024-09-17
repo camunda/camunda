@@ -7,15 +7,20 @@
  */
 package io.camunda.optimize.dto.optimize.query.analysis;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class DurationChartEntryDto {
+
   private Long key;
   private Long value;
   private boolean outlier;
+
+  public DurationChartEntryDto(Long key, Long value, boolean outlier) {
+    this.key = key;
+    this.value = value;
+    this.outlier = outlier;
+  }
+
+  public DurationChartEntryDto() {}
 }

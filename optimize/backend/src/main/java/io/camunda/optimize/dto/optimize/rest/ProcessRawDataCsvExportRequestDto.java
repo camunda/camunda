@@ -13,20 +13,31 @@ import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @Builder
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProcessRawDataCsvExportRequestDto {
+
   @NotNull private String processDefinitionKey;
   @NotEmpty @Builder.Default private List<String> processDefinitionVersions = new ArrayList<>();
   @NotNull @Builder.Default private List<String> tenantIds = Collections.singletonList(null);
   @Builder.Default @NotNull private List<ProcessFilterDto<?>> filter = new ArrayList<>();
   @NotEmpty @Builder.Default private List<String> includedColumns = new ArrayList<>();
+
+  public ProcessRawDataCsvExportRequestDto(
+      @NotNull String processDefinitionKey,
+      @NotEmpty List<String> processDefinitionVersions,
+      @NotNull List<String> tenantIds,
+      @NotNull List<ProcessFilterDto<?>> filter,
+      @NotEmpty List<String> includedColumns) {
+    this.processDefinitionKey = processDefinitionKey;
+    this.processDefinitionVersions = processDefinitionVersions;
+    this.tenantIds = tenantIds;
+    this.filter = filter;
+    this.includedColumns = includedColumns;
+  }
+
+  protected ProcessRawDataCsvExportRequestDto() {}
 }

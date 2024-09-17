@@ -21,9 +21,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 public class EntitySorter extends Sorter<EntityResponseDto> {
 
   private static final Comparator<EntityResponseDto> DEFAULT_ENTITY_COMPARATOR =
@@ -45,6 +43,8 @@ public class EntitySorter extends Sorter<EntityResponseDto> {
   public EntitySorter(final String sortBy, final SortOrder sortOrder) {
     this.sortRequestDto = new SortRequestDto(sortBy, sortOrder);
   }
+
+  public EntitySorter() {}
 
   @Override
   public List<EntityResponseDto> applySort(List<EntityResponseDto> entities) {

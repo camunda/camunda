@@ -14,12 +14,10 @@ import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.UserDto;
 import lombok.AccessLevel;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CollectionRoleResponseDto implements Comparable<CollectionRoleResponseDto> {
 
   private static final String ID_SEGMENT_SEPARATOR = ":";
@@ -55,6 +53,8 @@ public class CollectionRoleResponseDto implements Comparable<CollectionRoleRespo
     id = convertIdentityToRoleId(this.identity);
     this.role = role;
   }
+
+  protected CollectionRoleResponseDto() {}
 
   @Override
   public int compareTo(final CollectionRoleResponseDto other) {

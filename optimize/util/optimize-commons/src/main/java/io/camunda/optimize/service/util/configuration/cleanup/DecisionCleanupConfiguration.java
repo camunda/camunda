@@ -15,12 +15,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = false)
 public class DecisionCleanupConfiguration {
+
   @JsonProperty("enabled")
   private boolean enabled;
 
@@ -31,6 +30,8 @@ public class DecisionCleanupConfiguration {
   public DecisionCleanupConfiguration(final boolean enabled) {
     this.enabled = enabled;
   }
+
+  public DecisionCleanupConfiguration() {}
 
   public Set<String> getAllDecisionSpecificConfigurationKeys() {
     return new HashSet<>(decisionDefinitionSpecificConfiguration.keySet());

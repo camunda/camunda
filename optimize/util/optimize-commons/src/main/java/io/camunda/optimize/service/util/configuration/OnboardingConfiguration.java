@@ -9,10 +9,7 @@ package io.camunda.optimize.service.util.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.j2objc.annotations.Property;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
 public class OnboardingConfiguration {
@@ -34,14 +31,20 @@ public class OnboardingConfiguration {
   @JsonProperty("properties")
   private Properties properties;
 
-  @AllArgsConstructor
   @Data
-  @NoArgsConstructor(access = AccessLevel.PROTECTED)
   public static class Properties {
+
     @JsonProperty("organizationId")
     private String organizationId;
 
     @JsonProperty("clusterId")
     private String clusterId;
+
+    public Properties(String organizationId, String clusterId) {
+      this.organizationId = organizationId;
+      this.clusterId = clusterId;
+    }
+
+    protected Properties() {}
   }
 }

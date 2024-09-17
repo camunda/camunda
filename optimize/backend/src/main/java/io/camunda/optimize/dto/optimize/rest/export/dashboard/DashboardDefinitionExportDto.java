@@ -23,9 +23,7 @@ import java.util.List;
 import java.util.Set;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
@@ -46,6 +44,8 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
     availableFilters = dashboardDefinition.getAvailableFilters();
     collectionId = dashboardDefinition.getCollectionId();
   }
+
+  public DashboardDefinitionExportDto() {}
 
   @JsonIgnore
   public Set<String> getTileIds() {

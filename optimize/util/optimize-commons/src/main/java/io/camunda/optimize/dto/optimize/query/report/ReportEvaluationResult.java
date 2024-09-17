@@ -10,17 +10,19 @@ package io.camunda.optimize.dto.optimize.query.report;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
 import java.time.ZoneId;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
-@AllArgsConstructor
-@NoArgsConstructor
 @Data
 public abstract class ReportEvaluationResult {
 
   @NonNull protected ReportDefinitionDto<?> reportDefinition;
+
+  public ReportEvaluationResult(@NonNull ReportDefinitionDto<?> reportDefinition) {
+    this.reportDefinition = reportDefinition;
+  }
+
+  public ReportEvaluationResult() {}
 
   public String getId() {
     return reportDefinition.getId();

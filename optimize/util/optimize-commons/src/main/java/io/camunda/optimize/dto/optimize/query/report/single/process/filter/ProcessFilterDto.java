@@ -15,7 +15,6 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 /**
  * Abstract class that contains a hidden "type" field to distinguish, which filter type the jackson
@@ -64,7 +63,6 @@ import lombok.NoArgsConstructor;
       name = "completedOrCanceledFlowNodesOnly")
 })
 @Data
-@NoArgsConstructor
 public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
 
   protected DATA data;
@@ -76,6 +74,8 @@ public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
     this.data = data;
     setFilterLevel(filterLevel);
   }
+
+  public ProcessFilterDto() {}
 
   public abstract List<FilterApplicationLevel> validApplicationLevels();
 

@@ -7,22 +7,26 @@
  */
 package io.camunda.optimize.dto.engine;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
 @Builder
 @Data
 @EqualsAndHashCode(of = {"id"})
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class EngineListUserDto {
 
   private String id;
   private String firstName;
   private String lastName;
   private String email;
+
+  public EngineListUserDto(String id, String firstName, String lastName, String email) {
+    this.id = id;
+    this.firstName = firstName;
+    this.lastName = lastName;
+    this.email = email;
+  }
+
+  protected EngineListUserDto() {}
 }

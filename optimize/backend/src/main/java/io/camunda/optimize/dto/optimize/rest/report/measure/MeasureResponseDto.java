@@ -18,28 +18,36 @@ import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "type")
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = MapMeasureResponseDto.class, name = MAP_RESULT_TYPE),
-  @JsonSubTypes.Type(value = HyperMapMeasureResponseDto.class, name = HYPER_MAP_RESULT_TYPE),
-  @JsonSubTypes.Type(value = NumberMeasureResponseDto.class, name = NUMBER_RESULT_TYPE),
-  @JsonSubTypes.Type(value = RawDataMeasureResponseDto.class, name = RAW_RESULT_TYPE),
+    @JsonSubTypes.Type(value = MapMeasureResponseDto.class, name = MAP_RESULT_TYPE),
+    @JsonSubTypes.Type(value = HyperMapMeasureResponseDto.class, name = HYPER_MAP_RESULT_TYPE),
+    @JsonSubTypes.Type(value = NumberMeasureResponseDto.class, name = NUMBER_RESULT_TYPE),
+    @JsonSubTypes.Type(value = RawDataMeasureResponseDto.class, name = RAW_RESULT_TYPE),
 })
 public class MeasureResponseDto<T> {
+
   private ViewProperty property;
   private AggregationDto aggregationType;
   private UserTaskDurationTime userTaskDurationTime;
   private T data;
   private ResultType type;
+
+  public MeasureResponseDto(ViewProperty property, AggregationDto aggregationType,
+      UserTaskDurationTime userTaskDurationTime, T data, ResultType type) {
+    this.property = property;
+    this.aggregationType = aggregationType;
+    this.userTaskDurationTime = userTaskDurationTime;
+    this.data = data;
+    this.type = type;
+  }
+
+  protected MeasureResponseDto() {
+  }
 }

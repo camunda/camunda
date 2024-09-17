@@ -12,12 +12,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@NoArgsConstructor
 @Data
 public class RawDataProcessInstanceDto implements RawDataInstanceDto {
 
@@ -41,6 +37,37 @@ public class RawDataProcessInstanceDto implements RawDataInstanceDto {
 
   // Note that the flow node data field can only be included on the Json export response
   protected List<RawDataFlowNodeDataDto> flowNodeInstances;
+
+  public RawDataProcessInstanceDto(
+      String processDefinitionKey,
+      String processDefinitionId,
+      String processInstanceId,
+      RawDataCountDto counts,
+      Map<String, FlowNodeTotalDurationDataDto> flowNodeDurations,
+      String businessKey,
+      OffsetDateTime startDate,
+      OffsetDateTime endDate,
+      Long duration,
+      String engineName,
+      String tenantId,
+      Map<String, Object> variables,
+      List<RawDataFlowNodeDataDto> flowNodeInstances) {
+    this.processDefinitionKey = processDefinitionKey;
+    this.processDefinitionId = processDefinitionId;
+    this.processInstanceId = processInstanceId;
+    this.counts = counts;
+    this.flowNodeDurations = flowNodeDurations;
+    this.businessKey = businessKey;
+    this.startDate = startDate;
+    this.endDate = endDate;
+    this.duration = duration;
+    this.engineName = engineName;
+    this.tenantId = tenantId;
+    this.variables = variables;
+    this.flowNodeInstances = flowNodeInstances;
+  }
+
+  public RawDataProcessInstanceDto() {}
 
   public enum Fields {
     processDefinitionKey,

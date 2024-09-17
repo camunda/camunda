@@ -23,12 +23,11 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.U
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_USER_TASK;
 
 import com.google.common.collect.ImmutableMap;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.commons.text.StringSubstitutor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserTaskDurationScriptUtil {
+
+  private UserTaskDurationScriptUtil() {}
 
   public static String createUpdateUserTaskMetricsScript() {
     final StringSubstitutor substitutor =

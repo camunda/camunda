@@ -10,18 +10,20 @@ package io.camunda.optimize.service.util.configuration;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @Data
 public class TelemetryConfiguration {
 
   private boolean initializeTelemetry;
   private long reportingIntervalInHours;
+
+  public TelemetryConfiguration(boolean initializeTelemetry, long reportingIntervalInHours) {
+    this.initializeTelemetry = initializeTelemetry;
+    this.reportingIntervalInHours = reportingIntervalInHours;
+  }
+
+  protected TelemetryConfiguration() {}
 
   public void validate() {
     if (reportingIntervalInHours <= 0) {

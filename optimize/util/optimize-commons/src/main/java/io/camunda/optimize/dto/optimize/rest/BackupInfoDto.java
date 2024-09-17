@@ -9,12 +9,8 @@ package io.camunda.optimize.dto.optimize.rest;
 
 import io.camunda.optimize.dto.optimize.BackupState;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class BackupInfoDto {
 
@@ -22,4 +18,14 @@ public class BackupInfoDto {
   private String failureReason;
   private BackupState state;
   private List<SnapshotInfoDto> details;
+
+  public BackupInfoDto(
+      long backupId, String failureReason, BackupState state, List<SnapshotInfoDto> details) {
+    this.backupId = backupId;
+    this.failureReason = failureReason;
+    this.state = state;
+    this.details = details;
+  }
+
+  public BackupInfoDto() {}
 }

@@ -22,14 +22,13 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /** Bunch of utility methods that might be required during upgrade operation. */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
 public class UpgradeUtil {
+
+  private UpgradeUtil() {}
 
   public static UpgradeExecutionDependencies createUpgradeDependencies(
       final DatabaseType databaseType) {

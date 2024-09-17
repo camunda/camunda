@@ -8,17 +8,20 @@
 package io.camunda.optimize.dto.optimize.rest.pagination;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class PaginationDto {
 
   protected Integer limit;
   protected Integer offset;
+
+  public PaginationDto(Integer limit, Integer offset) {
+    this.limit = limit;
+    this.offset = offset;
+  }
+
+  public PaginationDto() {}
 
   public static PaginationDto fromPaginationRequest(
       final PaginationRequestDto paginationRequestDto) {

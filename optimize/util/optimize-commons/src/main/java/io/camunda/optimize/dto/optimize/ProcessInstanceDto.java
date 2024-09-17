@@ -17,16 +17,11 @@ import io.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @SuperBuilder
 public class ProcessInstanceDto implements OptimizeDto {
 
@@ -44,6 +39,39 @@ public class ProcessInstanceDto implements OptimizeDto {
   @Builder.Default private List<IncidentDto> incidents = new ArrayList<>();
   private DataSourceDto dataSource;
   private String tenantId;
+
+  protected ProcessInstanceDto(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String processDefinitionId,
+      String processInstanceId,
+      String businessKey,
+      OffsetDateTime startDate,
+      OffsetDateTime endDate,
+      Long duration,
+      String state,
+      List<FlowNodeInstanceDto> flowNodeInstances,
+      List<SimpleProcessVariableDto> variables,
+      List<IncidentDto> incidents,
+      DataSourceDto dataSource,
+      String tenantId) {
+    this.processDefinitionKey = processDefinitionKey;
+    this.processDefinitionVersion = processDefinitionVersion;
+    this.processDefinitionId = processDefinitionId;
+    this.processInstanceId = processInstanceId;
+    this.businessKey = businessKey;
+    this.startDate = startDate;
+    this.endDate = endDate;
+    this.duration = duration;
+    this.state = state;
+    this.flowNodeInstances = flowNodeInstances;
+    this.variables = variables;
+    this.incidents = incidents;
+    this.dataSource = dataSource;
+    this.tenantId = tenantId;
+  }
+
+  public ProcessInstanceDto() {}
 
   @JsonIgnore
   public List<FlowNodeInstanceDto> getUserTasks() {

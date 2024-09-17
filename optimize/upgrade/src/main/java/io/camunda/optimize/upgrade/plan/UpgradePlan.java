@@ -11,18 +11,18 @@ import com.vdurmont.semver4j.Semver;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-@NoArgsConstructor(access = AccessLevel.PACKAGE)
 @Slf4j
 public class UpgradePlan {
+
   @Getter private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
   @Getter @Setter private Semver toVersion;
   @Getter @Setter private Semver fromVersion;
+
+  UpgradePlan() {}
 
   public void addUpgradeStep(UpgradeStep upgradeStep) {
     upgradeSteps.add(upgradeStep);

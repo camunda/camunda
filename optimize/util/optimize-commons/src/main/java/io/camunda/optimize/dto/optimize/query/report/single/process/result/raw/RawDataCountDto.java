@@ -8,18 +8,22 @@
 package io.camunda.optimize.dto.optimize.query.report.single.process.result.raw;
 
 import io.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class RawDataCountDto implements RawDataInstanceDto {
 
   protected long incidents;
   protected long openIncidents;
   protected long userTasks;
+
+  public RawDataCountDto(long incidents, long openIncidents, long userTasks) {
+    this.incidents = incidents;
+    this.openIncidents = openIncidents;
+    this.userTasks = userTasks;
+  }
+
+  public RawDataCountDto() {}
 
   public enum Fields {
     incidents,

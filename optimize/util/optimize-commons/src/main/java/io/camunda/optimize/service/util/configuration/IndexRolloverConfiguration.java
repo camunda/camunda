@@ -7,15 +7,18 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @Data
 public class IndexRolloverConfiguration {
+
   private int scheduleIntervalInMinutes;
   private int maxIndexSizeGB;
+
+  public IndexRolloverConfiguration(int scheduleIntervalInMinutes, int maxIndexSizeGB) {
+    this.scheduleIntervalInMinutes = scheduleIntervalInMinutes;
+    this.maxIndexSizeGB = maxIndexSizeGB;
+  }
+
+  protected IndexRolloverConfiguration() {}
 }

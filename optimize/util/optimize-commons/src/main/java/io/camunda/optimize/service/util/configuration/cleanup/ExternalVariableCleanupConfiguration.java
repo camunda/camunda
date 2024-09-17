@@ -8,15 +8,17 @@
 package io.camunda.optimize.service.util.configuration.cleanup;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ExternalVariableCleanupConfiguration {
+
   @JsonProperty("enabled")
   private boolean enabled;
+
+  public ExternalVariableCleanupConfiguration(boolean enabled) {
+    this.enabled = enabled;
+  }
+
+  protected ExternalVariableCleanupConfiguration() {}
 }

@@ -10,9 +10,7 @@ package io.camunda.optimize.dto.optimize.index;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceDto> {
@@ -22,6 +20,8 @@ public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceD
   protected String esTypeIndexRefersTo;
   // flag to indicate whether at least one record with a sequence field has been imported
   protected boolean hasSeenSequenceField = false;
+
+  public PositionBasedImportIndexDto() {}
 
   public static final class Fields {
 

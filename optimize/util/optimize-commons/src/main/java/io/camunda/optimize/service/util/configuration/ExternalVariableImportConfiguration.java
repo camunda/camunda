@@ -7,13 +7,13 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
-import lombok.AccessLevel;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ExternalVariableImportConfiguration {
+
   private boolean enabled;
   private int maxPageSize;
+
+  protected ExternalVariableImportConfiguration() {}
 }

@@ -7,16 +7,20 @@
  */
 package io.camunda.optimize.dto.optimize.query.entity;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class EntityNameResponseDto {
 
   private String collectionName;
   private String dashboardName;
   private String reportName;
+
+  public EntityNameResponseDto(String collectionName, String dashboardName, String reportName) {
+    this.collectionName = collectionName;
+    this.dashboardName = dashboardName;
+    this.reportName = reportName;
+  }
+
+  public EntityNameResponseDto() {}
 }

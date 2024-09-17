@@ -10,16 +10,16 @@ package io.camunda.optimize.dto.optimize.cloud;
 import java.util.List;
 import java.util.function.Supplier;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 public class CloudUserDto {
 
   private String userId;
   private String name;
   private String email;
   private List<String> roles;
+
+  public CloudUserDto() {}
 
   public List<Supplier<String>> getSearchableDtoFields() {
     return List.of(this::getUserId, this::getName, this::getEmail);

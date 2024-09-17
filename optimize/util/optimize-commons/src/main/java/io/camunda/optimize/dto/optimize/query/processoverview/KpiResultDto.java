@@ -17,11 +17,9 @@ import io.camunda.optimize.dto.optimize.query.report.single.configuration.target
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.time.Duration;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
 @Data
-@NoArgsConstructor
 public class KpiResultDto {
 
   private String reportId;
@@ -36,6 +34,8 @@ public class KpiResultDto {
   private KpiType type;
   private ViewProperty measure;
   private TargetValueUnit unit;
+
+  public KpiResultDto() {}
 
   @JsonIgnore
   public boolean isTargetMet() {

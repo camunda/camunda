@@ -10,13 +10,9 @@ package io.camunda.optimize.dto.optimize.rest.sorting;
 import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import jakarta.ws.rs.QueryParam;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class SortRequestDto {
 
   public static final String SORT_BY = "sortBy";
@@ -27,6 +23,13 @@ public class SortRequestDto {
 
   @QueryParam(SORT_ORDER)
   private SortOrder sortOrder;
+
+  public SortRequestDto(String sortBy, SortOrder sortOrder) {
+    this.sortBy = sortBy;
+    this.sortOrder = sortOrder;
+  }
+
+  public SortRequestDto() {}
 
   public Optional<String> getSortBy() {
     return Optional.ofNullable(sortBy);

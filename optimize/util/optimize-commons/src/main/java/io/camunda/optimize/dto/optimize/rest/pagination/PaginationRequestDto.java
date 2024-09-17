@@ -12,13 +12,9 @@ import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.ws.rs.QueryParam;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class PaginationRequestDto {
 
   public static final String LIMIT_PARAM = "limit";
@@ -32,4 +28,12 @@ public class PaginationRequestDto {
   @QueryParam(OFFSET_PARAM)
   @Min(0)
   protected Integer offset;
+
+  public PaginationRequestDto(
+      @Min(0) @Max(MAX_RESPONSE_SIZE_LIMIT) Integer limit, @Min(0) Integer offset) {
+    this.limit = limit;
+    this.offset = offset;
+  }
+
+  public PaginationRequestDto() {}
 }

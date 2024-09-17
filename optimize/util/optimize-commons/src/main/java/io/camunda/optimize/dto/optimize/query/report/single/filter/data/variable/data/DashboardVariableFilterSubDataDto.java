@@ -10,13 +10,10 @@ package io.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.OperatorMultipleValuesFilterDataDto;
 import java.util.List;
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
@@ -29,6 +26,8 @@ public class DashboardVariableFilterSubDataDto extends OperatorMultipleValuesFil
     super(operator, values);
     this.allowCustomValues = allowCustomValues;
   }
+
+  protected DashboardVariableFilterSubDataDto() {}
 
   public static final class Fields {
 

@@ -9,16 +9,23 @@ package io.camunda.optimize.dto.optimize.query.entity;
 
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class EntitiesDeleteRequestDto {
 
   @NotNull List<String> reports;
   @NotNull List<String> collections;
   @NotNull List<String> dashboards;
+
+  public EntitiesDeleteRequestDto(
+      @NotNull List<String> reports,
+      @NotNull List<String> collections,
+      @NotNull List<String> dashboards) {
+    this.reports = reports;
+    this.collections = collections;
+    this.dashboards = dashboards;
+  }
+
+  public EntitiesDeleteRequestDto() {}
 }

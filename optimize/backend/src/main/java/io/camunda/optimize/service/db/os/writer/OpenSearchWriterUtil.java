@@ -19,18 +19,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Script;
 
 @Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class OpenSearchWriterUtil {
 
   public static final DateTimeFormatter dateTimeFormatter =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+
+  private OpenSearchWriterUtil() {}
 
   public static Script createFieldUpdateScript(
       final Set<String> fields, final Object entityDto, final ObjectMapper objectMapper) {

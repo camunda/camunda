@@ -12,13 +12,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.OffsetDateTime;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RestTestUtil {
+
+  private RestTestUtil() {}
 
   @SneakyThrows
   public static String getResponseContentAsString(final Response response) {

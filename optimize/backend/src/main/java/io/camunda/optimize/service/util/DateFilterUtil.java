@@ -16,11 +16,10 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DateFilterUtil {
+
+  private DateFilterUtil() {}
 
   public static OffsetDateTime getStartOfCurrentInterval(OffsetDateTime now, DateUnit dateUnit) {
     switch (dateUnit) {

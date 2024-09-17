@@ -7,19 +7,21 @@
  */
 package io.camunda.optimize.dto.optimize;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class IdentityDto {
 
   @NonNull private String id;
   private IdentityType type;
+
+  public IdentityDto(@NonNull String id, IdentityType type) {
+    this.id = id;
+    this.type = type;
+  }
+
+  protected IdentityDto() {}
 
   public static final class Fields {
 

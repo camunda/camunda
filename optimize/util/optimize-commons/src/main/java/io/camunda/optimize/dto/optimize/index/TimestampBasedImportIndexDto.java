@@ -13,9 +13,7 @@ import io.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import java.time.OffsetDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class TimestampBasedImportIndexDto extends ImportIndexDto<IngestedDataSourceDto>
@@ -31,6 +29,8 @@ public class TimestampBasedImportIndexDto extends ImportIndexDto<IngestedDataSou
     super(lastImportExecutionTimestamp, timestampOfLastEntity, dataSourceDto);
     this.esTypeIndexRefersTo = esTypeIndexRefersTo;
   }
+
+  public TimestampBasedImportIndexDto() {}
 
   @JsonIgnore
   public String getDataSourceName() {

@@ -8,16 +8,16 @@
 package io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data;
 
 import java.util.List;
-import lombok.AccessLevel;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 public class BooleanVariableFilterSubDataDto {
+
   protected List<Boolean> values;
 
   public BooleanVariableFilterSubDataDto(final List<Boolean> values) {
     this.values = values;
   }
+
+  protected BooleanVariableFilterSubDataDto() {}
 }

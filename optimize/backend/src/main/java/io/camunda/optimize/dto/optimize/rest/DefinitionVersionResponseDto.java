@@ -7,17 +7,20 @@
  */
 package io.camunda.optimize.dto.optimize.rest;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @Builder
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DefinitionVersionResponseDto {
+
   private String version;
   private String versionTag;
+
+  public DefinitionVersionResponseDto(String version, String versionTag) {
+    this.version = version;
+    this.versionTag = versionTag;
+  }
+
+  protected DefinitionVersionResponseDto() {}
 }

@@ -22,19 +22,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@NoArgsConstructor
-@AllArgsConstructor
 public class DashboardDefinitionRestDto extends BaseDashboardDefinitionDto
     implements CollectionEntity {
 
   @Valid protected List<DashboardReportTileDto> tiles = new ArrayList<>();
+
+  public DashboardDefinitionRestDto(@Valid List<DashboardReportTileDto> tiles) {
+    this.tiles = tiles;
+  }
+
+  public DashboardDefinitionRestDto() {}
 
   @JsonIgnore
   public Set<String> getTileIds() {

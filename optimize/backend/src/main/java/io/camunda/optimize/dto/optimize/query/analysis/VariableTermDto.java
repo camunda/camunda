@@ -7,18 +7,32 @@
  */
 package io.camunda.optimize.dto.optimize.query.analysis;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@NoArgsConstructor
 @Data
 public class VariableTermDto {
+
   private String variableName;
   private String variableTerm;
   private Long instanceCount;
   private Double outlierRatio;
   private Double nonOutlierRatio;
   private Double outlierToAllInstancesRatio;
+
+  public VariableTermDto(
+      String variableName,
+      String variableTerm,
+      Long instanceCount,
+      Double outlierRatio,
+      Double nonOutlierRatio,
+      Double outlierToAllInstancesRatio) {
+    this.variableName = variableName;
+    this.variableTerm = variableTerm;
+    this.instanceCount = instanceCount;
+    this.outlierRatio = outlierRatio;
+    this.nonOutlierRatio = nonOutlierRatio;
+    this.outlierToAllInstancesRatio = outlierToAllInstancesRatio;
+  }
+
+  public VariableTermDto() {}
 }

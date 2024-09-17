@@ -11,13 +11,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 @Builder
 public class IncidentDto implements Serializable, OptimizeDto {
@@ -31,11 +27,36 @@ public class IncidentDto implements Serializable, OptimizeDto {
   protected String failedActivityId;
   protected String incidentMessage;
   protected IncidentStatus incidentStatus;
-  @JsonIgnore private String processInstanceId;
+  @JsonIgnore
+  private String processInstanceId;
   private String definitionKey;
   private String definitionVersion;
   private String tenantId;
-  @JsonIgnore private String engineAlias;
+  @JsonIgnore
+  private String engineAlias;
+
+  public IncidentDto(String id, OffsetDateTime createTime, OffsetDateTime endTime,
+      Long durationInMs, IncidentType incidentType, String activityId, String failedActivityId,
+      String incidentMessage, IncidentStatus incidentStatus, String processInstanceId,
+      String definitionKey, String definitionVersion, String tenantId, String engineAlias) {
+    this.id = id;
+    this.createTime = createTime;
+    this.endTime = endTime;
+    this.durationInMs = durationInMs;
+    this.incidentType = incidentType;
+    this.activityId = activityId;
+    this.failedActivityId = failedActivityId;
+    this.incidentMessage = incidentMessage;
+    this.incidentStatus = incidentStatus;
+    this.processInstanceId = processInstanceId;
+    this.definitionKey = definitionKey;
+    this.definitionVersion = definitionVersion;
+    this.tenantId = tenantId;
+    this.engineAlias = engineAlias;
+  }
+
+  public IncidentDto() {
+  }
 
   public static final class Fields {
 

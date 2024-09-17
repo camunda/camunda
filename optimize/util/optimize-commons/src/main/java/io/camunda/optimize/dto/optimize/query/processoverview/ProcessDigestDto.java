@@ -8,15 +8,11 @@
 package io.camunda.optimize.dto.optimize.query.processoverview;
 
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@AllArgsConstructor
-@NoArgsConstructor
 public class ProcessDigestDto extends ProcessDigestResponseDto {
 
   // This is the baseline results, or in other words the results that were included in the
@@ -27,6 +23,12 @@ public class ProcessDigestDto extends ProcessDigestResponseDto {
     super(enabled);
     this.kpiReportResults = kpiReportResults;
   }
+
+  public ProcessDigestDto(Map<String, String> kpiReportResults) {
+    this.kpiReportResults = kpiReportResults;
+  }
+
+  public ProcessDigestDto() {}
 
   /** Needed to inherit field name constants from {@link ProcessDigestResponseDto} */
   public static class Fields extends ProcessDigestResponseDto.Fields {

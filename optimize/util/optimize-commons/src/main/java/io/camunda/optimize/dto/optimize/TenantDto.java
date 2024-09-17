@@ -7,15 +7,10 @@
  */
 package io.camunda.optimize.dto.optimize;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @Data
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -24,6 +19,14 @@ public class TenantDto implements OptimizeDto {
   @EqualsAndHashCode.Include private String id;
   @EqualsAndHashCode.Include private String name;
   private String engine;
+
+  public TenantDto(String id, String name, String engine) {
+    this.id = id;
+    this.name = name;
+    this.engine = engine;
+  }
+
+  protected TenantDto() {}
 
   public enum Fields {
     id,

@@ -19,14 +19,12 @@ import java.time.ZoneId;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
 @EqualsAndHashCode
 @Getter
 @Setter
-@NoArgsConstructor
 @ToString(callSuper = true)
 public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends Intent>
     implements Record<VALUE> {
@@ -47,6 +45,8 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
   private INTENT intent;
   private Map<String, Object> authorizations;
   private long operationReference;
+
+  public ZeebeRecordDto() {}
 
   @Override
   public String toJson() {

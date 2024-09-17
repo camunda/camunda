@@ -12,12 +12,8 @@ import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@NoArgsConstructor
 @Data
 public abstract class ImportIndexDto<T extends DataSourceDto> implements OptimizeDto {
 
@@ -26,6 +22,17 @@ public abstract class ImportIndexDto<T extends DataSourceDto> implements Optimiz
   protected OffsetDateTime timestampOfLastEntity =
       OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
   protected T dataSource;
+
+  public ImportIndexDto(
+      OffsetDateTime lastImportExecutionTimestamp,
+      OffsetDateTime timestampOfLastEntity,
+      T dataSource) {
+    this.lastImportExecutionTimestamp = lastImportExecutionTimestamp;
+    this.timestampOfLastEntity = timestampOfLastEntity;
+    this.dataSource = dataSource;
+  }
+
+  public ImportIndexDto() {}
 
   public static final class Fields {
 

@@ -8,15 +8,17 @@
 package io.camunda.optimize.dto.optimize.query.processoverview;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class ProcessDigestRequestDto {
 
   @JsonProperty("enabled")
   private boolean enabled;
+
+  public ProcessDigestRequestDto(boolean enabled) {
+    this.enabled = enabled;
+  }
+
+  public ProcessDigestRequestDto() {}
 }

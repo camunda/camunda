@@ -8,19 +8,24 @@
 package io.camunda.optimize.dto.optimize.rest;
 
 import java.io.Serializable;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
 @EqualsAndHashCode
 public class ImportIndexMismatchDto implements Serializable {
+
   private String indexName;
   private int sourceIndexVersion;
   private int targetIndexVersion;
+
+  public ImportIndexMismatchDto(String indexName, int sourceIndexVersion, int targetIndexVersion) {
+    this.indexName = indexName;
+    this.sourceIndexVersion = sourceIndexVersion;
+    this.targetIndexVersion = targetIndexVersion;
+  }
+
+  public ImportIndexMismatchDto() {}
 }

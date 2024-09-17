@@ -9,18 +9,20 @@ package io.camunda.optimize.dto.optimize.query.collection;
 
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class CollectionScopeEntryUpdateDto {
+
   private List<String> tenants = new ArrayList<>();
 
   public CollectionScopeEntryUpdateDto(CollectionScopeEntryDto scopeEntryDto) {
     this.tenants = scopeEntryDto.getTenants();
   }
+
+  public CollectionScopeEntryUpdateDto(List<String> tenants) {
+    this.tenants = tenants;
+  }
+
+  protected CollectionScopeEntryUpdateDto() {}
 }

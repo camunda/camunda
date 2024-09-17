@@ -22,16 +22,12 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
-@AllArgsConstructor
 @Builder
 @Data
-@NoArgsConstructor
 public class SingleReportConfigurationDto implements Combinable {
 
   @Builder.Default private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
@@ -91,6 +87,65 @@ public class SingleReportConfigurationDto implements Combinable {
   @Builder.Default private Boolean stackedBar = false;
   @Builder.Default private Boolean horizontalBar = false;
   @Builder.Default private Boolean logScale = false;
+
+  public SingleReportConfigurationDto(
+      String color,
+      Set<AggregationDto> aggregationTypes,
+      Set<UserTaskDurationTime> userTaskDurationTimes,
+      Boolean showInstanceCount,
+      Boolean pointMarkers,
+      Integer precision,
+      Boolean hideRelativeValue,
+      Boolean hideAbsoluteValue,
+      String yLabel,
+      String xLabel,
+      Boolean alwaysShowRelative,
+      Boolean alwaysShowAbsolute,
+      Boolean showGradientBars,
+      String xml,
+      TableColumnDto tableColumns,
+      SingleReportTargetValueDto targetValue,
+      HeatmapTargetValueDto heatmapTargetValue,
+      @NonNull AggregateByDateUnit groupByDateVariableUnit,
+      @NonNull AggregateByDateUnit distributeByDateVariableUnit,
+      CustomBucketDto customBucket,
+      CustomBucketDto distributeByCustomBucket,
+      ReportSortingDto sorting,
+      ProcessPartDto processPart,
+      MeasureVisualizationsDto measureVisualizations,
+      Boolean stackedBar,
+      Boolean horizontalBar,
+      Boolean logScale) {
+    this.color = color;
+    this.aggregationTypes = aggregationTypes;
+    this.userTaskDurationTimes = userTaskDurationTimes;
+    this.showInstanceCount = showInstanceCount;
+    this.pointMarkers = pointMarkers;
+    this.precision = precision;
+    this.hideRelativeValue = hideRelativeValue;
+    this.hideAbsoluteValue = hideAbsoluteValue;
+    this.yLabel = yLabel;
+    this.xLabel = xLabel;
+    this.alwaysShowRelative = alwaysShowRelative;
+    this.alwaysShowAbsolute = alwaysShowAbsolute;
+    this.showGradientBars = showGradientBars;
+    this.xml = xml;
+    this.tableColumns = tableColumns;
+    this.targetValue = targetValue;
+    this.heatmapTargetValue = heatmapTargetValue;
+    this.groupByDateVariableUnit = groupByDateVariableUnit;
+    this.distributeByDateVariableUnit = distributeByDateVariableUnit;
+    this.customBucket = customBucket;
+    this.distributeByCustomBucket = distributeByCustomBucket;
+    this.sorting = sorting;
+    this.processPart = processPart;
+    this.measureVisualizations = measureVisualizations;
+    this.stackedBar = stackedBar;
+    this.horizontalBar = horizontalBar;
+    this.logScale = logScale;
+  }
+
+  public SingleReportConfigurationDto() {}
 
   @JsonIgnore
   public String createCommandKey() {

@@ -10,15 +10,10 @@ package io.camunda.optimize.upgrade.service;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
 import java.time.Instant;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @Builder
 public class UpgradeStepLogEntryDto {
@@ -28,6 +23,21 @@ public class UpgradeStepLogEntryDto {
   @NonNull private UpgradeStepType stepType;
   @NonNull private Integer stepNumber;
   private Instant appliedDate;
+
+  public UpgradeStepLogEntryDto(
+      @NonNull String indexName,
+      @NonNull String optimizeVersion,
+      @NonNull UpgradeStepType stepType,
+      @NonNull Integer stepNumber,
+      Instant appliedDate) {
+    this.indexName = indexName;
+    this.optimizeVersion = optimizeVersion;
+    this.stepType = stepType;
+    this.stepNumber = stepNumber;
+    this.appliedDate = appliedDate;
+  }
+
+  protected UpgradeStepLogEntryDto() {}
 
   @JsonIgnore
   public String getId() {

@@ -7,15 +7,16 @@
  */
 package io.camunda.optimize.dto.optimize.query;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class IdResponseDto {
 
   protected String id;
+
+  public IdResponseDto(String id) {
+    this.id = id;
+  }
+
+  protected IdResponseDto() {}
 }

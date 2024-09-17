@@ -13,18 +13,16 @@ import io.camunda.optimize.dto.optimize.TenantDto;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.ToString;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class DefinitionResponseDto extends SimpleDefinitionDto {
+
   @NonNull private List<TenantDto> tenants;
 
   public DefinitionResponseDto(
@@ -46,6 +44,8 @@ public class DefinitionResponseDto extends SimpleDefinitionDto {
     super(key, name, type, engines);
     this.tenants = tenants;
   }
+
+  protected DefinitionResponseDto() {}
 
   public static DefinitionResponseDto from(
       final DefinitionWithTenantIdsDto definitionWithTenantIdsDto,

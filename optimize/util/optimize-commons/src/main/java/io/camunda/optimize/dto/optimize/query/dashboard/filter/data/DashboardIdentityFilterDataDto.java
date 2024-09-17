@@ -10,12 +10,9 @@ package io.camunda.optimize.dto.optimize.query.dashboard.filter.data;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.IdentityLinkFilterDataDto;
 import java.util.List;
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DashboardIdentityFilterDataDto extends IdentityLinkFilterDataDto {
@@ -40,6 +37,8 @@ public class DashboardIdentityFilterDataDto extends IdentityLinkFilterDataDto {
     this.allowCustomValues = allowCustomValues;
     this.defaultValues = defaultValues;
   }
+
+  protected DashboardIdentityFilterDataDto() {}
 
   public static final class Fields {
 

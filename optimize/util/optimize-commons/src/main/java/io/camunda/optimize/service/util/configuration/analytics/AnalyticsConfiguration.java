@@ -8,15 +8,11 @@
 package io.camunda.optimize.service.util.configuration.analytics;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AnalyticsConfiguration {
+
   @JsonProperty("enabled")
   private boolean enabled;
 
@@ -25,4 +21,13 @@ public class AnalyticsConfiguration {
 
   @JsonProperty("osano")
   private OsanoConfiguration osano;
+
+  public AnalyticsConfiguration(
+      boolean enabled, MixpanelConfiguration mixpanel, OsanoConfiguration osano) {
+    this.enabled = enabled;
+    this.mixpanel = mixpanel;
+    this.osano = osano;
+  }
+
+  protected AnalyticsConfiguration() {}
 }

@@ -38,12 +38,9 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConfigurationParser {
 
   private static final String ENGINES_FIELD = "engines";
@@ -57,6 +54,8 @@ public class ConfigurationParser {
       new TypeReference<List<Object>>() {};
   public static final TypeReference<Map<String, Object>> STRING_OBJECT_MAP_TYPE =
       new TypeReference<Map<String, Object>>() {};
+
+  private ConfigurationParser() {}
 
   // @formatter:on
 

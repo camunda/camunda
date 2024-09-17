@@ -11,12 +11,8 @@ import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class ProcessVariableDto implements OptimizeDto {
 
@@ -32,4 +28,25 @@ public class ProcessVariableDto implements OptimizeDto {
   private Long version;
   private String engineAlias;
   private String tenantId;
+
+  public ProcessVariableDto(String id, String name, String type, List<String> value,
+      OffsetDateTime timestamp, Map<String, Object> valueInfo, String processDefinitionKey,
+      String processDefinitionId, String processInstanceId, Long version, String engineAlias,
+      String tenantId) {
+    this.id = id;
+    this.name = name;
+    this.type = type;
+    this.value = value;
+    this.timestamp = timestamp;
+    this.valueInfo = valueInfo;
+    this.processDefinitionKey = processDefinitionKey;
+    this.processDefinitionId = processDefinitionId;
+    this.processInstanceId = processInstanceId;
+    this.version = version;
+    this.engineAlias = engineAlias;
+    this.tenantId = tenantId;
+  }
+
+  public ProcessVariableDto() {
+  }
 }

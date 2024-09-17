@@ -8,12 +8,8 @@
 package io.camunda.optimize.dto.optimize.query.entity;
 
 import jakarta.ws.rs.QueryParam;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class EntityNameRequestDto {
 
@@ -25,6 +21,14 @@ public class EntityNameRequestDto {
 
   @QueryParam("reportId")
   private String reportId;
+
+  public EntityNameRequestDto(String collectionId, String dashboardId, String reportId) {
+    this.collectionId = collectionId;
+    this.dashboardId = dashboardId;
+    this.reportId = reportId;
+  }
+
+  public EntityNameRequestDto() {}
 
   public enum Fields {
     collectionId,

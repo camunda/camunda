@@ -10,19 +10,28 @@ package io.camunda.optimize.dto.optimize.query.report.single.result;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MeasureDto<T> {
+
   private ViewProperty property;
   private AggregationDto aggregationType;
   private UserTaskDurationTime userTaskDurationTime;
   private T data;
+
+  public MeasureDto(
+      ViewProperty property,
+      AggregationDto aggregationType,
+      UserTaskDurationTime userTaskDurationTime,
+      T data) {
+    this.property = property;
+    this.aggregationType = aggregationType;
+    this.userTaskDurationTime = userTaskDurationTime;
+    this.data = data;
+  }
+
+  protected MeasureDto() {}
 
   public static <T> MeasureDto<T> of(
       ViewProperty property,

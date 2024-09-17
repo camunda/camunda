@@ -9,17 +9,14 @@ package io.camunda.optimize.dto.optimize.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ValidationErrorResponseDto extends ErrorResponseDto {
+
   private List<ValidationError> validationErrors;
 
   public ValidationErrorResponseDto(
@@ -28,11 +25,19 @@ public class ValidationErrorResponseDto extends ErrorResponseDto {
     this.validationErrors = validationErrors;
   }
 
+  protected ValidationErrorResponseDto() {}
+
   @Data
-  @NoArgsConstructor(access = AccessLevel.PROTECTED)
-  @AllArgsConstructor
   public static class ValidationError {
+
     private String property;
     private String errorMessage;
+
+    public ValidationError(String property, String errorMessage) {
+      this.property = property;
+      this.errorMessage = errorMessage;
+    }
+
+    protected ValidationError() {}
   }
 }

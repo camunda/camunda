@@ -14,10 +14,7 @@ import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -63,16 +60,26 @@ public class CCSaaSOrganizationsClient extends AbstractCCSaaSClient {
   }
 
   @Data
-  @NoArgsConstructor(access = AccessLevel.PROTECTED)
-  @AllArgsConstructor
   public static class AccountsOrganisationResponse {
+
     private Optional<AccountsSalesPlanDto> salesPlan;
+
+    public AccountsOrganisationResponse(Optional<AccountsSalesPlanDto> salesPlan) {
+      this.salesPlan = salesPlan;
+    }
+
+    protected AccountsOrganisationResponse() {}
   }
 
   @Data
-  @NoArgsConstructor(access = AccessLevel.PROTECTED)
-  @AllArgsConstructor
   public static class AccountsSalesPlanDto {
+
     private Optional<String> type;
+
+    public AccountsSalesPlanDto(Optional<String> type) {
+      this.type = type;
+    }
+
+    protected AccountsSalesPlanDto() {}
   }
 }

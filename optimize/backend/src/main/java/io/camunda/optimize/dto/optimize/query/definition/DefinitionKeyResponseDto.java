@@ -7,17 +7,20 @@
  */
 package io.camunda.optimize.dto.optimize.query.definition;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @Builder
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DefinitionKeyResponseDto {
+
   private String key;
   private String name;
+
+  public DefinitionKeyResponseDto(String key, String name) {
+    this.key = key;
+    this.name = name;
+  }
+
+  protected DefinitionKeyResponseDto() {}
 }

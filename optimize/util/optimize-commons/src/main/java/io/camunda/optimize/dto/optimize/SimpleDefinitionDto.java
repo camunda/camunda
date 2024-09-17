@@ -10,18 +10,14 @@ package io.camunda.optimize.dto.optimize;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class SimpleDefinitionDto {
+
   @EqualsAndHashCode.Include @NonNull private String key;
   private String name;
   @EqualsAndHashCode.Include @NonNull private DefinitionType type;
@@ -37,4 +33,17 @@ public class SimpleDefinitionDto {
     this.type = type;
     engines = Collections.singleton(engine);
   }
+
+  public SimpleDefinitionDto(
+      @NonNull String key,
+      String name,
+      @NonNull DefinitionType type,
+      @NonNull Set<String> engines) {
+    this.key = key;
+    this.name = name;
+    this.type = type;
+    this.engines = engines;
+  }
+
+  protected SimpleDefinitionDto() {}
 }

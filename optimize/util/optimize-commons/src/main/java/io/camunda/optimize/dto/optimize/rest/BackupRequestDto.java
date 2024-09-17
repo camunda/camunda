@@ -9,17 +9,18 @@ package io.camunda.optimize.dto.optimize.rest;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 public class BackupRequestDto {
 
   @NotNull
   @Min(0)
   private Long backupId;
+
+  public BackupRequestDto(@NotNull @Min(0) Long backupId) {
+    this.backupId = backupId;
+  }
+
+  protected BackupRequestDto() {}
 }

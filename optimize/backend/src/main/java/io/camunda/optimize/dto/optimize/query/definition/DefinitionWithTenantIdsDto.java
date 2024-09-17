@@ -12,18 +12,14 @@ import io.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import io.camunda.optimize.service.util.TenantListHandlingUtil;
 import java.util.List;
 import java.util.Set;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
+
   @NonNull private List<String> tenantIds;
 
   public DefinitionWithTenantIdsDto(
@@ -35,6 +31,12 @@ public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
     super(key, name, type, engines);
     this.tenantIds = tenantIds;
   }
+
+  public DefinitionWithTenantIdsDto(@NonNull List<String> tenantIds) {
+    this.tenantIds = tenantIds;
+  }
+
+  protected DefinitionWithTenantIdsDto() {}
 
   public List<String> getTenantIds() {
     return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);

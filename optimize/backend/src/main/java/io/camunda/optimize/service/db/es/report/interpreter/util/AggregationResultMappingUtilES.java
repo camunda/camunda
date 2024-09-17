@@ -9,11 +9,11 @@ package io.camunda.optimize.service.db.es.report.interpreter.util;
 
 import co.elastic.clients.elasticsearch._types.aggregations.TDigestPercentilesAggregate;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AggregationResultMappingUtilES {
+
+  private AggregationResultMappingUtilES() {
+  }
 
   public static Double mapToDoubleOrNull(
       final TDigestPercentilesAggregate aggregation, final double percentileValue) {

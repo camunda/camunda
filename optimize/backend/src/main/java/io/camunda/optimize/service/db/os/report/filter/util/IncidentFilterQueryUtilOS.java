@@ -22,14 +22,12 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.Resol
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class IncidentFilterQueryUtilOS {
+
   private static final Map<Class<? extends ProcessFilterDto<?>>, Query>
       incidentViewFilterInstanceQueries =
           ImmutableMap.of(
@@ -37,6 +35,8 @@ public class IncidentFilterQueryUtilOS {
               IncidentFilterQueryUtilOS.createDeletedIncidentTermQuery(),
               ResolvedIncidentFilterDto.class,
               IncidentFilterQueryUtilOS.createResolvedIncidentTermQuery());
+
+  private IncidentFilterQueryUtilOS() {}
 
   public static Optional<Query> instanceFilterForRelevantViewLevelFiltersQuery(
       final List<ProcessFilterDto<?>> filters) {

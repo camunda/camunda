@@ -17,13 +17,9 @@ import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
 
@@ -127,6 +123,53 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
     flowNodeType = FLOW_NODE_TYPE_USER_TASK;
     this.userTaskInstanceId = userTaskInstanceId;
   }
+
+  public FlowNodeInstanceDto(
+      String flowNodeInstanceId,
+      String flowNodeId,
+      String flowNodeType,
+      String processInstanceId,
+      Long totalDurationInMs,
+      OffsetDateTime startDate,
+      OffsetDateTime endDate,
+      Boolean canceled,
+      String definitionKey,
+      String definitionVersion,
+      String tenantId,
+      String engine,
+      String userTaskInstanceId,
+      OffsetDateTime dueDate,
+      String deleteReason,
+      String assignee,
+      List<String> candidateGroups,
+      List<AssigneeOperationDto> assigneeOperations,
+      List<CandidateGroupOperationDto> candidateGroupOperations,
+      Long idleDurationInMs,
+      Long workDurationInMs) {
+    this.flowNodeInstanceId = flowNodeInstanceId;
+    this.flowNodeId = flowNodeId;
+    this.flowNodeType = flowNodeType;
+    this.processInstanceId = processInstanceId;
+    this.totalDurationInMs = totalDurationInMs;
+    this.startDate = startDate;
+    this.endDate = endDate;
+    this.canceled = canceled;
+    this.definitionKey = definitionKey;
+    this.definitionVersion = definitionVersion;
+    this.tenantId = tenantId;
+    this.engine = engine;
+    this.userTaskInstanceId = userTaskInstanceId;
+    this.dueDate = dueDate;
+    this.deleteReason = deleteReason;
+    this.assignee = assignee;
+    this.candidateGroups = candidateGroups;
+    this.assigneeOperations = assigneeOperations;
+    this.candidateGroupOperations = candidateGroupOperations;
+    this.idleDurationInMs = idleDurationInMs;
+    this.workDurationInMs = workDurationInMs;
+  }
+
+  public FlowNodeInstanceDto() {}
 
   public static final class Fields {
 

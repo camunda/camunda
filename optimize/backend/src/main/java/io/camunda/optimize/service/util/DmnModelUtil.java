@@ -17,8 +17,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.dmn.Dmn;
@@ -29,8 +27,9 @@ import org.camunda.bpm.model.dmn.instance.Input;
 import org.camunda.bpm.model.dmn.instance.Output;
 
 @Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DmnModelUtil {
+
+  private DmnModelUtil() {}
 
   public static DmnModelInstance parseDmnModel(final String dmn10Xml) {
     try (final ByteArrayInputStream stream = new ByteArrayInputStream(dmn10Xml.getBytes())) {
@@ -136,6 +135,7 @@ public class DmnModelUtil {
   }
 
   private interface VariableExtractionFunction {
+
     List<DecisionVariableNameResponseDto> extract(DecisionTable table, String key);
   }
 }

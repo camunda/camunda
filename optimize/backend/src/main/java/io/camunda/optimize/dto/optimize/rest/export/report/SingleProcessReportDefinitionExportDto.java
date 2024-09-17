@@ -14,16 +14,13 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProces
 import io.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class SingleProcessReportDefinitionExportDto extends ReportDefinitionExportDto {
+
   @NotNull private ProcessReportDataDto data;
 
   public SingleProcessReportDefinitionExportDto(
@@ -37,6 +34,12 @@ public class SingleProcessReportDefinitionExportDto extends ReportDefinitionExpo
         reportDefinition.getCollectionId());
     this.data = reportDefinition.getData();
   }
+
+  public SingleProcessReportDefinitionExportDto(@NotNull ProcessReportDataDto data) {
+    this.data = data;
+  }
+
+  public SingleProcessReportDefinitionExportDto() {}
 
   @Override
   public ExportEntityType getExportEntityType() {

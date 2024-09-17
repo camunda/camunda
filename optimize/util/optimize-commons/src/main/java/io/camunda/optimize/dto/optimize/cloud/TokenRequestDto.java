@@ -8,14 +8,10 @@
 package io.camunda.optimize.dto.optimize.cloud;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class TokenRequestDto {
 
@@ -30,4 +26,13 @@ public class TokenRequestDto {
 
   @JsonProperty("grant_type")
   private String grantType;
+
+  public TokenRequestDto(String clientId, String clientSecret, String audience, String grantType) {
+    this.clientId = clientId;
+    this.clientSecret = clientSecret;
+    this.audience = audience;
+    this.grantType = grantType;
+  }
+
+  public TokenRequestDto() {}
 }

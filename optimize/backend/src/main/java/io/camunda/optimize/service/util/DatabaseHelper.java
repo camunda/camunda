@@ -9,11 +9,10 @@ package io.camunda.optimize.service.util;
 
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DatabaseHelper {
+
+  private DatabaseHelper() {}
 
   public static String constructKey(String databaseType, String engineAlias) {
     return databaseType + "-" + engineAlias;

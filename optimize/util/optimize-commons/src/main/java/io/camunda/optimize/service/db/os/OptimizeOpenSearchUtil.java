@@ -10,12 +10,11 @@ package io.camunda.optimize.service.db.os;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
 
 import jakarta.ws.rs.NotSupportedException;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class OptimizeOpenSearchUtil {
+
+  private OptimizeOpenSearchUtil() {}
 
   public static IndexSettings.Builder addStaticSetting(
       final String key, final int value, final IndexSettings.Builder contentBuilder) {

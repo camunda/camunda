@@ -8,15 +8,11 @@
 package io.camunda.optimize.dto.optimize.query.dashboard.tile;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
 @Builder(toBuilder = true)
-@NoArgsConstructor
-@AllArgsConstructor
 public class DashboardReportTileDto {
 
   protected String id;
@@ -24,6 +20,21 @@ public class DashboardReportTileDto {
   protected DimensionDto dimensions;
   @NotNull protected DashboardTileType type;
   protected Object configuration;
+
+  public DashboardReportTileDto(
+      String id,
+      PositionDto position,
+      DimensionDto dimensions,
+      @NotNull DashboardTileType type,
+      Object configuration) {
+    this.id = id;
+    this.position = position;
+    this.dimensions = dimensions;
+    this.type = type;
+    this.configuration = configuration;
+  }
+
+  public DashboardReportTileDto() {}
 
   public static final class Fields {
 

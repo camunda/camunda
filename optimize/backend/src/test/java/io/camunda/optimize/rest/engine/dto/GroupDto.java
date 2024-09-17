@@ -7,18 +7,22 @@
  */
 package io.camunda.optimize.rest.engine.dto;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
 @Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class GroupDto {
+
   private String id;
   private String name;
   private String type;
+
+  public GroupDto(String id, String name, String type) {
+    this.id = id;
+    this.name = name;
+    this.type = type;
+  }
+
+  protected GroupDto() {}
 }

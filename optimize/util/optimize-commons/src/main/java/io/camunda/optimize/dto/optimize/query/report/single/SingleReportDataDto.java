@@ -16,16 +16,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SuperBuilder
 public abstract class SingleReportDataDto implements ReportDataDto {
 
@@ -34,6 +29,15 @@ public abstract class SingleReportDataDto implements ReportDataDto {
 
   @Getter @Setter @Builder.Default @Valid
   private List<ReportDataDefinitionDto> definitions = new ArrayList<>();
+
+  public SingleReportDataDto(
+      SingleReportConfigurationDto configuration,
+      @Valid List<ReportDataDefinitionDto> definitions) {
+    this.configuration = configuration;
+    this.definitions = definitions;
+  }
+
+  protected SingleReportDataDto() {}
 
   @JsonIgnore
   public Optional<ReportDataDefinitionDto> getFirstDefinition() {

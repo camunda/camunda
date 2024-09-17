@@ -10,11 +10,10 @@ package io.camunda.optimize.service.mixpanel.client;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 public class MixpanelEventProperties {
+
   // Mixpanel default properties, see
   // https://developer.mixpanel.com/reference/import-events#high-level-requirements
   @JsonProperty("time")
@@ -50,6 +49,8 @@ public class MixpanelEventProperties {
     this.organizationId = organizationId;
     this.clusterId = clusterId;
   }
+
+  public MixpanelEventProperties() {}
 
   @JsonProperty("org_id")
   public String getOrgGroupKey() {

@@ -12,11 +12,9 @@ import io.camunda.optimize.dto.optimize.RoleType;
 import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CollectionRoleRequestDto {
 
   private static final String ID_SEGMENT_SEPARATOR = ":";
@@ -31,6 +29,8 @@ public class CollectionRoleRequestDto {
     setIdentity(identity);
     this.role = role;
   }
+
+  protected CollectionRoleRequestDto() {}
 
   public String getId() {
     return Optional.ofNullable(id).orElse(convertIdentityToRoleId(identity));

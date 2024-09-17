@@ -9,19 +9,28 @@ package io.camunda.optimize.dto.optimize.query.processoverview;
 
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class ProcessOverviewDto implements OptimizeDto {
 
   private String owner;
   private String processDefinitionKey;
   private ProcessDigestDto digest;
   private Map<String, String> lastKpiEvaluationResults;
+
+  public ProcessOverviewDto(
+      String owner,
+      String processDefinitionKey,
+      ProcessDigestDto digest,
+      Map<String, String> lastKpiEvaluationResults) {
+    this.owner = owner;
+    this.processDefinitionKey = processDefinitionKey;
+    this.digest = digest;
+    this.lastKpiEvaluationResults = lastKpiEvaluationResults;
+  }
+
+  public ProcessOverviewDto() {}
 
   public static final class Fields {
 

@@ -16,14 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TaskResponse {
 
@@ -38,6 +33,16 @@ public class TaskResponse {
 
   @JsonProperty("response")
   private TaskResponseDetails responseDetails;
+
+  public TaskResponse(
+      boolean completed, Task task, Error error, TaskResponseDetails responseDetails) {
+    this.completed = completed;
+    this.task = task;
+    this.error = error;
+    this.responseDetails = responseDetails;
+  }
+
+  protected TaskResponse() {}
 
   public boolean isCompleted() {
     return completed;
@@ -68,8 +73,6 @@ public class TaskResponse {
     return error;
   }
 
-  @NoArgsConstructor(access = AccessLevel.PROTECTED)
-  @AllArgsConstructor
   @Setter
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class Task {
@@ -79,6 +82,13 @@ public class TaskResponse {
 
     @JsonProperty("status")
     private Status status;
+
+    public Task(String id, Status status) {
+      this.id = id;
+      this.status = status;
+    }
+
+    protected Task() {}
 
     public String getId() {
       return id;
@@ -90,8 +100,6 @@ public class TaskResponse {
     }
   }
 
-  @NoArgsConstructor(access = AccessLevel.PROTECTED)
-  @AllArgsConstructor
   @Getter
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class Status {
@@ -107,13 +115,21 @@ public class TaskResponse {
 
     @JsonProperty("deleted")
     private Long deleted;
+
+    public Status(Long total, Long updated, Long created, Long deleted) {
+      this.total = total;
+      this.updated = updated;
+      this.created = created;
+      this.deleted = deleted;
+    }
+
+    protected Status() {}
   }
 
-  @NoArgsConstructor(access = AccessLevel.PROTECTED)
-  @AllArgsConstructor
   @JsonIgnoreProperties(ignoreUnknown = true)
   @Getter
   public static class Error {
+
     @JsonProperty("type")
     private String type;
 
@@ -125,6 +141,16 @@ public class TaskResponse {
 
     @JsonProperty("caused_by")
     private Map<String, Object> causedBy;
+
+    public Error(
+        String type, String reason, List<String> scriptStack, Map<String, Object> causedBy) {
+      this.type = type;
+      this.reason = reason;
+      this.scriptStack = scriptStack;
+      this.causedBy = causedBy;
+    }
+
+    protected Error() {}
 
     @Override
     public String toString() {
@@ -159,13 +185,18 @@ public class TaskResponse {
     }
   }
 
-  @NoArgsConstructor(access = AccessLevel.PROTECTED)
-  @AllArgsConstructor
   @Setter
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class TaskResponseDetails {
+
     @JsonProperty("failures")
     private List<Object> failures;
+
+    public TaskResponseDetails(List<Object> failures) {
+      this.failures = failures;
+    }
+
+    protected TaskResponseDetails() {}
 
     public List<Object> getFailures() {
       return failures;

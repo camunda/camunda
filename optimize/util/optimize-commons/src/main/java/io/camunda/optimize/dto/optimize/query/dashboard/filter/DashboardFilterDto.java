@@ -11,10 +11,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
   @JsonSubTypes.Type(value = DashboardInstanceStartDateFilterDto.class, name = "instanceStartDate"),
@@ -31,6 +29,8 @@ public abstract class DashboardFilterDto<DATA extends FilterDataDto> {
   protected DashboardFilterDto(final DATA data) {
     this.data = data;
   }
+
+  public DashboardFilterDto() {}
 
   public static final class Fields {
 

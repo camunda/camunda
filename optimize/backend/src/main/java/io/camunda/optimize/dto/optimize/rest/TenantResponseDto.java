@@ -7,15 +7,18 @@
  */
 package io.camunda.optimize.dto.optimize.rest;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TenantResponseDto {
+
   private String id;
   private String name;
+
+  public TenantResponseDto(String id, String name) {
+    this.id = id;
+    this.name = name;
+  }
+
+  protected TenantResponseDto() {}
 }

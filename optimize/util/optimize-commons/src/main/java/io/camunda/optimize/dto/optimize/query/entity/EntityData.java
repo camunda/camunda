@@ -10,12 +10,8 @@ package io.camunda.optimize.dto.optimize.query.entity;
 import io.camunda.optimize.dto.optimize.IdentityType;
 import java.util.HashMap;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class EntityData {
 
@@ -25,4 +21,11 @@ public class EntityData {
   public EntityData(final Map<EntityType, Long> subEntityCounts) {
     this.subEntityCounts = subEntityCounts;
   }
+
+  public EntityData(Map<EntityType, Long> subEntityCounts, Map<IdentityType, Long> roleCounts) {
+    this.subEntityCounts = subEntityCounts;
+    this.roleCounts = roleCounts;
+  }
+
+  public EntityData() {}
 }

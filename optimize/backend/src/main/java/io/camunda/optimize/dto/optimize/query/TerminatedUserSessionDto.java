@@ -9,14 +9,11 @@ package io.camunda.optimize.dto.optimize.query;
 
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import java.time.OffsetDateTime;
-import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TerminatedUserSessionDto {
 
   private String id;
@@ -26,4 +23,6 @@ public class TerminatedUserSessionDto {
     this.id = id;
     this.terminationTimestamp = LocalDateUtil.getCurrentDateTime();
   }
+
+  protected TerminatedUserSessionDto() {}
 }

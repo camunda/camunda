@@ -23,17 +23,17 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 
 @Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DateFilterQueryUtilOS {
+
   private static final DateTimeFormatter formatter =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+
+  private DateFilterQueryUtilOS() {}
 
   public static List<Query> filterQueries(
       final List<DateFilterDataDto<?>> dates, final String dateField, final ZoneId timezone) {

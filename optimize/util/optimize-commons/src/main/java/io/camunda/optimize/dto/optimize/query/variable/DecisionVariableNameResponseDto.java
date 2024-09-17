@@ -7,16 +7,20 @@
  */
 package io.camunda.optimize.dto.optimize.query.variable;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class DecisionVariableNameResponseDto {
 
   protected String id;
   protected String name;
   protected VariableType type;
+
+  public DecisionVariableNameResponseDto(String id, String name, VariableType type) {
+    this.id = id;
+    this.name = name;
+    this.type = type;
+  }
+
+  public DecisionVariableNameResponseDto() {}
 }

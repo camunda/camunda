@@ -12,18 +12,18 @@ import jakarta.ws.rs.BeanParam;
 import java.util.List;
 import java.util.Optional;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 /**
  * The Sorter and its subclasses are responsible for applying sorting after data has been fetched
  * from Elasticsearch
  */
-@NoArgsConstructor
 @ToString
 public abstract class Sorter<T> {
 
   @Getter @BeanParam SortRequestDto sortRequestDto;
+
+  public Sorter() {}
 
   public Optional<String> getSortBy() {
     return sortRequestDto.getSortBy();

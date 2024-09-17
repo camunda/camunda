@@ -10,13 +10,14 @@ package io.camunda.optimize.upgrade.indices;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public abstract class UserTestWithTemplateIndex<TBuilder>
     extends DefaultIndexMappingCreator<TBuilder> {
 
   private static final int VERSION = 1;
+
+  public UserTestWithTemplateIndex() {
+  }
 
   @Override
   public String getIndexName() {

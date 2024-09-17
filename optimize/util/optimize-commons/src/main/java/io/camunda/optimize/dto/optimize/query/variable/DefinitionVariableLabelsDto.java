@@ -11,18 +11,21 @@ import io.camunda.optimize.dto.optimize.OptimizeDto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class DefinitionVariableLabelsDto implements OptimizeDto {
 
   @NotBlank private String definitionKey;
 
   @Valid private List<LabelDto> labels;
+
+  public DefinitionVariableLabelsDto(@NotBlank String definitionKey, @Valid List<LabelDto> labels) {
+    this.definitionKey = definitionKey;
+    this.labels = labels;
+  }
+
+  public DefinitionVariableLabelsDto() {}
 
   public static final class Fields {
 

@@ -15,15 +15,14 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TimeZoneUtil {
 
   private static final Set<String> AVAILABLE_ZONE_IDS = ZoneId.getAvailableZoneIds();
+
+  private TimeZoneUtil() {}
 
   public static ZoneId extractTimezone(ContainerRequestContext requestContext) {
     final String headerString = requestContext.getHeaderString(X_OPTIMIZE_CLIENT_TIMEZONE);

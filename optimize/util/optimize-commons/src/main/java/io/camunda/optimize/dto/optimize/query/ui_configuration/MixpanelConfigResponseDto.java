@@ -7,14 +7,11 @@
  */
 package io.camunda.optimize.dto.optimize.query.ui_configuration;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class MixpanelConfigResponseDto {
+
   private boolean enabled;
   private String apiHost;
   private String token;
@@ -22,4 +19,23 @@ public class MixpanelConfigResponseDto {
   private String osanoScriptUrl;
   private String stage;
   private String clusterId;
+
+  public MixpanelConfigResponseDto(
+      boolean enabled,
+      String apiHost,
+      String token,
+      String organizationId,
+      String osanoScriptUrl,
+      String stage,
+      String clusterId) {
+    this.enabled = enabled;
+    this.apiHost = apiHost;
+    this.token = token;
+    this.organizationId = organizationId;
+    this.osanoScriptUrl = osanoScriptUrl;
+    this.stage = stage;
+    this.clusterId = clusterId;
+  }
+
+  public MixpanelConfigResponseDto() {}
 }

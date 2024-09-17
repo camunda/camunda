@@ -8,21 +8,24 @@
 package io.camunda.optimize.dto.optimize.query.sorting;
 
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor(access = AccessLevel.PUBLIC)
-@NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Data
 public class ReportSortingDto {
+
   public static final String SORT_BY_KEY = "key";
   public static final String SORT_BY_VALUE = "value";
   public static final String SORT_BY_LABEL = "label";
 
   private String by;
   private SortOrder order;
+
+  public ReportSortingDto(String by, SortOrder order) {
+    this.by = by;
+    this.order = order;
+  }
+
+  public ReportSortingDto() {}
 
   public Optional<String> getBy() {
     return Optional.ofNullable(by);

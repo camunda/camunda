@@ -8,13 +8,12 @@
 package io.camunda.optimize.util;
 
 import java.nio.charset.StandardCharsets;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FileReaderUtil {
+
+  private FileReaderUtil() {}
 
   @SneakyThrows
   public static String readFile(final String pathString) {

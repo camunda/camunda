@@ -16,14 +16,11 @@ import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @Data
-@NoArgsConstructor
 public class DecisionVariableNameRequestDto {
+
   @NotNull private String decisionDefinitionKey;
   private List<String> decisionDefinitionVersions = new ArrayList<>();
   private List<String> tenantIds = new ArrayList<>(DEFAULT_TENANT_IDS);
@@ -39,6 +36,17 @@ public class DecisionVariableNameRequestDto {
     this.decisionDefinitionKey = key;
     this.decisionDefinitionVersions = versions;
   }
+
+  public DecisionVariableNameRequestDto(
+      @NotNull String decisionDefinitionKey,
+      List<String> decisionDefinitionVersions,
+      List<String> tenantIds) {
+    this.decisionDefinitionKey = decisionDefinitionKey;
+    this.decisionDefinitionVersions = decisionDefinitionVersions;
+    this.tenantIds = tenantIds;
+  }
+
+  public DecisionVariableNameRequestDto() {}
 
   @JsonIgnore
   public void setDecisionDefinitionVersion(String decisionDefinitionVersion) {

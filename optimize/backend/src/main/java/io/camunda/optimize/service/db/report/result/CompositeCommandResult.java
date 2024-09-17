@@ -53,12 +53,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
 @Data
-@RequiredArgsConstructor
 public class CompositeCommandResult {
+
   private final SingleReportDataDto reportDataDto;
   private final ViewProperty viewProperty;
 
@@ -77,6 +76,11 @@ public class CompositeCommandResult {
     this.reportDataDto = reportDataDto;
     this.viewProperty = viewProperty;
     defaultNumberValueSupplier = () -> defaultNumberValue;
+  }
+
+  public CompositeCommandResult(SingleReportDataDto reportDataDto, ViewProperty viewProperty) {
+    this.reportDataDto = reportDataDto;
+    this.viewProperty = viewProperty;
   }
 
   public void setGroup(final GroupByResult groupByResult) {
@@ -264,7 +268,7 @@ public class CompositeCommandResult {
   private boolean isUserTaskDurationResult() {
     return reportDataDto instanceof ProcessReportDataDto
         && ProcessViewEntity.USER_TASK.equals(
-            ((ProcessReportDataDto) reportDataDto).getView().getEntity())
+        ((ProcessReportDataDto) reportDataDto).getView().getEntity())
         && ViewProperty.DURATION.equals(viewProperty);
   }
 
@@ -397,6 +401,7 @@ public class CompositeCommandResult {
   @AllArgsConstructor(access = AccessLevel.PROTECTED)
   @Data
   public static class GroupByResult {
+
     private String key;
     private String label;
     private List<DistributedByResult> distributions;
@@ -429,6 +434,7 @@ public class CompositeCommandResult {
   @Data
   @EqualsAndHashCode
   public static class DistributedByResult {
+
     private String key;
     private String label;
     private ViewResult viewResult;
@@ -480,7 +486,8 @@ public class CompositeCommandResult {
       private ArrayList<ViewMeasure> viewMeasures;
       private List<? extends RawDataInstanceDto> rawData;
 
-      ViewResultBuilder() {}
+      ViewResultBuilder() {
+      }
 
       public ViewResultBuilder viewMeasure(final ViewMeasure viewMeasure) {
         if (viewMeasures == null) {
@@ -571,7 +578,8 @@ public class CompositeCommandResult {
       private UserTaskDurationTime userTaskDurationTime;
       private Double value;
 
-      ViewMeasureBuilder() {}
+      ViewMeasureBuilder() {
+      }
 
       public ViewMeasureBuilder aggregationType(final AggregationDto aggregationType) {
         this.aggregationType = aggregationType;

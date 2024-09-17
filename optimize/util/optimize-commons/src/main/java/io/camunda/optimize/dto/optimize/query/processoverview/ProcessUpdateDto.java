@@ -9,15 +9,18 @@ package io.camunda.optimize.dto.optimize.query.processoverview;
 
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class ProcessUpdateDto implements OptimizeDto {
 
   private String ownerId;
   @NotNull private ProcessDigestRequestDto processDigest;
+
+  public ProcessUpdateDto(String ownerId, @NotNull ProcessDigestRequestDto processDigest) {
+    this.ownerId = ownerId;
+    this.processDigest = processDigest;
+  }
+
+  public ProcessUpdateDto() {}
 }

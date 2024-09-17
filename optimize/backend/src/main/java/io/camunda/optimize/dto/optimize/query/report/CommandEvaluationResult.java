@@ -16,15 +16,9 @@ import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 
-@AllArgsConstructor
-@RequiredArgsConstructor
-@NoArgsConstructor
 @Data
 public abstract class CommandEvaluationResult<T> {
 
@@ -48,6 +42,25 @@ public abstract class CommandEvaluationResult<T> {
     this.instanceCount = instanceCount;
     this.instanceCountWithoutFilters = instanceCountWithoutFilters;
     this.measures = measures;
+    this.reportData = reportData;
+  }
+
+  public CommandEvaluationResult(
+      long instanceCount,
+      long instanceCountWithoutFilters,
+      @NonNull List<MeasureDto<T>> measures,
+      @NonNull ReportDataDto reportData,
+      @NonNull PaginationDto pagination) {
+    this.instanceCount = instanceCount;
+    this.instanceCountWithoutFilters = instanceCountWithoutFilters;
+    this.measures = measures;
+    this.reportData = reportData;
+    this.pagination = pagination;
+  }
+
+  public CommandEvaluationResult() {}
+
+  public CommandEvaluationResult(@NonNull ReportDataDto reportData) {
     this.reportData = reportData;
   }
 

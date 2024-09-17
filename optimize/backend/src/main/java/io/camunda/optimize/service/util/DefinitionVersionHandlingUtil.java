@@ -13,13 +13,12 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DefinitionVersionHandlingUtil {
+
+  private DefinitionVersionHandlingUtil() {}
 
   public static String convertToLatestParticularVersion(
       final String processDefinitionVersion, final Supplier<String> latestVersionSupplier) {

@@ -9,14 +9,11 @@ package io.camunda.optimize.dto.optimize.rest.report;
 
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AuthorizedCombinedReportEvaluationResponseDto<T>
     extends AuthorizedReportEvaluationResponseDto<CombinedReportDefinitionRequestDto> {
 
@@ -29,4 +26,6 @@ public class AuthorizedCombinedReportEvaluationResponseDto<T>
     super(currentUserRole, reportDefinition);
     this.result = result;
   }
+
+  protected AuthorizedCombinedReportEvaluationResponseDto() {}
 }

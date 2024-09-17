@@ -7,11 +7,9 @@
  */
 package io.camunda.optimize.rest.queryparam;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class QueryParamUtil {
+
+  private QueryParamUtil() {}
 
   public static <T> T normalizeNullStringValue(T nullableIn) {
     return "null".equals(nullableIn) ? null : nullableIn;

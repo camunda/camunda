@@ -17,18 +17,25 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class CombinedReportDataDto implements ReportDataDto {
 
   protected CombinedReportConfigurationDto configuration = new CombinedReportConfigurationDto();
   protected ProcessVisualization visualization;
   protected List<CombinedReportItemDto> reports = new ArrayList<>();
+
+  public CombinedReportDataDto(
+      CombinedReportConfigurationDto configuration,
+      ProcessVisualization visualization,
+      List<CombinedReportItemDto> reports) {
+    this.configuration = configuration;
+    this.visualization = visualization;
+    this.reports = reports;
+  }
+
+  public CombinedReportDataDto() {}
 
   @JsonIgnore
   public List<String> getReportIds() {

@@ -17,16 +17,13 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString(callSuper = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 public class UserDto extends IdentityWithMetadataResponseDto {
@@ -69,6 +66,8 @@ public class UserDto extends IdentityWithMetadataResponseDto {
     this.email = email;
     this.roles = roles;
   }
+
+  protected UserDto() {}
 
   private static String resolveName(
       final String id, final String firstName, final String lastName) {

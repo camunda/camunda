@@ -7,19 +7,22 @@
  */
 package io.camunda.optimize.service.util.configuration.engine;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @Builder
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EngineAuthenticationConfiguration {
 
   private boolean enabled;
   private String password;
   private String user;
+
+  public EngineAuthenticationConfiguration(boolean enabled, String password, String user) {
+    this.enabled = enabled;
+    this.password = password;
+    this.user = user;
+  }
+
+  protected EngineAuthenticationConfiguration() {}
 }

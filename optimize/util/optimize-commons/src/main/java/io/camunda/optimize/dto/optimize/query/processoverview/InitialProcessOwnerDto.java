@@ -7,14 +7,18 @@
  */
 package io.camunda.optimize.dto.optimize.query.processoverview;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class InitialProcessOwnerDto {
+
   private String processDefinitionKey;
   private String owner;
+
+  public InitialProcessOwnerDto(String processDefinitionKey, String owner) {
+    this.processDefinitionKey = processDefinitionKey;
+    this.owner = owner;
+  }
+
+  public InitialProcessOwnerDto() {}
 }

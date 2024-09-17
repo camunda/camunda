@@ -19,12 +19,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = false)
 public class ProcessCleanupConfiguration {
+
   @JsonProperty("enabled")
   private boolean enabled;
 
@@ -46,6 +45,8 @@ public class ProcessCleanupConfiguration {
     this.enabled = enabled;
     this.cleanupMode = cleanupMode;
   }
+
+  public ProcessCleanupConfiguration() {}
 
   public void validate() {
     if (cleanupMode == null) {

@@ -10,13 +10,8 @@ package io.camunda.optimize.dto.optimize.query.entity;
 import io.camunda.optimize.dto.optimize.ReportType;
 import io.camunda.optimize.dto.optimize.RoleType;
 import java.time.OffsetDateTime;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @Data
 public class EntityResponseDto {
 
@@ -85,6 +80,35 @@ public class EntityResponseDto {
         reportType,
         currentUserRole);
   }
+
+  public EntityResponseDto(
+      String id,
+      String name,
+      String description,
+      OffsetDateTime lastModified,
+      OffsetDateTime created,
+      String owner,
+      String lastModifier,
+      EntityType entityType,
+      EntityData data,
+      Boolean combined,
+      ReportType reportType,
+      RoleType currentUserRole) {
+    this.id = id;
+    this.name = name;
+    this.description = description;
+    this.lastModified = lastModified;
+    this.created = created;
+    this.owner = owner;
+    this.lastModifier = lastModifier;
+    this.entityType = entityType;
+    this.data = data;
+    this.combined = combined;
+    this.reportType = reportType;
+    this.currentUserRole = currentUserRole;
+  }
+
+  protected EntityResponseDto() {}
 
   public static final class Fields {
 

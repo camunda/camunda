@@ -10,13 +10,9 @@ package io.camunda.optimize.dto.optimize.rest.definition;
 import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @Data
-@NoArgsConstructor
 public class MultiDefinitionTenantsRequestDto {
 
   public MultiDefinitionTenantsRequestDto(final List<DefinitionDto> definitionDtos) {
@@ -26,11 +22,25 @@ public class MultiDefinitionTenantsRequestDto {
   private List<DefinitionDto> definitions = new ArrayList<>();
   private String filterByCollectionScope;
 
-  @AllArgsConstructor
+  public MultiDefinitionTenantsRequestDto(
+      List<DefinitionDto> definitions, String filterByCollectionScope) {
+    this.definitions = definitions;
+    this.filterByCollectionScope = filterByCollectionScope;
+  }
+
+  public MultiDefinitionTenantsRequestDto() {}
+
   @Data
-  @NoArgsConstructor
   public static class DefinitionDto {
+
     @NotNull private String key;
     @NotNull private List<String> versions = new ArrayList<>();
+
+    public DefinitionDto(@NotNull String key, @NotNull List<String> versions) {
+      this.key = key;
+      this.versions = versions;
+    }
+
+    public DefinitionDto() {}
   }
 }

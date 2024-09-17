@@ -7,17 +7,20 @@
  */
 package io.camunda.optimize.dto.optimize.query.alert;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class AlertInterval {
 
   private int value;
   private AlertIntervalUnit unit;
+
+  public AlertInterval(int value, AlertIntervalUnit unit) {
+    this.value = value;
+    this.unit = unit;
+  }
+
+  public AlertInterval() {}
 
   public static final class Fields {
 

@@ -8,15 +8,18 @@
 package io.camunda.optimize.test.util.client.dto;
 
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@NoArgsConstructor
 @Data
 public class VariableValueDto {
 
   private Object value;
   private VariableType type;
+
+  public VariableValueDto(Object value, VariableType type) {
+    this.value = value;
+    this.type = type;
+  }
+
+  public VariableValueDto() {}
 }

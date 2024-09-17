@@ -11,13 +11,9 @@ import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class UIConfigurationResponseDto {
 
   private boolean emailEnabled;
@@ -43,4 +39,51 @@ public class UIConfigurationResponseDto {
   private MixpanelConfigResponseDto mixpanel = new MixpanelConfigResponseDto();
 
   private OnboardingResponseDto onboarding = new OnboardingResponseDto();
+
+  public UIConfigurationResponseDto(
+      boolean emailEnabled,
+      boolean sharingEnabled,
+      boolean tenantsAvailable,
+      boolean userSearchAvailable,
+      boolean userTaskAssigneeAnalyticsEnabled,
+      String optimizeVersion,
+      String optimizeDocsVersion,
+      boolean isEnterpriseMode,
+      OptimizeProfile optimizeProfile,
+      Map<String, WebappsEndpointDto> webappsEndpoints,
+      Map<AppName, String> webappsLinks,
+      String notificationsUrl,
+      List<String> webhooks,
+      boolean logoutHidden,
+      int maxNumDataSourcesForReport,
+      Integer exportCsvLimit,
+      DatabaseType optimizeDatabase,
+      boolean validLicense,
+      String licenseType,
+      MixpanelConfigResponseDto mixpanel,
+      OnboardingResponseDto onboarding) {
+    this.emailEnabled = emailEnabled;
+    this.sharingEnabled = sharingEnabled;
+    this.tenantsAvailable = tenantsAvailable;
+    this.userSearchAvailable = userSearchAvailable;
+    this.userTaskAssigneeAnalyticsEnabled = userTaskAssigneeAnalyticsEnabled;
+    this.optimizeVersion = optimizeVersion;
+    this.optimizeDocsVersion = optimizeDocsVersion;
+    this.isEnterpriseMode = isEnterpriseMode;
+    this.optimizeProfile = optimizeProfile;
+    this.webappsEndpoints = webappsEndpoints;
+    this.webappsLinks = webappsLinks;
+    this.notificationsUrl = notificationsUrl;
+    this.webhooks = webhooks;
+    this.logoutHidden = logoutHidden;
+    this.maxNumDataSourcesForReport = maxNumDataSourcesForReport;
+    this.exportCsvLimit = exportCsvLimit;
+    this.optimizeDatabase = optimizeDatabase;
+    this.validLicense = validLicense;
+    this.licenseType = licenseType;
+    this.mixpanel = mixpanel;
+    this.onboarding = onboarding;
+  }
+
+  public UIConfigurationResponseDto() {}
 }

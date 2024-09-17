@@ -11,12 +11,9 @@ import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.camunda.optimize.dto.optimize.AuthorizedEntityDto;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class AuthorizedDashboardDefinitionResponseDto extends AuthorizedEntityDto {
@@ -28,4 +25,6 @@ public class AuthorizedDashboardDefinitionResponseDto extends AuthorizedEntityDt
     super(currentUserRole);
     this.definitionDto = definitionDto;
   }
+
+  protected AuthorizedDashboardDefinitionResponseDto() {}
 }

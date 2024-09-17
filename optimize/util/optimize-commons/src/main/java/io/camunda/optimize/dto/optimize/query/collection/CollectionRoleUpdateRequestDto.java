@@ -8,17 +8,18 @@
 package io.camunda.optimize.dto.optimize.query.collection;
 
 import io.camunda.optimize.dto.optimize.RoleType;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class CollectionRoleUpdateRequestDto {
 
   private RoleType role;
+
+  public CollectionRoleUpdateRequestDto(RoleType role) {
+    this.role = role;
+  }
+
+  protected CollectionRoleUpdateRequestDto() {}
 
   public enum Fields {
     role

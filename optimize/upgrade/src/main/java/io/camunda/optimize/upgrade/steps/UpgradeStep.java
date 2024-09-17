@@ -11,16 +11,12 @@ import com.google.common.annotations.VisibleForTesting;
 import io.camunda.optimize.service.db.schema.IndexLookupUtil;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 public abstract class UpgradeStep {
+
   protected IndexMappingCreator index;
 
   // This should always be false in real upgrades. In test scenarios, it can be set to true to avoid
@@ -30,6 +26,13 @@ public abstract class UpgradeStep {
   protected UpgradeStep(final IndexMappingCreator index) {
     this.index = index;
   }
+
+  public UpgradeStep(IndexMappingCreator index, boolean skipIndexConversion) {
+    this.index = index;
+    this.skipIndexConversion = skipIndexConversion;
+  }
+
+  protected UpgradeStep() {}
 
   public abstract UpgradeStepType getType();
 

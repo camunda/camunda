@@ -7,21 +7,24 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single.filter.data.date;
 
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @EqualsAndHashCode
 public class RelativeDateFilterStartDto {
 
   protected Long value;
   protected DateUnit unit;
+
+  public RelativeDateFilterStartDto(Long value, DateUnit unit) {
+    this.value = value;
+    this.unit = unit;
+  }
+
+  public RelativeDateFilterStartDto() {}
 
   public static final class Fields {
 

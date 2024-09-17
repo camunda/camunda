@@ -9,18 +9,21 @@ package io.camunda.optimize.dto.optimize.rest;
 
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @Builder
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DefinitionTenantsRequestDto {
+
   @Builder.Default private List<String> versions = new ArrayList<>();
 
   private String filterByCollectionScope;
+
+  public DefinitionTenantsRequestDto(List<String> versions, String filterByCollectionScope) {
+    this.versions = versions;
+    this.filterByCollectionScope = filterByCollectionScope;
+  }
+
+  protected DefinitionTenantsRequestDto() {}
 }

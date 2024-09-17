@@ -9,12 +9,8 @@ package io.camunda.optimize.dto.optimize.rest;
 
 import java.time.OffsetDateTime;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class SnapshotInfoDto {
 
@@ -22,4 +18,14 @@ public class SnapshotInfoDto {
   private SnapshotState state;
   private OffsetDateTime startTime;
   private List<String> failures;
+
+  public SnapshotInfoDto(
+      String snapshotName, SnapshotState state, OffsetDateTime startTime, List<String> failures) {
+    this.snapshotName = snapshotName;
+    this.state = state;
+    this.startTime = startTime;
+    this.failures = failures;
+  }
+
+  public SnapshotInfoDto() {}
 }

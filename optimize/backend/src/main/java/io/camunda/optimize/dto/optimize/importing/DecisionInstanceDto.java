@@ -1,3 +1,4 @@
+
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
@@ -13,12 +14,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class DecisionInstanceDto implements OptimizeDto {
 
@@ -39,6 +36,34 @@ public class DecisionInstanceDto implements OptimizeDto {
   private Set<String> matchedRules = new HashSet<>();
   private String engine;
   private String tenantId;
+
+  public DecisionInstanceDto(String decisionInstanceId, String processDefinitionId,
+      String processDefinitionKey, String decisionDefinitionId, String decisionDefinitionKey,
+      String decisionDefinitionVersion, OffsetDateTime evaluationDateTime, String processInstanceId,
+      String rootProcessInstanceId, String activityId, Double collectResultValue,
+      String rootDecisionInstanceId, List<InputInstanceDto> inputs, List<OutputInstanceDto> outputs,
+      Set<String> matchedRules, String engine, String tenantId) {
+    this.decisionInstanceId = decisionInstanceId;
+    this.processDefinitionId = processDefinitionId;
+    this.processDefinitionKey = processDefinitionKey;
+    this.decisionDefinitionId = decisionDefinitionId;
+    this.decisionDefinitionKey = decisionDefinitionKey;
+    this.decisionDefinitionVersion = decisionDefinitionVersion;
+    this.evaluationDateTime = evaluationDateTime;
+    this.processInstanceId = processInstanceId;
+    this.rootProcessInstanceId = rootProcessInstanceId;
+    this.activityId = activityId;
+    this.collectResultValue = collectResultValue;
+    this.rootDecisionInstanceId = rootDecisionInstanceId;
+    this.inputs = inputs;
+    this.outputs = outputs;
+    this.matchedRules = matchedRules;
+    this.engine = engine;
+    this.tenantId = tenantId;
+  }
+
+  public DecisionInstanceDto() {
+  }
 
   public static final class Fields {
 

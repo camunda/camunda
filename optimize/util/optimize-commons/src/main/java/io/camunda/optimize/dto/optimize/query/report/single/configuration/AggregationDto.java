@@ -8,12 +8,8 @@
 package io.camunda.optimize.dto.optimize.query.report.single.configuration;
 
 import io.camunda.optimize.dto.optimize.OptimizeDto;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class AggregationDto implements OptimizeDto {
 
@@ -23,4 +19,11 @@ public class AggregationDto implements OptimizeDto {
 
   AggregationType type;
   Double value;
+
+  public AggregationDto(AggregationType type, Double value) {
+    this.type = type;
+    this.value = value;
+  }
+
+  public AggregationDto() {}
 }

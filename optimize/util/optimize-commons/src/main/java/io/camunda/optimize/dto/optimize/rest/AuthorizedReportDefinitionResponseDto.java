@@ -11,12 +11,9 @@ import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.camunda.optimize.dto.optimize.AuthorizedEntityDto;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class AuthorizedReportDefinitionResponseDto extends AuthorizedEntityDto {
@@ -28,6 +25,8 @@ public class AuthorizedReportDefinitionResponseDto extends AuthorizedEntityDto {
     super(currentUserRole);
     this.definitionDto = definitionDto;
   }
+
+  protected AuthorizedReportDefinitionResponseDto() {}
 
   public static final class Fields {
 

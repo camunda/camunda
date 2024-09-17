@@ -11,16 +11,14 @@ import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.camunda.optimize.dto.optimize.AuthorizedEntityDto;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class AuthorizedReportEvaluationResponseDto<D extends ReportDefinitionDto<?>>
     extends AuthorizedEntityDto {
+
   @JsonUnwrapped protected D reportDefinition;
 
   public AuthorizedReportEvaluationResponseDto(
@@ -28,4 +26,6 @@ public class AuthorizedReportEvaluationResponseDto<D extends ReportDefinitionDto
     super(currentUserRole);
     this.reportDefinition = reportDefinition;
   }
+
+  protected AuthorizedReportEvaluationResponseDto() {}
 }

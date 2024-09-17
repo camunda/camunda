@@ -7,15 +7,11 @@
  */
 package io.camunda.optimize.service.mixpanel.client;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MixpanelEvent {
+
   public static final String EVENT_NAME_PREFIX = "optimize:";
 
   private String event;
@@ -26,4 +22,11 @@ public class MixpanelEvent {
     this.event = EVENT_NAME_PREFIX + eventName;
     this.properties = properties;
   }
+
+  public MixpanelEvent(String event, MixpanelEventProperties properties) {
+    this.event = event;
+    this.properties = properties;
+  }
+
+  protected MixpanelEvent() {}
 }

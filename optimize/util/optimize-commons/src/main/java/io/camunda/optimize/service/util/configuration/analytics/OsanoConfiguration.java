@@ -9,17 +9,19 @@ package io.camunda.optimize.service.util.configuration.analytics;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class OsanoConfiguration {
+
   @JsonProperty("scriptUrl")
   private String scriptUrl;
+
+  public OsanoConfiguration(String scriptUrl) {
+    this.scriptUrl = scriptUrl;
+  }
+
+  protected OsanoConfiguration() {}
 
   public Optional<String> getScriptUrl() {
     return Optional.ofNullable(scriptUrl);

@@ -10,14 +10,10 @@ package io.camunda.optimize.dto.optimize.query.variable;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.time.OffsetDateTime;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 @Getter
 @Setter
@@ -30,6 +26,25 @@ public class VariableUpdateInstanceDto implements OptimizeDto {
   private String processInstanceId;
   private String tenantId;
   private OffsetDateTime timestamp;
+
+  public VariableUpdateInstanceDto(
+      String instanceId,
+      String name,
+      String type,
+      List<String> value,
+      String processInstanceId,
+      String tenantId,
+      OffsetDateTime timestamp) {
+    this.instanceId = instanceId;
+    this.name = name;
+    this.type = type;
+    this.value = value;
+    this.processInstanceId = processInstanceId;
+    this.tenantId = tenantId;
+    this.timestamp = timestamp;
+  }
+
+  public VariableUpdateInstanceDto() {}
 
   public static final class Fields {
 

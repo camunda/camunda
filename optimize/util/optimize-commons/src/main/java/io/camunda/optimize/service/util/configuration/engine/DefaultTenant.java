@@ -7,15 +7,11 @@
  */
 package io.camunda.optimize.service.util.configuration.engine;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 public class DefaultTenant {
+
   private String id;
   private String name;
 
@@ -23,4 +19,11 @@ public class DefaultTenant {
     this.id = id;
     this.name = id;
   }
+
+  public DefaultTenant(String id, String name) {
+    this.id = id;
+    this.name = name;
+  }
+
+  protected DefaultTenant() {}
 }

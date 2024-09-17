@@ -9,14 +9,9 @@ package io.camunda.optimize.dto.optimize;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-@AllArgsConstructor
 @Builder
 @Data
 public class SettingsDto {
@@ -24,6 +19,13 @@ public class SettingsDto {
   private Boolean sharingEnabled;
 
   private OffsetDateTime lastModified;
+
+  public SettingsDto(Boolean sharingEnabled, OffsetDateTime lastModified) {
+    this.sharingEnabled = sharingEnabled;
+    this.lastModified = lastModified;
+  }
+
+  private SettingsDto() {}
 
   public Optional<Boolean> getSharingEnabled() {
     return Optional.ofNullable(sharingEnabled);

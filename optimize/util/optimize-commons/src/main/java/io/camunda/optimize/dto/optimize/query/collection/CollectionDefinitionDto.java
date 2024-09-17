@@ -20,9 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 public class CollectionDefinitionDto extends BaseCollectionDefinitionDto<CollectionDataDto> {
 
   public CollectionDefinitionDto(
@@ -43,6 +41,8 @@ public class CollectionDefinitionDto extends BaseCollectionDefinitionDto<Collect
     this.owner = owner;
     this.automaticallyCreated = false;
   }
+
+  public CollectionDefinitionDto() {}
 
   public EntityResponseDto toEntityDto(final RoleType roleType) {
     return new EntityResponseDto(

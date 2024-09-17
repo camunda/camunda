@@ -7,17 +7,20 @@
  */
 package io.camunda.optimize.dto.optimize.query.dashboard.tile;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class DimensionDto {
 
   protected int width;
   protected int height;
+
+  public DimensionDto(int width, int height) {
+    this.width = width;
+    this.height = height;
+  }
+
+  public DimensionDto() {}
 
   public static final class Fields {
 

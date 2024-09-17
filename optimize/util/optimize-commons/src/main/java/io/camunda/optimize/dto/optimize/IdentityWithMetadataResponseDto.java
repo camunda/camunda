@@ -12,10 +12,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.List;
 import java.util.function.Supplier;
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 
@@ -29,7 +27,6 @@ import org.apache.commons.lang3.StringUtils;
   @JsonSubTypes.Type(value = GroupDto.class, name = "group"),
 })
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public abstract class IdentityWithMetadataResponseDto extends IdentityDto {
@@ -45,6 +42,8 @@ public abstract class IdentityWithMetadataResponseDto extends IdentityDto {
     super(id, type);
     this.name = name;
   }
+
+  protected IdentityWithMetadataResponseDto() {}
 
   @JsonIgnore
   protected abstract List<Supplier<String>> getSearchableDtoFields();

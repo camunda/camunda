@@ -21,17 +21,13 @@ import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-@AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)
-@NoArgsConstructor
 @SuperBuilder
 @DecisionFiltersMustReferenceExistingDefinitionsConstraint
 public class DecisionReportDataDto extends SingleReportDataDto {
@@ -44,6 +40,21 @@ public class DecisionReportDataDto extends SingleReportDataDto {
   protected ProcessReportDistributedByDto<?> distributedBy = new NoneDistributedByDto();
 
   protected DecisionVisualization visualization;
+
+  public DecisionReportDataDto(
+      @Valid List<DecisionFilterDto<?>> filter,
+      DecisionViewDto view,
+      DecisionGroupByDto<?> groupBy,
+      ProcessReportDistributedByDto<?> distributedBy,
+      DecisionVisualization visualization) {
+    this.filter = filter;
+    this.view = view;
+    this.groupBy = groupBy;
+    this.distributedBy = distributedBy;
+    this.visualization = visualization;
+  }
+
+  public DecisionReportDataDto() {}
 
   public String getDecisionDefinitionKey() {
     return getDefinitionKey();

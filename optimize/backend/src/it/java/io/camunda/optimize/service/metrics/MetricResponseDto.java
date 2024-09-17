@@ -10,28 +10,33 @@ package io.camunda.optimize.service.metrics;
 import io.micrometer.core.instrument.Statistic;
 import java.util.List;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 public class MetricResponseDto {
+
   private String name;
   private String description;
   private String baseUnit;
   private List<StatisticDto> measurements;
   private List<TagDto> availableTags;
 
+  public MetricResponseDto() {}
+
   @Data
-  @NoArgsConstructor
   public static class StatisticDto {
+
     private Statistic statistic;
     private Double value;
+
+    public StatisticDto() {}
   }
 
   @Data
-  @NoArgsConstructor
   public static class TagDto {
+
     private String tag;
     private List<String> values;
+
+    public TagDto() {}
   }
 }

@@ -7,16 +7,18 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ZeebeImportConfiguration {
 
   private int dynamicBatchSuccessAttempts;
   private int maxEmptyPagesToImport;
+
+  public ZeebeImportConfiguration(int dynamicBatchSuccessAttempts, int maxEmptyPagesToImport) {
+    this.dynamicBatchSuccessAttempts = dynamicBatchSuccessAttempts;
+    this.maxEmptyPagesToImport = maxEmptyPagesToImport;
+  }
+
+  protected ZeebeImportConfiguration() {}
 }

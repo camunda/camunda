@@ -7,17 +7,29 @@
  */
 package io.camunda.optimize.dto.optimize.query.ui_configuration;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class OnboardingResponseDto {
+
   private boolean enabled;
   private String appCuesScriptUrl;
   private String orgId;
   private String clusterId;
   private String salesPlanType;
+
+  public OnboardingResponseDto(
+      boolean enabled,
+      String appCuesScriptUrl,
+      String orgId,
+      String clusterId,
+      String salesPlanType) {
+    this.enabled = enabled;
+    this.appCuesScriptUrl = appCuesScriptUrl;
+    this.orgId = orgId;
+    this.clusterId = clusterId;
+    this.salesPlanType = salesPlanType;
+  }
+
+  public OnboardingResponseDto() {}
 }

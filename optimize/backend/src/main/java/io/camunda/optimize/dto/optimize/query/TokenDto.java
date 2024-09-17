@@ -7,13 +7,16 @@
  */
 package io.camunda.optimize.dto.optimize.query;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class TokenDto {
+
   protected String token;
+
+  public TokenDto(String token) {
+    this.token = token;
+  }
+
+  public TokenDto() {}
 }

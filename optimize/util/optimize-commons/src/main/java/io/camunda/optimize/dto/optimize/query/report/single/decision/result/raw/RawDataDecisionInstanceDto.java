@@ -10,12 +10,8 @@ package io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import io.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 import java.time.OffsetDateTime;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@NoArgsConstructor
 @Data
 public class RawDataDecisionInstanceDto implements RawDataInstanceDto {
 
@@ -28,6 +24,29 @@ public class RawDataDecisionInstanceDto implements RawDataInstanceDto {
   protected String tenantId;
   protected Map<String, InputVariableEntry> inputVariables;
   protected Map<String, OutputVariableEntry> outputVariables;
+
+  public RawDataDecisionInstanceDto(
+      String decisionDefinitionKey,
+      String decisionDefinitionId,
+      String decisionInstanceId,
+      String processInstanceId,
+      OffsetDateTime evaluationDateTime,
+      String engineName,
+      String tenantId,
+      Map<String, InputVariableEntry> inputVariables,
+      Map<String, OutputVariableEntry> outputVariables) {
+    this.decisionDefinitionKey = decisionDefinitionKey;
+    this.decisionDefinitionId = decisionDefinitionId;
+    this.decisionInstanceId = decisionInstanceId;
+    this.processInstanceId = processInstanceId;
+    this.evaluationDateTime = evaluationDateTime;
+    this.engineName = engineName;
+    this.tenantId = tenantId;
+    this.inputVariables = inputVariables;
+    this.outputVariables = outputVariables;
+  }
+
+  public RawDataDecisionInstanceDto() {}
 
   public enum Fields {
     decisionDefinitionKey,

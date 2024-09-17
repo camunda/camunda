@@ -18,14 +18,14 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConfigurationUtil {
+
   private static final Logger logger = LoggerFactory.getLogger(ConfigurationUtil.class);
+
+  private ConfigurationUtil() {}
 
   public static String cutTrailingSlash(String string) {
     if (string != null && !string.isEmpty() && string.endsWith("/")) {

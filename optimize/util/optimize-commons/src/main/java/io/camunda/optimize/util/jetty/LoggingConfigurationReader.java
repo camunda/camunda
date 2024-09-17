@@ -17,11 +17,9 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Objects;
-import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@NoArgsConstructor
 public class LoggingConfigurationReader {
 
   private final LinkedList<String> loggingConfigNames =
@@ -29,6 +27,8 @@ public class LoggingConfigurationReader {
           Arrays.asList("environment-logback.xml", "logback-test.xml", "logback.xml"));
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
+
+  public LoggingConfigurationReader() {}
 
   public void defineLogbackLoggingConfiguration() {
     LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();

@@ -7,19 +7,24 @@
  */
 package io.camunda.optimize.rest.engine.dto;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
 @Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class UserProfileDto {
+
   protected String id;
   protected String firstName;
   protected String lastName;
   protected String email;
+
+  public UserProfileDto(String id, String firstName, String lastName, String email) {
+    this.id = id;
+    this.firstName = firstName;
+    this.lastName = lastName;
+    this.email = email;
+  }
+
+  protected UserProfileDto() {}
 }

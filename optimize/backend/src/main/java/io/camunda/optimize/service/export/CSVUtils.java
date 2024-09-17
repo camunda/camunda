@@ -39,13 +39,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CSVUtils {
+
+  private CSVUtils() {}
 
   public static byte[] mapCsvLinesToCsvBytes(
       final List<String[]> csvStrings, final char csvDelimiter) {

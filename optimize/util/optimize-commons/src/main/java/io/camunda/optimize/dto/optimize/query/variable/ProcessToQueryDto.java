@@ -15,17 +15,25 @@ import io.camunda.optimize.service.util.TenantListHandlingUtil;
 import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class ProcessToQueryDto {
+
   @NotNull private String processDefinitionKey;
   private List<String> processDefinitionVersions = new ArrayList<>();
   private List<String> tenantIds = new ArrayList<>(DEFAULT_TENANT_IDS);
+
+  public ProcessToQueryDto(
+      @NotNull String processDefinitionKey,
+      List<String> processDefinitionVersions,
+      List<String> tenantIds) {
+    this.processDefinitionKey = processDefinitionKey;
+    this.processDefinitionVersions = processDefinitionVersions;
+    this.tenantIds = tenantIds;
+  }
+
+  public ProcessToQueryDto() {}
 
   @JsonIgnore
   public void setProcessDefinitionVersion(final String processDefinitionVersion) {

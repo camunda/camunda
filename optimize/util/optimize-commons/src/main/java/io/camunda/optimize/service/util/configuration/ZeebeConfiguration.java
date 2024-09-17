@@ -7,14 +7,9 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ZeebeConfiguration {
 
   private boolean enabled;
@@ -23,4 +18,21 @@ public class ZeebeConfiguration {
   private int maxImportPageSize;
   private boolean includeObjectVariableValue;
   private ZeebeImportConfiguration importConfig;
+
+  public ZeebeConfiguration(
+      boolean enabled,
+      String name,
+      int partitionCount,
+      int maxImportPageSize,
+      boolean includeObjectVariableValue,
+      ZeebeImportConfiguration importConfig) {
+    this.enabled = enabled;
+    this.name = name;
+    this.partitionCount = partitionCount;
+    this.maxImportPageSize = maxImportPageSize;
+    this.includeObjectVariableValue = includeObjectVariableValue;
+    this.importConfig = importConfig;
+  }
+
+  protected ZeebeConfiguration() {}
 }

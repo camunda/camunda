@@ -14,14 +14,10 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 @Data
 @Slf4j
@@ -37,6 +33,19 @@ public class TableColumnDto {
   @Builder.Default private List<String> excludedColumns = new ArrayList<>();
   @Builder.Default private List<String> includedColumns = new ArrayList<>();
   @Builder.Default private List<String> columnOrder = new ArrayList<>();
+
+  public TableColumnDto(
+      boolean includeNewVariables,
+      List<String> excludedColumns,
+      List<String> includedColumns,
+      List<String> columnOrder) {
+    this.includeNewVariables = includeNewVariables;
+    this.excludedColumns = excludedColumns;
+    this.includedColumns = includedColumns;
+    this.columnOrder = columnOrder;
+  }
+
+  public TableColumnDto() {}
 
   public void addNewAndRemoveUnexpectedVariableColumns(final List<String> allVariableColumns) {
     final List<String> newColumns = determineNewColumns(allVariableColumns);

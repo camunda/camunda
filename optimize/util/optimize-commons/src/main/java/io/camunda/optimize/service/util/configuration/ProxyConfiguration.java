@@ -12,15 +12,12 @@ import static io.camunda.optimize.service.util.configuration.ConfigurationServic
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @JsonIgnoreProperties
 @Data
 public class ProxyConfiguration {
+
   @JsonProperty("enabled")
   private boolean enabled;
 
@@ -32,6 +29,15 @@ public class ProxyConfiguration {
 
   @JsonProperty("sslEnabled")
   private boolean sslEnabled;
+
+  public ProxyConfiguration(boolean enabled, String host, Integer port, boolean sslEnabled) {
+    this.enabled = enabled;
+    this.host = host;
+    this.port = port;
+    this.sslEnabled = sslEnabled;
+  }
+
+  public ProxyConfiguration() {}
 
   public void validate() {
     if (this.enabled) {

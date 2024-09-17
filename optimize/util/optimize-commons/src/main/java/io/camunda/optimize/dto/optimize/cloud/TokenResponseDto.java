@@ -9,10 +9,8 @@ package io.camunda.optimize.dto.optimize.cloud;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 public class TokenResponseDto {
 
   @JsonProperty("access_token")
@@ -26,4 +24,6 @@ public class TokenResponseDto {
 
   @JsonProperty("scope")
   private String scope;
+
+  public TokenResponseDto() {}
 }

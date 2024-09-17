@@ -11,7 +11,6 @@ import static java.lang.System.getProperties;
 import static java.lang.System.setProperties;
 
 import java.util.Properties;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -22,10 +21,11 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  * completion
  */
 @Slf4j
-@NoArgsConstructor
 public class SystemPropertiesExtension implements BeforeEachCallback, AfterEachCallback {
 
   private Properties originalProperties;
+
+  public SystemPropertiesExtension() {}
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) throws Exception {

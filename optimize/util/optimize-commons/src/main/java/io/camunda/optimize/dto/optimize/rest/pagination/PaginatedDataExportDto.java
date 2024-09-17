@@ -9,12 +9,8 @@ package io.camunda.optimize.dto.optimize.rest.pagination;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.Collection;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PaginatedDataExportDto {
@@ -25,6 +21,23 @@ public class PaginatedDataExportDto {
   private long totalNumberOfRecords;
   private String reportId;
   private Object data;
+
+  public PaginatedDataExportDto(
+      String searchRequestId,
+      String message,
+      Integer numberOfRecordsInResponse,
+      long totalNumberOfRecords,
+      String reportId,
+      Object data) {
+    this.searchRequestId = searchRequestId;
+    this.message = message;
+    this.numberOfRecordsInResponse = numberOfRecordsInResponse;
+    this.totalNumberOfRecords = totalNumberOfRecords;
+    this.reportId = reportId;
+    this.data = data;
+  }
+
+  public PaginatedDataExportDto() {}
 
   public void setData(final Object data) {
     this.data = data;

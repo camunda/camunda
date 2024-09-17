@@ -8,21 +8,24 @@
 package io.camunda.optimize.dto.optimize.persistence;
 
 import io.camunda.optimize.dto.optimize.OptimizeDto;
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Getter
 @ToString
-@AllArgsConstructor
-@NoArgsConstructor
 @EqualsAndHashCode
 public class BusinessKeyDto implements OptimizeDto {
 
   private String processInstanceId;
   private String businessKey;
+
+  public BusinessKeyDto(String processInstanceId, String businessKey) {
+    this.processInstanceId = processInstanceId;
+    this.businessKey = businessKey;
+  }
+
+  public BusinessKeyDto() {}
 
   public static final class Fields {
 

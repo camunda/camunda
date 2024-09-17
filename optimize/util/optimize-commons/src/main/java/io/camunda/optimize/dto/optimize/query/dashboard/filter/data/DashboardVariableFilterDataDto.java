@@ -27,9 +27,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.DashboardVariableFilterSubDataDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import lombok.AccessLevel;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -62,7 +60,6 @@ import lombok.NoArgsConstructor;
   @JsonSubTypes.Type(value = DashboardDateVariableFilterDataDto.class, name = DATE_TYPE_LOWERCASE)
 })
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class DashboardVariableFilterDataDto implements FilterDataDto {
 
   protected VariableType type;
@@ -75,4 +72,6 @@ public abstract class DashboardVariableFilterDataDto implements FilterDataDto {
     this.type = type;
     this.data = data;
   }
+
+  protected DashboardVariableFilterDataDto() {}
 }

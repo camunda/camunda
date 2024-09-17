@@ -13,13 +13,9 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.QueryParam;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class PaginationScrollableRequestDto {
 
   public static final String QUERY_LIMIT_PARAM = "limit";
@@ -39,4 +35,15 @@ public class PaginationScrollableRequestDto {
   @Min(60)
   @DefaultValue("120")
   protected Integer scrollTimeout;
+
+  public PaginationScrollableRequestDto(
+      @Min(0) @Max(MAX_RESPONSE_SIZE_LIMIT) Integer limit,
+      String scrollId,
+      @Min(60) Integer scrollTimeout) {
+    this.limit = limit;
+    this.scrollId = scrollId;
+    this.scrollTimeout = scrollTimeout;
+  }
+
+  public PaginationScrollableRequestDto() {}
 }

@@ -21,11 +21,10 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.group.Variab
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessGroupByDtoCreator {
+
+  private ProcessGroupByDtoCreator() {}
 
   public static StartDateGroupByDto createGroupByStartDateDto(AggregateByDateUnit dateInterval) {
     StartDateGroupByDto groupByDto = new StartDateGroupByDto();

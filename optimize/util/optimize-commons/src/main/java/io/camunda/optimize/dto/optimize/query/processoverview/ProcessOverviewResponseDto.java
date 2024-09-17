@@ -8,13 +8,9 @@
 package io.camunda.optimize.dto.optimize.query.processoverview;
 
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class ProcessOverviewResponseDto {
 
   private String processDefinitionName;
@@ -22,6 +18,21 @@ public class ProcessOverviewResponseDto {
   private ProcessOwnerResponseDto owner;
   private ProcessDigestResponseDto digest;
   private List<KpiResultDto> kpis;
+
+  public ProcessOverviewResponseDto(
+      String processDefinitionName,
+      String processDefinitionKey,
+      ProcessOwnerResponseDto owner,
+      ProcessDigestResponseDto digest,
+      List<KpiResultDto> kpis) {
+    this.processDefinitionName = processDefinitionName;
+    this.processDefinitionKey = processDefinitionKey;
+    this.owner = owner;
+    this.digest = digest;
+    this.kpis = kpis;
+  }
+
+  public ProcessOverviewResponseDto() {}
 
   public static final class Fields {
 

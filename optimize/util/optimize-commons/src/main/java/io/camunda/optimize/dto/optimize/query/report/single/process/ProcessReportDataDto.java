@@ -34,17 +34,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-@AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)
-@NoArgsConstructor
 @SuperBuilder
 @ProcessFiltersMustReferenceExistingDefinitionsConstraint
 public class ProcessReportDataDto extends SingleReportDataDto implements Combinable {
@@ -62,6 +58,25 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   protected ProcessVisualization visualization;
   @Builder.Default protected boolean managementReport = false;
   @Builder.Default protected boolean instantPreviewReport = false;
+
+  public ProcessReportDataDto(
+      @Valid List<ProcessFilterDto<?>> filter,
+      ProcessViewDto view,
+      ProcessGroupByDto<?> groupBy,
+      ProcessReportDistributedByDto<?> distributedBy,
+      ProcessVisualization visualization,
+      boolean managementReport,
+      boolean instantPreviewReport) {
+    this.filter = filter;
+    this.view = view;
+    this.groupBy = groupBy;
+    this.distributedBy = distributedBy;
+    this.visualization = visualization;
+    this.managementReport = managementReport;
+    this.instantPreviewReport = instantPreviewReport;
+  }
+
+  public ProcessReportDataDto() {}
 
   public String getProcessDefinitionKey() {
     return getDefinitionKey();

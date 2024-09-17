@@ -9,22 +9,26 @@ package io.camunda.optimize.dto.optimize.query.report.combined.configuration.tar
 
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import java.util.Objects;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
 @ToString
 public class CombinedReportDurationChartDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
   private Boolean isBelow = false;
   private String value = "2";
+
+  public CombinedReportDurationChartDto(TargetValueUnit unit, Boolean isBelow, String value) {
+    this.unit = unit;
+    this.isBelow = isBelow;
+    this.value = value;
+  }
+
+  public CombinedReportDurationChartDto() {}
 
   @Override
   public boolean equals(final Object o) {

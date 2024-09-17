@@ -8,21 +8,24 @@
 package io.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value;
 
 import java.util.Objects;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
 @ToString
 public class CombinedReportCountChartDto {
 
   private Boolean isBelow = false;
   private String value = "100";
+
+  public CombinedReportCountChartDto(Boolean isBelow, String value) {
+    this.isBelow = isBelow;
+    this.value = value;
+  }
+
+  public CombinedReportCountChartDto() {}
 
   @Override
   public boolean equals(final Object o) {

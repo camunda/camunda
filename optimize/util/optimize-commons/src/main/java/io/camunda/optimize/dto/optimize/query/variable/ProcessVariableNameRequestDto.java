@@ -14,11 +14,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 @Data
 public class ProcessVariableNameRequestDto {
+
   private List<ProcessToQueryDto> processesToQuery = new ArrayList<>();
   private List<ProcessFilterDto<?>> filter = new ArrayList<>();
 
@@ -34,4 +33,6 @@ public class ProcessVariableNameRequestDto {
   public ProcessVariableNameRequestDto(List<ProcessToQueryDto> processesToQuery) {
     this(processesToQuery, Collections.emptyList());
   }
+
+  public ProcessVariableNameRequestDto() {}
 }

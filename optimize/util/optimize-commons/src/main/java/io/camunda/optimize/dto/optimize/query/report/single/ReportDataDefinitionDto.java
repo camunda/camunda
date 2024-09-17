@@ -14,13 +14,9 @@ import io.camunda.optimize.dto.optimize.ReportConstants;
 import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @Data
-@NoArgsConstructor
 public class ReportDataDefinitionDto {
 
   @NotEmpty private String identifier = UUID.randomUUID().toString();
@@ -88,6 +84,23 @@ public class ReportDataDefinitionDto {
     this.key = key;
     this.versions = versions;
   }
+
+  public ReportDataDefinitionDto(
+      @NotEmpty String identifier,
+      String key,
+      String name,
+      String displayName,
+      List<String> versions,
+      List<String> tenantIds) {
+    this.identifier = identifier;
+    this.key = key;
+    this.name = name;
+    this.displayName = displayName;
+    this.versions = versions;
+    this.tenantIds = tenantIds;
+  }
+
+  public ReportDataDefinitionDto() {}
 
   @JsonIgnore
   public void setVersion(final String version) {

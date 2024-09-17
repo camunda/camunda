@@ -9,12 +9,8 @@ package io.camunda.optimize.dto.optimize.rest;
 
 import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class Page<T> {
 
@@ -24,4 +20,21 @@ public class Page<T> {
   private String sortBy;
   private SortOrder sortOrder;
   private List<T> results;
+
+  public Page(
+      Integer offset,
+      Integer limit,
+      Long total,
+      String sortBy,
+      SortOrder sortOrder,
+      List<T> results) {
+    this.offset = offset;
+    this.limit = limit;
+    this.total = total;
+    this.sortBy = sortBy;
+    this.sortOrder = sortOrder;
+    this.results = results;
+  }
+
+  public Page() {}
 }

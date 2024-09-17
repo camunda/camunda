@@ -22,10 +22,8 @@ import io.camunda.optimize.service.export.CSVUtils;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
-@NoArgsConstructor
 public class RawDataCommandResult<T extends RawDataInstanceDto>
     extends CommandEvaluationResult<List<T>> {
 
@@ -37,6 +35,8 @@ public class RawDataCommandResult<T extends RawDataInstanceDto>
       @NonNull final List<T> data, @NonNull final SingleReportDataDto reportData) {
     super(Collections.singletonList(MeasureDto.of(data)), reportData);
   }
+
+  public RawDataCommandResult() {}
 
   @Override
   @SuppressWarnings(UNCHECKED_CAST)

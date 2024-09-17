@@ -10,18 +10,23 @@ package io.camunda.optimize.dto.optimize.query.variable;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class LabelDto implements OptimizeDto {
 
   private String variableLabel;
   @NotBlank private String variableName;
   @NotNull private VariableType variableType;
+
+  public LabelDto(
+      String variableLabel, @NotBlank String variableName, @NotNull VariableType variableType) {
+    this.variableLabel = variableLabel;
+    this.variableName = variableName;
+    this.variableType = variableType;
+  }
+
+  public LabelDto() {}
 
   public static final class Fields {
 

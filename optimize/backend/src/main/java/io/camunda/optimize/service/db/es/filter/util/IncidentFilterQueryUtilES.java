@@ -36,10 +36,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class IncidentFilterQueryUtilES {
 
   private static final NestedDefinitionQueryBuilderES NESTED_DEFINITION_QUERY_BUILDER =
@@ -54,6 +51,8 @@ public class IncidentFilterQueryUtilES {
               IncidentFilterQueryUtilES::createOpenIncidentTermQuery,
               ResolvedIncidentFilterDto.class,
               IncidentFilterQueryUtilES::createResolvedIncidentTermQuery);
+
+  private IncidentFilterQueryUtilES() {}
 
   public static BoolQuery.Builder createIncidentAggregationFilter(
       final ProcessReportDataDto reportData, final DefinitionService definitionService) {

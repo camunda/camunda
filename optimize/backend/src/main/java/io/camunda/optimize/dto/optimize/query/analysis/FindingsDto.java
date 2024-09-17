@@ -8,9 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.analysis;
 
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
 public class FindingsDto {
@@ -43,12 +41,20 @@ public class FindingsDto {
   }
 
   @Data
-  @NoArgsConstructor
-  @AllArgsConstructor
   public class Finding {
+
     private Long boundValue;
     private Double percentile;
     private Double relation;
     private Long count = 0L;
+
+    public Finding(Long boundValue, Double percentile, Double relation, Long count) {
+      this.boundValue = boundValue;
+      this.percentile = percentile;
+      this.relation = relation;
+      this.count = count;
+    }
+
+    public Finding() {}
   }
 }

@@ -11,16 +11,11 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
 @Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class CustomBucketDto {
 
   @Builder.Default private boolean active = false;
@@ -38,6 +33,21 @@ public class CustomBucketDto {
   private Double baseline = 0.0;
 
   @Builder.Default private BucketUnit baselineUnit = null;
+
+  public CustomBucketDto(
+      boolean active,
+      Double bucketSize,
+      BucketUnit bucketSizeUnit,
+      Double baseline,
+      BucketUnit baselineUnit) {
+    this.active = active;
+    this.bucketSize = bucketSize;
+    this.bucketSizeUnit = bucketSizeUnit;
+    this.baseline = baseline;
+    this.baselineUnit = baselineUnit;
+  }
+
+  protected CustomBucketDto() {}
 
   public Optional<Double> getBucketSizeInUnit(final BucketUnit requestedBucketUnit) {
     return convertValueToRequestedUnit(requestedBucketUnit, bucketSize, bucketSizeUnit);

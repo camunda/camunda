@@ -9,16 +9,12 @@ package io.camunda.optimize.dto.optimize.query;
 
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PageResultDto<T> {
+
   private String pagingState;
   private int limit;
   @NonNull private List<T> entities = new ArrayList<>();
@@ -26,6 +22,14 @@ public class PageResultDto<T> {
   public PageResultDto(final int limit) {
     this.limit = limit;
   }
+
+  public PageResultDto(String pagingState, int limit, @NonNull List<T> entities) {
+    this.pagingState = pagingState;
+    this.limit = limit;
+    this.entities = entities;
+  }
+
+  protected PageResultDto() {}
 
   public boolean isEmpty() {
     return this.entities.isEmpty();

@@ -12,12 +12,9 @@ import io.camunda.optimize.dto.optimize.AuthorizedEntityDto;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class AuthorizedCollectionDefinitionRestDto extends AuthorizedEntityDto {
@@ -29,6 +26,8 @@ public class AuthorizedCollectionDefinitionRestDto extends AuthorizedEntityDto {
     super(currentUserRole);
     this.definitionDto = definitionDto;
   }
+
+  protected AuthorizedCollectionDefinitionRestDto() {}
 
   public static AuthorizedCollectionDefinitionRestDto from(
       final AuthorizedCollectionDefinitionDto authorizedCollectionDto) {

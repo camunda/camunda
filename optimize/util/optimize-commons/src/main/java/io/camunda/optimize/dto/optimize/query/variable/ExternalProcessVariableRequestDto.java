@@ -12,19 +12,25 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 @Data
 public class ExternalProcessVariableRequestDto implements OptimizeDto {
 
-  @NotBlank private String id;
-  @NotBlank private String name;
+  @NotBlank
+  private String id;
+  @NotBlank
+  private String name;
   private String value;
-  @NotNull private VariableType type;
-  @NotBlank private String processInstanceId;
-  @NotBlank private String processDefinitionKey;
+  @NotNull
+  private VariableType type;
+  @NotBlank
+  private String processInstanceId;
+  @NotBlank
+  private String processDefinitionKey;
   private String serializationDataFormat; // optional, used for object variables
+
+  public ExternalProcessVariableRequestDto() {
+  }
 
   public static List<ExternalProcessVariableDto> toExternalProcessVariableDtos(
       final Long ingestionTimestamp, final List<ExternalProcessVariableRequestDto> variableDtos) {

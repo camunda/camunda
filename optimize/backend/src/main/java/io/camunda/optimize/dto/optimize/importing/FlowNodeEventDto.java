@@ -10,14 +10,11 @@ package io.camunda.optimize.dto.optimize.importing;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class FlowNodeEventDto implements Serializable, OptimizeDto {
+
   private String id; // == FlowNodeInstanceDto.flowNodeInstanceId
   private String activityId; // == FlowNodeInstanceDto.flowNodeID
   private String activityType;
@@ -35,4 +32,43 @@ public class FlowNodeEventDto implements Serializable, OptimizeDto {
   private Long orderCounter;
   private Boolean canceled;
   private String taskId; // == FlowNodeInstanceDto.userTaskId (null if flowNode is not a userTask)
+
+  public FlowNodeEventDto(
+      String id,
+      String activityId,
+      String activityType,
+      String activityName,
+      OffsetDateTime timestamp,
+      String processDefinitionId,
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String tenantId,
+      String engineAlias,
+      String processInstanceId,
+      OffsetDateTime startDate,
+      OffsetDateTime endDate,
+      Long durationInMs,
+      Long orderCounter,
+      Boolean canceled,
+      String taskId) {
+    this.id = id;
+    this.activityId = activityId;
+    this.activityType = activityType;
+    this.activityName = activityName;
+    this.timestamp = timestamp;
+    this.processDefinitionId = processDefinitionId;
+    this.processDefinitionKey = processDefinitionKey;
+    this.processDefinitionVersion = processDefinitionVersion;
+    this.tenantId = tenantId;
+    this.engineAlias = engineAlias;
+    this.processInstanceId = processInstanceId;
+    this.startDate = startDate;
+    this.endDate = endDate;
+    this.durationInMs = durationInMs;
+    this.orderCounter = orderCounter;
+    this.canceled = canceled;
+    this.taskId = taskId;
+  }
+
+  public FlowNodeEventDto() {}
 }

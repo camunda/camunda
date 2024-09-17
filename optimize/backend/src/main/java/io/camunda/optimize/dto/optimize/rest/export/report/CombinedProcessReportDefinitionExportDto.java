@@ -14,16 +14,13 @@ import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefi
 import io.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import io.camunda.optimize.service.db.schema.index.report.CombinedReportIndex;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class CombinedProcessReportDefinitionExportDto extends ReportDefinitionExportDto {
+
   @NotNull private CombinedReportDataDto data;
 
   public CombinedProcessReportDefinitionExportDto(
@@ -37,6 +34,12 @@ public class CombinedProcessReportDefinitionExportDto extends ReportDefinitionEx
         reportDefinition.getCollectionId());
     this.data = reportDefinition.getData();
   }
+
+  public CombinedProcessReportDefinitionExportDto(@NotNull CombinedReportDataDto data) {
+    this.data = data;
+  }
+
+  public CombinedProcessReportDefinitionExportDto() {}
 
   @Override
   public ExportEntityType getExportEntityType() {

@@ -10,13 +10,9 @@ package io.camunda.optimize.dto.optimize.persistence;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class CandidateGroupOperationDto implements OptimizeDto, Serializable {
@@ -26,6 +22,16 @@ public class CandidateGroupOperationDto implements OptimizeDto, Serializable {
   private String groupId;
   private String operationType;
   private OffsetDateTime timestamp;
+
+  public CandidateGroupOperationDto(
+      String id, String groupId, String operationType, OffsetDateTime timestamp) {
+    this.id = id;
+    this.groupId = groupId;
+    this.operationType = operationType;
+    this.timestamp = timestamp;
+  }
+
+  public CandidateGroupOperationDto() {}
 
   public static final class Fields {
 

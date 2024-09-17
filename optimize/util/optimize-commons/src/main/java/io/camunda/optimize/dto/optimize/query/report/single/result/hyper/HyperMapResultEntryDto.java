@@ -8,17 +8,14 @@
 package io.camunda.optimize.dto.optimize.query.report.single.result.hyper;
 
 import java.util.List;
-import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
 
 @EqualsAndHashCode
 @ToString
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class HyperMapResultEntryDto {
 
   // @formatter:off
@@ -39,6 +36,8 @@ public class HyperMapResultEntryDto {
     setValue(value);
     this.label = label;
   }
+
+  protected HyperMapResultEntryDto() {}
 
   public String getLabel() {
     return label != null && !label.isEmpty() ? label : key;

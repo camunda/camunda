@@ -11,15 +11,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.apache.lucene.search.ScoreDoc;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class IdentitySearchResultResponseDto {
+
   private List<IdentityWithMetadataResponseDto> result = new ArrayList<>();
 
   /**
@@ -31,4 +28,12 @@ public class IdentitySearchResultResponseDto {
   public IdentitySearchResultResponseDto(final List<IdentityWithMetadataResponseDto> result) {
     this.result = result;
   }
+
+  public IdentitySearchResultResponseDto(
+      List<IdentityWithMetadataResponseDto> result, ScoreDoc scoreDoc) {
+    this.result = result;
+    this.scoreDoc = scoreDoc;
+  }
+
+  public IdentitySearchResultResponseDto() {}
 }

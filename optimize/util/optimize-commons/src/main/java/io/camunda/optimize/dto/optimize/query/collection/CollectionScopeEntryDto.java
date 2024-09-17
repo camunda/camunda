@@ -18,11 +18,9 @@ import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class CollectionScopeEntryDto {
 
@@ -60,6 +58,8 @@ public class CollectionScopeEntryDto {
     this.definitionKey = definitionKey;
     this.tenants = tenants;
   }
+
+  protected CollectionScopeEntryDto() {}
 
   public String getId() {
     return Optional.ofNullable(id)

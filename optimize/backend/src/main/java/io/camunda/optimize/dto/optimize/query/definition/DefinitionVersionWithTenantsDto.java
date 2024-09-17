@@ -13,21 +13,26 @@ import io.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import io.camunda.optimize.dto.optimize.TenantDto;
 import java.util.Comparator;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DefinitionVersionWithTenantsDto extends SimpleDefinitionDto {
+
   @NonNull private String version;
   private String versionTag;
   @NonNull private List<TenantDto> tenants;
+
+  public DefinitionVersionWithTenantsDto(
+      @NonNull String version, String versionTag, @NonNull List<TenantDto> tenants) {
+    this.version = version;
+    this.versionTag = versionTag;
+    this.tenants = tenants;
+  }
+
+  protected DefinitionVersionWithTenantsDto() {}
 
   public void sort() {
     tenants.sort(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())));

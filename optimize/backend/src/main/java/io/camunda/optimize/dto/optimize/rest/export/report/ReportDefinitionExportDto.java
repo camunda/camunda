@@ -16,9 +16,7 @@ import io.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
 public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto {
@@ -35,6 +33,8 @@ public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto 
     super(id, exportEntityType, name, description, sourceIndexVersion);
     this.collectionId = collectionId;
   }
+
+  public ReportDefinitionExportDto() {}
 
   public static ReportDefinitionExportDto mapReportDefinitionToExportDto(
       final ReportDefinitionDto<?> reportDef) {

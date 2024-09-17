@@ -8,15 +8,11 @@
 package io.camunda.optimize.dto.optimize.importing;
 
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class InputInstanceDto {
 
   private String id;
@@ -24,4 +20,15 @@ public class InputInstanceDto {
   private String clauseName;
   private VariableType type;
   private String value;
+
+  public InputInstanceDto(
+      String id, String clauseId, String clauseName, VariableType type, String value) {
+    this.id = id;
+    this.clauseId = clauseId;
+    this.clauseName = clauseName;
+    this.type = type;
+    this.value = value;
+  }
+
+  public InputInstanceDto() {}
 }

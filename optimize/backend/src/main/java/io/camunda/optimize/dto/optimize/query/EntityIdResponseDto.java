@@ -8,16 +8,18 @@
 package io.camunda.optimize.dto.optimize.query;
 
 import io.camunda.optimize.dto.optimize.query.entity.EntityType;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class EntityIdResponseDto {
 
   private String id;
   private EntityType entityType;
+
+  public EntityIdResponseDto(String id, EntityType entityType) {
+    this.id = id;
+    this.entityType = entityType;
+  }
+
+  protected EntityIdResponseDto() {}
 }
