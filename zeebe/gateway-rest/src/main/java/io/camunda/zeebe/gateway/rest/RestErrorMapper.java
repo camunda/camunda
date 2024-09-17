@@ -7,14 +7,22 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
+import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.msgpack.spec.MsgpackException;
+import io.netty.channel.ConnectTimeoutException;
+import java.net.ConnectException;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
