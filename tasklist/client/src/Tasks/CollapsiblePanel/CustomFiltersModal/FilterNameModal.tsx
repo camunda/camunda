@@ -70,6 +70,7 @@ const FilterNameModal: React.FC<Props> = ({isOpen, onApply, onCancel}) => {
                   </Field>
                 </form>
               </ModalBody>
+              {/* @ts-expect-error wrong typedefs on Carbon */}
               <ModalFooter
                 primaryButtonText={t('customFiltersModalSaveAndApplyButton')}
                 secondaryButtonText={t('customFiltersModalCancelButton')}

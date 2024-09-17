@@ -10,7 +10,7 @@ import {useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {FormManager} from 'modules/formManager';
 import {Variable} from 'modules/types';
-import {InlineLoadingStatus, Layer} from '@carbon/react';
+import {InlineLoadingProps, Layer} from '@carbon/react';
 import {tracking} from 'modules/tracking';
 import {PoweredBy} from 'modules/components/PoweredBy';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
@@ -43,7 +43,7 @@ const FormJS: React.FC<Props> = ({
   const [isSchemaValid, setIsSchemaValid] = useState(true);
   const {t} = useTranslation();
   const [submissionState, setSubmissionState] =
-    useState<InlineLoadingStatus>('inactive');
+    useState<NonNullable<InlineLoadingProps['status']>>('inactive');
 
   if (!isSchemaValid) {
     return null;
