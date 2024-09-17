@@ -130,7 +130,7 @@ public class ProcessGroupByFlowNodeInterpreterES extends AbstractGroupByFlowNode
   private void removeHiddenModelElements(
       final List<GroupByResult> groupedData,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    if (context.getHiddenFlowNodeIds() != null) {
+    if (context.getHiddenFlowNodeIds() != null && !context.getHiddenFlowNodeIds().isEmpty()) {
       groupedData.removeIf(
           dataPoint -> context.getHiddenFlowNodeIds().contains(dataPoint.getKey()));
     }

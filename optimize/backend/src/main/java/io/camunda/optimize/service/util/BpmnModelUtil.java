@@ -39,6 +39,9 @@ import org.camunda.bpm.model.bpmn.instance.UserTask;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class BpmnModelUtil {
 
+  public static final String BPMN_ELEMENT_ATTRIBUTE = "bpmnElement";
+  public static final String IS_EXPANDED_ATTRIBUTE = "isExpanded";
+
   public static BpmnModelInstance parseBpmnModel(final String bpmn20Xml) {
     try (final ByteArrayInputStream stream = new ByteArrayInputStream(bpmn20Xml.getBytes())) {
       return Bpmn.readModelFromStream(stream);
@@ -116,14 +119,15 @@ public class BpmnModelUtil {
                     .filter(
                         element ->
                             flowNodeIdsBySubprocessId.containsKey(
-                                element.getAttributeValue("bpmnElement"))))
+                                element.getAttributeValue(BPMN_ELEMENT_ATTRIBUTE))))
         .filter(
             subProcessElement ->
-                !Boolean.parseBoolean(subProcessElement.getAttributeValue("isExpanded")))
+                !Boolean.parseBoolean(subProcessElement.getAttributeValue(IS_EXPANDED_ATTRIBUTE)))
         .flatMap(
             collapsedSubProcess ->
                 flowNodeIdsBySubprocessId
-                    .getOrDefault(collapsedSubProcess.getAttributeValue("bpmnElement"), Set.of())
+                    .getOrDefault(
+                        collapsedSubProcess.getAttributeValue(BPMN_ELEMENT_ATTRIBUTE), Set.of())
                     .stream())
         .collect(Collectors.toSet());
   }

@@ -54,7 +54,7 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
   private Set<String> allVariablesNames = new HashSet<>();
 
   // For heatmap reports, we exclude the collapsed subprocess data from being visualised. The keys
-  // for these nodes is calculated up front and remove during results retrieval
+  // for these nodes are calculated up front and removed during result retrieval
   private Set<String> hiddenFlowNodeIds = new HashSet<>();
 
   private FilterContext filterContext;
