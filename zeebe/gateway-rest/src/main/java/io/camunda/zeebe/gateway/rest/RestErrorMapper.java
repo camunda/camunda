@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.document.api.DocumentError.DocumentNotFound;
 import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.OperationNotSupported;
@@ -14,12 +16,18 @@ import io.camunda.service.CamundaServiceException;
 import io.camunda.service.DocumentServices.DocumentException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
+import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.msgpack.spec.MsgpackException;
+import io.netty.channel.ConnectTimeoutException;
+import java.net.ConnectException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,6 +93,61 @@ public class RestErrorMapper {
         yield mapErrorToProblem(ee.getCause(), rejectionMapper);
       case final CompletionException ce:
         yield mapErrorToProblem(ce.getCause(), rejectionMapper);
+      case final MsgpackException mpe:
+        yield createProblemDetail(
+            HttpStatus.BAD_REQUEST,
+            "Expected to handle REST API request, but messagepack property was invalid: "
+                + mpe.getMessage(),
+            mpe.getClass().getName());
+      case final JsonParseException jpe:
+        yield createProblemDetail(
+            HttpStatus.BAD_REQUEST,
+            "Expected to handle REST API request, but JSON property was invalid: "
+                + jpe.getMessage(),
+            jpe.getClass().getName());
+      case final IllegalArgumentException iae:
+        yield createProblemDetail(
+            HttpStatus.BAD_REQUEST,
+            "Expected to handle REST API request, but JSON property was invalid: "
+                + iae.getMessage(),
+            iae.getClass().getName());
+      case final RequestRetriesExhaustedException rree:
+        yield createProblemDetail(
+            HttpStatus.TOO_MANY_REQUESTS,
+            "Expected to handle REST API request, but all retries have been exhausted: "
+                + rree.getMessage(),
+            rree.getClass().getName());
+      case final TimeoutException te:
+        yield createProblemDetail(
+            HttpStatus.BAD_GATEWAY,
+            "Expected to handle REST API request, but request timed out between gateway and broker: "
+                + te.getMessage(),
+            te.getClass().getName());
+      case final MessagingException.ConnectionClosed cc:
+        yield createProblemDetail(
+            HttpStatus.BAD_GATEWAY,
+            "Expected to handle REST API request, but the connection was cut prematurely with the broker; "
+                + "the request may or may not have been accepted, and may not be safe to retry: "
+                + cc.getMessage(),
+            cc.getClass().getName());
+      case final ConnectTimeoutException cte:
+        yield createProblemDetail(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "Expected to handle REST API request, but a connection timeout exception occurred: "
+                + cte.getMessage(),
+            cte.getClass().getName());
+      case final ConnectException ce:
+        yield createProblemDetail(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "Expected to handle REST API request, but there was a connection error with one of the brokers: "
+                + ce.getMessage(),
+            ce.getClass().getName());
+      case final PartitionNotFoundException pnfe:
+        yield createProblemDetail(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "Expected to handle REST API request, but request could not be delivered: "
+                + pnfe.getMessage(),
+            pnfe.getClass().getName());
       default:
         REST_GATEWAY_LOGGER.error(
             "Expected to handle REST request, but an unexpected error occurred", error);
