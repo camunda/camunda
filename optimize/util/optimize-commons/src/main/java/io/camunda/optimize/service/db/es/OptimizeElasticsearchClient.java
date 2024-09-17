@@ -673,7 +673,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   public void deleteIndexByRawIndexNames(final String... indexNames) {
     final String indexNamesString = Arrays.toString(indexNames);
     log.debug("Deleting indices [{}].", indexNamesString);
-    esClientSnapshotFailsafe("DeleteIndex: " + indexNamesString)
+    dbClientSnapshotFailsafe("DeleteIndex: " + indexNamesString)
         .get(
             () ->
                 esWithTransportOptions()
@@ -708,45 +708,6 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   public <T> void deleteIndex(final IndexMappingCreator<T> indexMappingCreator) {
     final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(indexMappingCreator);
     deleteIndex(indexAlias);
-  }
-
-  private FailsafeExecutor<Object> esClientSnapshotFailsafe(final String operation) {
-    return Failsafe.with(createSnapshotRetryPolicy(operation, snapshotInProgressRetryDelaySeconds));
-  }
-
-  private RetryPolicy<Object> createSnapshotRetryPolicy(final String operation, final int delay) {
-    return new RetryPolicy<>()
-        .handleIf(
-            failure -> {
-              if (failure instanceof final ElasticsearchException statusException) {
-                return statusException.status() == 400
-                    && statusException.getMessage().contains("snapshot_in_progress_exception");
-              } else {
-                return false;
-              }
-            })
-        .withDelay(Duration.ofSeconds(delay))
-        // no retry limit
-        .withMaxRetries(-1)
-        .onFailedAttempt(
-            e -> {
-              log.warn(
-                  "Execution of {} failed due to a pending snapshot operation, details: {}",
-                  operation,
-                  e.getLastFailure().getMessage());
-              log.info("Will retry the operation in {} seconds...", delay);
-            });
-  @Override
-  public void deleteIndexByRawIndexNames(final String... indexNames) {
-    final String indexNamesString = Arrays.toString(indexNames);
-    log.debug("Deleting indices [{}].", indexNamesString);
-    dbClientSnapshotFailsafe("DeleteIndex: " + indexNamesString)
-        .get(
-            () ->
-                esWithTransportOptions()
-                    .indices()
-                    .delete(DeleteIndexRequest.of(b -> b.index(List.of(indexNames)))));
-    log.debug("Successfully deleted index [{}].", indexNamesString);
   }
 
   @Override

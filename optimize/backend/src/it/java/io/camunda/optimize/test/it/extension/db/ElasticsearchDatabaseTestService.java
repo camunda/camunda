@@ -940,15 +940,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void initSchema(
-      final List<IndexMappingCreator<IndexSettings.Builder>> mappingCreators,
-      final DatabaseMetadataService metadataService) {
-    final ElasticSearchSchemaManager schemaManager =
-        new ElasticSearchSchemaManager(
-            (ElasticSearchMetadataService) metadataService,
-            createDefaultConfiguration(),
-            getIndexNameService(),
-            mappingCreators);
+  public void initSchema(final DatabaseSchemaManager schemaManager) {
     schemaManager.initializeSchema(getOptimizeElasticClient());
   }
 
