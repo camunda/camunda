@@ -29,7 +29,7 @@ import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 
-public class ZeebeManagementClient {
+public class CamundaManagementClient {
 
   private static final String CLOCK_ENDPOINT = "/actuator/clock";
   private static final String CLOCK_ADD_ENDPOINT = "/actuator/clock/add";
@@ -39,20 +39,20 @@ public class ZeebeManagementClient {
 
   private final CloseableHttpClient httpClient = HttpClients.createDefault();
 
-  private final URI zeebeManagementApi;
+  private final URI camundaManagementApi;
 
-  public ZeebeManagementClient(final URI zeebeManagementApi) {
-    this.zeebeManagementApi = zeebeManagementApi;
+  public CamundaManagementClient(final URI camundaManagementApi) {
+    this.camundaManagementApi = camundaManagementApi;
   }
 
   public Instant getCurrentTime() {
 
     try {
-      final HttpGet request = new HttpGet(zeebeManagementApi + CLOCK_ENDPOINT);
+      final HttpGet request = new HttpGet(camundaManagementApi + CLOCK_ENDPOINT);
       final String responseBody = sendRequest(request);
 
-      final ZeebeClockResponseDto clockResponseDto =
-          objectMapper.readValue(responseBody, ZeebeClockResponseDto.class);
+      final CamundaClockResponseDto clockResponseDto =
+          objectMapper.readValue(responseBody, CamundaClockResponseDto.class);
       return Instant.parse(clockResponseDto.getInstant());
 
     } catch (final Exception e) {
@@ -62,9 +62,9 @@ public class ZeebeManagementClient {
 
   public void increaseTime(final Duration timeToAdd) {
 
-    final HttpPost request = new HttpPost(zeebeManagementApi + CLOCK_ADD_ENDPOINT);
+    final HttpPost request = new HttpPost(camundaManagementApi + CLOCK_ADD_ENDPOINT);
 
-    final ZeebeAddClockRequestDto requestDto = new ZeebeAddClockRequestDto();
+    final CamundaAddClockRequestDto requestDto = new CamundaAddClockRequestDto();
     requestDto.setOffsetMilli(timeToAdd.toMillis());
 
     try {

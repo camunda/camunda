@@ -16,7 +16,7 @@
 package io.camunda.process.test.impl.extension;
 
 import io.camunda.process.test.api.CamundaProcessTestContext;
-import io.camunda.process.test.impl.client.ZeebeManagementClient;
+import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -31,7 +31,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final CamundaContainer camundaContainer;
   private final ConnectorsContainer connectorsContainer;
   private final Consumer<ZeebeClient> clientCreationCallback;
-  private final ZeebeManagementClient zeebeManagementClient;
+  private final CamundaManagementClient camundaManagementClient;
 
   public CamundaProcessTestContextImpl(
       final CamundaContainer camundaContainer,
@@ -41,7 +41,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     this.connectorsContainer = connectorsContainer;
     this.clientCreationCallback = clientCreationCallback;
 
-    zeebeManagementClient = new ZeebeManagementClient(camundaContainer.getMonitoringApiAddress());
+    camundaManagementClient =
+        new CamundaManagementClient(camundaContainer.getMonitoringApiAddress());
   }
 
   @Override
@@ -82,11 +83,11 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public Instant getCurrentTime() {
-    return zeebeManagementClient.getCurrentTime();
+    return camundaManagementClient.getCurrentTime();
   }
 
   @Override
   public void increaseTime(final Duration timeToAdd) {
-    zeebeManagementClient.increaseTime(timeToAdd);
+    camundaManagementClient.increaseTime(timeToAdd);
   }
 }
