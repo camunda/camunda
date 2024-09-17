@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 package io.camunda.optimize;
 
 import java.io.File;
@@ -19,42 +26,45 @@ public class CodeQualityTest {
                 .toURI()
                 .getPath());
 
-    File optimizeDirectory = thisFilePath // test-classes
-        .getParentFile() // target
-        .getParentFile() // optimize-commons
-        .getParentFile() // util
-        .getParentFile(); // optimize
+    File optimizeDirectory =
+        thisFilePath // test-classes
+            .getParentFile() // target
+            .getParentFile() // optimize-commons
+            .getParentFile() // util
+            .getParentFile(); // optimize
 
     checkForForbiddenAnnotations(optimizeDirectory);
   }
 
   private static String[] forbiddenAnnotations = {
-      "@NoArgsConstructor",
-      "@AllArgsConstructor",
-      "@RequiredArgsConstructor",
-      "@FieldNameConstants"
+    "@NoArgsConstructor", "@AllArgsConstructor", "@RequiredArgsConstructor", "@FieldNameConstants"
   };
 
   @SneakyThrows
   private static void checkForForbiddenAnnotations(File currentDirectory) {
-    if(currentDirectory == null || !currentDirectory.isDirectory()) {
+    if (currentDirectory == null || !currentDirectory.isDirectory()) {
       return;
     }
 
     String currentDirectoryName = currentDirectory.getName();
-    if(currentDirectoryName.equals(".") || currentDirectoryName.equals("..")) {
+    if (currentDirectoryName.equals(".") || currentDirectoryName.equals("..")) {
       return;
     }
 
     File[] entries = currentDirectory.listFiles();
-    for(File entry : entries) {
-      if(entry.isDirectory()) {
+    for (File entry : entries) {
+      if (entry.isDirectory()) {
         checkForForbiddenAnnotations(entry);
-      } else if(!entry.getName().endsWith("CodeQualityTest.java") && entry.getName().endsWith(".java")) {
+      } else if (!entry.getName().endsWith("CodeQualityTest.java")
+          && entry.getName().endsWith(".java")) {
         String fileContent = new String(Files.readAllBytes(entry.toPath()));
-        for(String forbiddenAnnotation : forbiddenAnnotations) {
-          if(fileContent.contains(forbiddenAnnotation)) {
-            Assertions.fail("file " + entry.getAbsolutePath() + " contains forbidden annotation " + forbiddenAnnotation);
+        for (String forbiddenAnnotation : forbiddenAnnotations) {
+          if (fileContent.contains(forbiddenAnnotation)) {
+            Assertions.fail(
+                "file "
+                    + entry.getAbsolutePath()
+                    + " contains forbidden annotation "
+                    + forbiddenAnnotation);
           }
         }
       }
