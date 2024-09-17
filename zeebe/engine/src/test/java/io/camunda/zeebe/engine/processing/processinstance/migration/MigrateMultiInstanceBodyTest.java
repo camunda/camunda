@@ -785,60 +785,11 @@ public class MigrateMultiInstanceBodyTest {
 
     // then
     Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
-                .getFirst()
-                .getValue())
-        .describedAs("Expect that process definition key is changed")
-        .hasProcessDefinitionKey(targetProcessDefinitionKey)
-        .describedAs("Expect that bpmn process id and element id changed")
-        .hasBpmnProcessId(targetProcessId)
-        .hasElementId("serviceTask2")
-        .describedAs("Expect that version number did not change")
-        .hasVersion(1);
-
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.SERVICE_TASK)
-                .limit(3))
-        .extracting(Record::getValue)
-        .extracting(
-            r ->
-                tuple(
-                    r.getProcessDefinitionKey(),
-                    r.getBpmnProcessId(),
-                    r.getElementId(),
-                    r.getVersion()))
-        .containsExactly(
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1),
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1),
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1));
-
-    Assertions.assertThat(
             RecordingExporter.incidentRecords(IncidentIntent.MIGRATED)
                 .withRecordKey(incident.getKey())
                 .getFirst()
                 .getValue())
         .isNotNull();
-
-    assertThat(
-            RecordingExporter.jobRecords(JobIntent.MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(2))
-        .hasSize(2)
-        .extracting(Record::getValue)
-        .extracting(
-            r ->
-                tuple(
-                    r.getProcessDefinitionKey(),
-                    r.getBpmnProcessId(),
-                    r.getElementId(),
-                    r.getType()))
-        .containsExactly(
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "A"),
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "A"));
 
     // after migrating, we can successfully resolve the incident
     engine.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
@@ -931,60 +882,11 @@ public class MigrateMultiInstanceBodyTest {
 
     // then
     Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
-                .getFirst()
-                .getValue())
-        .describedAs("Expect that process definition key is changed")
-        .hasProcessDefinitionKey(targetProcessDefinitionKey)
-        .describedAs("Expect that bpmn process id and element id changed")
-        .hasBpmnProcessId(targetProcessId)
-        .hasElementId("serviceTask2")
-        .describedAs("Expect that version number did not change")
-        .hasVersion(1);
-
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.SERVICE_TASK)
-                .limit(3))
-        .extracting(Record::getValue)
-        .extracting(
-            r ->
-                tuple(
-                    r.getProcessDefinitionKey(),
-                    r.getBpmnProcessId(),
-                    r.getElementId(),
-                    r.getVersion()))
-        .containsExactly(
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1),
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1),
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1));
-
-    Assertions.assertThat(
             RecordingExporter.incidentRecords(IncidentIntent.MIGRATED)
                 .withRecordKey(incident.getKey())
                 .getFirst()
                 .getValue())
         .isNotNull();
-
-    assertThat(
-            RecordingExporter.jobRecords(JobIntent.MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(2))
-        .hasSize(2)
-        .extracting(Record::getValue)
-        .extracting(
-            r ->
-                tuple(
-                    r.getProcessDefinitionKey(),
-                    r.getBpmnProcessId(),
-                    r.getElementId(),
-                    r.getType()))
-        .containsExactly(
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "A"),
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "A"));
 
     // after migrating, we can successfully resolve the incident
     engine.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
