@@ -59,6 +59,7 @@ public class ProcessInstanceDaoIT extends OperateSearchAbstractIT {
             .setProcessDefinitionKey(2251799813685249L)
             .setProcessName("Demo process")
             .setProcessVersion(1)
+            .setProcessVersionTag("tag-v1")
             .setBpmnProcessId("demoProcess-1")
             .setStartDate(dateTimeFormatter.parseGeneralDateTime(firstInstanceStartDate))
             .setEndDate(dateTimeFormatter.parseGeneralDateTime(endDate))
@@ -132,6 +133,7 @@ public class ProcessInstanceDaoIT extends OperateSearchAbstractIT {
     final ProcessInstance result = dao.byKey(2251799813685251L);
     assertThat(result.getKey()).isEqualTo(2251799813685251L);
     assertThat(result.getBpmnProcessId()).isEqualTo("demoProcess-1");
+    assertThat(result.getProcessVersionTag()).isEqualTo("tag-v1");
     assertThat(result.getStartDate()).isEqualTo(firstInstanceStartDate);
     assertThat(result.getEndDate()).isEqualTo(endDate);
   }

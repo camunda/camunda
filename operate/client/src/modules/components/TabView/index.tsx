@@ -9,13 +9,15 @@
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {Container, Tab, Content, TabPanel, TabList} from './styled';
 import {tracking} from 'modules/tracking';
-import {Tabs, TabPanels} from '@carbon/react';
+import {Tabs, TabPanels, Stack} from '@carbon/react';
 
 type TabType = {
   id: string;
+  labelIcon?: React.ReactNode;
   label: string;
   content: React.ReactNode;
   removePadding?: boolean;
+  testId?: string;
   onClick?: () => void;
 };
 
@@ -36,9 +38,10 @@ const TabView: React.FC<Props> = ({tabs = [], eventName, dataTestId}) => {
       ) : (
         <Tabs>
           <TabList aria-label="Variable Panel Tabs">
-            {tabs.map(({id, label, onClick}) => (
+            {tabs.map(({id, labelIcon, label, testId, onClick}) => (
               <Tab
                 key={id}
+                data-testid={testId}
                 onClick={() => {
                   onClick?.();
                   if (eventName !== undefined) {
@@ -49,7 +52,10 @@ const TabView: React.FC<Props> = ({tabs = [], eventName, dataTestId}) => {
                   }
                 }}
               >
-                {label}
+                <Stack orientation="horizontal" gap={3}>
+                  {label}
+                  {labelIcon}
+                </Stack>
               </Tab>
             ))}
           </TabList>

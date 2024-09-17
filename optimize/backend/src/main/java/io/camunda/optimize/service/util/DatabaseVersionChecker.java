@@ -7,15 +7,16 @@
  */
 package io.camunda.optimize.service.util;
 
-import static io.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder.getCurrentESVersion;
+import static io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder.getCurrentESVersion;
 import static io.camunda.optimize.upgrade.os.OpenSearchClientBuilder.getCurrentOSVersion;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.transport.TransportOptions;
 import com.vdurmont.semver4j.Semver;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.service.util.configuration.DatabaseType;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 
 @Slf4j
@@ -24,9 +25,20 @@ public class DatabaseVersionChecker {
   public static final String MIN_ES_SUPPORTED_VERSION = "8.13.0";
   public static final String MIN_OS_SUPPORTED_VERSION = "2.9.0";
 
+  public static void checkDatabaseVersionSupported(
+      String databaseVersion, DatabaseType databaseVendor) {
+    switch (databaseVendor) {
+      case ELASTICSEARCH ->
+          checkCurrentDBVersionIsHigherThanMinimum(databaseVersion, MIN_ES_SUPPORTED_VERSION);
+      case OPENSEARCH ->
+          checkCurrentDBVersionIsHigherThanMinimum(databaseVersion, MIN_OS_SUPPORTED_VERSION);
+    }
+  }
+
   public static void checkESVersionSupport(
-      final RestHighLevelClient esClient, final RequestOptions requestOptions) throws IOException {
-    final String currentESVersion = getCurrentESVersion(esClient, requestOptions);
+      final ElasticsearchClient esClient, final TransportOptions transportOptions)
+      throws IOException {
+    final String currentESVersion = getCurrentESVersion(esClient, transportOptions);
     checkCurrentDBVersionIsHigherThanMinimum(currentESVersion, MIN_ES_SUPPORTED_VERSION);
   }
 

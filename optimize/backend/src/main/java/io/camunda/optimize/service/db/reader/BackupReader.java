@@ -7,9 +7,9 @@
  */
 package io.camunda.optimize.service.db.reader;
 
+import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
 import java.util.List;
 import java.util.Map;
-import org.elasticsearch.snapshots.SnapshotInfo;
 
 public interface BackupReader {
 

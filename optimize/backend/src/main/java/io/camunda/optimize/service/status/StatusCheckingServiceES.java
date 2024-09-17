@@ -7,13 +7,12 @@
  */
 package io.camunda.optimize.service.status;
 
+import co.elastic.clients.elasticsearch._types.HealthStatus;
+import co.elastic.clients.elasticsearch.cluster.HealthRequest;
+import co.elastic.clients.elasticsearch.cluster.HealthResponse;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import jakarta.ws.rs.core.Response;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -33,12 +32,11 @@ public class StatusCheckingServiceES extends StatusCheckingService {
   @Override
   public boolean isConnectedToDatabase() {
     try {
-      ClusterHealthRequest request =
-          new ClusterHealthRequest(optimizeIndexNameService.getIndexPrefix() + "*");
-      final ClusterHealthResponse healthResponse = esClient.getClusterHealth(request);
+      final HealthResponse healthResponse =
+          esClient.getClusterHealth(
+              HealthRequest.of(h -> h.index(optimizeIndexNameService.getIndexPrefix() + "*")));
 
-      return healthResponse.status().getStatus() == Response.Status.OK.getStatusCode()
-          && healthResponse.getStatus() != ClusterHealthStatus.RED;
+      return healthResponse.status() != HealthStatus.Red;
     } catch (Exception ignored) {
       return false;
     }

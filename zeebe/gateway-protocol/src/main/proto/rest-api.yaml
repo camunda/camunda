@@ -845,12 +845,12 @@ paths:
     post:
       tags:
         - Flow node Instance
-      summary: Query flow node instances (experimental)
+      summary: Query flow node instances (alpha)
       description: |
         Search for flow node instances based on given criteria.
 
         :::note
-        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
         for further details.
         :::
@@ -1013,12 +1013,12 @@ paths:
     post:
       tags:
         - Decision instance
-      summary: Query decision instances (experimental)
+      summary: Query decision instances (alpha)
       description: |
         Search for decision instances based on given criteria.
 
         :::note
-        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
         for further details.
         :::
@@ -1052,6 +1052,48 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
+
+  /decisions/evaluation:
+    post:
+      tags:
+        - Decision
+      summary: Evaluate decision
+      description: |
+        Evaluates a decision.
+        You specify the decision to evaluate either by using its unique key (as returned by
+        DeployResource), or using the decision ID. When using the decision ID, the latest deployed
+        version of the decision is used.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluateDecisionRequest"
+      responses:
+        "200":
+          description: The decision was evaluated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluateDecisionResponse"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The decision is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
   /authorizations/{ownerKey}:
     patch:
@@ -2894,7 +2936,7 @@ components:
           description: the DMN id of the decision requirements.
         tenantId:
           type: string
-          description: The tenant id of the decision requirements.
+          description: The tenant ID of the decision requirements.
     DecisionRequirementsSearchQueryResponse:
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -2926,8 +2968,150 @@ components:
           description: The name of the resource from which this decision requirements was parsed.
         tenantId:
           type: string
-          description: The tenant id of the decision requirements.
-
+          description: The tenant ID of the decision requirements.
+    EvaluateDecisionRequest:
+      type: object
+      properties:
+        decisionKey:
+          description: |
+            The unique key identifying the decision to be evaluated.
+            Cannot be used together with decisionId.
+          type: integer
+          format: int64
+        decisionId:
+          description: |
+            The ID of the decision to be evaluated.
+            Cannot be used together with decisionKey. When using the decision ID, the latest
+            deployed version of the decision is used.
+          type: string
+        variables:
+          description: The message variables as JSON document.
+          additionalProperties: true
+          type: object
+        tenantId:
+          description: The tenant ID of the decision.
+          type: string
+    EvaluateDecisionResponse:
+      type: object
+      properties:
+        decisionKey:
+          description: The unique key identifying the decision which was evaluated.
+          type: integer
+          format: int64
+        decisionId:
+          description: The ID of the decision which was evaluated.
+          type: string
+        decisionName:
+          description: The name of the decision which was evaluated.
+          type: string
+        decisionVersion:
+          description: The version of the decision which was evaluated.
+          type: integer
+          format: int32
+        decisionRequirementsId:
+          description: The ID of the decision requirements graph that the decision which was evaluated is part of.
+          type: string
+        decisionRequirementsKey:
+          description: The unique key identifying the decision requirements graph that the decision which was evaluated is part of.
+          type: integer
+          format: int64
+        decisionOutput:
+          description: |
+            JSON document that will instantiate the result of the decision which was evaluated.
+          type: string
+        failedDecisionId:
+          description: The ID of the decision which failed during evaluation.
+          type: string
+        failureMessage:
+          description: Message describing why the decision which was evaluated failed.
+          type: string
+        tenantId:
+          description: The tenant ID of the evaluated decision.
+          type: string
+        decisionInstanceKey:
+          description: The unique key identifying this decision evaluation.
+          type: integer
+          format: int64
+        evaluatedDecisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvaluatedDecisionItem"
+    EvaluatedDecisionItem:
+      type: object
+      description: List of decisions that were evaluated within the requested decision evaluation.
+      properties:
+        decisionKey:
+          description: The unique key identifying the decision which was evaluate.
+          type: integer
+          format: int64
+        decisionId:
+          description: The ID of the decision which was evaluated.
+          type: string
+        decisionName:
+          description: The name of the decision which was evaluated.
+          type: string
+        decisionVersion:
+          description: The version of the decision which was evaluated.
+          type: integer
+          format: int32
+        decisionType:
+          description: The type of the decision which was evaluated.
+          type: string
+        decisionOutput:
+          description: |
+            JSON document that will instantiate the result of the decision which was evaluated.
+          type: string
+        tenantId:
+          description: The tenant ID of the evaluated decision.
+          type: string
+        matchedRules:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchedDecisionRuleItem"
+        evaluatedInputs:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvaluatedDecisionInputItem"
+    MatchedDecisionRuleItem:
+      type: object
+      description: The decision rules that matched within this decision evaluation.
+      properties:
+        ruleId:
+          description: The ID of the matched rule.
+          type: string
+        ruleIndex:
+          description: The index of the matched rule.
+          type: string
+        evaluatedOutputs:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvaluatedDecisionOutputItem"
+    EvaluatedDecisionInputItem:
+      type: object
+      description: The decision inputs that were evaluated within this decision evaluation.
+      properties:
+        inputId:
+          description: The ID of the evaluated decision input.
+          type: string
+        inputName:
+          description: The name of the evaluated decision input.
+          type: string
+        inputValue:
+          description: The value of the evaluated decision input.
+          type: string
+    EvaluatedDecisionOutputItem:
+      type: object
+      description: The evaluated decision outputs.
+      properties:
+        outputId:
+          description: The ID of the evaluated decision output.
+          type: string
+        outputName:
+          description: The name of the evaluated decision output.
+          type: string
+        outputValue:
+          description: The value of the evaluated decision output.
+          type: string
     DecisionInstanceSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -3173,6 +3357,10 @@ components:
           type: string
           format: date-time
           description: The date and time when the document expires.
+        size:
+          type: integer
+          format: int64
+          description: The size of the document in bytes.
     DocumentLinkRequest:
       type: object
       properties:

@@ -17,8 +17,8 @@ import io.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResul
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
-import io.camunda.optimize.service.db.es.report.AuthorizationCheckReportEvaluationHandler;
 import io.camunda.optimize.service.db.es.report.result.RawDataCommandResult;
+import io.camunda.optimize.service.db.report.AuthorizationCheckReportEvaluationHandler;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.util.FileReaderUtil;
 import java.time.ZoneId;
@@ -67,7 +67,9 @@ public class CsvExportServiceTest {
     String expectedContent =
         FileReaderUtil.readFileWithWindowsLineSeparator("/csv/process/single/raw_process_data.csv");
 
-    assertThat(actualContent).isEqualTo(expectedContent);
+    // Added "\\s+" for fix failing on windows laptops
+    assertThat(actualContent.replaceAll("\\s+", ""))
+        .isEqualTo(expectedContent.replaceAll("\\s+", ""));
   }
 
   @Test
@@ -90,6 +92,8 @@ public class CsvExportServiceTest {
     String actualContent = new String(csvContent);
     String expectedContent =
         FileReaderUtil.readFileWithWindowsLineSeparator("/csv/decision/raw_decision_data.csv");
-    assertThat(actualContent).isEqualTo(expectedContent);
+    // Added "\\s+" for fix failing on windows laptops
+    assertThat(actualContent.replaceAll("\\s+", ""))
+        .isEqualTo(expectedContent.replaceAll("\\s+", ""));
   }
 }

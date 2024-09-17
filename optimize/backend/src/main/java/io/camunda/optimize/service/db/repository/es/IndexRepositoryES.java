@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.repository.es;
 
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.repository.IndexRepository;
@@ -19,7 +20,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.xcontent.XContentBuilder;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -56,12 +56,13 @@ public class IndexRepositoryES implements IndexRepository, ConfigurationReloadab
     return indexExists(indexMappingCreatorBuilder.getElasticsearch().apply(key).getIndexName());
   }
 
-  private String getIndexName(IndexMappingCreator<XContentBuilder> indexMappingCreator) {
+  private String getIndexName(IndexMappingCreator<IndexSettings.Builder> indexMappingCreator) {
     return indexNameService.getOptimizeIndexNameWithVersion(indexMappingCreator);
   }
 
   private void createMissingIndex(
-      IndexMappingCreator<XContentBuilder> indexMappingCreator, final Set<String> readOnlyAliases) {
+      final IndexMappingCreator<IndexSettings.Builder> indexMappingCreator,
+      final Set<String> readOnlyAliases) {
     log.debug("Creating index {}.", getIndexName(indexMappingCreator));
 
     elasticSearchSchemaManager.createOrUpdateOptimizeIndex(

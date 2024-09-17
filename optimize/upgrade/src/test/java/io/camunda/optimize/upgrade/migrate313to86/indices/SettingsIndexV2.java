@@ -9,13 +9,14 @@ package io.camunda.optimize.upgrade.migrate313to86.indices;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import io.camunda.optimize.dto.optimize.SettingsDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
-public class SettingsIndexV2 extends DefaultIndexMappingCreator<XContentBuilder> {
+public class SettingsIndexV2 extends DefaultIndexMappingCreator<IndexSettings.Builder> {
 
   public static final int VERSION = 2;
 
@@ -33,28 +34,17 @@ public class SettingsIndexV2 extends DefaultIndexMappingCreator<XContentBuilder>
   }
 
   @Override
-  public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return xContentBuilder
-        .startObject("metadataTelemetryEnabled")
-        .field("type", "boolean")
-        .endObject()
-        .startObject(SHARING_ENABLED)
-        .field("type", "boolean")
-        .endObject()
-        .startObject(LAST_MODIFIED)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-        .endObject()
-        .startObject("lastModifier")
-        .field("type", "keyword")
-        .endObject();
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+    return builder
+        .properties("metadataTelemetryEnabled", p -> p.boolean_(b -> b))
+        .properties(SHARING_ENABLED, p -> p.boolean_(b -> b))
+        .properties("lastModifier", p -> p.keyword(b -> b))
+        .properties(LAST_MODIFIED, p -> p.date(b -> b.format(OPTIMIZE_DATE_FORMAT)));
   }
 
   @Override
-  public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder)
-      throws IOException {
-    return contentBuilder.field(key, value);
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder builder) throws IOException {
+    return builder.numberOfShards(Integer.toString(value));
   }
 }

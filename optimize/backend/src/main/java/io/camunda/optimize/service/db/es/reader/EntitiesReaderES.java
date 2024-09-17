@@ -21,14 +21,19 @@ import static io.camunda.optimize.service.db.schema.index.report.AbstractReportI
 import static io.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.OWNER;
 import static io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.INSTANT_PREVIEW_REPORT;
 import static io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
-import static org.elasticsearch.core.TimeValue.timeValueSeconds;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.FilterAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.MgetRequest;
+import co.elastic.clients.elasticsearch.core.MgetResponse;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.get.GetResult;
+import co.elastic.clients.elasticsearch.core.mget.MultiGetResponseItem;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
@@ -39,6 +44,8 @@ import io.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityType;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeMultiGetOperationBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
 import io.camunda.optimize.service.db.es.schema.index.DashboardIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.CombinedReportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleDecisionReportIndexES;
@@ -59,19 +66,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.get.MultiGetItemResponse;
-import org.elasticsearch.action.get.MultiGetRequest;
-import org.elasticsearch.action.get.MultiGetResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -96,49 +90,111 @@ public class EntitiesReaderES implements EntitiesReader {
   public List<CollectionEntity> getAllPrivateEntitiesForOwnerId(final String ownerId) {
     log.debug("Fetching all available entities for user [{}]", ownerId);
 
-    final BoolQueryBuilder query =
-        boolQuery()
-            .mustNot(existsQuery(COLLECTION_ID))
-            .must(
-                boolQuery()
-                    .minimumShouldMatch(1)
-                    .should(termQuery(MANAGEMENT_DASHBOARD, false))
-                    .should(termQuery(DATA + "." + MANAGEMENT_REPORT, false))
-                    .should(
-                        boolQuery()
-                            .mustNot(existsQuery(MANAGEMENT_DASHBOARD))
-                            .mustNot(existsQuery(DATA + "." + MANAGEMENT_REPORT))))
-            .must(
-                boolQuery()
-                    .minimumShouldMatch(1)
-                    .should(termQuery(INSTANT_PREVIEW_DASHBOARD, false))
-                    .should(termQuery(DATA + "." + INSTANT_PREVIEW_REPORT, false))
-                    .should(
-                        boolQuery()
-                            .mustNot(existsQuery(INSTANT_PREVIEW_DASHBOARD))
-                            .mustNot(existsQuery(DATA + "." + INSTANT_PREVIEW_REPORT))));
+    final Query query =
+        Query.of(
+            q ->
+                q.bool(
+                    b -> {
+                      b.mustNot(m -> m.exists(e -> e.field(COLLECTION_ID)))
+                          .must(
+                              m ->
+                                  m.bool(
+                                      bb ->
+                                          bb.minimumShouldMatch("1")
+                                              .should(
+                                                  s ->
+                                                      s.term(
+                                                          t ->
+                                                              t.field(MANAGEMENT_DASHBOARD)
+                                                                  .value(false)))
+                                              .should(
+                                                  s ->
+                                                      s.term(
+                                                          t ->
+                                                              t.field(
+                                                                      DATA
+                                                                          + "."
+                                                                          + MANAGEMENT_REPORT)
+                                                                  .value(false)))
+                                              .should(
+                                                  s ->
+                                                      s.bool(
+                                                          bbb ->
+                                                              bbb.mustNot(
+                                                                      mm ->
+                                                                          mm.exists(
+                                                                              e ->
+                                                                                  e.field(
+                                                                                      MANAGEMENT_DASHBOARD)))
+                                                                  .mustNot(
+                                                                      mm ->
+                                                                          mm.exists(
+                                                                              e ->
+                                                                                  e.field(
+                                                                                      DATA
+                                                                                          + "."
+                                                                                          + MANAGEMENT_REPORT)))))))
+                          .must(
+                              m ->
+                                  m.bool(
+                                      bb ->
+                                          bb.minimumShouldMatch("1")
+                                              .should(
+                                                  s ->
+                                                      s.term(
+                                                          t ->
+                                                              t.field(INSTANT_PREVIEW_DASHBOARD)
+                                                                  .value(false)))
+                                              .should(
+                                                  s ->
+                                                      s.term(
+                                                          t ->
+                                                              t.field(
+                                                                      DATA
+                                                                          + "."
+                                                                          + INSTANT_PREVIEW_REPORT)
+                                                                  .value(false)))
+                                              .should(
+                                                  s ->
+                                                      s.bool(
+                                                          bbb ->
+                                                              bbb.mustNot(
+                                                                      mm ->
+                                                                          mm.exists(
+                                                                              e ->
+                                                                                  e.field(
+                                                                                      INSTANT_PREVIEW_DASHBOARD)))
+                                                                  .mustNot(
+                                                                      mm ->
+                                                                          mm.exists(
+                                                                              e ->
+                                                                                  e.field(
+                                                                                      DATA
+                                                                                          + "."
+                                                                                          + INSTANT_PREVIEW_REPORT)))))));
+                      if (ownerId != null) {
+                        b.must(m -> m.term(t -> t.field(OWNER).value(ownerId)));
+                      }
+                      return b;
+                    }));
 
-    if (ownerId != null) {
-      query.must(termQuery(OWNER, ownerId));
-    }
-
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
-            .query(query)
-            .size(LIST_FETCH_LIMIT)
-            .fetchSource(null, ENTITY_LIST_EXCLUDES);
     final SearchRequest searchRequest =
         createReportAndDashboardSearchRequest()
-            .source(searchSourceBuilder)
+            .query(query)
+            .size(LIST_FETCH_LIMIT)
+            .source(s -> s.filter(f -> f.excludes(List.of(ENTITY_LIST_EXCLUDES))))
             .scroll(
-                timeValueSeconds(
-                    configurationService
-                        .getElasticSearchConfiguration()
-                        .getScrollTimeoutInSeconds()));
+                t ->
+                    t.time(
+                        configurationService
+                                .getElasticSearchConfiguration()
+                                .getScrollTimeoutInSeconds()
+                            + "s"))
+            .build();
 
-    final SearchResponse scrollResp;
+    SearchResponse<CollectionEntity> scrollResp;
     try {
-      scrollResp = esClient.search(searchRequest);
+      scrollResp = esClient.search(searchRequest, CollectionEntity.class);
     } catch (final IOException e) {
       log.error("Was not able to retrieve private entities!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve private entities!", e);
@@ -163,37 +219,52 @@ public class EntitiesReaderES implements EntitiesReader {
       return new HashMap<>();
     }
 
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
+    final SearchRequest.Builder searchRequestBuilder =
+        createReportAndDashboardSearchRequest()
             .query(
-                termsQuery(
-                    COLLECTION_ID,
-                    collections.stream().map(BaseCollectionDefinitionDto::getId).toList()))
+                q ->
+                    q.terms(
+                        t ->
+                            t.field(COLLECTION_ID)
+                                .terms(
+                                    tt ->
+                                        tt.value(
+                                            collections.stream()
+                                                .map(BaseCollectionDefinitionDto::getId)
+                                                .map(FieldValue::of)
+                                                .toList()))))
             .size(0);
 
     collections.forEach(
         collection -> {
           final String collectionId = collection.getId();
-          final FilterAggregationBuilder byCollectionIdFilterAggregation =
-              filter(collectionId, boolQuery().filter(termQuery(COLLECTION_ID, collectionId)));
-          searchSourceBuilder.aggregation(byCollectionIdFilterAggregation);
-          final TermsAggregationBuilder byIndexNameAggregation =
-              terms(AGG_BY_INDEX_COUNT).field("_index");
-          byCollectionIdFilterAggregation.subAggregation(byIndexNameAggregation);
+          Aggregation aggregation =
+              Aggregation.of(
+                  a ->
+                      a.filter(
+                              f ->
+                                  f.bool(
+                                      b ->
+                                          b.filter(
+                                              ff ->
+                                                  ff.term(
+                                                      t ->
+                                                          t.field(COLLECTION_ID)
+                                                              .value(collectionId)))))
+                          .aggregations(
+                              AGG_BY_INDEX_COUNT,
+                              Aggregation.of(aa -> aa.terms(t -> t.field("_index")))));
+          searchRequestBuilder.aggregations(collectionId, aggregation);
         });
 
-    final SearchRequest searchRequest =
-        createReportAndDashboardSearchRequest().source(searchSourceBuilder);
-
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest);
-      return searchResponse.getAggregations().asList().stream()
-          .map(Filter.class::cast)
+      final SearchResponse<?> searchResponse =
+          esClient.search(searchRequestBuilder.build(), Object.class);
+      return searchResponse.aggregations().entrySet().stream()
           .map(
-              collectionFilterAggregation ->
+              (entry) ->
                   new AbstractMap.SimpleEntry<>(
-                      collectionFilterAggregation.getName(),
-                      extractEntityIndexCounts(collectionFilterAggregation)))
+                      entry.getKey(), extractEntityIndexCounts(entry.getValue().filter())))
           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     } catch (final IOException e) {
       throw new OptimizeRuntimeException("Was not able to count collection entities!", e);
@@ -203,11 +274,34 @@ public class EntitiesReaderES implements EntitiesReader {
   @Override
   public List<CollectionEntity> getAllEntitiesForCollection(final String collectionId) {
     log.debug("Fetching all available entities for collection [{}]", collectionId);
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
-            .query(termQuery(COLLECTION_ID, collectionId))
-            .size(LIST_FETCH_LIMIT);
-    return runEntitiesSearchRequest(searchSourceBuilder);
+
+    SearchRequest searchRequest =
+        createReportAndDashboardSearchRequest()
+            .query(q -> q.term(t -> t.field(COLLECTION_ID).value(collectionId)))
+            .size(LIST_FETCH_LIMIT)
+            .scroll(
+                t ->
+                    t.time(
+                        configurationService
+                                .getElasticSearchConfiguration()
+                                .getScrollTimeoutInSeconds()
+                            + "s"))
+            .build();
+
+    SearchResponse<CollectionEntity> scrollResp;
+    try {
+      scrollResp = esClient.search(searchRequest, CollectionEntity.class);
+    } catch (IOException e) {
+      log.error("Was not able to retrieve collection entities!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve entities!", e);
+    }
+
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
+        scrollResp,
+        CollectionEntity.class,
+        objectMapper,
+        esClient,
+        configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds());
   }
 
   @Override
@@ -215,18 +309,19 @@ public class EntitiesReaderES implements EntitiesReader {
       final EntityNameRequestDto requestDto, final String locale) {
     log.debug(
         String.format("Performing get entity names search request %s", requestDto.toString()));
-    final MultiGetResponse multiGetItemResponse = runGetEntityNamesRequest(requestDto);
+    final MgetResponse<CollectionEntity> multiGetItemResponse =
+        runGetEntityNamesRequest(requestDto, CollectionEntity.class);
 
     if (!atLeastOneResponseExistsForMultiGet(multiGetItemResponse)) {
       return Optional.empty();
     }
 
     final EntityNameResponseDto result = new EntityNameResponseDto();
-    for (final MultiGetItemResponse itemResponse : multiGetItemResponse) {
-      final GetResponse response = itemResponse.getResponse();
-      if (response.isExists()) {
-        final String entityId = response.getId();
-        final CollectionEntity entity = readCollectionEntity(response, entityId);
+    for (MultiGetResponseItem<CollectionEntity> itemResponse : multiGetItemResponse.docs()) {
+      GetResult<CollectionEntity> response = itemResponse.result();
+      if (response.found()) {
+        String entityId = response.id();
+        CollectionEntity entity = response.source();
         if (entityId.equals(requestDto.getCollectionId())) {
           result.setCollectionName(entity.getName());
         }
@@ -240,12 +335,13 @@ public class EntitiesReaderES implements EntitiesReader {
       }
     }
 
-    return Optional.ofNullable(result);
+    return Optional.of(result);
   }
 
-  private Map<EntityType, Long> extractEntityIndexCounts(final Filter collectionFilterAggregation) {
-    final Terms byIndexNameTerms =
-        collectionFilterAggregation.getAggregations().get(AGG_BY_INDEX_COUNT);
+  private Map<EntityType, Long> extractEntityIndexCounts(
+      final FilterAggregate collectionFilterAggregation) {
+    final StringTermsAggregate byIndexNameTerms =
+        collectionFilterAggregation.aggregations().get(AGG_BY_INDEX_COUNT).sterms();
     final long singleProcessReportCount =
         getDocCountForIndex(byIndexNameTerms, new SingleProcessReportIndexES());
     final long combinedProcessReportCount =
@@ -261,43 +357,38 @@ public class EntitiesReaderES implements EntitiesReader {
   }
 
   private long getDocCountForIndex(
-      final Terms byIndexNameTerms, final IndexMappingCreator<?> indexMapper) {
+      final StringTermsAggregate byIndexNameTerms, final IndexMappingCreator<?> indexMapper) {
     if (indexMapper.isCreateFromTemplate()) {
       throw new OptimizeRuntimeException(
           "Cannot fetch the document count for indices created from template");
     }
-    return Optional.ofNullable(
-            byIndexNameTerms.getBucketByKey(
-                optimizeIndexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(indexMapper)))
-        .map(MultiBucketsAggregation.Bucket::getDocCount)
+    return byIndexNameTerms.buckets().array().stream()
+        .filter(
+            s ->
+                optimizeIndexNameService
+                    .getOptimizeIndexNameWithVersionWithoutSuffix(indexMapper)
+                    .equals(s.key().stringValue()))
+        .findFirst()
+        .map(MultiBucketBase::docCount)
         .orElse(0L);
   }
 
-  private CollectionEntity readCollectionEntity(final GetResponse response, final String entityId) {
-    final CollectionEntity entity;
-    try {
-      entity = objectMapper.readValue(response.getSourceAsString(), CollectionEntity.class);
-    } catch (final IOException e) {
-      final String reason = String.format("Can't read collection entity with id [%s].", entityId);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-    return entity;
-  }
-
-  private MultiGetResponse runGetEntityNamesRequest(final EntityNameRequestDto requestDto) {
-    final MultiGetRequest request = new MultiGetRequest();
-    addGetEntityToRequest(request, requestDto.getReportId(), SINGLE_PROCESS_REPORT_INDEX_NAME);
-    addGetEntityToRequest(request, requestDto.getReportId(), SINGLE_DECISION_REPORT_INDEX_NAME);
-    addGetEntityToRequest(request, requestDto.getReportId(), COMBINED_REPORT_INDEX_NAME);
-    addGetEntityToRequest(request, requestDto.getDashboardId(), DASHBOARD_INDEX_NAME);
-    addGetEntityToRequest(request, requestDto.getCollectionId(), COLLECTION_INDEX_NAME);
-    if (request.getItems().isEmpty()) {
+  private <T> MgetResponse<T> runGetEntityNamesRequest(
+      EntityNameRequestDto requestDto, Class<T> clazz) {
+    final MgetRequest.Builder builder = new MgetRequest.Builder();
+    addGetEntityToRequest(builder, requestDto.getReportId(), SINGLE_PROCESS_REPORT_INDEX_NAME);
+    addGetEntityToRequest(builder, requestDto.getReportId(), SINGLE_DECISION_REPORT_INDEX_NAME);
+    addGetEntityToRequest(builder, requestDto.getReportId(), COMBINED_REPORT_INDEX_NAME);
+    addGetEntityToRequest(builder, requestDto.getDashboardId(), DASHBOARD_INDEX_NAME);
+    addGetEntityToRequest(builder, requestDto.getCollectionId(), COLLECTION_INDEX_NAME);
+    MgetRequest request = builder.build();
+    if (request.docs().isEmpty()) {
       throw new BadRequestException("No ids for entity name request provided");
     }
 
-    final MultiGetResponse multiGetItemResponses;
+    MgetResponse<T> multiGetItemResponses;
     try {
-      multiGetItemResponses = esClient.mget(request);
+      multiGetItemResponses = esClient.mget(request, clazz);
     } catch (final IOException e) {
       final String reason =
           String.format("Could not get entity names search request %s", requestDto);
@@ -308,45 +399,22 @@ public class EntitiesReaderES implements EntitiesReader {
   }
 
   private void addGetEntityToRequest(
-      final MultiGetRequest request, final String entityId, final String entityIndexName) {
+      final MgetRequest.Builder request, final String entityId, final String entityIndexName) {
     if (entityId != null) {
-      request.add(new MultiGetRequest.Item(entityIndexName, entityId));
+      OptimizeMultiGetOperationBuilderES builder = new OptimizeMultiGetOperationBuilderES();
+      request.docs(d -> builder.optimizeIndex(esClient, entityIndexName).id(entityId));
     }
   }
 
-  private List<CollectionEntity> runEntitiesSearchRequest(
-      final SearchSourceBuilder searchSourceBuilder) {
-    final SearchRequest searchRequest =
-        createReportAndDashboardSearchRequest()
-            .source(searchSourceBuilder)
-            .scroll(
-                timeValueSeconds(
-                    configurationService
-                        .getElasticSearchConfiguration()
-                        .getScrollTimeoutInSeconds()));
-
-    final SearchResponse scrollResp;
-    try {
-      scrollResp = esClient.search(searchRequest);
-    } catch (final IOException e) {
-      log.error("Was not able to retrieve collection entities!", e);
-      throw new OptimizeRuntimeException("Was not able to retrieve entities!", e);
-    }
-
-    return ElasticsearchReaderUtil.retrieveAllScrollResults(
-        scrollResp,
-        CollectionEntity.class,
-        objectMapper,
+  private SearchRequest.Builder createReportAndDashboardSearchRequest() {
+    OptimizeSearchRequestBuilderES searchRequest = new OptimizeSearchRequestBuilderES();
+    searchRequest.optimizeIndex(
         esClient,
-        configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds());
-  }
-
-  private SearchRequest createReportAndDashboardSearchRequest() {
-    return new SearchRequest(
         SINGLE_PROCESS_REPORT_INDEX_NAME,
         SINGLE_DECISION_REPORT_INDEX_NAME,
         COMBINED_REPORT_INDEX_NAME,
         DASHBOARD_INDEX_NAME);
+    return searchRequest;
   }
 
   private String getLocalizedDashboardName(

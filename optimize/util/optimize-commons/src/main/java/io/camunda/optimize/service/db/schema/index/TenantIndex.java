@@ -7,11 +7,10 @@
  */
 package io.camunda.optimize.service.db.schema.index;
 
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.TenantDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class TenantIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
   public static final int VERSION = 3;
@@ -27,21 +26,11 @@ public abstract class TenantIndex<TBuilder> extends DefaultIndexMappingCreator<T
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return xContentBuilder
-        .startObject(TenantDto.Fields.id.name())
-        .field("type", "text")
-        .field("index", false)
-        .endObject()
-        .startObject(TenantDto.Fields.name.name())
-        .field("type", "text")
-        .field("index", false)
-        .endObject()
-        .startObject(TenantDto.Fields.engine.name())
-        .field("type", "text")
-        .field("index", false)
-        .endObject();
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+
+    return builder
+        .properties(TenantDto.Fields.id.name(), p -> p.text(t -> t.index(false)))
+        .properties(TenantDto.Fields.name.name(), p -> p.text(t -> t.index(false)))
+        .properties(TenantDto.Fields.engine.name(), p -> p.text(t -> t.index(false)));
   }
 }

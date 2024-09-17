@@ -9,7 +9,6 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {Tooltip} from 'components';
 import {numberParser} from 'services';
 import {t} from 'translation';
 
@@ -73,9 +72,9 @@ export default function ProgressBar({min, max, value, isBelow, formatter, precis
         />
         <div className={classnames('rangeLabels')}>
           <span>{leftLabel}</span>
-          <Tooltip content={rightLabel} overflowOnly>
-            <span className="rightLabel">{rightLabel}</span>
-          </Tooltip>
+          <span className="rightLabel" title={rightLabel}>
+            {rightLabel}
+          </span>
         </div>
       </div>
     </div>

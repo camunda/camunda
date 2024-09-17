@@ -103,7 +103,7 @@ public class ResourceDeletionDeleteProcessor
     tryDeleteResources(command);
 
     stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETED, value);
-    commandDistributionBehavior.withKey(eventKey).distribute(command);
+    commandDistributionBehavior.withKey(eventKey).unordered().distribute(command);
     responseWriter.writeEventOnCommand(eventKey, ResourceDeletionIntent.DELETING, value, command);
   }
 

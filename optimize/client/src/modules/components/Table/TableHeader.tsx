@@ -10,7 +10,6 @@ import {MouseEvent} from 'react';
 import {TableHeader as CarbonTableHeader, DataTableSortState, TableSelectAll} from '@carbon/react';
 import classNames from 'classnames';
 
-import {Tooltip} from 'components';
 import {isReactElement} from 'services';
 
 import {Header} from './Table';
@@ -102,16 +101,22 @@ export default function TableHeader({
     ...getSortingProps(header),
     ...reactTableHeaderProps,
     className: classNames('tableHeader', {placeholder: header.placeholderOf}),
-    title: undefined,
+    title: getTableHeaderTitle(header),
     'data-group': header.group,
   };
 
   return (
     <CarbonTableHeader {...headerProps} ref={rewriteHeaderStyles(headerProps.style)}>
-      <Tooltip content={header.title} overflowOnly>
-        <span className="text">{header.render('Header')}</span>
-      </Tooltip>
+      <span className="text">{header.render('Header')}</span>
       <div {...header.getResizerProps()} className="resizer" />
     </CarbonTableHeader>
   );
+}
+
+function getTableHeaderTitle(header: Header): string {
+  let title = header.title || header.id;
+  if (typeof header.Header === 'string') {
+    title = header.Header;
+  }
+  return title;
 }

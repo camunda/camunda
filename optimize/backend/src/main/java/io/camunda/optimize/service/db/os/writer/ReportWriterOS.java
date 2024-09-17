@@ -273,7 +273,7 @@ public class ReportWriterOS implements ReportWriter {
             .query(QueryDSL.term(String.join(".", DATA, REPORTS, REPORT_ITEM_ID), reportId))
             .scoreMode(ChildScoreMode.None)
             .build()
-            .query();
+            .toQuery();
 
     Query query =
         new NestedQuery.Builder()
@@ -281,7 +281,7 @@ public class ReportWriterOS implements ReportWriter {
             .query(nested)
             .scoreMode(ChildScoreMode.None)
             .build()
-            .query();
+            .toQuery();
 
     osClient.updateByQuery(
         COMBINED_REPORT_INDEX_NAME, query, removeReportIdFromCombinedReportsScript);

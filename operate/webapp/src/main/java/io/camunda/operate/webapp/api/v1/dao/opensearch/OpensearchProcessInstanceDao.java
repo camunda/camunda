@@ -102,6 +102,8 @@ public class OpensearchProcessInstanceDao
               filter.getParentFlowNodeInstanceKey()));
       queryTerms.add(queryDSLWrapper.term(ProcessInstance.VERSION, filter.getProcessVersion()));
       queryTerms.add(
+          queryDSLWrapper.term(ProcessInstance.VERSION_TAG, filter.getProcessVersionTag()));
+      queryTerms.add(
           queryDSLWrapper.term(ProcessInstance.BPMN_PROCESS_ID, filter.getBpmnProcessId()));
       queryTerms.add(queryDSLWrapper.term(ProcessInstance.STATE, filter.getState()));
       queryTerms.add(queryDSLWrapper.term(ProcessInstance.INCIDENT, filter.getIncident()));

@@ -405,6 +405,31 @@ opensearch:
       # process instance. So this setting defines the maximum number of activities/variables that a single
       # process instance can contain. This limit helps to prevent out of memory errors and should be used with care.
       nested_documents_limit: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_NESTED_DOCUMENTS_LIMIT:10000}
+  interceptorPlugins:
+    # As per agreement, this is a temporary solution until
+    # Optimize unifies config loading the same way it is done
+    # in Zeebe. For now, limiting interceptors to 5.
+    # Related issue: https://github.com/camunda/camunda/issues/22349
+    0:
+      id: ${CAMUNDA_OPTIMIZE_OPENSEARCH_INTERCEPTORPLUGINS_0_ID:}
+      className: ${CAMUNDA_OPTIMIZE_OPENSEARCH_INTERCEPTORPLUGINS_0_CLASSNAME:}
+      jarPath: ${CAMUNDA_OPTIMIZE_OPENSEARCH_INTERCEPTORPLUGINS_0_JARPATH:}
+    1:
+      id: ${CAMUNDA_OPTIMIZE_OPENSEARCH_INTERCEPTORPLUGINS_1_ID:}
+      className: ${CAMUNDA_OPTIMIZE_OPENSEARCH_INTERCEPTORPLUGINS_1_CLASSNAME:}
+      jarPath: ${CAMUNDA_OPTIMIZE_OPENSEARCH_INTERCEPTORPLUGINS_1_JARPATH:}
+    2:
+      id: ${CAMUNDA_OPTIMIZE_OPENSEARCH_INTERCEPTORPLUGINS_2_ID:}
+      className: ${CAMUNDA_OPTIMIZE_OPENSEARCH_INTERCEPTORPLUGINS_2_CLASSNAME:}
+      jarPath: ${CAMUNDA_OPTIMIZE_OPENSEARCH_INTERCEPTORPLUGINS_2_JARPATH:}
+    3:
+      id: ${CAMUNDA_OPTIMIZE_OPENSEARCH_INTERCEPTORPLUGINS_3_ID:}
+      className: ${CAMUNDA_OPTIMIZE_OPENSEARCH_INTERCEPTORPLUGINS_3_CLASSNAME:}
+      jarPath: ${CAMUNDA_OPTIMIZE_OPENSEARCH_INTERCEPTORPLUGINS_3_JARPATH:}
+    4:
+      id: ${CAMUNDA_OPTIMIZE_OPENSEARCH_INTERCEPTORPLUGINS_4_ID:}
+      className: ${CAMUNDA_OPTIMIZE_OPENSEARCH_INTERCEPTORPLUGINS_4_CLASSNAME:}
+      jarPath: ${CAMUNDA_OPTIMIZE_OPENSEARCH_INTERCEPTORPLUGINS_4_JARPATH:}
 
 # everything that is related with configuring Elasticsearch or creating
 # a connection to it.
@@ -658,13 +683,6 @@ historyCleanup:
     # switch for the ingested variable data cleanup, defaults to false. Note that this cleans the external variable index,
     # not external variables already imported into process instances.
     enabled: ${CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED:false}
-
-# Configuration relating to the automatic archiving of data within Optimize
-dataArchive:
-  # Determines whether Optimize should try to archive data to cold indices
-  enabled: ${CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED:false}
-  # The interval in minutes between attempts to archive data made by Optimize
-  archiveIntervalInMins: 480
 
 locales:
   # all locales available

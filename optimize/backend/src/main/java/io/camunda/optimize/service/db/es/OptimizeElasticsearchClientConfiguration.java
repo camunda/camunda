@@ -7,6 +7,10 @@
  */
 package io.camunda.optimize.service.db.es;
 
+import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
+
+import co.elastic.clients.json.jackson.JacksonJsonProvider;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -29,10 +33,15 @@ public class OptimizeElasticsearchClientConfiguration {
   private final OptimizeIndexNameService optimizeIndexNameService;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
 
-  @Bean(destroyMethod = "close")
+  @Bean
   public OptimizeElasticsearchClient optimizeElasticsearchClient(
       final BackoffCalculator backoffCalculator) {
     return createOptimizeElasticsearchClient(backoffCalculator);
+  }
+
+  @Bean
+  public JacksonJsonProvider jacksonJsonProvider() {
+    return new JacksonJsonProvider(new JacksonJsonpMapper(OPTIMIZE_MAPPER));
   }
 
   @SneakyThrows

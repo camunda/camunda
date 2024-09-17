@@ -12,6 +12,7 @@ import static io.camunda.optimize.service.db.os.externalcode.client.async.OpenSe
 import static io.camunda.optimize.service.util.SnapshotUtil.getSnapshotPrefixWithBackupId;
 import static java.lang.String.format;
 
+import co.elastic.clients.transport.TransportException;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.SnapshotRepository;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -20,7 +21,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.transport.TransportException;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.DeleteSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.SnapshotInfo;

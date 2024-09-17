@@ -48,6 +48,11 @@
 
     <dependency>
       <groupId>io.github.openfeign</groupId>
+      <artifactId>feign-httpclient</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.github.openfeign</groupId>
       <artifactId>feign-jackson</artifactId>
     </dependency>
 
