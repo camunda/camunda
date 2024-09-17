@@ -22,10 +22,8 @@ import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.containers.TasklistContainer;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -46,7 +44,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
   private static final String CAMUNDA_GRPC_API =
       NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
   private static final String CAMUNDA_REST_API =
-      NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_REST_API;
+      "http://" + NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_REST_API;
 
   private static final String OPERATE_REST_API =
       "http://" + NETWORK_ALIAS_OPERATE + ":" + ContainerRuntimePorts.OPERATE_REST_API;
@@ -102,7 +100,8 @@ public class CamundaContainerRuntime implements AutoCloseable {
             .withLogConsumer(createContainerLogger(builder.getCamundaLoggerName()))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_CAMUNDA)
-            .withElasticsearchExporter(ELASTICSEARCH_URL)
+            .withZeebeApi(NETWORK_ALIAS_CAMUNDA)
+            .withElasticsearchUrl(ELASTICSEARCH_URL)
             .withEnv(builder.getCamundaEnvVars());
 
     builder.getCamundaExposedPorts().forEach(container::addExposedPort);
@@ -158,7 +157,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_CONNECTORS)
             .withZeebeGrpcApi(CAMUNDA_GRPC_API)
-            .withOperateApi(OPERATE_REST_API)
+            .withOperateApi(CAMUNDA_REST_API)
             .withEnv(builder.getConnectorsSecrets())
             .withEnv(builder.getConnectorsEnvVars());
 
@@ -172,9 +171,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
     final Instant startTime = Instant.now();
 
     elasticsearchContainer.start();
-    Stream.of(camundaContainer, operateContainer, tasklistContainer)
-        .parallel()
-        .forEach(GenericContainer::start);
+    camundaContainer.start();
 
     if (connectorsEnabled) {
       connectorsContainer.start();
@@ -214,10 +211,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
       connectorsContainer.stop();
     }
 
-    Stream.of(camundaContainer, operateContainer, tasklistContainer)
-        .parallel()
-        .forEach(GenericContainer::stop);
-
+    camundaContainer.stop();
     elasticsearchContainer.stop();
     network.close();
 

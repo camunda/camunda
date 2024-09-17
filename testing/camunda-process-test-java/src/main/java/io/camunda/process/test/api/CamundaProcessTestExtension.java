@@ -18,7 +18,7 @@ package io.camunda.process.test.api;
 import static org.junit.platform.commons.util.ReflectionUtils.makeAccessible;
 
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.containers.OperateContainer;
+import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
@@ -154,10 +154,10 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   }
 
   private CamundaDataSource createDataSource(final CamundaContainerRuntime containerRuntime) {
-    final OperateContainer operateContainer = containerRuntime.getOperateContainer();
-    final String operateApiEndpoint =
-        "http://" + operateContainer.getHost() + ":" + operateContainer.getRestApiPort();
-    return new CamundaDataSource(operateApiEndpoint);
+    final CamundaContainer camundaContainer = containerRuntime.getCamundaContainer();
+    final String camundaApiEndpoint =
+        "http://" + camundaContainer.getHost() + ":" + camundaContainer.getRestApiPort();
+    return new CamundaDataSource(camundaApiEndpoint);
   }
 
   @Override

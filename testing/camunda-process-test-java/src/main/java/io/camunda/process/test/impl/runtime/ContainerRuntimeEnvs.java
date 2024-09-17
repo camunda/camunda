@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.runtime;
 public class ContainerRuntimeEnvs {
 
   // Camunda
+  public static final String CAMUNDA_ENV_SPRING_PROFILES_ACTIVE = "SPRING_PROFILES_ACTIVE";
   public static final String CAMUNDA_ENV_ELASTICSEARCH_CLASSNAME =
       "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME";
   public static final String CAMUNDA_ENV_ELASTICSEARCH_ARGS_URL =
@@ -37,6 +38,8 @@ public class ContainerRuntimeEnvs {
       "CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL";
   public static final String CAMUNDA_OPERATE_IMPORTER_READERBACKOFF =
       "CAMUNDA_OPERATE_IMPORTER_READERBACKOFF";
+  public static final String OPERATE_ENV_CSRF_PREVENTION_ENABLED =
+      "CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED";
 
   // Tasklist
   public static final String TASKLIST_ENV_ZEEBE_GATEWAYADDRESS =
@@ -47,6 +50,8 @@ public class ContainerRuntimeEnvs {
       "CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL";
   public static final String TASKLIST_CSRF_PREVENTION_ENABLED =
       "CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED";
+  public static final String TASKLIST_ENV_IMPORTER_READERBACKOFF =
+      "CAMUNDA_TASKLIST_IMPORTER_READERBACKOFF";
 
   // Connectors
   public static final String CONNECTORS_ENV_ZEEBE_CLIENT_BROKER_GATEWAY_ADDRESS =
