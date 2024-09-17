@@ -48,12 +48,15 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
     withNetwork(Network.SHARED)
         .waitingFor(newDefaultWaitStrategy())
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_SPRING_PROFILES_ACTIVE, ACTIVE_SPRING_PROFILES)
-        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_CLOCK_CONTROLLED, "true")
-        .withEnv(ContainerRuntimeEnvs.OPERATE_ENV_CSRF_PREVENTION_ENABLED, "false")
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_CLOCK_CONTROLLED, "true")
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_CSRF_PREVENTION_ENABLED, "false")
         .withEnv(
-            ContainerRuntimeEnvs.CAMUNDA_OPERATE_IMPORTER_READERBACKOFF, IMPORTER_READER_BACKOFF)
-        .withEnv(ContainerRuntimeEnvs.TASKLIST_CSRF_PREVENTION_ENABLED, "false")
-        .withEnv(ContainerRuntimeEnvs.TASKLIST_ENV_IMPORTER_READERBACKOFF, IMPORTER_READER_BACKOFF)
+            ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_IMPORTER_READERBACKOFF,
+            IMPORTER_READER_BACKOFF)
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_CSRF_PREVENTION_ENABLED, "false")
+        .withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_IMPORTER_READERBACKOFF,
+            IMPORTER_READER_BACKOFF)
         .addExposedPorts(
             ContainerRuntimePorts.CAMUNDA_GATEWAY_API,
             ContainerRuntimePorts.CAMUNDA_COMMAND_API,
@@ -64,15 +67,18 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
   public CamundaContainer withElasticsearchUrl(final String url) {
     withEnv(
-        ContainerRuntimeEnvs.CAMUNDA_ENV_ELASTICSEARCH_CLASSNAME, ELASTICSEARCH_EXPORTER_CLASSNAME);
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ELASTICSEARCH_ARGS_URL, url);
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ELASTICSEARCH_ARGS_BULK_SIZE, ELASTICSEARCH_BULK_SIZE);
+        ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_ELASTICSEARCH_CLASSNAME,
+        ELASTICSEARCH_EXPORTER_CLASSNAME);
+    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_ELASTICSEARCH_ARGS_URL, url);
+    withEnv(
+        ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_ELASTICSEARCH_ARGS_BULK_SIZE,
+        ELASTICSEARCH_BULK_SIZE);
 
-    withEnv(ContainerRuntimeEnvs.OPERATE_ENV_ELASTICSEARCH_URL, url);
-    withEnv(ContainerRuntimeEnvs.OPERATE_ENV_ZEEBEELASTICSEARCH_URL, url);
+    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ELASTICSEARCH_URL, url);
+    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ZEEBEELASTICSEARCH_URL, url);
 
-    withEnv(ContainerRuntimeEnvs.TASKLIST_ENV_ELASTICSEARCH_URL, url);
-    withEnv(ContainerRuntimeEnvs.TASKLIST_ENV_ZEEBEELASTICSEARCH_URL, url);
+    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ELASTICSEARCH_URL, url);
+    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBEELASTICSEARCH_URL, url);
 
     return this;
   }
@@ -81,10 +87,10 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
     final String zeebeGrpcApi = networkAlias + ":" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
     final String zeebeRestApi = networkAlias + ":" + ContainerRuntimePorts.CAMUNDA_REST_API;
 
-    withEnv(ContainerRuntimeEnvs.OPERATE_ENV_ZEEBE_GATEWAYADDRESS, zeebeGrpcApi);
+    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ZEEBE_GATEWAYADDRESS, zeebeGrpcApi);
 
-    withEnv(ContainerRuntimeEnvs.TASKLIST_ENV_ZEEBE_GATEWAYADDRESS, zeebeGrpcApi);
-    withEnv(ContainerRuntimeEnvs.TASKLIST_ENV_ZEEBE_RESTADDRESS, zeebeRestApi);
+    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBE_GATEWAYADDRESS, zeebeGrpcApi);
+    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBE_RESTADDRESS, zeebeRestApi);
     return this;
   }
 
