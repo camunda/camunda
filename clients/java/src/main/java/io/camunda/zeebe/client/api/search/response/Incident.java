@@ -25,9 +25,9 @@ public interface Incident {
 
   Long getProcessInstanceKey();
 
-  String getType();
+  String getErrorType();
 
-  String getMessage();
+  String getErrorMessage();
 
   String getFlowNodeId();
 

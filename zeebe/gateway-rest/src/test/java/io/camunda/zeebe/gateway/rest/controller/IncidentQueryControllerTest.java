@@ -222,14 +222,13 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                     new IncidentFilter.Builder()
                         .tenantIds("t")
                         .flowNodeIds("fni")
-                        .flowNodeInstanceIds("fnii")
+                        .flowNodeInstanceKeys(17L)
                         .jobKeys(1L)
                         .keys(2L)
                         .processDefinitionKeys(3L)
                         .processInstanceKeys(4L)
-                        .states("s")
-                        .types("ty")
-                        .hasActiveOperation(true)
+                        .states(IncidentState.ACTIVE)
+                        .errorTypes(ErrorType.IO_MAPPING_ERROR)
                         .build())
                 .build());
   }

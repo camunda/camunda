@@ -17,8 +17,8 @@ package io.camunda.zeebe.client.impl.search.response;
 
 import io.camunda.zeebe.client.api.search.response.Incident;
 import io.camunda.zeebe.client.protocol.rest.IncidentItem;
+import io.camunda.zeebe.client.protocol.rest.IncidentItem.ErrorTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.IncidentItem.StateEnum;
-import io.camunda.zeebe.client.protocol.rest.IncidentItem.TypeEnum;
 
 public class IncidentImpl implements Incident {
 
@@ -26,8 +26,8 @@ public class IncidentImpl implements Incident {
   private final Long processDefinitionKey;
   private final String bpmnProcessId;
   private final Long processInstanceKey;
-  private final TypeEnum type;
-  private final String message;
+  private final ErrorTypeEnum errorType;
+  private final String errorMessage;
   private final String flowNodeId;
   private final Long flowNodeInstanceKey;
   private final String creationTime;
@@ -41,8 +41,8 @@ public class IncidentImpl implements Incident {
     processDefinitionKey = item.getProcessDefinitionKey();
     bpmnProcessId = item.getBpmnProcessId();
     processInstanceKey = item.getProcessInstanceKey();
-    type = item.getType();
-    message = item.getMessage();
+    errorType = item.getErrorType();
+    errorMessage = item.getErrorMessage();
     flowNodeId = item.getFlowNodeId();
     flowNodeInstanceKey = item.getFlowNodeInstanceKey();
     creationTime = item.getCreationTime();
@@ -73,13 +73,13 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public String getType() {
-    return type.getValue();
+  public String getErrorType() {
+    return errorType.getValue();
   }
 
   @Override
-  public String getMessage() {
-    return message;
+  public String getErrorMessage() {
+    return errorMessage;
   }
 
   @Override

@@ -51,11 +51,10 @@ public class SearchIncidentTest extends ClientRestTest {
                     .processInstanceKey(3L)
                     .tenantId("tenant")
                     .flowNodeId("flowNode")
-                    .flowNodeInstanceId("flowNodeInstance")
-                    .jobKey(4L)
+                    .flowNodeInstanceKey(4L)
+                    .jobKey(5L)
                     .state("state")
-                    .type("type")
-                    .hasActiveOperation(false))
+                    .errorType("type"))
         .send()
         .join();
     // then
@@ -67,11 +66,10 @@ public class SearchIncidentTest extends ClientRestTest {
     assertThat(filter.getProcessInstanceKey()).isEqualTo(3L);
     assertThat(filter.getTenantId()).isEqualTo("tenant");
     assertThat(filter.getFlowNodeId()).isEqualTo("flowNode");
-    assertThat(filter.getFlowNodeInstanceId()).isEqualTo("flowNodeInstance");
-    assertThat(filter.getJobKey()).isEqualTo(4L);
+    assertThat(filter.getFlowNodeInstanceKey()).isEqualTo(4L);
+    assertThat(filter.getJobKey()).isEqualTo(5L);
     assertThat(filter.getState()).isEqualTo("state");
-    assertThat(filter.getType()).isEqualTo("type");
-    assertThat(filter.getHasActiveOperation()).isFalse();
+    assertThat(filter.getErrorMessage()).isEqualTo("type");
   }
 
   @Test

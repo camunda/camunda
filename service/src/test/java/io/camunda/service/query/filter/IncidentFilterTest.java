@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.entities.IncidentEntity;
+import io.camunda.service.entities.IncidentEntity.ErrorType;
+import io.camunda.service.entities.IncidentEntity.IncidentState;
 import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.util.StubbedCamundaSearchClient;
@@ -110,7 +112,7 @@ public final class IncidentFilterTest {
 
   @Test
   public void shouldQueryByState() {
-    final var filter = FilterBuilders.incident(f -> f.states("COMPLETED"));
+    final var filter = FilterBuilders.incident(f -> f.states(IncidentState.ACTIVE));
     final var searchQuery = SearchQueryBuilders.incidentSearchQuery(q -> q.filter(filter));
 
     // when
@@ -194,7 +196,7 @@ public final class IncidentFilterTest {
 
   @Test
   public void shouldQueryByType() {
-    final var filter = FilterBuilders.incident(f -> f.types("ERROR"));
+    final var filter = FilterBuilders.incident(f -> f.errorTypes(ErrorType.JOB_NO_RETRIES));
     final var searchQuery = SearchQueryBuilders.incidentSearchQuery(q -> q.filter(filter));
 
     // when

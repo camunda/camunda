@@ -2119,26 +2119,50 @@ components:
         processDefinitionKey:
           type: integer
           format: int64
+        bpmnProcessId:
+          type: string
         processInstanceKey:
           type: integer
           format: int64
-        type:
+        errorType:
           type: string
-        message:
+          enum:
+            - UNSPECIFIED
+            - UNKNOWN
+            - IO_MAPPING_ERROR
+            - JOB_NO_RETRIES
+            - CONDITION_ERROR
+            - EXTRACT_VALUE_ERROR
+            - CALLED_ELEMENT_ERROR
+            - UNHANDLED_ERROR_EVENT
+            - MESSAGE_SIZE_EXCEEDED
+            - CALLED_DECISION_ERROR
+            - DECISION_EVALUATION_ERROR
+            - FORM_NOT_FOUND
+        errorMessage:
           type: string
         flowNodeId:
           type: string
-        flowNodeInstanceId:
+        flowNodeInstanceKey:
+          type: integer
+          format: int64
+        creationTime:
           type: string
+          format: date-time
         state:
           type: string
+          enum:
+            - ACTIVE
+            - MIGRATED
+            - RESOLVED
+            - PENDING
         jobKey:
           type: integer
           format: int64
+        treePath:
+          type: string
         tenantId:
           type: string
-        hasActiveOperation:
-          type: boolean
     IncidentSearchQueryResponse:
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -2162,7 +2186,7 @@ components:
         processInstanceKey:
           type: integer
           format: int64
-        type:
+        errorType:
           type: string
           enum:
             - UNSPECIFIED
@@ -2177,7 +2201,7 @@ components:
             - CALLED_DECISION_ERROR
             - DECISION_EVALUATION_ERROR
             - FORM_NOT_FOUND
-        message:
+        errorMessage:
           type: string
         flowNodeId:
           type: string
