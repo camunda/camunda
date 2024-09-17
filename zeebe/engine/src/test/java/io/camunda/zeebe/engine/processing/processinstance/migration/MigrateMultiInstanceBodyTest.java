@@ -160,6 +160,7 @@ public class MigrateMultiInstanceBodyTest {
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(targetProcessDefinitionKey)
                 .withElementType(BpmnElementType.END_EVENT)
                 .withElementId("multi_instance_target_process_end")
@@ -303,6 +304,7 @@ public class MigrateMultiInstanceBodyTest {
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(targetProcessDefinitionKey)
                 .withElementType(BpmnElementType.END_EVENT)
                 .withElementId("multi_instance_target_process_end")
@@ -363,6 +365,7 @@ public class MigrateMultiInstanceBodyTest {
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
                 .withElementId("A")
                 .limit(3))
         .describedAs("Wait until all service tasks have activated")
@@ -439,6 +442,7 @@ public class MigrateMultiInstanceBodyTest {
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(targetProcessDefinitionKey)
                 .withElementType(BpmnElementType.END_EVENT)
                 .withElementId("multi_instance_target_process_end")
@@ -498,6 +502,7 @@ public class MigrateMultiInstanceBodyTest {
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withParentProcessInstanceKey(processInstanceKey)
                 .withElementId("A")
                 .limit(3))
         .describedAs("Wait until all service tasks have activated")
@@ -505,6 +510,7 @@ public class MigrateMultiInstanceBodyTest {
 
     final var childProcessInstances =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(processInstanceKey)
             .withElementId("A")
             .limit(3)
             .toList();
@@ -561,6 +567,7 @@ public class MigrateMultiInstanceBodyTest {
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(targetProcessDefinitionKey)
                 .withElementType(BpmnElementType.END_EVENT)
                 .withElementId("multi_instance_target_process_end")
@@ -698,6 +705,7 @@ public class MigrateMultiInstanceBodyTest {
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(targetProcessDefinitionKey)
                 .withElementType(BpmnElementType.END_EVENT)
                 .withElementId("multi_instance_target_process_end")
@@ -839,6 +847,7 @@ public class MigrateMultiInstanceBodyTest {
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(targetProcessDefinitionKey)
                 .withElementType(BpmnElementType.END_EVENT)
                 .withElementId("multi_instance_target_process_end")
@@ -983,6 +992,7 @@ public class MigrateMultiInstanceBodyTest {
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
                 .withProcessDefinitionKey(targetProcessDefinitionKey)
                 .withElementType(BpmnElementType.END_EVENT)
                 .withElementId("multi_instance_target_process_end")
