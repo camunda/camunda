@@ -71,6 +71,7 @@ public final class SetVariablesCommandImpl
     httpRequestConfig = httpClient.newRequestConfig();
     useRest = preferRestOverGrpc;
     this.elementInstanceKey = elementInstanceKey;
+    requestTimeout(requestTimeout);
   }
 
   @Override

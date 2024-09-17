@@ -72,6 +72,7 @@ public final class CreateProcessInstanceCommandImpl
     this.jsonMapper = jsonMapper;
     grpcRequestObjectBuilder = CreateProcessInstanceRequest.newBuilder();
     tenantId(config.getDefaultTenantId());
+    requestTimeout(requestTimeout);
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     useRest = preferRestOverGrpc;

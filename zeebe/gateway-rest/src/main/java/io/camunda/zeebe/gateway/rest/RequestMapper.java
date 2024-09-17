@@ -339,7 +339,12 @@ public class RequestMapper {
   public static Either<ProblemDetail, PublicationMessageRequest> toMessagePublicationRequest(
       final MessagePublicationRequest messagePublicationRequest, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(messagePublicationRequest.getTenantId(), multiTenancyEnabled, "Correlate Message")
+        validateTenantId(messagePublicationRequest.getTenantId(), multiTenancyEnabled, "Publish Message")
+            .flatMap(
+                tenantId ->
+                    validateAuthorization(tenantId, multiTenancyEnabled, "Publish Message")
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)))
             .flatMap(
                 tenantId ->
                     validateMessagePublicationRequest(messagePublicationRequest)

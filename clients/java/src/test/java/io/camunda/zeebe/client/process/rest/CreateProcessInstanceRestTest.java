@@ -162,7 +162,7 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
   }
 
   @Test
-  public void shouldRaise() {
+  public void shouldRaiseAnErrorIfRequestFails() {
     // given
     gatewayService.errorOnRequest(
         RestGatewayPaths.getCreateProcessInstanceUrl(),

@@ -74,6 +74,7 @@ public final class CreateProcessInstanceWithResultCommandImpl
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     useRest = preferRestOverGrpc;
+    requestTimeout(requestTimeout);
   }
 
   @Override
