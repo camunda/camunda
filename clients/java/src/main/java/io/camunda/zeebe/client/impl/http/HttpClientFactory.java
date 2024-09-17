@@ -42,6 +42,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
+import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.config.RequestConfig.Builder;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
@@ -133,14 +134,29 @@ public class HttpClientFactory {
             .setHostnameVerifier(hostnameVerifier)
             .build();
     final PoolingAsyncClientConnectionManager connectionManager =
-        PoolingAsyncClientConnectionManagerBuilder.create().setTlsStrategy(tlsStrategy).build();
+        PoolingAsyncClientConnectionManagerBuilder.create()
+            .setTlsStrategy(tlsStrategy)
+            //            .setDefaultTlsConfig(
+            //                TlsConfig.custom()
+            //                    .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
+            //                    .setHandshakeTimeout(Timeout.ofSeconds(30L))
+            //                    .build())
+            //            .setMaxConnPerRoute(10)
+            //            .setMaxConnTotal(20)
+            //            .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.LAX)
+            .setDefaultConnectionConfig(
+                ConnectionConfig.custom()
+                    .setSocketTimeout(Timeout.ofSeconds(40L))
+                    .setConnectTimeout(Timeout.ofSeconds(40L))
+                    .build())
+            .build();
 
     final IOReactorConfig ioReactorConfig =
         IOReactorConfig.custom()
             .setSoTimeout(Timeout.ofSeconds(30)) // Overall socket timeout
-            .setSndBufSize(64 * 1024) // Larger send buffer size
-            .setRcvBufSize(64 * 1024) // Larger receive buffer size
-            .setTcpNoDelay(true) // Disable Nagle's algorithm for lower latency
+            //            .setSndBufSize(64 * 1024) // Larger send buffer size
+            //            .setRcvBufSize(64 * 1024) // Larger receive buffer size
+            //            .setTcpNoDelay(true) // Disable Nagle's algorithm for lower latency
             .build();
 
     final HttpAsyncClientBuilder builder =

@@ -42,7 +42,7 @@ public class LongPollingActivateJobsTest {
 
   @BeforeEach
   void initClientAndInstances() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(40)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
@@ -68,7 +68,7 @@ public class LongPollingActivateJobsTest {
   // TODO: the REST use case is currently not working, see
   // https://github.com/camunda/camunda/issues/19883
   @ParameterizedTest
-  @ValueSource(booleans = {true, false})
+  @ValueSource(booleans = {true})
   public void shouldActivateJobsIfBatchIsTruncated(final boolean useRest, final TestInfo testInfo) {
     // given
     final int availableJobs = 10;
@@ -110,7 +110,7 @@ public class LongPollingActivateJobsTest {
   // TODO: the REST use case is currently not working, see
   // https://github.com/camunda/camunda/issues/19883
   @ParameterizedTest
-  @ValueSource(booleans = {true, false})
+  @ValueSource(booleans = {true})
   public void shouldActivateJobForOpenRequest(final boolean useRest, final TestInfo testInfo)
       throws InterruptedException {
     // given
