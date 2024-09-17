@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
-import org.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;

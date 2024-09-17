@@ -258,7 +258,8 @@ public class OpenSearchSchemaManager implements SchemaManager {
       final var indexAsJSONNode = objectMapper.readTree(new StringReader(json));
 
       final var customSettings = getCustomSettings(templateSettings, indexAsJSONNode);
-      final var mappings = getMappings(indexAsJSONNode.get(MAPPINGS));
+      final var mappings = getMappings(
+          objectMapper.writeValueAsString(indexAsJSONNode.get(MAPPINGS)));
 
       final IndexTemplateMapping template =
           templateBuilder.mappings(mappings).settings(customSettings).build();
@@ -276,11 +277,25 @@ public class OpenSearchSchemaManager implements SchemaManager {
     }
   }
 
-  private TypeMapping getMappings(final JsonNode mappingsAsJSON) {
-    final JsonbJsonpMapper jsonpMapper = new JsonbJsonpMapper();
+  private TypeMapping getMappings(final String json) {
+    final ObjectMapper objectMapper = new ObjectMapper();
+    JsonNode indexAsJSONNode = null;
+    final String jsonNew =
+        "{\"mappings\": "
+            + json.replace("TypeMapping: ", "")
+            .replace("\"match_mapping_type\":[\"string\"]", "\"match_mapping_type\":\"string\"")
+            .replace("\"path_match\":[\"*\"]", "\"path_match\":\"*\"")
+            + "}";
+    try {
+      indexAsJSONNode = objectMapper.readTree(new StringReader(jsonNew));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
     final JsonParser jsonParser =
-        JsonProvider.provider().createParser(new StringReader(mappingsAsJSON.toPrettyString()));
-    return TypeMapping._DESERIALIZER.deserialize(jsonParser, jsonpMapper);
+        JsonProvider.provider()
+            .createParser(new StringReader(indexAsJSONNode.get("mappings").toPrettyString()));
+    return TypeMapping._DESERIALIZER.deserialize(jsonParser, new JsonbJsonpMapper());
   }
 
   public void createIndexLifeCyclesIfNotExist() {

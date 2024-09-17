@@ -27,7 +27,7 @@ import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import jakarta.ws.rs.NotSupportedException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
+import io.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SchemaUpgradeClientFactory {

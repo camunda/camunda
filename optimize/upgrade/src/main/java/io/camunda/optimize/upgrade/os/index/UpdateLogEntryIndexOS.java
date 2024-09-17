@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package org.camunda.optimize.upgrade.os.index;
+package io.camunda.optimize.upgrade.os.index;
 
 import io.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
 import org.opensearch.client.opensearch.indices.IndexSettings;

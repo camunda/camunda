@@ -15,8 +15,8 @@ import io.camunda.optimize.upgrade.es.index.UpdateLogEntryIndexES;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
-import org.camunda.optimize.upgrade.os.index.UpdateLogEntryIndexOS;
+import io.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
+import io.camunda.optimize.upgrade.os.index.UpdateLogEntryIndexOS;
 
 public class UpgradeStepLogService {
 
