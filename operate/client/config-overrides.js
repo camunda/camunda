@@ -8,15 +8,11 @@
 
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 const LicensePlugin = require('webpack-license-plugin');
-const DepencencyCSVConverterWebpackPlugin = require('./DepencencyCSVConverterWebpackPlugin');
 
 module.exports = function override(config, env) {
   config.plugins.push(
     new MonacoWebpackPlugin({
       languages: ['json'],
-    }),
-    new DepencencyCSVConverterWebpackPlugin({
-      inputFile: 'dependencies.json',
     }),
     new LicensePlugin({
       outputFilename: 'dependencies.json',

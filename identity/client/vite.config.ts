@@ -19,15 +19,18 @@ export default defineConfig(({ mode }) => ({
           output:
             mode === "sbom"
               ? {
-                  file: path.join(__dirname, "dist", "dependencies.csv"),
+                  file: path.join(__dirname, "dist", "dependencies.json"),
                   encoding: "utf-8",
                   template(dependencies) {
-                    return dependencies
-                      .map(
-                        (dependency) =>
-                          `"${dependency.name}","${dependency.version}","${dependency.license}"`,
-                      )
-                      .join("\n");
+                    return JSON.stringify(
+                      dependencies.map(({ name, version, license }) => ({
+                        name,
+                        version,
+                        license,
+                      })),
+                      null,
+                      2,
+                    );
                   },
                 }
               : path.resolve(__dirname, "./dist/assets/vendor.LICENSE.txt"),
