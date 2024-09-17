@@ -25,6 +25,7 @@ import com.google.common.collect.Lists;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES;
+import io.camunda.optimize.service.db.repository.es.TaskRepositoryES;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -58,8 +59,9 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
   public ProcessDefinitionWriterES(
       final OptimizeElasticsearchClient esClient,
       final ObjectMapper objectMapper,
-      final ConfigurationService configurationService) {
-    super(objectMapper, esClient);
+      final ConfigurationService configurationService,
+      final TaskRepositoryES taskRepositoryES) {
+    super(objectMapper, esClient, taskRepositoryES);
     this.configurationService = configurationService;
   }
 
@@ -134,8 +136,7 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
                         s -> s.bool(matchingDefinitionQuery.build()));
                   });
               final boolean deleted =
-                  ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-                      esClient,
+                  taskRepositoryES.tryUpdateByQueryRequest(
                       String.format("%d process definitions", processDefIds.size()),
                       MARK_AS_DELETED_SCRIPT,
                       Query.of(q -> q.bool(definitionsToDeleteQueryBuilder.build())),
@@ -152,8 +153,7 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
 
   @Override
   public void markDefinitionKeysAsOnboarded(final Set<String> definitionKeys) {
-    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-        esClient,
+    taskRepositoryES.tryUpdateByQueryRequest(
         "process definitions onboarded state",
         MARK_AS_ONBOARDED_SCRIPT,
         Query.of(

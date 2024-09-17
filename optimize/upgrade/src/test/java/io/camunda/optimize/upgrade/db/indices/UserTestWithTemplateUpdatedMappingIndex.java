@@ -8,15 +8,13 @@
 package io.camunda.optimize.upgrade.indices;
 
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
-import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
-public class UserTestWithTemplateUpdatedMappingIndex
-    extends DefaultIndexMappingCreator<IndexSettings.Builder> {
+public abstract class UserTestWithTemplateUpdatedMappingIndex<TBuilder>
+    extends DefaultIndexMappingCreator<TBuilder> {
 
   private static final int VERSION = 2;
 
@@ -46,11 +44,5 @@ public class UserTestWithTemplateUpdatedMappingIndex
         .properties("password", p -> p.keyword(k -> k))
         .properties("username", p -> p.keyword(k -> k))
         .properties("email", p -> p.keyword(k -> k));
-  }
-
-  @Override
-  public IndexSettings.Builder addStaticSetting(
-      final String key, final int value, final IndexSettings.Builder builder) throws IOException {
-    return builder.numberOfShards(Integer.toString(value));
   }
 }

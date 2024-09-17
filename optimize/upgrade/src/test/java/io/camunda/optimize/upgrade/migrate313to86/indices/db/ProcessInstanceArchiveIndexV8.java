@@ -8,13 +8,11 @@
 package io.camunda.optimize.upgrade.migrate313to86.indices;
 
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
-import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
 import java.util.Locale;
 
-public class ProcessInstanceArchiveIndexV8
-    extends DefaultIndexMappingCreator<IndexSettings.Builder> {
+public abstract class ProcessInstanceArchiveIndexV8<TBuilder>
+    extends DefaultIndexMappingCreator<TBuilder> {
   public static final int VERSION = 8; // same as current processInstanceIndexVersion
 
   private final String indexName;
@@ -35,12 +33,6 @@ public class ProcessInstanceArchiveIndexV8
   @Override
   public int getVersion() {
     return VERSION;
-  }
-
-  @Override
-  public IndexSettings.Builder addStaticSetting(
-      final String key, final int value, final IndexSettings.Builder builder) throws IOException {
-    return builder.numberOfShards(Integer.toString(value));
   }
 
   @Override

@@ -7,19 +7,23 @@
  */
 package io.camunda.optimize.upgrade.migrate313to86.indices;
 
-import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
-import co.elastic.clients.elasticsearch.indices.IndexSettings;
-import co.elastic.clients.elasticsearch.indices.IndexSettings.Builder;
-import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
+import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
-public class OnboardingStateIndexV2 extends DefaultIndexMappingCreator<Builder> {
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import io.camunda.optimize.dto.optimize.SettingsDto;
+import io.camunda.optimize.service.db.DatabaseConstants;
+import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+
+public abstract class SettingsIndexV2<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final int VERSION = 2;
 
+  public static final String SHARING_ENABLED = SettingsDto.Fields.sharingEnabled.name();
+  public static final String LAST_MODIFIED = SettingsDto.Fields.lastModified.name();
+
   @Override
   public String getIndexName() {
-    return "onboarding-state";
+    return DatabaseConstants.SETTINGS_INDEX_NAME;
   }
 
   @Override
@@ -29,18 +33,10 @@ public class OnboardingStateIndexV2 extends DefaultIndexMappingCreator<Builder> 
 
   @Override
   public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
-    // @formatter:off
     return builder
-        .properties("id", p -> p.keyword(k -> k))
-        .properties("key", p -> p.keyword(k -> k))
-        .properties("userId", p -> p.keyword(k -> k))
-        .properties("seen", p -> p.boolean_(k -> k));
-    // @formatter:on
-  }
-
-  @Override
-  public IndexSettings.Builder addStaticSetting(
-      final String key, final int value, final IndexSettings.Builder builder) throws IOException {
-    return builder.numberOfShards(Integer.toString(value));
+        .properties("metadataTelemetryEnabled", p -> p.boolean_(b -> b))
+        .properties(SHARING_ENABLED, p -> p.boolean_(b -> b))
+        .properties("lastModifier", p -> p.keyword(b -> b))
+        .properties(LAST_MODIFIED, p -> p.date(b -> b.format(OPTIMIZE_DATE_FORMAT)));
   }
 }
