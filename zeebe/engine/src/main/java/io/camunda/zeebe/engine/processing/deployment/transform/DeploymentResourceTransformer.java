@@ -34,8 +34,6 @@ interface DeploymentResourceTransformer {
    * @param resource the resource to transform
    * @param deployment the deployment record containing the metadata created in {@link
    *     DeploymentResourceTransformer#createMetadata(DeploymentResource, DeploymentRecord)}
-   * @return either {@link Either.Right} if the resource is transformed successfully, or {@link
-   *     Either.Left} if the transformation failed
    */
-  Either<Failure, Void> writeRecords(DeploymentResource resource, DeploymentRecord deployment);
+  void writeRecords(DeploymentResource resource, DeploymentRecord deployment);
 }

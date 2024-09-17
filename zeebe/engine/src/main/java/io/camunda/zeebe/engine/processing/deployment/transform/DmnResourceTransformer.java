@@ -89,10 +89,9 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   }
 
   @Override
-  public Either<Failure, Void> writeRecords(
-      final DeploymentResource resource, final DeploymentRecord deployment) {
+  public void writeRecords(final DeploymentResource resource, final DeploymentRecord deployment) {
     if (deployment.hasDuplicatesOnly()) {
-      return Either.right(null);
+      return;
     }
     final var checksum = checksumGenerator.apply(resource.getResource());
     deployment.decisionRequirementsMetadata().stream()
@@ -156,7 +155,6 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                                 .setDeploymentKey(decision.getDeploymentKey()));
                       });
             });
-    return Either.right(null);
   }
 
   private Either<Failure, ?> checkForDuplicateIds(

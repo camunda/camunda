@@ -113,10 +113,9 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
-  public Either<Failure, Void> writeRecords(
-      final DeploymentResource resource, final DeploymentRecord deployment) {
+  public void writeRecords(final DeploymentResource resource, final DeploymentRecord deployment) {
     if (deployment.hasDuplicatesOnly()) {
-      return Either.right(null);
+      return;
     }
     final var checksum = checksumGenerator.apply(resource.getResource());
     deployment.processesMetadata().stream()
@@ -141,7 +140,6 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                   ProcessIntent.CREATED,
                   new ProcessRecord().wrap(metadata, resource.getResource()));
             });
-    return Either.right(null);
   }
 
   private Either<Failure, BpmnModelInstance> readProcessDefinition(

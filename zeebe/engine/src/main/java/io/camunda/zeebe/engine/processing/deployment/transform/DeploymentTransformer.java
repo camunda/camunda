@@ -28,8 +28,6 @@ import java.time.InstantSource;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -113,27 +111,18 @@ public final class DeploymentTransformer {
     // records are being written yet)
     while (resourceIterator.hasNext()) {
       final DeploymentResource deploymentResource = resourceIterator.next();
-      success &=
-          transformResource(
-              deploymentEvent,
-              errors,
-              deploymentResource,
-              transformer -> transformer::createMetadata);
+      success &= createMetadata(deploymentResource, deploymentEvent, errors);
     }
 
     // step 2: update metadata (optionally) and write actual event records
     if (success) {
       for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
-        success &=
-            transformResource(
-                deploymentEvent,
-                errors,
-                deploymentResource,
-                transformer -> transformer::writeRecords);
+        final var transformer = getResourceTransformer(deploymentResource.getResourceName());
+        transformer.writeRecords(deploymentResource, deploymentEvent);
       }
-    }
+      return Either.right(null);
 
-    if (!success) {
+    } else {
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason =
           String.format(
@@ -141,24 +130,17 @@ public final class DeploymentTransformer {
 
       return Either.left(new Failure(rejectionReason));
     }
-
-    return Either.right(null);
   }
 
-  private boolean transformResource(
-      final DeploymentRecord deploymentEvent,
-      final StringBuilder errors,
+  private boolean createMetadata(
       final DeploymentResource deploymentResource,
-      final Function<
-              DeploymentResourceTransformer,
-              BiFunction<DeploymentResource, DeploymentRecord, Either<Failure, Void>>>
-          transformation) {
+      final DeploymentRecord deploymentEvent,
+      final StringBuilder errors) {
     final var resourceName = deploymentResource.getResourceName();
     final var transformer = getResourceTransformer(resourceName);
 
     try {
-      final var result =
-          transformation.apply(transformer).apply(deploymentResource, deploymentEvent);
+      final var result = transformer.createMetadata(deploymentResource, deploymentEvent);
 
       if (result.isRight()) {
         return true;
@@ -196,20 +178,13 @@ public final class DeploymentTransformer {
     @Override
     public Either<Failure, Void> createMetadata(
         final DeploymentResource resource, final DeploymentRecord deployment) {
-      return createUnknownResourceTypeFailure(resource);
-    }
-
-    @Override
-    public Either<Failure, Void> writeRecords(
-        final DeploymentResource resource, final DeploymentRecord deployment) {
-      return createUnknownResourceTypeFailure(resource);
-    }
-
-    private Either<Failure, Void> createUnknownResourceTypeFailure(
-        final DeploymentResource resource) {
       final var failureMessage =
           String.format("%n'%s': unknown resource type", resource.getResourceName());
       return Either.left(new Failure(failureMessage));
     }
+
+    @Override
+    public void writeRecords(
+        final DeploymentResource resource, final DeploymentRecord deployment) {}
   }
 }
