@@ -82,6 +82,37 @@ class UserTaskQueryTest {
   }
 
   @Test
+  public void shouldNoteRetrieveTaskByInvalidVariableValue() {
+    final UserTaskVariableFilterRequest variableValueFilter =
+        new UserTaskVariableFilterRequest().name("process01").value("\"pVariable\"");
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.variables(List.of(variableValueFilter)))
+            .send()
+            .join();
+    assertThat(result.items().size()).isEqualTo(0);
+  }
+
+  @Test
+  public void shouldRetrieveTaskByOrVariableCondition() {
+    final UserTaskVariableFilterRequest variableValueFilter1 =
+        new UserTaskVariableFilterRequest().name("task02").value("1");
+
+    final UserTaskVariableFilterRequest variableValueFilter2 =
+        new UserTaskVariableFilterRequest().name("task01").value("\"test\"");
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.variables(List.of(variableValueFilter1, variableValueFilter2)))
+            .send()
+            .join();
+    assertThat(result.items().size()).isEqualTo(2);
+  }
+
+  @Test
   public void shouldRetrieveTaskByAssignee() {
     final var result =
         camundaClient.newUserTaskQuery().filter(f -> f.assignee("demo")).send().join();

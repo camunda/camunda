@@ -150,7 +150,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
               .map(transformer::apply)
               .map((q) -> hasChildQuery("processVariable", q))
               .collect(Collectors.toList());
-      return and(queries);
+      return or(queries);
     }
     return null;
   }
@@ -164,7 +164,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
               .map(transformer::apply)
               .map((q) -> hasChildQuery("taskVariable", q))
               .collect(Collectors.toList());
-      return and(queries);
+      return or(queries);
     }
     return null;
   }
