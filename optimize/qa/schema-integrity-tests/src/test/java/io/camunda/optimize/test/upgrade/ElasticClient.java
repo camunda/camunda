@@ -12,11 +12,9 @@ import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMI
 import co.elastic.clients.elasticsearch._types.analysis.TokenChar;
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.HttpGet;
 import org.elasticsearch.action.admin.cluster.repositories.delete.DeleteRepositoryRequest;
@@ -103,8 +101,10 @@ public class ElasticClient {
     final Request request =
         new Request(
             HttpGet.METHOD_NAME,
-            "/" + DEFAULT_OPTIMIZE_INDEX_PATTERN + "/_settings/" + String.join(",",
-                SETTINGS_FILTER));
+            "/"
+                + DEFAULT_OPTIMIZE_INDEX_PATTERN
+                + "/_settings/"
+                + String.join(",", SETTINGS_FILTER));
     Response response = client.getLowLevelClient().performRequest(request);
     Map<String, Map> map = OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), Map.class);
     for (Map stringStringEntry : map.values()) {
