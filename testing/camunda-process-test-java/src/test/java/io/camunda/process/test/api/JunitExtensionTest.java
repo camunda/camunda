@@ -67,8 +67,6 @@ public class JunitExtensionTest {
     when(camundaContainerRuntime.getCamundaContainer()).thenReturn(camundaContainer);
     when(camundaContainer.getGrpcApiAddress()).thenReturn(GRPC_API_ADDRESS);
     when(camundaContainer.getRestApiAddress()).thenReturn(REST_API_ADDRESS);
-    when(camundaContainer.getHost()).thenReturn("my-host");
-    when(camundaContainer.getRestApiPort()).thenReturn(100);
 
     when(camundaContainerRuntime.getConnectorsContainer()).thenReturn(connectorsContainer);
 
