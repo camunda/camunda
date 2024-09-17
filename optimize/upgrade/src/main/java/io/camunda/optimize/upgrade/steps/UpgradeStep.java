@@ -27,7 +27,7 @@ public abstract class UpgradeStep {
   // failing conversion of test indices that don't have lookups
   @VisibleForTesting @Setter protected boolean skipIndexConversion = false;
 
-  protected UpgradeStep(IndexMappingCreator index) {
+  protected UpgradeStep(final IndexMappingCreator index) {
     this.index = index;
   }
 
@@ -35,8 +35,8 @@ public abstract class UpgradeStep {
 
   protected abstract void performUpgradeStep(SchemaUpgradeClient<?, ?> schemaUpgradeClient);
 
-  public void execute(SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
-    if (!skipIndexConversion) {
+  public void execute(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
+    if (!skipIndexConversion && index != null) {
       index = IndexLookupUtil.convertIndexForDatabase(index, schemaUpgradeClient.getDatabaseType());
     }
     performUpgradeStep(schemaUpgradeClient);
