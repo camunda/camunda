@@ -14,17 +14,19 @@ import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.reader.TerminatedUserSessionReader;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Collections;
-import lombok.RequiredArgsConstructor;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Conditional(OpenSearchCondition.class)
 public class TerminatedUserSessionReaderOS extends TerminatedUserSessionReader {
 
   private final OptimizeOpenSearchClient osClient;
+
+  public TerminatedUserSessionReaderOS(OptimizeOpenSearchClient osClient) {
+    this.osClient = osClient;
+  }
 
   @Override
   protected boolean sessionIdExists(final String sessionId) {

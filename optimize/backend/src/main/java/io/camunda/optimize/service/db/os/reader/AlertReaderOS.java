@@ -23,14 +23,12 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
@@ -38,6 +36,12 @@ public class AlertReaderOS implements AlertReader {
 
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
+
+  public AlertReaderOS(
+      OptimizeOpenSearchClient osClient, ConfigurationService configurationService) {
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public long getAlertCount() {

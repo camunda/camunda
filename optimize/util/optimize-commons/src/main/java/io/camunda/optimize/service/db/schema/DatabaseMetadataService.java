@@ -16,15 +16,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 public abstract class DatabaseMetadataService<CLIENT extends DatabaseClient> {
+
   protected static final String ERROR_MESSAGE_REQUEST =
       "Could not write Optimize metadata (version and installationID) to database.";
   protected static final String ERROR_MESSAGE_READING_METADATA_DOC =
@@ -32,6 +31,10 @@ public abstract class DatabaseMetadataService<CLIENT extends DatabaseClient> {
   protected static final String CURRENT_OPTIMIZE_VERSION = Version.VERSION;
 
   protected final ObjectMapper objectMapper;
+
+  public DatabaseMetadataService(ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
 
   public abstract Optional<MetadataDto> readMetadata(final CLIENT dbClient);
 
@@ -93,10 +96,10 @@ public abstract class DatabaseMetadataService<CLIENT extends DatabaseClient> {
     params.put("newInstallationId", newInstallationId);
     String scriptString =
         """
-                    if (ctx._source.$type == null) {
-                       ctx._source.$type = params.newInstallationId;
-                    }
-                    """
+            if (ctx._source.$type == null) {
+               ctx._source.$type = params.newInstallationId;
+            }
+            """
             .replace("$type", MetadataDto.Fields.installationId.name());
 
     if (!StringUtils.isBlank(newSchemaVersion)) {

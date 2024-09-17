@@ -28,16 +28,22 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class DecisionGroupByNoneInterpreterES extends AbstractDecisionGroupByInterpreterES {
+
   @Getter private final DecisionDistributedByNoneInterpreterES distributedByInterpreter;
   @Getter private final DecisionViewInterpreterFacadeES viewInterpreter;
+
+  public DecisionGroupByNoneInterpreterES(
+      DecisionDistributedByNoneInterpreterES distributedByInterpreter,
+      DecisionViewInterpreterFacadeES viewInterpreter) {
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(

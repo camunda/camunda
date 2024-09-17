@@ -48,7 +48,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -57,7 +56,6 @@ import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
@@ -67,6 +65,17 @@ public class BranchAnalysisReaderES implements BranchAnalysisReader {
   private final DefinitionService definitionService;
   private final ProcessQueryFilterEnhancerES queryFilterEnhancer;
   private final ProcessDefinitionReader processDefinitionReader;
+
+  public BranchAnalysisReaderES(
+      OptimizeElasticsearchClient esClient,
+      DefinitionService definitionService,
+      ProcessQueryFilterEnhancerES queryFilterEnhancer,
+      ProcessDefinitionReader processDefinitionReader) {
+    this.esClient = esClient;
+    this.definitionService = definitionService;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+    this.processDefinitionReader = processDefinitionReader;
+  }
 
   @Override
   public BranchAnalysisResponseDto branchAnalysis(

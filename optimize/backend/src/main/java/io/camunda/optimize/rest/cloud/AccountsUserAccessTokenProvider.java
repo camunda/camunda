@@ -10,7 +10,6 @@ package io.camunda.optimize.rest.cloud;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.security.core.Authentication;
@@ -23,8 +22,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @Component
 @Slf4j
 @Conditional(CCSaaSCondition.class)
-@RequiredArgsConstructor
 public class AccountsUserAccessTokenProvider {
+
+  public AccountsUserAccessTokenProvider() {}
 
   private Optional<String> retrieveServiceTokenFromFramework() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

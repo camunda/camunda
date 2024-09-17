@@ -42,18 +42,20 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateGroupsReader {
 
   private final OptimizeElasticsearchClient esClient;
+
+  public AssigneeAndCandidateGroupsReaderES(OptimizeElasticsearchClient esClient) {
+    this.esClient = esClient;
+  }
 
   @Override
   public void consumeAssigneesInBatches(

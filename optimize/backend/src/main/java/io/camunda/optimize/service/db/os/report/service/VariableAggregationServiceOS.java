@@ -22,7 +22,6 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import java.time.ZoneId;
 import java.util.Map;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
@@ -39,10 +38,10 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Conditional(OpenSearchCondition.class)
 public class VariableAggregationServiceOS {
+
   public static final String NESTED_VARIABLE_AGGREGATION = "nestedVariables";
   public static final String NESTED_FLOWNODE_AGGREGATION = "nestedFlowNodes";
   public static final String VARIABLES_AGGREGATION = "variables";
@@ -56,6 +55,17 @@ public class VariableAggregationServiceOS {
   private final NumberVariableAggregationServiceOS numberVariableAggregationService;
   private final DateAggregationServiceOS dateAggregationService;
   private final MinMaxStatsServiceOS minMaxStatsService;
+
+  public VariableAggregationServiceOS(
+      ConfigurationService configurationService,
+      NumberVariableAggregationServiceOS numberVariableAggregationService,
+      DateAggregationServiceOS dateAggregationService,
+      MinMaxStatsServiceOS minMaxStatsService) {
+    this.configurationService = configurationService;
+    this.numberVariableAggregationService = numberVariableAggregationService;
+    this.dateAggregationService = dateAggregationService;
+    this.minMaxStatsService = minMaxStatsService;
+  }
 
   public Optional<Pair<String, Aggregation>> createVariableSubAggregation(
       final VariableAggregationContextOS context) {

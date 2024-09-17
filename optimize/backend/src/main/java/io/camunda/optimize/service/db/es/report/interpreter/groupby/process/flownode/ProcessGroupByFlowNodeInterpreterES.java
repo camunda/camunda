@@ -36,19 +36,29 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessGroupByFlowNodeInterpreterES extends AbstractGroupByFlowNodeInterpreterES {
+
   private static final String NESTED_EVENTS_AGGREGATION = "nestedEvents";
   @Getter final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
   @Getter final ProcessViewInterpreterFacadeES viewInterpreter;
   private final ConfigurationService configurationService;
   @Getter private final DefinitionService definitionService;
+
+  public ProcessGroupByFlowNodeInterpreterES(
+      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      ProcessViewInterpreterFacadeES viewInterpreter,
+      ConfigurationService configurationService,
+      DefinitionService definitionService) {
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+    this.configurationService = configurationService;
+    this.definitionService = definitionService;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {

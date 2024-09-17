@@ -17,14 +17,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class ExternalVariableService {
 
   private final ExternalProcessVariableWriter externalProcessVariableWriter;
+
+  public ExternalVariableService(ExternalProcessVariableWriter externalProcessVariableWriter) {
+    this.externalProcessVariableWriter = externalProcessVariableWriter;
+  }
 
   public void storeExternalProcessVariables(
       final List<ExternalProcessVariableDto> externalProcessVariables) {

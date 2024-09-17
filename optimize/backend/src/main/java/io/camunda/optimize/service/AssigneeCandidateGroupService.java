@@ -39,11 +39,9 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Slf4j
 @Component
 public class AssigneeCandidateGroupService {
@@ -55,6 +53,17 @@ public class AssigneeCandidateGroupService {
   private final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader;
   private final UserTaskIdentityService userTaskIdentityService;
   private final ReportService reportService;
+
+  public AssigneeCandidateGroupService(
+      DataSourceDefinitionAuthorizationService definitionAuthorizationService,
+      AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader,
+      UserTaskIdentityService userTaskIdentityService,
+      ReportService reportService) {
+    this.definitionAuthorizationService = definitionAuthorizationService;
+    this.assigneeAndCandidateGroupsReader = assigneeAndCandidateGroupsReader;
+    this.userTaskIdentityService = userTaskIdentityService;
+    this.reportService = reportService;
+  }
 
   public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
       final String id, final IdentityType type) {

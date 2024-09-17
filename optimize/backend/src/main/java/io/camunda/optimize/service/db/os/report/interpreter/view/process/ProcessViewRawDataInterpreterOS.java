@@ -54,7 +54,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Script;
@@ -74,15 +73,28 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataInterpreter
     implements ProcessViewInterpreterOS {
+
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final OptimizeOpenSearchClient osClient;
   private final DefinitionService definitionService;
   private final VariableRepositoryOS variableRepository;
+
+  public ProcessViewRawDataInterpreterOS(
+      ConfigurationService configurationService,
+      ObjectMapper objectMapper,
+      OptimizeOpenSearchClient osClient,
+      DefinitionService definitionService,
+      VariableRepositoryOS variableRepository) {
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+    this.osClient = osClient;
+    this.definitionService = definitionService;
+    this.variableRepository = variableRepository;
+  }
 
   @Override
   public void adjustSearchRequest(

@@ -17,7 +17,6 @@ import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.springframework.context.ApplicationContext;
@@ -26,13 +25,22 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class IndexRepositoryOS implements IndexRepository, ConfigurationReloadable {
+
   private final OptimizeOpenSearchClient osClient;
   private final OpenSearchSchemaManager openSearchSchemaManager;
   private final OptimizeIndexNameService indexNameService;
   private final Set<String> indices = ConcurrentHashMap.newKeySet();
+
+  public IndexRepositoryOS(
+      OptimizeOpenSearchClient osClient,
+      OpenSearchSchemaManager openSearchSchemaManager,
+      OptimizeIndexNameService indexNameService) {
+    this.osClient = osClient;
+    this.openSearchSchemaManager = openSearchSchemaManager;
+    this.indexNameService = indexNameService;
+  }
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {

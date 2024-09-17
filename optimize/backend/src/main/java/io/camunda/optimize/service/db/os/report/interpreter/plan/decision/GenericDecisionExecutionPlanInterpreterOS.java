@@ -22,20 +22,32 @@ import io.camunda.optimize.service.db.report.plan.decision.DecisionExecutionPlan
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class GenericDecisionExecutionPlanInterpreterOS
     extends AbstractDecisionExecutionPlanInterpreterOS {
+
   @Getter private final DecisionDefinitionReader decisionDefinitionReader;
   @Getter private final DecisionQueryFilterEnhancerOS queryFilterEnhancer;
   @Getter private final DecisionGroupByInterpreterFacadeOS groupByInterpreter;
   @Getter private final DecisionViewInterpreterFacadeOS viewInterpreter;
   @Getter private final OptimizeOpenSearchClient osClient;
+
+  public GenericDecisionExecutionPlanInterpreterOS(
+      DecisionDefinitionReader decisionDefinitionReader,
+      DecisionQueryFilterEnhancerOS queryFilterEnhancer,
+      DecisionGroupByInterpreterFacadeOS groupByInterpreter,
+      DecisionViewInterpreterFacadeOS viewInterpreter,
+      OptimizeOpenSearchClient osClient) {
+    this.decisionDefinitionReader = decisionDefinitionReader;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+    this.groupByInterpreter = groupByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+    this.osClient = osClient;
+  }
 
   @Override
   public Set<DecisionExecutionPlan> getSupportedExecutionPlans() {

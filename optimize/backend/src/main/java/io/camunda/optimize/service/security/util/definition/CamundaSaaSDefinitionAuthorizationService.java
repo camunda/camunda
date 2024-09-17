@@ -18,15 +18,15 @@ import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Conditional(CCSaaSCondition.class)
 @Component
 public class CamundaSaaSDefinitionAuthorizationService
     implements DataSourceDefinitionAuthorizationService {
+
+  public CamundaSaaSDefinitionAuthorizationService() {}
 
   @Override
   public List<TenantDto> resolveAuthorizedTenantsForProcess(

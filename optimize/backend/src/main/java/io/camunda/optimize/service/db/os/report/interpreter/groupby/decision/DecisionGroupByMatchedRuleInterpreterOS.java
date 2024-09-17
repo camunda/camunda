@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -35,13 +34,22 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class DecisionGroupByMatchedRuleInterpreterOS extends AbstractDecisionGroupByInterpreterOS {
+
   private static final String MATCHED_RULES_AGGREGATION = "matchedRules";
   private final ConfigurationService configurationService;
   @Getter private final DecisionDistributedByNoneInterpreterOS distributedByInterpreter;
   @Getter private final DecisionViewInterpreterFacadeOS viewInterpreter;
+
+  public DecisionGroupByMatchedRuleInterpreterOS(
+      ConfigurationService configurationService,
+      DecisionDistributedByNoneInterpreterOS distributedByInterpreter,
+      DecisionViewInterpreterFacadeOS viewInterpreter) {
+    this.configurationService = configurationService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<DecisionGroupBy> getSupportedGroupBys() {

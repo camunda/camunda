@@ -31,21 +31,31 @@ import io.camunda.optimize.service.util.InstanceIndexUtil;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class DecisionGroupByInputVariableInterpreterOS
     extends AbstractGroupByVariableInterpreterOS<DecisionReportDataDto, DecisionExecutionPlan>
     implements DecisionGroupByInterpreterOS {
+
   @Getter private final VariableAggregationServiceOS variableAggregationService;
   @Getter private final DefinitionService definitionService;
   @Getter private final DecisionDistributedByNoneInterpreterOS distributedByInterpreter;
   @Getter private final DecisionViewInterpreterFacadeOS viewInterpreter;
+
+  public DecisionGroupByInputVariableInterpreterOS(
+      VariableAggregationServiceOS variableAggregationService,
+      DefinitionService definitionService,
+      DecisionDistributedByNoneInterpreterOS distributedByInterpreter,
+      DecisionViewInterpreterFacadeOS viewInterpreter) {
+    this.variableAggregationService = variableAggregationService;
+    this.definitionService = definitionService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<DecisionGroupBy> getSupportedGroupBys() {

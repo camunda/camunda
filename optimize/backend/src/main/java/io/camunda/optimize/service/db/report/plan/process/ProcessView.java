@@ -20,10 +20,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.configuration.proces
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
 public enum ProcessView {
   PROCESS_VIEW_FLOW_NODE_DURATION(new ProcessViewDto(FLOW_NODE, DURATION)),
   PROCESS_VIEW_FLOW_NODE_FREQUENCY(new ProcessViewDto(FLOW_NODE, FREQUENCY)),
@@ -46,6 +44,11 @@ public enum ProcessView {
   ProcessView(ProcessViewDto processViewDto) {
     this.processViewDto = processViewDto;
     this.processPartDto = null;
+  }
+
+  private ProcessView(ProcessViewDto processViewDto, ProcessPartDto processPartDto) {
+    this.processViewDto = processViewDto;
+    this.processPartDto = processPartDto;
   }
 
   public boolean isFrequency() {

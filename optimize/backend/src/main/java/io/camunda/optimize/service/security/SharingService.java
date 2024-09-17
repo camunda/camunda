@@ -42,11 +42,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 public class SharingService implements ReportReferencingService, DashboardReferencingService {
@@ -56,6 +54,19 @@ public class SharingService implements ReportReferencingService, DashboardRefere
   private final PlainReportEvaluationHandler reportEvaluationHandler;
   private final DashboardService dashboardService;
   private final ReportService reportService;
+
+  public SharingService(
+      SharingWriter sharingWriter,
+      SharingReader sharingReader,
+      PlainReportEvaluationHandler reportEvaluationHandler,
+      DashboardService dashboardService,
+      ReportService reportService) {
+    this.sharingWriter = sharingWriter;
+    this.sharingReader = sharingReader;
+    this.reportEvaluationHandler = reportEvaluationHandler;
+    this.dashboardService = dashboardService;
+    this.reportService = reportService;
+  }
 
   public IdResponseDto createNewReportShareIfAbsent(
       ReportShareRestDto createSharingDto, String userId) {

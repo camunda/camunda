@@ -22,16 +22,19 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class DecisionDistributedByNoneInterpreterES
     extends AbstractDistributedByInterpreterES<DecisionReportDataDto, DecisionExecutionPlan> {
+
   @Getter private final DecisionViewInterpreterFacadeES viewInterpreter;
+
+  public DecisionDistributedByNoneInterpreterES(DecisionViewInterpreterFacadeES viewInterpreter) {
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(

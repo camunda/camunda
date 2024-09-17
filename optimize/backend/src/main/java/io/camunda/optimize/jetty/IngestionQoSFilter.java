@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.FieldUtils;
@@ -39,7 +38,6 @@ import org.springframework.http.HttpStatus;
  * mainly in the response we give on rejected requests.
  * https://www.eclipse.org/jetty/javadoc/9.4.26.v20200117/org/eclipse/jetty/servlets/QoSFilter.html
  */
-@RequiredArgsConstructor
 @Slf4j
 @Data
 public class IngestionQoSFilter implements Filter {
@@ -59,6 +57,10 @@ public class IngestionQoSFilter implements Filter {
   private AsyncListener[] listeners;
 
   private final Callable<Integer> maxRequestCountProvider;
+
+  public IngestionQoSFilter(Callable<Integer> maxRequestCountProvider) {
+    this.maxRequestCountProvider = maxRequestCountProvider;
+  }
 
   @Override
   public void init(FilterConfig filterConfig) {
@@ -202,6 +204,7 @@ public class IngestionQoSFilter implements Filter {
   }
 
   private class QoSAsyncListener implements AsyncListener {
+
     private final int priority;
 
     public QoSAsyncListener(int priority) {

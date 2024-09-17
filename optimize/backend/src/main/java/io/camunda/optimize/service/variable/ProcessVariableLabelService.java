@@ -14,17 +14,21 @@ import io.camunda.optimize.service.db.writer.VariableLabelWriter;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 public class ProcessVariableLabelService {
 
   private final VariableLabelWriter variableLabelWriter;
   private final DefinitionService definitionService;
+
+  public ProcessVariableLabelService(
+      VariableLabelWriter variableLabelWriter, DefinitionService definitionService) {
+    this.variableLabelWriter = variableLabelWriter;
+    this.definitionService = definitionService;
+  }
 
   public void storeVariableLabels(final DefinitionVariableLabelsDto definitionVariableLabelsDto) {
     definitionVariableLabelsDto.getLabels().stream()

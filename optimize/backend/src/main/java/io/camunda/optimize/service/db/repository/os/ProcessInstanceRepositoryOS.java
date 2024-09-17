@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -61,15 +60,28 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
+
   public static final String INDEX_NOT_FOUND_ERROR_MESSAGE_KEYWORD = "index_not_found_exception";
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
   private final OptimizeOpenSearchClient osClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
+
+  public ProcessInstanceRepositoryOS(
+      ConfigurationService configurationService,
+      OptimizeIndexNameService indexNameService,
+      OptimizeOpenSearchClient osClient,
+      ObjectMapper objectMapper,
+      DateTimeFormatter dateTimeFormatter) {
+    this.configurationService = configurationService;
+    this.indexNameService = indexNameService;
+    this.osClient = osClient;
+    this.objectMapper = objectMapper;
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
 
   @Override
   public void deleteByIds(
@@ -133,6 +145,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
       final PageResultDto<String> previousPage,
       final Supplier<PageResultDto<String>> firstPageFetchFunction) {
     record Result(String processInstanceId) {}
+
     final int limit = previousPage.getLimit();
     if (previousPage.isLastPage()) {
       return new PageResultDto<>(limit);
@@ -208,6 +221,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
   private PageResultDto<String> getFirstPageOfProcessInstanceIdsForFilter(
       final String processDefinitionKey, final Query filterQuery, final Integer limit) {
     record Result(String processInstanceId) {}
+
     final PageResultDto<String> result = new PageResultDto<>(limit);
     final Integer resolvedLimit = Optional.ofNullable(limit).orElse(MAX_RESPONSE_SIZE_LIMIT);
 

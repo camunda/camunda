@@ -47,7 +47,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
@@ -56,10 +55,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slf4j
-@RequiredArgsConstructor
 public abstract class DecisionVariableQueryFilterOS extends AbstractVariableQueryFilterOS
     implements QueryFilterOS<VariableFilterDataDto<?>> {
+
   protected final Logger logger = LoggerFactory.getLogger(getClass());
+
+  public DecisionVariableQueryFilterOS() {}
 
   abstract String getVariablePath();
 

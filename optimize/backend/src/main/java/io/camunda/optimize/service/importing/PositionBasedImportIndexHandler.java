@@ -17,7 +17,6 @@ import jakarta.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -25,7 +24,6 @@ import org.springframework.context.annotation.Scope;
 
 @Slf4j
 @Getter
-@RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class PositionBasedImportIndexHandler
     implements ZeebeImportIndexHandler<PositionBasedImportPage, PositionBasedImportIndexDto> {
@@ -39,6 +37,8 @@ public abstract class PositionBasedImportIndexHandler
   private long pendingSequenceOfLastEntity = 0;
   private boolean hasSeenSequenceField = false;
   @Autowired private PositionBasedImportIndexReader positionBasedImportIndexReader;
+
+  public PositionBasedImportIndexHandler() {}
 
   @Override
   public PositionBasedImportIndexDto getIndexStateDto() {

@@ -13,18 +13,18 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Slf4j
 @Component
 @Conditional(OpenSearchCondition.class)
 public class ProcessMultiVariableQueryFilterOS extends AbstractProcessVariableQueryFilterOS
     implements QueryFilterOS<MultipleVariableFilterDataDto> {
+
+  public ProcessMultiVariableQueryFilterOS() {}
 
   @Override
   public List<Query> filterQueries(

@@ -19,7 +19,6 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.io.IOException;
 import java.util.Arrays;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.DeleteSnapshotResponse;
@@ -29,11 +28,17 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class SnapshotRepositoryOS implements SnapshotRepository {
+
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
+
+  public SnapshotRepositoryOS(
+      OptimizeOpenSearchClient osClient, ConfigurationService configurationService) {
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void deleteOptimizeSnapshots(final Long backupId) {

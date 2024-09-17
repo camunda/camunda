@@ -36,20 +36,32 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessGroupByFlowNodeDurationInterpreterES
     extends AbstractGroupByFlowNodeInterpreterES {
+
   private final MinMaxStatsServiceES minMaxStatsService;
   @Getter private final DefinitionService definitionService;
   @Getter final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
   private final DurationAggregationServiceES durationAggregationService;
   @Getter final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  public ProcessGroupByFlowNodeDurationInterpreterES(
+      MinMaxStatsServiceES minMaxStatsService,
+      DefinitionService definitionService,
+      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      DurationAggregationServiceES durationAggregationService,
+      ProcessViewInterpreterFacadeES viewInterpreter) {
+    this.minMaxStatsService = minMaxStatsService;
+    this.definitionService = definitionService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.durationAggregationService = durationAggregationService;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {

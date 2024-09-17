@@ -16,18 +16,21 @@ import io.camunda.optimize.service.db.reader.InstantDashboardMetadataReader;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class InstantDashboardMetadataReaderOS implements InstantDashboardMetadataReader {
+
   private final OptimizeOpenSearchClient osClient;
+
+  public InstantDashboardMetadataReaderOS(OptimizeOpenSearchClient osClient) {
+    this.osClient = osClient;
+  }
 
   @Override
   public Optional<String> getInstantDashboardIdFor(

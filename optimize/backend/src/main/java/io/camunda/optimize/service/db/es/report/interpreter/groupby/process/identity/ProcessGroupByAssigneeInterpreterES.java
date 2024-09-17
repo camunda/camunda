@@ -21,21 +21,35 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessGroupByAssigneeInterpreterES
     extends AbstractProcessGroupByIdentityInterpreterES {
+
   @Getter final AssigneeCandidateGroupService assigneeCandidateGroupService;
   @Getter final ConfigurationService configurationService;
   @Getter final DefinitionService definitionService;
   @Getter final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
   @Getter final ProcessViewInterpreterFacadeES viewInterpreter;
   @Getter final LocalizationService localizationService;
+
+  public ProcessGroupByAssigneeInterpreterES(
+      AssigneeCandidateGroupService assigneeCandidateGroupService,
+      ConfigurationService configurationService,
+      DefinitionService definitionService,
+      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      ProcessViewInterpreterFacadeES viewInterpreter,
+      LocalizationService localizationService) {
+    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
+    this.configurationService = configurationService;
+    this.definitionService = definitionService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+    this.localizationService = localizationService;
+  }
 
   @Override
   protected String getIdentityField() {

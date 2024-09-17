@@ -13,7 +13,6 @@ import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -21,11 +20,20 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @Conditional(CCSaaSCondition.class)
-@RequiredArgsConstructor
 public class CloudSaasMetaInfoService {
+
   private final CCSaaSOrganizationsClient organizationsClient;
   private final AccountsUserAccessTokenProvider accessTokenProvider;
   private final CCSaasClusterClient clusterClient;
+
+  public CloudSaasMetaInfoService(
+      CCSaaSOrganizationsClient organizationsClient,
+      AccountsUserAccessTokenProvider accessTokenProvider,
+      CCSaasClusterClient clusterClient) {
+    this.organizationsClient = organizationsClient;
+    this.accessTokenProvider = accessTokenProvider;
+    this.clusterClient = clusterClient;
+  }
 
   public Optional<String> getSalesPlanType() {
     final Optional<String> accessToken = getCurrentUserServiceToken();

@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -32,7 +31,6 @@ import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
 @EqualsAndHashCode(callSuper = true)
-@RequiredArgsConstructor
 @Component
 @Data
 @Slf4j
@@ -51,6 +49,23 @@ public class OnboardingSchedulerService extends AbstractScheduledService
   private int intervalToCheckForOnboardingDataInSeconds;
   private Consumer<String> emailNotificationHandler;
   private Consumer<String> panelNotificationHandler;
+
+  public OnboardingSchedulerService(
+      ProcessDefinitionReader processDefinitionReader,
+      ProcessDefinitionWriter processDefinitionWriter,
+      ProcessInstanceReader processInstanceReader,
+      ConfigurationService configurationService,
+      OnboardingEmailNotificationService onboardingEmailNotificationService,
+      ProcessOverviewService processOverviewService,
+      CustomerOnboardingDataImportService onboardingDataService) {
+    this.processDefinitionReader = processDefinitionReader;
+    this.processDefinitionWriter = processDefinitionWriter;
+    this.processInstanceReader = processInstanceReader;
+    this.configurationService = configurationService;
+    this.onboardingEmailNotificationService = onboardingEmailNotificationService;
+    this.processOverviewService = processOverviewService;
+    this.onboardingDataService = onboardingDataService;
+  }
 
   @PostConstruct
   public void init() {

@@ -32,20 +32,30 @@ import io.camunda.optimize.service.util.InstanceIndexUtil;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class DecisionGroupByOutputVariableInterpreterES
     extends AbstractGroupByVariableInterpreterES<DecisionReportDataDto, DecisionExecutionPlan>
     implements DecisionGroupByInterpreterES {
+
   @Getter private final VariableAggregationServiceES variableAggregationService;
   @Getter private final DefinitionService definitionService;
   @Getter private final DecisionDistributedByNoneInterpreterES distributedByInterpreter;
   @Getter private final DecisionViewInterpreterFacadeES viewInterpreter;
+
+  public DecisionGroupByOutputVariableInterpreterES(
+      VariableAggregationServiceES variableAggregationService,
+      DefinitionService definitionService,
+      DecisionDistributedByNoneInterpreterES distributedByInterpreter,
+      DecisionViewInterpreterFacadeES viewInterpreter) {
+    this.variableAggregationService = variableAggregationService;
+    this.definitionService = definitionService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   private DecisionGroupByVariableValueDto getVariableGroupByDto(
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {

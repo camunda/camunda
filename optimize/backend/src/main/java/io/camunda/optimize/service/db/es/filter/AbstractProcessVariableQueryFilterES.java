@@ -41,14 +41,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Slf4j
 @Component
 public abstract class AbstractProcessVariableQueryFilterES extends AbstractVariableQueryFilterES {
+
+  public AbstractProcessVariableQueryFilterES() {}
 
   protected Query.Builder createFilterQueryBuilder(
       final VariableFilterDataDto<?> dto, final ZoneId timezone) {

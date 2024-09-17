@@ -17,7 +17,6 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 @Getter
@@ -67,10 +66,13 @@ public class ReportEvaluationInfo {
     return new ReportEvaluationInfoBuilder(reportEvaluationInfo);
   }
 
-  @RequiredArgsConstructor
   public static class ReportEvaluationInfoBuilder {
 
     private final ReportEvaluationInfo reportEvaluationInfo;
+
+    public ReportEvaluationInfoBuilder(ReportEvaluationInfo reportEvaluationInfo) {
+      this.reportEvaluationInfo = reportEvaluationInfo;
+    }
 
     public ReportEvaluationInfoBuilder userId(final String userId) {
       reportEvaluationInfo.setUserId(userId);

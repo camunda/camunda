@@ -24,18 +24,26 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessDistributedByFlowNodeInterpreterES
     extends AbstractProcessDistributedByModelElementInterpreterES {
+
   @Getter private final ConfigurationService configurationService;
   @Getter private final DefinitionService definitionService;
   @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  public ProcessDistributedByFlowNodeInterpreterES(
+      ConfigurationService configurationService,
+      DefinitionService definitionService,
+      ProcessViewInterpreterFacadeES viewInterpreter) {
+    this.configurationService = configurationService;
+    this.definitionService = definitionService;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   protected String getModelElementIdPath() {

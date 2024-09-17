@@ -16,19 +16,23 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.OffsetDateTime;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 public class CleanupScheduler extends AbstractScheduledService implements ConfigurationReloadable {
 
   private final ConfigurationService configurationService;
   private final List<CleanupService> cleanupServices;
+
+  public CleanupScheduler(
+      ConfigurationService configurationService, List<CleanupService> cleanupServices) {
+    this.configurationService = configurationService;
+    this.cleanupServices = cleanupServices;
+  }
 
   @PostConstruct
   public void init() {

@@ -53,7 +53,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
@@ -72,7 +71,6 @@ import org.opensearch.client.opensearch.core.search.SourceFilter;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
@@ -82,6 +80,17 @@ public class EntitiesReaderOS implements EntitiesReader {
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService optimizeIndexNameService;
   private final LocalizationService localizationService;
+
+  public EntitiesReaderOS(
+      OptimizeOpenSearchClient osClient,
+      ConfigurationService configurationService,
+      OptimizeIndexNameService optimizeIndexNameService,
+      LocalizationService localizationService) {
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+    this.optimizeIndexNameService = optimizeIndexNameService;
+    this.localizationService = localizationService;
+  }
 
   @Override
   public List<CollectionEntity> getAllPrivateEntities() {

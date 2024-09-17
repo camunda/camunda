@@ -20,12 +20,10 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
@@ -33,6 +31,12 @@ public class InstantDashboardMetadataReaderES implements InstantDashboardMetadat
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+
+  public InstantDashboardMetadataReaderES(
+      OptimizeElasticsearchClient esClient, ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public Optional<String> getInstantDashboardIdFor(String processDefinitionKey, String template)

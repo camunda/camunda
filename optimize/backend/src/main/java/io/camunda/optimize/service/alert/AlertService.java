@@ -53,7 +53,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -69,7 +68,6 @@ import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.scheduling.quartz.SpringBeanJobFactory;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 public class AlertService implements ReportReferencingService {
@@ -85,6 +83,27 @@ public class AlertService implements ReportReferencingService {
   private final AlertRecipientValidator alertRecipientValidator;
 
   private SchedulerFactoryBean schedulerFactoryBean;
+
+  public AlertService(
+      ApplicationContext applicationContext,
+      AlertReader alertReader,
+      AlertWriter alertWriter,
+      ConfigurationService configurationService,
+      AlertReminderJobFactory alertReminderJobFactory,
+      AlertCheckJobFactory alertCheckJobFactory,
+      ReportService reportService,
+      AuthorizedCollectionService authorizedCollectionService,
+      AlertRecipientValidator alertRecipientValidator) {
+    this.applicationContext = applicationContext;
+    this.alertReader = alertReader;
+    this.alertWriter = alertWriter;
+    this.configurationService = configurationService;
+    this.alertReminderJobFactory = alertReminderJobFactory;
+    this.alertCheckJobFactory = alertCheckJobFactory;
+    this.reportService = reportService;
+    this.authorizedCollectionService = authorizedCollectionService;
+    this.alertRecipientValidator = alertRecipientValidator;
+  }
 
   @PostConstruct
   public void init() {

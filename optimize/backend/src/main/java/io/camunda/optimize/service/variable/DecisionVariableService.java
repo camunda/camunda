@@ -19,17 +19,22 @@ import io.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthoriz
 import jakarta.ws.rs.ForbiddenException;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 public class DecisionVariableService {
 
   private final DecisionVariableReader decisionVariableReader;
   private final DataSourceTenantAuthorizationService tenantAuthorizationService;
+
+  public DecisionVariableService(
+      DecisionVariableReader decisionVariableReader,
+      DataSourceTenantAuthorizationService tenantAuthorizationService) {
+    this.decisionVariableReader = decisionVariableReader;
+    this.tenantAuthorizationService = tenantAuthorizationService;
+  }
 
   public List<DecisionVariableNameResponseDto> getInputVariableNames(
       List<DecisionVariableNameRequestDto> variableRequestDtos) {

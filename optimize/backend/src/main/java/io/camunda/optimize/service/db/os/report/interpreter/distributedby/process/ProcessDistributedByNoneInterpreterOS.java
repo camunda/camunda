@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -31,11 +30,15 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ProcessDistributedByNoneInterpreterOS
     extends AbstractProcessDistributedByInterpreterOS {
+
   @Getter private final ProcessViewInterpreterFacadeOS viewInterpreter;
+
+  public ProcessDistributedByNoneInterpreterOS(ProcessViewInterpreterFacadeOS viewInterpreter) {
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessDistributedBy> getSupportedDistributedBys() {

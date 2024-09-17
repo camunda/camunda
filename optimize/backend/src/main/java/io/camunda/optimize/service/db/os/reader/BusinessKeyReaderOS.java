@@ -23,14 +23,12 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
@@ -38,6 +36,12 @@ public class BusinessKeyReaderOS implements BusinessKeyReader {
 
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
+
+  public BusinessKeyReaderOS(
+      OptimizeOpenSearchClient osClient, ConfigurationService configurationService) {
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public List<BusinessKeyDto> getBusinessKeysForProcessInstanceIds(

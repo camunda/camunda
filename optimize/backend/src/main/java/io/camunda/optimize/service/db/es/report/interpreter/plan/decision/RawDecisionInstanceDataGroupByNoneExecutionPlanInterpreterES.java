@@ -19,21 +19,33 @@ import io.camunda.optimize.service.db.report.interpreter.plan.decision.RawDecisi
 import io.camunda.optimize.service.db.report.plan.decision.DecisionExecutionPlan;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreterES
     extends AbstractDecisionExecutionPlanInterpreterES
     implements RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreter {
+
   @Getter private final DecisionDefinitionReader decisionDefinitionReader;
   @Getter private final DecisionQueryFilterEnhancerES queryFilterEnhancer;
   @Getter private final DecisionGroupByInterpreterFacadeES groupByInterpreter;
   @Getter private final DecisionViewInterpreterFacadeES viewInterpreter;
   @Getter private final OptimizeElasticsearchClient esClient;
+
+  public RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreterES(
+      DecisionDefinitionReader decisionDefinitionReader,
+      DecisionQueryFilterEnhancerES queryFilterEnhancer,
+      DecisionGroupByInterpreterFacadeES groupByInterpreter,
+      DecisionViewInterpreterFacadeES viewInterpreter,
+      OptimizeElasticsearchClient esClient) {
+    this.decisionDefinitionReader = decisionDefinitionReader;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+    this.groupByInterpreter = groupByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+    this.esClient = esClient;
+  }
 
   @Override
   public CommandEvaluationResult<Object> interpret(

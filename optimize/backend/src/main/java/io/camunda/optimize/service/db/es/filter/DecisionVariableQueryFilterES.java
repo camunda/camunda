@@ -40,16 +40,17 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slf4j
-@RequiredArgsConstructor
 public abstract class DecisionVariableQueryFilterES extends AbstractVariableQueryFilterES
     implements QueryFilterES<VariableFilterDataDto<?>> {
+
   protected final Logger logger = LoggerFactory.getLogger(getClass());
+
+  public DecisionVariableQueryFilterES() {}
 
   abstract String getVariablePath();
 

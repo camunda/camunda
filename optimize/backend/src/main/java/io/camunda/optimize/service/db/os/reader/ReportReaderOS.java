@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Time;
@@ -62,7 +61,6 @@ import org.opensearch.client.opensearch.core.search.SourceFilter;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
@@ -70,6 +68,12 @@ public class ReportReaderOS implements ReportReader {
 
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
+
+  public ReportReaderOS(
+      OptimizeOpenSearchClient osClient, ConfigurationService configurationService) {
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public Optional<ReportDefinitionDto> getReport(final String reportId) {

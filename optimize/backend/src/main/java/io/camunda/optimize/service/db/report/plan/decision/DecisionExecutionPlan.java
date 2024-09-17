@@ -23,10 +23,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRep
 import io.camunda.optimize.service.db.report.plan.ExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.ReportResultType;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
 public enum DecisionExecutionPlan implements ExecutionPlan {
   DECISION_INSTANCE_FREQUENCY_GROUP_BY_EVALUATION_DATE_TIME(
       DECISION_VIEW_INSTANCE_FREQUENCY,
@@ -73,6 +71,19 @@ public enum DecisionExecutionPlan implements ExecutionPlan {
     this.distributedBy = distributedBy;
     this.resultType = resultType;
     commandKey = buildCommandKey();
+  }
+
+  private DecisionExecutionPlan(
+      DecisionView view,
+      DecisionGroupBy groupBy,
+      DecisionDistributedBy distributedBy,
+      ReportResultType resultType,
+      String commandKey) {
+    this.view = view;
+    this.groupBy = groupBy;
+    this.distributedBy = distributedBy;
+    this.resultType = resultType;
+    this.commandKey = commandKey;
   }
 
   @Override

@@ -15,14 +15,14 @@ import io.camunda.optimize.service.db.es.filter.util.DateFilterQueryUtilES;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class InstanceEndDateQueryFilterES implements QueryFilterES<DateFilterDataDto<?>> {
+
+  public InstanceEndDateQueryFilterES() {}
 
   @Override
   public void addFilters(

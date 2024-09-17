@@ -28,21 +28,31 @@ import io.camunda.optimize.service.util.InstanceIndexUtil;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ProcessGroupByVariableInterpreterOS
     extends AbstractGroupByVariableInterpreterOS<ProcessReportDataDto, ProcessExecutionPlan>
     implements ProcessGroupByInterpreterOS {
+
   @Getter private final VariableAggregationServiceOS variableAggregationService;
   @Getter private final DefinitionService definitionService;
   @Getter private final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
   @Getter private final ProcessViewInterpreterFacadeOS viewInterpreter;
+
+  public ProcessGroupByVariableInterpreterOS(
+      VariableAggregationServiceOS variableAggregationService,
+      DefinitionService definitionService,
+      ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
+      ProcessViewInterpreterFacadeOS viewInterpreter) {
+    this.variableAggregationService = variableAggregationService;
+    this.definitionService = definitionService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {

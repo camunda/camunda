@@ -16,7 +16,6 @@ import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Conditional;
@@ -24,7 +23,6 @@ import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 @Conditional(CCSaaSCondition.class)
@@ -33,6 +31,13 @@ public class MixpanelDataScheduler extends AbstractScheduledService
 
   private final ConfigurationService configurationService;
   private final MixpanelReportingService mixpanelReportingService;
+
+  public MixpanelDataScheduler(
+      ConfigurationService configurationService,
+      MixpanelReportingService mixpanelReportingService) {
+    this.configurationService = configurationService;
+    this.mixpanelReportingService = mixpanelReportingService;
+  }
 
   @PostConstruct
   public void init() {

@@ -12,13 +12,15 @@ import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
 public enum DecisionView {
   DECISION_VIEW_INSTANCE_FREQUENCY(new DecisionViewDto(FREQUENCY)),
   DECISION_VIEW_RAW_DATA(new DecisionViewDto(ViewProperty.RAW_DATA));
 
   private final DecisionViewDto decisionViewDto;
+
+  private DecisionView(DecisionViewDto decisionViewDto) {
+    this.decisionViewDto = decisionViewDto;
+  }
 }

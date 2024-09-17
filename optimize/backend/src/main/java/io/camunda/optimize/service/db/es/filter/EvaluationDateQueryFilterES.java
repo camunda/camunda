@@ -14,12 +14,12 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Dat
 import io.camunda.optimize.service.db.es.filter.util.DateFilterQueryUtilES;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class EvaluationDateQueryFilterES implements QueryFilterES<DateFilterDataDto<?>> {
+
+  public EvaluationDateQueryFilterES() {}
 
   @Override
   public void addFilters(

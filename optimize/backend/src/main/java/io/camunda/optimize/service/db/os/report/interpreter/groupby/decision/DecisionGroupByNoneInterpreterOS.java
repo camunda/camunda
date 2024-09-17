@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -32,11 +31,18 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class DecisionGroupByNoneInterpreterOS extends AbstractDecisionGroupByInterpreterOS {
+
   @Getter private final DecisionDistributedByNoneInterpreterOS distributedByInterpreter;
   @Getter private final DecisionViewInterpreterFacadeOS viewInterpreter;
+
+  public DecisionGroupByNoneInterpreterOS(
+      DecisionDistributedByNoneInterpreterOS distributedByInterpreter,
+      DecisionViewInterpreterFacadeOS viewInterpreter) {
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<DecisionGroupBy> getSupportedGroupBys() {

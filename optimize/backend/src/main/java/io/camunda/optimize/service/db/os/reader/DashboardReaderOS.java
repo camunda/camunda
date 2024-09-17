@@ -20,7 +20,6 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
@@ -33,13 +32,16 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class DashboardReaderOS implements DashboardReader {
 
   private final OptimizeOpenSearchClient osClient;
+
+  public DashboardReaderOS(OptimizeOpenSearchClient osClient) {
+    this.osClient = osClient;
+  }
 
   @Override
   public long getDashboardCount() {

@@ -20,21 +20,35 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessGroupByProcessInstanceEndDateInterpreterES
     extends AbstractProcessGroupByProcessInstanceDateInterpreterES {
+
   @Getter private final ConfigurationService configurationService;
   @Getter private final DateAggregationServiceES dateAggregationService;
   @Getter private final MinMaxStatsServiceES minMaxStatsService;
   @Getter private final ProcessQueryFilterEnhancerES queryFilterEnhancer;
   @Getter private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
   @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  public ProcessGroupByProcessInstanceEndDateInterpreterES(
+      ConfigurationService configurationService,
+      DateAggregationServiceES dateAggregationService,
+      MinMaxStatsServiceES minMaxStatsService,
+      ProcessQueryFilterEnhancerES queryFilterEnhancer,
+      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      ProcessViewInterpreterFacadeES viewInterpreter) {
+    this.configurationService = configurationService;
+    this.dateAggregationService = dateAggregationService;
+    this.minMaxStatsService = minMaxStatsService;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {

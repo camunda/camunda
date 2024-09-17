@@ -18,19 +18,29 @@ import io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ProcessDistributedByInstanceStartDateInterpreterOS
     extends AbstractProcessDistributedByInstanceDateInterpreterOS {
+
   @Getter private final ProcessViewInterpreterFacadeOS viewInterpreter;
   @Getter private final DateAggregationServiceOS dateAggregationService;
   @Getter private final ProcessQueryFilterEnhancerOS queryFilterEnhancer;
   @Getter private final MinMaxStatsServiceOS minMaxStatsService;
+
+  public ProcessDistributedByInstanceStartDateInterpreterOS(
+      ProcessViewInterpreterFacadeOS viewInterpreter,
+      DateAggregationServiceOS dateAggregationService,
+      ProcessQueryFilterEnhancerOS queryFilterEnhancer,
+      MinMaxStatsServiceOS minMaxStatsService) {
+    this.viewInterpreter = viewInterpreter;
+    this.dateAggregationService = dateAggregationService;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+    this.minMaxStatsService = minMaxStatsService;
+  }
 
   @Override
   public Set<ProcessDistributedBy> getSupportedDistributedBys() {

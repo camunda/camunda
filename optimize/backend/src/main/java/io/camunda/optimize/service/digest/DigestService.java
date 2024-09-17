@@ -45,7 +45,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationContext;
@@ -53,7 +52,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 public class DigestService implements ConfigurationReloadable {
@@ -73,6 +71,27 @@ public class DigestService implements ConfigurationReloadable {
   private final RootUrlGenerator rootUrlGenerator;
   private final Map<String, ScheduledFuture<?>> scheduledDigestTasks = new HashMap<>();
   private ThreadPoolTaskScheduler digestTaskScheduler;
+
+  public DigestService(
+      ConfigurationService configurationService,
+      EmailService emailService,
+      AbstractIdentityService identityService,
+      KpiService kpiService,
+      DefinitionService definitionService,
+      ProcessOverviewWriter processOverviewWriter,
+      ProcessOverviewReader processOverviewReader,
+      ReportReader reportReader,
+      RootUrlGenerator rootUrlGenerator) {
+    this.configurationService = configurationService;
+    this.emailService = emailService;
+    this.identityService = identityService;
+    this.kpiService = kpiService;
+    this.definitionService = definitionService;
+    this.processOverviewWriter = processOverviewWriter;
+    this.processOverviewReader = processOverviewReader;
+    this.reportReader = reportReader;
+    this.rootUrlGenerator = rootUrlGenerator;
+  }
 
   @PostConstruct
   public void init() {
@@ -315,6 +334,7 @@ public class DigestService implements ConfigurationReloadable {
 
   @Data
   public static class DigestTemplateKpiSummaryDto {
+
     private final String reportName;
     private final String reportLink;
     private final String kpiType;

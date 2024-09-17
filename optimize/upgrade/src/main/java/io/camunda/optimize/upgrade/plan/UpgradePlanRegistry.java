@@ -18,11 +18,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@RequiredArgsConstructor
 public class UpgradePlanRegistry {
 
   private final Map<Semver, UpgradePlan> upgradePlans;
@@ -65,6 +63,10 @@ public class UpgradePlanRegistry {
                 }
               });
     }
+  }
+
+  public UpgradePlanRegistry(Map<Semver, UpgradePlan> upgradePlans) {
+    this.upgradePlans = upgradePlans;
   }
 
   public List<UpgradePlan> getSequentialUpgradePlansToTargetVersion(final String targetVersion) {

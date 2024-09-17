@@ -15,12 +15,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 
-@RequiredArgsConstructor
 @Slf4j
 public abstract class AbstractImportScheduler<T extends SchedulerConfig>
     extends AbstractScheduledService {
@@ -28,6 +26,11 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig>
   protected final List<ImportMediator> importMediators;
   @Getter protected final T dataImportSourceDto;
   protected boolean isImporting = false;
+
+  public AbstractImportScheduler(List<ImportMediator> importMediators, T dataImportSourceDto) {
+    this.importMediators = importMediators;
+    this.dataImportSourceDto = dataImportSourceDto;
+  }
 
   @Override
   public void run() {

@@ -20,20 +20,32 @@ import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessGroupByUserTaskStartDateInterpreterES
     extends AbstractProcessGroupByUserTaskDateInterpreterES {
+
   @Getter private final DateAggregationServiceES dateAggregationService;
   @Getter private final MinMaxStatsServiceES minMaxStatsService;
   @Getter private final DefinitionService definitionService;
   @Getter private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
   @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  public ProcessGroupByUserTaskStartDateInterpreterES(
+      DateAggregationServiceES dateAggregationService,
+      MinMaxStatsServiceES minMaxStatsService,
+      DefinitionService definitionService,
+      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      ProcessViewInterpreterFacadeES viewInterpreter) {
+    this.dateAggregationService = dateAggregationService;
+    this.minMaxStatsService = minMaxStatsService;
+    this.definitionService = definitionService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {

@@ -32,11 +32,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 public class ProcessVariableService {
@@ -44,6 +42,15 @@ public class ProcessVariableService {
   private final ProcessVariableReader processVariableReader;
   private final DataSourceTenantAuthorizationService tenantAuthorizationService;
   private final ReportService reportService;
+
+  public ProcessVariableService(
+      ProcessVariableReader processVariableReader,
+      DataSourceTenantAuthorizationService tenantAuthorizationService,
+      ReportService reportService) {
+    this.processVariableReader = processVariableReader;
+    this.tenantAuthorizationService = tenantAuthorizationService;
+    this.reportService = reportService;
+  }
 
   public List<ProcessVariableNameResponseDto> getVariableNames(
       final ProcessVariableNameRequestDto variableRequestDto) {

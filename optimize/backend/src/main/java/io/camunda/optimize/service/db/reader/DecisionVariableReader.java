@@ -16,17 +16,21 @@ import io.camunda.optimize.service.db.repository.VariableRepository;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.Collections;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 public class DecisionVariableReader {
 
   private final DecisionDefinitionReader decisionDefinitionReader;
   private final VariableRepository variableRepository;
+
+  public DecisionVariableReader(
+      DecisionDefinitionReader decisionDefinitionReader, VariableRepository variableRepository) {
+    this.decisionDefinitionReader = decisionDefinitionReader;
+    this.variableRepository = variableRepository;
+  }
 
   public List<DecisionVariableNameResponseDto> getInputVariableNames(
       final String decisionDefinitionKey,

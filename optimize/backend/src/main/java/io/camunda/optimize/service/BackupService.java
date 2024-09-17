@@ -32,12 +32,10 @@ import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 public class BackupService {
@@ -47,6 +45,15 @@ public class BackupService {
   private final BackupReader backupReader;
   private final BackupWriter backupWriter;
   private final ConfigurationService configurationService;
+
+  public BackupService(
+      BackupReader backupReader,
+      BackupWriter backupWriter,
+      ConfigurationService configurationService) {
+    this.backupReader = backupReader;
+    this.backupWriter = backupWriter;
+    this.configurationService = configurationService;
+  }
 
   public synchronized void triggerBackup(final Long backupId) {
     validateRepositoryExists();

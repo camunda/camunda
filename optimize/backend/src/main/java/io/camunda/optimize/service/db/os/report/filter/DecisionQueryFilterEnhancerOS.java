@@ -16,11 +16,9 @@ import io.camunda.optimize.service.db.report.filter.DecisionQueryFilterEnhancer;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class DecisionQueryFilterEnhancerOS extends DecisionQueryFilterEnhancer
     implements QueryFilterEnhancerOS<DecisionFilterDto<?>> {
@@ -28,6 +26,15 @@ public class DecisionQueryFilterEnhancerOS extends DecisionQueryFilterEnhancer
   @Getter private final EvaluationDateQueryFilterOS evaluationDateQueryFilter;
   private final DecisionInputVariableQueryFilterOS decisionInputVariableQueryFilter;
   private final DecisionOutputVariableQueryFilterOS decisionOutputVariableQueryFilter;
+
+  public DecisionQueryFilterEnhancerOS(
+      EvaluationDateQueryFilterOS evaluationDateQueryFilter,
+      DecisionInputVariableQueryFilterOS decisionInputVariableQueryFilter,
+      DecisionOutputVariableQueryFilterOS decisionOutputVariableQueryFilter) {
+    this.evaluationDateQueryFilter = evaluationDateQueryFilter;
+    this.decisionInputVariableQueryFilter = decisionInputVariableQueryFilter;
+    this.decisionOutputVariableQueryFilter = decisionOutputVariableQueryFilter;
+  }
 
   @Override
   public List<Query> filterQueries(

@@ -26,17 +26,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessGroupByNoneInterpreterES extends AbstractProcessGroupByInterpreterES
     implements ProcessGroupByInterpreterES {
+
   private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
   @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  public ProcessGroupByNoneInterpreterES(
+      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      ProcessViewInterpreterFacadeES viewInterpreter) {
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {

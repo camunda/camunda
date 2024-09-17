@@ -52,13 +52,11 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public abstract class ReportEvaluationHandler {
 
@@ -70,6 +68,21 @@ public abstract class ReportEvaluationHandler {
   private final ProcessVariableService processVariableService;
   private final DefinitionService definitionService;
   private final CollapsedSubprocessNodesService collapsedSubprocessNodesService;
+
+  public ReportEvaluationHandler(
+      ReportService reportService,
+      SingleReportEvaluator singleReportEvaluator,
+      CombinedReportEvaluator combinedReportEvaluator,
+      ProcessVariableService processVariableService,
+      DefinitionService definitionService,
+      CollapsedSubprocessNodesService collapsedSubprocessNodesService) {
+    this.reportService = reportService;
+    this.singleReportEvaluator = singleReportEvaluator;
+    this.combinedReportEvaluator = combinedReportEvaluator;
+    this.processVariableService = processVariableService;
+    this.definitionService = definitionService;
+    this.collapsedSubprocessNodesService = collapsedSubprocessNodesService;
+  }
 
   public AuthorizedReportEvaluationResult evaluateReport(
       final ReportEvaluationInfo evaluationInfo) {

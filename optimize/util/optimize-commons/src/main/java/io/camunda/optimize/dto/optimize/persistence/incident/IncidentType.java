@@ -12,14 +12,11 @@ import static io.camunda.optimize.service.util.importing.ZeebeConstants.FAILED_J
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @EqualsAndHashCode
-@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public class IncidentType {
 
   public static final IncidentType FAILED_EXTERNAL_TASK =
@@ -32,6 +29,10 @@ public class IncidentType {
   */
   private static final IncidentType FAILED_JOB = new IncidentType(FAILED_JOB_INCIDENT_TYPE);
   private final String id;
+
+  protected IncidentType(String id) {
+    this.id = id;
+  }
 
   @JsonValue
   public String getId() {

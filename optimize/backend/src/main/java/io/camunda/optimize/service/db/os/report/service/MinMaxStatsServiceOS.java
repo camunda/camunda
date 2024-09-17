@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opensearch.client.opensearch._types.Script;
@@ -39,10 +38,14 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class MinMaxStatsServiceOS extends AbstractMinMaxStatsService {
+
   private final OptimizeOpenSearchClient osClient;
+
+  public MinMaxStatsServiceOS(OptimizeOpenSearchClient osClient) {
+    this.osClient = osClient;
+  }
 
   public MinMaxStatDto getMinMaxDateRange(
       final ExecutionContext<? extends SingleReportDataDto, ?> context,

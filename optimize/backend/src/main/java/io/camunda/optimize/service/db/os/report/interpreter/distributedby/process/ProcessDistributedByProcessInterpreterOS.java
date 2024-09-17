@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -43,14 +42,23 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ProcessDistributedByProcessInterpreterOS
     extends AbstractProcessDistributedByInterpreterOS
     implements ProcessDistributedByProcessInterpreter {
+
   @Getter private final ProcessViewInterpreterFacadeOS viewInterpreter;
   private final ConfigurationService configurationService;
   @Getter private final ProcessDefinitionReader processDefinitionReader;
+
+  public ProcessDistributedByProcessInterpreterOS(
+      ProcessViewInterpreterFacadeOS viewInterpreter,
+      ConfigurationService configurationService,
+      ProcessDefinitionReader processDefinitionReader) {
+    this.viewInterpreter = viewInterpreter;
+    this.configurationService = configurationService;
+    this.processDefinitionReader = processDefinitionReader;
+  }
 
   @Override
   public Set<ProcessDistributedBy> getSupportedDistributedBys() {

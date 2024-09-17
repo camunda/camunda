@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.NestedSortValue;
@@ -59,14 +58,25 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class DecisionViewRawDataInterpreterOS extends AbstractDecisionViewRawDataInterpreter
     implements DecisionViewInterpreterOS {
+
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final OptimizeOpenSearchClient osClient;
   @Getter private final DecisionVariableReader decisionVariableReader;
+
+  public DecisionViewRawDataInterpreterOS(
+      ConfigurationService configurationService,
+      ObjectMapper objectMapper,
+      OptimizeOpenSearchClient osClient,
+      DecisionVariableReader decisionVariableReader) {
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+    this.osClient = osClient;
+    this.decisionVariableReader = decisionVariableReader;
+  }
 
   @Override
   public void adjustSearchRequest(

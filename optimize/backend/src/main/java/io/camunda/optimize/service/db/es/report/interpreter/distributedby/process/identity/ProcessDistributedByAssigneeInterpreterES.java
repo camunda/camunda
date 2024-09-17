@@ -20,20 +20,32 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessDistributedByAssigneeInterpreterES
     extends AbstractProcessDistributedByIdentityInterpreterES {
+
   @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
   @Getter private final ConfigurationService configurationService;
   @Getter private final LocalizationService localizationService;
   @Getter private final DefinitionService definitionService;
   @Getter private final AssigneeCandidateGroupService assigneeCandidateGroupService;
+
+  public ProcessDistributedByAssigneeInterpreterES(
+      ProcessViewInterpreterFacadeES viewInterpreter,
+      ConfigurationService configurationService,
+      LocalizationService localizationService,
+      DefinitionService definitionService,
+      AssigneeCandidateGroupService assigneeCandidateGroupService) {
+    this.viewInterpreter = viewInterpreter;
+    this.configurationService = configurationService;
+    this.localizationService = localizationService;
+    this.definitionService = definitionService;
+    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
+  }
 
   @Override
   public Set<ProcessDistributedBy> getSupportedDistributedBys() {

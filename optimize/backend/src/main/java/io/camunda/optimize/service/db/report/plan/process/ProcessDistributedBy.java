@@ -18,10 +18,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.UserTaskDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.VariableDistributedByDto;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
 public enum ProcessDistributedBy {
   PROCESS_DISTRIBUTED_BY_ASSIGNEE(new AssigneeDistributedByDto()),
   PROCESS_DISTRIBUTED_BY_CANDIDATE_GROUP(new CandidateGroupDistributedByDto()),
@@ -34,4 +32,8 @@ public enum ProcessDistributedBy {
   PROCESS_DISTRIBUTED_BY_VARIABLE(new VariableDistributedByDto());
 
   private final ProcessReportDistributedByDto<?> dto;
+
+  private ProcessDistributedBy(ProcessReportDistributedByDto<?> dto) {
+    this.dto = dto;
+  }
 }

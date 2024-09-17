@@ -22,21 +22,33 @@ import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class RawProcessInstanceDataGroupByNoneExecutionPlanInterpreterOS
     extends AbstractProcessExecutionPlanInterpreterOS
     implements RawProcessInstanceDataGroupByNoneExecutionPlanInterpreter {
+
   @Getter private final ProcessGroupByInterpreterFacadeOS groupByInterpreter;
   @Getter private final ProcessViewInterpreterFacadeOS viewInterpreter;
   @Getter private final OptimizeOpenSearchClient osClient;
   @Getter private final ProcessDefinitionReader processDefinitionReader;
   @Getter private final ProcessQueryFilterEnhancerOS queryFilterEnhancer;
+
+  public RawProcessInstanceDataGroupByNoneExecutionPlanInterpreterOS(
+      ProcessGroupByInterpreterFacadeOS groupByInterpreter,
+      ProcessViewInterpreterFacadeOS viewInterpreter,
+      OptimizeOpenSearchClient osClient,
+      ProcessDefinitionReader processDefinitionReader,
+      ProcessQueryFilterEnhancerOS queryFilterEnhancer) {
+    this.groupByInterpreter = groupByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+    this.osClient = osClient;
+    this.processDefinitionReader = processDefinitionReader;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+  }
 
   @Override
   public Set<ProcessExecutionPlan> getSupportedExecutionPlans() {

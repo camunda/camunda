@@ -13,13 +13,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class IngestedImportIndexHandlerProvider {
@@ -28,6 +26,10 @@ public class IngestedImportIndexHandlerProvider {
 
   private Map<String, ImportIndexHandler<?, ?>> allHandlers;
   @Getter private ExternalVariableUpdateImportIndexHandler externalVariableUpdateImportIndexHandler;
+
+  public IngestedImportIndexHandlerProvider(BeanFactory beanFactory) {
+    this.beanFactory = beanFactory;
+  }
 
   @PostConstruct
   public void init() {

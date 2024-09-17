@@ -39,10 +39,8 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Path("/analysis")
 public class AnalysisRestService {
@@ -50,6 +48,15 @@ public class AnalysisRestService {
   private final BranchAnalysisService branchAnalysisService;
   private final OutlierAnalysisService outlierAnalysisService;
   private final SessionService sessionService;
+
+  public AnalysisRestService(
+      BranchAnalysisService branchAnalysisService,
+      OutlierAnalysisService outlierAnalysisService,
+      SessionService sessionService) {
+    this.branchAnalysisService = branchAnalysisService;
+    this.outlierAnalysisService = outlierAnalysisService;
+    this.sessionService = sessionService;
+  }
 
   @POST
   @Path("/correlation")

@@ -12,7 +12,6 @@ import static io.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -21,7 +20,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-@RequiredArgsConstructor
 public abstract class AbstractSecurityConfigurerAdapter {
 
   protected static final String DEEP_SUB_PATH_ANY = "/**";
@@ -32,6 +30,17 @@ public abstract class AbstractSecurityConfigurerAdapter {
       preAuthenticatedAuthenticationProvider;
   protected final SessionService sessionService;
   protected final AuthCookieService authCookieService;
+
+  public AbstractSecurityConfigurerAdapter(
+      ConfigurationService configurationService,
+      CustomPreAuthenticatedAuthenticationProvider preAuthenticatedAuthenticationProvider,
+      SessionService sessionService,
+      AuthCookieService authCookieService) {
+    this.configurationService = configurationService;
+    this.preAuthenticatedAuthenticationProvider = preAuthenticatedAuthenticationProvider;
+    this.sessionService = sessionService;
+    this.authCookieService = authCookieService;
+  }
 
   @SneakyThrows
   protected SecurityFilterChain applyPublicApiOptions(final HttpSecurity http) {

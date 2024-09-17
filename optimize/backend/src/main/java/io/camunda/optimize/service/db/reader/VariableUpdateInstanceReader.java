@@ -12,16 +12,18 @@ import io.camunda.optimize.service.db.repository.VariableRepository;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 public class VariableUpdateInstanceReader {
 
   private final VariableRepository variableRepository;
+
+  public VariableUpdateInstanceReader(VariableRepository variableRepository) {
+    this.variableRepository = variableRepository;
+  }
 
   public List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(
       final Set<String> processInstanceIds) {

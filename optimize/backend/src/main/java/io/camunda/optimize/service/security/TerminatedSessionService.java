@@ -17,13 +17,11 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 public class TerminatedSessionService extends AbstractScheduledService {
@@ -33,6 +31,15 @@ public class TerminatedSessionService extends AbstractScheduledService {
   private final TerminatedUserSessionReader terminatedUserSessionReader;
   private final TerminatedUserSessionWriter terminatedUserSessionWriter;
   private final ConfigurationService configurationService;
+
+  public TerminatedSessionService(
+      TerminatedUserSessionReader terminatedUserSessionReader,
+      TerminatedUserSessionWriter terminatedUserSessionWriter,
+      ConfigurationService configurationService) {
+    this.terminatedUserSessionReader = terminatedUserSessionReader;
+    this.terminatedUserSessionWriter = terminatedUserSessionWriter;
+    this.configurationService = configurationService;
+  }
 
   @PostConstruct
   public void initScheduledCleanup() {

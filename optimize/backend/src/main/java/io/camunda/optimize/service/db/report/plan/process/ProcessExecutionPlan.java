@@ -55,10 +55,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepor
 import io.camunda.optimize.service.db.report.plan.ExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.ReportResultType;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
 public enum ProcessExecutionPlan implements ExecutionPlan {
   FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE_END_DATE_BY_FLOW_NODE(
       PROCESS_VIEW_FLOW_NODE_DURATION,
@@ -640,6 +638,21 @@ public enum ProcessExecutionPlan implements ExecutionPlan {
     this.resultType = resultType;
     this.assigneeReport = assigneeReport;
     commandKey = buildCommandKey();
+  }
+
+  private ProcessExecutionPlan(
+      ProcessView view,
+      ProcessGroupBy groupBy,
+      ProcessDistributedBy distributedBy,
+      ReportResultType resultType,
+      boolean assigneeReport,
+      String commandKey) {
+    this.view = view;
+    this.groupBy = groupBy;
+    this.distributedBy = distributedBy;
+    this.resultType = resultType;
+    this.assigneeReport = assigneeReport;
+    this.commandKey = commandKey;
   }
 
   @Override

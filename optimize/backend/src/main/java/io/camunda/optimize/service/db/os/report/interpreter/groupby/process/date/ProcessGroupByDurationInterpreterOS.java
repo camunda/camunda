@@ -32,7 +32,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
@@ -42,13 +41,24 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ProcessGroupByDurationInterpreterOS extends AbstractProcessGroupByInterpreterOS {
+
   private final DurationAggregationServiceOS durationAggregationService;
   private final MinMaxStatsServiceOS minMaxStatsService;
   @Getter private final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
   @Getter private final ProcessViewInterpreterFacadeOS viewInterpreter;
+
+  public ProcessGroupByDurationInterpreterOS(
+      DurationAggregationServiceOS durationAggregationService,
+      MinMaxStatsServiceOS minMaxStatsService,
+      ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
+      ProcessViewInterpreterFacadeOS viewInterpreter) {
+    this.durationAggregationService = durationAggregationService;
+    this.minMaxStatsService = minMaxStatsService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {

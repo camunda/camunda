@@ -36,12 +36,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessGroupByUserTaskDurationInterpreterES
     extends AbstractGroupByUserTaskInterpreterES {
@@ -51,6 +49,19 @@ public class ProcessGroupByUserTaskDurationInterpreterES
   @Getter private final DefinitionService definitionService;
   @Getter private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
   @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  public ProcessGroupByUserTaskDurationInterpreterES(
+      MinMaxStatsServiceES minMaxStatsService,
+      DurationAggregationServiceES durationAggregationService,
+      DefinitionService definitionService,
+      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      ProcessViewInterpreterFacadeES viewInterpreter) {
+    this.minMaxStatsService = minMaxStatsService;
+    this.durationAggregationService = durationAggregationService;
+    this.definitionService = definitionService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {

@@ -29,11 +29,9 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.time.ZoneId;
 import java.util.Map;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class VariableAggregationServiceES {
@@ -51,6 +49,17 @@ public class VariableAggregationServiceES {
   private final NumberVariableAggregationServiceES numberVariableAggregationService;
   private final DateAggregationServiceES dateAggregationService;
   private final MinMaxStatsServiceES minMaxStatsService;
+
+  public VariableAggregationServiceES(
+      ConfigurationService configurationService,
+      NumberVariableAggregationServiceES numberVariableAggregationService,
+      DateAggregationServiceES dateAggregationService,
+      MinMaxStatsServiceES minMaxStatsService) {
+    this.configurationService = configurationService;
+    this.numberVariableAggregationService = numberVariableAggregationService;
+    this.dateAggregationService = dateAggregationService;
+    this.minMaxStatsService = minMaxStatsService;
+  }
 
   public Optional<Map<String, Aggregation.Builder.ContainerBuilder>> createVariableSubAggregation(
       final VariableAggregationContextES context) {

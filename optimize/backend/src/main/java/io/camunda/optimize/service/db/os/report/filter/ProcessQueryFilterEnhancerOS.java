@@ -52,7 +52,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -60,7 +59,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
@@ -97,6 +95,69 @@ public class ProcessQueryFilterEnhancerOS implements QueryFilterEnhancerOS<Proce
   private final InstancesContainingUserTasksFilterOS instancesContainingUserTasksFilter;
   private final FlowNodeStartDateQueryFilterOS flowNodeStartDateQueryFilter;
   private final FlowNodeEndDateQueryFilterOS flowNodeEndDateQueryFilter;
+
+  public ProcessQueryFilterEnhancerOS(
+      ConfigurationService configurationService,
+      Environment environment,
+      InstanceStartDateQueryFilterOS instanceStartDateQueryFilter,
+      InstanceEndDateQueryFilterOS instanceEndDateQueryFilter,
+      ProcessVariableQueryFilterOS variableQueryFilter,
+      ProcessMultiVariableQueryFilterOS multiVariableQueryFilter,
+      ExecutedFlowNodeQueryFilterOS executedFlowNodeQueryFilter,
+      ExecutingFlowNodeQueryFilterOS executingFlowNodeQueryFilter,
+      CanceledFlowNodeQueryFilterOS canceledFlowNodeQueryFilter,
+      DurationQueryFilterOS durationQueryFilter,
+      RunningInstancesOnlyQueryFilterOS runningInstancesOnlyQueryFilter,
+      CompletedInstancesOnlyQueryFilterOS completedInstancesOnlyQueryFilter,
+      CanceledInstancesOnlyQueryFilterOS canceledInstancesOnlyQueryFilter,
+      NonCanceledInstancesOnlyQueryFilterOS nonCanceledInstancesOnlyQueryFilter,
+      SuspendedInstancesOnlyQueryFilterOS suspendedInstancesOnlyQueryFilter,
+      NonSuspendedInstancesOnlyQueryFilterOS nonSuspendedInstancesOnlyQueryFilter,
+      FlowNodeDurationQueryFilterOS flowNodeDurationQueryFilter,
+      AssigneeQueryFilterOS assigneeQueryFilter,
+      CandidateGroupQueryFilterOS candidateGroupQueryFilter,
+      OpenIncidentQueryFilterOS openIncidentQueryFilter,
+      DeletedIncidentQueryFilterOS deletedIncidentQueryFilter,
+      ResolvedIncidentQueryFilterOS resolvedIncidentQueryFilter,
+      NoIncidentQueryFilterOS noIncidentQueryFilter,
+      RunningFlowNodesOnlyQueryFilterOS runningFlowNodesOnlyQueryFilter,
+      CompletedFlowNodesOnlyQueryFilterOS completedFlowNodesOnlyQueryFilter,
+      CanceledFlowNodesOnlyQueryFilterOS canceledFlowNodesOnlyQueryFilter,
+      CompletedOrCanceledFlowNodesOnlyQueryFilterOS completedOrCanceledFlowNodesOnlyQueryFilter,
+      InstancesContainingUserTasksFilterOS instancesContainingUserTasksFilter,
+      FlowNodeStartDateQueryFilterOS flowNodeStartDateQueryFilter,
+      FlowNodeEndDateQueryFilterOS flowNodeEndDateQueryFilter) {
+    this.configurationService = configurationService;
+    this.environment = environment;
+    this.instanceStartDateQueryFilter = instanceStartDateQueryFilter;
+    this.instanceEndDateQueryFilter = instanceEndDateQueryFilter;
+    this.variableQueryFilter = variableQueryFilter;
+    this.multiVariableQueryFilter = multiVariableQueryFilter;
+    this.executedFlowNodeQueryFilter = executedFlowNodeQueryFilter;
+    this.executingFlowNodeQueryFilter = executingFlowNodeQueryFilter;
+    this.canceledFlowNodeQueryFilter = canceledFlowNodeQueryFilter;
+    this.durationQueryFilter = durationQueryFilter;
+    this.runningInstancesOnlyQueryFilter = runningInstancesOnlyQueryFilter;
+    this.completedInstancesOnlyQueryFilter = completedInstancesOnlyQueryFilter;
+    this.canceledInstancesOnlyQueryFilter = canceledInstancesOnlyQueryFilter;
+    this.nonCanceledInstancesOnlyQueryFilter = nonCanceledInstancesOnlyQueryFilter;
+    this.suspendedInstancesOnlyQueryFilter = suspendedInstancesOnlyQueryFilter;
+    this.nonSuspendedInstancesOnlyQueryFilter = nonSuspendedInstancesOnlyQueryFilter;
+    this.flowNodeDurationQueryFilter = flowNodeDurationQueryFilter;
+    this.assigneeQueryFilter = assigneeQueryFilter;
+    this.candidateGroupQueryFilter = candidateGroupQueryFilter;
+    this.openIncidentQueryFilter = openIncidentQueryFilter;
+    this.deletedIncidentQueryFilter = deletedIncidentQueryFilter;
+    this.resolvedIncidentQueryFilter = resolvedIncidentQueryFilter;
+    this.noIncidentQueryFilter = noIncidentQueryFilter;
+    this.runningFlowNodesOnlyQueryFilter = runningFlowNodesOnlyQueryFilter;
+    this.completedFlowNodesOnlyQueryFilter = completedFlowNodesOnlyQueryFilter;
+    this.canceledFlowNodesOnlyQueryFilter = canceledFlowNodesOnlyQueryFilter;
+    this.completedOrCanceledFlowNodesOnlyQueryFilter = completedOrCanceledFlowNodesOnlyQueryFilter;
+    this.instancesContainingUserTasksFilter = instancesContainingUserTasksFilter;
+    this.flowNodeStartDateQueryFilter = flowNodeStartDateQueryFilter;
+    this.flowNodeEndDateQueryFilter = flowNodeEndDateQueryFilter;
+  }
 
   @Override
   public List<Query> filterQueries(

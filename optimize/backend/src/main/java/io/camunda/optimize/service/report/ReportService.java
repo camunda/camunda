@@ -73,13 +73,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 public class ReportService implements CollectionReferencingService {
@@ -96,6 +94,23 @@ public class ReportService implements CollectionReferencingService {
   private final AuthorizedCollectionService collectionService;
   private final AbstractIdentityService identityService;
   private final DefinitionService defintionService;
+
+  public ReportService(
+      ReportWriter reportWriter,
+      ReportReader reportReader,
+      ReportAuthorizationService reportAuthorizationService,
+      ReportRelationService reportRelationService,
+      AuthorizedCollectionService collectionService,
+      AbstractIdentityService identityService,
+      DefinitionService defintionService) {
+    this.reportWriter = reportWriter;
+    this.reportReader = reportReader;
+    this.reportAuthorizationService = reportAuthorizationService;
+    this.reportRelationService = reportRelationService;
+    this.collectionService = collectionService;
+    this.identityService = identityService;
+    this.defintionService = defintionService;
+  }
 
   private static void copyDefinitionMetaDataToUpdate(
       final ReportDefinitionDto from, final ReportDefinitionUpdateDto to, final String userId) {
@@ -1066,6 +1081,7 @@ public class ReportService implements CollectionReferencingService {
 
   @FunctionalInterface
   private interface CreateReportMethod<RD extends ReportDataDto> {
+
     IdResponseDto create(
         String userId, RD reportData, String reportName, String description, String collectionId);
   }
