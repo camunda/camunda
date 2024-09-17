@@ -15,23 +15,9 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
-import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import io.camunda.zeebe.protocol.record.RecordValue;
-import org.immutables.value.Value;
-
-@Value.Immutable
-@ImmutableProtocol(builder = ImmutableUserRecordValue.Builder.class)
-public interface UserRecordValue extends RecordValue {
-
-  Long getUserKey();
-
-  String getUsername();
-
-  String getName();
-
-  String getEmail();
-
-  String getPassword();
-
-  UserType getUserType();
+public enum UserType {
+  // The default user is automatically created and has full access to the system.
+  DEFAULT,
+  // Regular users are created manually and need to be granted permissions to access the system.
+  REGULAR
 }

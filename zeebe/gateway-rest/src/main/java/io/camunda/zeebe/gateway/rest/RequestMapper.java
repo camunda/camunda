@@ -99,6 +99,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.multipart.MultipartFile;
 
 public class RequestMapper {
@@ -285,7 +286,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, CreateUserRequest> toCreateUserRequest(
-      final UserRequest request) {
+      final UserRequest request, final PasswordEncoder passwordEncoder) {
     return getResult(
         validateUserCreateRequest(request),
         () ->
@@ -293,7 +294,7 @@ public class RequestMapper {
                 request.getUsername(),
                 request.getName(),
                 request.getEmail(),
-                request.getPassword()));
+                passwordEncoder.encode(request.getPassword())));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(

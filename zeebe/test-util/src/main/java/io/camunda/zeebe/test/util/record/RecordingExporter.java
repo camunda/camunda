@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -431,6 +432,10 @@ public final class RecordingExporter implements Exporter {
 
   public static UserRecordStream userRecords() {
     return new UserRecordStream(records(ValueType.USER, UserRecordValue.class));
+  }
+
+  public static UserRecordStream userRecords(final UserIntent intent) {
+    return userRecords().withIntent(intent);
   }
 
   public static ClockRecordStream clockRecords() {
