@@ -131,7 +131,7 @@
       <bpmn:startEvent id="Event_1tf9brs" name="fraud claim investigation started">
         <bpmn:extensionElements>
           <zeebe:ioMapping>
-            <zeebe:output source="=1" target="vendor_claim_frequency" />
+            <zeebe:output source="=5" target="vendor_claim_frequency" />
             <zeebe:output source="=1" target="customer_claim_frequency" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
