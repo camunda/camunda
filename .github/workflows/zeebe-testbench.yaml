@@ -49,8 +49,7 @@ jobs:
           # Replace dots and slashes with dashes
           set -x
           branch=${BRANCH/[\/\.]/-}
-          mvn help:evaluate -q -DforceStdout -D"expression=project.version"
-          ./mvnw help:evaluate -q -DforceStdout -D"expression=project.version"
+          ./mvnw help:evaluate -DforceStdout -D"expression=project.version"
           version=$(mvn help:evaluate -q -DforceStdout -D"expression=project.version")
           echo "image-tag=$version-$branch-${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
         env:
