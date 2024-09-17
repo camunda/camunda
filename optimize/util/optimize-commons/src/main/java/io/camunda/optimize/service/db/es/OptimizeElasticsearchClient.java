@@ -105,7 +105,6 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -118,11 +117,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.FailsafeExecutor;
-import net.jodah.failsafe.RetryPolicy;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.http.HttpEntity;
@@ -147,15 +143,11 @@ import org.springframework.context.ApplicationContext;
 @Slf4j
 public class OptimizeElasticsearchClient extends DatabaseClient {
 
-  private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
   private RestClient restClient;
   private final ObjectMapper objectMapper;
   @Getter private ElasticsearchClient esClient;
   private ElasticsearchAsyncClient elasticsearchAsyncClient;
   private TransportOptionsProvider transportOptionsProvider;
-
-  @Setter
-  private int snapshotInProgressRetryDelaySeconds = DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY;
 
   public OptimizeElasticsearchClient(
       final RestClient restClient,
@@ -213,6 +205,14 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
         if (index != null) {
           final Map analysis = (Map) index.get("analysis");
           if (analysis != null) {
+            Map analyzer = (Map) ((Map) analysis.get("analyzer")).get("is_present_analyzer");
+            if (!List.class.isInstance(analyzer.get("filter"))) {
+              analyzer.put("filter", List.of(analyzer.get("filter")));
+            }
+            Map lowercaseNgram = (Map) ((Map) analysis.get("analyzer")).get("lowercase_ngram");
+            if (!List.class.isInstance(lowercaseNgram.get("filter"))) {
+              lowercaseNgram.put("filter", List.of(lowercaseNgram.get("filter")));
+            }
             final Map tokenizer = (Map) analysis.get("tokenizer");
             if (tokenizer != null) {
               final Map ngramTokenizer = (Map) tokenizer.get("ngram_tokenizer");
@@ -363,6 +363,12 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
   public void createIndex(final CreateIndexRequest request) throws IOException {
     esWithTransportOptions().indices().create(request);
+  }
+
+  @Override
+  @SneakyThrows
+  public long countWithoutPrefix(final String unprefixedIndex) {
+    return countWithoutPrefix(CountRequest.of(c -> c.index(unprefixedIndex)));
   }
 
   public long countWithoutPrefix(final CountRequest request)
@@ -675,7 +681,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   public void deleteIndexByRawIndexNames(final String... indexNames) {
     final String indexNamesString = Arrays.toString(indexNames);
     log.debug("Deleting indices [{}].", indexNamesString);
-    esClientSnapshotFailsafe("DeleteIndex: " + indexNamesString)
+    dbClientSnapshotFailsafe("DeleteIndex: " + indexNamesString)
         .get(
             () ->
                 esWithTransportOptions()
@@ -712,32 +718,9 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     deleteIndex(indexAlias);
   }
 
-  private FailsafeExecutor<Object> esClientSnapshotFailsafe(final String operation) {
-    return Failsafe.with(createSnapshotRetryPolicy(operation, snapshotInProgressRetryDelaySeconds));
-  }
-
-  private RetryPolicy<Object> createSnapshotRetryPolicy(final String operation, final int delay) {
-    return new RetryPolicy<>()
-        .handleIf(
-            failure -> {
-              if (failure instanceof final ElasticsearchException statusException) {
-                return statusException.status() == 400
-                    && statusException.getMessage().contains("snapshot_in_progress_exception");
-              } else {
-                return false;
-              }
-            })
-        .withDelay(Duration.ofSeconds(delay))
-        // no retry limit
-        .withMaxRetries(-1)
-        .onFailedAttempt(
-            e -> {
-              log.warn(
-                  "Execution of {} failed due to a pending snapshot operation, details: {}",
-                  operation,
-                  e.getLastFailure().getMessage());
-              log.info("Will retry the operation in {} seconds...", delay);
-            });
+  @Override
+  public void deleteAllIndexes() {
+    deleteIndexByRawIndexNames("_all");
   }
 
   public final CountResponse count(final CountRequest countRequest) throws IOException {

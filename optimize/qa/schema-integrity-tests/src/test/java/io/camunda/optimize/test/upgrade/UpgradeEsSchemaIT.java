@@ -16,8 +16,6 @@ import java.util.Map;
 import java.util.Set;
 import org.elasticsearch.client.indices.IndexTemplateMetadata;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
-import org.elasticsearch.common.collect.ImmutableOpenMap;
-import org.elasticsearch.common.settings.Settings;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -113,7 +111,7 @@ public class UpgradeEsSchemaIT {
           "Expected settings size: {}, keys: {}",
           expectedSettings.size(),
           expectedSettings.keySet());
-      final ImmutableOpenMap<String, Settings> newSettings = newElasticClient.getSettings();
+      final Map<String, Map> newSettings = newElasticClient.getSettings();
       log.info("Actual settings size: {}, keys: {}", newSettings.size(), newSettings.keySet());
       assertThat(newSettings).isEqualTo(expectedSettings);
       assertThat(newElasticClient.getMappings()).isEqualTo(expectedMappings);

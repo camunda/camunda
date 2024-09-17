@@ -25,6 +25,7 @@ import io.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeUpdateOperationBuilderES;
 import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES;
+import io.camunda.optimize.service.db.repository.es.TaskRepositoryES;
 import io.camunda.optimize.service.db.writer.DecisionDefinitionWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -48,6 +49,7 @@ public class DecisionDefinitionWriterES implements DecisionDefinitionWriter {
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
+  private final TaskRepositoryES taskRepositoryES;
 
   private static final Script MARK_AS_DELETED_SCRIPT =
       Script.of(
@@ -129,8 +131,7 @@ public class DecisionDefinitionWriterES implements DecisionDefinitionWriter {
                   });
 
               final boolean deleted =
-                  ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-                      esClient,
+                  taskRepositoryES.tryUpdateByQueryRequest(
                       String.format("%d decision definitions", decisionDefIds.size()),
                       MARK_AS_DELETED_SCRIPT,
                       Query.of(q -> q.bool(definitionsToDeleteQueryBuilder.build())),

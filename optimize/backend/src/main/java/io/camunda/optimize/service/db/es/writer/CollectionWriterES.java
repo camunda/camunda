@@ -39,6 +39,7 @@ import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeDeleteRequestBuilderES;
 import io.camunda.optimize.service.db.es.builders.OptimizeIndexRequestBuilderES;
 import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES;
+import io.camunda.optimize.service.db.repository.es.TaskRepositoryES;
 import io.camunda.optimize.service.db.writer.CollectionWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
@@ -65,6 +66,7 @@ public class CollectionWriterES implements CollectionWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter formatter;
+  private final TaskRepositoryES taskRepositoryES;
 
   @Override
   public void updateCollection(final CollectionDefinitionUpdateDto collection, final String id) {
@@ -214,8 +216,8 @@ public class CollectionWriterES implements CollectionWriter {
                                                                                     .name()))
                                                                         .value(scopeEntryId))))))));
 
-    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-        esClient, updateItem, removeScopeEntryFromCollectionsScript, query, COLLECTION_INDEX_NAME);
+    taskRepositoryES.tryUpdateByQueryRequest(
+        updateItem, removeScopeEntryFromCollectionsScript, query, COLLECTION_INDEX_NAME);
   }
 
   @Override
