@@ -4,10 +4,10 @@
 # see https://docs.docker.com/build/buildkit/#getting-started
 # Both ubuntu and eclipse-temurin are pinned via digest and not by a strict version tag, as Renovate
 # has trouble with custom versioning schemes
-ARG BASE_IMAGE="ubuntu:jammy"
-ARG BASE_DIGEST="sha256:58b87898e82351c6cf9cf5b9f3c20257bb9e2dcf33af051e12ce532d7f94e3fe"
-ARG JDK_IMAGE="eclipse-temurin:21-jdk-jammy"
-ARG JDK_DIGEST="sha256:c7b6b308fb4d1606571ae3aa9326bacb6146eef4311cf6ea6f5ff53122055f16"
+ARG BASE_IMAGE="ubuntu:noble"
+ARG BASE_DIGEST="sha256:dfc10878be8d8fc9c61cbff33166cb1d1fe44391539243703c72766894fa834a"
+ARG JDK_IMAGE="eclipse-temurin:21-jdk-noble"
+ARG JDK_DIGEST="sha256:48e264b4a3393475e0d778885687adf6012b3ff25f83b6a6bafbcd42a3ffcc65"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
@@ -151,7 +151,7 @@ VOLUME ${ZB_HOME}/data
 VOLUME ${ZB_HOME}/logs
 
 RUN groupadd --gid 1001 camunda && \
-    adduser --system --gid 1001 --uid 1001 --home ${ZB_HOME} camunda && \
+    useradd --system --gid 1001 --uid 1001 --home ${ZB_HOME} camunda && \
     chmod g=u /etc/passwd && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
     # helps to avoid potential permission issues due to default volume ownership.

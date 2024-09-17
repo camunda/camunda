@@ -12,7 +12,7 @@
   "org.opencontainers.image.description": "Camunda platform: the universal process orchestrator",
   "org.opencontainers.image.documentation": "https://docs.camunda.io/docs/self-managed/about-self-managed/",
   "org.opencontainers.image.licenses": "(Apache-2.0 AND LicenseRef-Camunda-License-1.0)",
-  "org.opencontainers.image.ref.name": "ubuntu:jammy",
+  "org.opencontainers.image.ref.name": "ubuntu:noble",
   "org.opencontainers.image.revision": $REVISION,
   "org.opencontainers.image.source": "https://github.com/camunda/camunda",
   "org.opencontainers.image.title": "Camunda Platform",
