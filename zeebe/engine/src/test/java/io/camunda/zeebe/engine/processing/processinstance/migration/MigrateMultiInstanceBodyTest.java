@@ -760,7 +760,14 @@ public class MigrateMultiInstanceBodyTest {
 
     final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
 
-    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+    final var jobs =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("A")
+            .limit(3)
+            .toList();
+
+    engine.job().withKey(jobs.getFirst().getKey()).complete();
 
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
@@ -833,17 +840,11 @@ public class MigrateMultiInstanceBodyTest {
             tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "A"),
             tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "A"));
 
-    // after resolving the incident, the first failing job should be completed without a problem
+    // after migrating, we can successfully resolve the incident
     engine.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
-    final var jobs =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withType("A")
-            .withProcessInstanceKey(processInstanceKey)
-            .limit(3)
-            .toList();
-
-    jobs.forEach(job -> engine.job().withKey(job.getKey()).complete());
+    // and complete the two still active jobs without problems
+    jobs.stream().skip(1).forEach(job -> engine.job().withKey(job.getKey()).complete());
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -905,7 +906,14 @@ public class MigrateMultiInstanceBodyTest {
 
     final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
 
-    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+    final var jobs =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("A")
+            .limit(3)
+            .toList();
+
+    engine.job().withKey(jobs.getFirst().getKey()).complete();
 
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
@@ -978,17 +986,11 @@ public class MigrateMultiInstanceBodyTest {
             tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "A"),
             tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "A"));
 
-    // after resolving the incident, the first failing job should be completed without a problem
+    // after migrating, we can successfully resolve the incident
     engine.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
-    final var jobs =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withType("A")
-            .withProcessInstanceKey(processInstanceKey)
-            .limit(3)
-            .toList();
-
-    jobs.forEach(job -> engine.job().withKey(job.getKey()).complete());
+    // and complete the two still active jobs without problems
+    jobs.stream().skip(1).forEach(job -> engine.job().withKey(job.getKey()).complete());
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
