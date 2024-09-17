@@ -587,6 +587,7 @@ test.describe('task details page', () => {
 
     await tasksPage.openTask('Confirm Employee Details');
     await tasksPage.assignToMeButton.click();
+    await page.reload();
     await expect(taskFormView.nameInput).toHaveValue('Ben');
 
     await expect(taskFormView.form.getByText('Marketing')).toBeVisible({
@@ -598,6 +599,7 @@ test.describe('task details page', () => {
 
     await tasksPage.filterBy('Completed');
     await tasksPage.openTask('Employee Details');
+    await page.reload();
     await expect(taskFormView.nameInput).toHaveValue('Ben');
     await expect(taskFormView.form.getByText('Marketing')).toBeVisible();
 
