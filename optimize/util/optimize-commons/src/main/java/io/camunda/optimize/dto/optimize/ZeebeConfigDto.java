@@ -7,13 +7,16 @@
  */
 package io.camunda.optimize.dto.optimize;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-@AllArgsConstructor
 public class ZeebeConfigDto implements SchedulerConfig {
 
   private String name;
   private int partitionCount;
+
+  public ZeebeConfigDto(String name, int partitionCount) {
+    this.name = name;
+    this.partitionCount = partitionCount;
+  }
 }

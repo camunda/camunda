@@ -7,11 +7,9 @@
  */
 package io.camunda.optimize.service.mixpanel.client;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-@AllArgsConstructor
 public class MixpanelHeartbeatMetrics {
 
   private long processReportCount;
@@ -21,4 +19,21 @@ public class MixpanelHeartbeatMetrics {
   private long dashboardShareCount;
   private long alertCount;
   private long taskReportCount;
+
+  public MixpanelHeartbeatMetrics(
+      long processReportCount,
+      long decisionReportCount,
+      long dashboardCount,
+      long reportShareCount,
+      long dashboardShareCount,
+      long alertCount,
+      long taskReportCount) {
+    this.processReportCount = processReportCount;
+    this.decisionReportCount = decisionReportCount;
+    this.dashboardCount = dashboardCount;
+    this.reportShareCount = reportShareCount;
+    this.dashboardShareCount = dashboardShareCount;
+    this.alertCount = alertCount;
+    this.taskReportCount = taskReportCount;
+  }
 }

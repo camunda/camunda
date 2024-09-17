@@ -83,13 +83,11 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Slf4j
 @Component
 @Conditional(ElasticSearchCondition.class)
@@ -98,6 +96,15 @@ public class DefinitionReaderES implements DefinitionReader {
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
+
+  public DefinitionReaderES(
+      OptimizeElasticsearchClient esClient,
+      ConfigurationService configurationService,
+      ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public Optional<DefinitionWithTenantIdsDto> getDefinitionWithAvailableTenants(

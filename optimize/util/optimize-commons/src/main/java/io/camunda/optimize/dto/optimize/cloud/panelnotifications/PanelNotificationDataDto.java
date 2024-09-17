@@ -7,17 +7,15 @@
  */
 package io.camunda.optimize.dto.optimize.cloud.panelnotifications;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @EqualsAndHashCode
 @Builder
 @Data
 public class PanelNotificationDataDto {
+
   private final String uniqueId;
   private final String source;
   private final String type;
@@ -25,4 +23,21 @@ public class PanelNotificationDataDto {
   private final String title;
   private final String description;
   private final PanelNotificationMetaDataDto meta;
+
+  private PanelNotificationDataDto(
+      String uniqueId,
+      String source,
+      String type,
+      String orgId,
+      String title,
+      String description,
+      PanelNotificationMetaDataDto meta) {
+    this.uniqueId = uniqueId;
+    this.source = source;
+    this.type = type;
+    this.orgId = orgId;
+    this.title = title;
+    this.description = description;
+    this.meta = meta;
+  }
 }

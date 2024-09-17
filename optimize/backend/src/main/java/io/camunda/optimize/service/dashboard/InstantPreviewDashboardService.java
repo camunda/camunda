@@ -47,7 +47,6 @@ import java.util.regex.Pattern;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
 import java.util.zip.Checksum;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -55,7 +54,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Slf4j
-@AllArgsConstructor
 @Component
 public class InstantPreviewDashboardService {
 
@@ -77,8 +75,28 @@ public class InstantPreviewDashboardService {
   protected final ConfigurationService configurationService;
   private HashMap<String, Long> templateChecksums;
 
+  public InstantPreviewDashboardService(
+      DashboardService dashboardService,
+      ReportService reportService,
+      InstantDashboardMetadataReader instantDashboardMetadataReader,
+      InstantDashboardMetadataWriter instantDashboardMetadataWriter,
+      EntityImportService entityImportService,
+      DefinitionService definitionService,
+      ConfigurationService configurationService,
+      HashMap<String, Long> templateChecksums) {
+    this.dashboardService = dashboardService;
+    this.reportService = reportService;
+    this.instantDashboardMetadataReader = instantDashboardMetadataReader;
+    this.instantDashboardMetadataWriter = instantDashboardMetadataWriter;
+    this.entityImportService = entityImportService;
+    this.definitionService = definitionService;
+    this.configurationService = configurationService;
+    this.templateChecksums = templateChecksums;
+  }
+
   @FunctionalInterface
   public interface BiConsumerWithParameters<T, U> {
+
     void accept(T t, U u);
   }
 

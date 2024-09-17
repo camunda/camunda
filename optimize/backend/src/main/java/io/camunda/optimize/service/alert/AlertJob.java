@@ -31,7 +31,6 @@ import io.camunda.optimize.util.SuppressionConstants;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
@@ -40,7 +39,6 @@ import org.quartz.JobKey;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-@AllArgsConstructor
 @Slf4j
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class AlertJob implements Job {
@@ -54,6 +52,21 @@ public class AlertJob implements Job {
   private final ReportReader reportReader;
   private final AlertWriter alertWriter;
   private final PlainReportEvaluationHandler reportEvaluator;
+
+  public AlertJob(
+      ConfigurationService configurationService,
+      List<AlertNotificationService> notificationServices,
+      AlertReader alertReader,
+      ReportReader reportReader,
+      AlertWriter alertWriter,
+      PlainReportEvaluationHandler reportEvaluator) {
+    this.configurationService = configurationService;
+    this.notificationServices = notificationServices;
+    this.alertReader = alertReader;
+    this.reportReader = reportReader;
+    this.alertWriter = alertWriter;
+    this.reportEvaluator = reportEvaluator;
+  }
 
   @Override
   public void execute(final JobExecutionContext jobExecutionContext) {

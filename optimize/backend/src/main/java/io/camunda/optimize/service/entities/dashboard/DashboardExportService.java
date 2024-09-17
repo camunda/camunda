@@ -24,11 +24,9 @@ import jakarta.ws.rs.NotFoundException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class DashboardExportService {
@@ -36,6 +34,15 @@ public class DashboardExportService {
   private final DashboardService dashboardService;
   private final ReportExportService reportExportService;
   private final AuthorizedCollectionService collectionService;
+
+  public DashboardExportService(
+      DashboardService dashboardService,
+      ReportExportService reportExportService,
+      AuthorizedCollectionService collectionService) {
+    this.dashboardService = dashboardService;
+    this.reportExportService = reportExportService;
+    this.collectionService = collectionService;
+  }
 
   public List<OptimizeEntityExportDto> getCompleteDashboardExport(final Set<String> dashboardIds) {
     log.debug("Exporting dashboards with IDs {} via API.", dashboardIds);

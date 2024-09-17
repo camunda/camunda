@@ -50,19 +50,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-@AllArgsConstructor
 public class KpiService {
 
   private final ReportService reportService;
   private final LocalizationService localizationService;
   private final PlainReportEvaluationHandler reportEvaluationHandler;
+
+  public KpiService(
+      ReportService reportService,
+      LocalizationService localizationService,
+      PlainReportEvaluationHandler reportEvaluationHandler) {
+    this.reportService = reportService;
+    this.localizationService = localizationService;
+    this.reportEvaluationHandler = reportEvaluationHandler;
+  }
 
   public List<KpiResultDto> evaluateKpiReports(final String processDefinitionKey) {
     final List<SingleProcessReportDefinitionRequestDto> kpiReports =
@@ -236,9 +243,14 @@ public class KpiService {
   }
 
   @Data
-  @AllArgsConstructor
   private static class TargetAndUnit {
+
     private String target;
     private TargetValueUnit targetValueUnit;
+
+    public TargetAndUnit(String target, TargetValueUnit targetValueUnit) {
+      this.target = target;
+      this.targetValueUnit = targetValueUnit;
+    }
   }
 }

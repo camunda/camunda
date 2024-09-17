@@ -41,20 +41,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(DashboardRestService.DASHBOARD_PATH)
 @Component
 public class DashboardRestService {
+
   public static final String DASHBOARD_PATH = "/dashboard";
   public static final String INSTANT_PREVIEW_PATH = "/instant";
   private final DashboardService dashboardService;
   private final InstantPreviewDashboardService instantPreviewDashboardService;
   private final SessionService sessionService;
   private final DashboardRestMapper dashboardRestMapper;
+
+  public DashboardRestService(
+      DashboardService dashboardService,
+      InstantPreviewDashboardService instantPreviewDashboardService,
+      SessionService sessionService,
+      DashboardRestMapper dashboardRestMapper) {
+    this.dashboardService = dashboardService;
+    this.instantPreviewDashboardService = instantPreviewDashboardService;
+    this.sessionService = sessionService;
+    this.dashboardRestMapper = dashboardRestMapper;
+  }
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)

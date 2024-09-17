@@ -15,14 +15,15 @@ import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
-@AllArgsConstructor
 @Slf4j
 public class UpgradeValidationService {
+
   private static final String ENVIRONMENT_CONFIG_FILE = "environment-config.yaml";
+
+  public UpgradeValidationService() {}
 
   public void validateSchemaVersions(
       @NonNull final String schemaVersion,

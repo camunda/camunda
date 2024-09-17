@@ -19,18 +19,28 @@ import io.camunda.optimize.service.db.repository.TaskRepository;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class DecisionInstanceWriter {
+
   private final IndexRepository indexRepository;
   private final TaskRepository taskRepository;
   private final Repository repository;
   private final DecisionInstanceRepository decisionInstanceRepository;
+
+  public DecisionInstanceWriter(
+      IndexRepository indexRepository,
+      TaskRepository taskRepository,
+      Repository repository,
+      DecisionInstanceRepository decisionInstanceRepository) {
+    this.indexRepository = indexRepository;
+    this.taskRepository = taskRepository;
+    this.repository = repository;
+    this.decisionInstanceRepository = decisionInstanceRepository;
+  }
 
   public void importDecisionInstances(List<DecisionInstanceDto> decisionInstanceDtos) {
     final String importItemName = "decision instances";

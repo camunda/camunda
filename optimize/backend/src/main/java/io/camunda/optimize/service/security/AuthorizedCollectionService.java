@@ -23,12 +23,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Slf4j
-@AllArgsConstructor
 @Component
 public class AuthorizedCollectionService {
 
@@ -41,6 +39,12 @@ public class AuthorizedCollectionService {
 
   private final CollectionReader collectionReader;
   private final AbstractIdentityService identityService;
+
+  public AuthorizedCollectionService(
+      CollectionReader collectionReader, AbstractIdentityService identityService) {
+    this.collectionReader = collectionReader;
+    this.identityService = identityService;
+  }
 
   public Optional<RoleType> getUsersCollectionResourceRole(
       final String userId, final String collectionId) throws NotFoundException, ForbiddenException {

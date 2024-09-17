@@ -22,12 +22,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class DashboardClient {
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public DashboardClient(Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public DashboardDefinitionRestDto getDashboard(final String dashboardId) {
     return getRequestExecutor()

@@ -20,7 +20,6 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
@@ -29,13 +28,24 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class DecisionInstanceRepositoryOS implements DecisionInstanceRepository {
+
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
   private final DateTimeFormatter dateTimeFormatter;
+
+  public DecisionInstanceRepositoryOS(
+      OptimizeOpenSearchClient osClient,
+      ConfigurationService configurationService,
+      OptimizeIndexNameService indexNameService,
+      DateTimeFormatter dateTimeFormatter) {
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+    this.indexNameService = indexNameService;
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
 
   @Override
   public void importDecisionInstances(

@@ -24,21 +24,31 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class DecisionInstanceRepositoryES implements DecisionInstanceRepository {
+
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
   private final TaskRepositoryES taskRepositoryES;
+
+  public DecisionInstanceRepositoryES(
+      OptimizeElasticsearchClient esClient,
+      ConfigurationService configurationService,
+      ObjectMapper objectMapper,
+      DateTimeFormatter dateTimeFormatter) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
 
   @Override
   public void importDecisionInstances(

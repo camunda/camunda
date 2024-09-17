@@ -12,16 +12,18 @@ import static io.camunda.optimize.service.util.configuration.ConfigurationServic
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Locale;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
-@AllArgsConstructor
 public enum DatabaseType {
   ELASTICSEARCH(ELASTICSEARCH_DATABASE_PROPERTY),
   OPENSEARCH(OPENSEARCH_DATABASE_PROPERTY);
 
   private final String id;
+
+  private DatabaseType(String id) {
+    this.id = id;
+  }
 
   @JsonValue
   public String getId() {

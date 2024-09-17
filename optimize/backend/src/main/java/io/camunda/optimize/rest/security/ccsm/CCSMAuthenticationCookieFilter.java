@@ -31,13 +31,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 
 @Conditional(CCSMCondition.class)
-@AllArgsConstructor
 public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProcessingFilter {
 
   private final CCSMTokenService ccsmTokenService;
@@ -46,6 +44,10 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
       final CCSMTokenService ccsmTokenService, final AuthenticationManager authenticationManager) {
     this.ccsmTokenService = ccsmTokenService;
     setAuthenticationManager(authenticationManager);
+  }
+
+  public CCSMAuthenticationCookieFilter(CCSMTokenService ccsmTokenService) {
+    this.ccsmTokenService = ccsmTokenService;
   }
 
   @Override

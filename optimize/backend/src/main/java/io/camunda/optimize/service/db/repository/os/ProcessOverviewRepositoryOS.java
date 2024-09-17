@@ -22,7 +22,6 @@ import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -34,11 +33,17 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ProcessOverviewRepositoryOS implements ProcessOverviewRepository {
+
   private final OptimizeOpenSearchClient osClient;
   private final OptimizeIndexNameService indexNameService;
+
+  public ProcessOverviewRepositoryOS(
+      OptimizeOpenSearchClient osClient, OptimizeIndexNameService indexNameService) {
+    this.osClient = osClient;
+    this.indexNameService = indexNameService;
+  }
 
   @Override
   public void updateProcessConfiguration(

@@ -13,17 +13,21 @@ import io.camunda.optimize.service.entities.dashboard.DashboardExportService;
 import io.camunda.optimize.service.entities.report.ReportExportService;
 import java.util.List;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class EntityExportService {
 
   private final ReportExportService reportExportService;
   private final DashboardExportService dashboardExportService;
+
+  public EntityExportService(
+      ReportExportService reportExportService, DashboardExportService dashboardExportService) {
+    this.reportExportService = reportExportService;
+    this.dashboardExportService = dashboardExportService;
+  }
 
   public List<ReportDefinitionExportDto> getReportExportDtos(final Set<String> reportIds) {
     return reportExportService.getReportExportDtos(reportIds);

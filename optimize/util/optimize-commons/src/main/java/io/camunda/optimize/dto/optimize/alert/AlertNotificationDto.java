@@ -8,10 +8,8 @@
 package io.camunda.optimize.dto.optimize.alert;
 
 import io.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
-@AllArgsConstructor
 @Data
 public class AlertNotificationDto {
 
@@ -20,4 +18,17 @@ public class AlertNotificationDto {
   private final AlertNotificationType type;
   private final String alertMessage;
   private final String reportLink;
+
+  public AlertNotificationDto(
+      AlertDefinitionDto alert,
+      Double currentValue,
+      AlertNotificationType type,
+      String alertMessage,
+      String reportLink) {
+    this.alert = alert;
+    this.currentValue = currentValue;
+    this.type = type;
+    this.alertMessage = alertMessage;
+    this.reportLink = reportLink;
+  }
 }

@@ -20,7 +20,6 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
@@ -30,12 +29,16 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadataWriter {
+
   private final OptimizeOpenSearchClient osClient;
+
+  public InstantDashboardMetadataWriterOS(OptimizeOpenSearchClient osClient) {
+    this.osClient = osClient;
+  }
 
   @Override
   public void saveInstantDashboard(final InstantDashboardDataDto dashboardDataDto) {
@@ -66,6 +69,7 @@ public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadat
   public List<String> deleteOutdatedTemplateEntriesAndGetExistingDashboardIds(
       final List<Long> hashesAllowed) throws IOException {
     record Result(String dashboardId) {}
+
     BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
     SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()

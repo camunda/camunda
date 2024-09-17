@@ -14,11 +14,9 @@ import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import jakarta.ws.rs.ForbiddenException;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class SettingsService {
@@ -27,6 +25,17 @@ public class SettingsService {
   private final SettingsWriter settingsWriter;
   private final AbstractIdentityService identityService;
   private final ConfigurationService configurationService;
+
+  public SettingsService(
+      SettingsReader settingsReader,
+      SettingsWriter settingsWriter,
+      AbstractIdentityService identityService,
+      ConfigurationService configurationService) {
+    this.settingsReader = settingsReader;
+    this.settingsWriter = settingsWriter;
+    this.identityService = identityService;
+    this.configurationService = configurationService;
+  }
 
   public SettingsDto getSettings() {
     return settingsReader

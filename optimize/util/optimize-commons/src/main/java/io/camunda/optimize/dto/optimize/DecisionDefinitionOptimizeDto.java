@@ -12,12 +12,10 @@ import io.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-@AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto {
@@ -57,6 +55,15 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto
       final List<DecisionVariableNameResponseDto> outputVariableNames) {
     super(
         id, key, version, versionTag, name, dataSource, tenantId, deleted, DefinitionType.DECISION);
+    this.dmn10Xml = dmn10Xml;
+    this.inputVariableNames = inputVariableNames;
+    this.outputVariableNames = outputVariableNames;
+  }
+
+  public DecisionDefinitionOptimizeDto(
+      String dmn10Xml,
+      List<DecisionVariableNameResponseDto> inputVariableNames,
+      List<DecisionVariableNameResponseDto> outputVariableNames) {
     this.dmn10Xml = dmn10Xml;
     this.inputVariableNames = inputVariableNames;
     this.outputVariableNames = outputVariableNames;

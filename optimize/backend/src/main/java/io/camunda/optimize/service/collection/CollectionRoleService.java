@@ -25,12 +25,10 @@ import jakarta.ws.rs.NotFoundException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
-@AllArgsConstructor
 @Slf4j
 public class CollectionRoleService {
 
@@ -38,6 +36,17 @@ public class CollectionRoleService {
   private final CollectionWriter collectionWriter;
   private final CollectionReader collectionReader;
   private final AbstractIdentityService identityService;
+
+  public CollectionRoleService(
+      AuthorizedCollectionService authorizedCollectionService,
+      CollectionWriter collectionWriter,
+      CollectionReader collectionReader,
+      AbstractIdentityService identityService) {
+    this.authorizedCollectionService = authorizedCollectionService;
+    this.collectionWriter = collectionWriter;
+    this.collectionReader = collectionReader;
+    this.identityService = identityService;
+  }
 
   public void addRolesToCollection(
       final String userId,

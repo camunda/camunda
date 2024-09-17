@@ -28,12 +28,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
@@ -41,6 +39,12 @@ public class InstantDashboardMetadataWriterES implements InstantDashboardMetadat
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+
+  public InstantDashboardMetadataWriterES(
+      OptimizeElasticsearchClient esClient, ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public void saveInstantDashboard(InstantDashboardDataDto dashboardDataDto) {

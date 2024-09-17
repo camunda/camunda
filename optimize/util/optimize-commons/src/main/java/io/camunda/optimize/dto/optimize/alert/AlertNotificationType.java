@@ -10,10 +10,8 @@ package io.camunda.optimize.dto.optimize.alert;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Locale;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-@AllArgsConstructor
 @Getter
 public enum AlertNotificationType {
   NEW("alert_new_triggered"),
@@ -22,6 +20,10 @@ public enum AlertNotificationType {
   ;
 
   @JsonIgnore private final String utmSource;
+
+  private AlertNotificationType(String utmSource) {
+    this.utmSource = utmSource;
+  }
 
   @JsonValue
   public String getId() {

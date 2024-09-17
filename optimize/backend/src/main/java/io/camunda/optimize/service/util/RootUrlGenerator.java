@@ -9,11 +9,9 @@ package io.camunda.optimize.service.util;
 
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class RootUrlGenerator {
@@ -22,6 +20,10 @@ public class RootUrlGenerator {
   private static final String HTTPS_PREFIX = "https://";
 
   private final ConfigurationService configurationService;
+
+  public RootUrlGenerator(ConfigurationService configurationService) {
+    this.configurationService = configurationService;
+  }
 
   public String getRootUrl() {
     final Optional<String> containerAccessUrl = configurationService.getContainerAccessUrl();

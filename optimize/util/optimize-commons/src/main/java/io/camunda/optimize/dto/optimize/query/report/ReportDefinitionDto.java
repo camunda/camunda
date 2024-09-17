@@ -16,12 +16,10 @@ import io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityType;
 import jakarta.validation.Valid;
 import java.time.OffsetDateTime;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
 
 @Data
-@AllArgsConstructor
 @SuperBuilder(toBuilder = true)
 public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionEntity {
 
@@ -41,6 +39,31 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
   private final ReportType reportType;
 
   protected ReportDefinitionDto(final D data, final Boolean combined, final ReportType reportType) {
+    this.data = data;
+    this.combined = combined;
+    this.reportType = reportType;
+  }
+
+  public ReportDefinitionDto(
+      String id,
+      String name,
+      String description,
+      OffsetDateTime lastModified,
+      OffsetDateTime created,
+      String owner,
+      String lastModifier,
+      String collectionId,
+      @Valid D data,
+      boolean combined,
+      ReportType reportType) {
+    this.id = id;
+    this.name = name;
+    this.description = description;
+    this.lastModified = lastModified;
+    this.created = created;
+    this.owner = owner;
+    this.lastModifier = lastModifier;
+    this.collectionId = collectionId;
     this.data = data;
     this.combined = combined;
     this.reportType = reportType;

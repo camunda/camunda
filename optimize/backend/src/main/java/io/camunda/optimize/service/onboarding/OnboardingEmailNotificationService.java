@@ -18,12 +18,10 @@ import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.util.RootUrlGenerator;
 import java.util.Map;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class OnboardingEmailNotificationService {
@@ -38,6 +36,19 @@ public class OnboardingEmailNotificationService {
   private final AbstractIdentityService identityService;
   private final DefinitionService definitionService;
   private final RootUrlGenerator rootUrlGenerator;
+
+  public OnboardingEmailNotificationService(
+      EmailService emailService,
+      ProcessOverviewReader processOverviewReader,
+      AbstractIdentityService identityService,
+      DefinitionService definitionService,
+      RootUrlGenerator rootUrlGenerator) {
+    this.emailService = emailService;
+    this.processOverviewReader = processOverviewReader;
+    this.identityService = identityService;
+    this.definitionService = definitionService;
+    this.rootUrlGenerator = rootUrlGenerator;
+  }
 
   public void sendOnboardingEmailWithErrorHandling(@NonNull final String processKey) {
     final Optional<ProcessOverviewDto> optProcessOverview =

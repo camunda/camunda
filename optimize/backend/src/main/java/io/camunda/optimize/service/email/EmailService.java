@@ -25,7 +25,6 @@ import jakarta.mail.internet.MimeMessage;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +33,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 import org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class EmailService {
@@ -42,6 +40,12 @@ public class EmailService {
   private final ConfigurationService configurationService;
 
   @Autowired private final FreeMarkerConfigurer freemarkerConfigurer;
+
+  public EmailService(
+      ConfigurationService configurationService, FreeMarkerConfigurer freemarkerConfigurer) {
+    this.configurationService = configurationService;
+    this.freemarkerConfigurer = freemarkerConfigurer;
+  }
 
   public void sendTemplatedEmailWithErrorHandling(
       final String recipient,

@@ -7,16 +7,16 @@
  */
 package io.camunda.optimize.rest.security;
 
-import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 public class CustomPreAuthenticatedAuthenticationProvider implements AuthenticationProvider {
+
+  public CustomPreAuthenticatedAuthenticationProvider() {}
 
   @Override
   public Authentication authenticate(final Authentication authentication)

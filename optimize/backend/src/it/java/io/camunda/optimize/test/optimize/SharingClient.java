@@ -18,12 +18,14 @@ import io.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import io.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import jakarta.ws.rs.core.Response;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class SharingClient {
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public SharingClient(Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public DashboardDefinitionRestDto evaluateDashboard(final String dashboardShareId) {
     return getRequestExecutor()

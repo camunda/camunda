@@ -39,14 +39,12 @@ import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ImportRepositoryES implements ImportRepository {
 
@@ -54,6 +52,17 @@ public class ImportRepositoryES implements ImportRepository {
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
   private final DateTimeFormatter dateTimeFormatter;
+
+  public ImportRepositoryES(
+      OptimizeElasticsearchClient esClient,
+      ObjectMapper objectMapper,
+      ConfigurationService configurationService,
+      DateTimeFormatter dateTimeFormatter) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.configurationService = configurationService;
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
 
   @Override
   public List<TimestampBasedImportIndexDto> getAllTimestampBasedImportIndicesForTypes(

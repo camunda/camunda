@@ -8,15 +8,18 @@
 package io.camunda.optimize.dto.optimize.query.report.single.process.view;
 
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-@AllArgsConstructor
 public class VariableViewPropertyDto implements TypedViewPropertyDto {
 
   private final String name;
   private final VariableType type;
+
+  public VariableViewPropertyDto(String name, VariableType type) {
+    this.name = name;
+    this.type = type;
+  }
 
   @Override
   public String toString() {

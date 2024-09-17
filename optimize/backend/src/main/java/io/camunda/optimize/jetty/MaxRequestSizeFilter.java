@@ -21,19 +21,23 @@ import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.http.MimeTypes;
 
 @Slf4j
-@AllArgsConstructor
 public class MaxRequestSizeFilter implements Filter {
 
   public static final String MESSAGE_NO_CONTENT_LENGTH = "No Content-Length header in request.";
 
   private final Callable<ObjectMapper> objectMapperProvider;
   private final Callable<Long> maxSizeProvider;
+
+  public MaxRequestSizeFilter(
+      Callable<ObjectMapper> objectMapperProvider, Callable<Long> maxSizeProvider) {
+    this.objectMapperProvider = objectMapperProvider;
+    this.maxSizeProvider = maxSizeProvider;
+  }
 
   @Override
   public void init(final FilterConfig filterConfig) throws ServletException {

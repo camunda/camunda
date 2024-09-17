@@ -17,25 +17,29 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.util.ObjectBuilderBase;
 
-@AllArgsConstructor
 @Slf4j
 public class OpenSearchOperation {
 
   private static final String INDEX_FIELD = "index";
   protected OptimizeIndexNameService indexNameService;
 
+  public OpenSearchOperation(OptimizeIndexNameService indexNameService) {
+    this.indexNameService = indexNameService;
+  }
+
   protected <T extends ObjectBuilderBase> T applyIndexPrefix(T request) {
     try {
       Field indexField = request.getClass().getDeclaredField(INDEX_FIELD);
       indexField.setAccessible(true);
       Object indexFieldContent = indexField.get(request);
-      if (Objects.isNull(indexFieldContent)) return request;
+      if (Objects.isNull(indexFieldContent)) {
+        return request;
+      }
       if (indexFieldContent instanceof final String currentIndex) {
         indexField.set(request, getIndexAliasFor(currentIndex));
       } else if (indexFieldContent instanceof List<?> currentIndexes) {

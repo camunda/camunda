@@ -17,11 +17,9 @@ import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfigurati
 import io.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitionCleanupConfiguration;
 import java.time.OffsetDateTime;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class EngineDataDecisionCleanupService extends CleanupService {
@@ -29,6 +27,15 @@ public class EngineDataDecisionCleanupService extends CleanupService {
   private final ConfigurationService configurationService;
   private final DecisionDefinitionReader decisionDefinitionReader;
   private final DecisionInstanceWriter decisionInstanceWriter;
+
+  public EngineDataDecisionCleanupService(
+      ConfigurationService configurationService,
+      DecisionDefinitionReader decisionDefinitionReader,
+      DecisionInstanceWriter decisionInstanceWriter) {
+    this.configurationService = configurationService;
+    this.decisionDefinitionReader = decisionDefinitionReader;
+    this.decisionInstanceWriter = decisionInstanceWriter;
+  }
 
   @Override
   public boolean isEnabled() {

@@ -19,18 +19,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Conditional(CCSMCondition.class)
 @Component
 public class CamundaCCSMDefinitionAuthorizationService
     implements DataSourceDefinitionAuthorizationService {
 
   private final CamundaCCSMTenantAuthorizationService tenantAuthorizationService;
+
+  public CamundaCCSMDefinitionAuthorizationService(
+      CamundaCCSMTenantAuthorizationService tenantAuthorizationService) {
+    this.tenantAuthorizationService = tenantAuthorizationService;
+  }
 
   @Override
   public List<TenantDto> resolveAuthorizedTenantsForProcess(

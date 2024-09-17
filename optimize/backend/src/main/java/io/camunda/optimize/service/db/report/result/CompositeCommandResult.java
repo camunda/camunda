@@ -52,7 +52,6 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
 @Data
@@ -615,8 +614,6 @@ public class CompositeCommandResult {
   }
 
   @Data
-  @AllArgsConstructor
-  @NoArgsConstructor
   public static class ViewMeasureIdentifier {
 
     private AggregationDto aggregationType;
@@ -624,6 +621,15 @@ public class CompositeCommandResult {
 
     public ViewMeasureIdentifier(final AggregationDto aggregationDto) {
       aggregationType = aggregationDto;
+    }
+
+    public ViewMeasureIdentifier(AggregationDto aggregationType,
+        UserTaskDurationTime userTaskDurationTime) {
+      this.aggregationType = aggregationType;
+      this.userTaskDurationTime = userTaskDurationTime;
+    }
+
+    public ViewMeasureIdentifier() {
     }
   }
 }

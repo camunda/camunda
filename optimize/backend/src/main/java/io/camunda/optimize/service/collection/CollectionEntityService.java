@@ -26,11 +26,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class CollectionEntityService {
@@ -40,6 +38,19 @@ public class CollectionEntityService {
   private final AlertService alertService;
   private final ReportService reportService;
   private final DashboardService dashboardService;
+
+  public CollectionEntityService(
+      AuthorizedEntitiesService authorizedEntitiesService,
+      AuthorizedCollectionService authorizedCollectionService,
+      AlertService alertService,
+      ReportService reportService,
+      DashboardService dashboardService) {
+    this.authorizedEntitiesService = authorizedEntitiesService;
+    this.authorizedCollectionService = authorizedCollectionService;
+    this.alertService = alertService;
+    this.reportService = reportService;
+    this.dashboardService = dashboardService;
+  }
 
   public List<EntityResponseDto> getAuthorizedCollectionEntities(
       final String userId, final String collectionId) {

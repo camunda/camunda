@@ -31,17 +31,21 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@AllArgsConstructor
 @Path("/process")
 @Component
 public class ProcessOverviewRestService {
 
   private final ProcessOverviewService processOverviewService;
   private final SessionService sessionService;
+
+  public ProcessOverviewRestService(
+      ProcessOverviewService processOverviewService, SessionService sessionService) {
+    this.processOverviewService = processOverviewService;
+    this.sessionService = sessionService;
+  }
 
   @GET
   @Path("/overview")

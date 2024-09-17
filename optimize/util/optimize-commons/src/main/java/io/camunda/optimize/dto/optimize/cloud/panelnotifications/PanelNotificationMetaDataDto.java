@@ -7,19 +7,25 @@
  */
 package io.camunda.optimize.dto.optimize.cloud.panelnotifications;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @EqualsAndHashCode
 @Builder
 @Data
 public class PanelNotificationMetaDataDto {
+
   private final String identifier;
   private final String[] permissions;
   private final String href;
   private final String label;
+
+  private PanelNotificationMetaDataDto(
+      String identifier, String[] permissions, String href, String label) {
+    this.identifier = identifier;
+    this.permissions = permissions;
+    this.href = href;
+    this.label = label;
+  }
 }

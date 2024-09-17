@@ -20,12 +20,10 @@ import io.camunda.optimize.service.db.writer.DecisionDefinitionXmlWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
@@ -34,6 +32,15 @@ public class DecisionDefinitionXmlWriterES implements DecisionDefinitionXmlWrite
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
+
+  public DecisionDefinitionXmlWriterES(
+      OptimizeElasticsearchClient esClient,
+      ConfigurationService configurationService,
+      ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public void importDecisionDefinitionXmls(

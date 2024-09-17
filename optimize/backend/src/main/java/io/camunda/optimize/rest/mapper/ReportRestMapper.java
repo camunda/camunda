@@ -33,17 +33,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Slf4j
-@AllArgsConstructor
 @Component
 public class ReportRestMapper {
 
   private final AbstractIdentityService identityService;
   private final LocalizationService localizationService;
+
+  public ReportRestMapper(
+      AbstractIdentityService identityService, LocalizationService localizationService) {
+    this.identityService = identityService;
+    this.localizationService = localizationService;
+  }
 
   public <T> AuthorizedReportEvaluationResponseDto<?> mapToLocalizedEvaluationResponseDto(
       final AuthorizedReportEvaluationResult reportEvaluationResult, final String locale) {

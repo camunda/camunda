@@ -16,11 +16,9 @@ import jakarta.ws.rs.NotFoundException;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class CsvExportService {
@@ -29,6 +27,13 @@ public class CsvExportService {
 
   private final AuthorizationCheckReportEvaluationHandler reportEvaluationHandler;
   private final ConfigurationService configurationService;
+
+  public CsvExportService(
+      AuthorizationCheckReportEvaluationHandler reportEvaluationHandler,
+      ConfigurationService configurationService) {
+    this.reportEvaluationHandler = reportEvaluationHandler;
+    this.configurationService = configurationService;
+  }
 
   public Optional<byte[]> getCsvBytesForEvaluatedReportResult(
       final String userId, final String reportId, final ZoneId timezone) {

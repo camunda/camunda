@@ -33,11 +33,9 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class CollectionService {
@@ -48,6 +46,21 @@ public class CollectionService {
   private final CollectionWriter collectionWriter;
   private final CollectionReader collectionReader;
   private final AbstractIdentityService identityService;
+
+  public CollectionService(
+      AuthorizedCollectionService authorizedCollectionService,
+      CollectionRelationService collectionRelationService,
+      CollectionEntityService collectionEntityService,
+      CollectionWriter collectionWriter,
+      CollectionReader collectionReader,
+      AbstractIdentityService identityService) {
+    this.authorizedCollectionService = authorizedCollectionService;
+    this.collectionRelationService = collectionRelationService;
+    this.collectionEntityService = collectionEntityService;
+    this.collectionWriter = collectionWriter;
+    this.collectionReader = collectionReader;
+    this.identityService = identityService;
+  }
 
   public IdResponseDto createNewCollectionAndReturnId(
       final String userId,

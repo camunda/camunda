@@ -9,15 +9,18 @@ package io.camunda.optimize.service.db.writer.variable;
 
 import io.camunda.optimize.service.db.repository.VariableRepository;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class VariableUpdateInstanceWriter {
+
   private final VariableRepository variableRepository;
+
+  public VariableUpdateInstanceWriter(VariableRepository variableRepository) {
+    this.variableRepository = variableRepository;
+  }
 
   public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
     log.info("Deleting variable updates for [{}] processInstanceIds", processInstanceIds.size());

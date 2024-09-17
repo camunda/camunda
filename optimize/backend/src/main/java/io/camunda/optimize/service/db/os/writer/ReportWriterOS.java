@@ -42,7 +42,6 @@ import jakarta.ws.rs.NotFoundException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.json.JsonData;
@@ -61,7 +60,6 @@ import org.opensearch.client.opensearch.core.UpdateResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
@@ -69,6 +67,11 @@ public class ReportWriterOS implements ReportWriter {
 
   private final ObjectMapper objectMapper;
   private final OptimizeOpenSearchClient osClient;
+
+  public ReportWriterOS(ObjectMapper objectMapper, OptimizeOpenSearchClient osClient) {
+    this.objectMapper = objectMapper;
+    this.osClient = osClient;
+  }
 
   @Override
   public IdResponseDto createNewCombinedReport(

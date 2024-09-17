@@ -18,7 +18,6 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import jakarta.ws.rs.NotFoundException;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
@@ -28,13 +27,16 @@ import org.opensearch.client.opensearch.core.IndexResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class SharingWriterOS implements SharingWriter {
 
   private final OptimizeOpenSearchClient osClient;
+
+  public SharingWriterOS(OptimizeOpenSearchClient osClient) {
+    this.osClient = osClient;
+  }
 
   @Override
   public ReportShareRestDto saveReportShare(final ReportShareRestDto createSharingDto) {

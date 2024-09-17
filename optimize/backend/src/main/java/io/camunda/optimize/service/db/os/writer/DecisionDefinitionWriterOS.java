@@ -25,7 +25,6 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
@@ -35,7 +34,6 @@ import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
@@ -47,6 +45,15 @@ public class DecisionDefinitionWriterOS implements DecisionDefinitionWriter {
   private final ObjectMapper objectMapper;
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
+
+  public DecisionDefinitionWriterOS(
+      ObjectMapper objectMapper,
+      OptimizeOpenSearchClient osClient,
+      ConfigurationService configurationService) {
+    this.objectMapper = objectMapper;
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void importDecisionDefinitions(

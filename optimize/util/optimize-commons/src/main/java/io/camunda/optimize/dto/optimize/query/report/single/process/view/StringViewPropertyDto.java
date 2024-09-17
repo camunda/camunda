@@ -9,14 +9,16 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.view;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Objects;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-@AllArgsConstructor
 public class StringViewPropertyDto implements TypedViewPropertyDto {
 
   private final String id;
+
+  public StringViewPropertyDto(String id) {
+    this.id = id;
+  }
 
   @JsonValue
   public String getId() {

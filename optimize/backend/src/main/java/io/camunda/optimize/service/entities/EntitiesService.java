@@ -32,11 +32,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class EntitiesService {
@@ -48,6 +46,23 @@ public class EntitiesService {
   private final DashboardService dashboardService;
   private final AuthorizedCollectionService authorizedCollectionService;
   private final InstantPreviewDashboardService instantPreviewDashboardService;
+
+  public EntitiesService(
+      CollectionService collectionService,
+      AuthorizedEntitiesService authorizedEntitiesService,
+      EntitiesReader entitiesReader,
+      ReportService reportService,
+      DashboardService dashboardService,
+      AuthorizedCollectionService authorizedCollectionService,
+      InstantPreviewDashboardService instantPreviewDashboardService) {
+    this.collectionService = collectionService;
+    this.authorizedEntitiesService = authorizedEntitiesService;
+    this.entitiesReader = entitiesReader;
+    this.reportService = reportService;
+    this.dashboardService = dashboardService;
+    this.authorizedCollectionService = authorizedCollectionService;
+    this.instantPreviewDashboardService = instantPreviewDashboardService;
+  }
 
   public List<EntityResponseDto> getAllEntities(final String userId) {
     final List<AuthorizedCollectionDefinitionDto> collectionDefinitions =

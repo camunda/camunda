@@ -15,12 +15,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-@AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto {
@@ -75,6 +73,17 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
       final Map<String, String> userTaskNames) {
     super(
         id, key, version, versionTag, name, dataSource, tenantId, deleted, DefinitionType.PROCESS);
+    this.bpmn20Xml = bpmn20Xml;
+    this.flowNodeData = flowNodeData;
+    this.userTaskNames = userTaskNames;
+    this.onboarded = onboarded;
+  }
+
+  public ProcessDefinitionOptimizeDto(
+      String bpmn20Xml,
+      List<FlowNodeDataDto> flowNodeData,
+      Map<String, String> userTaskNames,
+      boolean onboarded) {
     this.bpmn20Xml = bpmn20Xml;
     this.flowNodeData = flowNodeData;
     this.userTaskNames = userTaskNames;

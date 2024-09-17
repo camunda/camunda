@@ -21,10 +21,8 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(DecisionVariablesRestService.DECISION_VARIABLES_PATH)
 @Component
 public class DecisionVariablesRestService {
@@ -35,6 +33,12 @@ public class DecisionVariablesRestService {
 
   private final DecisionVariableService decisionVariableService;
   private final SessionService sessionService;
+
+  public DecisionVariablesRestService(
+      DecisionVariableService decisionVariableService, SessionService sessionService) {
+    this.decisionVariableService = decisionVariableService;
+    this.sessionService = sessionService;
+  }
 
   @POST
   @Path(DECISION_INPUTS_NAMES_PATH)

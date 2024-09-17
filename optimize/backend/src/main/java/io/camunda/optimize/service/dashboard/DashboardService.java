@@ -62,14 +62,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 @Slf4j
-@AllArgsConstructor
 @Component
 public class DashboardService implements ReportReferencingService, CollectionReferencingService {
 
@@ -81,6 +79,25 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   private final AbstractIdentityService identityService;
   private final ReportReader reportReader;
   private final DashboardRelationService dashboardRelationService;
+
+  public DashboardService(
+      DashboardWriter dashboardWriter,
+      DashboardReader dashboardReader,
+      ProcessVariableService processVariableService,
+      ReportService reportService,
+      AuthorizedCollectionService collectionService,
+      AbstractIdentityService identityService,
+      ReportReader reportReader,
+      DashboardRelationService dashboardRelationService) {
+    this.dashboardWriter = dashboardWriter;
+    this.dashboardReader = dashboardReader;
+    this.processVariableService = processVariableService;
+    this.reportService = reportService;
+    this.collectionService = collectionService;
+    this.identityService = identityService;
+    this.reportReader = reportReader;
+    this.dashboardRelationService = dashboardRelationService;
+  }
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForReportDelete(

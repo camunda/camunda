@@ -13,17 +13,19 @@ import io.camunda.optimize.service.mixpanel.MixpanelReportingService;
 import io.camunda.optimize.service.mixpanel.client.EventReportingEvent;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(CCSaaSCondition.class)
-@AllArgsConstructor
 public class MixpanelNotificationService implements AlertNotificationService {
 
   private final MixpanelReportingService mixpanelReportingService;
+
+  public MixpanelNotificationService(MixpanelReportingService mixpanelReportingService) {
+    this.mixpanelReportingService = mixpanelReportingService;
+  }
 
   @Override
   public void notify(@NonNull final AlertNotificationDto notification) {

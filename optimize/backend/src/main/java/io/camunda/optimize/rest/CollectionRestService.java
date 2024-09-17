@@ -49,14 +49,13 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@AllArgsConstructor
 @Path("/collection")
 @Component
 public class CollectionRestService {
+
   private final SessionService sessionService;
   private final CollectionService collectionService;
   private final AuthorizedCollectionService authorizedCollectionService;
@@ -67,6 +66,29 @@ public class CollectionRestService {
   private final CollectionRestMapper collectionRestMapper;
   private final AlertRestMapper alertRestMapper;
   private final EntityRestMapper entityRestMapper;
+
+  public CollectionRestService(
+      SessionService sessionService,
+      CollectionService collectionService,
+      AuthorizedCollectionService authorizedCollectionService,
+      CollectionRoleService collectionRoleService,
+      CollectionScopeService collectionScopeService,
+      CollectionEntityService collectionEntityService,
+      ReportRestMapper reportRestMapper,
+      CollectionRestMapper collectionRestMapper,
+      AlertRestMapper alertRestMapper,
+      EntityRestMapper entityRestMapper) {
+    this.sessionService = sessionService;
+    this.collectionService = collectionService;
+    this.authorizedCollectionService = authorizedCollectionService;
+    this.collectionRoleService = collectionRoleService;
+    this.collectionScopeService = collectionScopeService;
+    this.collectionEntityService = collectionEntityService;
+    this.reportRestMapper = reportRestMapper;
+    this.collectionRestMapper = collectionRestMapper;
+    this.alertRestMapper = alertRestMapper;
+    this.entityRestMapper = entityRestMapper;
+  }
 
   /** Creates a new collection. */
   @POST

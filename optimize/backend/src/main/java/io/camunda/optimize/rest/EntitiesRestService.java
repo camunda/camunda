@@ -29,11 +29,9 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@AllArgsConstructor
 @Path(EntitiesRestService.ENTITIES_PATH)
 @Component
 public class EntitiesRestService {
@@ -43,6 +41,15 @@ public class EntitiesRestService {
   private final EntitiesService entitiesService;
   private final SessionService sessionService;
   private final EntityRestMapper entityRestMapper;
+
+  public EntitiesRestService(
+      EntitiesService entitiesService,
+      SessionService sessionService,
+      EntityRestMapper entityRestMapper) {
+    this.entitiesService = entitiesService;
+    this.sessionService = sessionService;
+    this.entityRestMapper = entityRestMapper;
+  }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)

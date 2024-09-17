@@ -17,17 +17,24 @@ import io.camunda.optimize.service.db.reader.EntitiesReader;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Component;
 
 @Component
-@AllArgsConstructor
 public class AuthorizedEntitiesService {
 
   private final EntitiesReader entitiesReader;
   private final AbstractIdentityService identityService;
   private final ReportAuthorizationService reportAuthorizationService;
+
+  public AuthorizedEntitiesService(
+      EntitiesReader entitiesReader,
+      AbstractIdentityService identityService,
+      ReportAuthorizationService reportAuthorizationService) {
+    this.entitiesReader = entitiesReader;
+    this.identityService = identityService;
+    this.reportAuthorizationService = reportAuthorizationService;
+  }
 
   public List<EntityResponseDto> getAuthorizedPrivateEntities(final String userId) {
 

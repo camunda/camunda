@@ -11,14 +11,16 @@ import io.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitio
 import io.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
-@AllArgsConstructor
 public class CollectionRestMapper {
 
   private final AbstractIdentityService identityService;
+
+  public CollectionRestMapper(AbstractIdentityService identityService) {
+    this.identityService = identityService;
+  }
 
   public void prepareRestResponse(
       final AuthorizedCollectionDefinitionRestDto collectionDefinitionRestDto) {

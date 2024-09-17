@@ -19,17 +19,21 @@ import io.camunda.optimize.service.db.report.ReportEvaluationInfo;
 import io.camunda.optimize.service.report.ReportService;
 import jakarta.ws.rs.BadRequestException;
 import java.time.ZoneId;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class JsonReportResultExportService {
 
   private final PlainReportEvaluationHandler reportEvaluationHandler;
   private final ReportService reportService;
+
+  public JsonReportResultExportService(
+      PlainReportEvaluationHandler reportEvaluationHandler, ReportService reportService) {
+    this.reportEvaluationHandler = reportEvaluationHandler;
+    this.reportService = reportService;
+  }
 
   public PaginatedDataExportDto getJsonForEvaluatedReportResult(
       final String reportId, final ZoneId timezone, final PaginationDto paginationInfo) {

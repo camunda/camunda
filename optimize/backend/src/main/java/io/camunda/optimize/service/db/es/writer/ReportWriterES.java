@@ -58,13 +58,11 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
@@ -73,6 +71,11 @@ public class ReportWriterES implements ReportWriter {
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
   private final TaskRepositoryES taskRepositoryES;
+
+  public ReportWriterES(ObjectMapper objectMapper, OptimizeElasticsearchClient esClient) {
+    this.objectMapper = objectMapper;
+    this.esClient = esClient;
+  }
 
   @Override
   public IdResponseDto createNewCombinedReport(

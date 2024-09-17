@@ -35,10 +35,8 @@ import io.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 
-@AllArgsConstructor
 @Builder
 public class CollectionClient {
 
@@ -48,6 +46,10 @@ public class CollectionClient {
   public static final String PRIVATE_COLLECTION_ID = null;
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public CollectionClient(Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public String createNewCollectionForAllDefinitionTypes() {
     final String collectionId = createNewCollectionWithDefaultScope(PROCESS);

@@ -18,7 +18,6 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -26,7 +25,6 @@ import org.opensearch.client.opensearch.core.IndexRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
@@ -34,6 +32,12 @@ public class TerminatedUserSessionWriterOS extends TerminatedUserSessionWriter {
 
   private final OptimizeOpenSearchClient osClient;
   private final DateTimeFormatter dateTimeFormatter;
+
+  public TerminatedUserSessionWriterOS(
+      OptimizeOpenSearchClient osClient, DateTimeFormatter dateTimeFormatter) {
+    this.osClient = osClient;
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
 
   @Override
   protected void performWritingTerminatedUserSession(final TerminatedUserSessionDto sessionDto) {

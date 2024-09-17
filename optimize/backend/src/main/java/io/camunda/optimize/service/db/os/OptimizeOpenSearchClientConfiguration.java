@@ -13,7 +13,6 @@ import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import io.camunda.search.connect.plugin.PluginRepository;
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -21,14 +20,23 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@AllArgsConstructor
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class OptimizeOpenSearchClientConfiguration {
+
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService optimizeIndexNameService;
   private final OpenSearchSchemaManager openSearchSchemaManager;
   private final PluginRepository pluginRepository = new PluginRepository();
+
+  public OptimizeOpenSearchClientConfiguration(
+      ConfigurationService configurationService,
+      OptimizeIndexNameService optimizeIndexNameService,
+      OpenSearchSchemaManager openSearchSchemaManager) {
+    this.configurationService = configurationService;
+    this.optimizeIndexNameService = optimizeIndexNameService;
+    this.openSearchSchemaManager = openSearchSchemaManager;
+  }
 
   @Bean(destroyMethod = "close")
   public OptimizeOpenSearchClient optimizeOpenSearchClient(

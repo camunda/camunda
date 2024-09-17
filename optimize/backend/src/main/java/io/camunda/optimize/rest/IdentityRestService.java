@@ -24,11 +24,9 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(IdentityRestService.IDENTITY_RESOURCE_PATH)
 @Component
 @Slf4j
@@ -40,6 +38,12 @@ public class IdentityRestService {
 
   private final AbstractIdentityService identityService;
   private final SessionService sessionService;
+
+  public IdentityRestService(
+      AbstractIdentityService identityService, SessionService sessionService) {
+    this.identityService = identityService;
+    this.sessionService = sessionService;
+  }
 
   @GET
   @Path(IDENTITY_SEARCH_SUB_PATH)

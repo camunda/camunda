@@ -9,11 +9,14 @@ package io.camunda.optimize.dto.optimize.importing;
 
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-@AllArgsConstructor
 public class LastKpiEvaluationResultsDto implements OptimizeDto {
+
   final Map<String, String> reportIdToValue;
+
+  public LastKpiEvaluationResultsDto(Map<String, String> reportIdToValue) {
+    this.reportIdToValue = reportIdToValue;
+  }
 }

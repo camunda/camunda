@@ -19,10 +19,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(AuthenticationRestService.AUTHENTICATION_PATH)
 @Component
 public class AuthenticationRestService {
@@ -33,6 +31,10 @@ public class AuthenticationRestService {
   public static final String CALLBACK = "/callback";
 
   private final AbstractAuthenticationService authenticationService;
+
+  public AuthenticationRestService(AbstractAuthenticationService authenticationService) {
+    this.authenticationService = authenticationService;
+  }
 
   @POST
   @Produces("application/json")

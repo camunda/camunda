@@ -22,11 +22,9 @@ import io.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionC
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class EngineDataProcessCleanupService extends CleanupService {
@@ -37,6 +35,21 @@ public class EngineDataProcessCleanupService extends CleanupService {
   private final ProcessInstanceWriter processInstanceWriter;
   private final ProcessVariableUpdateWriter processVariableUpdateWriter;
   private final VariableUpdateInstanceWriter variableUpdateInstanceWriter;
+
+  public EngineDataProcessCleanupService(
+      ConfigurationService configurationService,
+      ProcessDefinitionReader processDefinitionReader,
+      ProcessInstanceReader processInstanceReader,
+      ProcessInstanceWriter processInstanceWriter,
+      ProcessVariableUpdateWriter processVariableUpdateWriter,
+      VariableUpdateInstanceWriter variableUpdateInstanceWriter) {
+    this.configurationService = configurationService;
+    this.processDefinitionReader = processDefinitionReader;
+    this.processInstanceReader = processInstanceReader;
+    this.processInstanceWriter = processInstanceWriter;
+    this.processVariableUpdateWriter = processVariableUpdateWriter;
+    this.variableUpdateInstanceWriter = variableUpdateInstanceWriter;
+  }
 
   @Override
   public boolean isEnabled() {

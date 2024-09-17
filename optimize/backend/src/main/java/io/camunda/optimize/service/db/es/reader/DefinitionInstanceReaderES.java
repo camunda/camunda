@@ -27,19 +27,21 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class DefinitionInstanceReaderES extends DefinitionInstanceReader {
 
   private final OptimizeElasticsearchClient esClient;
+
+  public DefinitionInstanceReaderES(OptimizeElasticsearchClient esClient) {
+    this.esClient = esClient;
+  }
 
   @Override
   public Set<String> getAllExistingDefinitionKeys(

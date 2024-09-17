@@ -86,7 +86,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.Refresh;
@@ -130,9 +129,9 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class VariableRepositoryOS implements VariableRepository {
+
   private final OptimizeOpenSearchClient osClient;
   private final OptimizeIndexNameService indexNameService;
   private final ConfigurationService configurationService;
@@ -140,6 +139,21 @@ public class VariableRepositoryOS implements VariableRepository {
   private final DecisionDefinitionReader decisionDefinitionReader;
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessQueryFilterEnhancerOS processQueryFilterEnhancer;
+
+  public VariableRepositoryOS(
+      OptimizeOpenSearchClient osClient,
+      OptimizeIndexNameService indexNameService,
+      ConfigurationService configurationService,
+      DateTimeFormatter dateTimeFormatter,
+      DecisionDefinitionReader decisionDefinitionReader,
+      ProcessDefinitionReader processDefinitionReader) {
+    this.osClient = osClient;
+    this.indexNameService = indexNameService;
+    this.configurationService = configurationService;
+    this.dateTimeFormatter = dateTimeFormatter;
+    this.decisionDefinitionReader = decisionDefinitionReader;
+    this.processDefinitionReader = processDefinitionReader;
+  }
 
   @Override
   public void deleteVariableDataByProcessInstanceIds(

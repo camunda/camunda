@@ -36,12 +36,10 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class ProcessOverviewService {
@@ -55,6 +53,23 @@ public class ProcessOverviewService {
   private final AbstractIdentityService identityService;
   private final KpiService kpiService;
   private final DigestService digestService;
+
+  public ProcessOverviewService(
+      DefinitionService definitionService,
+      DataSourceDefinitionAuthorizationService definitionAuthorizationService,
+      ProcessOverviewWriter processOverviewWriter,
+      ProcessOverviewReader processOverviewReader,
+      AbstractIdentityService identityService,
+      KpiService kpiService,
+      DigestService digestService) {
+    this.definitionService = definitionService;
+    this.definitionAuthorizationService = definitionAuthorizationService;
+    this.processOverviewWriter = processOverviewWriter;
+    this.processOverviewReader = processOverviewReader;
+    this.identityService = identityService;
+    this.kpiService = kpiService;
+    this.digestService = digestService;
+  }
 
   public List<ProcessOverviewResponseDto> getAllProcessOverviews(
       final String userId, final String locale) {

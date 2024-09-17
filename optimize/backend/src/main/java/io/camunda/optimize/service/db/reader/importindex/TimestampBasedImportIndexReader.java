@@ -14,17 +14,19 @@ import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import io.camunda.optimize.service.db.repository.ImportRepository;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-@AllArgsConstructor
 public class TimestampBasedImportIndexReader
     implements ImportIndexReader<TimestampBasedImportIndexDto, IngestedDataSourceDto> {
 
   final ImportRepository importRepository;
+
+  public TimestampBasedImportIndexReader(ImportRepository importRepository) {
+    this.importRepository = importRepository;
+  }
 
   @Override
   public Optional<TimestampBasedImportIndexDto> getImportIndex(

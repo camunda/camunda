@@ -17,7 +17,6 @@ import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import io.camunda.search.connect.plugin.PluginRepository;
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -25,7 +24,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@AllArgsConstructor
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class OptimizeElasticsearchClientConfiguration {
@@ -34,6 +32,15 @@ public class OptimizeElasticsearchClientConfiguration {
   private final OptimizeIndexNameService optimizeIndexNameService;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
   private final PluginRepository pluginRepository = new PluginRepository();
+
+  public OptimizeElasticsearchClientConfiguration(
+      ConfigurationService configurationService,
+      OptimizeIndexNameService optimizeIndexNameService,
+      ElasticSearchSchemaManager elasticSearchSchemaManager) {
+    this.configurationService = configurationService;
+    this.optimizeIndexNameService = optimizeIndexNameService;
+    this.elasticSearchSchemaManager = elasticSearchSchemaManager;
+  }
 
   @Bean
   public OptimizeElasticsearchClient optimizeElasticsearchClient(

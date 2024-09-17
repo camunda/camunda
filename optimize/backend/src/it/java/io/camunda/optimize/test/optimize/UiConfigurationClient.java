@@ -17,10 +17,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class UiConfigurationClient {
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
   public static final String TEST_WEBHOOK_HOST = "127.0.0.1";
@@ -34,6 +33,10 @@ public class UiConfigurationClient {
   public static final String TEST_WEBHOOK_URL_INVALID_PORT =
       "http://" + TEST_WEBHOOK_HOST + ":1080";
   public static final String TEST_WEBHOOK_URL_PATH = "/webhookpath";
+
+  public UiConfigurationClient(Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public Map<String, WebhookConfiguration> createSimpleWebhookConfigurationMap(Set<String> names) {
     Map<String, WebhookConfiguration> webhookMap = new HashMap<>();

@@ -51,10 +51,8 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(EXTERNAL_SUB_PATH)
 @Component
 public class SharingPublicReaderRestService {
@@ -70,6 +68,27 @@ public class SharingPublicReaderRestService {
   private final UIConfigurationRestService uiConfigurationService;
   private final AssigneeRestService assigneeRestService;
   private final SettingsService settingsService;
+
+  public SharingPublicReaderRestService(
+      SharingRestService protectedSharingRestService,
+      LocalizationRestService localizationRestService,
+      ProcessVariableRestService processVariableRestService,
+      DecisionVariablesRestService decisionVariableRestService,
+      FlowNodeRestService flowNodeRestService,
+      CandidateGroupRestService candidateGroupRestService,
+      UIConfigurationRestService uiConfigurationService,
+      AssigneeRestService assigneeRestService,
+      SettingsService settingsService) {
+    this.protectedSharingRestService = protectedSharingRestService;
+    this.localizationRestService = localizationRestService;
+    this.processVariableRestService = processVariableRestService;
+    this.decisionVariableRestService = decisionVariableRestService;
+    this.flowNodeRestService = flowNodeRestService;
+    this.candidateGroupRestService = candidateGroupRestService;
+    this.uiConfigurationService = uiConfigurationService;
+    this.assigneeRestService = assigneeRestService;
+    this.settingsService = settingsService;
+  }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)

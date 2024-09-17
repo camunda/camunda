@@ -24,17 +24,20 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@AllArgsConstructor
 @Path("/alert")
 @Component
 public class AlertRestService {
 
   private final AlertService alertService;
   private final SessionService sessionService;
+
+  public AlertRestService(AlertService alertService, SessionService sessionService) {
+    this.alertService = alertService;
+    this.sessionService = sessionService;
+  }
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)

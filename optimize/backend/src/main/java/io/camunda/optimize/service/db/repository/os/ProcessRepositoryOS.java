@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
@@ -34,11 +33,17 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ProcessRepositoryOS implements ProcessRepository {
+
   private final OptimizeOpenSearchClient osClient;
   private final OptimizeIndexNameService indexNameService;
+
+  public ProcessRepositoryOS(
+      OptimizeOpenSearchClient osClient, OptimizeIndexNameService indexNameService) {
+    this.osClient = osClient;
+    this.indexNameService = indexNameService;
+  }
 
   @Override
   public Map<String, ProcessOverviewDto> getProcessOverviewsByKey(

@@ -11,15 +11,18 @@ import io.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDt
 import io.camunda.optimize.service.db.repository.VariableRepository;
 import java.time.Instant;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class ExternalVariableReader {
+
   VariableRepository variableRepository;
+
+  public ExternalVariableReader(VariableRepository variableRepository) {
+    this.variableRepository = variableRepository;
+  }
 
   public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAfter(
       final Long ingestTimestamp, final int limit) {

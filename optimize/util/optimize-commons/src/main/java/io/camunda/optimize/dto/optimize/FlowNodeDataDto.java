@@ -8,15 +8,20 @@
 package io.camunda.optimize.dto.optimize;
 
 import java.io.Serializable;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@RequiredArgsConstructor
 public class FlowNodeDataDto implements Serializable {
+
   private String id;
   private String name;
   private String type;
+
+  public FlowNodeDataDto(String id, String name, String type) {
+    this.id = id;
+    this.name = name;
+    this.type = type;
+  }
+
+  public FlowNodeDataDto() {}
 }

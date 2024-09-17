@@ -17,11 +17,9 @@ import io.camunda.optimize.service.mixpanel.client.MixpanelHeartbeatMetrics;
 import io.camunda.optimize.service.mixpanel.client.MixpanelHeartbeatProperties;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
-@AllArgsConstructor
 public class MixpanelDataService {
 
   private final ConfigurationService configurationService;
@@ -29,6 +27,19 @@ public class MixpanelDataService {
   private final DashboardReader dashboardReader;
   private final AlertReader alertReader;
   private final SharingReader sharingReader;
+
+  public MixpanelDataService(
+      ConfigurationService configurationService,
+      ReportReader reportReader,
+      DashboardReader dashboardReader,
+      AlertReader alertReader,
+      SharingReader sharingReader) {
+    this.configurationService = configurationService;
+    this.reportReader = reportReader;
+    this.dashboardReader = dashboardReader;
+    this.alertReader = alertReader;
+    this.sharingReader = sharingReader;
+  }
 
   public MixpanelHeartbeatProperties getMixpanelHeartbeatProperties() {
     final MixpanelConfiguration.TrackingProperties mixpanelProperties = getMixpanelProperties();

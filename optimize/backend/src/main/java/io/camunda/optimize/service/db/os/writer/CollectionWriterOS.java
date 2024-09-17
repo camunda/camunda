@@ -33,7 +33,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Refresh;
@@ -51,7 +50,6 @@ import org.opensearch.client.opensearch.core.UpdateResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
@@ -59,6 +57,11 @@ public class CollectionWriterOS implements CollectionWriter {
 
   private final OptimizeOpenSearchClient osClient;
   private final DateTimeFormatter formatter;
+
+  public CollectionWriterOS(OptimizeOpenSearchClient osClient, DateTimeFormatter formatter) {
+    this.osClient = osClient;
+    this.formatter = formatter;
+  }
 
   @Override
   public void updateCollection(final CollectionDefinitionUpdateDto collection, final String id) {

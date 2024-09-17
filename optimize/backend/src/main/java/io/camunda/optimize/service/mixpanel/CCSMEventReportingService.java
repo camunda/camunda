@@ -9,14 +9,14 @@ package io.camunda.optimize.service.mixpanel;
 
 import io.camunda.optimize.service.mixpanel.client.EventReportingEvent;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
-import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(CCSMCondition.class)
-@AllArgsConstructor
 public class CCSMEventReportingService implements EventReportingService {
+
+  public CCSMEventReportingService() {}
 
   @Override
   public void sendEntityEvent(final EventReportingEvent event, final String entityId) {

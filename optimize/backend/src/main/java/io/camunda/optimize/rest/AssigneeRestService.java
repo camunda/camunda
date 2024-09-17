@@ -28,12 +28,10 @@ import jakarta.ws.rs.core.MediaType;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(ASSIGNEE_RESOURCE_PATH)
 @Component
 @Slf4j
@@ -45,6 +43,12 @@ public class AssigneeRestService {
 
   private final SessionService sessionService;
   private final AssigneeCandidateGroupService assigneeCandidateGroupService;
+
+  public AssigneeRestService(
+      SessionService sessionService, AssigneeCandidateGroupService assigneeCandidateGroupService) {
+    this.sessionService = sessionService;
+    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
+  }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)

@@ -55,11 +55,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class ReportImportService {
@@ -69,6 +67,19 @@ public class ReportImportService {
   private final DefinitionService definitionService;
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final OptimizeIndexNameService optimizeIndexNameService;
+
+  public ReportImportService(
+      ReportService reportService,
+      ReportWriter reportWriter,
+      DefinitionService definitionService,
+      DataSourceDefinitionAuthorizationService definitionAuthorizationService,
+      OptimizeIndexNameService optimizeIndexNameService) {
+    this.reportService = reportService;
+    this.reportWriter = reportWriter;
+    this.definitionService = definitionService;
+    this.definitionAuthorizationService = definitionAuthorizationService;
+    this.optimizeIndexNameService = optimizeIndexNameService;
+  }
 
   public void importReportsIntoCollection(
       final String collectionId,

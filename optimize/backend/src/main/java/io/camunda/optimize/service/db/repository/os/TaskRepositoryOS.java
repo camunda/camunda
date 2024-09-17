@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
@@ -29,10 +28,14 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class TaskRepositoryOS extends TaskRepository {
+
   private final OptimizeOpenSearchClient osClient;
+
+  public TaskRepositoryOS(OptimizeOpenSearchClient osClient) {
+    this.osClient = osClient;
+  }
 
   @Override
   public List<TaskProgressInfo> tasksProgress(final String action) {
@@ -58,7 +61,7 @@ public class TaskRepositoryOS extends TaskRepository {
   private static int getProgress(Status status) {
     return status.total() > 0
         ? Double.valueOf((double) getProcessedTasksCount(status) / status.total() * 100.0D)
-            .intValue()
+        .intValue()
         : 0;
   }
 

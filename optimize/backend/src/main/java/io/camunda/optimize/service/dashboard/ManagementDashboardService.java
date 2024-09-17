@@ -34,14 +34,12 @@ import io.camunda.optimize.service.db.writer.ReportWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.Collections;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Slf4j
-@AllArgsConstructor
 @Component
 public class ManagementDashboardService {
 
@@ -63,6 +61,15 @@ public class ManagementDashboardService {
   private final DashboardWriter dashboardWriter;
   private final ReportWriter reportWriter;
   private final ConfigurationService configurationService;
+
+  public ManagementDashboardService(
+      DashboardWriter dashboardWriter,
+      ReportWriter reportWriter,
+      ConfigurationService configurationService) {
+    this.dashboardWriter = dashboardWriter;
+    this.reportWriter = reportWriter;
+    this.configurationService = configurationService;
+  }
 
   @EventListener(ApplicationReadyEvent.class)
   public void init() {

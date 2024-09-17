@@ -21,7 +21,6 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import jakarta.ws.rs.BadRequestException;
 import java.util.HashSet;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Script;
@@ -29,7 +28,6 @@ import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Slf4j
 @Component
 @Conditional(OpenSearchCondition.class)
@@ -37,6 +35,11 @@ public class SettingWriterOS implements SettingsWriter {
 
   private final OptimizeOpenSearchClient osClient;
   private final ObjectMapper objectMapper;
+
+  public SettingWriterOS(OptimizeOpenSearchClient osClient, ObjectMapper objectMapper) {
+    this.osClient = osClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public void upsertSettings(final SettingsDto settingsDto) {

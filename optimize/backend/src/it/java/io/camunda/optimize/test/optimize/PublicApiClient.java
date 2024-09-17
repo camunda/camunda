@@ -20,11 +20,14 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class PublicApiClient {
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public PublicApiClient(Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public List<ReportDefinitionExportDto> exportReportDefinitionsAndReturnResponse(
       final List<String> reportIds, final String accessToken) {

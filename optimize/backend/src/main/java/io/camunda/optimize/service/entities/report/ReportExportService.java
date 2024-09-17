@@ -23,11 +23,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class ReportExportService {
@@ -35,6 +33,15 @@ public class ReportExportService {
   private final ReportReader reportReader;
   private final ReportAuthorizationService reportAuthorizationService;
   private final AuthorizedCollectionService authorizedCollectionService;
+
+  public ReportExportService(
+      ReportReader reportReader,
+      ReportAuthorizationService reportAuthorizationService,
+      AuthorizedCollectionService authorizedCollectionService) {
+    this.reportReader = reportReader;
+    this.reportAuthorizationService = reportAuthorizationService;
+    this.authorizedCollectionService = authorizedCollectionService;
+  }
 
   public List<ReportDefinitionExportDto> getReportExportDtos(final Set<String> reportIds) {
     log.debug("Exporting all reports with IDs {} for export via API.", reportIds);

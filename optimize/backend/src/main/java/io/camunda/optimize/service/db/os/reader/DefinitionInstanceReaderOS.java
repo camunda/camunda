@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
@@ -35,13 +34,19 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class DefinitionInstanceReaderOS extends DefinitionInstanceReader {
+
   final OptimizeIndexNameService indexNameService;
   final OptimizeOpenSearchClient osClient;
+
+  public DefinitionInstanceReaderOS(
+      OptimizeIndexNameService indexNameService, OptimizeOpenSearchClient osClient) {
+    this.indexNameService = indexNameService;
+    this.osClient = osClient;
+  }
 
   @Override
   public Set<String> getAllExistingDefinitionKeys(

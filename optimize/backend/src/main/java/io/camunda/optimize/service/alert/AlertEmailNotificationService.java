@@ -11,18 +11,22 @@ import io.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
 import io.camunda.optimize.service.email.EmailService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class AlertEmailNotificationService implements AlertNotificationService {
 
   private final ConfigurationService configurationService;
   private final EmailService emailService;
+
+  public AlertEmailNotificationService(
+      ConfigurationService configurationService, EmailService emailService) {
+    this.configurationService = configurationService;
+    this.emailService = emailService;
+  }
 
   @Override
   public void notify(@NonNull final AlertNotificationDto notification) {

@@ -12,11 +12,14 @@ import io.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import io.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
 import jakarta.ws.rs.core.Response;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class FlowNodeNamesClient {
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public FlowNodeNamesClient(Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public FlowNodeNamesResponseDto getFlowNodeNames(FlowNodeIdsToNamesRequestDto requestDto) {
     return getRequestExecutor()

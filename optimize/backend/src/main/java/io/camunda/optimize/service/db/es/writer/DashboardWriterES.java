@@ -42,13 +42,11 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
@@ -57,6 +55,11 @@ public class DashboardWriterES implements DashboardWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final TaskRepositoryES taskRepositoryES;
+
+  public DashboardWriterES(OptimizeElasticsearchClient esClient, ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public IdResponseDto createNewDashboard(

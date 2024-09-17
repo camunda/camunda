@@ -13,17 +13,22 @@ import io.camunda.optimize.service.security.util.tenant.CamundaCCSMTenantAuthori
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Conditional(CCSMCondition.class)
 public class CamundaCCSMTenantService implements TenantService {
 
   private final CamundaCCSMTenantAuthorizationService tenantAuthorizationService;
   private final ConfigurationService configurationService;
+
+  public CamundaCCSMTenantService(
+      CamundaCCSMTenantAuthorizationService tenantAuthorizationService,
+      ConfigurationService configurationService) {
+    this.tenantAuthorizationService = tenantAuthorizationService;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public boolean isAuthorizedToSeeTenant(final String userId, final String tenantId) {

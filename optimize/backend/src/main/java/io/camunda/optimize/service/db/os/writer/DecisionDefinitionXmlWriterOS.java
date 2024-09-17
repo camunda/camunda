@@ -18,7 +18,6 @@ import io.camunda.optimize.service.db.writer.DecisionDefinitionXmlWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
@@ -26,15 +25,26 @@ import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class DecisionDefinitionXmlWriterOS implements DecisionDefinitionXmlWriter {
+
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
   private final ObjectMapper objectMapper;
+
+  public DecisionDefinitionXmlWriterOS(
+      OptimizeOpenSearchClient osClient,
+      ConfigurationService configurationService,
+      OptimizeIndexNameService indexNameService,
+      ObjectMapper objectMapper) {
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+    this.indexNameService = indexNameService;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public void importDecisionDefinitionXmls(

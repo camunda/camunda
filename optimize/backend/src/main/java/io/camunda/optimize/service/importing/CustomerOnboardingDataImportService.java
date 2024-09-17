@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -36,7 +35,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-@AllArgsConstructor
 public class CustomerOnboardingDataImportService {
 
   private static final String CUSTOMER_ONBOARDING_DEFINITION =
@@ -48,6 +46,19 @@ public class CustomerOnboardingDataImportService {
   private final ConfigurationService configurationService;
   private final ProcessInstanceWriter processInstanceWriter;
   private final ProcessInstanceRepository processInstanceRepository;
+
+  public CustomerOnboardingDataImportService(
+      ProcessDefinitionWriter processDefinitionWriter,
+      ObjectMapper objectMapper,
+      ConfigurationService configurationService,
+      ProcessInstanceWriter processInstanceWriter,
+      ProcessInstanceRepository processInstanceRepository) {
+    this.processDefinitionWriter = processDefinitionWriter;
+    this.objectMapper = objectMapper;
+    this.configurationService = configurationService;
+    this.processInstanceWriter = processInstanceWriter;
+    this.processInstanceRepository = processInstanceRepository;
+  }
 
   @EventListener(ApplicationReadyEvent.class)
   public void importData() {

@@ -25,14 +25,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class AlertClient {
 
   public static final String TEST_ALERT_NAME = "test alert";
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public AlertClient(Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public String createAlertForReport(final String reportId) {
     return createAlert(createSimpleAlert(reportId));

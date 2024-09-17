@@ -15,11 +15,14 @@ import io.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExpor
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class ExportClient {
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public ExportClient(Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public Response exportReportAsCsv(String reportId, String fileName) {
     return getRequestExecutor().buildCsvExportRequest(reportId, fileName).execute();

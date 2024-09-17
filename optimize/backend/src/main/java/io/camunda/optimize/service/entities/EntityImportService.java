@@ -43,12 +43,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class EntityImportService {
@@ -58,6 +56,19 @@ public class EntityImportService {
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionService collectionService;
   private final ConfigurationService configurationService;
+
+  public EntityImportService(
+      ReportImportService reportImportService,
+      DashboardImportService dashboardImportService,
+      AuthorizedCollectionService authorizedCollectionService,
+      CollectionService collectionService,
+      ConfigurationService configurationService) {
+    this.reportImportService = reportImportService;
+    this.dashboardImportService = dashboardImportService;
+    this.authorizedCollectionService = authorizedCollectionService;
+    this.collectionService = collectionService;
+    this.configurationService = configurationService;
+  }
 
   public List<EntityIdResponseDto> importEntities(
       final String collectionId, final Set<OptimizeEntityExportDto> entitiesToImport) {

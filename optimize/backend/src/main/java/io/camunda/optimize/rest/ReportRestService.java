@@ -48,10 +48,8 @@ import jakarta.ws.rs.core.MediaType;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path("/report")
 @Component
 public class ReportRestService {
@@ -60,6 +58,17 @@ public class ReportRestService {
   private final ReportEvaluationService reportEvaluationService;
   private final SessionService sessionService;
   private final ReportRestMapper reportRestMapper;
+
+  public ReportRestService(
+      ReportService reportService,
+      ReportEvaluationService reportEvaluationService,
+      SessionService sessionService,
+      ReportRestMapper reportRestMapper) {
+    this.reportService = reportService;
+    this.reportEvaluationService = reportEvaluationService;
+    this.sessionService = sessionService;
+    this.reportRestMapper = reportRestMapper;
+  }
 
   @POST
   @Path("/process/single/")

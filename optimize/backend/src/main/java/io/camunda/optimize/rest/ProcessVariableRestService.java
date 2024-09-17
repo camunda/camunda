@@ -26,10 +26,8 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(ProcessVariableRestService.PROCESS_VARIABLES_PATH)
 @Component
 public class ProcessVariableRestService {
@@ -39,6 +37,15 @@ public class ProcessVariableRestService {
   private final ProcessVariableService processVariableService;
   private final SessionService sessionService;
   private final ProcessVariableLabelService processVariableLabelService;
+
+  public ProcessVariableRestService(
+      ProcessVariableService processVariableService,
+      SessionService sessionService,
+      ProcessVariableLabelService processVariableLabelService) {
+    this.processVariableService = processVariableService;
+    this.sessionService = sessionService;
+    this.processVariableLabelService = processVariableLabelService;
+  }
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)

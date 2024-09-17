@@ -10,14 +10,16 @@ package io.camunda.optimize.rest.mapper;
 import io.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
-@AllArgsConstructor
 public class AlertRestMapper {
 
   private final AbstractIdentityService identityService;
+
+  public AlertRestMapper(AbstractIdentityService identityService) {
+    this.identityService = identityService;
+  }
 
   public void prepareRestResponse(final AlertDefinitionDto alertDefinitionDto) {
     resolveOwnerAndModifierNames(alertDefinitionDto);

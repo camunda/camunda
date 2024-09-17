@@ -45,17 +45,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@AllArgsConstructor
 @Slf4j
 @Path(PublicApiRestService.PUBLIC_PATH)
 @Component
 public class PublicApiRestService {
+
   public static final String PUBLIC_PATH = "/public";
 
   public static final String EXPORT_SUB_PATH = "/export";
@@ -81,6 +80,23 @@ public class PublicApiRestService {
   private final DashboardService dashboardService;
   private final ProcessVariableLabelService processVariableLabelService;
   private final SettingsService settingsService;
+
+  public PublicApiRestService(
+      JsonReportResultExportService jsonReportResultExportService,
+      EntityExportService entityExportService,
+      EntityImportService entityImportService,
+      ReportService reportService,
+      DashboardService dashboardService,
+      ProcessVariableLabelService processVariableLabelService,
+      SettingsService settingsService) {
+    this.jsonReportResultExportService = jsonReportResultExportService;
+    this.entityExportService = entityExportService;
+    this.entityImportService = entityImportService;
+    this.reportService = reportService;
+    this.dashboardService = dashboardService;
+    this.processVariableLabelService = processVariableLabelService;
+    this.settingsService = settingsService;
+  }
 
   @GET
   @Path(REPORT_SUB_PATH)

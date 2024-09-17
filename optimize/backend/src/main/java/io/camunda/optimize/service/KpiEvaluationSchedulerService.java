@@ -21,13 +21,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class KpiEvaluationSchedulerService extends AbstractScheduledService {
@@ -36,6 +34,17 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
   private final DefinitionService definitionService;
   private final ConfigurationService configurationService;
   private final KpiService kpiService;
+
+  public KpiEvaluationSchedulerService(
+      ProcessOverviewWriter processOverviewWriter,
+      DefinitionService definitionService,
+      ConfigurationService configurationService,
+      KpiService kpiService) {
+    this.processOverviewWriter = processOverviewWriter;
+    this.definitionService = definitionService;
+    this.configurationService = configurationService;
+    this.kpiService = kpiService;
+  }
 
   @PostConstruct
   public void init() {

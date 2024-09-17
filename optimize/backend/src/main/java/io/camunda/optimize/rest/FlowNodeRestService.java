@@ -23,11 +23,9 @@ import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(FlowNodeRestService.FLOW_NODE_PATH)
 @Component
 @Slf4j
@@ -37,6 +35,10 @@ public class FlowNodeRestService {
   public static final String FLOW_NODE_NAMES_SUB_PATH = "/flowNodeNames";
 
   private final DefinitionService definitionService;
+
+  public FlowNodeRestService(DefinitionService definitionService) {
+    this.definitionService = definitionService;
+  }
 
   @POST
   @Path(FLOW_NODE_NAMES_SUB_PATH)

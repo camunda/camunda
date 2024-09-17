@@ -12,13 +12,12 @@ import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
-@AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class ReindexStep extends UpgradeStep {
+
   @Getter private final IndexMappingCreator sourceIndex;
   @Getter private final IndexMappingCreator targetIndex;
   private final DatabaseQueryWrapper queryWrapper;
@@ -29,6 +28,17 @@ public class ReindexStep extends UpgradeStep {
       final IndexMappingCreator targetIndex,
       final DatabaseQueryWrapper queryWrapper) {
     this(sourceIndex, targetIndex, queryWrapper, null);
+  }
+
+  public ReindexStep(
+      IndexMappingCreator sourceIndex,
+      IndexMappingCreator targetIndex,
+      DatabaseQueryWrapper queryWrapper,
+      String mappingScript) {
+    this.sourceIndex = sourceIndex;
+    this.targetIndex = targetIndex;
+    this.queryWrapper = queryWrapper;
+    this.mappingScript = mappingScript;
   }
 
   @Override

@@ -26,11 +26,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class AnalysisClient {
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public AnalysisClient(Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public Response getProcessDefinitionCorrelationRawResponse(
       BranchAnalysisRequestDto branchAnalysisRequestDto) {

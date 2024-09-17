@@ -21,11 +21,9 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 public class ReportAuthorizationService {
 
@@ -33,6 +31,17 @@ public class ReportAuthorizationService {
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final AuthorizedCollectionService collectionAuthorizationService;
   private final ReportReader reportReader;
+
+  public ReportAuthorizationService(
+      AbstractIdentityService identityService,
+      DataSourceDefinitionAuthorizationService definitionAuthorizationService,
+      AuthorizedCollectionService collectionAuthorizationService,
+      ReportReader reportReader) {
+    this.identityService = identityService;
+    this.definitionAuthorizationService = definitionAuthorizationService;
+    this.collectionAuthorizationService = collectionAuthorizationService;
+    this.reportReader = reportReader;
+  }
 
   public boolean isAuthorizedToReport(final String userId, final ReportDefinitionDto<?> report) {
     return getAuthorizedRole(userId, report).isPresent();

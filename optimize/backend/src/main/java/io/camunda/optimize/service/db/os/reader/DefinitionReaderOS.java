@@ -61,7 +61,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opensearch.client.opensearch._types.FieldValue;
@@ -96,7 +95,6 @@ import org.opensearch.client.opensearch.core.search.SourceFilter;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Slf4j
 @Component
 @Conditional(OpenSearchCondition.class)
@@ -104,6 +102,12 @@ public class DefinitionReaderOS implements DefinitionReader {
 
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
+
+  public DefinitionReaderOS(
+      OptimizeOpenSearchClient osClient, ConfigurationService configurationService) {
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public Optional<DefinitionWithTenantIdsDto> getDefinitionWithAvailableTenants(

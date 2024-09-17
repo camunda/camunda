@@ -7,16 +7,18 @@
  */
 package io.camunda.optimize.dto.optimize.cloud.panelnotifications;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @EqualsAndHashCode
 @Builder
 @Data
 public class PanelNotificationRequestDto {
+
   private final PanelNotificationDataDto notification;
+
+  private PanelNotificationRequestDto(PanelNotificationDataDto notification) {
+    this.notification = notification;
+  }
 }

@@ -113,14 +113,12 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class VariableRepositoryES implements VariableRepository {
 
@@ -132,6 +130,23 @@ public class VariableRepositoryES implements VariableRepository {
   private final ProcessQueryFilterEnhancerES processQueryFilterEnhancer;
   private final ProcessDefinitionReader processDefinitionReader;
   private final TaskRepositoryES taskRepositoryES;
+
+  public VariableRepositoryES(
+      OptimizeElasticsearchClient esClient,
+      ObjectMapper objectMapper,
+      ConfigurationService configurationService,
+      DateTimeFormatter dateTimeFormatter,
+      DecisionDefinitionReader decisionDefinitionReader,
+      ProcessQueryFilterEnhancerES processQueryFilterEnhancer,
+      ProcessDefinitionReader processDefinitionReader) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.configurationService = configurationService;
+    this.dateTimeFormatter = dateTimeFormatter;
+    this.decisionDefinitionReader = decisionDefinitionReader;
+    this.processQueryFilterEnhancer = processQueryFilterEnhancer;
+    this.processDefinitionReader = processDefinitionReader;
+  }
 
   @Override
   public void deleteVariableDataByProcessInstanceIds(

@@ -13,16 +13,18 @@ import io.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class DecisionDefinitionReaderImpl implements DecisionDefinitionReader {
 
   private final DefinitionReader definitionReader;
+
+  public DecisionDefinitionReaderImpl(DefinitionReader definitionReader) {
+    this.definitionReader = definitionReader;
+  }
 
   @Override
   public Optional<DecisionDefinitionOptimizeDto> getDecisionDefinition(

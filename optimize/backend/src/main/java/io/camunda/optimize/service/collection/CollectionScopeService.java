@@ -48,11 +48,9 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 public class CollectionScopeService {
@@ -72,6 +70,23 @@ public class CollectionScopeService {
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionWriter collectionWriter;
   private final ReportService reportService;
+
+  public CollectionScopeService(
+      TenantService tenantService,
+      DefinitionService definitionService,
+      DataSourceDefinitionAuthorizationService definitionAuthorizationService,
+      ReportReader reportReader,
+      AuthorizedCollectionService authorizedCollectionService,
+      CollectionWriter collectionWriter,
+      ReportService reportService) {
+    this.tenantService = tenantService;
+    this.definitionService = definitionService;
+    this.definitionAuthorizationService = definitionAuthorizationService;
+    this.reportReader = reportReader;
+    this.authorizedCollectionService = authorizedCollectionService;
+    this.collectionWriter = collectionWriter;
+    this.reportService = reportService;
+  }
 
   public List<CollectionScopeEntryResponseDto> getCollectionScope(
       final String userId, final String collectionId) {
