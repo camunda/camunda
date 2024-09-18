@@ -246,7 +246,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   property-tests:
     name: Property Tests
-    runs-on: gcp-perf-core-16-default
+    runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
