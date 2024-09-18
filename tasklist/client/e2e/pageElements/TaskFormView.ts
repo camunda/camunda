@@ -107,9 +107,8 @@ class TaskFormView {
       if (await element.isVisible()) {
         return;
       }
-
-      await page.reload();
       await page.waitForTimeout(10 * 1000);
+      await page.reload();
       // Update the elapsed time
       elapsedTime += 10000;
     }
