@@ -114,7 +114,7 @@ public final class SearchQueryRequestMapper {
     final var sort =
         toSearchQuerySort(
             request.getSort(),
-            SortOptionBuilders::flownodeInstance,
+            SortOptionBuilders::flowNodeInstance,
             SearchQueryRequestMapper::applyFlownodeInstanceSortField);
     final var filter = toFlownodeInstanceFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::flownodeInstanceSearchQuery);
@@ -317,7 +317,7 @@ public final class SearchQueryRequestMapper {
 
   private static FlowNodeInstanceFilter toFlownodeInstanceFilter(
       final FlowNodeInstanceFilterRequest filter) {
-    final var builder = FilterBuilders.flownodeInstance();
+    final var builder = FilterBuilders.flowNodeInstance();
     Optional.ofNullable(filter)
         .ifPresent(
             f -> {
@@ -330,9 +330,10 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getBpmnProcessId()).ifPresent(builder::bpmnProcessIds);
               Optional.ofNullable(f.getState())
                   .ifPresent(s -> builder.states(FlowNodeState.valueOf(s.getValue())));
-              Optional.ofNullable(f.getType()).ifPresent(t -> FlowNodeType.valueOf(t.getValue()));
+              Optional.ofNullable(f.getType())
+                  .ifPresent(
+                      t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t.getValue())));
               Optional.ofNullable(f.getFlowNodeId()).ifPresent(builder::flowNodeIds);
-              Optional.ofNullable(f.getFlowNodeName()).ifPresent(builder::flowNodeNames);
               Optional.ofNullable(f.getTreePath()).ifPresent(builder::treePaths);
               Optional.ofNullable(f.getIncident()).ifPresent(builder::incident);
               Optional.ofNullable(f.getIncidentKey()).ifPresent(builder::incidentKeys);
@@ -473,6 +474,24 @@ public final class SearchQueryRequestMapper {
   private static List<String> applyFlownodeInstanceSortField(
       final String field, final FlowNodeInstanceSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "flowNodeInstanceKey" -> builder.flowNodeInstanceKey();
+        case "processInstanceKey" -> builder.processInstanceKey();
+        case "processDefinitionKey" -> builder.processDefinitionKey();
+        case "bpmnProcessId" -> builder.bpmnProcessId();
+        case "startDate" -> builder.startDate();
+        case "endDate" -> builder.endDate();
+        case "flowNodeId" -> builder.flowNodeId();
+        case "type" -> builder.type();
+        case "state" -> builder.state();
+        case "incidentKey" -> builder.incidentKey();
+        case "tenantId" -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
     return validationErrors;
   }
 

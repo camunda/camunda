@@ -17,7 +17,6 @@ public record FlowNodeInstanceEntity(
     String startDate,
     String endDate,
     String flowNodeId,
-    String flowNodeName,
     String treePath,
     FlowNodeType type,
     FlowNodeState state,

@@ -2337,7 +2337,7 @@ components:
           description: The flow node id for this flow node instance.
         flowNodeName:
           type: string
-          description: The flow node name for this flow node instance
+          description: The flow node name
         treePath:
           type: string
           description: The path of keys from process instance to this flow node instance separated by '/'

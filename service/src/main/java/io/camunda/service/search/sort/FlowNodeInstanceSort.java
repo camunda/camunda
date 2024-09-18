@@ -20,7 +20,7 @@ public record FlowNodeInstanceSort(List<FieldSorting> orderings) implements Sort
 
   public static FlowNodeInstanceSort of(
       final Function<FlowNodeInstanceSort.Builder, ObjectBuilder<FlowNodeInstanceSort>> fn) {
-    return SortOptionBuilders.flownodeInstance(fn);
+    return SortOptionBuilders.flowNodeInstance(fn);
   }
 
   public static final class Builder extends AbstractBuilder<Builder>
@@ -41,6 +41,11 @@ public record FlowNodeInstanceSort(List<FieldSorting> orderings) implements Sort
       return this;
     }
 
+    public Builder bpmnProcessId() {
+      currentOrdering = new FieldSorting("bpmnProcessId", null);
+      return this;
+    }
+
     public Builder startDate() {
       currentOrdering = new FieldSorting("startDate", null);
       return this;
@@ -53,11 +58,6 @@ public record FlowNodeInstanceSort(List<FieldSorting> orderings) implements Sort
 
     public Builder flowNodeId() {
       currentOrdering = new FieldSorting("flowNodeId", null);
-      return this;
-    }
-
-    public Builder flowNodeName() {
-      currentOrdering = new FieldSorting("flowNodeName", null);
       return this;
     }
 

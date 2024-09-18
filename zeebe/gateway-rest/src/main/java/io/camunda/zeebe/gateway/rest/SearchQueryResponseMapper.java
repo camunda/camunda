@@ -203,7 +203,6 @@ public final class SearchQueryResponseMapper {
     return new FlowNodeInstanceItem()
         .flowNodeInstanceKey(instance.key())
         .flowNodeId(instance.flowNodeId())
-        .flowNodeName(instance.flowNodeName())
         .processDefinitionKey(instance.processDefinitionKey())
         .bpmnProcessId(instance.bpmnProcessId())
         .processInstanceKey(instance.processInstanceKey())

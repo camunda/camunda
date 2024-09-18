@@ -25,7 +25,6 @@ public record FlowNodeInstanceFilter(
     List<FlowNodeState> states,
     List<FlowNodeType> types,
     List<String> flowNodeIds,
-    List<String> flowNodeNames,
     List<String> treePaths,
     Boolean incident,
     List<Long> incidentKeys,
@@ -41,7 +40,6 @@ public record FlowNodeInstanceFilter(
     private List<FlowNodeState> states;
     private List<FlowNodeType> types;
     private List<String> flowNodeIds;
-    private List<String> flowNodeNames;
     private List<String> treePaths;
     private Boolean incident;
     private List<Long> incidentKeys;
@@ -110,15 +108,6 @@ public record FlowNodeInstanceFilter(
       return flowNodeIds(collectValuesAsList(values));
     }
 
-    public FlowNodeInstanceFilter.Builder flowNodeNames(final List<String> values) {
-      flowNodeNames = addValuesToList(flowNodeNames, values);
-      return this;
-    }
-
-    public FlowNodeInstanceFilter.Builder flowNodeNames(final String... values) {
-      return flowNodeNames(collectValuesAsList(values));
-    }
-
     public FlowNodeInstanceFilter.Builder treePaths(final List<String> values) {
       treePaths = addValuesToList(treePaths, values);
       return this;
@@ -161,7 +150,6 @@ public record FlowNodeInstanceFilter(
           Objects.requireNonNullElse(states, Collections.emptyList()),
           Objects.requireNonNullElse(types, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeIds, Collections.emptyList()),
-          Objects.requireNonNullElse(flowNodeNames, Collections.emptyList()),
           Objects.requireNonNullElse(treePaths, Collections.emptyList()),
           Objects.requireNonNullElse(incident, false),
           Objects.requireNonNullElse(incidentKeys, Collections.emptyList()),

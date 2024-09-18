@@ -42,6 +42,12 @@ public class FlownodeInstanceFilterImpl
   }
 
   @Override
+  public FlownodeInstanceFilter bpmnProcessId(final String value) {
+    filter.bpmnProcessId(value);
+    return this;
+  }
+
+  @Override
   public FlownodeInstanceFilter processInstanceKey(final long value) {
     filter.setProcessInstanceKey(value);
     return this;
@@ -50,12 +56,6 @@ public class FlownodeInstanceFilterImpl
   @Override
   public FlownodeInstanceFilter flowNodeId(final String value) {
     filter.setFlowNodeId(value);
-    return this;
-  }
-
-  @Override
-  public FlownodeInstanceFilter flowNodeName(final String value) {
-    filter.setFlowNodeName(value);
     return this;
   }
 

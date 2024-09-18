@@ -42,6 +42,11 @@ public class FlownodeInstanceSortImpl extends SearchQuerySortBase<FlownodeInstan
   }
 
   @Override
+  public FlownodeInstanceSort bpmnProcessId() {
+    return field("bpmnProcessId");
+  }
+
+  @Override
   public FlownodeInstanceSort startDate() {
     return field("startDate");
   }
@@ -54,11 +59,6 @@ public class FlownodeInstanceSortImpl extends SearchQuerySortBase<FlownodeInstan
   @Override
   public FlownodeInstanceSort flowNodeId() {
     return field("flowNodeId");
-  }
-
-  @Override
-  public FlownodeInstanceSort flowNodeName() {
-    return field("flowNodeName");
   }
 
   @Override

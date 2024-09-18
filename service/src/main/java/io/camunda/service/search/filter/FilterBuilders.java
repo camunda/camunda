@@ -38,7 +38,7 @@ public final class FilterBuilders {
     return new DecisionInstanceFilter.Builder();
   }
 
-  public static FlowNodeInstanceFilter.Builder flownodeInstance() {
+  public static FlowNodeInstanceFilter.Builder flowNodeInstance() {
     return new FlowNodeInstanceFilter.Builder();
   }
 

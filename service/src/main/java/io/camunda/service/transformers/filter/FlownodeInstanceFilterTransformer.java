@@ -31,7 +31,6 @@ public class FlownodeInstanceFilterTransformer
         getStateQuery(filter.states()),
         getTypeQuery(filter.types()),
         stringTerms("flowNodeId", filter.flowNodeIds()),
-        stringTerms("flowNodeName", filter.flowNodeNames()),
         stringTerms("treePath", filter.treePaths()),
         term("incident", filter.incident()),
         longTerms("incidentKey", filter.incidentKeys()),

@@ -23,9 +23,9 @@ public record FlowNodeInstanceQuery(
           FlowNodeInstanceQuery, Builder, FlowNodeInstanceFilter, FlowNodeInstanceSort> {
 
     private static final FlowNodeInstanceFilter EMPTY_FILTER =
-        FilterBuilders.flownodeInstance().build();
+        FilterBuilders.flowNodeInstance().build();
     private static final FlowNodeInstanceSort EMPTY_SORT =
-        SortOptionBuilders.flownodeInstance().build();
+        SortOptionBuilders.flowNodeInstance().build();
 
     private FlowNodeInstanceFilter filter;
     private FlowNodeInstanceSort sort;
