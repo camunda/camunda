@@ -246,16 +246,14 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   public void shouldReturnBadGatewayOnTimeoutException() {
     // given
-    final var errorMsg = "Oh noes, timeouts!";
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
-        .thenReturn(CompletableFuture.failedFuture(new TimeoutException(errorMsg)));
+        .thenReturn(CompletableFuture.failedFuture(new TimeoutException("Oh noes, timeouts!")));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
             HttpStatus.BAD_GATEWAY,
-            "Expected to handle REST API request, but request timed out between gateway and broker: "
-                + errorMsg);
+            "Expected to handle REST API request, but request timed out between gateway and broker");
     expectedBody.setTitle(TimeoutException.class.getName());
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
@@ -287,8 +285,7 @@ public class ErrorMapperTest extends RestControllerTest {
         ProblemDetail.forStatusAndDetail(
             HttpStatus.BAD_GATEWAY,
             "Expected to handle REST API request, but the connection was cut prematurely with the broker; "
-                + "the request may or may not have been accepted, and may not be safe to retry: "
-                + errorMsg);
+                + "the request may or may not have been accepted, and may not be safe to retry");
     expectedBody.setTitle(ConnectionClosed.class.getName());
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
@@ -311,16 +308,16 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   public void shouldReturnServiceUnavailableOnConnectTimeoutException() {
     // given
-    final var errorMsg = "Oh noes, connection timeouts!";
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
-        .thenReturn(CompletableFuture.failedFuture(new ConnectTimeoutException(errorMsg)));
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ConnectTimeoutException("Oh noes, connection timeouts!")));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
             HttpStatus.SERVICE_UNAVAILABLE,
-            "Expected to handle REST API request, but a connection timeout exception occurred: "
-                + errorMsg);
+            "Expected to handle REST API request, but a connection timeout exception occurred");
     expectedBody.setTitle(ConnectTimeoutException.class.getName());
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
@@ -343,16 +340,15 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   public void shouldReturnServiceUnavailableOnConnectException() {
     // given
-    final var errorMsg = "Oh noes, connection timeouts!";
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
-        .thenReturn(CompletableFuture.failedFuture(new ConnectException(errorMsg)));
+        .thenReturn(
+            CompletableFuture.failedFuture(new ConnectException("Oh noes, connection timeouts!")));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
             HttpStatus.SERVICE_UNAVAILABLE,
-            "Expected to handle REST API request, but there was a connection error with one of the brokers: "
-                + errorMsg);
+            "Expected to handle REST API request, but there was a connection error with one of the brokers");
     expectedBody.setTitle(ConnectException.class.getName());
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
@@ -375,8 +371,6 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   public void shouldReturnServiceUnavailableOnPartitionNotFoundException() {
     // given
-    final var errorMsg =
-        "Expected to execute command on partition 1, but either it does not exist, or the gateway is not yet aware of it";
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(CompletableFuture.failedFuture(new PartitionNotFoundException(1)));
 
@@ -384,7 +378,7 @@ public class ErrorMapperTest extends RestControllerTest {
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
             HttpStatus.SERVICE_UNAVAILABLE,
-            "Expected to handle REST API request, but request could not be delivered: Expected to execute command on partition 1, but either it does not exist, or the gateway is not yet aware of it");
+            "Expected to handle REST API request, but request could not be delivered");
     expectedBody.setTitle(PartitionNotFoundException.class.getName());
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
@@ -406,17 +400,15 @@ public class ErrorMapperTest extends RestControllerTest {
 
   @Test
   public void shouldReturnBadRequestOnMsgpackException() {
-    // given
-    final var errorMsg = "Oh noes, msg parsing!";
+    // given;
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
-        .thenReturn(CompletableFuture.failedFuture(new MsgpackException(errorMsg)));
+        .thenReturn(CompletableFuture.failedFuture(new MsgpackException("Oh noes, msg parsing!")));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
             HttpStatus.BAD_REQUEST,
-            "Expected to handle REST API request, but messagepack property was invalid: "
-                + errorMsg);
+            "Expected to handle REST API request, but messagepack property was invalid");
     expectedBody.setTitle(MsgpackException.class.getName());
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
@@ -439,15 +431,15 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   public void shouldReturnBadRequestOnJsonParseException() {
     // given
-    final var errorMsg = "Oh noes, json parsing!";
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
-        .thenReturn(CompletableFuture.failedFuture(new JsonParseException(errorMsg)));
+        .thenReturn(
+            CompletableFuture.failedFuture(new JsonParseException("Oh noes, json parsing!")));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
             HttpStatus.BAD_REQUEST,
-            "Expected to handle REST API request, but JSON property was invalid: " + errorMsg);
+            "Expected to handle REST API request, but JSON property was invalid");
     expectedBody.setTitle(JsonParseException.class.getName());
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
@@ -470,15 +462,16 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   public void shouldReturnBadRequestOnIllegalArgumentException() {
     // given
-    final var errorMsg = "Oh noes, illegal arguments!";
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
-        .thenReturn(CompletableFuture.failedFuture(new IllegalArgumentException(errorMsg)));
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new IllegalArgumentException("Oh noes, illegal arguments!")));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
             HttpStatus.BAD_REQUEST,
-            "Expected to handle REST API request, but JSON property was invalid: " + errorMsg);
+            "Expected to handle REST API request, but JSON property was invalid");
     expectedBody.setTitle(IllegalArgumentException.class.getName());
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
@@ -501,9 +494,6 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   public void shouldReturnTooManyRequestsOnRequestRetriesExhaustedException() {
     // given
-    final var errorMsg =
-        "Expected to execute the command on one of the partitions, but all failed; there are no more partitions available to retry. "
-            + "Please try again. If the error persists contact your zeebe operator";
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(CompletableFuture.failedFuture(new RequestRetriesExhaustedException()));
 
@@ -511,8 +501,7 @@ public class ErrorMapperTest extends RestControllerTest {
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
             HttpStatus.TOO_MANY_REQUESTS,
-            "Expected to handle REST API request, but all retries have been exhausted: "
-                + errorMsg);
+            "Expected to handle REST API request, but all retries have been exhausted");
     expectedBody.setTitle(RequestRetriesExhaustedException.class.getName());
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
