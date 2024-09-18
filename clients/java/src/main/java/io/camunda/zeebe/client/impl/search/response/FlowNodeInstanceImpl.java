@@ -24,7 +24,6 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
   private final String flowNodeId;
-  private final String flowNodeName;
   private final String startDate;
   private final String endDate;
   private final Boolean incident;
@@ -39,7 +38,6 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
     processDefinitionKey = item.getProcessDefinitionKey();
     processInstanceKey = item.getProcessInstanceKey();
     flowNodeId = item.getFlowNodeId();
-    flowNodeName = item.getFlowNodeName();
     startDate = item.getStartDate();
     endDate = item.getEndDate();
     incident = item.getIncident();
@@ -68,11 +66,6 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   @Override
   public String getFlowNodeId() {
     return flowNodeId;
-  }
-
-  @Override
-  public String getFlowNodeName() {
-    return flowNodeName;
   }
 
   @Override

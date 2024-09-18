@@ -199,7 +199,7 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toFlowNodeInstance).toList();
   }
 
-  private static FlowNodeInstanceItem toFlowNodeInstance(final FlowNodeInstanceEntity instance) {
+  public static FlowNodeInstanceItem toFlowNodeInstance(final FlowNodeInstanceEntity instance) {
     return new FlowNodeInstanceItem()
         .flowNodeInstanceKey(instance.key())
         .flowNodeId(instance.flowNodeId())

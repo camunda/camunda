@@ -15,6 +15,7 @@ import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.service.entities.FlowNodeInstanceEntity;
 import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.filter.FlowNodeInstanceFilter;
 import io.camunda.service.search.query.FlowNodeInstanceQuery;
 import io.camunda.service.search.query.SearchQueryResult;
@@ -72,7 +73,44 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
           .sortValues(new Object[] {"v"})
           .build();
 
-  static final String FLOWNODE_INSTANCES_SEARCH_URL = "/v2/flownode-instances/search";
+  static final String EXPECTED_GET_RESPONSE =
+      """
+         {
+           "flowNodeInstanceKey":23,
+           "processInstanceKey":5,
+           "processDefinitionKey":17,
+           "bpmnProcessId":"complexProcess",
+           "startDate":"startDate",
+           "endDate":"endDate",
+           "flowNodeId":"startEvent_1",
+           "treePath":"5/23",
+           "type":"SERVICE_TASK",
+           "state":"ACTIVE",
+           "incident":true,
+           "incidentKey":1234,
+           "tenantId":"tenantId"
+         }
+  """;
+
+  static final FlowNodeInstanceEntity GET_QUERY_RESULT =
+      new FlowNodeInstanceEntity(
+          23L,
+          5L,
+          17L,
+          "startDate",
+          "endDate",
+          "startEvent_1",
+          "5/23",
+          FlowNodeType.SERVICE_TASK,
+          FlowNodeState.ACTIVE,
+          true,
+          1234L,
+          null,
+          "complexProcess",
+          "tenantId");
+
+  static final String FLOW_NODE_INSTANCES_URL = "/v2/flownode-instances/";
+  static final String FLOW_NODE_INSTANCES_SEARCH_URL = FLOW_NODE_INSTANCES_URL + "search";
 
   @MockBean FlowNodeInstanceServices flowNodeInstanceServices;
 
@@ -90,7 +128,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(FLOWNODE_INSTANCES_SEARCH_URL)
+        .uri(FLOW_NODE_INSTANCES_SEARCH_URL)
         .exchange()
         .expectStatus()
         .isOk()
@@ -111,7 +149,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
     final var request = "{}";
     webClient
         .post()
-        .uri(FLOWNODE_INSTANCES_SEARCH_URL)
+        .uri(FLOW_NODE_INSTANCES_SEARCH_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -153,7 +191,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         """;
     webClient
         .post()
-        .uri(FLOWNODE_INSTANCES_SEARCH_URL)
+        .uri(FLOW_NODE_INSTANCES_SEARCH_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -210,7 +248,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         """;
     webClient
         .post()
-        .uri(FLOWNODE_INSTANCES_SEARCH_URL)
+        .uri(FLOW_NODE_INSTANCES_SEARCH_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -251,5 +289,49 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                         .asc()
                         .build())
                 .build());
+  }
+
+  @Test
+  void shouldGetFlowNodeInstanceByKey() {
+    when(flowNodeInstanceServices.getByKey(any(Long.class))).thenReturn(GET_QUERY_RESULT);
+    // when / then
+    webClient
+        .get()
+        .uri(FLOW_NODE_INSTANCES_URL + "23")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON_UTF8_VALUE)
+        .expectBody()
+        .json(EXPECTED_GET_RESPONSE);
+
+    verify(flowNodeInstanceServices).getByKey(23L);
+  }
+
+  @Test
+  void shouldThrowNotFoundIfKeyNotExistsForGetFlowNodeInstanceByKey() {
+    when(flowNodeInstanceServices.getByKey(any(Long.class))).thenThrow(new NotFoundException(""));
+    // when / then
+    webClient
+        .get()
+        .uri(FLOW_NODE_INSTANCES_URL + "5")
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
+        .expectBody()
+        .json(
+            """
+          {
+              "type":"about:blank",
+              "title":"NOT_FOUND",
+              "status":404,
+              "instance":"/v2/flownode-instances/5"
+          }
+        """);
+
+    verify(flowNodeInstanceServices).getByKey(5L);
   }
 }

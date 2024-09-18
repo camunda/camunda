@@ -50,6 +50,11 @@ public record FlowNodeInstanceQuery(
       return this;
     }
 
+    public FlowNodeInstanceQuery.Builder filter(
+        final Function<FlowNodeInstanceFilter.Builder, ObjectBuilder<FlowNodeInstanceFilter>> fn) {
+      return filter(FilterBuilders.flowNodeInstance(fn));
+    }
+
     public Builder sort(
         final Function<FlowNodeInstanceSort.Builder, ObjectBuilder<FlowNodeInstanceSort>> fn) {
       return sort(SortOptionBuilders.flowNodeInstance(fn));
