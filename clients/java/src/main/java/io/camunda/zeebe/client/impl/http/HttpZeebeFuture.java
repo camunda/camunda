@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.impl.http;
 
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.ProblemException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -34,6 +35,27 @@ public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements 
   private volatile Future<?> transportFuture;
 
   @Override
+  public RespT join() {
+    try {
+      return get();
+    } catch (final ExecutionException e) {
+      throw unwrapExecutionException(e);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ClientException("Failed: interrupted while awaiting response", e);
+    }
+  }
+
+  @Override
+  public boolean cancel(final boolean mayInterruptIfRunning) {
+    if (transportFuture != null) {
+      transportFuture.cancel(mayInterruptIfRunning);
+    }
+
+    return super.cancel(mayInterruptIfRunning);
+  }
+
+  @Override
   public RespT join(final long timeout, final TimeUnit unit) {
     try {
       return super.get(timeout, unit);
@@ -47,21 +69,21 @@ public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements 
     }
   }
 
-  @Override
-  public boolean cancel(final boolean mayInterruptIfRunning) {
-    if (transportFuture != null) {
-      transportFuture.cancel(mayInterruptIfRunning);
-    }
-
-    return super.cancel(mayInterruptIfRunning);
-  }
-
   public void transportFuture(final Future<?> httpFuture) {
     transportFuture = httpFuture;
 
     // possibly we were already cancelled between calls
     if (isCancelled()) {
       httpFuture.cancel(true);
+    }
+  }
+
+  private ProblemException unwrapExecutionException(final ExecutionException e) {
+    final Throwable cause = e.getCause();
+    if (cause instanceof ProblemException) {
+      throw (ProblemException) cause;
+    } else {
+      throw new ClientException(cause);
     }
   }
 }
