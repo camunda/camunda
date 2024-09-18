@@ -382,11 +382,11 @@ public class RequestMapper {
             .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
             .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants);
 
-    final var authenticatedUser =
-        (CamundaUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
 
-    if (authenticatedUser != null) {
-      token.withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedUser.getUserKey());
+    if (requestAuthentication != null) {
+      final var authenticatedPrincipal = (CamundaUser) requestAuthentication.getPrincipal();
+      token.withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedPrincipal.getUserKey());
     }
 
     return new Builder().token(token.build()).tenants(authorizedTenants).build();
