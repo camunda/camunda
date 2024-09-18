@@ -27,7 +27,7 @@ jobs:
             tag: SNAPSHOT
         optimize:
           image:
-            tag: SNAPSHOT
+            tag: 8-SNAPSHOT
       vault-secret-mapping: |
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR | TEST_DOCKER_USERNAME;
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
