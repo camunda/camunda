@@ -14,8 +14,7 @@ import java.io.IOException;
 
 public class UserTestWithTemplateIndexES extends UserTestWithTemplateIndex<Builder> {
 
-  public UserTestWithTemplateIndexES() {
-  }
+  public UserTestWithTemplateIndexES() {}
 
   @Override
   public IndexSettings.Builder addStaticSetting(

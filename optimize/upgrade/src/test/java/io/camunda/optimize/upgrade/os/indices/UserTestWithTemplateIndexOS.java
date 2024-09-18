@@ -14,8 +14,7 @@ import org.opensearch.client.opensearch.indices.IndexSettings.Builder;
 
 public class UserTestWithTemplateIndexOS extends UserTestWithTemplateIndex<Builder> {
 
-  public UserTestWithTemplateIndexOS() {
-  }
+  public UserTestWithTemplateIndexOS() {}
 
   @Override
   public IndexSettings.Builder addStaticSetting(
