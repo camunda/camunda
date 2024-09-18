@@ -236,7 +236,7 @@ public final class SearchQueryResponseMapper {
     return incidents.stream().map(SearchQueryResponseMapper::toIncident).toList();
   }
 
-  private static IncidentItem toIncident(final IncidentEntity t) {
+  public static IncidentItem toIncident(final IncidentEntity t) {
     return new IncidentItem()
         .key(t.key())
         .processDefinitionKey(t.processDefinitionKey())

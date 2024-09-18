@@ -10,9 +10,9 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 
 import io.camunda.service.IncidentServices;
-import io.camunda.service.entities.IncidentEntity;
 import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.query.IncidentQuery;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -54,12 +54,12 @@ public class IncidentQueryController {
   @GetMapping(
       path = "/{incidentKey}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public ResponseEntity<IncidentEntity> getByKey(
+  public ResponseEntity<IncidentItem> getByKey(
       @PathVariable("incidentKey") final Long incidentKey) {
     try {
       return ResponseEntity.ok()
           .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
-          .body(incidentServices.getByKey(incidentKey));
+          .body(SearchQueryResponseMapper.toIncident(incidentServices.getByKey(incidentKey)));
     } catch (final NotFoundException nfe) {
       final var problemDetail =
           RestErrorMapper.createProblemDetail(
