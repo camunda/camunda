@@ -36,6 +36,7 @@ import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.os.report.context.VariableAggregationContextOS;
 import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
 import io.camunda.optimize.service.db.os.report.service.VariableAggregationServiceOS;
+import io.camunda.optimize.service.db.os.util.AggregateHelperOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.report.plan.ExecutionPlan;
@@ -242,9 +243,9 @@ public abstract class AbstractGroupByVariableInterpreterOS<
       // variable
       return;
     }
-
-    final NestedAggregate nested =
-        response.aggregations().get(NESTED_VARIABLE_AGGREGATION).nested();
+    final Map<String, Aggregate> fixedAggregations =
+        AggregateHelperOS.withNullValues(response.hits().total().value(), response.aggregations());
+    final NestedAggregate nested = fixedAggregations.get(NESTED_VARIABLE_AGGREGATION).nested();
     final FilterAggregate filteredVariables =
         nested.aggregations().get(FILTERED_VARIABLES_AGGREGATION).filter();
     final Aggregate filterLimitedAggregation =

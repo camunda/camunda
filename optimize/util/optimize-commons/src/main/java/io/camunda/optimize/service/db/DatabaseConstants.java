@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DatabaseConstants {
+  public static final String AGGREGATION_CONTAINS_NULL = "isNull";
 
   // Note: we cap listings to 1000 as a generous practical limit, no paging
   public static final int LIST_FETCH_LIMIT = 1000;

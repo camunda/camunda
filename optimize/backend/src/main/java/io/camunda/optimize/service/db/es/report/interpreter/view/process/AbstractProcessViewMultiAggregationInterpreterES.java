@@ -7,62 +7,27 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.view.process;
 
-import com.google.common.collect.ImmutableMap;
-import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.service.db.es.report.aggregations.AggregationStrategy;
-import io.camunda.optimize.service.db.es.report.aggregations.AvgAggregation;
-import io.camunda.optimize.service.db.es.report.aggregations.MaxAggregation;
-import io.camunda.optimize.service.db.es.report.aggregations.MinAggregation;
-import io.camunda.optimize.service.db.es.report.aggregations.PercentileAggregation;
-import io.camunda.optimize.service.db.es.report.aggregations.SumAggregation;
-import io.camunda.optimize.service.db.report.ExecutionContext;
-import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewMeasure;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
+import io.camunda.optimize.service.db.es.report.aggregations.AggregationStrategyES;
+import io.camunda.optimize.service.db.es.report.aggregations.AvgAggregationES;
+import io.camunda.optimize.service.db.es.report.aggregations.MaxAggregationES;
+import io.camunda.optimize.service.db.es.report.aggregations.MinAggregationES;
+import io.camunda.optimize.service.db.es.report.aggregations.PercentileAggregationES;
+import io.camunda.optimize.service.db.es.report.aggregations.SumAggregationES;
+import io.camunda.optimize.service.db.report.interpreter.view.process.AbstractProcessViewMultiAggregationInterpreter;
 
 public abstract class AbstractProcessViewMultiAggregationInterpreterES
+    extends AbstractProcessViewMultiAggregationInterpreter<AggregationStrategyES<?>>
     implements ProcessViewInterpreterES {
 
-  private static final Map<AggregationType, AggregationStrategy<?>> AGGREGATION_STRATEGIES =
-      ImmutableMap.<AggregationType, AggregationStrategy<?>>builder()
-          .put(AggregationType.MIN, new MinAggregation())
-          .put(AggregationType.MAX, new MaxAggregation())
-          .put(AggregationType.AVERAGE, new AvgAggregation())
-          .put(AggregationType.SUM, new SumAggregation())
-          .put(AggregationType.PERCENTILE, new PercentileAggregation())
-          .build();
-
   @Override
-  public ViewResult createEmptyResult(
-      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final ViewResult.ViewResultBuilder viewResultBuilder = ViewResult.builder();
-    getAggregationStrategies(context.getReportData())
-        .forEach(
-            aggregationStrategy ->
-                viewResultBuilder.viewMeasure(
-                    ViewMeasure.builder()
-                        .aggregationType(aggregationStrategy.getAggregationType())
-                        .value(null)
-                        .build()));
-    return viewResultBuilder.build();
-  }
-
-  public List<AggregationStrategy<?>> getAggregationStrategies(
-      final ProcessReportDataDto definitionData) {
-    return definitionData.getConfiguration().getAggregationTypes().stream()
-        .map(
-            aggregationTypeDto -> {
-              final AggregationStrategy<?> aggregationStrategy =
-                  AGGREGATION_STRATEGIES.get(aggregationTypeDto.getType());
-              if (aggregationStrategy instanceof PercentileAggregation) {
-                return new PercentileAggregation(aggregationTypeDto.getValue());
-              }
-              return aggregationStrategy;
-            })
-        .collect(Collectors.toList());
+  protected AggregationStrategyES<?> getAggregationStrategy(final AggregationDto aggregationDto) {
+    return switch (aggregationDto.getType()) {
+      case MIN -> new MinAggregationES();
+      case MAX -> new MaxAggregationES();
+      case AVERAGE -> new AvgAggregationES();
+      case SUM -> new SumAggregationES();
+      case PERCENTILE -> new PercentileAggregationES(aggregationDto.getValue());
+    };
   }
 }
