@@ -8,7 +8,6 @@
 package io.camunda.service.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -19,10 +18,10 @@ import java.util.List;
 
 public class FormFilterTransformer implements FilterTransformer<FormFilter> {
 
-  private final ServiceTransformers transformers;
+  private final ServiceTransformers serviceTransformers;
 
   public FormFilterTransformer(final ServiceTransformers transformers) {
-    this.transformers = transformers;
+    serviceTransformers = transformers;
   }
 
   @Override
@@ -38,9 +37,7 @@ public class FormFilterTransformer implements FilterTransformer<FormFilter> {
   }
 
   private SearchQuery getFormByKeysQuery(final List<Long> formKey) {
-    final List<String> formKeyAsString = formKey.stream()
-        .map(String::valueOf)
-        .toList();
+    final List<String> formKeyAsString = formKey.stream().map(String::valueOf).toList();
 
     return stringTerms("id", formKeyAsString);
   }
