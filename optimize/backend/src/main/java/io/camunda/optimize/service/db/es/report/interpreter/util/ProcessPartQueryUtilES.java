@@ -25,7 +25,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import co.elastic.clients.json.JsonData;
 import com.google.common.collect.ImmutableMap;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
-import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import io.camunda.optimize.service.db.report.interpreter.util.AbstractProcessPartQueryUtil;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import java.util.HashMap;
 import java.util.List;
@@ -35,11 +35,7 @@ import lombok.NoArgsConstructor;
 import org.apache.commons.text.StringSubstitutor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class ProcessPartQueryUtil {
-
-  private static final String SCRIPT_AGGREGATION = "scriptAggregation";
-  private static final String NESTED_AGGREGATION = "nestedAggregation";
-
+public class ProcessPartQueryUtilES extends AbstractProcessPartQueryUtil {
   public static Map<String, Aggregate> getProcessPartAggregations(
       final Map<String, Aggregate> aggs) {
     return aggs.get(NESTED_AGGREGATION).nested().aggregations();
@@ -47,8 +43,8 @@ public class ProcessPartQueryUtil {
 
   public static Double getProcessPartAggregationResult(
       final Map<String, Aggregate> aggs, final AggregationDto aggregationType) {
-    NestedAggregate nested = aggs.get(NESTED_AGGREGATION).nested();
-    ScriptedMetricAggregate scriptedMetric =
+    final NestedAggregate nested = aggs.get(NESTED_AGGREGATION).nested();
+    final ScriptedMetricAggregate scriptedMetric =
         nested.aggregations().get(getScriptAggregationName(aggregationType)).scriptedMetric();
     try {
       return scriptedMetric.value().to(Double.class);
@@ -61,7 +57,7 @@ public class ProcessPartQueryUtil {
       final BoolQuery.Builder boolQueryBuilder,
       final String startFlowNodeId,
       final String endFlowNodeId) {
-    String termPath =
+    final String termPath =
         ProcessInstanceIndex.FLOW_NODE_INSTANCES + "." + ProcessInstanceIndex.FLOW_NODE_ID;
     boolQueryBuilder.must(
         m ->
@@ -84,7 +80,7 @@ public class ProcessPartQueryUtil {
       final String startFlowNodeId,
       final String endFlowNodeId,
       final List<AggregationDto> aggregationTypes) {
-    Aggregation.Builder.ContainerBuilder nestedFlowNodeAggregation =
+    final Aggregation.Builder.ContainerBuilder nestedFlowNodeAggregation =
         new Aggregation.Builder().nested(n -> n.path(ProcessInstanceIndex.FLOW_NODE_INSTANCES));
     aggregationTypes.forEach(
         aggregationType -> {
@@ -107,15 +103,6 @@ public class ProcessPartQueryUtil {
         });
 
     return Map.of(NESTED_AGGREGATION, nestedFlowNodeAggregation);
-  }
-
-  private static String getScriptAggregationName(final AggregationDto aggregationType) {
-    final String aggName =
-        aggregationType.getType() == AggregationType.PERCENTILE
-            ? aggregationType.getType().getId()
-                + String.valueOf(aggregationType.getValue()).replace(".", "_")
-            : aggregationType.getType().getId();
-    return String.join("_", SCRIPT_AGGREGATION, aggName);
   }
 
   private static Script createInitScript() {

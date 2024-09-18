@@ -239,6 +239,10 @@ public interface QueryDSL {
     return sortOrder == sortOrder.ASC ? SortOrder.Asc : SortOrder.Desc;
   }
 
+  static Script script(final String script) {
+    return scriptFromJsonData(script, Map.of());
+  }
+
   static Script script(final String script, final Map<String, Object> params) {
     return scriptFromJsonData(script, jsonParams(params));
   }

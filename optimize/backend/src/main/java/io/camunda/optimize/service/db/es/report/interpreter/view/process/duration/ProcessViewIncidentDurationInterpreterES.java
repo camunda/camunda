@@ -12,7 +12,6 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.I
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_CREATE_TIME;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_DURATION_IN_MS;
 
-import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.report.plan.process.ProcessView;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
@@ -29,12 +28,12 @@ public class ProcessViewIncidentDurationInterpreterES
   }
 
   @Override
-  protected String getReferenceDateFieldName(final ProcessReportDataDto reportData) {
+  protected String getReferenceDateFieldName() {
     return INCIDENTS + "." + INCIDENT_CREATE_TIME;
   }
 
   @Override
-  protected String getDurationFieldName(final ProcessReportDataDto definitionData) {
+  protected String getDurationFieldName() {
     return INCIDENTS + "." + INCIDENT_DURATION_IN_MS;
   }
 }

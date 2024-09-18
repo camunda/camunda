@@ -24,18 +24,18 @@ import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessView;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
+import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.math3.util.Precision;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
-@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Primary
+@Conditional(ElasticSearchCondition.class)
 public class ProcessViewUserTaskDurationInterpreterES
     extends AbstractProcessViewMultiAggregationInterpreterES {
 

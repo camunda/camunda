@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -66,6 +67,13 @@ public class ProcessViewInterpreterFacadeOS
       Map<String, Aggregate> aggregations,
       ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return interpreter(context.getPlan().getView()).retrieveResult(response, aggregations, context);
+  }
+
+  @Override
+  public Builder adjustQuery(
+      final Builder queryBuilder,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    return interpreter(context.getPlan().getView()).adjustQuery(queryBuilder, context);
   }
 
   @Override

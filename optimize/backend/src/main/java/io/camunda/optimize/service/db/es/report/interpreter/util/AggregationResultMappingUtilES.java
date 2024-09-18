@@ -13,11 +13,11 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class ElasticsearchAggregationResultMappingUtil {
+public class AggregationResultMappingUtilES {
 
   public static Double mapToDoubleOrNull(
       final TDigestPercentilesAggregate aggregation, final double percentileValue) {
-    Double percentile =
+    final Double percentile =
         Optional.ofNullable(aggregation.values())
             .filter(h -> h.keyed().get(Double.toString(percentileValue)) != null)
             .map(h -> Double.parseDouble(h.keyed().get(Double.toString(percentileValue))))
@@ -26,14 +26,6 @@ public class ElasticsearchAggregationResultMappingUtil {
       return null;
     } else {
       return percentile;
-    }
-  }
-
-  public static Double mapToDoubleOrNull(final Double value) {
-    if (Double.isInfinite(value) || Double.isNaN(value)) {
-      return null;
-    } else {
-      return value;
     }
   }
 }
