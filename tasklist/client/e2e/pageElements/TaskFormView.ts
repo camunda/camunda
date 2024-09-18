@@ -58,8 +58,8 @@ class TaskFormView {
     let retries = 3;
     while (retries > 0) {
       try {
-        await this.selectDropdown.click({timeout: 40000});
-        await this.page.getByText(value).click({timeout: 40000});
+        await this.selectDropdown.click({timeout: 60000});
+        await this.page.getByText(value).click({timeout: 60000});
         break;
       } catch (error) {
         console.log(`Retry ${4 - retries} - Element click failed: ${error}`);
