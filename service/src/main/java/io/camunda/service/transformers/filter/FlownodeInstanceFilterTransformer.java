@@ -32,7 +32,7 @@ public class FlownodeInstanceFilterTransformer
         getTypeQuery(filter.types()),
         stringTerms("flowNodeId", filter.flowNodeIds()),
         stringTerms("treePath", filter.treePaths()),
-        term("incident", filter.incident()),
+        filter.incident() != null ? term("incident", filter.incident()) : null,
         longTerms("incidentKey", filter.incidentKeys()),
         stringTerms("tenantId", filter.tenantIds()));
   }

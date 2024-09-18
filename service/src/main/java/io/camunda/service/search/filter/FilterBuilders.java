@@ -42,6 +42,11 @@ public final class FilterBuilders {
     return new FlowNodeInstanceFilter.Builder();
   }
 
+  public static FlowNodeInstanceFilter flowNodeInstance(
+      final Function<FlowNodeInstanceFilter.Builder, ObjectBuilder<FlowNodeInstanceFilter>> fn) {
+    return fn.apply(flowNodeInstance()).build();
+  }
+
   public static UserFilter.Builder user() {
     return new UserFilter.Builder();
   }

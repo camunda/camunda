@@ -151,7 +151,7 @@ public record FlowNodeInstanceFilter(
           Objects.requireNonNullElse(types, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeIds, Collections.emptyList()),
           Objects.requireNonNullElse(treePaths, Collections.emptyList()),
-          Objects.requireNonNullElse(incident, false),
+          incident,
           Objects.requireNonNullElse(incidentKeys, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
     }

@@ -10,9 +10,12 @@ package io.camunda.service.search.query;
 import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.filter.FlowNodeInstanceFilter;
 import io.camunda.service.search.page.SearchQueryPage;
+import io.camunda.service.search.query.IncidentQuery.Builder;
 import io.camunda.service.search.sort.FlowNodeInstanceSort;
 import io.camunda.service.search.sort.SortOptionBuilders;
+import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
+import java.util.function.Function;
 
 public record FlowNodeInstanceQuery(
     FlowNodeInstanceFilter filter, FlowNodeInstanceSort sort, SearchQueryPage page)
@@ -45,6 +48,11 @@ public record FlowNodeInstanceQuery(
     public Builder sort(final FlowNodeInstanceSort value) {
       sort = value;
       return this;
+    }
+
+    public Builder sort(
+        final Function<FlowNodeInstanceSort.Builder, ObjectBuilder<FlowNodeInstanceSort>> fn) {
+      return sort(SortOptionBuilders.flowNodeInstance(fn));
     }
 
     @Override
