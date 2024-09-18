@@ -42,6 +42,11 @@ jobs:
           registry: gcr.io
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - id: image-tag
         name: Calculate image tag
         shell: bash
@@ -49,18 +54,12 @@ jobs:
           # Replace dots and slashes with dashes
           set -x
           branch=${BRANCH/[\/\.]/-}
-          export JAVA_HOME=$JAVA_HOME_21_X64
           java --version
           ./mvnw help:evaluate -DforceStdout -q -D"expression=project.version"
           version=$(./mvnw help:evaluate -q -DforceStdout -D"expression=project.version")
           echo "image-tag=$version-$branch-${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
         env:
           BRANCH: ${{ inputs.branch }}
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
       - uses: ./.github/actions/build-platform-docker
