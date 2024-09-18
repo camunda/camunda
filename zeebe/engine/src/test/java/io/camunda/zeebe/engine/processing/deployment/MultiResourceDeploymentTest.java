@@ -194,10 +194,10 @@ public class MultiResourceDeploymentTest {
                   .getLast())
           .satisfies(
               record -> {
-                assertThat(record.getKey()).isEqualTo(expectedProcessDefinitionKey);
-                assertThat(record.getValue().getProcessDefinitionKey())
-                    .isEqualTo(expectedProcessDefinitionKey);
-                assertThat(record.getValue().getVersion()).isEqualTo(2);
+                Assertions.assertThat(record).hasKey(expectedProcessDefinitionKey);
+                Assertions.assertThat(record.getValue())
+                    .hasProcessDefinitionKey(expectedProcessDefinitionKey)
+                    .hasVersion(2);
               });
     }
 
@@ -210,10 +210,10 @@ public class MultiResourceDeploymentTest {
                   .getLast())
           .satisfies(
               record -> {
-                assertThat(record.getKey()).isEqualTo(expectedDecisionRequirementsKey);
-                assertThat(record.getValue().getDecisionRequirementsKey())
-                    .isEqualTo(expectedDecisionRequirementsKey);
-                assertThat(record.getValue().getDecisionRequirementsVersion()).isEqualTo(2);
+                Assertions.assertThat(record).hasKey(expectedDecisionRequirementsKey);
+                Assertions.assertThat(record.getValue())
+                    .hasDecisionRequirementsKey(expectedDecisionRequirementsKey)
+                    .hasDecisionRequirementsVersion(2);
               });
     }
 
@@ -226,11 +226,11 @@ public class MultiResourceDeploymentTest {
                   .getLast())
           .satisfies(
               record -> {
-                assertThat(record.getKey()).isEqualTo(expectedDecisionKey);
-                assertThat(record.getValue().getDecisionKey()).isEqualTo(expectedDecisionKey);
-                assertThat(record.getValue().getDecisionRequirementsKey())
-                    .isEqualTo(expectedDecisionRequirementsKey);
-                assertThat(record.getValue().getVersion()).isEqualTo(2);
+                Assertions.assertThat(record).hasKey(expectedDecisionKey);
+                Assertions.assertThat(record.getValue())
+                    .hasDecisionKey(expectedDecisionKey)
+                    .hasDecisionRequirementsKey(expectedDecisionRequirementsKey)
+                    .hasVersion(2);
               });
     }
 
@@ -238,9 +238,8 @@ public class MultiResourceDeploymentTest {
       assertThat(RecordingExporter.formRecords().withIntent(FormIntent.CREATED).limit(2).getLast())
           .satisfies(
               record -> {
-                assertThat(record.getKey()).isEqualTo(expectedFormKey);
-                assertThat(record.getValue().getFormKey()).isEqualTo(expectedFormKey);
-                assertThat(record.getValue().getVersion()).isEqualTo(2);
+                Assertions.assertThat(record).hasKey(expectedFormKey);
+                Assertions.assertThat(record.getValue()).hasFormKey(expectedFormKey).hasVersion(2);
               });
     }
   }
@@ -292,10 +291,7 @@ public class MultiResourceDeploymentTest {
                   Assertions.assertThat(metadata)
                       .hasVersion(1)
                       .isDuplicate()
-                      .extracting(
-                          ProcessMetadataValue::getProcessDefinitionKey,
-                          InstanceOfAssertFactories.LONG)
-                      .isEqualTo(processV1.getProcessDefinitionKey()));
+                      .hasProcessDefinitionKey(processV1.getProcessDefinitionKey()));
       assertThat(secondDeployment.getDecisionRequirementsMetadata())
           .singleElement()
           .satisfies(
@@ -303,10 +299,7 @@ public class MultiResourceDeploymentTest {
                   Assertions.assertThat(metadata)
                       .hasDecisionRequirementsVersion(1)
                       .isDuplicate()
-                      .extracting(
-                          DecisionRequirementsMetadataValue::getDecisionRequirementsKey,
-                          InstanceOfAssertFactories.LONG)
-                      .isEqualTo(drgV1.getDecisionRequirementsKey()));
+                      .hasDecisionRequirementsKey(drgV1.getDecisionRequirementsKey()));
       assertThat(secondDeployment.getDecisionsMetadata())
           .singleElement()
           .satisfies(
@@ -314,11 +307,8 @@ public class MultiResourceDeploymentTest {
                   Assertions.assertThat(metadata)
                       .hasVersion(1)
                       .isDuplicate()
-                      .extracting(
-                          DecisionRecordValue::getDecisionKey,
-                          DecisionRecordValue::getDecisionRequirementsKey)
-                      .containsExactly(
-                          decisionV1.getDecisionKey(), drgV1.getDecisionRequirementsKey()));
+                      .hasDecisionKey(decisionV1.getDecisionKey())
+                      .hasDecisionRequirementsKey(drgV1.getDecisionRequirementsKey()));
       assertThat(secondDeployment.getFormMetadata())
           .singleElement()
           .satisfies(
@@ -326,8 +316,7 @@ public class MultiResourceDeploymentTest {
                   Assertions.assertThat(metadata)
                       .hasVersion(1)
                       .isDuplicate()
-                      .extracting(FormMetadataValue::getFormKey)
-                      .isEqualTo(formV1.getFormKey()));
+                      .hasFormKey(formV1.getFormKey()));
 
       final long recordsCountAfter =
           RecordingExporter.records()
