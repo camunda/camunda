@@ -278,6 +278,15 @@ public final class SearchQueryResponseMapper {
         .priority(t.priority());
   }
 
+  public static FormItem toFormItem(final FormEntity f) {
+    return new FormItem()
+        //.key(Long.valueOf(f.id()))
+        //.bpmnId(f.bpmnId())
+        //.version(f.version())
+        //.schema(f.schema())
+        .tenantId(f.tenantId());
+  }
+
   public static Either<ProblemDetail, List<UserResponse>> toUsers(final List<UserEntity> users) {
     return Either.right(
         users.stream().map(SearchQueryResponseMapper::toUser).map(Either::get).toList());

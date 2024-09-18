@@ -137,4 +137,12 @@ public final class FilterBuilders {
       final Function<IncidentFilter.Builder, ObjectBuilder<IncidentFilter>> fn) {
     return fn.apply(incident()).build();
   }
+
+  public static FormFilter.Builder form() {
+    return new FormFilter.Builder();
+  }
+
+  public static FormFilter form(final Function<FormFilter.Builder, ObjectBuilder<FormFilter>> fn) {
+    return fn.apply(form()).build();
+  }
 }

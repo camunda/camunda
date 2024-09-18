@@ -90,6 +90,14 @@ public final class SortOptionBuilders {
     return fn.apply(user()).build();
   }
 
+  public static FormSort.Builder form() {
+    return new FormSort.Builder();
+  }
+
+  public static FormSort form(final Function<FormSort.Builder, ObjectBuilder<FormSort>> fn) {
+    return fn.apply(form()).build();
+  }
+
   public static IncidentSort.Builder incident() {
     return new IncidentSort.Builder();
   }
