@@ -110,6 +110,7 @@ public class JwtAuthorizationTest {
             .withIssuer(DEFAULT_ISSUER)
             .withAudience(DEFAULT_AUDIENCE)
             .withSubject(DEFAULT_SUBJECT)
+            .withClaim(Authorization.AUTHORIZED_USER_KEY, 1234L)
             .sign(Algorithm.none());
 
     // when
