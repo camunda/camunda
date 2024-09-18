@@ -12,11 +12,14 @@ import io.camunda.optimize.service.util.configuration.ConfigurationUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Builder
 @Data
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EngineConfiguration {
 
   private String name;
@@ -44,8 +47,6 @@ public class EngineConfiguration {
     this.excludedTenants = excludedTenants;
     this.authentication = authentication;
   }
-
-  protected EngineConfiguration() {}
 
   @JsonIgnore
   public Optional<String> getDefaultTenantId() {

@@ -16,11 +16,13 @@ import java.util.List;
 import java.util.stream.Stream;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Builder
 @Data
 @Slf4j
+@NoArgsConstructor
 public class TableColumnDto {
 
   public static final String VARIABLE_PREFIX = "variable:";
@@ -44,8 +46,6 @@ public class TableColumnDto {
     this.includedColumns = includedColumns;
     this.columnOrder = columnOrder;
   }
-
-  public TableColumnDto() {}
 
   public void addNewAndRemoveUnexpectedVariableColumns(final List<String> allVariableColumns) {
     final List<String> newColumns = determineNewColumns(allVariableColumns);

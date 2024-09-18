@@ -24,10 +24,12 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
 @Builder
 @Data
+@NoArgsConstructor
 public class SingleReportConfigurationDto implements Combinable {
 
   @Builder.Default private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
@@ -144,8 +146,6 @@ public class SingleReportConfigurationDto implements Combinable {
     this.horizontalBar = horizontalBar;
     this.logScale = logScale;
   }
-
-  public SingleReportConfigurationDto() {}
 
   @JsonIgnore
   public String createCommandKey() {

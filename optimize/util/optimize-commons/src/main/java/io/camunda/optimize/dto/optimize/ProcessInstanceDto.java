@@ -19,10 +19,12 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Data
 @SuperBuilder
+@NoArgsConstructor
 public class ProcessInstanceDto implements OptimizeDto {
 
   private String processDefinitionKey;
@@ -70,8 +72,6 @@ public class ProcessInstanceDto implements OptimizeDto {
     this.dataSource = dataSource;
     this.tenantId = tenantId;
   }
-
-  public ProcessInstanceDto() {}
 
   @JsonIgnore
   public List<FlowNodeInstanceDto> getUserTasks() {

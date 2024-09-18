@@ -18,10 +18,12 @@ import java.util.List;
 import java.util.Optional;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 @SuperBuilder
+@NoArgsConstructor
 public abstract class SingleReportDataDto implements ReportDataDto {
 
   @Getter @Setter @Builder.Default
@@ -36,8 +38,6 @@ public abstract class SingleReportDataDto implements ReportDataDto {
     this.configuration = configuration;
     this.definitions = definitions;
   }
-
-  protected SingleReportDataDto() {}
 
   @JsonIgnore
   public Optional<ReportDataDefinitionDto> getFirstDefinition() {

@@ -24,12 +24,14 @@ import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
 @SuperBuilder
 @DecisionFiltersMustReferenceExistingDefinitionsConstraint
+@NoArgsConstructor
 public class DecisionReportDataDto extends SingleReportDataDto {
 
   @Builder.Default @Valid protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
@@ -53,8 +55,6 @@ public class DecisionReportDataDto extends SingleReportDataDto {
     this.distributedBy = distributedBy;
     this.visualization = visualization;
   }
-
-  public DecisionReportDataDto() {}
 
   public String getDecisionDefinitionKey() {
     return getDefinitionKey();

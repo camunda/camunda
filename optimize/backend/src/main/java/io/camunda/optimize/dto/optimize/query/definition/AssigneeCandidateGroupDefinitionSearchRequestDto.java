@@ -14,9 +14,11 @@ import java.util.List;
 import java.util.Optional;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
 public class AssigneeCandidateGroupDefinitionSearchRequestDto {
 
   private String terms;
@@ -33,8 +35,6 @@ public class AssigneeCandidateGroupDefinitionSearchRequestDto {
     this.processDefinitionKey = processDefinitionKey;
     this.tenantIds = tenantIds;
   }
-
-  public AssigneeCandidateGroupDefinitionSearchRequestDto() {}
 
   public Optional<String> getTerms() {
     return Optional.ofNullable(terms);

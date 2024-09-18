@@ -13,9 +13,11 @@ import java.util.List;
 import java.util.Optional;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
 public class AssigneeCandidateGroupReportSearchRequestDto {
 
   private String terms;
@@ -28,8 +30,6 @@ public class AssigneeCandidateGroupReportSearchRequestDto {
     this.limit = limit;
     this.reportIds = reportIds;
   }
-
-  public AssigneeCandidateGroupReportSearchRequestDto() {}
 
   public Optional<String> getTerms() {
     return Optional.ofNullable(terms);

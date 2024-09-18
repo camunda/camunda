@@ -37,12 +37,14 @@ import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
 @SuperBuilder
 @ProcessFiltersMustReferenceExistingDefinitionsConstraint
+@NoArgsConstructor
 public class ProcessReportDataDto extends SingleReportDataDto implements Combinable {
 
   private static final String COMMAND_KEY_SEPARATOR = "_";
@@ -75,8 +77,6 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     this.managementReport = managementReport;
     this.instantPreviewReport = instantPreviewReport;
   }
-
-  public ProcessReportDataDto() {}
 
   public String getProcessDefinitionKey() {
     return getDefinitionKey();

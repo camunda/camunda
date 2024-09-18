@@ -13,9 +13,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
 public class CustomBucketDto {
 
   @Builder.Default private boolean active = false;
@@ -46,8 +48,6 @@ public class CustomBucketDto {
     this.baseline = baseline;
     this.baselineUnit = baselineUnit;
   }
-
-  protected CustomBucketDto() {}
 
   public Optional<Double> getBucketSizeInUnit(final BucketUnit requestedBucketUnit) {
     return convertValueToRequestedUnit(requestedBucketUnit, bucketSize, bucketSizeUnit);

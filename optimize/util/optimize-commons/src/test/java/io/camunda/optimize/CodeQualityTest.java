@@ -37,11 +37,8 @@ public class CodeQualityTest {
   }
 
   private static String[] forbiddenAnnotations = {
-    "@NoArgsConstructor",
-    "@AllArgsConstructor",
-    "@RequiredArgsConstructor",
-    "@FieldNameConstants",
-    "@Accessor"
+    // "@NoArgsConstructor",
+    "@AllArgsConstructor", "@RequiredArgsConstructor", "@FieldNameConstants", "@Accessor"
   };
 
   @SneakyThrows

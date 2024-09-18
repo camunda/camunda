@@ -13,11 +13,14 @@ import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Builder
 @Data
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProcessRawDataCsvExportRequestDto {
 
   @NotNull private String processDefinitionKey;
@@ -38,6 +41,4 @@ public class ProcessRawDataCsvExportRequestDto {
     this.filter = filter;
     this.includedColumns = includedColumns;
   }
-
-  protected ProcessRawDataCsvExportRequestDto() {}
 }

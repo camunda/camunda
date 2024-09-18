@@ -9,11 +9,14 @@ package io.camunda.optimize.dto.optimize.query.report.combined;
 
 import static io.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_CONFIGURATION_COLOR;
 
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder(toBuilder = true)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CombinedReportItemDto {
 
   private String id;
@@ -27,8 +30,6 @@ public class CombinedReportItemDto {
     this.id = id;
     this.color = color;
   }
-
-  protected CombinedReportItemDto() {}
 
   public static final class Fields {
 
