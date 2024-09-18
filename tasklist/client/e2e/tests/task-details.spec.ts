@@ -576,7 +576,7 @@ test.describe('task details page', () => {
       // });
     } catch (error) {
       console.log('Form not loaded:' + error);
-      await sleep(10000);
+      await sleep(15000);
       await page.reload();
       // await taskFormView.waitUntilLocatorIsVisible(taskFormView.form, page);
       await expect(taskFormView.form).toBeVisible({timeout: 10000});
