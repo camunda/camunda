@@ -10,19 +10,19 @@ package io.camunda.optimize.service.db.es.report.aggregations;
 import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
-import co.elastic.clients.elasticsearch._types.aggregations.PercentilesAggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.PercentilesAggregation.Builder;
 import co.elastic.clients.elasticsearch._types.aggregations.TDigestPercentilesAggregate;
 import co.elastic.clients.util.Pair;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import io.camunda.optimize.service.db.es.report.interpreter.util.ElasticsearchAggregationResultMappingUtil;
+import io.camunda.optimize.service.db.es.report.interpreter.util.AggregationResultMappingUtilES;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
 @AllArgsConstructor
 @NoArgsConstructor
-public class PercentileAggregation extends AggregationStrategy<PercentilesAggregation.Builder> {
+public class PercentileAggregationES extends AggregationStrategyES<Builder> {
 
   private static final String PERCENTILE_AGGREGATION = "percentileAggregation";
 
@@ -36,14 +36,13 @@ public class PercentileAggregation extends AggregationStrategy<PercentilesAggreg
                 createAggregationName(
                     customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION))
             .tdigestPercentiles();
-    return ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull(
-        percentiles, percentileValue);
+    return AggregationResultMappingUtilES.mapToDoubleOrNull(percentiles, percentileValue);
   }
 
   @Override
   public Pair<String, Aggregation.Builder.ContainerBuilder> createAggregationBuilderForAggregation(
-      final String customIdentifier, Script script, String... field) {
-    Aggregation.Builder builder = new Aggregation.Builder();
+      final String customIdentifier, final Script script, final String... field) {
+    final Aggregation.Builder builder = new Aggregation.Builder();
     return Pair.of(
         createAggregationName(
             customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION),

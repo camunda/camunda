@@ -16,12 +16,18 @@ import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewR
 import java.util.Map;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 public interface ViewInterpreterOS<DATA extends SingleReportDataDto, PLAN extends ExecutionPlan>
     extends ViewInterpreter<DATA, PLAN> {
+
+  default BoolQuery.Builder adjustQuery(
+      final BoolQuery.Builder queryBuilder, final ExecutionContext<DATA, PLAN> context) {
+    return queryBuilder;
+  }
 
   default void adjustSearchRequest(
       final SearchRequest.Builder searchRequestBuilder,

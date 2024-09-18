@@ -13,22 +13,18 @@ import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder.ContainerBuilder;
 import co.elastic.clients.elasticsearch._types.aggregations.FormatMetricAggregationBase;
 import co.elastic.clients.util.Pair;
-import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
-import java.util.Arrays;
+import io.camunda.optimize.service.db.report.aggregations.AggregationStrategy;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
-public abstract class AggregationStrategy<
-    T extends FormatMetricAggregationBase.AbstractBuilder<T>> {
+public abstract class AggregationStrategyES<
+        T extends FormatMetricAggregationBase.AbstractBuilder<T>>
+    extends AggregationStrategy {
 
   protected abstract Pair<String, ContainerBuilder> createAggregationBuilderForAggregation(
-      final String customIdentifier, Script script, String... field);
+      final String customIdentifier, final Script script, final String... field);
 
   protected abstract Double getValueForAggregation(
       final String customIdentifier, final Map<String, Aggregate> aggs);
-
-  public abstract AggregationDto getAggregationType();
 
   public Double getValue(final Map<String, Aggregate> aggs) {
     return getValue(null, aggs);
@@ -39,16 +35,12 @@ public abstract class AggregationStrategy<
   }
 
   public Pair<String, Aggregation.Builder.ContainerBuilder> createAggregationBuilder(
-      Script script, String... field) {
+      final Script script, final String... field) {
     return createAggregationBuilder(null, script, field);
   }
 
   public Pair<String, Aggregation.Builder.ContainerBuilder> createAggregationBuilder(
-      final String customIdentifier, Script script, String... field) {
+      final String customIdentifier, final Script script, final String... field) {
     return createAggregationBuilderForAggregation(customIdentifier, script, field);
-  }
-
-  protected String createAggregationName(final String... segments) {
-    return Arrays.stream(segments).filter(Objects::nonNull).collect(Collectors.joining("_"));
   }
 }
