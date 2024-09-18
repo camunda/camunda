@@ -67,7 +67,7 @@ public class BackupReaderES implements BackupReader {
           final String reason =
               String.format("No repository with name [%s] could be found.", repositoryName);
           log.error(reason, e);
-          throw new OptimizeSnapshotRepositoryNotFoundException(reason);
+          throw new OptimizeSnapshotRepositoryNotFoundException(reason, e);
         } else {
           final String reason =
               String.format(

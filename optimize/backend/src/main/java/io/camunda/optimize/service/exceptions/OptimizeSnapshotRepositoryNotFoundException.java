@@ -14,6 +14,10 @@ public class OptimizeSnapshotRepositoryNotFoundException extends OptimizeRuntime
     super(message);
   }
 
+  public OptimizeSnapshotRepositoryNotFoundException(final String message, final Throwable e) {
+    super(message, e);
+  }
+
   @Override
   public String getErrorCode() {
     return ERROR_CODE;
