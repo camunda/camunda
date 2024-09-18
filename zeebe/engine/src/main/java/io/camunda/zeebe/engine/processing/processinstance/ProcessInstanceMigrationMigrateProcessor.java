@@ -197,7 +197,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     final String targetElementId = sourceElementIdToTargetElementId.get(elementId);
     requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
     requireSameElementType(
-        targetProcessDefinition, targetElementId, elementInstanceRecord, processInstanceKey);
+        targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
     requireSameUserTaskImplementation(
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
     requireUnchangedFlowScope(
@@ -239,6 +239,12 @@ public class ProcessInstanceMigrationMigrateProcessor
         sourceProcessDefinition,
         targetProcessDefinition,
         elementId);
+    requireSameMultiInstanceLoopCharacteristics(
+        sourceProcessDefinition,
+        elementId,
+        targetProcessDefinition,
+        targetElementId,
+        processInstanceKey);
     requireNoConcurrentCommand(eventScopeInstanceState, elementInstance, processInstanceKey);
 
     stateWriter.appendFollowUpEvent(

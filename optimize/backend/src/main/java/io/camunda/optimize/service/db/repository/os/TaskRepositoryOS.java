@@ -10,9 +10,19 @@ package io.camunda.optimize.service.db.repository.os;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.TaskRepository;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import io.camunda.optimize.upgrade.es.TaskResponse;
+import io.camunda.optimize.upgrade.es.TaskResponse.Error;
+import io.camunda.optimize.upgrade.es.TaskResponse.Task;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.opensearch.client.opensearch._types.ErrorCause;
+import org.opensearch.client.opensearch.tasks.GetTasksResponse;
+import org.opensearch.client.opensearch.tasks.Info;
 import org.opensearch.client.opensearch.tasks.Status;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -21,7 +31,7 @@ import org.springframework.stereotype.Component;
 @Component
 @AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
-public class TaskRepositoryOS implements TaskRepository {
+public class TaskRepositoryOS extends TaskRepository {
   private final OptimizeOpenSearchClient osClient;
 
   @Override
@@ -50,5 +60,58 @@ public class TaskRepositoryOS implements TaskRepository {
         ? Double.valueOf((double) getProcessedTasksCount(status) / status.total() * 100.0D)
             .intValue()
         : 0;
+  }
+
+  @Override
+  public TaskResponse getTaskResponse(final String taskId) throws IOException {
+    final GetTasksResponse taskResponse =
+        osClient.getRichOpenSearchClient().task().taskWithRetries(taskId);
+    return createTaskResponseFromGetTasksResponse(taskResponse);
+  }
+
+  private TaskResponse createTaskResponseFromGetTasksResponse(
+      final GetTasksResponse getTasksResponse) {
+    boolean completed = getTasksResponse.completed();
+
+    Info taskInfo = getTasksResponse.task();
+    TaskResponse.Status status = null;
+    if (taskInfo.status() != null) {
+      status =
+          new TaskResponse.Status(
+              taskInfo.status().total(),
+              taskInfo.status().updated(),
+              taskInfo.status().created(),
+              taskInfo.status().deleted());
+    }
+
+    final Task task = new TaskResponse.Task(String.valueOf(taskInfo.id()), status);
+    TaskResponse.Error error = null;
+    if (getTasksResponse.error() != null) {
+      List<String> stackTrace =
+          getTasksResponse.error().stackTrace() != null
+              ? List.of(getTasksResponse.error().stackTrace())
+              : Collections.emptyList();
+      Map<String, Object> causedByMap = Map.of();
+      final ErrorCause causedByResponse = getTasksResponse.error().causedBy();
+      if (causedByResponse != null
+          && causedByResponse.type() != null
+          && causedByResponse.reason() != null) {
+        causedByMap = Map.of(causedByResponse.type(), causedByResponse.reason());
+      }
+      error =
+          new Error(
+              getTasksResponse.error().type(),
+              getTasksResponse.error().reason(),
+              stackTrace,
+              causedByMap);
+    }
+
+    TaskResponse.TaskResponseDetails responseDetails = null;
+    if (getTasksResponse.response() != null) {
+      responseDetails =
+          new TaskResponse.TaskResponseDetails(
+              new ArrayList<>(getTasksResponse.response().failures()));
+    }
+    return new TaskResponse(completed, task, error, responseDetails);
   }
 }

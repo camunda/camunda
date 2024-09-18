@@ -86,7 +86,6 @@ import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
-import io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
@@ -132,6 +131,7 @@ public class VariableRepositoryES implements VariableRepository {
   private final DecisionDefinitionReader decisionDefinitionReader;
   private final ProcessQueryFilterEnhancerES processQueryFilterEnhancer;
   private final ProcessDefinitionReader processDefinitionReader;
+  private final TaskRepositoryES taskRepositoryES;
 
   @Override
   public void deleteVariableDataByProcessInstanceIds(
@@ -231,8 +231,7 @@ public class VariableRepositoryES implements VariableRepository {
 
   @Override
   public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
-    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-        esClient,
+    taskRepositoryES.tryDeleteByQueryRequest(
         Query.of(
             q ->
                 q.bool(
@@ -367,8 +366,7 @@ public class VariableRepositoryES implements VariableRepository {
   @Override
   public void deleteExternalVariablesIngestedBefore(
       final OffsetDateTime timestamp, final String deletedItemIdentifier) {
-    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-        esClient,
+    taskRepositoryES.tryDeleteByQueryRequest(
         Query.of(
             q ->
                 q.bool(

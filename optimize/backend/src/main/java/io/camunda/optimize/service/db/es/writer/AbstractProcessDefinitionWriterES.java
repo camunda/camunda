@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeUpdateOperationBuilderES;
+import io.camunda.optimize.service.db.repository.es.TaskRepositoryES;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
@@ -29,6 +30,7 @@ public abstract class AbstractProcessDefinitionWriterES {
   protected final Logger log = LoggerFactory.getLogger(getClass());
   protected final ObjectMapper objectMapper;
   protected final OptimizeElasticsearchClient esClient;
+  protected final TaskRepositoryES taskRepositoryES;
 
   abstract Script createUpdateScript(ProcessDefinitionOptimizeDto processDefinitionDtos);
 

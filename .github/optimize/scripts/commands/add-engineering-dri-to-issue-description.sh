@@ -21,7 +21,7 @@ ISSUE_DESCRIPTION=$(echo "$ISSUE_DESCRIPTION" | sed "/Engineering DRI: @\w\+[[:s
 ISSUE_DESCRIPTION=$(echo "$ISSUE_DESCRIPTION" | sed "/Engineering DRI:[[:space:]]*$/d")
 
 # Add new assignee at the beginning of the description (if there were exactly the same assignee already it will be replaced anyway)
-ISSUE_DESCRIPTION=$(echo -e "Engineering DRI: @$ENGINEERINGDRI\\n\\n${ISSUE_DESCRIPTION}")
+ISSUE_DESCRIPTION=$(echo -e "Engineering DRI: @$ENGINEERING_DRI\\n\\n${ISSUE_DESCRIPTION}")
 
 # Update the issue description
 gh issue edit $ISSUE_URL --body "${ISSUE_DESCRIPTION}"

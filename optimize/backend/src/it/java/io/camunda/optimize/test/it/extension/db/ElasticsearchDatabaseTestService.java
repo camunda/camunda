@@ -19,7 +19,6 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.F
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static io.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
@@ -84,13 +83,13 @@ import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
-import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
-import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
+import io.camunda.optimize.service.db.repository.es.TaskRepositoryES;
+import io.camunda.optimize.service.db.schema.DatabaseSchemaManager;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
@@ -140,12 +139,14 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   private String elasticsearchDatabaseVersion;
 
   private OptimizeElasticsearchClient optimizeElasticsearchClient;
+  private final TaskRepositoryES taskRepositoryES;
 
   public ElasticsearchDatabaseTestService(
       final String customIndexPrefix, final boolean haveToClean) {
     super(customIndexPrefix, haveToClean);
     initEsClient();
     setTestIndexRepository(new TestIndexRepositoryES(optimizeElasticsearchClient));
+    taskRepositoryES = new TaskRepositoryES(optimizeElasticsearchClient);
   }
 
   private static ClientAndServer initMockServer() {
@@ -939,15 +940,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void initSchema(
-      final List<IndexMappingCreator<IndexSettings.Builder>> mappingCreators,
-      final DatabaseMetadataService metadataService) {
-    final ElasticSearchSchemaManager schemaManager =
-        new ElasticSearchSchemaManager(
-            (ElasticSearchMetadataService) metadataService,
-            createDefaultConfiguration(),
-            getIndexNameService(),
-            mappingCreators);
+  public void initSchema(final DatabaseSchemaManager schemaManager) {
     schemaManager.initializeSchema(getOptimizeElasticClient());
   }
 
