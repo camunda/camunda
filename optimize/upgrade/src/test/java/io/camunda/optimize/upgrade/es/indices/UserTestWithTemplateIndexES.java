@@ -11,10 +11,11 @@ import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import co.elastic.clients.elasticsearch.indices.IndexSettings.Builder;
 import io.camunda.optimize.upgrade.indices.UserTestWithTemplateIndex;
 import java.io.IOException;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class UserTestWithTemplateIndexES extends UserTestWithTemplateIndex<Builder> {
+
+  public UserTestWithTemplateIndexES() {
+  }
 
   @Override
   public IndexSettings.Builder addStaticSetting(

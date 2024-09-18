@@ -9,12 +9,13 @@ package io.camunda.optimize.upgrade.os.indices;
 
 import io.camunda.optimize.upgrade.indices.UserTestWithTemplateIndex;
 import java.io.IOException;
-import lombok.AllArgsConstructor;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.IndexSettings.Builder;
 
-@AllArgsConstructor
 public class UserTestWithTemplateIndexOS extends UserTestWithTemplateIndex<Builder> {
+
+  public UserTestWithTemplateIndexOS() {
+  }
 
   @Override
   public IndexSettings.Builder addStaticSetting(
