@@ -571,14 +571,10 @@ test.describe('task details page', () => {
     await tasksPage.assignToMeButton.click();
     try {
       await taskFormView.waitUntilLocatorIsVisible(taskFormView.form, page);
-      // await page.waitForFunction(() => taskFormView.form.isVisible(), {
-      //   timeout: 60000,
-      // });
     } catch (error) {
       console.log('Form not loaded:' + error);
       await sleep(15000);
       await page.reload();
-      // await taskFormView.waitUntilLocatorIsVisible(taskFormView.form, page);
       await expect(taskFormView.form).toBeVisible({timeout: 10000});
     }
     await expect(taskFormView.nameInput).toBeVisible();
