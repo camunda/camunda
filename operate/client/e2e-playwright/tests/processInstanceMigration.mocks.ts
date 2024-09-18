@@ -38,6 +38,7 @@ const setup = async () => {
       'orderProcessMigration',
       deploymentsV1[0].process.version,
       10,
+      {key1: 'myFirstCorrelationKey', key2: 'mySecondCorrelationKey'},
     ),
     processV1: deploymentsV1[0].process,
     processV2: deploymentsV2[0].process,

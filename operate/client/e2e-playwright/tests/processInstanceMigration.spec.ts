@@ -80,7 +80,8 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(3);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(11);
+
     await expect(
       page.getByLabel(/target flow node for check payment/i),
     ).toHaveValue('checkPayment');
@@ -90,6 +91,30 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       page.getByLabel(/target flow node for request for payment/i),
     ).toHaveValue('requestForPayment');
+    await expect(page.getByLabel(/target flow node for task a/i)).toHaveValue(
+      'TaskA',
+    );
+    await expect(page.getByLabel(/target flow node for task b/i)).toHaveValue(
+      'TaskB',
+    );
+    await expect(page.getByLabel(/target flow node for task c/i)).toHaveValue(
+      'TaskC',
+    );
+    await expect(page.getByLabel(/target flow node for task d/i)).toHaveValue(
+      'TaskD',
+    );
+    await expect(
+      page.getByLabel(/target flow node for message interrupting/i),
+    ).toHaveValue('MessageInterrupting');
+    await expect(
+      page.getByLabel(/target flow node for timer interrupting/i),
+    ).toHaveValue('TimerInterrupting');
+    await expect(
+      page.getByLabel(/target flow node for message non-interrupting/i),
+    ).toHaveValue('MessageNonInterrupting');
+    await expect(
+      page.getByLabel(/target flow node for timer non-interrupting/i),
+    ).toHaveValue('TimerNonInterrupting');
 
     // Expect pre-selected process and version
     await expect(migrationView.targetProcessComboBox).toHaveValue(
@@ -206,6 +231,49 @@ test.describe.serial('Process Instance Migration', () => {
       targetFlowNodeName: 'Ship Articles 2',
     });
 
+    /**
+     * Map Tasks A-D. Note that there is a cross mapping:
+     * A -> C2
+     * C -> A2
+     */
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Task A',
+      targetFlowNodeName: 'Task C2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Task B',
+      targetFlowNodeName: 'Task B2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Task C',
+      targetFlowNodeName: 'Task A2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Task D',
+      targetFlowNodeName: 'Task D2',
+    });
+
+    /**
+     * Map boundary events. Note that there is a cross mapping:
+     * interrupting <-> non-interrupting
+     */
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Message interrupting',
+      targetFlowNodeName: 'Message non-interrupting 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Timer interrupting',
+      targetFlowNodeName: 'Timer interrupting 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Message non-interrupting',
+      targetFlowNodeName: 'Message interrupting 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Timer non-interrupting',
+      targetFlowNodeName: 'Timer non-interrupting 2',
+    });
+
     await migrationView.nextButton.click();
 
     await expect(migrationView.summaryNotification).toContainText(
@@ -270,6 +338,60 @@ test.describe.serial('Process Instance Migration', () => {
     await commonPage.collapseOperationsPanel();
   });
 
+  test('Migrated message boundary events', async ({
+    processesPage,
+    processInstancePage,
+  }) => {
+    const {processV3} = initialData;
+
+    await processesPage.navigateToProcesses({
+      searchParams: {
+        active: 'true',
+        process: processV3.bpmnProcessId,
+        version: processV3.version.toString(),
+      },
+    });
+
+    await processesPage.getNthProcessInstanceLink(0).click();
+
+    /**
+     * Expect that the correlation key and message have been migrated from Task C to Task A2
+     */
+    await processInstancePage.diagram.clickFlowNode('Task A2');
+    await processInstancePage.diagram.showMetaData();
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"correlationKey": "mySecondCorrelationKey"',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"messageName": "Message_2",',
+      ),
+    ).toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+    await processInstancePage.diagram.clickFlowNode('Task A2'); // deselect Task A2
+
+    /**
+     * Expect that the correlation key and message have been migrated from Task A to Task C2
+     */
+    await processInstancePage.diagram.clickFlowNode('Task C2');
+    await processInstancePage.diagram.showMetaData();
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"correlationKey": "myFirstCorrelationKey"',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"messageName": "Message_1",',
+      ),
+    ).toBeVisible();
+  });
+
   test('Migrated date tag', async ({processesPage, processInstancePage}) => {
     const targetBpmnProcessId = initialData.processV3.bpmnProcessId;
     const targetVersion = initialData.processV3.version.toString();
@@ -283,12 +405,7 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     // Navigate to the first process instance in the list, that has been migrated
-    await processesPage.processInstancesTable
-      .getByRole('link', {
-        name: /^view instance/i,
-      })
-      .first()
-      .click();
+    await processesPage.getNthProcessInstanceLink(0).click();
 
     // Expect the migrated tag to be visible
     await expect(
