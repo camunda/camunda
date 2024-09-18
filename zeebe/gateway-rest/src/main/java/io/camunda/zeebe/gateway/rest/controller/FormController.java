@@ -10,10 +10,14 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 
 import io.camunda.service.FormServices;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.zeebe.gateway.protocol.rest.FormItem;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,6 +35,7 @@ public class FormController {
   public ResponseEntity<FormItem> getByKey(@PathVariable("formKey") final Long formKey) {
     try {
       return ResponseEntity.ok()
+          .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
           .body(SearchQueryResponseMapper.toFormItem(formServices.getByKey(formKey)));
     } catch (final Exception exc) {
       REST_LOGGER.warn("An exception occurred in get Form by key.", exc);
