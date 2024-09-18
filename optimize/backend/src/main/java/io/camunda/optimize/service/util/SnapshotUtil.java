@@ -16,9 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class SnapshotUtil {
-  public static final String REPOSITORY_MISSING_EXCEPTION_TYPE =
-      "type=repository_missing_exception";
-  public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "type=snapshot_missing_exception";
+  public static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
+  public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "snapshot_missing_exception";
   private static final String COMPONENT_PREFIX = "camunda_optimize_";
   private static final String SNAPSHOT_PREFIX =
       "{componentPrefix}{backupId}_"; // trailing underscore required to avoid
