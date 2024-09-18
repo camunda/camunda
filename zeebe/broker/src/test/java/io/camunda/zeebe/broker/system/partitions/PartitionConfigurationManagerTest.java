@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -158,7 +159,7 @@ final class PartitionConfigurationManagerTest {
               new ExporterDescriptor(validExporterToInitialize, TestExporterA.class, Map.of()),
               exporterWithDifferentType,
               new ExporterDescriptor(exporterWithDifferentType, TestExporterC.class, Map.of()));
-      return new ExporterRepository(exporters, new ExternalJarRepository());
+      return new ExporterRepository(exporters, new ExternalJarRepository(), emptyList());
     }
 
     @Test
