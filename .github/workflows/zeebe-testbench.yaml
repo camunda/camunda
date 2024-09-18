@@ -50,7 +50,7 @@ jobs:
           set -x
           branch=${BRANCH/[\/\.]/-}
           ./mvnw help:evaluate -DforceStdout -D"expression=project.version"
-          version=$(mvn help:evaluate -q -DforceStdout -D"expression=project.version")
+          version=$(./mvnw help:evaluate -q -DforceStdout -D"expression=project.version")
           echo "image-tag=$version-$branch-${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
         env:
           BRANCH: ${{ inputs.branch }}
