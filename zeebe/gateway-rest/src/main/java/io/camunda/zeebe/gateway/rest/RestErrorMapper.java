@@ -94,60 +94,50 @@ public class RestErrorMapper {
       case final CompletionException ce:
         yield mapErrorToProblem(ce.getCause(), rejectionMapper);
       case final MsgpackException mpe:
-        yield createProblemDetail(
-            HttpStatus.BAD_REQUEST,
-            "Expected to handle REST API request, but messagepack property was invalid: "
-                + mpe.getMessage(),
-            mpe.getClass().getName());
+        final var mpeMsg =
+            "Expected to handle REST API request, but messagepack property was invalid";
+        REST_GATEWAY_LOGGER.debug(mpeMsg, mpe);
+        yield createProblemDetail(HttpStatus.BAD_REQUEST, mpeMsg, mpe.getClass().getName());
       case final JsonParseException jpe:
-        yield createProblemDetail(
-            HttpStatus.BAD_REQUEST,
-            "Expected to handle REST API request, but JSON property was invalid: "
-                + jpe.getMessage(),
-            jpe.getClass().getName());
+        final var jpeMsg = "Expected to handle REST API request, but JSON property was invalid";
+        REST_GATEWAY_LOGGER.debug(jpeMsg, jpe);
+        yield createProblemDetail(HttpStatus.BAD_REQUEST, jpeMsg, jpe.getClass().getName());
       case final IllegalArgumentException iae:
-        yield createProblemDetail(
-            HttpStatus.BAD_REQUEST,
-            "Expected to handle REST API request, but JSON property was invalid: "
-                + iae.getMessage(),
-            iae.getClass().getName());
+        final var iaeMsg = "Expected to handle REST API request, but JSON property was invalid";
+        REST_GATEWAY_LOGGER.debug(iaeMsg, iae);
+        yield createProblemDetail(HttpStatus.BAD_REQUEST, iaeMsg, iae.getClass().getName());
       case final RequestRetriesExhaustedException rree:
-        yield createProblemDetail(
-            HttpStatus.TOO_MANY_REQUESTS,
-            "Expected to handle REST API request, but all retries have been exhausted: "
-                + rree.getMessage(),
-            rree.getClass().getName());
+        final var rreeMsg =
+            "Expected to handle REST API request, but all retries have been exhausted";
+        REST_GATEWAY_LOGGER.trace(rreeMsg, rree);
+        yield createProblemDetail(HttpStatus.TOO_MANY_REQUESTS, rreeMsg, rree.getClass().getName());
       case final TimeoutException te:
-        yield createProblemDetail(
-            HttpStatus.BAD_GATEWAY,
-            "Expected to handle REST API request, but request timed out between gateway and broker: "
-                + te.getMessage(),
-            te.getClass().getName());
+        final var teMsg =
+            "Expected to handle REST API request, but request timed out between gateway and broker";
+        REST_GATEWAY_LOGGER.debug(teMsg, te);
+        yield createProblemDetail(HttpStatus.BAD_GATEWAY, teMsg, te.getClass().getName());
       case final MessagingException.ConnectionClosed cc:
-        yield createProblemDetail(
-            HttpStatus.BAD_GATEWAY,
+        final var ccMsg =
             "Expected to handle REST API request, but the connection was cut prematurely with the broker; "
-                + "the request may or may not have been accepted, and may not be safe to retry: "
-                + cc.getMessage(),
-            cc.getClass().getName());
+                + "the request may or may not have been accepted, and may not be safe to retry";
+        REST_GATEWAY_LOGGER.warn(ccMsg, cc);
+        yield createProblemDetail(HttpStatus.BAD_GATEWAY, ccMsg, cc.getClass().getName());
       case final ConnectTimeoutException cte:
-        yield createProblemDetail(
-            HttpStatus.SERVICE_UNAVAILABLE,
-            "Expected to handle REST API request, but a connection timeout exception occurred: "
-                + cte.getMessage(),
-            cte.getClass().getName());
+        final var cteMsg =
+            "Expected to handle REST API request, but a connection timeout exception occurred";
+        REST_GATEWAY_LOGGER.warn(cteMsg, cte);
+        yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, cteMsg, cte.getClass().getName());
       case final ConnectException ce:
-        yield createProblemDetail(
-            HttpStatus.SERVICE_UNAVAILABLE,
-            "Expected to handle REST API request, but there was a connection error with one of the brokers: "
-                + ce.getMessage(),
-            ce.getClass().getName());
+        final var ceMsg =
+            "Expected to handle REST API request, but there was a connection error with one of the brokers";
+        REST_GATEWAY_LOGGER.warn(ceMsg, ce);
+        yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, ceMsg, ce.getClass().getName());
       case final PartitionNotFoundException pnfe:
+        final var pnfeMsg =
+            "Expected to handle REST API request, but request could not be delivered";
+        REST_GATEWAY_LOGGER.debug(pnfeMsg, pnfe);
         yield createProblemDetail(
-            HttpStatus.SERVICE_UNAVAILABLE,
-            "Expected to handle REST API request, but request could not be delivered: "
-                + pnfe.getMessage(),
-            pnfe.getClass().getName());
+            HttpStatus.SERVICE_UNAVAILABLE, pnfeMsg, pnfe.getClass().getName());
       default:
         REST_GATEWAY_LOGGER.error(
             "Expected to handle REST request, but an unexpected error occurred", error);
