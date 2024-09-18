@@ -49,6 +49,7 @@ jobs:
           # Replace dots and slashes with dashes
           set -x
           branch=${BRANCH/[\/\.]/-}
+          export JAVA_HOME=$JAVA_HOME_21_X64
           java --version
           ./mvnw help:evaluate -DforceStdout -q -D"expression=project.version"
           version=$(./mvnw help:evaluate -q -DforceStdout -D"expression=project.version")
