@@ -16,7 +16,7 @@
     "@uidotdev/usehooks": "2.4.1",
     "bpmn-js": "17.11.1",
     "classnames": "^2.5.1",
-    "date-fns": "3.6.0",
+    "date-fns": "4.1.0",
     "event-source-polyfill": "1.0.31",
     "final-form": "4.20.10",
     "final-form-arrays": "3.1.0",
@@ -34,7 +34,7 @@
     "react-i18next": "^15.0.0",
     "react-router-dom": "6.26.2",
     "react-transition-group": "4.4.5",
-    "sass": "1.78.0",
+    "sass": "1.79.1",
     "styled-components": "6.1.13",
     "ts-pattern": "5.3.1",
     "zod": "3.23.8"

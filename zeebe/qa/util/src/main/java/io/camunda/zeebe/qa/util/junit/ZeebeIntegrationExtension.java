@@ -111,8 +111,33 @@ final class ZeebeIntegrationExtension
                 field -> ReflectionUtils.isAssignableTo(field.getType(), TestCluster.class)),
             HierarchyTraversalMode.TOP_DOWN)
         .stream()
+        .peek(
+            field ->
+                initResourceField(extensionContext.getRequiredTestClass(), testInstance, field))
         .map(field -> asClusterResource(testInstance, field))
         .toList();
+  }
+
+  private void initResourceField(
+      final Class<?> requiredTestClass, final Object testInstance, final Field field) {
+    final String initMethod = field.getAnnotation(TestZeebe.class).initMethod();
+    if (!initMethod.isEmpty()) {
+      ReflectionUtils.findMethod(requiredTestClass, initMethod)
+          .ifPresentOrElse(
+              method -> {
+                method.setAccessible(true);
+                try {
+                  method.invoke(testInstance);
+                } catch (final ReflectiveOperationException e) {
+                  throw new UnsupportedOperationException(e);
+                }
+              },
+              () -> {
+                throw new IllegalArgumentException(
+                    "Could not find method '%s' in class '%s'"
+                        .formatted(initMethod, requiredTestClass));
+              });
+    }
   }
 
   private Iterable<ApplicationResource> lookupApplications(
@@ -126,6 +151,9 @@ final class ZeebeIntegrationExtension
                 field -> ReflectionUtils.isAssignableTo(field.getType(), TestApplication.class)),
             HierarchyTraversalMode.TOP_DOWN)
         .stream()
+        .peek(
+            field ->
+                initResourceField(extensionContext.getRequiredTestClass(), testInstance, field))
         .map(field -> asNodeResource(testInstance, field))
         .toList();
   }

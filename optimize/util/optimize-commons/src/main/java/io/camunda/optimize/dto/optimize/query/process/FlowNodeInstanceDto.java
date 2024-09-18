@@ -21,12 +21,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.experimental.Accessors;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-@Accessors(chain = true)
 public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
 
   private String flowNodeInstanceId;

@@ -8,7 +8,6 @@
 package io.camunda.optimize.upgrade.es.index;
 
 import co.elastic.clients.elasticsearch.indices.IndexSettings;
-import java.io.IOException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -17,7 +16,7 @@ public class UpdateLogEntryIndexES
 
   @Override
   public IndexSettings.Builder addStaticSetting(
-      final String key, final int value, final IndexSettings.Builder builder) throws IOException {
+      final String key, final int value, final IndexSettings.Builder builder) {
     return builder.numberOfShards(Integer.toString(value));
   }
 }

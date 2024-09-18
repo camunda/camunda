@@ -10,6 +10,8 @@ package io.camunda.optimize.service.db.os.externalcode.client.sync;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import org.apache.hc.core5.http.ConnectionClosedException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.opensearch.client.opensearch.tasks.Info;
@@ -27,6 +29,22 @@ public class OpenSearchTaskOperations extends OpenSearchRetryOperation {
   @Override
   public GetTasksResponse task(String id) {
     return safe(() -> super.task(id), e -> defaultTaskErrorMessage(id));
+  }
+
+  public GetTasksResponse taskWithRetries(String id) {
+    return executeWithGivenRetries(
+        1,
+        "Get task information for " + id,
+        () -> {
+          try {
+            GetTasksResponse response = super.task(id);
+            return response;
+          } catch (ConnectionClosedException e) {
+            System.out.println("Failed will retry for Task ID " + id);
+            return null;
+          }
+        },
+        Objects::isNull);
   }
 
   @Override

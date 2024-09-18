@@ -31,6 +31,10 @@ describe('stores/processXml/processXml.list', () => {
       'shippingSubProcess',
       'shipArticles',
       'confirmDelivery',
+      'MessageInterrupting',
+      'TimerInterrupting',
+      'MessageNonInterrupting',
+      'TimerNonInterrupting',
     ]);
   });
 
@@ -52,6 +56,10 @@ describe('stores/processXml/processXml.list', () => {
       'shippingSubProcess',
       'shipArticles',
       'confirmDelivery',
+      'MessageInterrupting',
+      'TimerInterrupting',
+      'MessageNonInterrupting',
+      'TimerNonInterrupting',
     ]);
   });
 });

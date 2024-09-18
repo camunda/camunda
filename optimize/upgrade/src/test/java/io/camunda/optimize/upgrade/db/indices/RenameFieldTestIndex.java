@@ -8,13 +8,10 @@
 package io.camunda.optimize.upgrade.indices;
 
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
-import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
 
-public class UserTestUpdatedMappingIndex extends DefaultIndexMappingCreator<IndexSettings.Builder> {
-
-  private static final int VERSION = 2;
+public abstract class RenameFieldTestIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
+  private static final int VERSION = 1;
 
   @Override
   public String getIndexName() {
@@ -28,15 +25,6 @@ public class UserTestUpdatedMappingIndex extends DefaultIndexMappingCreator<Inde
 
   @Override
   public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
-    return builder
-        .properties("password", p -> p.keyword(k -> k))
-        .properties("username", p -> p.keyword(k -> k))
-        .properties("email", p -> p.keyword(k -> k));
-  }
-
-  @Override
-  public IndexSettings.Builder addStaticSetting(
-      final String key, final int value, final IndexSettings.Builder builder) throws IOException {
-    return builder.numberOfShards(Integer.toString(value));
+    return builder.properties("name", p -> p.keyword(k -> k));
   }
 }

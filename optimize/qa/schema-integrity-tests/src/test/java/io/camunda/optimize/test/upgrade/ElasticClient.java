@@ -7,12 +7,16 @@
  */
 package io.camunda.optimize.test.upgrade;
 
+import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
+
+import co.elastic.clients.elasticsearch._types.analysis.TokenChar;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.http.HttpHost;
+import org.apache.http.client.methods.HttpGet;
 import org.elasticsearch.action.admin.cluster.repositories.delete.DeleteRepositoryRequest;
 import org.elasticsearch.action.admin.cluster.repositories.put.PutRepositoryRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotRequest;
@@ -20,7 +24,6 @@ import org.elasticsearch.action.admin.cluster.snapshots.restore.RestoreSnapshotR
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
@@ -32,7 +35,6 @@ import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.client.indices.IndexTemplateMetadata;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.cluster.metadata.MappingMetadata;
-import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.repositories.fs.FsRepository;
 
@@ -95,13 +97,40 @@ public class ElasticClient {
     log.info("Successfully wiped all indices & templates from {} Elasticsearch!", name);
   }
 
-  public ImmutableOpenMap<String, Settings> getSettings() throws IOException {
-    return client
-        .indices()
-        .getSettings(
-            new GetSettingsRequest().indices(DEFAULT_OPTIMIZE_INDEX_PATTERN).names(SETTINGS_FILTER),
-            RequestOptions.DEFAULT)
-        .getIndexToSettings();
+  public Map<String, Map> getSettings() throws IOException {
+    final Request request =
+        new Request(
+            HttpGet.METHOD_NAME,
+            "/"
+                + DEFAULT_OPTIMIZE_INDEX_PATTERN
+                + "/_settings/"
+                + String.join(",", SETTINGS_FILTER));
+    Response response = client.getLowLevelClient().performRequest(request);
+    Map<String, Map> map = OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), Map.class);
+    for (Map stringStringEntry : map.values()) {
+      Map analysis =
+          (Map) ((Map) ((Map) stringStringEntry.get("settings")).get("index")).get("analysis");
+      Map analyzer = (Map) ((Map) analysis.get("analyzer")).get("is_present_analyzer");
+      if (!List.class.isInstance(analyzer.get("filter"))) {
+        analyzer.put("filter", List.of(analyzer.get("filter")));
+      }
+      Map lowercaseNgram = (Map) ((Map) analysis.get("analyzer")).get("lowercase_ngram");
+      if (!List.class.isInstance(lowercaseNgram.get("filter"))) {
+        lowercaseNgram.put("filter", List.of(lowercaseNgram.get("filter")));
+      }
+      Map ngramTokenizer = (Map) ((Map) analysis.get("tokenizer")).get("ngram_tokenizer");
+      if (!ngramTokenizer.containsKey("token_chars")) {
+        ngramTokenizer.put(
+            "token_chars",
+            List.of(
+                TokenChar.Letter.jsonValue(),
+                TokenChar.Digit.jsonValue(),
+                TokenChar.Whitespace.jsonValue(),
+                TokenChar.Punctuation.jsonValue(),
+                TokenChar.Symbol.jsonValue()));
+      }
+    }
+    return map;
   }
 
   public Map<String, MappingMetadata> getMappings() throws IOException {

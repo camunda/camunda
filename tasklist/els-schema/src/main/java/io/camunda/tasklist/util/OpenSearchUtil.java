@@ -309,6 +309,49 @@ public abstract class OpenSearchUtil {
     }
   }
 
+  public static <T> void scrollWith(
+      SearchRequest.Builder searchRequest,
+      OpenSearchClient osClient,
+      Consumer<List<Hit<T>>> searchHitsProcessor,
+      Consumer<Map> aggsProcessor,
+      Class<T> clazz,
+      Consumer<HitsMetadata<T>> firstResponseConsumer)
+      throws IOException {
+
+    searchRequest.scroll(Time.of(t -> t.time(OpenSearchUtil.INTERNAL_SCROLL_KEEP_ALIVE_MS)));
+    SearchResult<T> response = osClient.search(searchRequest.build(), clazz);
+
+    if (firstResponseConsumer != null) {
+      firstResponseConsumer.accept(response.hits());
+    }
+
+    if (aggsProcessor != null) {
+      aggsProcessor.accept(response.aggregations());
+    }
+
+    String scrollId = response.scrollId();
+    HitsMetadata hits = response.hits();
+    try {
+      while (hits.hits().size() != 0) {
+        if (searchHitsProcessor != null) {
+          searchHitsProcessor.accept(response.hits().hits());
+        }
+
+        final ScrollRequest.Builder scrollRequest = new ScrollRequest.Builder();
+        scrollRequest.scrollId(scrollId);
+        scrollRequest.scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)));
+
+        response = osClient.scroll(scrollRequest.build(), clazz);
+        scrollId = response.scrollId();
+        hits = response.hits();
+      }
+    } catch (Exception e) {
+      throw new TasklistRuntimeException(e.getMessage());
+    } finally {
+      clearScroll(scrollId, osClient);
+    }
+  }
+
   public static String whereToSearch(
       IndexDescriptor descriptor, OpenSearchUtil.QueryType queryType) {
     switch (queryType) {

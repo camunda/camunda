@@ -6,6 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {default as Tooltip} from './Tooltip';
+import {BusinessObject, ElementType} from 'bpmn-js/lib/NavigatedViewer';
 
-export type {TooltipProps} from './Tooltip';
+const hasType = ({
+  businessObject,
+  types,
+}: {
+  businessObject: BusinessObject;
+  types: ElementType[];
+}) => {
+  if (types.includes(businessObject.$type)) {
+    return true;
+  }
+};
+
+export {hasType};

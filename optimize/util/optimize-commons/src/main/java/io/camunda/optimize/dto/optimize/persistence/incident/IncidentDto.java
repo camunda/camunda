@@ -15,20 +15,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
 
-@Accessors(chain = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 @Builder
 public class IncidentDto implements Serializable, OptimizeDto {
-
-  @JsonIgnore private String processInstanceId;
-  private String definitionKey;
-  private String definitionVersion;
-  private String tenantId;
-  @JsonIgnore private String engineAlias;
 
   protected String id;
   protected OffsetDateTime createTime;
@@ -39,6 +31,11 @@ public class IncidentDto implements Serializable, OptimizeDto {
   protected String failedActivityId;
   protected String incidentMessage;
   protected IncidentStatus incidentStatus;
+  @JsonIgnore private String processInstanceId;
+  private String definitionKey;
+  private String definitionVersion;
+  private String tenantId;
+  @JsonIgnore private String engineAlias;
 
   public static final class Fields {
 

@@ -54,8 +54,12 @@ public interface QueryDSL {
   }
 
   private static Map<String, JsonData> jsonParams(final Map<String, Object> params) {
-    return params.entrySet().stream()
-        .collect(Collectors.toMap(Map.Entry::getKey, e -> json(e.getValue())));
+    if (params != null) {
+      return params.entrySet().stream()
+          .collect(Collectors.toMap(Map.Entry::getKey, e -> json(e.getValue())));
+    } else {
+      return Map.of();
+    }
   }
 
   static Query and(final Query... queries) {

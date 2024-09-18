@@ -12,13 +12,13 @@ import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.clearScrollRequest;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.deleteByQueryRequestBuilder;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.deleteRequestBuilder;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.getRequest;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.scrollRequest;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.time;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.updateByQueryRequestBuilder;
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 
+import io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import jakarta.ws.rs.NotFoundException;
@@ -372,24 +372,23 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
         null);
   }
 
-  public <R> Optional<R> getWithRetries(
+  public <R> Optional<R> getRequest(
       final String index, final String id, final Class<R> entityClass) {
-    return executeWithRetries(
-        () -> {
-          try {
-            final GetResponse<R> response =
-                openSearchClient.get(applyIndexPrefix(getRequest(index, id)).build(), entityClass);
-            return response.found() ? Optional.ofNullable(response.source()) : Optional.empty();
-          } catch (final OpenSearchException e) {
-            if (openSearchClient._transport() instanceof AwsSdk2Transport
-                && isAwsNotFoundException(e)) {
-              return Optional.empty();
-            } else {
-              log.error(e.getMessage());
-              throw new OptimizeRuntimeException(e.getMessage());
-            }
-          }
-        });
+    try {
+      final GetResponse<R> response =
+          openSearchClient.get(
+              applyIndexPrefix(RequestDSL.getRequest(index, id)).build(), entityClass);
+      return response.found() ? Optional.ofNullable(response.source()) : Optional.empty();
+    } catch (final OpenSearchException | IOException e) {
+      if (openSearchClient._transport() instanceof AwsSdk2Transport
+          && e instanceof OpenSearchException osException
+          && isAwsNotFoundException(osException)) {
+        return Optional.empty();
+      } else {
+        log.error(e.getMessage());
+        throw new OptimizeRuntimeException(e.getMessage());
+      }
+    }
   }
 
   public DeleteByQueryResponse delete(final String index, final String field, final String value) {

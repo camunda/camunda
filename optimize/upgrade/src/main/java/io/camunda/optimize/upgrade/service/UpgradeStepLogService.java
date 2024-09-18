@@ -12,6 +12,8 @@ import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.es.SchemaUpgradeClientES;
 import io.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
 import io.camunda.optimize.upgrade.es.index.UpdateLogEntryIndexES;
+import io.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
+import io.camunda.optimize.upgrade.os.index.UpdateLogEntryIndexOS;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -21,8 +23,9 @@ public class UpgradeStepLogService {
   public void initializeOrUpdate(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
     if (schemaUpgradeClient instanceof SchemaUpgradeClientES esClient) {
       esClient.createOrUpdateIndex(new UpdateLogEntryIndexES());
+    } else if (schemaUpgradeClient instanceof SchemaUpgradeClientOS osClient) {
+      osClient.createOrUpdateIndex(new UpdateLogEntryIndexOS());
     }
-    // TODO when the OS schema client exists, do the same as above here
   }
 
   public void recordAppliedStep(
@@ -30,10 +33,6 @@ public class UpgradeStepLogService {
       final UpgradeStepLogEntryDto logEntryDto) {
     logEntryDto.setAppliedDate(LocalDateUtil.getCurrentDateTime().toInstant());
     schemaUpgradeClient.upsert(UpdateLogEntryIndex.INDEX_NAME, logEntryDto.getId(), logEntryDto);
-    if (schemaUpgradeClient instanceof SchemaUpgradeClientES esClient) {
-      esClient.upsert(UpdateLogEntryIndex.INDEX_NAME, logEntryDto.getId(), logEntryDto);
-    }
-    // TODO when the OS schema client exists, do the same as above here
   }
 
   public Map<String, UpgradeStepLogEntryDto> getAllAppliedStepsForUpdateToById(
