@@ -36,7 +36,6 @@ services:
     container_name: optimize-opensearch
     image: camunda/optimize:latest
     depends_on:
-      - elasticsearch
       - identity
     ports:
       - "8090:8090"

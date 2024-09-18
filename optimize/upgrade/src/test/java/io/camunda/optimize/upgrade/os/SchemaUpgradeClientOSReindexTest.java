@@ -56,6 +56,9 @@ import org.opensearch.client.opensearch.tasks.Status;
 
 @ExtendWith(MockitoExtension.class)
 public class SchemaUpgradeClientOSReindexTest {
+  @RegisterExtension
+  LogCapturer logCapturer = LogCapturer.create().captureForType(SchemaUpgradeClientOS.class);
+
   @Mock private OpenSearchSchemaManager schemaManager;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Mock.Strictness.LENIENT)
@@ -65,11 +68,7 @@ public class SchemaUpgradeClientOSReindexTest {
   @Mock private OptimizeIndexNameService indexNameService;
   @Mock private OpenSearchMetadataService metadataService;
   @Mock private Info taskInfo;
-
   private SchemaUpgradeClient<?, ?> underTest;
-
-  @RegisterExtension
-  LogCapturer logCapturer = LogCapturer.create().captureForType(SchemaUpgradeClientOS.class);
 
   @BeforeEach
   public void init() {
@@ -118,7 +117,7 @@ public class SchemaUpgradeClientOSReindexTest {
     mockCountResponseFromIndex(index2, 0L);
     final Info taskInfo = mock(Info.class);
     // TODO The mocking issue is in the two lines below
-    Map<String, Info> mockedResponse = getMockedListResponse(taskInfo).tasks();
+    final Map<String, Info> mockedResponse = getMockedListResponse(taskInfo).tasks();
     when(openSearchClient.getTaskList(any(ListRequest.class)).tasks()).thenReturn(mockedResponse);
     when(taskInfo.id()).thenReturn(Long.valueOf(numericTaskId));
     when(taskInfo.description()).thenReturn(createReindexTaskDescription(index1, index2));
@@ -142,7 +141,7 @@ public class SchemaUpgradeClientOSReindexTest {
   public void testReindexSkippedDueToEqualDocCount() throws IOException {
     // given
     final String index1 = "index1";
-    final String index2 = "index1";
+    final String index2 = "index2";
 
     mockCountResponseFromIndex(index1, 1L);
     mockCountResponseFromIndex(index2, 1L);
@@ -234,12 +233,22 @@ public class SchemaUpgradeClientOSReindexTest {
     verify(openSearchClient).submitReindexTask(any(ReindexRequest.class));
   }
 
-  private Info createInfo(String taskId, long total, long updated, long created, long deleted) {
+  private Info createInfo(
+      final String taskId,
+      final long total,
+      final long updated,
+      final long created,
+      final long deleted) {
     return createInfo(taskId, total, updated, created, deleted, "");
   }
 
   private Info createInfo(
-      String taskId, long total, long updated, long created, long deleted, String description) {
+      final String taskId,
+      final long total,
+      final long updated,
+      final long created,
+      final long deleted,
+      final String description) {
     return Info.of(
         i ->
             i.id(Long.parseLong(taskId))
@@ -254,7 +263,8 @@ public class SchemaUpgradeClientOSReindexTest {
                 .status(createStatus(total, updated, created, deleted)));
   }
 
-  private Status createStatus(long total, long updated, long created, long deleted) {
+  private Status createStatus(
+      final long total, final long updated, final long created, final long deleted) {
     return Status.of(
         s ->
             s.total(total)
@@ -288,15 +298,15 @@ public class SchemaUpgradeClientOSReindexTest {
   }
 
   private void mockListInfoResponseContainingSourceAndTarget(
-      final String taskId, String node, final String sourceIndex, final String targetIndex)
+      final String taskId, final String node, final String sourceIndex, final String targetIndex)
       throws IOException {
     when(taskInfo.description()).thenReturn(createReindexTaskDescription(sourceIndex, targetIndex));
     when(taskInfo.id()).thenReturn(Long.valueOf(taskId));
-    ListResponse mockedListResponse = getMockedListResponse(taskInfo);
+    final ListResponse mockedListResponse = getMockedListResponse(taskInfo);
     when(openSearchClient.getTaskList(any())).thenReturn(mockedListResponse);
   }
 
-  private ListResponse getMockedListResponse(Info taskInfo) {
+  private ListResponse getMockedListResponse(final Info taskInfo) {
     return new ListResponse.Builder().tasks(Map.of("" + this.taskInfo.id(), this.taskInfo)).build();
   }
 
@@ -316,7 +326,7 @@ public class SchemaUpgradeClientOSReindexTest {
     when(openSearchClient.countWithoutPrefix(matches(indexName))).thenAnswer(a -> count);
   }
 
-  private Response createOsResponse(GetTasksResponse taskResponse) throws IOException {
+  private Response createOsResponse(final GetTasksResponse taskResponse) throws IOException {
     final Response mockedReindexResponse = mock(Response.class);
 
     final HttpEntity httpEntity = mock(HttpEntity.class);

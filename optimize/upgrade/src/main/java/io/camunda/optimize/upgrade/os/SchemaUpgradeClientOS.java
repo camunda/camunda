@@ -106,7 +106,7 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
       reindexRequest.script(createDefaultScript(mappingScript));
     }
 
-    String reindexTaskId = submitReindexTask(reindexRequest.build());
+    final String reindexTaskId = submitReindexTask(reindexRequest.build());
     waitUntilTaskIsFinished(reindexTaskId, targetIndex.getIndexName());
   }
 
@@ -127,7 +127,7 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
           targetIndex,
           sourceIndex);
     } else {
-      Supplier<ReindexRequest> supplier =
+      final Supplier<ReindexRequest> supplier =
           () -> {
             final ReindexRequest.Builder reindexRequest =
                 createReindexRequest(sourceIndex, targetIndex, null).waitForCompletion(false);
@@ -157,7 +157,7 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
                           .doc(documentDto)
                           .docAsUpsert(true)),
               Object.class);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message =
           String.format("Could not upsert document with id %s to index %s.", id, index);
       throw new OptimizeRuntimeException(message, e);
@@ -228,7 +228,7 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
             .name(databaseClient.applyIndexPrefixes(indexTemplateName));
     try {
       return databaseClient.getOpenSearchClient().indices().existsTemplate(request.build()).value();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new UpgradeRuntimeException(
           String.format(
               "Could not validate whether index template [%s] exists!", indexTemplateName),
@@ -241,7 +241,7 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
     if (indexTemplateExists(indexTemplateName)) {
       try {
         databaseClient.deleteIndexTemplateByIndexTemplateName(indexTemplateName);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new UpgradeRuntimeException(
             String.format("Could not delete index template [%s]!", indexTemplateName), e);
       }
@@ -254,14 +254,14 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
         CreateIndexRequest.of(c -> c.index(indexNameWithSuffix));
     try {
       databaseClient.createIndex(createIndexRequest);
-    } catch (OpenSearchException e) {
+    } catch (final OpenSearchException e) {
       if (e.status() == BAD_REQUEST.code()
           && e.getMessage().contains(INDEX_ALREADY_EXISTS_EXCEPTION_TYPE)) {
         log.debug("Index {} from template already exists.", indexNameWithSuffix);
       } else {
         throw e;
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OptimizeRuntimeException(
           String.format("Could not create index %s from template.", indexNameWithSuffix), e);
     }
@@ -298,7 +298,7 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
                                       .isWriteIndex(isWriteAlias)
                                       .aliases(indexAliases.stream().toList()))));
       databaseClient.getOpenSearchClient().indices().updateAliases(indicesAliasesRequest);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new UpgradeRuntimeException(
           String.format("Could not add alias to index [%s]!", completeIndexName), e);
     }
@@ -385,7 +385,7 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
           .getAlias(GetAliasRequest.of(g -> g.index(indexName)))
           .result()
           .getOrDefault(indexName, IndexAliases.of(i -> i.aliases(Map.of())));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OptimizeRuntimeException(
           String.format("Could not retrieve existing aliases for {%s}.", indexName), e);
     }
@@ -407,11 +407,11 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
       try {
         validateStatusOfPendingTask(taskId);
         log.info("Found pending task with id {}, will wait for it to finish.", taskId);
-      } catch (UpgradeRuntimeException ex) {
+      } catch (final UpgradeRuntimeException ex) {
         log.info(
             "Pending task is not completable, submitting new task for identifier {}", identifier);
         taskId = submitNewTaskFunction.apply(request);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new UpgradeRuntimeException(
             String.format(
                 "Could not check status of pending task with id %s for identifier %s",
@@ -443,8 +443,8 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
               ListRequest.of(l -> l.detailed(true).waitForCompletion(false).actions(taskAction)));
 
       if (tasksResponse.tasks() == null || tasksResponse.tasks().isEmpty()) {
-        for (TaskExecutingNode value : tasksResponse.nodes().values()) {
-          if (request instanceof ReindexRequest reindexRequest) {
+        for (final TaskExecutingNode value : tasksResponse.nodes().values()) {
+          if (request instanceof final ReindexRequest reindexRequest) {
             return value.tasks().values().stream()
                 .filter(
                     taskInfo ->
@@ -461,8 +461,8 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
         log.debug("No pending task found for description matching [{}].", request.toString());
         return Optional.empty();
       }
-      String matchingDescription;
-      if (request instanceof ReindexRequest reindexRequest) {
+      final String matchingDescription;
+      if (request instanceof final ReindexRequest reindexRequest) {
         matchingDescription =
             createReIndexRequestDescription(
                 reindexRequest.source().index(), reindexRequest.dest().index());
@@ -476,7 +476,7 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
                       && areTaskAndRequestDescriptionsEqual(
                           taskInfo.description(), matchingDescription))
           .findAny();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.warn("Could not get pending task for description matching [{}].", request.toString());
       return Optional.empty();
     }
@@ -493,7 +493,7 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
   private String submitReindexTask(final ReindexRequest reindexRequest) {
     try {
       return databaseClient.submitReindexTask(reindexRequest).task();
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       throw new UpgradeRuntimeException("Could not submit reindex task");
     }
   }
@@ -501,7 +501,7 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
   private String submitUpdateTask(final UpdateByQueryRequest request) {
     try {
       return databaseClient.submitUpdateTask(request).task();
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       throw new UpgradeRuntimeException("Could not submit update task");
     }
   }
@@ -509,7 +509,7 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
   private String submitDeleteTask(final DeleteByQueryRequest request) {
     try {
       return databaseClient.submitDeleteTask(request).task();
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       throw new UpgradeRuntimeException("Could not submit delete task");
     }
   }
@@ -603,7 +603,7 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
   }
 
   private void applyAliasesToIndex(final String indexName, final IndexAliases aliases) {
-    for (Map.Entry<String, AliasDefinition> alias : aliases.aliases().entrySet()) {
+    for (final Map.Entry<String, AliasDefinition> alias : aliases.aliases().entrySet()) {
       addAlias(
           alias.getKey(),
           indexName,
@@ -616,20 +616,25 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
   private void setAllAliasesToReadOnly(final String indexName, final IndexAliases aliases) {
     log.debug("Setting all aliases pointing to {} to readonly.", indexName);
 
-    List<String> list = aliases.aliases().keySet().stream().toList();
+    final List<String> list = aliases.aliases().keySet().stream().toList();
     try {
-      final UpdateAliasesRequest indicesAliasesRequest =
-          UpdateAliasesRequest.of(
-              u ->
-                  u.actions(Action.of(a -> a.remove(r -> r.index(indexName).aliases(list))))
-                      .actions(
-                          Action.of(
-                              a ->
-                                  a.add(
-                                      q -> q.index(indexName).isWriteIndex(false).aliases(list)))));
-      databaseClient.getOpenSearchClient().indices().updateAliases(indicesAliasesRequest);
-    } catch (Exception e) {
-      String errorMessage = String.format("Could not add alias to index [%s]!", indexName);
+      if (!list.isEmpty()) {
+        final UpdateAliasesRequest indicesAliasesRequest =
+            UpdateAliasesRequest.of(
+                u ->
+                    u.actions(Action.of(a -> a.remove(r -> r.index(indexName).aliases(list))))
+                        .actions(
+                            Action.of(
+                                a ->
+                                    a.add(
+                                        q ->
+                                            q.index(indexName)
+                                                .isWriteIndex(false)
+                                                .aliases(list)))));
+        databaseClient.getOpenSearchClient().indices().updateAliases(indicesAliasesRequest);
+      }
+    } catch (final Exception e) {
+      final String errorMessage = String.format("Could not add alias to index [%s]!", indexName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }
