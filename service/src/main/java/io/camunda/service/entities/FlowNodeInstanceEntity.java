@@ -19,10 +19,56 @@ public record FlowNodeInstanceEntity(
     String flowNodeId,
     String flowNodeName,
     String treePath,
-    String type,
-    String state,
+    FlowNodeType type,
+    FlowNodeState state,
     Boolean incident,
     Long incidentKey,
     Long scopeKey,
     String bpmnProcessId,
-    String tenantId) {}
+    String tenantId) {
+
+  public enum FlowNodeType {
+    UNSPECIFIED,
+    PROCESS,
+    SUB_PROCESS,
+    EVENT_SUB_PROCESS,
+    START_EVENT,
+    INTERMEDIATE_CATCH_EVENT,
+    INTERMEDIATE_THROW_EVENT,
+    BOUNDARY_EVENT,
+    END_EVENT,
+    SERVICE_TASK,
+    RECEIVE_TASK,
+    USER_TASK,
+    MANUAL_TASK,
+    TASK,
+    EXCLUSIVE_GATEWAY,
+    INCLUSIVE_GATEWAY,
+    PARALLEL_GATEWAY,
+    EVENT_BASED_GATEWAY,
+    SEQUENCE_FLOW,
+    MULTI_INSTANCE_BODY,
+    CALL_ACTIVITY,
+    BUSINESS_RULE_TASK,
+    SCRIPT_TASK,
+    SEND_TASK,
+    UNKNOWN;
+
+    public static FlowNodeType fromZeebeBpmnElementType(final String bpmnElementType) {
+      if (bpmnElementType == null) {
+        return UNSPECIFIED;
+      }
+      try {
+        return FlowNodeType.valueOf(bpmnElementType);
+      } catch (final IllegalArgumentException ex) {
+        return UNKNOWN;
+      }
+    }
+  }
+
+  public enum FlowNodeState {
+    ACTIVE,
+    COMPLETED,
+    TERMINATED
+  }
+}

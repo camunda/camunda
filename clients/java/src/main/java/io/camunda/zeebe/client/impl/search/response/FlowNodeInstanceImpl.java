@@ -29,10 +29,10 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   private final String endDate;
   private final Boolean incident;
   private final Long incidentKey;
-  private final String state;
+  private final FlowNodeInstanceItem.StateEnum state;
   private final String tenantId;
   private final String treePath;
-  private final String type;
+  private final FlowNodeInstanceItem.TypeEnum type;
 
   public FlowNodeInstanceImpl(final FlowNodeInstanceItem item) {
     flowNodeInstanceKey = item.getFlowNodeInstanceKey();
@@ -97,7 +97,7 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
 
   @Override
   public String getState() {
-    return state;
+    return state.getValue();
   }
 
   @Override
@@ -112,6 +112,6 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
 
   @Override
   public String getType() {
-    return type;
+    return type.getValue();
   }
 }

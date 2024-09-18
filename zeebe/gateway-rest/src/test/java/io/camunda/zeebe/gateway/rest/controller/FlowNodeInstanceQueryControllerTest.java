@@ -13,6 +13,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.service.entities.FlowNodeInstanceEntity;
+import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeState;
+import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.service.search.query.FlowNodeInstanceQuery;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.SearchQueryResult.Builder;
@@ -59,8 +61,8 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                       "flowNodeId",
                       "flowNodeName",
                       "processInstanceKey/flowNodeId",
-                      "SERVICE_TASK",
-                      "COMPLETED",
+                      FlowNodeType.SERVICE_TASK,
+                      FlowNodeState.ACTIVE,
                       false,
                       null,
                       null,

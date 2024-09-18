@@ -17,6 +17,8 @@ import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceType;
 import io.camunda.service.entities.IncidentEntity;
 import io.camunda.service.entities.IncidentEntity.IncidentState;
+import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeState;
+import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.service.search.filter.*;
 import io.camunda.service.search.page.SearchQueryPage;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
@@ -325,8 +327,10 @@ public final class SearchQueryRequestMapper {
                   .ifPresent(builder::processInstanceKeys);
               Optional.ofNullable(f.getProcessDefinitionKey())
                   .ifPresent(builder::processDefinitionKeys);
-              Optional.ofNullable(f.getState()).ifPresent(builder::states);
-              Optional.ofNullable(f.getType()).ifPresent(builder::types);
+              Optional.ofNullable(f.getBpmnProcessId()).ifPresent(builder::bpmnProcessIds);
+              Optional.ofNullable(f.getState())
+                  .ifPresent(s -> builder.states(FlowNodeState.valueOf(s.getValue())));
+              Optional.ofNullable(f.getType()).ifPresent(t -> FlowNodeType.valueOf(t.getValue()));
               Optional.ofNullable(f.getFlowNodeId()).ifPresent(builder::flowNodeIds);
               Optional.ofNullable(f.getFlowNodeName()).ifPresent(builder::flowNodeNames);
               Optional.ofNullable(f.getTreePath()).ifPresent(builder::treePaths);

@@ -10,6 +10,8 @@ package io.camunda.service.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
+import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeState;
+import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
@@ -19,8 +21,9 @@ public record FlowNodeInstanceFilter(
     List<Long> flowNodeInstanceKeys,
     List<Long> processInstanceKeys,
     List<Long> processDefinitionKeys,
-    List<String> states,
-    List<String> types,
+    List<String> bpmnProcessIds,
+    List<FlowNodeState> states,
+    List<FlowNodeType> types,
     List<String> flowNodeIds,
     List<String> flowNodeNames,
     List<String> treePaths,
@@ -34,8 +37,9 @@ public record FlowNodeInstanceFilter(
     private List<Long> flowNodeInstanceKeys;
     private List<Long> processInstanceKeys;
     private List<Long> processDefinitionKeys;
-    private List<String> states;
-    private List<String> types;
+    private List<String> bpmnProcessIds;
+    private List<FlowNodeState> states;
+    private List<FlowNodeType> types;
     private List<String> flowNodeIds;
     private List<String> flowNodeNames;
     private List<String> treePaths;
@@ -70,21 +74,30 @@ public record FlowNodeInstanceFilter(
       return processDefinitionKeys(collectValuesAsList(values));
     }
 
-    public FlowNodeInstanceFilter.Builder states(final List<String> values) {
+    public FlowNodeInstanceFilter.Builder bpmnProcessIds(final List<String> values) {
+      bpmnProcessIds = addValuesToList(bpmnProcessIds, values);
+      return this;
+    }
+
+    public FlowNodeInstanceFilter.Builder bpmnProcessIds(final String... values) {
+      return bpmnProcessIds(collectValuesAsList(values));
+    }
+
+    public FlowNodeInstanceFilter.Builder states(final List<FlowNodeState> values) {
       states = addValuesToList(states, values);
       return this;
     }
 
-    public FlowNodeInstanceFilter.Builder states(final String... values) {
+    public FlowNodeInstanceFilter.Builder states(final FlowNodeState... values) {
       return states(collectValuesAsList(values));
     }
 
-    public FlowNodeInstanceFilter.Builder types(final List<String> values) {
+    public FlowNodeInstanceFilter.Builder types(final List<FlowNodeType> values) {
       types = addValuesToList(types, values);
       return this;
     }
 
-    public FlowNodeInstanceFilter.Builder types(final String... values) {
+    public FlowNodeInstanceFilter.Builder types(final FlowNodeType... values) {
       return types(collectValuesAsList(values));
     }
 
@@ -144,6 +157,7 @@ public record FlowNodeInstanceFilter(
           Objects.requireNonNullElse(flowNodeInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(bpmnProcessIds, Collections.emptyList()),
           Objects.requireNonNullElse(states, Collections.emptyList()),
           Objects.requireNonNullElse(types, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeIds, Collections.emptyList()),

@@ -13,6 +13,8 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeState;
+import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.service.search.filter.FlowNodeInstanceFilter;
 import java.util.List;
 
@@ -25,8 +27,9 @@ public class FlownodeInstanceFilterTransformer
         longTerms("key", filter.flowNodeInstanceKeys()),
         longTerms("processInstanceKey", filter.processInstanceKeys()),
         longTerms("processDefinitionKey", filter.processDefinitionKeys()),
-        stringTerms("state", filter.states()),
-        stringTerms("type", filter.types()),
+        stringTerms("bpmnProcessId", filter.bpmnProcessIds()),
+        getStateQuery(filter.states()),
+        getTypeQuery(filter.types()),
         stringTerms("flowNodeId", filter.flowNodeIds()),
         stringTerms("flowNodeName", filter.flowNodeNames()),
         stringTerms("treePath", filter.treePaths()),
@@ -38,5 +41,13 @@ public class FlownodeInstanceFilterTransformer
   @Override
   public List<String> toIndices(final FlowNodeInstanceFilter filter) {
     return List.of("operate-flownode-instance-8.3.1_alias");
+  }
+
+  private SearchQuery getStateQuery(final List<FlowNodeState> states) {
+    return stringTerms("state", states != null ? states.stream().map(Enum::name).toList() : null);
+  }
+
+  private SearchQuery getTypeQuery(final List<FlowNodeType> types) {
+    return stringTerms("type", types != null ? types.stream().map(Enum::name).toList() : null);
   }
 }

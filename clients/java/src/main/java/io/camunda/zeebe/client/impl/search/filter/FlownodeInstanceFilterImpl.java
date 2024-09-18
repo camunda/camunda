@@ -61,13 +61,13 @@ public class FlownodeInstanceFilterImpl
 
   @Override
   public FlownodeInstanceFilter state(final String value) {
-    filter.setState(value);
+    filter.setState(FlowNodeInstanceFilterRequest.StateEnum.valueOf(value));
     return this;
   }
 
   @Override
   public FlownodeInstanceFilter type(final String value) {
-    filter.setType(value);
+    filter.setType(FlowNodeInstanceFilterRequest.TypeEnum.valueOf(value));
     return this;
   }
 

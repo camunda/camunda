@@ -205,14 +205,15 @@ public final class SearchQueryResponseMapper {
         .flowNodeId(instance.flowNodeId())
         .flowNodeName(instance.flowNodeName())
         .processDefinitionKey(instance.processDefinitionKey())
+        .bpmnProcessId(instance.bpmnProcessId())
         .processInstanceKey(instance.processInstanceKey())
         .incidentKey(instance.incidentKey())
         .incident(instance.incident())
         .startDate(instance.startDate())
         .endDate(instance.endDate())
-        .state(instance.state())
+        .state(FlowNodeInstanceItem.StateEnum.fromValue(instance.state().name()))
         .treePath(instance.treePath())
-        .type(instance.type())
+        .type(FlowNodeInstanceItem.TypeEnum.fromValue(instance.type().name()))
         .tenantId(instance.tenantId());
   }
 
