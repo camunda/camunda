@@ -9,6 +9,7 @@
 import {action, makeObservable, override} from 'mobx';
 import {ProcessXmlBase} from './processXml.base';
 import {parseDiagramXML} from 'modules/utils/bpmn';
+import {isMigratableFlowNode} from './utils/isMigratableFlowNode';
 
 class ProcessesXml extends ProcessXmlBase {
   constructor() {
@@ -22,14 +23,7 @@ class ProcessesXml extends ProcessXmlBase {
 
   get selectableFlowNodes() {
     return super.selectableFlowNodes
-      .filter((flowNode) => {
-        return [
-          'bpmn:ServiceTask',
-          'bpmn:UserTask',
-          'bpmn:SubProcess',
-          'bpmn:CallActivity',
-        ].includes(flowNode.$type);
-      })
+      .filter(isMigratableFlowNode)
       .map((flowNode) => {
         return {...flowNode, name: flowNode.name ?? flowNode.id};
       });
