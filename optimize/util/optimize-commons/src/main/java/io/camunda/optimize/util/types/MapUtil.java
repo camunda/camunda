@@ -9,6 +9,7 @@ package io.camunda.optimize.util.types;
 
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
@@ -22,5 +23,9 @@ public class MapUtil {
     return Stream.of(map1, map2)
         .flatMap(m -> m.entrySet().stream())
         .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+  }
+
+  public static <K, V> Collector<Pair<K, V>, ?, Map<K, V>> pairCollector() {
+    return Collectors.toMap(Pair::getKey, Pair::getValue);
   }
 }
