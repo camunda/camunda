@@ -12,10 +12,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMa
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SuperBuilder
 public class HyperMapMeasureResponseDto extends MeasureResponseDto<List<HyperMapResultEntryDto>> {
   // overridden to make sure the type is always available and correct for these classes
   @Override
