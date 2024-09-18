@@ -72,9 +72,13 @@ public class ReportWriterES implements ReportWriter {
   private final OptimizeElasticsearchClient esClient;
   private final TaskRepositoryES taskRepositoryES;
 
-  public ReportWriterES(ObjectMapper objectMapper, OptimizeElasticsearchClient esClient) {
+  public ReportWriterES(
+      ObjectMapper objectMapper,
+      OptimizeElasticsearchClient esClient,
+      TaskRepositoryES taskRepositoryES) {
     this.objectMapper = objectMapper;
     this.esClient = esClient;
+    this.taskRepositoryES = taskRepositoryES;
   }
 
   @Override

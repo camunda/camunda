@@ -11,8 +11,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
 public class NumberMeasureResponseDto extends MeasureResponseDto<Double> {
 
-  protected NumberMeasureResponseDto() {
-  }
+  protected NumberMeasureResponseDto() {}
 
   // overridden to make sure the type is always available and correct for these classes
   @Override

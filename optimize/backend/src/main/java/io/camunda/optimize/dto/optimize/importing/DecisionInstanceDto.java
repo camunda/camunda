@@ -1,4 +1,3 @@
-
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
@@ -37,12 +36,24 @@ public class DecisionInstanceDto implements OptimizeDto {
   private String engine;
   private String tenantId;
 
-  public DecisionInstanceDto(String decisionInstanceId, String processDefinitionId,
-      String processDefinitionKey, String decisionDefinitionId, String decisionDefinitionKey,
-      String decisionDefinitionVersion, OffsetDateTime evaluationDateTime, String processInstanceId,
-      String rootProcessInstanceId, String activityId, Double collectResultValue,
-      String rootDecisionInstanceId, List<InputInstanceDto> inputs, List<OutputInstanceDto> outputs,
-      Set<String> matchedRules, String engine, String tenantId) {
+  public DecisionInstanceDto(
+      String decisionInstanceId,
+      String processDefinitionId,
+      String processDefinitionKey,
+      String decisionDefinitionId,
+      String decisionDefinitionKey,
+      String decisionDefinitionVersion,
+      OffsetDateTime evaluationDateTime,
+      String processInstanceId,
+      String rootProcessInstanceId,
+      String activityId,
+      Double collectResultValue,
+      String rootDecisionInstanceId,
+      List<InputInstanceDto> inputs,
+      List<OutputInstanceDto> outputs,
+      Set<String> matchedRules,
+      String engine,
+      String tenantId) {
     this.decisionInstanceId = decisionInstanceId;
     this.processDefinitionId = processDefinitionId;
     this.processDefinitionKey = processDefinitionKey;
@@ -62,8 +73,7 @@ public class DecisionInstanceDto implements OptimizeDto {
     this.tenantId = tenantId;
   }
 
-  public DecisionInstanceDto() {
-  }
+  public DecisionInstanceDto() {}
 
   public static final class Fields {
 

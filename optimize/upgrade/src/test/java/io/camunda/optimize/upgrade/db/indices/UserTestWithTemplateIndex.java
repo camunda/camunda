@@ -16,8 +16,7 @@ public abstract class UserTestWithTemplateIndex<TBuilder>
 
   private static final int VERSION = 1;
 
-  public UserTestWithTemplateIndex() {
-  }
+  public UserTestWithTemplateIndex() {}
 
   @Override
   public String getIndexName() {

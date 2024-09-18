@@ -48,8 +48,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;
@@ -267,7 +265,7 @@ public class CompositeCommandResult {
   private boolean isUserTaskDurationResult() {
     return reportDataDto instanceof ProcessReportDataDto
         && ProcessViewEntity.USER_TASK.equals(
-        ((ProcessReportDataDto) reportDataDto).getView().getEntity())
+            ((ProcessReportDataDto) reportDataDto).getView().getEntity())
         && ViewProperty.DURATION.equals(viewProperty);
   }
 
@@ -397,13 +395,18 @@ public class CompositeCommandResult {
         resultClass.getSimpleName(), resultClass.getSimpleName(), resultPartClass.getSimpleName());
   }
 
-  @AllArgsConstructor(access = AccessLevel.PROTECTED)
   @Data
   public static class GroupByResult {
 
     private String key;
     private String label;
     private List<DistributedByResult> distributions;
+
+    protected GroupByResult(String key, String label, List<DistributedByResult> distributions) {
+      this.key = key;
+      this.label = label;
+      this.distributions = distributions;
+    }
 
     public static GroupByResult createGroupByNone(final List<DistributedByResult> distributions) {
       return new GroupByResult(GROUP_NONE_KEY, null, distributions);
@@ -429,7 +432,6 @@ public class CompositeCommandResult {
     }
   }
 
-  @AllArgsConstructor(access = AccessLevel.PROTECTED)
   @Data
   @EqualsAndHashCode
   public static class DistributedByResult {
@@ -437,6 +439,12 @@ public class CompositeCommandResult {
     private String key;
     private String label;
     private ViewResult viewResult;
+
+    protected DistributedByResult(String key, String label, ViewResult viewResult) {
+      this.key = key;
+      this.label = label;
+      this.viewResult = viewResult;
+    }
 
     public static DistributedByResult createDistributedByNoneResult(final ViewResult viewResult) {
       return new DistributedByResult(null, null, viewResult);
@@ -485,8 +493,7 @@ public class CompositeCommandResult {
       private ArrayList<ViewMeasure> viewMeasures;
       private List<? extends RawDataInstanceDto> rawData;
 
-      ViewResultBuilder() {
-      }
+      ViewResultBuilder() {}
 
       public ViewResultBuilder viewMeasure(final ViewMeasure viewMeasure) {
         if (viewMeasures == null) {
@@ -577,8 +584,7 @@ public class CompositeCommandResult {
       private UserTaskDurationTime userTaskDurationTime;
       private Double value;
 
-      ViewMeasureBuilder() {
-      }
+      ViewMeasureBuilder() {}
 
       public ViewMeasureBuilder aggregationType(final AggregationDto aggregationType) {
         this.aggregationType = aggregationType;
@@ -623,13 +629,12 @@ public class CompositeCommandResult {
       aggregationType = aggregationDto;
     }
 
-    public ViewMeasureIdentifier(AggregationDto aggregationType,
-        UserTaskDurationTime userTaskDurationTime) {
+    public ViewMeasureIdentifier(
+        AggregationDto aggregationType, UserTaskDurationTime userTaskDurationTime) {
       this.aggregationType = aggregationType;
       this.userTaskDurationTime = userTaskDurationTime;
     }
 
-    public ViewMeasureIdentifier() {
-    }
+    public ViewMeasureIdentifier() {}
   }
 }

@@ -16,8 +16,7 @@ public abstract class UserTestWithTemplateUpdatedMappingIndex<TBuilder>
 
   private static final int VERSION = 2;
 
-  public UserTestWithTemplateUpdatedMappingIndex() {
-  }
+  public UserTestWithTemplateUpdatedMappingIndex() {}
 
   @Override
   public String getIndexName() {

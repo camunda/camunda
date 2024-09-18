@@ -13,8 +13,7 @@ import java.util.List;
 
 public class MapMeasureResponseDto extends MeasureResponseDto<List<MapResultEntryDto>> {
 
-  protected MapMeasureResponseDto() {
-  }
+  protected MapMeasureResponseDto() {}
 
   // overridden to make sure the type is always available and correct for these classes
   @Override

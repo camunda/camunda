@@ -17,23 +17,21 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class AssigneeOperationDto implements OptimizeDto, Serializable {
 
-  @EqualsAndHashCode.Include
-  private String id;
+  @EqualsAndHashCode.Include private String id;
 
   private String userId;
   private String operationType;
   private OffsetDateTime timestamp;
 
-  public AssigneeOperationDto(String id, String userId, String operationType,
-      OffsetDateTime timestamp) {
+  public AssigneeOperationDto(
+      String id, String userId, String operationType, OffsetDateTime timestamp) {
     this.id = id;
     this.userId = userId;
     this.operationType = operationType;
     this.timestamp = timestamp;
   }
 
-  public AssigneeOperationDto() {
-  }
+  public AssigneeOperationDto() {}
 
   public static final class Fields {
 

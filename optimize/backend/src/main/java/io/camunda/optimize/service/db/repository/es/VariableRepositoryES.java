@@ -138,7 +138,8 @@ public class VariableRepositoryES implements VariableRepository {
       DateTimeFormatter dateTimeFormatter,
       DecisionDefinitionReader decisionDefinitionReader,
       ProcessQueryFilterEnhancerES processQueryFilterEnhancer,
-      ProcessDefinitionReader processDefinitionReader) {
+      ProcessDefinitionReader processDefinitionReader,
+      TaskRepositoryES taskRepositoryES) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
     this.configurationService = configurationService;
@@ -146,6 +147,7 @@ public class VariableRepositoryES implements VariableRepository {
     this.decisionDefinitionReader = decisionDefinitionReader;
     this.processQueryFilterEnhancer = processQueryFilterEnhancer;
     this.processDefinitionReader = processDefinitionReader;
+    this.taskRepositoryES = taskRepositoryES;
   }
 
   @Override

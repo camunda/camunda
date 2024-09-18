@@ -29,9 +29,18 @@ public class ProcessVariableDto implements OptimizeDto {
   private String engineAlias;
   private String tenantId;
 
-  public ProcessVariableDto(String id, String name, String type, List<String> value,
-      OffsetDateTime timestamp, Map<String, Object> valueInfo, String processDefinitionKey,
-      String processDefinitionId, String processInstanceId, Long version, String engineAlias,
+  public ProcessVariableDto(
+      String id,
+      String name,
+      String type,
+      List<String> value,
+      OffsetDateTime timestamp,
+      Map<String, Object> valueInfo,
+      String processDefinitionKey,
+      String processDefinitionId,
+      String processInstanceId,
+      Long version,
+      String engineAlias,
       String tenantId) {
     this.id = id;
     this.name = name;
@@ -47,6 +56,5 @@ public class ProcessVariableDto implements OptimizeDto {
     this.tenantId = tenantId;
   }
 
-  public ProcessVariableDto() {
-  }
+  public ProcessVariableDto() {}
 }

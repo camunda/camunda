@@ -50,9 +50,13 @@ public class AlertWriterES implements AlertWriter {
   private final ObjectMapper objectMapper;
   private final TaskRepositoryES taskRepositoryES;
 
-  public AlertWriterES(OptimizeElasticsearchClient esClient, ObjectMapper objectMapper) {
+  public AlertWriterES(
+      OptimizeElasticsearchClient esClient,
+      ObjectMapper objectMapper,
+      TaskRepositoryES taskRepositoryES) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
+    this.taskRepositoryES = taskRepositoryES;
   }
 
   @Override

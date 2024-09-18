@@ -43,11 +43,13 @@ public class DecisionInstanceRepositoryES implements DecisionInstanceRepository 
       OptimizeElasticsearchClient esClient,
       ConfigurationService configurationService,
       ObjectMapper objectMapper,
-      DateTimeFormatter dateTimeFormatter) {
+      DateTimeFormatter dateTimeFormatter,
+      TaskRepositoryES taskRepositoryES) {
     this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
     this.dateTimeFormatter = dateTimeFormatter;
+    this.taskRepositoryES = taskRepositoryES;
   }
 
   @Override

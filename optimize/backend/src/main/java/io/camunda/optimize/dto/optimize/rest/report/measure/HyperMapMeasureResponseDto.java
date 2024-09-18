@@ -13,8 +13,7 @@ import java.util.List;
 
 public class HyperMapMeasureResponseDto extends MeasureResponseDto<List<HyperMapResultEntryDto>> {
 
-  protected HyperMapMeasureResponseDto() {
-  }
+  protected HyperMapMeasureResponseDto() {}
 
   // overridden to make sure the type is always available and correct for these classes
   @Override

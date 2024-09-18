@@ -26,10 +26,10 @@ import lombok.Data;
     include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = MapMeasureResponseDto.class, name = MAP_RESULT_TYPE),
-    @JsonSubTypes.Type(value = HyperMapMeasureResponseDto.class, name = HYPER_MAP_RESULT_TYPE),
-    @JsonSubTypes.Type(value = NumberMeasureResponseDto.class, name = NUMBER_RESULT_TYPE),
-    @JsonSubTypes.Type(value = RawDataMeasureResponseDto.class, name = RAW_RESULT_TYPE),
+  @JsonSubTypes.Type(value = MapMeasureResponseDto.class, name = MAP_RESULT_TYPE),
+  @JsonSubTypes.Type(value = HyperMapMeasureResponseDto.class, name = HYPER_MAP_RESULT_TYPE),
+  @JsonSubTypes.Type(value = NumberMeasureResponseDto.class, name = NUMBER_RESULT_TYPE),
+  @JsonSubTypes.Type(value = RawDataMeasureResponseDto.class, name = RAW_RESULT_TYPE),
 })
 public class MeasureResponseDto<T> {
 
@@ -39,8 +39,12 @@ public class MeasureResponseDto<T> {
   private T data;
   private ResultType type;
 
-  public MeasureResponseDto(ViewProperty property, AggregationDto aggregationType,
-      UserTaskDurationTime userTaskDurationTime, T data, ResultType type) {
+  public MeasureResponseDto(
+      ViewProperty property,
+      AggregationDto aggregationType,
+      UserTaskDurationTime userTaskDurationTime,
+      T data,
+      ResultType type) {
     this.property = property;
     this.aggregationType = aggregationType;
     this.userTaskDurationTime = userTaskDurationTime;
@@ -48,6 +52,5 @@ public class MeasureResponseDto<T> {
     this.type = type;
   }
 
-  protected MeasureResponseDto() {
-  }
+  protected MeasureResponseDto() {}
 }

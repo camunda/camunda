@@ -66,11 +66,13 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
       ConfigurationService configurationService,
       OptimizeElasticsearchClient esClient,
       ObjectMapper objectMapper,
-      DateTimeFormatter dateTimeFormatter) {
+      DateTimeFormatter dateTimeFormatter,
+      TaskRepositoryES taskRepositoryES) {
     this.configurationService = configurationService;
     this.esClient = esClient;
     this.objectMapper = objectMapper;
     this.dateTimeFormatter = dateTimeFormatter;
+    this.taskRepositoryES = taskRepositoryES;
   }
 
   @Override

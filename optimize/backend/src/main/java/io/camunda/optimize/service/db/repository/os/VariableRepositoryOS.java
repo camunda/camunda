@@ -146,13 +146,15 @@ public class VariableRepositoryOS implements VariableRepository {
       ConfigurationService configurationService,
       DateTimeFormatter dateTimeFormatter,
       DecisionDefinitionReader decisionDefinitionReader,
-      ProcessDefinitionReader processDefinitionReader) {
+      ProcessDefinitionReader processDefinitionReader,
+      ProcessQueryFilterEnhancerOS processQueryFilterEnhancer) {
     this.osClient = osClient;
     this.indexNameService = indexNameService;
     this.configurationService = configurationService;
     this.dateTimeFormatter = dateTimeFormatter;
     this.decisionDefinitionReader = decisionDefinitionReader;
     this.processDefinitionReader = processDefinitionReader;
+    this.processQueryFilterEnhancer = processQueryFilterEnhancer;
   }
 
   @Override

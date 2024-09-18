@@ -31,9 +31,12 @@ public abstract class AbstractProcessDefinitionWriterES {
   protected final TaskRepositoryES taskRepositoryES;
 
   public AbstractProcessDefinitionWriterES(
-      ObjectMapper objectMapper, OptimizeElasticsearchClient esClient) {
+      ObjectMapper objectMapper,
+      OptimizeElasticsearchClient esClient,
+      TaskRepositoryES taskRepositoryES) {
     this.objectMapper = objectMapper;
     this.esClient = esClient;
+    this.taskRepositoryES = taskRepositoryES;
   }
 
   abstract Script createUpdateScript(ProcessDefinitionOptimizeDto processDefinitionDtos);

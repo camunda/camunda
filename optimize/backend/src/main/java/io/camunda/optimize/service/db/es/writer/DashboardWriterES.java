@@ -56,9 +56,13 @@ public class DashboardWriterES implements DashboardWriter {
   private final ObjectMapper objectMapper;
   private final TaskRepositoryES taskRepositoryES;
 
-  public DashboardWriterES(OptimizeElasticsearchClient esClient, ObjectMapper objectMapper) {
+  public DashboardWriterES(
+      OptimizeElasticsearchClient esClient,
+      ObjectMapper objectMapper,
+      TaskRepositoryES taskRepositoryES) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
+    this.taskRepositoryES = taskRepositoryES;
   }
 
   @Override

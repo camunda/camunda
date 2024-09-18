@@ -13,8 +13,7 @@ import java.util.List;
 
 public class RawDataMeasureResponseDto extends MeasureResponseDto<List<RawDataInstanceDto>> {
 
-  protected RawDataMeasureResponseDto() {
-  }
+  protected RawDataMeasureResponseDto() {}
 
   // overridden to make sure the type is always available and correct for these classes
   @Override

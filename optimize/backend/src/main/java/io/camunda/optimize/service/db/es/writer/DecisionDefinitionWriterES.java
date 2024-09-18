@@ -56,10 +56,12 @@ public class DecisionDefinitionWriterES implements DecisionDefinitionWriter {
   public DecisionDefinitionWriterES(
       ObjectMapper objectMapper,
       OptimizeElasticsearchClient esClient,
-      ConfigurationService configurationService) {
+      ConfigurationService configurationService,
+      TaskRepositoryES taskRepositoryES) {
     this.objectMapper = objectMapper;
     this.esClient = esClient;
     this.configurationService = configurationService;
+    this.taskRepositoryES = taskRepositoryES;
   }
 
   @Override

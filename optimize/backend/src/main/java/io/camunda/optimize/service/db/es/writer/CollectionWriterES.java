@@ -69,10 +69,12 @@ public class CollectionWriterES implements CollectionWriter {
   public CollectionWriterES(
       OptimizeElasticsearchClient esClient,
       ObjectMapper objectMapper,
-      DateTimeFormatter formatter) {
+      DateTimeFormatter formatter,
+      TaskRepositoryES taskRepositoryES) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
     this.formatter = formatter;
+    this.taskRepositoryES = taskRepositoryES;
   }
 
   @Override

@@ -1,4 +1,3 @@
-
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
@@ -23,8 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ElasticsearchWriterUtil {
 
-  private ElasticsearchWriterUtil() {
-  }
+  private ElasticsearchWriterUtil() {}
 
   public static Script createFieldUpdateScript(
       final Set<String> fields, final Object entityDto, final ObjectMapper objectMapper) {

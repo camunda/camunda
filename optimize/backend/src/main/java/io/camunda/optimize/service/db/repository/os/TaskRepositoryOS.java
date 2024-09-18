@@ -61,7 +61,7 @@ public class TaskRepositoryOS extends TaskRepository {
   private static int getProgress(Status status) {
     return status.total() > 0
         ? Double.valueOf((double) getProcessedTasksCount(status) / status.total() * 100.0D)
-        .intValue()
+            .intValue()
         : 0;
   }
 

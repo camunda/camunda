@@ -32,8 +32,10 @@ public class TerminatedUserSessionWriterES extends TerminatedUserSessionWriter {
   private final OptimizeElasticsearchClient esClient;
   private final TaskRepositoryES taskRepositoryES;
 
-  public TerminatedUserSessionWriterES(OptimizeElasticsearchClient esClient) {
+  public TerminatedUserSessionWriterES(
+      OptimizeElasticsearchClient esClient, TaskRepositoryES taskRepositoryES) {
     this.esClient = esClient;
+    this.taskRepositoryES = taskRepositoryES;
   }
 
   @Override
