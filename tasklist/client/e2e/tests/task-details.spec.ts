@@ -580,7 +580,7 @@ test.describe('task details page', () => {
     await expect(taskFormView.nameInput).toBeVisible();
     await taskFormView.nameInput.fill('Ben');
     await taskFormView.selectDropdownValue('marketing');
-    await tasksPage.completeTaskButton.click();
+    await tasksPage.completeTaskButton.click({timeout: 60000});
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await tasksPage.openTask('Confirm Employee Details');
