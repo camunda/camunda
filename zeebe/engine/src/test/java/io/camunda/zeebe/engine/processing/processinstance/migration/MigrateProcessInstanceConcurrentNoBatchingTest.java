@@ -16,12 +16,14 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -31,15 +33,18 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
-import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.List;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -1061,28 +1066,20 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
                     .startEvent()
                     .userTask("wait", u -> u.zeebeUserTask())
                     .sequenceFlowId("toA")
-                    .serviceTask(
-                        "A",
-                        a ->
-                            a.zeebeJobType("A")
-                                .multiInstance()
-                                .zeebeInputCollectionExpression("[1,2,3]")
-                                .zeebeInputElement("item"))
-                    .endEvent()
+                    .task("A")
+                    .multiInstance()
+                    .zeebeInputCollectionExpression("[1,2]")
+                    .zeebeInputElement("item")
                     .done())
             .withXmlResource(
                 Bpmn.createExecutableProcess(targetProcessId)
                     .startEvent()
                     .userTask("wait", u -> u.zeebeUserTask())
                     .sequenceFlowId("toA")
-                    .serviceTask(
-                        "A",
-                        a ->
-                            a.zeebeJobType("A")
-                                .multiInstance()
-                                .zeebeInputCollectionExpression("[1,2,3]")
-                                .zeebeInputElement("item2"))
-                    .endEvent()
+                    .task("A")
+                    .multiInstance()
+                    .zeebeInputCollectionExpression("[1,2]")
+                    .zeebeInputElement("item2")
                     .done())
             .deploy();
 
@@ -1151,16 +1148,114 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
     ENGINE.start();
 
     assertThat(
-            RecordingExporter.jobRecords(JobIntent.CREATED)
+            RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .withType("A")
-                .limit(3))
-        .describedAs("Expect that the jobs were created successfully")
-        .hasSize(3)
-        .describedAs("Expect that the created jobs are for the target process definition")
+                .limitToProcessInstanceCompleted()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementId("A")
+                .withElementType(BpmnElementType.TASK))
+        .describedAs("Expect that only two out of three instances are created")
+        .hasSize(2)
+        .describedAs("Expect that the tasks are activated in the target process definition")
         .extracting(Record::getValue)
-        .extracting(JobRecordValue::getProcessDefinitionKey)
+        .extracting(ProcessInstanceRecordValue::getProcessDefinitionKey)
         .containsOnly(targetProcessDefinitionKey);
+
+    assert false;
+  }
+
+  @Test
+  public void shouldMigrateParallelMultiInstanceConcurrently2() {
+    // given
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .userTask("wait", u -> u.zeebeUserTask())
+                    .sequenceFlowId("toA")
+                    .task("A")
+                    .multiInstance()
+                    .zeebeInputCollectionExpression("items")
+                    .zeebeInputElement("item")
+                    .done())
+            .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(sourceProcessId)
+            .withVariable("items", List.of(1, 2))
+            .create();
+
+    // We wait for the user task to be activated, so we can complete it, take the sequence flow and
+    // finally activate the multi-instance body before migrating the process instance
+    // we assume that the inner instance activation is postponed by ProcessInstanceBatch commands
+    final var userTask =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("wait")
+            .getFirst();
+
+    // we generate a key for the intermediate catch event so we can activate it using events
+    // this requires us to pause processing to avoid concurrent database transaction modification
+    ENGINE.pauseProcessing(1);
+    final var keyGenerator =
+        ((MutableProcessingState) ENGINE.getProcessingState()).getKeyGenerator();
+    final var sequenceFlowKey = keyGenerator.nextKey();
+    final var multiInstanceBodyKey = keyGenerator.nextKey();
+
+    // we need to stop the engine to ensure events are applied after writing the records directly
+    ENGINE.stop();
+
+    // when
+    final var sequenceFlowRecord = new ProcessInstanceRecord();
+    sequenceFlowRecord.copyFrom((ProcessInstanceRecord) userTask.getValue());
+    sequenceFlowRecord.setElementId("toA").setBpmnElementType(BpmnElementType.SEQUENCE_FLOW);
+
+    final var multiInstanceRecord = new ProcessInstanceRecord();
+    multiInstanceRecord.copyFrom((ProcessInstanceRecord) userTask.getValue());
+    multiInstanceRecord.setBpmnElementType(BpmnElementType.MULTI_INSTANCE_BODY).setElementId("A");
+
+    ENGINE.writeRecords(
+        RecordToWrite.event()
+            .processInstance(ProcessInstanceIntent.ELEMENT_COMPLETING, userTask.getValue())
+            .key(userTask.getKey()),
+        RecordToWrite.event()
+            .processInstance(ProcessInstanceIntent.ELEMENT_COMPLETED, userTask.getValue())
+            .key(userTask.getKey()),
+        RecordToWrite.event()
+            .processInstance(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, sequenceFlowRecord)
+            .key(sequenceFlowKey),
+        RecordToWrite.command()
+            .processInstance(ProcessInstanceIntent.ACTIVATE_ELEMENT, multiInstanceRecord)
+            .key(multiInstanceBodyKey),
+        RecordToWrite.command()
+            .variable(
+                VariableDocumentIntent.UPDATE,
+                new VariableDocumentRecord()
+                    .setUpdateSemantics(VariableDocumentUpdateSemantic.LOCAL)
+                    .setScopeKey(multiInstanceBodyKey)
+                    .setVariables(
+                        new UnsafeBuffer(
+                            MsgPackConverter.convertToMsgPack("{\"items\":[1,2,3]}")))));
+    ENGINE.start();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementId("A")
+                .withElementType(BpmnElementType.TASK))
+        .describedAs("Expect that only two out of three instances are created")
+        .hasSize(2);
+
+    assert false;
   }
 
   private static String createMigrationRejectionDueConcurrentModificationReason(
