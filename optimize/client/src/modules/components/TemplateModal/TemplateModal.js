@@ -32,14 +32,15 @@ export default function TemplateModal({
   initialDefinitions = [],
   trackingEventName,
 }) {
-  console.log({templateGroups});
-  const firstTemplate = templateGroups[1]?.templates[0] || templateGroups[0]?.templates[0];
-  const [name, setName] = useState(t(entity + '.templates.' + firstTemplate.name));
+  const blankTemplate = templateGroups[0].templates[0];
+  const firstTemplate = templateGroups[1]?.templates[0];
+  const preselectedTemplate = firstTemplate || blankTemplate;
+  const [name, setName] = useState(t(entity + '.templates.' + preselectedTemplate.name));
   const [description, setDescription] = useState(
-    getDescription(entity, firstTemplate.name, firstTemplate.disableDescription)
+    getDescription(entity, preselectedTemplate.name, preselectedTemplate.disableDescription)
   );
   const [xmlData, setXmlData] = useState([]);
-  const [template, setTemplate] = useState(firstTemplate.config);
+  const [template, setTemplate] = useState(preselectedTemplate.config);
   const [selectedDefinitions, setSelectedDefinitions] = useState(initialDefinitions);
   const diagramArea = useRef();
   const templateContainer = useRef();

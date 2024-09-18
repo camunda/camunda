@@ -79,28 +79,28 @@ export default function ReportTemplateModal({onClose, onConfirm, initialDefiniti
 }
 
 function getTemplates(optimizeDatabase) {
-  const templates = [
+  if (optimizeDatabase === 'opensearch') {
+    return [
+      monitorTargetAsMetricTemplate(),
+      monitorTargetsOverTimeTemplate(),
+      correlateMetricsInLineBarChartTemplate(),
+      compareProcessesAndVersionsInABarChartTemplate(),
+      analyzeSharesAsPieChartTemplate(),
+      analyzeOrExportRawDataFromATableTemplate(),
+    ];
+  }
+
+  return [
+    locateBottlenecsOnAHitmapTemplate(),
+    localeIncidentHotspotsOnAHeatmapTemplate(),
+    monitorTargetAsKpiTemplate(),
     monitorTargetAsMetricTemplate(),
     monitorTargetsOverTimeTemplate(),
     correlateMetricsInLineBarChartTemplate(),
+    correlateDurationAndCountInPieChartTemplate(),
+    listIncidentsAsTableTemplate(),
     compareProcessesAndVersionsInABarChartTemplate(),
     analyzeSharesAsPieChartTemplate(),
     analyzeOrExportRawDataFromATableTemplate(),
   ];
-
-  if (optimizeDatabase !== 'opensearch') {
-    templates.splice(
-      3, // this is the split point for the templates that are not available
-      0,
-      correlateDurationAndCountInPieChartTemplate(),
-      listIncidentsAsTableTemplate()
-    );
-    templates.unshift(
-      locateBottlenecsOnAHitmapTemplate(),
-      localeIncidentHotspotsOnAHeatmapTemplate(),
-      monitorTargetAsKpiTemplate()
-    );
-  }
-
-  return templates;
 }

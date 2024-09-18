@@ -75,7 +75,5 @@ it('should not show the kpi option if optimize is running in opensearch mode', a
 
   const node = shallow(<CreateNewButton {...props} />);
 
-  console.log(node.debug());
-
   expect(node.find({label: 'Process KPI'})).not.toExist();
 });
