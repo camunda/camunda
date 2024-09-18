@@ -15,7 +15,7 @@
     "@types/loadable__component": "5.13.9",
     "bpmn-js": "17.11.1",
     "bpmn-moddle": "9.0.1",
-    "date-fns": "3.6.0",
+    "date-fns": "4.1.0",
     "dmn-js": "16.7.0",
     "final-form": "4.20.10",
     "final-form-arrays": "3.1.0",

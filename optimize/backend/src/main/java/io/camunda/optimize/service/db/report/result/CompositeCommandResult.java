@@ -54,12 +54,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
 
 @Data
 @RequiredArgsConstructor
-@Accessors(chain = true)
 public class CompositeCommandResult {
   private final SingleReportDataDto reportDataDto;
   private final ViewProperty viewProperty;
@@ -78,17 +76,17 @@ public class CompositeCommandResult {
       final Double defaultNumberValue) {
     this.reportDataDto = reportDataDto;
     this.viewProperty = viewProperty;
-    this.defaultNumberValueSupplier = () -> defaultNumberValue;
+    defaultNumberValueSupplier = () -> defaultNumberValue;
   }
 
   public void setGroup(final GroupByResult groupByResult) {
-    this.groups = singletonList(groupByResult);
+    groups = singletonList(groupByResult);
   }
 
   public CommandEvaluationResult<List<HyperMapResultEntryDto>> transformToHyperMap() {
     final Map<ViewMeasureIdentifier, List<HyperMapResultEntryDto>> measureDataSets =
         createMeasureMap(ArrayList::new);
-    for (GroupByResult group : groups) {
+    for (final GroupByResult group : groups) {
       final Map<ViewMeasureIdentifier, List<MapResultEntryDto>> distributionsByAggregationType =
           createMeasureMap(ArrayList::new);
       group.distributions.forEach(
@@ -134,7 +132,7 @@ public class CompositeCommandResult {
   public CommandEvaluationResult<List<MapResultEntryDto>> transformToMap() {
     final Map<ViewMeasureIdentifier, List<MapResultEntryDto>> measureDataSets =
         createMeasureMap(ArrayList::new);
-    for (GroupByResult group : groups) {
+    for (final GroupByResult group : groups) {
       group
           .getDistributions()
           .forEach(
@@ -435,12 +433,12 @@ public class CompositeCommandResult {
     private String label;
     private ViewResult viewResult;
 
-    public static DistributedByResult createDistributedByNoneResult(ViewResult viewResult) {
+    public static DistributedByResult createDistributedByNoneResult(final ViewResult viewResult) {
       return new DistributedByResult(null, null, viewResult);
     }
 
     public static DistributedByResult createDistributedByResult(
-        String key, String label, ViewResult viewResult) {
+        final String key, final String label, final ViewResult viewResult) {
       return new DistributedByResult(key, label, viewResult);
     }
 
@@ -449,14 +447,14 @@ public class CompositeCommandResult {
     }
 
     public List<Double> getValuesAsDouble() {
-      return this.getViewResult().getViewMeasures().stream()
+      return getViewResult().getViewMeasures().stream()
           .map(ViewMeasure::getValue)
           .collect(Collectors.toList());
     }
 
     public List<MapResultEntryDto> getValuesAsMapResultEntries() {
       return getValuesAsDouble().stream()
-          .map(value -> new MapResultEntryDto(this.key, value, this.label))
+          .map(value -> new MapResultEntryDto(key, value, label))
           .collect(Collectors.toList());
     }
   }
@@ -467,7 +465,8 @@ public class CompositeCommandResult {
     private List<ViewMeasure> viewMeasures;
     private List<? extends RawDataInstanceDto> rawData;
 
-    ViewResult(List<ViewMeasure> viewMeasures, List<? extends RawDataInstanceDto> rawData) {
+    ViewResult(
+        final List<ViewMeasure> viewMeasures, final List<? extends RawDataInstanceDto> rawData) {
       this.viewMeasures = viewMeasures;
       this.rawData = rawData;
     }
@@ -483,15 +482,15 @@ public class CompositeCommandResult {
 
       ViewResultBuilder() {}
 
-      public ViewResultBuilder viewMeasure(ViewMeasure viewMeasure) {
-        if (this.viewMeasures == null) {
-          this.viewMeasures = new ArrayList<ViewMeasure>();
+      public ViewResultBuilder viewMeasure(final ViewMeasure viewMeasure) {
+        if (viewMeasures == null) {
+          viewMeasures = new ArrayList<ViewMeasure>();
         }
-        this.viewMeasures.add(viewMeasure);
+        viewMeasures.add(viewMeasure);
         return this;
       }
 
-      public ViewResultBuilder viewMeasures(Collection<? extends ViewMeasure> viewMeasures) {
+      public ViewResultBuilder viewMeasures(final Collection<? extends ViewMeasure> viewMeasures) {
         if (viewMeasures == null) {
           throw new NullPointerException("viewMeasures cannot be null");
         }
@@ -503,19 +502,19 @@ public class CompositeCommandResult {
       }
 
       public ViewResultBuilder clearViewMeasures() {
-        if (this.viewMeasures != null) {
-          this.viewMeasures.clear();
+        if (viewMeasures != null) {
+          viewMeasures.clear();
         }
         return this;
       }
 
-      public ViewResultBuilder rawData(List<? extends RawDataInstanceDto> rawData) {
+      public ViewResultBuilder rawData(final List<? extends RawDataInstanceDto> rawData) {
         this.rawData = rawData;
         return this;
       }
 
       public ViewResult build() {
-        List<ViewMeasure> viewMeasures;
+        final List<ViewMeasure> viewMeasures;
         switch (this.viewMeasures == null ? 0 : this.viewMeasures.size()) {
           case 0:
             viewMeasures = Collections.emptyList();
@@ -528,14 +527,15 @@ public class CompositeCommandResult {
                 Collections.unmodifiableList(new ArrayList<ViewMeasure>(this.viewMeasures));
         }
 
-        return new ViewResult(viewMeasures, this.rawData);
+        return new ViewResult(viewMeasures, rawData);
       }
 
+      @Override
       public String toString() {
         return "CompositeCommandResult.ViewResult.ViewResultBuilder(viewMeasures="
-            + this.viewMeasures
+            + viewMeasures
             + ", rawData="
-            + this.rawData
+            + rawData
             + ")";
       }
     }
@@ -549,7 +549,9 @@ public class CompositeCommandResult {
     private Double value;
 
     ViewMeasure(
-        AggregationDto aggregationType, UserTaskDurationTime userTaskDurationTime, Double value) {
+        final AggregationDto aggregationType,
+        final UserTaskDurationTime userTaskDurationTime,
+        final Double value) {
       this.aggregationType = aggregationType;
       this.userTaskDurationTime = userTaskDurationTime;
       this.value = value;
@@ -571,32 +573,34 @@ public class CompositeCommandResult {
 
       ViewMeasureBuilder() {}
 
-      public ViewMeasureBuilder aggregationType(AggregationDto aggregationType) {
+      public ViewMeasureBuilder aggregationType(final AggregationDto aggregationType) {
         this.aggregationType = aggregationType;
         return this;
       }
 
-      public ViewMeasureBuilder userTaskDurationTime(UserTaskDurationTime userTaskDurationTime) {
+      public ViewMeasureBuilder userTaskDurationTime(
+          final UserTaskDurationTime userTaskDurationTime) {
         this.userTaskDurationTime = userTaskDurationTime;
         return this;
       }
 
-      public ViewMeasureBuilder value(Double value) {
+      public ViewMeasureBuilder value(final Double value) {
         this.value = value;
         return this;
       }
 
       public ViewMeasure build() {
-        return new ViewMeasure(this.aggregationType, this.userTaskDurationTime, this.value);
+        return new ViewMeasure(aggregationType, userTaskDurationTime, value);
       }
 
+      @Override
       public String toString() {
         return "CompositeCommandResult.ViewMeasure.ViewMeasureBuilder(aggregationType="
-            + this.aggregationType
+            + aggregationType
             + ", userTaskDurationTime="
-            + this.userTaskDurationTime
+            + userTaskDurationTime
             + ", value="
-            + this.value
+            + value
             + ")";
       }
     }
@@ -607,11 +611,11 @@ public class CompositeCommandResult {
   @NoArgsConstructor
   public static class ViewMeasureIdentifier {
 
-    public ViewMeasureIdentifier(final AggregationDto aggregationDto) {
-      this.aggregationType = aggregationDto;
-    }
-
     private AggregationDto aggregationType;
     private UserTaskDurationTime userTaskDurationTime;
+
+    public ViewMeasureIdentifier(final AggregationDto aggregationDto) {
+      aggregationType = aggregationDto;
+    }
   }
 }

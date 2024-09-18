@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.AbstractCCSMIT;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import io.camunda.optimize.dto.optimize.importing.UserTaskIdentityOperationType;
 import io.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskDataDto;
@@ -72,13 +73,14 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
               assertThat(savedInstance.getDataSource().getName())
                   .isEqualTo(getConfiguredZeebeName());
               assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
+              final FlowNodeInstanceDto runningUserTaskInstance =
+                  createRunningUserTaskInstance(instance, exportedEvents);
+              runningUserTaskInstance.setDueDate(EXPECTED_DUE_DATE);
               assertThat(savedInstance.getFlowNodeInstances())
                   .singleElement() // only userTask was imported because all other records were
                   // removed
                   .usingRecursiveComparison()
-                  .isEqualTo(
-                      createRunningUserTaskInstance(instance, exportedEvents)
-                          .setDueDate(EXPECTED_DUE_DATE));
+                  .isEqualTo(runningUserTaskInstance);
             });
   }
 
@@ -105,12 +107,13 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         getExpectedEndDateForCompletedUserTaskEvents(userTaskEvents);
     final FlowNodeInstanceDto expectedUserTask =
         createRunningUserTaskInstance(instance, userTaskEvents);
-    expectedUserTask
-        .setDueDate(EXPECTED_DUE_DATE)
-        .setEndDate(expectedEndDate)
-        .setIdleDurationInMs(0L)
-        .setTotalDurationInMs(getExpectedTotalDurationForCompletedUserTask(userTaskEvents))
-        .setWorkDurationInMs(getExpectedTotalDurationForCompletedUserTask(userTaskEvents));
+    expectedUserTask.setDueDate(EXPECTED_DUE_DATE);
+    expectedUserTask.setEndDate(expectedEndDate);
+    expectedUserTask.setIdleDurationInMs(0L);
+    expectedUserTask.setTotalDurationInMs(
+        getExpectedTotalDurationForCompletedUserTask(userTaskEvents));
+    expectedUserTask.setWorkDurationInMs(
+        getExpectedTotalDurationForCompletedUserTask(userTaskEvents));
 
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
@@ -159,12 +162,13 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     userTaskEvents = getZeebeExportedUserTaskEvents();
     final OffsetDateTime expectedEndDate =
         getExpectedEndDateForCompletedUserTaskEvents(userTaskEvents);
-    expectedUserTask
-        .setDueDate(EXPECTED_DUE_DATE)
-        .setEndDate(expectedEndDate)
-        .setIdleDurationInMs(0L)
-        .setTotalDurationInMs(getExpectedTotalDurationForCompletedUserTask(userTaskEvents))
-        .setWorkDurationInMs(getExpectedTotalDurationForCompletedUserTask(userTaskEvents));
+    expectedUserTask.setDueDate(EXPECTED_DUE_DATE);
+    expectedUserTask.setEndDate(expectedEndDate);
+    expectedUserTask.setIdleDurationInMs(0L);
+    expectedUserTask.setTotalDurationInMs(
+        getExpectedTotalDurationForCompletedUserTask(userTaskEvents));
+    expectedUserTask.setWorkDurationInMs(
+        getExpectedTotalDurationForCompletedUserTask(userTaskEvents));
 
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
@@ -211,13 +215,12 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         getExpectedEndDateForCanceledUserTaskEvents(exportedEvents);
     final Long expectedTotalAndIdleDuration =
         Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis();
-    expectedUserTask
-        .setDueDate(EXPECTED_DUE_DATE)
-        .setEndDate(expectedEndDate)
-        .setTotalDurationInMs(expectedTotalAndIdleDuration)
-        .setIdleDurationInMs(expectedTotalAndIdleDuration)
-        .setWorkDurationInMs(0L)
-        .setCanceled(true);
+    expectedUserTask.setDueDate(EXPECTED_DUE_DATE);
+    expectedUserTask.setEndDate(expectedEndDate);
+    expectedUserTask.setTotalDurationInMs(expectedTotalAndIdleDuration);
+    expectedUserTask.setIdleDurationInMs(expectedTotalAndIdleDuration);
+    expectedUserTask.setWorkDurationInMs(0L);
+    expectedUserTask.setCanceled(true);
 
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
@@ -264,15 +267,14 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         createRunningUserTaskInstance(instance, exportedEvents);
     final OffsetDateTime expectedEndDate =
         getExpectedEndDateForCanceledUserTaskEvents(exportedEvents);
-    expectedUserTask
-        .setDueDate(EXPECTED_DUE_DATE)
-        .setEndDate(expectedEndDate)
-        .setTotalDurationInMs(
-            Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis())
-        .setIdleDurationInMs(
-            Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis())
-        .setWorkDurationInMs(0L)
-        .setCanceled(true);
+    expectedUserTask.setDueDate(EXPECTED_DUE_DATE);
+    expectedUserTask.setEndDate(expectedEndDate);
+    expectedUserTask.setTotalDurationInMs(
+        Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis());
+    expectedUserTask.setIdleDurationInMs(
+        Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis());
+    expectedUserTask.setWorkDurationInMs(0L);
+    expectedUserTask.setCanceled(true);
 
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
@@ -321,23 +323,22 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     final OffsetDateTime expectedEndDate =
         getExpectedEndDateForCanceledUserTaskEvents(exportedEvents);
     final OffsetDateTime assignDate = getTimestampForAssignedUserTaskEvents(exportedEvents);
-    expectedUserTask
-        .setAssignee(ASSIGNEE_ID)
-        .setDueDate(EXPECTED_DUE_DATE)
-        .setEndDate(expectedEndDate)
-        .setTotalDurationInMs(
-            Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis())
-        .setIdleDurationInMs(
-            Duration.between(expectedUserTask.getStartDate(), assignDate).toMillis())
-        .setWorkDurationInMs(Duration.between(assignDate, expectedEndDate).toMillis())
-        .setAssigneeOperations(
-            List.of(
-                new AssigneeOperationDto()
-                    .setId(getExpectedIdFromRecords(exportedEvents, ASSIGNED))
-                    .setOperationType(CLAIM_OPERATION_TYPE.toString())
-                    .setUserId(ASSIGNEE_ID)
-                    .setTimestamp(getTimestampForAssignedUserTaskEvents(exportedEvents))))
-        .setCanceled(true);
+    expectedUserTask.setAssignee(ASSIGNEE_ID);
+    expectedUserTask.setDueDate(EXPECTED_DUE_DATE);
+    expectedUserTask.setEndDate(expectedEndDate);
+    expectedUserTask.setTotalDurationInMs(
+        Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis());
+    expectedUserTask.setIdleDurationInMs(
+        Duration.between(expectedUserTask.getStartDate(), assignDate).toMillis());
+    expectedUserTask.setWorkDurationInMs(Duration.between(assignDate, expectedEndDate).toMillis());
+    expectedUserTask.setAssigneeOperations(
+        List.of(
+            createAssigneeOperationDto(
+                getExpectedIdFromRecords(exportedEvents, ASSIGNED),
+                CLAIM_OPERATION_TYPE,
+                ASSIGNEE_ID,
+                getTimestampForAssignedUserTaskEvents(exportedEvents))));
+    expectedUserTask.setCanceled(true);
 
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
@@ -391,23 +392,22 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     final OffsetDateTime assignDate = getTimestampForAssignedUserTaskEvents(exportedEvents);
     final FlowNodeInstanceDto expectedUserTask =
         createRunningUserTaskInstance(instance, exportedEvents);
-    expectedUserTask
-        .setAssignee(ASSIGNEE_ID)
-        .setDueDate(EXPECTED_DUE_DATE)
-        .setEndDate(expectedEndDate)
-        .setTotalDurationInMs(
-            Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis())
-        .setIdleDurationInMs(
-            Duration.between(expectedUserTask.getStartDate(), assignDate).toMillis())
-        .setWorkDurationInMs(Duration.between(assignDate, expectedEndDate).toMillis())
-        .setAssigneeOperations(
-            List.of(
-                new AssigneeOperationDto()
-                    .setId(getExpectedIdFromRecords(exportedEvents, ASSIGNED))
-                    .setOperationType(CLAIM_OPERATION_TYPE.toString())
-                    .setUserId(ASSIGNEE_ID)
-                    .setTimestamp(getTimestampForAssignedUserTaskEvents(exportedEvents))))
-        .setCanceled(true);
+    expectedUserTask.setAssignee(ASSIGNEE_ID);
+    expectedUserTask.setDueDate(EXPECTED_DUE_DATE);
+    expectedUserTask.setEndDate(expectedEndDate);
+    expectedUserTask.setTotalDurationInMs(
+        Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis());
+    expectedUserTask.setIdleDurationInMs(
+        Duration.between(expectedUserTask.getStartDate(), assignDate).toMillis());
+    expectedUserTask.setWorkDurationInMs(Duration.between(assignDate, expectedEndDate).toMillis());
+    expectedUserTask.setAssigneeOperations(
+        List.of(
+            createAssigneeOperationDto(
+                getExpectedIdFromRecords(exportedEvents, ASSIGNED),
+                CLAIM_OPERATION_TYPE,
+                ASSIGNEE_ID,
+                getTimestampForAssignedUserTaskEvents(exportedEvents))));
+    expectedUserTask.setCanceled(true);
 
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
@@ -451,17 +451,17 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     // then
     exportedEvents = getZeebeExportedUserTaskEvents();
     final FlowNodeInstanceDto expectedUserTask =
-        createRunningUserTaskInstance(instance, exportedEvents)
-            .setIdleDurationInMs(getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents))
-            .setAssignee(ASSIGNEE_ID)
-            .setAssigneeOperations(
-                List.of(
-                    new AssigneeOperationDto()
-                        .setId(getExpectedIdFromRecords(exportedEvents, ASSIGNED))
-                        .setUserId(ASSIGNEE_ID)
-                        .setOperationType(CLAIM_OPERATION_TYPE.toString())
-                        .setTimestamp(
-                            getTimestampForZeebeAssignEvents(exportedEvents, ASSIGNEE_ID))));
+        createRunningUserTaskInstance(instance, exportedEvents);
+    expectedUserTask.setIdleDurationInMs(
+        getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents));
+    expectedUserTask.setAssignee(ASSIGNEE_ID);
+    expectedUserTask.setAssigneeOperations(
+        List.of(
+            createAssigneeOperationDto(
+                getExpectedIdFromRecords(exportedEvents, ASSIGNED),
+                CLAIM_OPERATION_TYPE,
+                ASSIGNEE_ID,
+                getTimestampForZeebeAssignEvents(exportedEvents, ASSIGNEE_ID))));
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
         .satisfies(
@@ -505,17 +505,17 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     // then
     exportedEvents = getZeebeExportedUserTaskEvents();
     final FlowNodeInstanceDto expectedUserTask =
-        createRunningUserTaskInstance(instance, exportedEvents)
-            .setIdleDurationInMs(getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents))
-            .setAssignee(ASSIGNEE_ID)
-            .setAssigneeOperations(
-                List.of(
-                    new AssigneeOperationDto()
-                        .setId(getExpectedIdFromRecords(exportedEvents, ASSIGNED))
-                        .setUserId(ASSIGNEE_ID)
-                        .setOperationType(CLAIM_OPERATION_TYPE.toString())
-                        .setTimestamp(
-                            getTimestampForZeebeAssignEvents(exportedEvents, ASSIGNEE_ID))));
+        createRunningUserTaskInstance(instance, exportedEvents);
+    expectedUserTask.setIdleDurationInMs(
+        getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents));
+    expectedUserTask.setAssignee(ASSIGNEE_ID);
+    expectedUserTask.setAssigneeOperations(
+        List.of(
+            createAssigneeOperationDto(
+                getExpectedIdFromRecords(exportedEvents, ASSIGNED),
+                CLAIM_OPERATION_TYPE,
+                ASSIGNEE_ID,
+                getTimestampForZeebeAssignEvents(exportedEvents, ASSIGNEE_ID))));
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
         .satisfies(
@@ -571,28 +571,28 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
               assertThat(savedInstance.getDataSource().getName())
                   .isEqualTo(getConfiguredZeebeName());
               assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
+              final FlowNodeInstanceDto runningUserTaskInstance =
+                  createRunningUserTaskInstance(instance, exportedEvents);
+              runningUserTaskInstance.setIdleDurationInMs(0L);
+              runningUserTaskInstance.setWorkDurationInMs(
+                  getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents));
+              runningUserTaskInstance.setAssigneeOperations(
+                  List.of(
+                      createAssigneeOperationDto(
+                          getExpectedIdFromRecords(exportedEvents, CREATING),
+                          CLAIM_OPERATION_TYPE,
+                          ASSIGNEE_ID,
+                          getExpectedStartDateForUserTaskEvents(exportedEvents)),
+                      createAssigneeOperationDto(
+                          getExpectedIdFromRecords(exportedEvents, ASSIGNED),
+                          UNCLAIM_OPERATION_TYPE,
+                          null,
+                          getTimestampForAssignedUserTaskEvents(exportedEvents))));
               assertThat(savedInstance.getFlowNodeInstances())
                   // only userTask was imported because all other records were removed
                   .singleElement()
                   .usingRecursiveComparison()
-                  .isEqualTo(
-                      createRunningUserTaskInstance(instance, exportedEvents)
-                          .setIdleDurationInMs(0L)
-                          .setWorkDurationInMs(
-                              getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents))
-                          .setAssigneeOperations(
-                              List.of(
-                                  new AssigneeOperationDto()
-                                      .setId(getExpectedIdFromRecords(exportedEvents, CREATING))
-                                      .setUserId(ASSIGNEE_ID)
-                                      .setOperationType(CLAIM_OPERATION_TYPE.toString())
-                                      .setTimestamp(
-                                          getExpectedStartDateForUserTaskEvents(exportedEvents)),
-                                  new AssigneeOperationDto()
-                                      .setId(getExpectedIdFromRecords(exportedEvents, ASSIGNED))
-                                      .setOperationType(UNCLAIM_OPERATION_TYPE.toString())
-                                      .setTimestamp(
-                                          getTimestampForAssignedUserTaskEvents(exportedEvents)))));
+                  .isEqualTo(runningUserTaskInstance);
             });
   }
 
@@ -619,20 +619,22 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     // then
     exportedEvents = getZeebeExportedUserTaskEvents();
     final FlowNodeInstanceDto expectedUserTask =
-        createRunningUserTaskInstance(instance, exportedEvents)
-            .setIdleDurationInMs(0L)
-            .setWorkDurationInMs(getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents))
-            .setAssigneeOperations(
-                List.of(
-                    new AssigneeOperationDto()
-                        .setId(getExpectedIdFromRecords(exportedEvents, CREATING))
-                        .setUserId(ASSIGNEE_ID)
-                        .setOperationType(CLAIM_OPERATION_TYPE.toString())
-                        .setTimestamp(getExpectedStartDateForUserTaskEvents(exportedEvents)),
-                    new AssigneeOperationDto()
-                        .setId(getExpectedIdFromRecords(exportedEvents, ASSIGNED))
-                        .setOperationType(UNCLAIM_OPERATION_TYPE.toString())
-                        .setTimestamp(getTimestampForZeebeUnassignEvent(exportedEvents))));
+        createRunningUserTaskInstance(instance, exportedEvents);
+    expectedUserTask.setIdleDurationInMs(0L);
+    expectedUserTask.setWorkDurationInMs(
+        getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents));
+    expectedUserTask.setAssigneeOperations(
+        List.of(
+            createAssigneeOperationDto(
+                getExpectedIdFromRecords(exportedEvents, CREATING),
+                CLAIM_OPERATION_TYPE,
+                ASSIGNEE_ID,
+                getExpectedStartDateForUserTaskEvents(exportedEvents)),
+            createAssigneeOperationDto(
+                getExpectedIdFromRecords(exportedEvents, ASSIGNED),
+                UNCLAIM_OPERATION_TYPE,
+                null,
+                getTimestampForZeebeUnassignEvent(exportedEvents))));
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
         .satisfies(
@@ -682,23 +684,23 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
               assertThat(savedInstance.getDataSource().getName())
                   .isEqualTo(getConfiguredZeebeName());
               assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
+              final FlowNodeInstanceDto runningUserTaskInstance =
+                  createRunningUserTaskInstance(instance, exportedEvents);
+              runningUserTaskInstance.setDueDate(EXPECTED_DUE_DATE);
+              runningUserTaskInstance.setIdleDurationInMs(0L);
+              runningUserTaskInstance.setAssignee(ASSIGNEE_ID);
+              runningUserTaskInstance.setAssigneeOperations(
+                  List.of(
+                      createAssigneeOperationDto(
+                          getExpectedIdFromRecords(exportedEvents, CREATING),
+                          CLAIM_OPERATION_TYPE,
+                          ASSIGNEE_ID,
+                          getExpectedStartDateForUserTaskEvents(exportedEvents))));
               assertThat(savedInstance.getFlowNodeInstances())
                   // only userTask was imported because all other records were removed
                   .singleElement()
                   .usingRecursiveComparison()
-                  .isEqualTo(
-                      createRunningUserTaskInstance(instance, exportedEvents)
-                          .setDueDate(EXPECTED_DUE_DATE)
-                          .setIdleDurationInMs(0L)
-                          .setAssignee(ASSIGNEE_ID)
-                          .setAssigneeOperations(
-                              List.of(
-                                  new AssigneeOperationDto()
-                                      .setId(getExpectedIdFromRecords(exportedEvents, CREATING))
-                                      .setUserId(ASSIGNEE_ID)
-                                      .setOperationType(CLAIM_OPERATION_TYPE.toString())
-                                      .setTimestamp(
-                                          getExpectedStartDateForUserTaskEvents(exportedEvents)))));
+                  .isEqualTo(runningUserTaskInstance);
             });
   }
 
@@ -726,6 +728,36 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
 
     // then
     final List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    final FlowNodeInstanceDto runningUserTaskInstance =
+        createRunningUserTaskInstance(instance, exportedEvents);
+    runningUserTaskInstance.setEndDate(
+        getExpectedEndDateForCompletedUserTaskEvents(exportedEvents));
+    runningUserTaskInstance.setIdleDurationInMs(
+        getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents)
+            + getDurationInMsBetweenAssignOperations(exportedEvents, "", assigneeId2));
+    runningUserTaskInstance.setWorkDurationInMs(
+        getDurationInMsBetweenAssignOperations(exportedEvents, assigneeId1, "")
+            + getDurationInMsBetweenLastAssignOperationAndEnd(exportedEvents, assigneeId2));
+    runningUserTaskInstance.setTotalDurationInMs(
+        getExpectedTotalDurationForCompletedUserTask(exportedEvents));
+    runningUserTaskInstance.setAssignee(assigneeId2);
+    runningUserTaskInstance.setAssigneeOperations(
+        List.of(
+            createAssigneeOperationDto(
+                getExpectedIdFromAssignRecordsWithAssigneeId(exportedEvents, assigneeId1),
+                CLAIM_OPERATION_TYPE,
+                assigneeId1,
+                getTimestampForZeebeAssignEvents(exportedEvents, assigneeId1)),
+            createAssigneeOperationDto(
+                getExpectedIdFromAssignRecordsWithAssigneeId(exportedEvents, ""),
+                UNCLAIM_OPERATION_TYPE,
+                null,
+                getTimestampForZeebeUnassignEvent(exportedEvents)),
+            createAssigneeOperationDto(
+                getExpectedIdFromAssignRecordsWithAssigneeId(exportedEvents, assigneeId2),
+                CLAIM_OPERATION_TYPE,
+                assigneeId2,
+                getTimestampForZeebeAssignEvents(exportedEvents, assigneeId2))));
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
         .satisfies(
@@ -733,49 +765,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                 assertThat(savedInstance.getFlowNodeInstances())
                     .singleElement()
                     .usingRecursiveComparison()
-                    .isEqualTo(
-                        createRunningUserTaskInstance(instance, exportedEvents)
-                            .setEndDate(
-                                getExpectedEndDateForCompletedUserTaskEvents(exportedEvents))
-                            .setIdleDurationInMs(
-                                getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents)
-                                    + getDurationInMsBetweenAssignOperations(
-                                        exportedEvents, "", assigneeId2))
-                            .setWorkDurationInMs(
-                                getDurationInMsBetweenAssignOperations(
-                                        exportedEvents, assigneeId1, "")
-                                    + getDurationInMsBetweenLastAssignOperationAndEnd(
-                                        exportedEvents, assigneeId2))
-                            .setTotalDurationInMs(
-                                getExpectedTotalDurationForCompletedUserTask(exportedEvents))
-                            .setAssignee(assigneeId2)
-                            .setAssigneeOperations(
-                                List.of(
-                                    new AssigneeOperationDto()
-                                        .setId(
-                                            getExpectedIdFromAssignRecordsWithAssigneeId(
-                                                exportedEvents, assigneeId1))
-                                        .setUserId(assigneeId1)
-                                        .setOperationType(CLAIM_OPERATION_TYPE.toString())
-                                        .setTimestamp(
-                                            getTimestampForZeebeAssignEvents(
-                                                exportedEvents, assigneeId1)),
-                                    new AssigneeOperationDto()
-                                        .setId(
-                                            getExpectedIdFromAssignRecordsWithAssigneeId(
-                                                exportedEvents, ""))
-                                        .setOperationType(UNCLAIM_OPERATION_TYPE.toString())
-                                        .setTimestamp(
-                                            getTimestampForZeebeUnassignEvent(exportedEvents)),
-                                    new AssigneeOperationDto()
-                                        .setId(
-                                            getExpectedIdFromAssignRecordsWithAssigneeId(
-                                                exportedEvents, assigneeId2))
-                                        .setUserId(assigneeId2)
-                                        .setOperationType(CLAIM_OPERATION_TYPE.toString())
-                                        .setTimestamp(
-                                            getTimestampForZeebeAssignEvents(
-                                                exportedEvents, assigneeId2))))));
+                    .isEqualTo(runningUserTaskInstance));
   }
 
   @Test
@@ -807,6 +797,36 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
 
     // then
     final List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    final FlowNodeInstanceDto runningUserTaskInstance =
+        createRunningUserTaskInstance(instance, exportedEvents);
+    runningUserTaskInstance.setEndDate(
+        getExpectedEndDateForCompletedUserTaskEvents(exportedEvents));
+    runningUserTaskInstance.setIdleDurationInMs(
+        getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents)
+            + getDurationInMsBetweenAssignOperations(exportedEvents, "", assigneeId2));
+    runningUserTaskInstance.setWorkDurationInMs(
+        getDurationInMsBetweenAssignOperations(exportedEvents, assigneeId1, "")
+            + getDurationInMsBetweenLastAssignOperationAndEnd(exportedEvents, assigneeId2));
+    runningUserTaskInstance.setTotalDurationInMs(
+        getExpectedTotalDurationForCompletedUserTask(exportedEvents));
+    runningUserTaskInstance.setAssignee(assigneeId2);
+    runningUserTaskInstance.setAssigneeOperations(
+        List.of(
+            createAssigneeOperationDto(
+                getExpectedIdFromAssignRecordsWithAssigneeId(exportedEvents, assigneeId1),
+                CLAIM_OPERATION_TYPE,
+                assigneeId1,
+                getTimestampForZeebeAssignEvents(exportedEvents, assigneeId1)),
+            createAssigneeOperationDto(
+                getExpectedIdFromAssignRecordsWithAssigneeId(exportedEvents, ""),
+                UNCLAIM_OPERATION_TYPE,
+                null,
+                getTimestampForZeebeUnassignEvent(exportedEvents)),
+            createAssigneeOperationDto(
+                getExpectedIdFromAssignRecordsWithAssigneeId(exportedEvents, assigneeId2),
+                CLAIM_OPERATION_TYPE,
+                assigneeId2,
+                getTimestampForZeebeAssignEvents(exportedEvents, assigneeId2))));
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
         .satisfies(
@@ -814,49 +834,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                 assertThat(savedInstance.getFlowNodeInstances())
                     .singleElement()
                     .usingRecursiveComparison()
-                    .isEqualTo(
-                        createRunningUserTaskInstance(instance, exportedEvents)
-                            .setEndDate(
-                                getExpectedEndDateForCompletedUserTaskEvents(exportedEvents))
-                            .setIdleDurationInMs(
-                                getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents)
-                                    + getDurationInMsBetweenAssignOperations(
-                                        exportedEvents, "", assigneeId2))
-                            .setWorkDurationInMs(
-                                getDurationInMsBetweenAssignOperations(
-                                        exportedEvents, assigneeId1, "")
-                                    + getDurationInMsBetweenLastAssignOperationAndEnd(
-                                        exportedEvents, assigneeId2))
-                            .setTotalDurationInMs(
-                                getExpectedTotalDurationForCompletedUserTask(exportedEvents))
-                            .setAssignee(assigneeId2)
-                            .setAssigneeOperations(
-                                List.of(
-                                    new AssigneeOperationDto()
-                                        .setId(
-                                            getExpectedIdFromAssignRecordsWithAssigneeId(
-                                                exportedEvents, assigneeId1))
-                                        .setUserId(assigneeId1)
-                                        .setOperationType(CLAIM_OPERATION_TYPE.toString())
-                                        .setTimestamp(
-                                            getTimestampForZeebeAssignEvents(
-                                                exportedEvents, assigneeId1)),
-                                    new AssigneeOperationDto()
-                                        .setId(
-                                            getExpectedIdFromAssignRecordsWithAssigneeId(
-                                                exportedEvents, ""))
-                                        .setOperationType(UNCLAIM_OPERATION_TYPE.toString())
-                                        .setTimestamp(
-                                            getTimestampForZeebeUnassignEvent(exportedEvents)),
-                                    new AssigneeOperationDto()
-                                        .setId(
-                                            getExpectedIdFromAssignRecordsWithAssigneeId(
-                                                exportedEvents, assigneeId2))
-                                        .setUserId(assigneeId2)
-                                        .setOperationType(CLAIM_OPERATION_TYPE.toString())
-                                        .setTimestamp(
-                                            getTimestampForZeebeAssignEvents(
-                                                exportedEvents, assigneeId2))))));
+                    .isEqualTo(runningUserTaskInstance));
   }
 
   @Test
@@ -907,17 +885,21 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
 
   private FlowNodeInstanceDto createRunningUserTaskInstance(
       final ProcessInstanceEvent deployedInstance, final List<ZeebeUserTaskRecordDto> events) {
-    return new FlowNodeInstanceDto()
-        .setFlowNodeInstanceId(String.valueOf(events.get(0).getValue().getElementInstanceKey()))
-        .setFlowNodeId(USER_TASK)
-        .setFlowNodeType(FLOW_NODE_TYPE_USER_TASK)
-        .setProcessInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-        .setDefinitionKey(String.valueOf(deployedInstance.getBpmnProcessId()))
-        .setDefinitionVersion(String.valueOf(deployedInstance.getVersion()))
-        .setTenantId(ZEEBE_DEFAULT_TENANT_ID)
-        .setUserTaskInstanceId(String.valueOf(getExpectedUserTaskInstanceIdFromRecords(events)))
-        .setStartDate(getExpectedStartDateForUserTaskEvents(events))
-        .setCanceled(false);
+    final FlowNodeInstanceDto flowNodeInstanceDto = new FlowNodeInstanceDto();
+    flowNodeInstanceDto.setFlowNodeInstanceId(
+        String.valueOf(events.get(0).getValue().getElementInstanceKey()));
+    flowNodeInstanceDto.setFlowNodeId(USER_TASK);
+    flowNodeInstanceDto.setFlowNodeType(FLOW_NODE_TYPE_USER_TASK);
+    flowNodeInstanceDto.setProcessInstanceId(
+        String.valueOf(deployedInstance.getProcessInstanceKey()));
+    flowNodeInstanceDto.setDefinitionKey(String.valueOf(deployedInstance.getBpmnProcessId()));
+    flowNodeInstanceDto.setDefinitionVersion(String.valueOf(deployedInstance.getVersion()));
+    flowNodeInstanceDto.setTenantId(ZEEBE_DEFAULT_TENANT_ID);
+    flowNodeInstanceDto.setUserTaskInstanceId(
+        String.valueOf(getExpectedUserTaskInstanceIdFromRecords(events)));
+    flowNodeInstanceDto.setStartDate(getExpectedStartDateForUserTaskEvents(events));
+    flowNodeInstanceDto.setCanceled(false);
+    return flowNodeInstanceDto;
   }
 
   private OffsetDateTime getExpectedStartDateForUserTaskEvents(
@@ -1013,5 +995,18 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
 
   private List<ZeebeUserTaskRecordDto> getZeebeExportedUserTaskEvents() {
     return getZeebeExportedUserTaskEventsByElementId().get(USER_TASK);
+  }
+
+  private AssigneeOperationDto createAssigneeOperationDto(
+      final String id,
+      final UserTaskIdentityOperationType userTaskIdentityOperationType,
+      final String userId,
+      final OffsetDateTime timestamp) {
+    final AssigneeOperationDto assigneeOperationDto = new AssigneeOperationDto();
+    assigneeOperationDto.setId(id);
+    assigneeOperationDto.setOperationType(userTaskIdentityOperationType.toString());
+    assigneeOperationDto.setUserId(userId);
+    assigneeOperationDto.setTimestamp(timestamp);
+    return assigneeOperationDto;
   }
 }
