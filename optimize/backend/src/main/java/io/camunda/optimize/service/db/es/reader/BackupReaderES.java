@@ -63,7 +63,7 @@ public class BackupReaderES implements BackupReader {
       try {
         esClient.verifyRepositoryExists(getRepositoriesRequest);
       } catch (ElasticsearchException e) {
-        if (e.error().reason().contains(REPOSITORY_MISSING_EXCEPTION_TYPE)) {
+        if (StringUtils.contains(e.getMessage(), REPOSITORY_MISSING_EXCEPTION_TYPE)) {
           final String reason =
               String.format("No repository with name [%s] could be found.", repositoryName);
           log.error(reason, e);
@@ -71,7 +71,7 @@ public class BackupReaderES implements BackupReader {
         } else {
           final String reason =
               String.format(
-                  "Error while retrieving repository with name [%s] due to an ElasticsearchStatusException.",
+                  "Error while retrieving repository with name [%s] due to an ElasticsearchException.",
                   repositoryName);
           log.error(reason, e);
           throw new OptimizeRuntimeException(reason, e);
@@ -127,13 +127,13 @@ public class BackupReaderES implements BackupReader {
     try {
       response = esClient.getSnapshots(snapshotsStatusRequest);
     } catch (ElasticsearchException e) {
-      if (e.error().reason().contains(SNAPSHOT_MISSING_EXCEPTION_TYPE)) {
+      if (StringUtils.contains(e.getMessage(), SNAPSHOT_MISSING_EXCEPTION_TYPE)) {
         // no snapshot with given backupID exists
         return Collections.emptyList();
       }
       final String reason =
           String.format(
-              "Could not retrieve snapshots with names [%s] due to an ElasticsearchStatusException.",
+              "Could not retrieve snapshots with names [%s] due to an ElasticsearchException.",
               String.join(", ", snapshots));
       log.error(reason);
       throw new OptimizeRuntimeException(reason, e);
