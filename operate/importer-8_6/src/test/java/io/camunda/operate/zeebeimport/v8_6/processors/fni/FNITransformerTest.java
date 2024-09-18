@@ -8,11 +8,15 @@
 package io.camunda.operate.zeebeimport.v8_6.processors.fni;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.zeebeimport.cache.FNITreePathCacheCompositeKey;
+import io.camunda.operate.zeebeimport.cache.TreePathCache;
 import io.camunda.operate.zeebeimport.processors.fni.FNITransformer;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -28,12 +32,19 @@ import org.mockito.Mockito;
 public class FNITransformerTest {
 
   private FNITransformer fniTransformer;
+  private TreePathCache mockTreePathCache;
 
   @BeforeEach
   public void setup() {
-    fniTransformer =
-        new FNITransformer(
-            key -> String.format("%d/%d", key.processInstanceKey(), key.flowScopeKey()));
+    mockTreePathCache = Mockito.mock(TreePathCache.class);
+    when(mockTreePathCache.resolveParentTreePath(any()))
+        .thenAnswer(
+            invocationOnMock -> {
+              final FNITreePathCacheCompositeKey compositeKey = invocationOnMock.getArgument(0);
+              return String.format(
+                  "%d/%d", compositeKey.processInstanceKey(), compositeKey.flowScopeKey());
+            });
+    fniTransformer = new FNITransformer(mockTreePathCache);
   }
 
   @Test
@@ -55,6 +66,32 @@ public class FNITransformerTest {
     assertThat(flowNodeInstanceEntity.getEndDate()).isNull();
     assertThat(flowNodeInstanceEntity.getStartDate().toInstant())
         .isEqualTo(Instant.ofEpochMilli(time));
+  }
+
+  @Test
+  public void shouldNotCacheLeafFNI() {
+    // given
+    final var time = System.currentTimeMillis();
+    final var record = createStartingZeebeRecord(time);
+
+    // when
+    fniTransformer.toFlowNodeInstanceEntity(record, null);
+
+    // then
+    Mockito.verify(mockTreePathCache, times(0)).cacheTreePath(any(), any());
+  }
+
+  @Test
+  public void shouldCacheContainerFNI() {
+    // given
+    final var time = System.currentTimeMillis();
+    final var record = createStartingZeebeRecord(time);
+
+    // when
+    fniTransformer.toFlowNodeInstanceEntity(record, null);
+
+    // then
+    Mockito.verify(mockTreePathCache, times(0)).cacheTreePath(any(), any());
   }
 
   @Test
@@ -173,15 +210,22 @@ public class FNITransformerTest {
     return createZeebeRecord(timestamp, ProcessInstanceIntent.ELEMENT_TERMINATED);
   }
 
-  private static io.camunda.zeebe.protocol.record.Record createZeebeRecord(
+  protected static io.camunda.zeebe.protocol.record.Record createZeebeRecord(
       final long timestamp, final ProcessInstanceIntent intent) {
+    return createZeebeRecord(timestamp, intent, BpmnElementType.START_EVENT);
+  }
+
+  protected static io.camunda.zeebe.protocol.record.Record createZeebeRecord(
+      final long timestamp,
+      final ProcessInstanceIntent intent,
+      final BpmnElementType bpmnElementType) {
     final var recordValue =
         ImmutableProcessInstanceRecordValue.builder()
             .withBpmnProcessId("process")
             .withElementId("element")
             .withTenantId("none")
             .withProcessDefinitionKey(123)
-            .withBpmnElementType(BpmnElementType.START_EVENT)
+            .withBpmnElementType(bpmnElementType)
             .withFlowScopeKey(3)
             .withProcessInstanceKey(1)
             .withVersion(12)

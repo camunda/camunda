@@ -16,6 +16,7 @@
  */
 package io.camunda.operate.zeebeimport.v8_6.processors.fni;
 
+import static io.camunda.operate.zeebeimport.v8_6.processors.fni.FNITransformerTest.createZeebeRecord;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -23,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.zeebeimport.cache.FNITreePathCacheCompositeKey;
 import io.camunda.operate.zeebeimport.cache.TreePathCache;
+import io.camunda.operate.zeebeimport.processors.fni.FNITransformer;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import org.junit.jupiter.api.BeforeEach;
