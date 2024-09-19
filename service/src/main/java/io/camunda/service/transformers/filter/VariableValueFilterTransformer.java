@@ -22,7 +22,7 @@ public final class VariableValueFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final VariableValueFilter value) {
-    return toSearchQuery(value, "varName", "varValue");
+    return toSearchQuery(value, "name", "value");
   }
 
   public SearchQuery toSearchQuery(

@@ -1830,6 +1830,17 @@ components:
           type: string
         bpmnDefinitionId:
           type: string
+        variables:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserTaskVariableFilterRequest"
+    UserTaskVariableFilterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: string
     UserTaskItem:
       type: object
       properties:
