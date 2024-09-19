@@ -37,6 +37,5 @@ public class AlertCreationRequestDto {
     public static final String fixNotification = "fixNotification";
     public static final String reminder = "reminder";
     public static final String emails = "emails";
-    public static final String webhook = "webhook";
   }
 }
