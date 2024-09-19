@@ -13,11 +13,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.UserSearchClient;
-import io.camunda.service.search.filter.UserFilter;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.SearchQueryResult;
+import io.camunda.search.filter.UserFilter;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.util.Either;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +35,7 @@ public class UserServiceTest {
   public void shouldEmptyQueryReturnUsers() {
     // given
     final var result = mock(SearchQueryResult.class);
-    when(client.searchUsers(any(), any())).thenReturn(Either.right(result));
+    when(client.searchUsers(any(), any())).thenReturn(result);
 
     final UserFilter filter = new UserFilter.Builder().build();
     final var searchQuery = SearchQueryBuilders.userSearchQuery((b) -> b.filter(filter));

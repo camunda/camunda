@@ -7,14 +7,13 @@
  */
 package io.camunda.search.clients;
 
-import io.camunda.service.entities.VariableEntity;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.search.query.VariableQuery;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.zeebe.util.Either;
+import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.VariableQuery;
+import io.camunda.search.security.auth.Authentication;
 
 public interface VariableSearchClient extends AutoCloseable {
 
-  Either<Exception, SearchQueryResult<VariableEntity>> searchVariables(
+  SearchQueryResult<VariableEntity> searchVariables(
       VariableQuery filter, Authentication authentication);
 }

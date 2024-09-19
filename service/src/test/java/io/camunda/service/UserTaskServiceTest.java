@@ -13,13 +13,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.UserTaskSearchClient;
-import io.camunda.service.entities.UserTaskEntity;
-import io.camunda.service.search.filter.UserTaskFilter;
-import io.camunda.service.search.filter.UserTaskFilter.Builder;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.SearchQueryResult;
+import io.camunda.search.entities.UserTaskEntity;
+import io.camunda.search.filter.UserTaskFilter;
+import io.camunda.search.filter.UserTaskFilter.Builder;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +39,7 @@ public class UserTaskServiceTest {
   public void shouldReturnUserTasks() {
     // given
     final var result = mock(SearchQueryResult.class);
-    when(client.searchUserTasks(any(), any())).thenReturn(Either.right(result));
+    when(client.searchUserTasks(any(), any())).thenReturn(result);
 
     final UserTaskFilter filter = new Builder().build();
     final var searchQuery = SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(filter));
@@ -57,7 +56,7 @@ public class UserTaskServiceTest {
     // given
     final var entity = mock(UserTaskEntity.class);
     final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
-    when(client.searchUserTasks(any(), any())).thenReturn(Either.right(result));
+    when(client.searchUserTasks(any(), any())).thenReturn(result);
 
     // when
     final var searchQueryResult = services.getByKey(1L);
@@ -65,5 +64,4 @@ public class UserTaskServiceTest {
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
   }
-
 }

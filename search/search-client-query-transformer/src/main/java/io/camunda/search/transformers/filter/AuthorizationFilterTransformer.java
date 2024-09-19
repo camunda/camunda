@@ -11,7 +11,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.service.search.filter.AuthorizationFilter;
+import io.camunda.search.filter.AuthorizationFilter;
 import java.util.List;
 
 public class AuthorizationFilterTransformer implements FilterTransformer<AuthorizationFilter> {

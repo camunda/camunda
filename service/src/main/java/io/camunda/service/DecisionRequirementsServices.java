@@ -7,24 +7,23 @@
  */
 package io.camunda.service;
 
-import static io.camunda.service.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
+import static io.camunda.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
 
 import io.camunda.search.clients.DecisionRequirementSearchClient;
-import io.camunda.service.entities.DecisionRequirementsEntity;
-import io.camunda.service.exception.NotFoundException;
-import io.camunda.service.exception.SearchQueryExecutionException;
+import io.camunda.search.entities.DecisionRequirementsEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.query.DecisionRequirementsQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.search.core.SearchQueryService;
-import io.camunda.service.search.query.DecisionRequirementsQuery;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.function.Function;
 
 public final class DecisionRequirementsServices
     extends SearchQueryService<
-    DecisionRequirementsServices, DecisionRequirementsQuery, DecisionRequirementsEntity> {
+        DecisionRequirementsServices, DecisionRequirementsQuery, DecisionRequirementsEntity> {
 
   private final DecisionRequirementSearchClient decisionRequirementSearchClient;
 
@@ -45,26 +44,18 @@ public final class DecisionRequirementsServices
   @Override
   public SearchQueryResult<DecisionRequirementsEntity> search(
       final DecisionRequirementsQuery query) {
-    return decisionRequirementSearchClient
-        .searchDecisionRequirements(query, authentication)
-        .fold(
-            (e) -> {
-              throw new SearchQueryExecutionException("Failed to execute search query", e);
-            },
-            (r) -> r);
+    return decisionRequirementSearchClient.searchDecisionRequirements(query, authentication);
   }
 
   public DecisionRequirementsEntity getByKey(final Long key) {
     final SearchQueryResult<DecisionRequirementsEntity> result =
         search(
-            SearchQueryBuilders.decisionRequirementsSearchQuery()
-                .filter(f -> f.decisionRequirementsKeys(key))
-                .build());
+            decisionRequirementsSearchQuery().filter(f -> f.decisionRequirementsKeys(key)).build());
     if (result.total() < 1) {
       throw new NotFoundException(
           String.format("Decision requirements with decisionRequirementsKey=%d not found", key));
     } else if (result.total() > 1) {
-      throw new CamundaServiceException(
+      throw new CamundaSearchException(
           String.format("Found decision requirements with key %d more than once", key));
     } else {
       return result.items().stream().findFirst().orElseThrow();
@@ -74,7 +65,7 @@ public final class DecisionRequirementsServices
   public SearchQueryResult<DecisionRequirementsEntity> search(
       final Function<DecisionRequirementsQuery.Builder, ObjectBuilder<DecisionRequirementsQuery>>
           fn) {
-    return search(SearchQueryBuilders.decisionRequirementsSearchQuery(fn));
+    return search(decisionRequirementsSearchQuery(fn));
   }
 
   public String getDecisionRequirementsXml(final Long decisionRequirementsKey) {
@@ -83,9 +74,7 @@ public final class DecisionRequirementsServices
             q ->
                 q.filter(f -> f.decisionRequirementsKeys(decisionRequirementsKey))
                     .resultConfig(r -> r.xml().include()));
-    return search(decisionRequirementsQuery)
-        .items()
-        .stream()
+    return search(decisionRequirementsQuery).items().stream()
         .findFirst()
         .map(DecisionRequirementsEntity::xml)
         .orElseThrow(

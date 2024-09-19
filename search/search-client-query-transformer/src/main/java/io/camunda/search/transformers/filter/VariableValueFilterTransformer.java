@@ -15,7 +15,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.clients.types.TypedValue;
-import io.camunda.service.search.filter.VariableValueFilter;
+import io.camunda.search.filter.VariableValueFilter;
 
 public final class VariableValueFilterTransformer
     implements FilterTransformer<VariableValueFilter> {

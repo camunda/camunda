@@ -7,7 +7,8 @@
  */
 package io.camunda.service;
 
-import io.camunda.service.security.auth.Authentication;
+import io.camunda.search.security.auth.Authentication;
+import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
@@ -49,13 +50,13 @@ public abstract class ApiServices<T extends ApiServices<T>> {
         .handleAsync(
             (response, error) -> {
               if (error != null) {
-                throw new CamundaServiceException(error);
+                throw new CamundaBrokerException(error);
               }
               if (response.isError()) {
-                throw new CamundaServiceException(response.getError());
+                throw new CamundaBrokerException(response.getError());
               }
               if (response.isRejection()) {
-                throw new CamundaServiceException(response.getRejection());
+                throw new CamundaBrokerException(response.getRejection());
               }
               return response;
             });

@@ -7,14 +7,13 @@
  */
 package io.camunda.search.clients;
 
-import io.camunda.service.entities.IncidentEntity;
-import io.camunda.service.search.query.IncidentQuery;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.zeebe.util.Either;
+import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 
 public interface IncidentSearchClient extends AutoCloseable {
 
-  Either<Exception, SearchQueryResult<IncidentEntity>> searchIncidents(
+  SearchQueryResult<IncidentEntity> searchIncidents(
       IncidentQuery filter, Authentication authentication);
 }

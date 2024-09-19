@@ -7,19 +7,19 @@
  */
 package io.camunda.service;
 
-import static io.camunda.service.search.query.SearchQueryBuilders.decisionDefinitionSearchQuery;
-import static io.camunda.service.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
+import static io.camunda.search.query.SearchQueryBuilders.decisionDefinitionSearchQuery;
+import static io.camunda.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
 
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
-import io.camunda.service.entities.DecisionDefinitionEntity;
-import io.camunda.service.entities.DecisionRequirementsEntity;
-import io.camunda.service.exception.NotFoundException;
-import io.camunda.service.exception.SearchQueryExecutionException;
+import io.camunda.search.entities.DecisionDefinitionEntity;
+import io.camunda.search.entities.DecisionRequirementsEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.query.DecisionDefinitionQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.search.core.SearchQueryService;
-import io.camunda.service.search.query.DecisionDefinitionQuery;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -57,13 +57,7 @@ public final class DecisionDefinitionServices
 
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> search(final DecisionDefinitionQuery query) {
-    return decisionDefinitionSearchClient
-        .searchDecisionDefinitions(query, authentication)
-        .fold(
-            (e) -> {
-              throw new SearchQueryExecutionException("Failed to execute search query", e);
-            },
-            (r) -> r);
+    return decisionDefinitionSearchClient.searchDecisionDefinitions(query, authentication);
   }
 
   public SearchQueryResult<DecisionDefinitionEntity> search(
@@ -82,7 +76,6 @@ public final class DecisionDefinitionServices
                     .resultConfig(r -> r.xml().include()));
     return decisionRequirementSearchClient
         .searchDecisionRequirements(decisionRequirementsQuery, authentication)
-        .get()
         .items()
         .stream()
         .findFirst()
@@ -103,7 +96,7 @@ public final class DecisionDefinitionServices
       throw new NotFoundException(
           "Decision Definition with decisionKey=%d not found".formatted(decisionKey));
     } else if (result.total() > 1) {
-      throw new CamundaServiceException(
+      throw new CamundaSearchException(
           String.format("Found Decision Definition with key %d more than once", decisionKey));
     } else {
       return result.items().stream().findFirst().orElseThrow();

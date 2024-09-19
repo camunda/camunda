@@ -7,15 +7,14 @@
  */
 package io.camunda.service;
 
-import static io.camunda.service.search.query.SearchQueryBuilders.decisionInstanceSearchQuery;
+import static io.camunda.search.query.SearchQueryBuilders.decisionInstanceSearchQuery;
 
 import io.camunda.search.clients.DecisionInstanceSearchClient;
-import io.camunda.service.entities.DecisionInstanceEntity;
-import io.camunda.service.exception.SearchQueryExecutionException;
+import io.camunda.search.entities.DecisionInstanceEntity;
+import io.camunda.search.query.DecisionInstanceQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.search.core.SearchQueryService;
-import io.camunda.service.search.query.DecisionInstanceQuery;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.function.Function;
@@ -42,13 +41,7 @@ public final class DecisionInstanceServices
 
   @Override
   public SearchQueryResult<DecisionInstanceEntity> search(final DecisionInstanceQuery query) {
-    return decisionInstanceSearchClient
-        .searchDecisionInstances(query, authentication)
-        .fold(
-            (e) -> {
-              throw new SearchQueryExecutionException("Failed to execute search query", e);
-            },
-            (r) -> r);
+    return decisionInstanceSearchClient.searchDecisionInstances(query, authentication);
   }
 
   public SearchQueryResult<DecisionInstanceEntity> search(

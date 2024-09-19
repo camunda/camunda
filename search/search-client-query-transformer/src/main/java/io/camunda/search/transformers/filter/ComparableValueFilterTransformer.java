@@ -14,9 +14,9 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.range;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.clients.types.TypedValue;
+import io.camunda.search.filter.ComparableValueFilter;
+import io.camunda.search.filter.FilterBase;
 import io.camunda.search.transformers.filter.ComparableValueFilterTransformer.ComparableFieldFilter;
-import io.camunda.service.search.filter.ComparableValueFilter;
-import io.camunda.service.search.filter.FilterBase;
 import java.util.Collections;
 
 public class ComparableValueFilterTransformer implements FilterTransformer<ComparableFieldFilter> {

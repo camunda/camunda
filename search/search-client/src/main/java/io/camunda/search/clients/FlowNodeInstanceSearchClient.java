@@ -7,14 +7,13 @@
  */
 package io.camunda.search.clients;
 
-import io.camunda.service.entities.FlowNodeInstanceEntity;
-import io.camunda.service.search.query.FlowNodeInstanceQuery;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.zeebe.util.Either;
+import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 
 public interface FlowNodeInstanceSearchClient extends AutoCloseable {
 
-  Either<Exception, SearchQueryResult<FlowNodeInstanceEntity>> searchFlowNodeInstances(
+  SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       FlowNodeInstanceQuery filter, Authentication authentication);
 }

@@ -14,10 +14,10 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.filter.DateValueFilter;
+import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.transformers.ServiceTransformers;
 import io.camunda.search.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
-import io.camunda.service.search.filter.DateValueFilter;
-import io.camunda.service.search.filter.ProcessInstanceFilter;
 import java.util.List;
 
 public final class ProcessInstanceFilterTransformer

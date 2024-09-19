@@ -7,14 +7,13 @@
  */
 package io.camunda.search.clients;
 
-import io.camunda.service.entities.ProcessInstanceEntity;
-import io.camunda.service.search.query.ProcessInstanceQuery;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.zeebe.util.Either;
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 
 public interface ProcessInstanceSearchClient extends AutoCloseable {
 
-  Either<Exception, SearchQueryResult<ProcessInstanceEntity>> searchProcessInstances(
+  SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       ProcessInstanceQuery filter, Authentication authentication);
 }

@@ -12,10 +12,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -42,10 +42,10 @@ public class MessageControllerTest extends RestControllerTest {
   private static final String PUBLICATION_ENDPOINT = MESSAGE_BASE_URL + "/publication";
   private static final String EXPECTED_PUBLICATION_RESPONSE =
       """
-            {
-              "messageKey": 123,
-              "tenantId": "<default>"
-            }""";
+          {
+            "messageKey": 123,
+            "tenantId": "<default>"
+          }""";
   @MockBean MessageServices messageServices;
   @MockBean MultiTenancyCfg multiTenancyCfg;
   @Captor ArgumentCaptor<CorrelateMessageRequest> correlationRequestCaptor;
@@ -70,14 +70,14 @@ public class MessageControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "name": "messageName",
-          "correlationKey": "correlationKey",
-          "variables": {
-            "key": "value"
-          },
-          "tenantId": "<default>"
-        }""";
+            {
+              "name": "messageName",
+              "correlationKey": "correlationKey",
+              "variables": {
+                "key": "value"
+              },
+              "tenantId": "<default>"
+            }""";
 
     // when then
     final var response =
@@ -102,11 +102,11 @@ public class MessageControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-        {
-          "messageKey": 123,
-          "tenantId": "<default>",
-          "processInstanceKey": 321
-        }""");
+                {
+                  "messageKey": 123,
+                  "tenantId": "<default>",
+                  "processInstanceKey": 321
+                }""");
   }
 
   @Test
@@ -123,14 +123,14 @@ public class MessageControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "name": "messageName",
-          "correlationKey": "correlationKey",
-          "variables": {
-            "key": "value"
-          },
-          "tenantId": "tenantId"
-        }""";
+            {
+              "name": "messageName",
+              "correlationKey": "correlationKey",
+              "variables": {
+                "key": "value"
+              },
+              "tenantId": "tenantId"
+            }""";
 
     // when then
     final ResponseSpec response =
@@ -158,11 +158,11 @@ public class MessageControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-        {
-          "messageKey": 123,
-          "tenantId": "tenantId",
-          "processInstanceKey": 321
-        }""");
+                {
+                  "messageKey": 123,
+                  "tenantId": "tenantId",
+                  "processInstanceKey": 321
+                }""");
   }
 
   @Test
@@ -170,12 +170,12 @@ public class MessageControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "correlationKey": "correlationKey",
-          "variables": {
-            "key": "value"
-          }
-        }""";
+            {
+              "correlationKey": "correlationKey",
+              "variables": {
+                "key": "value"
+              }
+            }""";
 
     // when then
     webClient
@@ -190,13 +190,13 @@ public class MessageControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "No messageName provided.",
-              "instance": "%s"
-            }"""
+                {
+                  "type": "about:blank",
+                  "status": 400,
+                  "title": "INVALID_ARGUMENT",
+                  "detail": "No messageName provided.",
+                  "instance": "%s"
+                }"""
                 .formatted(CORRELATION_ENDPOINT));
     verifyNoInteractions(messageServices);
   }
@@ -206,13 +206,13 @@ public class MessageControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "name": "",
-          "correlationKey": "correlationKey",
-          "variables": {
-            "key": "value"
-          }
-        }""";
+            {
+              "name": "",
+              "correlationKey": "correlationKey",
+              "variables": {
+                "key": "value"
+              }
+            }""";
 
     // when then
     webClient
@@ -227,13 +227,13 @@ public class MessageControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "No messageName provided.",
-              "instance": "%s"
-            }"""
+                {
+                  "type": "about:blank",
+                  "status": 400,
+                  "title": "INVALID_ARGUMENT",
+                  "detail": "No messageName provided.",
+                  "instance": "%s"
+                }"""
                 .formatted(CORRELATION_ENDPOINT));
     verifyNoInteractions(messageServices);
   }
@@ -245,9 +245,9 @@ public class MessageControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "name": "messageName"
-        }""";
+            {
+              "name": "messageName"
+            }""";
 
     // when then
     webClient
@@ -262,13 +262,13 @@ public class MessageControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "Expected to handle request Correlate Message with tenant identifier 'null', but no tenant identifier was provided.",
-              "instance": "%s"
-            }"""
+                {
+                  "type": "about:blank",
+                  "status": 400,
+                  "title": "INVALID_ARGUMENT",
+                  "detail": "Expected to handle request Correlate Message with tenant identifier 'null', but no tenant identifier was provided.",
+                  "instance": "%s"
+                }"""
                 .formatted(CORRELATION_ENDPOINT));
     verifyNoInteractions(messageServices);
   }
@@ -280,10 +280,10 @@ public class MessageControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "name": "messageName",
-          "tenantId": "tenant"
-        }""";
+            {
+              "name": "messageName",
+              "tenantId": "tenant"
+            }""";
 
     // when then
     webClient
@@ -298,13 +298,13 @@ public class MessageControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "Expected to handle request Correlate Message with tenant identifier 'tenant', but multi-tenancy is disabled",
-              "instance": "%s"
-            }"""
+                {
+                  "type": "about:blank",
+                  "status": 400,
+                  "title": "INVALID_ARGUMENT",
+                  "detail": "Expected to handle request Correlate Message with tenant identifier 'tenant', but multi-tenancy is disabled",
+                  "instance": "%s"
+                }"""
                 .formatted(CORRELATION_ENDPOINT));
     verifyNoInteractions(messageServices);
   }
@@ -316,10 +316,10 @@ public class MessageControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "name": "messageName",
-          "tenantId": "tenanttenanttenanttenanttenanttenanttenanttenanttenant"
-        }""";
+            {
+              "name": "messageName",
+              "tenantId": "tenanttenanttenanttenanttenanttenanttenanttenanttenant"
+            }""";
 
     // when then
     webClient
@@ -334,13 +334,13 @@ public class MessageControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "Expected to handle request Correlate Message with tenant identifier 'tenanttenanttenanttenanttenanttenanttenanttenanttenant', but tenant identifier is longer than 31 characters.",
-              "instance": "%s"
-            }"""
+                {
+                  "type": "about:blank",
+                  "status": 400,
+                  "title": "INVALID_ARGUMENT",
+                  "detail": "Expected to handle request Correlate Message with tenant identifier 'tenanttenanttenanttenanttenanttenanttenanttenanttenant', but tenant identifier is longer than 31 characters.",
+                  "instance": "%s"
+                }"""
                 .formatted(CORRELATION_ENDPOINT));
     verifyNoInteractions(messageServices);
   }
@@ -352,10 +352,10 @@ public class MessageControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "name": "messageName",
-          "tenantId": "<invalid>"
-        }""";
+            {
+              "name": "messageName",
+              "tenantId": "<invalid>"
+            }""";
 
     // when then
     webClient
@@ -370,13 +370,13 @@ public class MessageControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "Expected to handle request Correlate Message with tenant identifier '<invalid>', but tenant identifier contains illegal characters.",
-              "instance": "%s"
-            }"""
+                {
+                  "type": "about:blank",
+                  "status": 400,
+                  "title": "INVALID_ARGUMENT",
+                  "detail": "Expected to handle request Correlate Message with tenant identifier '<invalid>', but tenant identifier contains illegal characters.",
+                  "instance": "%s"
+                }"""
                 .formatted(CORRELATION_ENDPOINT));
     verifyNoInteractions(messageServices);
   }
@@ -388,10 +388,10 @@ public class MessageControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "name": "messageName",
-          "tenantId": "unauthorizedTenant"
-        }""";
+            {
+              "name": "messageName",
+              "tenantId": "unauthorizedTenant"
+            }""";
 
     // when then
     final ResponseSpec response =
@@ -411,13 +411,13 @@ public class MessageControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-            {
-              "type": "about:blank",
-              "status": 401,
-              "title": "UNAUTHORIZED",
-              "detail": "Expected to handle request Correlate Message with tenant identifier 'unauthorizedTenant', but tenant is not authorized to perform this request",
-              "instance": "%s"
-            }"""
+                {
+                  "type": "about:blank",
+                  "status": 401,
+                  "title": "UNAUTHORIZED",
+                  "detail": "Expected to handle request Correlate Message with tenant identifier 'unauthorizedTenant', but tenant is not authorized to perform this request",
+                  "instance": "%s"
+                }"""
                 .formatted(CORRELATION_ENDPOINT));
     verifyNoInteractions(messageServices);
   }
@@ -429,16 +429,16 @@ public class MessageControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "name": "messageName",
-          "correlationKey": "correlationKey",
-          "timeToLive": 123,
-          "messageId": "messageId",
-          "variables": {
-            "key": "value"
-          },
-          "tenantId": "<default>"
-        }""";
+            {
+              "name": "messageName",
+              "correlationKey": "correlationKey",
+              "timeToLive": 123,
+              "messageId": "messageId",
+              "variables": {
+                "key": "value"
+              },
+              "tenantId": "<default>"
+            }""";
 
     // when then
     webClient
@@ -470,15 +470,15 @@ public class MessageControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "name": "messageName",
-          "timeToLive": 123,
-          "messageId": "messageId",
-          "variables": {
-            "key": "value"
-          },
-          "tenantId": "<default>"
-        }""";
+            {
+              "name": "messageName",
+              "timeToLive": 123,
+              "messageId": "messageId",
+              "variables": {
+                "key": "value"
+              },
+              "tenantId": "<default>"
+            }""";
 
     // when then
     webClient
@@ -510,14 +510,14 @@ public class MessageControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "name": "messageName",
-          "messageId": "messageId",
-          "variables": {
-            "key": "value"
-          },
-          "tenantId": "<default>"
-        }""";
+            {
+              "name": "messageName",
+              "messageId": "messageId",
+              "variables": {
+                "key": "value"
+              },
+              "tenantId": "<default>"
+            }""";
 
     // when then
     webClient
@@ -549,24 +549,24 @@ public class MessageControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "correlationKey": "correlationKey",
-          "timeToLive": 123,
-          "messageId": "messageId",
-          "variables": {
-            "key": "value"
-          },
-          "tenantId": "<default>"
-        }""";
+            {
+              "correlationKey": "correlationKey",
+              "timeToLive": 123,
+              "messageId": "messageId",
+              "variables": {
+                "key": "value"
+              },
+              "tenantId": "<default>"
+            }""";
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"No name provided.",
-            "instance":"/v2/messages/publication"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No name provided.",
+                "instance":"/v2/messages/publication"
+             }""";
 
     // when then
     webClient

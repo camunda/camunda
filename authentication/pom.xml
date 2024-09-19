@@ -61,7 +61,7 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-service-domain</artifactId>
+      <artifactId>camunda-search-domain</artifactId>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

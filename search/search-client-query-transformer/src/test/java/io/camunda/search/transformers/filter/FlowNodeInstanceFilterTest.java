@@ -10,9 +10,9 @@ package io.camunda.search.transformers.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchTermQuery;
-import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeState;
-import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeType;
-import io.camunda.service.search.filter.FilterBuilders;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.search.filter.FilterBuilders;
 import org.junit.jupiter.api.Test;
 
 public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {

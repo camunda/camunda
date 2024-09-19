@@ -8,12 +8,11 @@
 package io.camunda.service;
 
 import io.camunda.search.clients.UserSearchClient;
-import io.camunda.service.entities.UserEntity;
-import io.camunda.service.exception.SearchQueryExecutionException;
+import io.camunda.search.entities.UserEntity;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.UserQuery;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.search.core.SearchQueryService;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.search.query.UserQuery;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserCreateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -33,18 +32,12 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
 
   @Override
   public SearchQueryResult<UserEntity> search(final UserQuery query) {
-    return userSearchClient
-        .searchUsers(query, authentication)
-        .fold(
-            (e) -> {
-              throw new SearchQueryExecutionException("Failed to execute search query", e);
-            },
-            (r) -> r);
+    return userSearchClient.searchUsers(query, authentication);
   }
 
   @Override
   public UserServices withAuthentication(final Authentication authentication) {
-    return new UserServices(brokerClient, this.userSearchClient, authentication);
+    return new UserServices(brokerClient, userSearchClient, authentication);
   }
 
   public CompletableFuture<UserRecord> createUser(final CreateUserRequest request) {

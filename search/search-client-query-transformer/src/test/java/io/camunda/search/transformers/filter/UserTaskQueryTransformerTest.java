@@ -15,11 +15,11 @@ import io.camunda.search.clients.query.SearchHasChildQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchTermQuery;
-import io.camunda.service.search.filter.FilterBuilders;
-import io.camunda.service.search.filter.UserTaskFilter;
-import io.camunda.service.search.filter.UserTaskFilter.Builder;
-import io.camunda.service.search.filter.VariableValueFilter;
-import io.camunda.service.search.query.SearchQueryBuilders;
+import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.UserTaskFilter;
+import io.camunda.search.filter.UserTaskFilter.Builder;
+import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.search.query.SearchQueryBuilders;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -276,10 +276,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
 
     final VariableValueFilter variableFilterValue = variableValueFilterBuilder.build();
 
-    final var filter =
-        FilterBuilders.userTask((f) -> f.variable(List.of(variableFilterValue)));
-    final var searchQuery =
-        SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(filter));
+    final var filter = FilterBuilders.userTask((f) -> f.variable(List.of(variableFilterValue)));
+    final var searchQuery = SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(filter));
 
     // when
     final var searchRequest = transformQuery(filter);

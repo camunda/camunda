@@ -8,14 +8,14 @@ package io.camunda.search.transformers.filter;
  * except in compliance with the Camunda License 1.0.
  */
 
-import static io.camunda.service.search.filter.FilterBuilders.dateValue;
+import static io.camunda.search.filter.FilterBuilders.dateValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
-import io.camunda.service.search.filter.FilterBuilders;
-import io.camunda.service.search.query.SearchQueryBuilders;
+import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.query.SearchQueryBuilders;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -188,8 +188,6 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
                                 .before(
                                     OffsetDateTime.of(
                                         LocalDateTime.of(2024, 2, 3, 4, 5, 6), ZoneOffset.UTC)))));
-    final var searchQuery =
-        SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.filter(decisionInstanceFilter));
 
     // when
     final var searchRequest = transformQuery(decisionInstanceFilter);

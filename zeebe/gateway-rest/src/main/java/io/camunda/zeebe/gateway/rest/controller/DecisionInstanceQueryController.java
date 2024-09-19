@@ -9,12 +9,13 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 
+import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.service.DecisionInstanceServices;
-import io.camunda.service.search.query.DecisionInstanceQuery;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryResponse;
-import io.camunda.zeebe.gateway.rest.*;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;

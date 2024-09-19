@@ -7,15 +7,14 @@
  */
 package io.camunda.search.transformers.filter;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
-import io.camunda.service.entities.IncidentEntity.ErrorType;
-import io.camunda.service.entities.IncidentEntity.IncidentState;
-import io.camunda.service.search.filter.DateValueFilter;
-import io.camunda.service.search.filter.FilterBuilders;
+import io.camunda.search.entities.IncidentEntity.ErrorType;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.filter.DateValueFilter;
+import io.camunda.search.filter.FilterBuilders;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;

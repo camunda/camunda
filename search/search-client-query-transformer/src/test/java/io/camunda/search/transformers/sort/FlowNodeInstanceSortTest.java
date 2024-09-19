@@ -9,10 +9,10 @@ package io.camunda.search.transformers.sort;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.sort.FlowNodeInstanceSort;
-import io.camunda.service.search.sort.SearchSortOptions;
-import io.camunda.service.search.sort.SortOrder;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.sort.FlowNodeInstanceSort;
+import io.camunda.search.sort.SearchSortOptions;
+import io.camunda.search.sort.SortOrder;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -53,7 +53,8 @@ public class FlowNodeInstanceSortTest extends AbstractSortTransformerTest {
       final SortOrder sortOrder,
       final Function<FlowNodeInstanceSort.Builder, ObjectBuilder<FlowNodeInstanceSort>> fn) {
     // when
-    var sort = transformRequest(SearchQueryBuilders.flownodeInstanceSearchQuery(q -> q.sort(fn)));
+    final var sort =
+        transformRequest(SearchQueryBuilders.flownodeInstanceSearchQuery(q -> q.sort(fn)));
 
     // then
     assertThat(sort).hasSize(2);
@@ -81,7 +82,7 @@ public class FlowNodeInstanceSortTest extends AbstractSortTransformerTest {
 
     @Override
     public Object[] get() {
-      return new Object[]{field, sortOrder, fn};
+      return new Object[] {field, sortOrder, fn};
     }
   }
 }

@@ -9,7 +9,7 @@ package io.camunda.search.transformers.result;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.service.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryBuilders;
 import org.junit.jupiter.api.Test;
 
 class DecisionInstanceResultConfigTest extends AbstractResultConfigTest {

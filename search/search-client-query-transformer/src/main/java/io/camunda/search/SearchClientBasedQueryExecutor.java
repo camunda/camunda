@@ -8,18 +8,17 @@
 package io.camunda.search;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.exception.SearchQueryExecutionException;
+import io.camunda.search.filter.FilterBase;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.TypedSearchQuery;
+import io.camunda.search.security.auth.Authentication;
+import io.camunda.search.sort.SortOption;
 import io.camunda.search.transformers.ServiceTransformers;
 import io.camunda.search.transformers.filter.AuthenticationTransformer;
 import io.camunda.search.transformers.filter.FilterTransformer;
 import io.camunda.search.transformers.query.SearchQueryResultTransformer;
 import io.camunda.search.transformers.query.TypedSearchQueryTransformer;
-import io.camunda.service.exception.SearchQueryExecutionException;
-import io.camunda.service.search.filter.FilterBase;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.search.query.TypedSearchQuery;
-import io.camunda.service.search.sort.SortOption;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.zeebe.util.Either;
 
 public final class SearchClientBasedQueryExecutor {
 
@@ -36,15 +35,14 @@ public final class SearchClientBasedQueryExecutor {
     this.authentication = authentication;
   }
 
-  public <T extends FilterBase, S extends SortOption, R>
-      Either<Exception, SearchQueryResult<R>> search(
-          final TypedSearchQuery<T, S> query, final Class<R> documentClass) {
+  public <T extends FilterBase, S extends SortOption, R> SearchQueryResult<R> search(
+      final TypedSearchQuery<T, S> query, final Class<R> documentClass) {
     final var authCheck = getAuthenticationCheckIfPresent();
     final var transformer = getSearchQueryRequestTransformer(query);
     final var searchRequest = transformer.applyWithAuthentication(query, authCheck);
 
     final SearchQueryResultTransformer<R> responseTransformer = getSearchResultTransformer();
-    return searchClient.search(searchRequest, documentClass).map(responseTransformer::apply);
+    return responseTransformer.apply(searchClient.search(searchRequest, documentClass));
   }
 
   private SearchQuery getAuthenticationCheckIfPresent() {

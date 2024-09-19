@@ -13,9 +13,9 @@ import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
-import io.camunda.service.search.filter.FilterBuilders;
-import io.camunda.service.search.filter.ProcessInstanceFilter;
-import io.camunda.service.search.query.SearchQueryBuilders;
+import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.query.SearchQueryBuilders;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -348,7 +348,6 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
         "processInstance");
     assertIsSearchTermQuery(
         ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "state", "ACTIVE");
-
   }
 
   @Test
@@ -420,7 +419,8 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   private void assertIsSearchTermQuery(
-      final SearchQueryOption searchQueryOption, final String expectedField,
+      final SearchQueryOption searchQueryOption,
+      final String expectedField,
       final String expectedValue) {
     assertThat(searchQueryOption)
         .isInstanceOfSatisfying(
@@ -432,7 +432,8 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   private void assertIsSearchTermQuery(
-      final SearchQueryOption searchQueryOption, final String expectedField,
+      final SearchQueryOption searchQueryOption,
+      final String expectedField,
       final Long expectedValue) {
     assertThat(searchQueryOption)
         .isInstanceOfSatisfying(
@@ -444,7 +445,8 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   private void assertIsSearchTermQuery(
-      final SearchQueryOption searchQueryOption, final String expectedField,
+      final SearchQueryOption searchQueryOption,
+      final String expectedField,
       final Integer expectedValue) {
     assertThat(searchQueryOption)
         .isInstanceOfSatisfying(
@@ -456,7 +458,8 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   private void assertIsSearchTermQuery(
-      final SearchQueryOption searchQueryOption, final String expectedField,
+      final SearchQueryOption searchQueryOption,
+      final String expectedField,
       final Boolean expectedValue) {
     assertThat(searchQueryOption)
         .isInstanceOfSatisfying(

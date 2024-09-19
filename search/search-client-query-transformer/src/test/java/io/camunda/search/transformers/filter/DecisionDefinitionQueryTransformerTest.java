@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
-import io.camunda.service.search.filter.FilterBuilders;
+import io.camunda.search.filter.FilterBuilders;
 import org.junit.jupiter.api.Test;
 
 public final class DecisionDefinitionQueryTransformerTest extends AbstractTransformerTest {
@@ -19,8 +19,7 @@ public final class DecisionDefinitionQueryTransformerTest extends AbstractTransf
   @Test
   public void shouldQueryByDecisionDefinitionKey() {
     // given
-    final var filter =
-        FilterBuilders.decisionDefinition(f -> f.decisionDefinitionKeys(123L));
+    final var filter = FilterBuilders.decisionDefinition(f -> f.decisionDefinitionKeys(123L));
 
     // when
     final var searchRequest = transformQuery(filter);

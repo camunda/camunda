@@ -7,10 +7,10 @@
  */
 package io.camunda.search.transformers.sort;
 
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.sort.IncidentSort;
-import io.camunda.service.search.sort.SearchSortOptions;
-import io.camunda.service.search.sort.SortOrder;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.sort.IncidentSort;
+import io.camunda.search.sort.SearchSortOptions;
+import io.camunda.search.sort.SortOrder;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 import java.util.stream.Stream;

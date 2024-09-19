@@ -13,12 +13,12 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceType;
+import io.camunda.search.filter.DateValueFilter;
+import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.transformers.ServiceTransformers;
 import io.camunda.search.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
-import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceType;
-import io.camunda.service.search.filter.DateValueFilter;
-import io.camunda.service.search.filter.DecisionInstanceFilter;
 import java.util.List;
 
 public final class DecisionInstanceFilterTransformer

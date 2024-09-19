@@ -11,7 +11,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.service.search.filter.UserFilter;
+import io.camunda.search.filter.UserFilter;
 import java.util.List;
 
 public class UserFilterTransformer implements FilterTransformer<UserFilter> {

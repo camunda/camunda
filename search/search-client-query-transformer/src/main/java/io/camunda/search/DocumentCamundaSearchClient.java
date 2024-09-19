@@ -13,15 +13,14 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryRequest.Builder;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.util.Either;
 import java.util.function.Function;
 
 public interface DocumentCamundaSearchClient {
 
-  <T> Either<Exception, SearchQueryResponse<T>> search(
+  <T> SearchQueryResponse<T> search(
       final SearchQueryRequest searchRequest, final Class<T> documentClass);
 
-  default <T> Either<Exception, SearchQueryResponse<T>> search(
+  default <T> SearchQueryResponse<T> search(
       final Function<Builder, ObjectBuilder<SearchQueryRequest>> fn, final Class<T> documentClass) {
     return search(searchRequest(fn), documentClass);
   }

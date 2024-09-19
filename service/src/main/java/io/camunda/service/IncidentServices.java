@@ -8,14 +8,14 @@
 package io.camunda.service;
 
 import io.camunda.search.clients.IncidentSearchClient;
-import io.camunda.service.entities.IncidentEntity;
-import io.camunda.service.exception.NotFoundException;
-import io.camunda.service.exception.SearchQueryExecutionException;
+import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.search.core.SearchQueryService;
-import io.camunda.service.search.query.IncidentQuery;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
@@ -43,13 +43,7 @@ public class IncidentServices
 
   @Override
   public SearchQueryResult<IncidentEntity> search(final IncidentQuery query) {
-    return incidentSearchClient
-        .searchIncidents(query, authentication)
-        .fold(
-            (e) -> {
-              throw new SearchQueryExecutionException("Failed to execute search query", e);
-            },
-            (r) -> r);
+    return incidentSearchClient.searchIncidents(query, authentication);
   }
 
   @Override
@@ -63,7 +57,7 @@ public class IncidentServices
     if (result.total() < 1) {
       throw new NotFoundException(String.format("Incident with key %d not found", key));
     } else if (result.total() > 1) {
-      throw new CamundaServiceException(
+      throw new CamundaSearchException(
           String.format("Found Incident with key %d more than once", key));
     } else {
       return result.items().stream().findFirst().orElseThrow();

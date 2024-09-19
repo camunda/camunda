@@ -17,9 +17,9 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.filter.UserTaskFilter;
+import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.transformers.ServiceTransformers;
-import io.camunda.service.search.filter.UserTaskFilter;
-import io.camunda.service.search.filter.VariableValueFilter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -63,10 +63,10 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
       final var taskVarNameQuery =
           filter.variableFilters() != null
               ? stringTerms(
-              "name",
-              filter.variableFilters().stream()
-                  .map(VariableValueFilter::name)
-                  .collect(Collectors.toList()))
+                  "name",
+                  filter.variableFilters().stream()
+                      .map(VariableValueFilter::name)
+                      .collect(Collectors.toList()))
               : null;
 
       // Process Condition:

@@ -9,11 +9,11 @@ package io.camunda.search.transformers.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.service.search.filter.ProcessInstanceFilter;
-import io.camunda.service.search.page.SearchQueryPage;
-import io.camunda.service.search.query.ProcessInstanceQuery;
-import io.camunda.service.search.result.ProcessInstanceQueryResultConfig;
-import io.camunda.service.search.sort.ProcessInstanceSort;
+import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.result.ProcessInstanceQueryResultConfig;
+import io.camunda.search.sort.ProcessInstanceSort;
 import org.junit.jupiter.api.Test;
 
 public class SearchQueryBuilderTest {

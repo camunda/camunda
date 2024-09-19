@@ -10,9 +10,9 @@ package io.camunda.search.transformers.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchTermQuery;
-import io.camunda.service.search.filter.AuthorizationFilter;
-import io.camunda.service.search.filter.AuthorizationFilter.Builder;
-import io.camunda.service.search.filter.FilterBuilders;
+import io.camunda.search.filter.AuthorizationFilter;
+import io.camunda.search.filter.AuthorizationFilter.Builder;
+import io.camunda.search.filter.FilterBuilders;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 import java.util.stream.Stream;

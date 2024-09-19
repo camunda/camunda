@@ -13,12 +13,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.DecisionRequirementSearchClient;
-import io.camunda.service.entities.DecisionRequirementsEntity;
-import io.camunda.service.search.query.DecisionRequirementsQuery;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.SearchQueryResult;
+import io.camunda.search.entities.DecisionRequirementsEntity;
+import io.camunda.search.query.DecisionRequirementsQuery;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +41,7 @@ public final class DecisionRequirementsServiceTest {
 
     // when
     final var result = mock(SearchQueryResult.class);
-    when(client.searchDecisionRequirements(any(), any())).thenReturn(Either.right(result));
+    when(client.searchDecisionRequirements(any(), any())).thenReturn(result);
     final SearchQueryResult<DecisionRequirementsEntity> searchQueryResult =
         services.search(searchQuery);
 
@@ -55,8 +54,8 @@ public final class DecisionRequirementsServiceTest {
     // given
     final var decisionRequirementEntity = mock(DecisionRequirementsEntity.class);
     when(decisionRequirementEntity.key()).thenReturn(124L);
-    when(client.searchDecisionRequirements(any(), any())).thenReturn(
-        Either.right(new SearchQueryResult(1, List.of(decisionRequirementEntity), null)));
+    when(client.searchDecisionRequirements(any(), any()))
+        .thenReturn(new SearchQueryResult(1, List.of(decisionRequirementEntity), null));
 
     // when
     final var searchQueryResult = services.getByKey(124L);
@@ -74,8 +73,7 @@ public final class DecisionRequirementsServiceTest {
     when(decisionRequirementEntity.xml()).thenReturn("<xml/>");
     final var decisionRequirementResult = mock(SearchQueryResult.class);
     when(decisionRequirementResult.items()).thenReturn(List.of(decisionRequirementEntity));
-    when(client.searchDecisionRequirements(any(), any())).thenReturn(
-        Either.right(decisionRequirementResult));
+    when(client.searchDecisionRequirements(any(), any())).thenReturn(decisionRequirementResult);
 
     // when
     final String expectedXml = "<xml/>";
@@ -84,5 +82,4 @@ public final class DecisionRequirementsServiceTest {
     // then
     assertThat(searchQueryResult).isEqualTo(expectedXml);
   }
-
 }

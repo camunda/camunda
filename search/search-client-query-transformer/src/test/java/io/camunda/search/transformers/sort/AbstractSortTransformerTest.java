@@ -7,11 +7,11 @@
  */
 package io.camunda.search.transformers.sort;
 
+import io.camunda.search.filter.FilterBase;
+import io.camunda.search.query.TypedSearchQuery;
+import io.camunda.search.sort.SearchSortOptions;
+import io.camunda.search.sort.SortOption;
 import io.camunda.search.transformers.ServiceTransformers;
-import io.camunda.service.search.filter.FilterBase;
-import io.camunda.service.search.query.TypedSearchQuery;
-import io.camunda.service.search.sort.SearchSortOptions;
-import io.camunda.service.search.sort.SortOption;
 import java.util.List;
 
 public class AbstractSortTransformerTest {
@@ -19,7 +19,7 @@ public class AbstractSortTransformerTest {
   private final ServiceTransformers transformers = ServiceTransformers.newInstance();
 
   protected List<SearchSortOptions> transformRequest(
-      TypedSearchQuery<? extends FilterBase, ? extends SortOption> request) {
+      final TypedSearchQuery<? extends FilterBase, ? extends SortOption> request) {
     return transformers
         .getTypedSearchQueryTransformer(request.getClass())
         .apply((TypedSearchQuery<FilterBase, SortOption>) request)

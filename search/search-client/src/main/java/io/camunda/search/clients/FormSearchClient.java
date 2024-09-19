@@ -7,14 +7,12 @@
  */
 package io.camunda.search.clients;
 
-import io.camunda.service.entities.FormEntity;
-import io.camunda.service.search.query.FormQuery;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.zeebe.util.Either;
+import io.camunda.search.entities.FormEntity;
+import io.camunda.search.query.FormQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 
 public interface FormSearchClient extends AutoCloseable {
 
-  Either<Exception, SearchQueryResult<FormEntity>> searchForms(
-      FormQuery filter, Authentication authentication);
+  SearchQueryResult<FormEntity> searchForms(FormQuery filter, Authentication authentication);
 }

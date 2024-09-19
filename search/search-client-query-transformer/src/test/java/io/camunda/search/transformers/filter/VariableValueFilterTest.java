@@ -9,7 +9,7 @@ package io.camunda.search.transformers.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.service.search.filter.VariableValueFilter.Builder;
+import io.camunda.search.filter.VariableValueFilter.Builder;
 import org.junit.jupiter.api.Test;
 
 public class VariableValueFilterTest {

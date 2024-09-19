@@ -7,10 +7,10 @@
  */
 package io.camunda.service.search.core;
 
+import io.camunda.search.query.SearchQueryBase;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.ApiServices;
-import io.camunda.service.search.query.SearchQueryBase;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 
 public abstract class SearchQueryService<T extends ApiServices<T>, Q extends SearchQueryBase, D>

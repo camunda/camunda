@@ -13,7 +13,7 @@ import co.elastic.clients.elasticsearch._types.SortOptionsBuilders;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
-import io.camunda.service.search.sort.SearchFieldSort;
+import io.camunda.search.sort.SearchFieldSort;
 
 public final class FieldSortTransformer
     extends ElasticsearchTransformer<SearchFieldSort, FieldSort> {

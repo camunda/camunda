@@ -8,14 +8,13 @@
 package io.camunda.service;
 
 import io.camunda.search.clients.VariableSearchClient;
-import io.camunda.service.entities.VariableEntity;
-import io.camunda.service.exception.SearchQueryExecutionException;
+import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.VariableQuery;
+import io.camunda.search.query.VariableQuery.Builder;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.search.core.SearchQueryService;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.search.query.VariableQuery;
-import io.camunda.service.search.query.VariableQuery.Builder;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.function.Function;
@@ -35,18 +34,12 @@ public final class VariableServices
 
   @Override
   public VariableServices withAuthentication(final Authentication authentication) {
-    return new VariableServices(brokerClient, this.variableSearchClient, authentication);
+    return new VariableServices(brokerClient, variableSearchClient, authentication);
   }
 
   @Override
   public SearchQueryResult<VariableEntity> search(final VariableQuery query) {
-    return variableSearchClient
-        .searchVariables(query, authentication)
-        .fold(
-            (e) -> {
-              throw new SearchQueryExecutionException("Failed to execute search query", e);
-            },
-            (r) -> r);
+    return variableSearchClient.searchVariables(query, authentication);
   }
 
   public SearchQueryResult<VariableEntity> search(

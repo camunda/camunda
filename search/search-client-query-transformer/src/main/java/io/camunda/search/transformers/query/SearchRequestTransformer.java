@@ -9,10 +9,10 @@ package io.camunda.search.transformers.query;
 
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.filter.FilterBase;
+import io.camunda.search.query.TypedSearchQuery;
+import io.camunda.search.sort.SortOption;
 import io.camunda.search.transformers.ServiceTransformer;
-import io.camunda.service.search.filter.FilterBase;
-import io.camunda.service.search.query.TypedSearchQuery;
-import io.camunda.service.search.sort.SortOption;
 
 public interface SearchRequestTransformer<F extends FilterBase, S extends SortOption>
     extends ServiceTransformer<TypedSearchQuery<F, S>, SearchQueryRequest> {

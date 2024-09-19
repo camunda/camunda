@@ -21,6 +21,7 @@
     <module>search-client-connect</module>
     <module>search-client-query-transformer</module>
     <module>search-client-plugin</module>
+    <module>search-domain</module>
   </modules>
 
 </project>

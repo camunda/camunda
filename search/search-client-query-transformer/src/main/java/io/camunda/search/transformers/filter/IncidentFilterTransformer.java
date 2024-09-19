@@ -12,12 +12,12 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.entities.IncidentEntity.ErrorType;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.filter.DateValueFilter;
+import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.transformers.ServiceTransformers;
 import io.camunda.search.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
-import io.camunda.service.entities.IncidentEntity.ErrorType;
-import io.camunda.service.entities.IncidentEntity.IncidentState;
-import io.camunda.service.search.filter.DateValueFilter;
-import io.camunda.service.search.filter.IncidentFilter;
 import java.util.List;
 
 public class IncidentFilterTransformer implements FilterTransformer<IncidentFilter> {

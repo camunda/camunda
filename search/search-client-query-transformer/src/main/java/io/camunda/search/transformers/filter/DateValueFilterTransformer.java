@@ -10,9 +10,9 @@ package io.camunda.search.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.range;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.filter.DateValueFilter;
+import io.camunda.search.filter.FilterBase;
 import io.camunda.search.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
-import io.camunda.service.search.filter.DateValueFilter;
-import io.camunda.service.search.filter.FilterBase;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;

@@ -9,7 +9,7 @@ package io.camunda.search.transformers.result;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.service.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryBuilders;
 import org.junit.jupiter.api.Test;
 
 public class ProcessInstanceResultConfigTest extends AbstractResultConfigTest {
@@ -17,9 +17,10 @@ public class ProcessInstanceResultConfigTest extends AbstractResultConfigTest {
   @Test
   public void shouldSourceConfigIncludeProcessKey() {
     // when
-    var source = transformRequest(
-        SearchQueryBuilders.processInstanceSearchQuery(
-            q -> q.resultConfig(r -> r.key().include())));
+    final var source =
+        transformRequest(
+            SearchQueryBuilders.processInstanceSearchQuery(
+                q -> q.resultConfig(r -> r.key().include())));
 
     // then
     assertThat(source.sourceFilter().includes()).containsExactly("key");
@@ -29,9 +30,10 @@ public class ProcessInstanceResultConfigTest extends AbstractResultConfigTest {
   @Test
   public void shouldSourceConfigExcludeProcessKey() {
     // when
-    var source = transformRequest(
-        SearchQueryBuilders.processInstanceSearchQuery(
-            q -> q.resultConfig(r -> r.key().exclude())));
+    final var source =
+        transformRequest(
+            SearchQueryBuilders.processInstanceSearchQuery(
+                q -> q.resultConfig(r -> r.key().exclude())));
 
     // then
     assertThat(source.sourceFilter().excludes()).containsExactly("key");

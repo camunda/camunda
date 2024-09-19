@@ -50,9 +50,9 @@ import io.camunda.search.es.transformers.sort.SortOptionsTransformer;
 import io.camunda.search.es.transformers.source.SourceConfigTransformer;
 import io.camunda.search.es.transformers.source.SourceFilterTransformer;
 import io.camunda.search.es.transformers.types.TypedValueTransformer;
+import io.camunda.search.sort.SearchFieldSort;
+import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.transformers.SearchTransfomer;
-import io.camunda.service.search.sort.SearchFieldSort;
-import io.camunda.service.search.sort.SearchSortOptions;
 import java.util.HashMap;
 import java.util.Map;
 

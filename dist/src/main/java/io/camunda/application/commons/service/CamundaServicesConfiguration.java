@@ -152,8 +152,8 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  public FormServices formServices(final BrokerClient brokerClient,
-      final FormSearchClient formSearchClient) {
+  public FormServices formServices(
+      final BrokerClient brokerClient, final FormSearchClient formSearchClient) {
     return new FormServices(brokerClient, formSearchClient, null);
   }
 }

@@ -16,8 +16,8 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.clients.types.TypedValue;
+import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.transformers.SearchTransfomer;
-import io.camunda.service.search.sort.SearchSortOptions;
 
 public abstract class ElasticsearchTransformer<T, R> implements SearchTransfomer<T, R> {
 

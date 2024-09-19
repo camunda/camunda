@@ -13,10 +13,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.FormSearchClient;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.SearchQueryResult;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.util.Either;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,12 +30,11 @@ public final class FormServiceTest {
     services = new FormServices(mock(BrokerClient.class), client, null);
   }
 
-
   @Test
   public void shouldReturnForm() {
     // given
     final var result = mock(SearchQueryResult.class);
-    when(client.searchForms(any(), any())).thenReturn(Either.right(result));
+    when(client.searchForms(any(), any())).thenReturn(result);
 
     final var searchQuery = SearchQueryBuilders.formSearchQuery().filter(f -> f.keys(1L)).build();
 

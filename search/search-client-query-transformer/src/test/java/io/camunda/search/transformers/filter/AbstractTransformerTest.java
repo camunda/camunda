@@ -8,14 +8,14 @@
 package io.camunda.search.transformers.filter;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.filter.FilterBase;
 import io.camunda.search.transformers.ServiceTransformers;
-import io.camunda.service.search.filter.FilterBase;
 
 public class AbstractTransformerTest {
 
   private final ServiceTransformers transformers = ServiceTransformers.newInstance();
 
-  protected <F extends FilterBase> SearchQuery transformQuery(F filter) {
+  protected <F extends FilterBase> SearchQuery transformQuery(final F filter) {
     return transformers.getFilterTransformer(filter.getClass()).apply(filter);
   }
 }

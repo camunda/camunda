@@ -14,14 +14,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
-import io.camunda.service.entities.DecisionRequirementsEntity;
-import io.camunda.service.entities.ProcessInstanceEntity;
-import io.camunda.service.exception.NotFoundException;
-import io.camunda.service.search.query.ProcessInstanceQuery;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.SearchQueryResult;
+import io.camunda.search.entities.DecisionRequirementsEntity;
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +41,7 @@ public final class ProcessInstanceServiceTest {
   public void shouldReturnProcessInstance() {
     // given
     final var result = mock(SearchQueryResult.class);
-    when(client.searchProcessInstances(any(), any())).thenReturn(Either.right(result));
+    when(client.searchProcessInstances(any(), any())).thenReturn(result);
 
     final ProcessInstanceQuery searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery().build();
@@ -53,15 +53,14 @@ public final class ProcessInstanceServiceTest {
     assertThat(searchQueryResult).isEqualTo(result);
   }
 
-
   @Test
   public void shouldReturnProcessInstanceByKey() {
     // given
     final var key = 123L;
     final var entity = mock(ProcessInstanceEntity.class);
     when(entity.key()).thenReturn(key);
-    when(client.searchProcessInstances(any(), any())).thenReturn(
-        Either.right(new SearchQueryResult(1, List.of(entity), null)));
+    when(client.searchProcessInstances(any(), any()))
+        .thenReturn(new SearchQueryResult(1, List.of(entity), null));
 
     // when
     final var searchQueryResult = services.getByKey(key);
@@ -74,8 +73,8 @@ public final class ProcessInstanceServiceTest {
   public void shouldThrownExceptionIfNotFoundByKey() {
     // given
     final var key = 100L;
-    when(client.searchProcessInstances(any(), any())).thenReturn(
-        Either.right(new SearchQueryResult(0, List.of(), null)));
+    when(client.searchProcessInstances(any(), any()))
+        .thenReturn(new SearchQueryResult(0, List.of(), null));
 
     // when / then
     final var exception =
@@ -89,14 +88,13 @@ public final class ProcessInstanceServiceTest {
     final var key = 200L;
     final var entity1 = mock(DecisionRequirementsEntity.class);
     final var entity2 = mock(DecisionRequirementsEntity.class);
-    when(client.searchProcessInstances(any(), any())).thenReturn(
-        Either.right(new SearchQueryResult(2, List.of(entity1, entity2), null)));
+    when(client.searchProcessInstances(any(), any()))
+        .thenReturn(new SearchQueryResult(2, List.of(entity1, entity2), null));
 
     // when / then
     final var exception =
-        assertThrowsExactly(CamundaServiceException.class, () -> services.getByKey(key));
+        assertThrowsExactly(CamundaSearchException.class, () -> services.getByKey(key));
     assertThat(exception.getMessage())
         .isEqualTo("Found Process Instance with key 200 more than once");
   }
-
 }

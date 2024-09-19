@@ -12,9 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchTermQuery;
-import io.camunda.service.search.filter.FilterBuilders;
-import io.camunda.service.search.filter.VariableFilter;
-import io.camunda.service.search.filter.VariableValueFilter;
+import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.VariableFilter;
+import io.camunda.search.filter.VariableValueFilter;
 import org.junit.jupiter.api.Test;
 
 public final class VariableQueryTransformerTest extends AbstractTransformerTest {

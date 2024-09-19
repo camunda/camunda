@@ -11,8 +11,8 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.filter.FormFilter;
 import io.camunda.search.transformers.ServiceTransformers;
-import io.camunda.service.search.filter.FormFilter;
 import java.util.Arrays;
 import java.util.List;
 

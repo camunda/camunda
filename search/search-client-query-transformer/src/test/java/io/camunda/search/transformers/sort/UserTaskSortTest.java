@@ -9,11 +9,11 @@ package io.camunda.search.transformers.sort;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.service.search.filter.FilterBuilders;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.sort.SearchSortOptions;
-import io.camunda.service.search.sort.SortOrder;
-import io.camunda.service.search.sort.UserTaskSort;
+import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.sort.SearchSortOptions;
+import io.camunda.search.sort.SortOrder;
+import io.camunda.search.sort.UserTaskSort;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 

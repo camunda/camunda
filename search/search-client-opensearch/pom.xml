@@ -25,17 +25,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-service-domain</artifactId>
+      <artifactId>camunda-search-domain</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-util</artifactId>
     </dependency>
 
     <dependency>

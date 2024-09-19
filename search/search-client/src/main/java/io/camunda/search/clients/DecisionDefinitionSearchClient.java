@@ -7,14 +7,13 @@
  */
 package io.camunda.search.clients;
 
-import io.camunda.service.entities.DecisionDefinitionEntity;
-import io.camunda.service.search.query.DecisionDefinitionQuery;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.zeebe.util.Either;
+import io.camunda.search.entities.DecisionDefinitionEntity;
+import io.camunda.search.query.DecisionDefinitionQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 
 public interface DecisionDefinitionSearchClient extends AutoCloseable {
 
-  Either<Exception, SearchQueryResult<DecisionDefinitionEntity>> searchDecisionDefinitions(
+  SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
       DecisionDefinitionQuery filter, Authentication authentication);
 }

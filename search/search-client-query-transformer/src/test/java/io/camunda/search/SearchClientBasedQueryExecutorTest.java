@@ -14,11 +14,10 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.transformers.ServiceTransformers;
-import io.camunda.service.entities.ProcessInstanceEntity;
-import io.camunda.service.entities.ProcessInstanceEntity.ProcessInstanceState;
-import io.camunda.service.search.query.ProcessInstanceQuery;
-import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,11 +44,9 @@ class SearchClientBasedQueryExecutorTest {
           null,
           ProcessInstanceState.ACTIVE,
           false,
-          null
-      );
+          null);
 
-  @Mock
-  private DocumentCamundaSearchClient searchClient;
+  @Mock private DocumentCamundaSearchClient searchClient;
   private final ServiceTransformers serviceTransformers = ServiceTransformers.newInstance();
 
   private SearchClientBasedQueryExecutor queryExecutor;
@@ -69,14 +66,13 @@ class SearchClientBasedQueryExecutorTest {
         createProcessInstanceEntityResponse(demoProcessInstance);
 
     when(searchClient.search(any(SearchQueryRequest.class), any(Class.class)))
-        .thenReturn(Either.right(processInstanceEntityResponse));
+        .thenReturn(processInstanceEntityResponse);
 
     // When we search
     final var searchResult = queryExecutor.search(searchAllQuery, ProcessInstanceEntity.class);
 
-    assertThat(searchResult.isRight()).isTrue();
-    assertThat(searchResult.get().total()).isEqualTo(1);
-    final List<ProcessInstanceEntity> items = searchResult.get().items();
+    assertThat(searchResult.total()).isEqualTo(1);
+    final List<ProcessInstanceEntity> items = searchResult.items();
     assertThat(items).hasSize(1);
     assertThat(items.getFirst().key()).isEqualTo(demoProcessInstance.key());
   }

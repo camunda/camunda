@@ -8,10 +8,10 @@
 package io.camunda.search.transformers.result;
 
 import io.camunda.search.clients.source.SearchSourceConfig;
+import io.camunda.search.filter.FilterBase;
+import io.camunda.search.query.TypedSearchQuery;
+import io.camunda.search.sort.SortOption;
 import io.camunda.search.transformers.ServiceTransformers;
-import io.camunda.service.search.filter.FilterBase;
-import io.camunda.service.search.query.TypedSearchQuery;
-import io.camunda.service.search.sort.SortOption;
 
 public class AbstractResultConfigTest {
 

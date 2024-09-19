@@ -8,15 +8,15 @@
 package io.camunda.service;
 
 import io.camunda.search.clients.UserTaskSearchClient;
-import io.camunda.service.entities.UserTaskEntity;
-import io.camunda.service.exception.NotFoundException;
-import io.camunda.service.exception.SearchQueryExecutionException;
+import io.camunda.search.entities.UserTaskEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.UserTaskQuery;
+import io.camunda.search.query.UserTaskQuery.Builder;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.search.core.SearchQueryService;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.search.query.UserTaskQuery;
-import io.camunda.service.search.query.UserTaskQuery.Builder;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskAssignmentRequest;
@@ -48,13 +48,7 @@ public final class UserTaskServices
 
   @Override
   public SearchQueryResult<UserTaskEntity> search(final UserTaskQuery query) {
-    return userTaskSearchClient
-        .searchUserTasks(query, authentication)
-        .fold(
-            (e) -> {
-              throw new SearchQueryExecutionException("Failed to execute search query", e);
-            },
-            (r) -> r);
+    return userTaskSearchClient.searchUserTasks(query, authentication);
   }
 
   public SearchQueryResult<UserTaskEntity> search(
@@ -94,12 +88,11 @@ public final class UserTaskServices
 
   public UserTaskEntity getByKey(final Long key) {
     final SearchQueryResult<UserTaskEntity> result =
-        search(
-            SearchQueryBuilders.userTaskSearchQuery().filter(f -> f.userTaskKeys(key)).build());
+        search(SearchQueryBuilders.userTaskSearchQuery().filter(f -> f.userTaskKeys(key)).build());
     if (result.total() < 1) {
       throw new NotFoundException(String.format("User Task with key %d not found", key));
     } else if (result.total() > 1) {
-      throw new CamundaServiceException(
+      throw new CamundaSearchException(
           String.format("Found User Task with key %d more than once", key));
     } else {
       return result.items().stream().findFirst().orElseThrow();

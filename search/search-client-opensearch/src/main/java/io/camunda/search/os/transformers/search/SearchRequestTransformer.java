@@ -11,7 +11,7 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.os.transformers.OpensearchTransformer;
 import io.camunda.search.os.transformers.OpensearchTransformers;
-import io.camunda.service.search.sort.SearchSortOptions;
+import io.camunda.search.sort.SearchSortOptions;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;

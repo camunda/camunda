@@ -7,14 +7,13 @@
  */
 package io.camunda.search.clients;
 
-import io.camunda.service.entities.AuthorizationEntity;
-import io.camunda.service.search.query.AuthorizationQuery;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.zeebe.util.Either;
+import io.camunda.search.entities.AuthorizationEntity;
+import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 
 public interface AuthorizationSearchClient extends AutoCloseable {
 
-  Either<Exception, SearchQueryResult<AuthorizationEntity>> searchAuthorizations(
+  SearchQueryResult<AuthorizationEntity> searchAuthorizations(
       AuthorizationQuery filter, Authentication authentication);
 }

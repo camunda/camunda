@@ -13,10 +13,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.SearchQueryResult;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.util.Either;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +34,7 @@ public final class FlowNodeInstanceServiceTest {
   public void shouldReturnFlowNodeInstance() {
     // given
     final var result = mock(SearchQueryResult.class);
-    when(client.searchFlowNodeInstances(any(), any())).thenReturn(Either.right(result));
+    when(client.searchFlowNodeInstances(any(), any())).thenReturn(result);
 
     final var searchQuery = SearchQueryBuilders.flownodeInstanceSearchQuery().build();
 

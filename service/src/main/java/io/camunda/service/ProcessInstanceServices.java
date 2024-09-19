@@ -8,14 +8,14 @@
 package io.camunda.service;
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
-import io.camunda.service.entities.ProcessInstanceEntity;
-import io.camunda.service.exception.NotFoundException;
-import io.camunda.service.exception.SearchQueryExecutionException;
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.search.core.SearchQueryService;
-import io.camunda.service.search.query.ProcessInstanceQuery;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
@@ -39,7 +39,7 @@ import java.util.function.Function;
 
 public final class ProcessInstanceServices
     extends SearchQueryService<
-    ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
+        ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
 
   private final ProcessInstanceSearchClient processInstanceSearchClient;
 
@@ -58,13 +58,7 @@ public final class ProcessInstanceServices
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> search(final ProcessInstanceQuery query) {
-    return processInstanceSearchClient
-        .searchProcessInstances(query, authentication)
-        .fold(
-            (e) -> {
-              throw new SearchQueryExecutionException("Failed to execute search query", e);
-            },
-            (r) -> r);
+    return processInstanceSearchClient.searchProcessInstances(query, authentication);
   }
 
   public SearchQueryResult<ProcessInstanceEntity> search(
@@ -82,7 +76,7 @@ public final class ProcessInstanceServices
       throw new NotFoundException(
           String.format("Process Instance with key %d not found", processInstanceKey));
     } else if (result.total() > 1) {
-      throw new CamundaServiceException(
+      throw new CamundaSearchException(
           String.format("Found Process Instance with key %d more than once", processInstanceKey));
     } else {
       return result.items().stream().findFirst().orElseThrow();
@@ -174,27 +168,19 @@ public final class ProcessInstanceServices
       Long requestTimeout,
       Long operationReference,
       List<ProcessInstanceCreationStartInstruction> startInstructions,
-      List<String> fetchVariables) {
+      List<String> fetchVariables) {}
 
-  }
-
-  public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {
-
-  }
+  public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}
 
   public record ProcessInstanceMigrateRequest(
       Long processInstanceKey,
       Long targetProcessDefinitionKey,
       List<ProcessInstanceMigrationMappingInstruction> mappingInstructions,
-      Long operationReference) {
-
-  }
+      Long operationReference) {}
 
   public record ProcessInstanceModifyRequest(
       Long processInstanceKey,
       List<ProcessInstanceModificationActivateInstruction> activateInstructions,
       List<ProcessInstanceModificationTerminateInstruction> terminateInstructions,
-      Long operationReference) {
-
-  }
+      Long operationReference) {}
 }

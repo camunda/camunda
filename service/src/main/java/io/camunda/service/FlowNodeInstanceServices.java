@@ -8,21 +8,21 @@
 package io.camunda.service;
 
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
-import io.camunda.service.entities.FlowNodeInstanceEntity;
-import io.camunda.service.exception.NotFoundException;
-import io.camunda.service.exception.SearchQueryExecutionException;
+import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.search.core.SearchQueryService;
-import io.camunda.service.search.query.FlowNodeInstanceQuery;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.function.Function;
 
 public final class FlowNodeInstanceServices
     extends SearchQueryService<
-    FlowNodeInstanceServices, FlowNodeInstanceQuery, FlowNodeInstanceEntity> {
+        FlowNodeInstanceServices, FlowNodeInstanceQuery, FlowNodeInstanceEntity> {
 
   private final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient;
 
@@ -41,13 +41,7 @@ public final class FlowNodeInstanceServices
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> search(final FlowNodeInstanceQuery query) {
-    return flowNodeInstanceSearchClient
-        .searchFlowNodeInstances(query, authentication)
-        .fold(
-            (e) -> {
-              throw new SearchQueryExecutionException("Failed to execute search query", e);
-            },
-            (r) -> r);
+    return flowNodeInstanceSearchClient.searchFlowNodeInstances(query, authentication);
   }
 
   public SearchQueryResult<FlowNodeInstanceEntity> search(
@@ -64,7 +58,7 @@ public final class FlowNodeInstanceServices
     if (result.total() < 1) {
       throw new NotFoundException(String.format("Flow node instance with key %d not found", key));
     } else if (result.total() > 1) {
-      throw new CamundaServiceException(
+      throw new CamundaSearchException(
           String.format("Found Flow node instance with key %d more than once", key));
     } else {
       return result.items().stream().findFirst().orElseThrow();

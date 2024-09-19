@@ -13,7 +13,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.service.search.filter.DecisionRequirementsFilter;
+import io.camunda.search.filter.DecisionRequirementsFilter;
 import java.util.List;
 
 public final class DecisionRequirementsFilterTransformer

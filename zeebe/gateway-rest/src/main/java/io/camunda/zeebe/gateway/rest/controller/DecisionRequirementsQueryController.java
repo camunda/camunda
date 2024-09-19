@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 
+import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.service.DecisionRequirementsServices;
-import io.camunda.service.search.query.DecisionRequirementsQuery;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;

@@ -10,7 +10,7 @@ package io.camunda.search.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.service.security.auth.Authentication;
+import io.camunda.search.security.auth.Authentication;
 
 public final class AuthenticationTransformer implements FilterTransformer<Authentication> {
 

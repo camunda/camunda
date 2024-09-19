@@ -9,7 +9,7 @@ package io.camunda.clients.sort;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.service.search.sort.SortOptionsBuilders;
+import io.camunda.search.sort.SortOptionsBuilders;
 import org.junit.jupiter.api.Test;
 
 public class SearchSortOptionsTest {
