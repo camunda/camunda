@@ -43,7 +43,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.user.UserProcessors;
-import io.camunda.zeebe.engine.processing.usertask.UserTaskEventProcessors;
+import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -56,6 +56,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
@@ -200,9 +201,7 @@ public final class EngineProcessors {
         processingState,
         scheduledTaskStateFactory,
         interPartitionCommandSender);
-
-    UserTaskEventProcessors.addUserTaskProcessors(
-        typedRecordProcessors, processingState, bpmnBehaviors, writers);
+    addUserTaskProcessors(typedRecordProcessors, processingState, bpmnBehaviors, writers);
 
     UserProcessors.addUserProcessors(
         keyGenerator,
@@ -405,6 +404,19 @@ public final class EngineProcessors {
             commandDistributionBehavior);
     typedRecordProcessors.onCommand(
         ValueType.SIGNAL, SignalIntent.BROADCAST, signalBroadcastProcessor);
+  }
+
+  private static void addUserTaskProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final MutableProcessingState processingState,
+      final BpmnBehaviors bpmnBehaviors,
+      final Writers writers) {
+    final var userTaskProcessor = new UserTaskProcessor(processingState, bpmnBehaviors, writers);
+
+    UserTaskIntent.commands()
+        .forEach(
+            intent ->
+                typedRecordProcessors.onCommand(ValueType.USER_TASK, intent, userTaskProcessor));
   }
 
   private static void addCommandDistributionProcessors(
