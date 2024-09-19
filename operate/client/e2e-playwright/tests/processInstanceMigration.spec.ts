@@ -39,7 +39,7 @@ test.beforeAll(async ({request}) => {
     .toHaveProperty('total', 10);
 });
 
-test.describe.serial('Process Instance Migration', () => {
+test.describe.serial.only('Process Instance Migration', () => {
   /**
    * Migrate from ProcessV1 to ProcessV2
    * ProcessV1 and ProcessV2 have identical bpmnProcess id and flow node names,
@@ -378,7 +378,7 @@ test.describe.serial('Process Instance Migration', () => {
      */
     await processInstancePage.diagram.clickFlowNode('Task A2');
     await processInstancePage.diagram.showMetaData();
-    await page.waitForTimeout(500); // wait until metadata modal is fully rendered
+    // await page.waitForTimeout(500); // wait until metadata modal is fully rendered
     await expect(
       processInstancePage.metadataModal.getByText(
         '"correlationKey": "mySecondCorrelationKey"',
@@ -401,7 +401,7 @@ test.describe.serial('Process Instance Migration', () => {
      */
     await processInstancePage.diagram.clickFlowNode('Task C2');
     await processInstancePage.diagram.showMetaData();
-    await page.waitForTimeout(500); // wait until metadata modal is fully rendered
+    // await page.waitForTimeout(500); // wait until metadata modal is fully rendered
     await expect(
       processInstancePage.metadataModal.getByText(
         '"correlationKey": "myFirstCorrelationKey"',
