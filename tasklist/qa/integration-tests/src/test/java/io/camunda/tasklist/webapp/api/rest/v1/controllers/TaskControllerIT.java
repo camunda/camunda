@@ -1405,7 +1405,6 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .timeout(Duration.ofSeconds(20))
           .untilAsserted(
               () -> {
-                listViewStore.getVariablesByVariableName("var_1");
                 assertThat(listViewStore.getVariablesByVariableName("var_1")).isNotEmpty();
               });
 
