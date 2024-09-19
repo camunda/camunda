@@ -74,7 +74,7 @@ public class RestGatewayService {
     mockInfo
         .getWireMock()
         .register(
-            WireMock.get(RestGatewayPaths.getEvaluateDecisionUrl())
+            WireMock.post(RestGatewayPaths.getEvaluateDecisionUrl())
                 .willReturn(WireMock.okJson(JSON_MAPPER.toJson(response))));
   }
 
