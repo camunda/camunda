@@ -37,6 +37,11 @@ describe('stores/processXml/processXml.list', () => {
       'confirmDelivery',
       'MessageIntermediateCatch',
       'TimerIntermediateCatch',
+      'MessageEventSubProcess',
+      'TaskX',
+      'TimerEventSubProcess',
+      'TaskY',
+      'MessageReceiveTask',
     ]);
   });
 
@@ -64,6 +69,11 @@ describe('stores/processXml/processXml.list', () => {
       'confirmDelivery',
       'MessageIntermediateCatch',
       'TimerIntermediateCatch',
+      'MessageEventSubProcess',
+      'TaskX',
+      'TimerEventSubProcess',
+      'TaskY',
+      'MessageReceiveTask',
     ]);
   });
 });
