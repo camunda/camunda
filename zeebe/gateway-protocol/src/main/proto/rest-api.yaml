@@ -3246,14 +3246,6 @@ components:
         state:
           $ref: '#/components/schemas/DecisionInstanceStateEnum'
           description: The state of the decision instance.
-        evaluationDateBefore:
-          type: string
-          format: date-time
-          description: The evaluation date of the decision instance must be before this date.
-        evaluationDateAfter:
-          type: string
-          format: date-time
-          description: The evaluation date of the decision instance must be after this date.
         evaluationFailure:
           type: string
           description: The evaluation failure of the decision instance.
@@ -3265,12 +3257,10 @@ components:
           type: integer
           format: int64
           description: The key of the process instance.
-        decisionKeys:
-          type: array
-          items:
-            type: integer
-            format: int64
-          description: The keys of the decisions.
+        decisionKey:
+          type: integer
+          format: int64
+          description: The key of the decision.
         dmnDecisionId:
           type: string
           description: The ID of the DMN decision.

@@ -142,14 +142,9 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getState())
           .map(s -> convertEnum(s, DecisionInstanceState.class))
           .ifPresent(builder::states);
-      ofNullable(filter.getEvaluationDateBefore())
-          .map(SearchQueryRequestMapper::toDateValueFilter)
-          .ifPresent(builder::evaluationDate);
-      builder.evaluationDate(
-          toDateValueFilter(filter.getEvaluationDateAfter(), filter.getEvaluationDateBefore()));
       ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getDecisionKeys()).ifPresent(builder::decisionKeys);
+      ofNullable(filter.getDecisionKey()).ifPresent(builder::decisionKeys);
       ofNullable(filter.getDmnDecisionId()).ifPresent(builder::dmnDecisionIds);
       ofNullable(filter.getDmnDecisionName()).ifPresent(builder::dmnDecisionNames);
       ofNullable(filter.getDecisionVersion()).ifPresent(builder::decisionVersions);

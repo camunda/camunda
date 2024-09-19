@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.service.search.filter.FilterBuilders.dateValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -21,9 +20,6 @@ import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -105,24 +101,21 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
             """
       {
           "filter": {
-              "evaluationDateAfter": "2024-01-02T03:04:05+00:00",
-              "evaluationDateBefore": "2024-02-03T04:05:06+00:00"
+              "decisionKey": 123456
           }
       }""",
             q ->
-                q.filter(
-                        f ->
-                            f.evaluationDate(
-                                dateValue(
-                                    d ->
-                                        d.after(
-                                                OffsetDateTime.of(
-                                                    LocalDateTime.of(2024, 1, 2, 3, 4, 5),
-                                                    ZoneOffset.UTC))
-                                            .before(
-                                                OffsetDateTime.of(
-                                                    LocalDateTime.of(2024, 2, 3, 4, 5, 6),
-                                                    ZoneOffset.UTC)))))
+                q.filter(f -> f.decisionKeys(123456L))
+                    .resultConfig(r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())),
+        new TestArguments(
+            """
+      {
+          "filter": {
+              "decisionType": "DECISION_TABLE"
+          }
+      }""",
+            q ->
+                q.filter(f -> f.decisionTypes(DecisionInstanceType.DECISION_TABLE))
                     .resultConfig(r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())),
         new TestArguments(
             """
