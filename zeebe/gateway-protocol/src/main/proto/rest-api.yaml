@@ -2304,7 +2304,7 @@ components:
             - COMPLETED
             - TERMINATED
         type:
-          description: Type of flow node as defined set of values
+          description: Type of flow node as defined set of values.
           type: string
           enum:
             - UNSPECIFIED
@@ -2337,19 +2337,19 @@ components:
           description: The flow node id for this flow node instance.
         flowNodeName:
           type: string
-          description: The flow node name
+          description: The flow node name.
         treePath:
           type: string
-          description: The path of keys from process instance to this flow node instance separated by '/'
+          description: The path of keys from process instance to this flow node instance separated by '/'.
         incident:
           type: boolean
-          description: Shows whether this flow node instance has an incident related to
+          description: Shows whether this flow node instance has an incident related to.
         incidentKey:
           type: integer
-          description: The key of incident if field incident is true
+          description: The key of incident if field incident is true.
           format: int64
         tenantId:
-          description: The tenant id
+          description: The tenant id.
           type: string
     FlowNodeInstanceSearchQueryResponse:
       allOf:
@@ -2379,11 +2379,11 @@ components:
           description: The bpmn process id associated to this flow node instance.
           type: string
         startDate:
-          description: Date when flow node instance started
+          description: Date when flow node instance started.
           type: string
           format: date-time
         endDate:
-          description: Date when flow node instance finished
+          description: Date when flow node instance finished.
           type: string
           format: date-time
         flowNodeId:
@@ -2393,7 +2393,7 @@ components:
           description: The path from process instance leading to this flow node instance.
           type: string
         type:
-          description: Type of flow node as defined set of values
+          description: Type of flow node as defined set of values.
           type: string
           enum:
             - UNSPECIFIED
