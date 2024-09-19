@@ -104,6 +104,7 @@ public class Engine implements RecordProcessor {
   public ProcessingResult process(
       final TypedRecord record, final ProcessingResultBuilder processingResultBuilder) {
 
+    System.out.println("COMMAND: " + record.getValueType() + " - " + record.getIntent());
     try (final var scope = new ProcessingResultBuilderScope(processingResultBuilder)) {
       TypedRecordProcessor<?> currentProcessor = null;
 

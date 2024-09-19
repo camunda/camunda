@@ -490,6 +490,8 @@ public final class EventAppliers implements EventApplier {
       throw new NoApplierForVersion(intent, recordVersion, getLatestVersion(intent));
     }
 
+    System.out.println("EVENT: " + intent.getClass().getSimpleName() + " - " + intent.name());
+
     applierForVersion.applyState(key, value);
   }
 }
