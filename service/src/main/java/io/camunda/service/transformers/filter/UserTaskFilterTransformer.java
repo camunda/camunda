@@ -52,9 +52,9 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     // Task Variable Query: Check if taskVariable with specified varName and varValue exists
     final var taskVariableQuery = getTaskVariablesQuery(filter.variableFilters());
 
-    // Process and Subprocess Variable Query: Check if processVariable with specified varName and
-    // varValue exists
+    // Process Variable Query: Check if processVariable  with specified varName and varValue exists
     final var processVariableQuery = getProcessVariablesQuery(filter.variableFilters());
+
     final SearchQuery typeQuery = exists("flowNodeInstanceId"); // Default to task
 
     SearchQuery variablesQuery = null;

@@ -82,6 +82,20 @@ class UserTaskQueryTest {
   }
 
   @Test
+  public void shouldRetrieveTaskByVariableNameSearch() {
+    final UserTaskVariableFilterRequest variableValueFilter =
+        new UserTaskVariableFilterRequest().name("process01");
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.variables(List.of(variableValueFilter)))
+            .send()
+            .join();
+    assertThat(result.items().size()).isEqualTo(2);
+  }
+
+  @Test
   public void shouldNoteRetrieveTaskByInvalidVariableValue() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("process01").value("\"pVariable\"");
