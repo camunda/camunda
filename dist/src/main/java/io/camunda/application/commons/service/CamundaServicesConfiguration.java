@@ -30,6 +30,7 @@ import io.camunda.service.FormServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.MessageServices;
+import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.SignalServices;
@@ -68,6 +69,12 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final DecisionInstanceSearchClient decisionInstanceSearchClient) {
     return new DecisionInstanceServices(brokerClient, decisionInstanceSearchClient, null);
+  }
+
+  @Bean
+  public ProcessDefinitionServices processDefinitionServices(
+      final CamundaServices camundaServices) {
+    return camundaServices.processDefinitionServices();
   }
 
   @Bean

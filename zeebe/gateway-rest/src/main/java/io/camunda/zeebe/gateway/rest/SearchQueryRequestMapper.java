@@ -71,6 +71,21 @@ public final class SearchQueryRequestMapper {
 
   private SearchQueryRequestMapper() {}
 
+  public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
+      final ProcessDefinitionSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.processDefinitionSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            request.getSort(),
+            SortOptionBuilders::processDefinition,
+            SearchQueryRequestMapper::applyProcessDefinitionSortField);
+    final var filter = toProcessDefinitionFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::processDefinitionSearchQuery);
+  }
+
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
       final ProcessInstanceSearchQueryRequest request) {
     if (request == null) {
@@ -243,6 +258,12 @@ public final class SearchQueryRequestMapper {
             SearchQueryRequestMapper::applyIncidentSortField);
     final var filter = toIncidentFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::incidentSearchQuery);
+  }
+
+  private static ProcessDefinitionFilter toProcessDefinitionFilter(
+      final ProcessDefinitionFilterRequest filter) {
+    final var builder = FilterBuilders.processDefinition();
+    return builder.build();
   }
 
   private static ProcessInstanceFilter toProcessInstanceFilter(
@@ -443,6 +464,12 @@ public final class SearchQueryRequestMapper {
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
+    return validationErrors;
+  }
+
+  private static List<String> applyProcessDefinitionSortField(
+      final String field, final ProcessDefinitionSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
     return validationErrors;
   }
 
