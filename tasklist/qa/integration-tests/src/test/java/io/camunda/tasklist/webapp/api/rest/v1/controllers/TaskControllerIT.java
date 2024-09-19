@@ -1404,9 +1404,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       Awaitility.await("tasklist-list-view has imported the data")
           .timeout(Duration.ofSeconds(20))
           .untilAsserted(
-              () -> {
-                assertThat(listViewStore.getVariablesByVariableName("var_1")).isNotEmpty();
-              });
+              () -> assertThat(listViewStore.getVariablesByVariableName("var_1")).isNotEmpty());
 
       // Assert the Task Variables were persisted in the tasklist-list-view
       assertThat(listViewStore.getVariablesByVariableName("var_a").get(0).equals("225"));
