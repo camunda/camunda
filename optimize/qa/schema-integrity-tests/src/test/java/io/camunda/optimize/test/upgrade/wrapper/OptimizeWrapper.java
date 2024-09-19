@@ -55,8 +55,9 @@ public class OptimizeWrapper {
       throw new RuntimeException("Upgrade is already running, wait for it to finish.");
     }
     log.info(
-        "Running upgrade to Optimize {} on Elasticsearch with port {}...",
+        "Running upgrade to Optimize {} on {} with port {}...",
         optimizeVersion,
+        databaseType.getId(),
         databasePort);
 
     final ProcessBuilder processBuilder =
@@ -66,6 +67,7 @@ public class OptimizeWrapper {
             .redirectOutput(Redirect.to(new File(outputFilePath)));
     final Map<String, String> envVars = new HashMap<>();
     envVars.put("OPTIMIZE_ELASTICSEARCH_HTTP_PORT", String.valueOf(databasePort));
+    envVars.put("CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT", String.valueOf(databasePort));
     processBuilder.environment().putAll(envVars);
     upgradeProcess = processBuilder.start();
   }

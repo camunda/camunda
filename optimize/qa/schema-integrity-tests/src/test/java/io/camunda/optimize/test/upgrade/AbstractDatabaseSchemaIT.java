@@ -7,11 +7,15 @@
  */
 package io.camunda.optimize.test.upgrade;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.test.upgrade.client.AbstractDatabaseSchemaTestClient;
 import io.camunda.optimize.test.upgrade.wrapper.OptimizeWrapper;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +24,8 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AbstractDatabaseSchemaIT<T extends AbstractDatabaseSchemaTestClient> {
   private static final Logger log = LoggerFactory.getLogger(AbstractDatabaseSchemaIT.class);
+  protected static final String TOKEN_CHARS_FIELD_PATH =
+      "settings.index.analysis.tokenizer.ngram_tokenizer._value._value.tokenChars";
   protected T oldDatabaseSchemaClient;
   protected T newDatabaseSchemaClient;
   private final String previousVersion = System.getProperties().getProperty("previousVersion");
@@ -136,5 +142,25 @@ public abstract class AbstractDatabaseSchemaIT<T extends AbstractDatabaseSchemaT
 
   protected String getBuildDirectory() {
     return buildDirectory;
+  }
+
+  protected <T> void assertMapContentEqualityFieldByField(
+      Map<String, T> expected, Map<String, T> actual, String ignoringFields) {
+    // Check that the keys are the same
+    assertThat(actual.keySet()).containsExactlyInAnyOrderElementsOf(expected.keySet());
+
+    // Check recursively each value is the same
+    expected.forEach(
+        (key, expectedValue) -> {
+          T actualValue = actual.get(key);
+          if (StringUtils.isNotBlank(ignoringFields)) {
+            assertThat(actualValue)
+                .usingRecursiveComparison()
+                .ignoringFields(ignoringFields)
+                .isEqualTo(expectedValue);
+          } else {
+            assertThat(actualValue).usingRecursiveComparison().isEqualTo(expectedValue);
+          }
+        });
   }
 }

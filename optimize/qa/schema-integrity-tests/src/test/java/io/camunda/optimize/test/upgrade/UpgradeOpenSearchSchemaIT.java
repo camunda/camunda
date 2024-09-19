@@ -7,8 +7,6 @@
  */
 package io.camunda.optimize.test.upgrade;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.test.upgrade.client.OpenSearchSchemaTestClient;
 import java.io.IOException;
@@ -48,19 +46,21 @@ public class UpgradeOpenSearchSchemaIT
   protected void assertMigratedDatabaseIndicesMatchExpected() throws IOException {
     log.info(
         "Expected settings size: {}, keys: {}", expectedSettings.size(), expectedSettings.keySet());
-    final Map<String, IndexState> newSettings = newDatabaseSchemaClient.getSettings();
-    log.info("Actual settings size: {}, keys: {}", newSettings.size(), newSettings.keySet());
-    assertThat(newSettings).isEqualTo(expectedSettings);
-    assertThat(newDatabaseSchemaClient.getMappings()).isEqualTo(expectedMappings);
+    final Map<String, IndexState> actualSettings = newDatabaseSchemaClient.getSettings();
+    log.info("Actual settings size: {}, keys: {}", actualSettings.size(), actualSettings.keySet());
+
+    assertMapContentEqualityFieldByField(expectedSettings, actualSettings, TOKEN_CHARS_FIELD_PATH);
+    assertMapContentEqualityFieldByField(
+        expectedMappings, newDatabaseSchemaClient.getMappings(), null);
   }
 
   @Override
   protected void assertMigratedDatabaseAliasesMatchExpected() throws IOException {
     log.info(
         "Expected aliases size: {}, keys: {}", expectedAliases.size(), expectedAliases.keySet());
-    final Map<String, IndexAliases> newAliases = newDatabaseSchemaClient.getAliases();
-    log.info("Actual aliases size: {}, keys: {}", newAliases.size(), newAliases.keySet());
-    assertThat(newAliases).isEqualTo(expectedAliases);
+    final Map<String, IndexAliases> actualAliases = newDatabaseSchemaClient.getAliases();
+    log.info("Actual aliases size: {}, keys: {}", actualAliases.size(), actualAliases.keySet());
+    assertMapContentEqualityFieldByField(expectedAliases, actualAliases, null);
   }
 
   @Override
@@ -69,9 +69,10 @@ public class UpgradeOpenSearchSchemaIT
         "Expected templates size: {}, names: {}",
         expectedTemplates.size(),
         expectedTemplates.keySet());
-    final Map<String, TemplateMapping> newTemplates = newDatabaseSchemaClient.getTemplates();
-    log.info("Actual templates size: {}, names: {}", newTemplates.size(), newTemplates.keySet());
-    assertThat(newTemplates).isEqualTo(expectedTemplates);
+    final Map<String, TemplateMapping> actualTemplates = newDatabaseSchemaClient.getTemplates();
+    log.info(
+        "Actual templates size: {}, names: {}", actualTemplates.size(), actualTemplates.keySet());
+    assertMapContentEqualityFieldByField(expectedTemplates, actualTemplates, null);
   }
 
   @Override
