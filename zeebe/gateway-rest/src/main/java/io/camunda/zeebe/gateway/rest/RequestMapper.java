@@ -384,8 +384,9 @@ public class RequestMapper {
 
     final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
 
-    if (requestAuthentication != null) {
-      final var authenticatedPrincipal = (CamundaUser) requestAuthentication.getPrincipal();
+    if (requestAuthentication != null
+        && requestAuthentication.getPrincipal()
+            instanceof final CamundaUser authenticatedPrincipal) {
       token.withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedPrincipal.getUserKey());
     }
 

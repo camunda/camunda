@@ -16,6 +16,7 @@ import com.auth0.jwt.interfaces.Verification;
 import io.camunda.zeebe.auth.api.AuthorizationDecoder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -78,15 +79,19 @@ public class JwtAuthorizationDecoder
 
   @Override
   public Map<String, Object> decode() {
-    final DecodedJWT decodedJWT =
-        withClaim(Authorization.AUTHORIZED_TENANTS)
-            .withClaim(Authorization.AUTHORIZED_USER_KEY)
-            .build();
-    return Map.of(
+    final DecodedJWT decodedJWT = withClaim(Authorization.AUTHORIZED_TENANTS).build();
+    final var claimMap = new HashMap<String, Object>();
+    claimMap.put(
         Authorization.AUTHORIZED_TENANTS,
-        decodedJWT.getClaim(Authorization.AUTHORIZED_TENANTS).asList(String.class),
-        Authorization.AUTHORIZED_USER_KEY,
-        decodedJWT.getClaim(Authorization.AUTHORIZED_USER_KEY).asLong());
+        decodedJWT.getClaim(Authorization.AUTHORIZED_TENANTS).asList(String.class));
+
+    if (decodedJWT.getClaims().containsKey(Authorization.AUTHORIZED_USER_KEY)) {
+      claimMap.put(
+          Authorization.AUTHORIZED_USER_KEY,
+          decodedJWT.getClaim(Authorization.AUTHORIZED_USER_KEY).asLong());
+    }
+
+    return claimMap;
   }
 
   /**
