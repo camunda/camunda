@@ -40,7 +40,7 @@ class DecisionInstanceFilterTest {
   }
 
   @Test
-  void shouldQueryByDecisionKey() {
+  void shouldQueryByKey() {
     // given
     final var decisionInstanceFilter = FilterBuilders.decisionInstance(f -> f.keys(124L));
     final var searchQuery =
@@ -129,6 +129,29 @@ class DecisionInstanceFilterTest {
             t -> {
               assertThat(t.field()).isEqualTo("decisionId");
               assertThat(t.value().stringValue()).isEqualTo("dId");
+            });
+  }
+
+  @Test
+  void shouldQueryByDecisionKey() {
+    // given
+    final var decisionInstanceFilter = FilterBuilders.decisionInstance(f -> f.decisionKeys(12345L));
+    final var searchQuery =
+        SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.filter(decisionInstanceFilter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("decisionDefinitionId");
+              assertThat(t.value().stringValue()).isEqualTo("12345");
             });
   }
 
