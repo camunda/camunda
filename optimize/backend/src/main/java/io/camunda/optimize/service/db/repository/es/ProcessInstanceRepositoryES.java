@@ -70,14 +70,19 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
         BulkRequest.of(
             b ->
                 b.operations(
-                    o -> {
-                      processInstanceIds.forEach(
-                          id ->
-                              o.delete(
-                                  d ->
-                                      d.id(id).index(esClient.addPrefixesToIndices(index).get(0))));
-                      return o;
-                    }));
+                    processInstanceIds.stream()
+                        .map(
+                            id ->
+                                BulkOperation.of(
+                                    o ->
+                                        o.delete(
+                                            d ->
+                                                d.id(id)
+                                                    .index(
+                                                        esClient
+                                                            .addPrefixesToIndices(index)
+                                                            .get(0)))))
+                        .toList()));
     esClient.doBulkRequest(bulkRequest, index, false);
   }
 
