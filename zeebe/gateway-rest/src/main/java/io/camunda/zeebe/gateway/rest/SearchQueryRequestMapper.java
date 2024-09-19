@@ -19,6 +19,8 @@ import io.camunda.service.entities.IncidentEntity;
 import io.camunda.service.entities.IncidentEntity.IncidentState;
 import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.service.entities.IncidentEntity;
+import io.camunda.service.entities.IncidentEntity.IncidentState;
 import io.camunda.service.search.filter.*;
 import io.camunda.service.search.page.SearchQueryPage;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
