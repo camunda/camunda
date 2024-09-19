@@ -10,6 +10,7 @@ package io.camunda.tasklist.zeebeimport.v860.processors.common;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.TaskVariableEntity;
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.zeebeimport.v860.record.Intent;
 import io.camunda.zeebe.protocol.record.Record;
@@ -44,8 +45,7 @@ public class UserTaskRecordToVariableEntityMapper {
         try {
           varValue = objectMapper.writeValueAsString(varMap.getValue());
         } catch (final JsonProcessingException e) {
-          LOGGER.error("Failed to parse variable %s".formatted(varMap), e);
-          throw new RuntimeException(e);
+          throw new TasklistRuntimeException("Failed to parse variable %s".formatted(varMap), e);
         }
         final TaskVariableEntity variableEntity = new TaskVariableEntity();
         variableEntity.setId(
