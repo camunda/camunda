@@ -10,6 +10,8 @@ package io.camunda.service.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
+import io.camunda.service.entities.IncidentEntity.ErrorType;
+import io.camunda.service.entities.IncidentEntity.IncidentState;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
@@ -18,29 +20,34 @@ import java.util.Objects;
 public record IncidentFilter(
     List<Long> keys,
     List<Long> processDefinitionKeys,
+    List<String> bpmnProcessIds,
     List<Long> processInstanceKeys,
-    List<String> types,
+    List<ErrorType> errorTypes,
+    List<String> errorMessages,
     List<String> flowNodeIds,
-    List<String> flowNodeInstanceIds,
-    List<String> states,
+    List<Long> flowNodeInstanceKeys,
+    DateValueFilter creationTime,
+    List<IncidentState> states,
     List<Long> jobKeys,
-    List<String> tenantIds,
-    boolean hasActiveOperation)
+    List<String> treePaths,
+    List<String> tenantIds)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<IncidentFilter> {
 
     private List<Long> keys;
     private List<Long> processDefinitionKeys;
+    private List<String> bpmnProcessIds;
     private List<Long> processInstanceKeys;
-    private List<String> types;
+    private List<ErrorType> errorTypes;
+    private List<String> errorMessages;
     private List<String> flowNodeIds;
-    private List<String> flowNodeInstanceIds;
+    private List<Long> flowNodeInstanceKeys;
     private DateValueFilter creationTimeFilter;
-    private List<String> states;
+    private List<IncidentState> states;
     private List<Long> jobKeys;
+    private List<String> treePaths;
     private List<String> tenantIds;
-    private boolean hasActiveOperation = false;
 
     public Builder keys(final Long value, final Long... values) {
       return keys(collectValues(value, values));
@@ -60,6 +67,15 @@ public record IncidentFilter(
       return this;
     }
 
+    public Builder bpmnProcessIds(final String value, final String... values) {
+      return bpmnProcessIds(collectValues(value, values));
+    }
+
+    public Builder bpmnProcessIds(final List<String> values) {
+      bpmnProcessIds = addValuesToList(bpmnProcessIds, values);
+      return this;
+    }
+
     public Builder processInstanceKeys(final Long value, final Long... values) {
       return processInstanceKeys(collectValues(value, values));
     }
@@ -69,12 +85,26 @@ public record IncidentFilter(
       return this;
     }
 
-    public Builder types(final String value, final String... values) {
-      return types(collectValues(value, values));
+    public Builder errorTypes(final ErrorType value, final ErrorType... values) {
+      return errorTypes(collectValues(value, values));
     }
 
-    public Builder types(final List<String> values) {
-      types = addValuesToList(types, values);
+    public Builder errorTypes(final List<ErrorType> values) {
+      errorTypes = addValuesToList(errorTypes, values);
+      return this;
+    }
+
+    public Builder errorMessages(final String value, final String... values) {
+      return errorMessages(collectValues(value, values));
+    }
+
+    public Builder errorMessages(final List<String> values) {
+      errorMessages = addValuesToList(errorMessages, values);
+      return this;
+    }
+
+    public Builder creationTime(final DateValueFilter value) {
+      creationTimeFilter = value;
       return this;
     }
 
@@ -87,20 +117,20 @@ public record IncidentFilter(
       return this;
     }
 
-    public Builder flowNodeInstanceIds(final String value, final String... values) {
-      return flowNodeInstanceIds(collectValues(value, values));
+    public Builder flowNodeInstanceKeys(final Long value, final Long... values) {
+      return flowNodeInstanceKeys(collectValues(value, values));
     }
 
-    public Builder flowNodeInstanceIds(final List<String> values) {
-      flowNodeInstanceIds = addValuesToList(flowNodeInstanceIds, values);
+    public Builder flowNodeInstanceKeys(final List<Long> values) {
+      flowNodeInstanceKeys = addValuesToList(flowNodeInstanceKeys, values);
       return this;
     }
 
-    public Builder states(final String value, final String... values) {
+    public Builder states(final IncidentState value, final IncidentState... values) {
       return states(collectValues(value, values));
     }
 
-    public Builder states(final List<String> values) {
+    public Builder states(final List<IncidentState> values) {
       states = addValuesToList(states, values);
       return this;
     }
@@ -114,6 +144,15 @@ public record IncidentFilter(
       return this;
     }
 
+    public Builder treePaths(final String value, final String... values) {
+      return treePaths(collectValues(value, values));
+    }
+
+    public Builder treePaths(final List<String> values) {
+      treePaths = addValuesToList(treePaths, values);
+      return this;
+    }
+
     public Builder tenantIds(final String value, final String... values) {
       return tenantIds(collectValues(value, values));
     }
@@ -123,24 +162,22 @@ public record IncidentFilter(
       return this;
     }
 
-    public Builder hasActiveOperation(final boolean value) {
-      hasActiveOperation = value;
-      return this;
-    }
-
     @Override
     public IncidentFilter build() {
       return new IncidentFilter(
           Objects.requireNonNullElse(keys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(bpmnProcessIds, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(types, Collections.emptyList()),
+          Objects.requireNonNullElse(errorTypes, Collections.emptyList()),
+          Objects.requireNonNullElse(errorMessages, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeIds, Collections.emptyList()),
-          Objects.requireNonNullElse(flowNodeInstanceIds, Collections.emptyList()),
+          Objects.requireNonNullElse(flowNodeInstanceKeys, Collections.emptyList()),
+          creationTimeFilter,
           Objects.requireNonNullElse(states, Collections.emptyList()),
           Objects.requireNonNullElse(jobKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
-          hasActiveOperation);
+          Objects.requireNonNullElse(treePaths, Collections.emptyList()),
+          Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
     }
   }
 }
