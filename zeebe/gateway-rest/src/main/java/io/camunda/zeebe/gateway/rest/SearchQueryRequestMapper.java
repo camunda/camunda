@@ -15,6 +15,8 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceType;
+import io.camunda.service.entities.IncidentEntity;
+import io.camunda.service.entities.IncidentEntity.IncidentState;
 import io.camunda.service.search.filter.*;
 import io.camunda.service.search.page.SearchQueryPage;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
@@ -415,16 +417,21 @@ public final class SearchQueryRequestMapper {
 
     if (filter != null) {
       ofNullable(filter.getKey()).ifPresent(builder::keys);
-      ofNullable(filter.getState()).ifPresent(builder::states);
-      ofNullable(filter.getProcessInstanceKey()).ifPresent(builder::processInstanceKeys);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
+      ofNullable(filter.getBpmnProcessId()).ifPresent(builder::bpmnProcessIds);
+      ofNullable(filter.getProcessInstanceKey()).ifPresent(builder::processInstanceKeys);
+      ofNullable(filter.getErrorType())
+          .ifPresent(t -> builder.errorTypes(IncidentEntity.ErrorType.valueOf(t.getValue())));
+      ofNullable(filter.getErrorMessage()).ifPresent(builder::errorMessages);
       ofNullable(filter.getFlowNodeId()).ifPresent(builder::flowNodeIds);
-      ofNullable(filter.getFlowNodeInstanceId()).ifPresent(builder::flowNodeInstanceIds);
-      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+      ofNullable(filter.getFlowNodeInstanceKey()).ifPresent(builder::flowNodeInstanceKeys);
+      ofNullable(filter.getCreationTime())
+          .ifPresent(t -> builder.creationTime(toDateValueFilter(t)));
+      ofNullable(filter.getState())
+          .ifPresent(s -> builder.states(IncidentState.valueOf(s.getValue())));
       ofNullable(filter.getJobKey()).ifPresent(builder::jobKeys);
-      ofNullable(filter.getType()).ifPresent(builder::types);
-      ofNullable(filter.getHasActiveOperation())
-          .ifPresentOrElse(builder::hasActiveOperation, () -> {});
+      ofNullable(filter.getTreePath()).ifPresent(builder::treePaths);
+      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
     return builder.build();
   }
@@ -508,14 +515,17 @@ public final class SearchQueryRequestMapper {
     } else {
       switch (field) {
         case "key" -> builder.key();
-        case "type" -> builder.type();
-        case "state" -> builder.state();
-        case "creationTime" -> builder.creationTime();
-        case "processInstanceKey" -> builder.processInstanceKey();
         case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "flowNodeInstanceId" -> builder.flowNodeInstanceId();
+        case "bpmnProcessId" -> builder.bpmnProcessId();
+        case "processInstanceKey" -> builder.processInstanceKey();
+        case "errorType" -> builder.errorType();
+        case "errorMessage" -> builder.errorMessage();
         case "flowNodeId" -> builder.flowNodeId();
+        case "flowNodeInstanceKey" -> builder.flowNodeInstanceKey();
+        case "creationTime" -> builder.creationTime();
+        case "state" -> builder.state();
         case "jobKey" -> builder.jobKey();
+        case "treePath" -> builder.treePath();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

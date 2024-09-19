@@ -206,7 +206,7 @@ export async function addDiagramTooltip({
 
   // create overlay node from html
   const overlayHtml = document.createElement('div');
-  overlayHtml.classList.add('Tooltip', 'top', 'center', theme === 'light' ? 'light' : 'dark');
+  overlayHtml.classList.add('Tooltip', theme === 'light' ? 'light' : 'dark');
 
   if (onMouseEnter) {
     overlayHtml.addEventListener('mouseenter', onMouseEnter);

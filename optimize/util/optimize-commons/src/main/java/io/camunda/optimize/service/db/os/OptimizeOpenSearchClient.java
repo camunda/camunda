@@ -14,6 +14,7 @@ import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestD
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static io.camunda.optimize.service.exceptions.ExceptionHelper.safe;
+import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static java.lang.String.format;
 
 import io.camunda.optimize.dto.optimize.DataImportSourceType;
@@ -21,6 +22,7 @@ import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import io.camunda.optimize.service.db.DatabaseClient;
+import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
@@ -31,6 +33,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
 import io.camunda.search.connect.plugin.PluginRepository;
+import jakarta.ws.rs.NotSupportedException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,12 +49,14 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.FieldSort;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
@@ -63,6 +68,7 @@ import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.DeleteResponse;
 import org.opensearch.client.opensearch.core.GetRequest;
@@ -70,11 +76,14 @@ import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.MgetResponse;
+import org.opensearch.client.opensearch.core.ReindexRequest;
+import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.ScrollResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.UpdateByQueryRequest;
+import org.opensearch.client.opensearch.core.UpdateByQueryResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.UpdateResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
@@ -85,12 +94,20 @@ import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.opensearch.client.opensearch.core.mget.MultiGetOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
+import org.opensearch.client.opensearch.indices.CreateIndexRequest;
+import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
+import org.opensearch.client.opensearch.indices.DeleteIndexRequest.Builder;
+import org.opensearch.client.opensearch.indices.DeleteIndexResponse;
 import org.opensearch.client.opensearch.indices.GetAliasRequest;
 import org.opensearch.client.opensearch.indices.GetAliasResponse;
+import org.opensearch.client.opensearch.indices.GetMappingRequest;
+import org.opensearch.client.opensearch.indices.GetMappingResponse;
 import org.opensearch.client.opensearch.indices.RolloverRequest;
 import org.opensearch.client.opensearch.indices.RolloverResponse;
 import org.opensearch.client.opensearch.indices.rollover.RolloverConditions;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
+import org.opensearch.client.opensearch.tasks.ListRequest;
+import org.opensearch.client.opensearch.tasks.ListResponse;
 import org.opensearch.client.opensearch.tasks.Status;
 import org.springframework.context.ApplicationContext;
 
@@ -102,6 +119,37 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   @Getter private OpenSearchAsyncClient openSearchAsyncClient;
 
   @Getter private RichOpenSearchClient richOpenSearchClient;
+
+  private RestClient restClient;
+
+  private TransportOptionsProvider transportOptionsProvider;
+
+  public OptimizeOpenSearchClient(
+      final RestClient restClient,
+      final ExtendedOpenSearchClient openSearchClient,
+      final OpenSearchAsyncClient openSearchAsyncClient,
+      final OptimizeIndexNameService indexNameService,
+      final TransportOptionsProvider transportOptionsProvider) {
+    this.openSearchClient = openSearchClient;
+    this.indexNameService = indexNameService;
+    this.transportOptionsProvider = transportOptionsProvider;
+    this.openSearchAsyncClient = openSearchAsyncClient;
+    richOpenSearchClient =
+        new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
+    this.restClient = restClient;
+  }
+
+  public RestClient getRestClient() {
+    if (restClient != null) {
+      return restClient;
+    } else {
+      // We are creating this client only for testing, as there is currently no use in the normal
+      // codebase. In case that becomes necessary this is a bit complicated because the AwsTransport
+      // requires Apache 5, however the RestClient works with Apache 4, so we would need to
+      // duplicate the entire logic for building the transport
+      throw new NotSupportedException("RestClient is only available for testing");
+    }
+  }
 
   public OptimizeOpenSearchClient(
       final ExtendedOpenSearchClient openSearchClient,
@@ -157,7 +205,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     }
   }
 
-  private static void validateTaskResponse(final GetTasksResponse taskResponse) {
+  public static void validateTaskResponse(final GetTasksResponse taskResponse) {
     if (taskResponse.error() != null) {
       log.error("An Opensearch task failed with error: {}", taskResponse.error());
       throw new OptimizeRuntimeException(taskResponse.error().toString());
@@ -172,9 +220,25 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     }
   }
 
+  public void createIndex(final CreateIndexRequest request) throws IOException {
+    getOpenSearchClient().indices().create(request);
+  }
+
   public final void close() {
     Optional.of(openSearchClient).ifPresent(OpenSearchClient::shutdown);
     Optional.of(openSearchAsyncClient).ifPresent(OpenSearchAsyncClient::shutdown);
+  }
+
+  @Override
+  public long countWithoutPrefix(final String unprefixedIndex) {
+    final CountRequest.Builder builder = new CountRequest.Builder().index(unprefixedIndex);
+
+    try {
+      return getOpenSearchClient().count(builder.build()).count();
+    } catch (final Exception e) {
+      throw new OptimizeRuntimeException(
+          String.format("Could not determine count from index: %s", unprefixedIndex));
+    }
   }
 
   @Override
@@ -223,6 +287,27 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return richOpenSearchClient.doc().delete(indexName, entityId);
   }
 
+  public final GetMappingResponse getMapping(
+      final GetMappingRequest.Builder getMappingsRequest, final String... indexes)
+      throws IOException {
+    getMappingsRequest.index(Arrays.stream(convertToPrefixedAliasNames(indexes)).toList());
+    return getOpenSearchClient().indices().getMapping(getMappingsRequest.build());
+  }
+
+  public void deleteIndexTemplateByIndexTemplateName(final String indexTemplateName) {
+    final String prefixedIndexTemplateName =
+        indexNameService.getOptimizeIndexAliasForIndex(indexTemplateName);
+    log.debug("Deleting index template [{}].", prefixedIndexTemplateName);
+    try {
+      getOpenSearchClient().indices().deleteTemplate(b -> b.name(prefixedIndexTemplateName));
+    } catch (final IOException e) {
+      final String errorMessage =
+          String.format("Could not delete index template [%s]!", prefixedIndexTemplateName);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+    log.debug("Successfully deleted index template [{}].", prefixedIndexTemplateName);
+  }
+
   public <A, B> UpdateResponse<A> upsert(
       final UpdateRequest.Builder<A, B> requestBuilder,
       final Class<A> clazz,
@@ -234,6 +319,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final UpdateRequest.Builder<Void, T> requestBuilder,
       final Function<Exception, String> errorMessageSupplier) {
     return richOpenSearchClient.doc().update(requestBuilder, errorMessageSupplier);
+  }
+
+  public <T> UpdateResponse<Void> update(
+      final UpdateRequest<Void, T> request, final Class<Void> clazz) throws IOException {
+    return openSearchClient.update(request, clazz);
   }
 
   public <T> UpdateResponse<Void> update(
@@ -266,6 +356,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     final GetAliasRequest aliasesRequest = new GetAliasRequest.Builder().name(aliasName).build();
     try {
       return openSearchClient.indices().getAlias(aliasesRequest).result().keySet();
+    } catch (final OpenSearchException e) {
+      if (e.response().status() == NOT_FOUND.code()) {
+        return Set.of();
+      }
+      throw e;
     } catch (final Exception e) {
       final String message =
           String.format("Could not retrieve index names for alias {%s}.", aliasName);
@@ -277,7 +372,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   public boolean triggerRollover(final String indexAliasName, final int maxIndexSizeGB) {
     final RolloverRequest rolloverRequest =
         new RolloverRequest.Builder()
-            .alias(indexAliasName)
+            .alias(convertToPrefixedAliasName(indexAliasName))
             .conditions(new RolloverConditions.Builder().maxSize(maxIndexSizeGB + GB_UNIT).build())
             .build();
 
@@ -445,6 +540,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   public final GetAliasResponse getAlias(final String indexNamePattern) throws IOException {
     final GetAliasRequest getAliasesRequest =
         new GetAliasRequest.Builder().index(convertToPrefixedAliasName(indexNamePattern)).build();
+    return getAlias(getAliasesRequest);
+  }
+
+  public final GetAliasResponse getAlias(final GetAliasRequest getAliasesRequest)
+      throws IOException {
     return openSearchClient.indices().getAlias(getAliasesRequest);
   }
 
@@ -494,6 +594,24 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
   public long count(final String indexName, final String errorMessage) {
     return count(new String[] {indexName}, QueryDSL.matchAll(), errorMessage);
+  }
+
+  public UpdateByQueryResponse submitUpdateTask(final UpdateByQueryRequest request)
+      throws IOException {
+    return getOpenSearchClient().updateByQuery(request);
+  }
+
+  public DeleteByQueryResponse submitDeleteTask(final DeleteByQueryRequest request)
+      throws IOException {
+    return getOpenSearchClient().deleteByQuery(request);
+  }
+
+  public ReindexResponse submitReindexTask(final ReindexRequest request) throws IOException {
+    return getOpenSearchClient().reindex(request);
+  }
+
+  public ListResponse getTaskList(final ListRequest request) throws IOException {
+    return getOpenSearchClient().tasks().list(request);
   }
 
   // todo rename it in scope of OPT-7469
@@ -728,7 +846,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   public final RolloverResponse rollover(RolloverRequest rolloverRequest) throws IOException {
-    rolloverRequest = applyAliasPrefixAndRolloverConditions(rolloverRequest);
     return openSearchClient.indices().rollover(rolloverRequest);
   }
 
@@ -836,11 +953,32 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   public void deleteIndexByRawIndexNames(final String... indexNames) {
     final String indexNamesString = Arrays.toString(indexNames);
     log.debug("Deleting indices [{}].", indexNamesString);
-    richOpenSearchClient.index().deleteIndicesWithRetries(indexNames);
+    dbClientSnapshotFailsafe("DeleteIndex: " + indexNamesString)
+        .get(
+            () ->
+                getOpenSearchClient()
+                    .indices()
+                    .delete(DeleteIndexRequest.of(b -> b.index(List.of(indexNames)))));
     log.debug("Successfully deleted index [{}].", indexNamesString);
   }
 
-  private void waitUntilTaskIsFinished(final String taskId, final String taskItemIdentifier) {
+  @Override
+  public void deleteAllIndexes() {
+    log.debug("Deleting all indexes.");
+    try {
+      final DeleteIndexResponse response =
+          openSearchClient.indices().delete(new Builder().index("*").build());
+      if (response.acknowledged()) {
+        log.debug("Successfully deleted all indexes.");
+      } else {
+        log.warn("There was an error deleting all indexes.");
+      }
+    } catch (IOException e) {
+      log.warn("There was an error deleting all indexes.", e);
+    }
+  }
+
+  public void waitUntilTaskIsFinished(final String taskId, final String taskItemIdentifier) {
     final BackoffCalculator backoffCalculator = new BackoffCalculator(1000, 10);
     boolean finished = false;
     int progress = -1;

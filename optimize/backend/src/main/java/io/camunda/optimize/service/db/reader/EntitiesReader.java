@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 
 public interface EntitiesReader {
-
+  String INDEX_FIELD = "_index";
   String AGG_BY_INDEX_COUNT = "byIndexCount";
 
   String[] ENTITY_LIST_EXCLUDES = {REPORT_DATA_XML_PROPERTY};

@@ -12,7 +12,7 @@ import classnames from 'classnames';
 import deepEqual from 'fast-deep-equal';
 import {Button, Column, Grid} from '@carbon/react';
 
-import {Modal, DefinitionSelection, BPMNDiagram, DiagramScrollLock, Tooltip} from 'components';
+import {Modal, DefinitionSelection, BPMNDiagram, DiagramScrollLock} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {useErrorHandling} from 'hooks';
@@ -181,15 +181,13 @@ export default function TemplateModal({
                     const templateDescription = getDescription(entity, name, disableDescription);
 
                     return (
-                      <Tooltip
+                      <div
                         key={idx}
                         title={
                           disabled?.(selectedDefinitions)
                             ? getDisableStateText(selectedDefinitions)
                             : undefined
                         }
-                        position="bottom"
-                        align="left"
                       >
                         <div>
                           <Button
@@ -217,7 +215,7 @@ export default function TemplateModal({
                             )}
                           </Button>
                         </div>
-                      </Tooltip>
+                      </div>
                     );
                   })}
                 </div>

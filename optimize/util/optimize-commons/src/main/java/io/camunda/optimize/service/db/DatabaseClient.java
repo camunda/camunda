@@ -15,19 +15,30 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.FailsafeExecutor;
+import net.jodah.failsafe.RetryPolicy;
 import org.apache.tika.utils.StringUtils;
 
+@Slf4j
 public abstract class DatabaseClient implements ConfigurationReloadable {
 
   protected static final String NESTED_DOC_LIMIT_MESSAGE =
       "The number of nested documents has exceeded the allowed limit of";
+  private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
   @Getter protected OptimizeIndexNameService indexNameService;
+
+  @Setter
+  private int snapshotInProgressRetryDelaySeconds = DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY;
 
   /**
    * Get all the aliases for the indexes matching the indexNamePattern
@@ -46,6 +57,8 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
   public abstract boolean triggerRollover(final String indexAliasName, final int maxIndexSizeGB);
 
   public abstract void deleteIndex(final String indexAlias);
+
+  public abstract long countWithoutPrefix(final String unprefixedIndex) throws IOException;
 
   public abstract void refresh(final String indexPattern);
 
@@ -146,7 +159,36 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
     return true;
   }
 
+  protected RetryPolicy<Object> createSnapshotRetryPolicy(final String operation, final int delay) {
+    return new RetryPolicy<>()
+        .handleIf(
+            failure -> {
+              if (failure instanceof final RuntimeException statusException) {
+                return statusException.getMessage().contains("snapshot_in_progress_exception");
+              } else {
+                return false;
+              }
+            })
+        .withDelay(Duration.ofSeconds(delay))
+        // no retry limit
+        .withMaxRetries(-1)
+        .onFailedAttempt(
+            e -> {
+              log.warn(
+                  "Execution of {} failed due to a pending snapshot operation, details: {}",
+                  operation,
+                  e.getLastFailure().getMessage());
+              log.info("Will retry the operation in {} seconds...", delay);
+            });
+  }
+
+  protected FailsafeExecutor<Object> dbClientSnapshotFailsafe(final String operation) {
+    return Failsafe.with(createSnapshotRetryPolicy(operation, snapshotInProgressRetryDelaySeconds));
+  }
+
   public abstract void deleteIndexByRawIndexNames(String... indexNames);
+
+  public abstract void deleteAllIndexes();
 
   private String generateErrorMessageForValidationImportRequestDto(
       final RequestType type, final String fieldName) {

@@ -32,6 +32,7 @@ import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeDeleteRequestBuilderES;
 import io.camunda.optimize.service.db.es.builders.OptimizeIndexRequestBuilderES;
 import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES;
+import io.camunda.optimize.service.db.repository.es.TaskRepositoryES;
 import io.camunda.optimize.service.db.schema.index.DashboardIndex;
 import io.camunda.optimize.service.db.writer.DashboardWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -55,6 +56,7 @@ public class DashboardWriterES implements DashboardWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+  private final TaskRepositoryES taskRepositoryES;
 
   @Override
   public IdResponseDto createNewDashboard(
@@ -180,15 +182,14 @@ public class DashboardWriterES implements DashboardWriter {
                                                 t.field(TILES + "." + DashboardIndex.REPORT_ID)
                                                     .value(reportId))))));
 
-    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-        esClient, updateItem, removeReportFromDashboardScript, query, DASHBOARD_INDEX_NAME);
+    taskRepositoryES.tryUpdateByQueryRequest(
+        updateItem, removeReportFromDashboardScript, query, DASHBOARD_INDEX_NAME);
   }
 
   @Override
   public void deleteDashboardsOfCollection(final String collectionId) {
 
-    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-        esClient,
+    taskRepositoryES.tryDeleteByQueryRequest(
         Query.of(q -> q.term(t -> t.field(COLLECTION_ID).value(collectionId))),
         String.format("dashboards of collection with ID [%s]", collectionId),
         true,
@@ -227,8 +228,7 @@ public class DashboardWriterES implements DashboardWriter {
   @Override
   public void deleteManagementDashboard() {
 
-    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-        esClient,
+    taskRepositoryES.tryDeleteByQueryRequest(
         Query.of(q -> q.term(t -> t.field(MANAGEMENT_DASHBOARD).value(true))),
         "Management Dashboard",
         true,

@@ -17,7 +17,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeIndexOperationBuilderES;
-import io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import io.camunda.optimize.service.db.repository.DecisionInstanceRepository;
 import io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -39,6 +38,7 @@ public class DecisionInstanceRepositoryES implements DecisionInstanceRepository 
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
+  private final TaskRepositoryES taskRepositoryES;
 
   @Override
   public void importDecisionInstances(
@@ -67,8 +67,7 @@ public class DecisionInstanceRepositoryES implements DecisionInstanceRepository 
                                                 JsonData.of(
                                                     dateTimeFormatter.format(evaluationDate)))))));
 
-    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-        esClient,
+    taskRepositoryES.tryDeleteByQueryRequest(
         query,
         String.format(
             "decision instances with definitionKey %s and evaluationDate past %s",

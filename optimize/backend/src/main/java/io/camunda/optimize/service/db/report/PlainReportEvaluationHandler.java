@@ -10,6 +10,7 @@ package io.camunda.optimize.service.db.report;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.service.DefinitionService;
+import io.camunda.optimize.service.identity.CollapsedSubprocessNodesService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.variable.ProcessVariableService;
 import java.util.Optional;
@@ -23,13 +24,15 @@ public class PlainReportEvaluationHandler extends ReportEvaluationHandler {
       final SingleReportEvaluator singleReportEvaluator,
       final CombinedReportEvaluator combinedReportEvaluator,
       final ProcessVariableService processVariableService,
-      final DefinitionService definitionService) {
+      final DefinitionService definitionService,
+      final CollapsedSubprocessNodesService collapsedSubprocessNodesService) {
     super(
         reportService,
         singleReportEvaluator,
         combinedReportEvaluator,
         processVariableService,
-        definitionService);
+        definitionService,
+        collapsedSubprocessNodesService);
   }
 
   @Override

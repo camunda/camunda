@@ -41,6 +41,7 @@ import io.camunda.optimize.service.util.mapper.CustomReportDefinitionDeserialize
 import io.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
+import jakarta.ws.rs.NotSupportedException;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -74,6 +75,8 @@ import org.apache.hc.core5.util.Timeout;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContexts;
+import org.opensearch.client.RestClient;
+import org.opensearch.client.RestClientBuilder;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -131,6 +134,34 @@ public class OpenSearchClientBuilder {
         AwsSdk2TransportOptions.builder()
             .setMapper(new JacksonJsonpMapper(ObjectMapperFactory.OPTIMIZE_MAPPER))
             .build());
+  }
+
+  public static RestClientBuilder buildDefaultRestClient(
+      final ConfigurationService configurationService) {
+    final RestClientBuilder restClientBuilder =
+        RestClient.builder(buildOpenSearchConnectionNodesApache4(configurationService))
+            .setRequestConfigCallback(
+                requestConfigBuilder ->
+                    requestConfigBuilder
+                        .setConnectTimeout(
+                            configurationService
+                                .getOpenSearchConfiguration()
+                                .getConnectionTimeout())
+                        .setSocketTimeout(0));
+    if (!StringUtils.isEmpty(configurationService.getOpenSearchConfiguration().getPathPrefix())) {
+      restClientBuilder.setPathPrefix(
+          configurationService.getOpenSearchConfiguration().getPathPrefix());
+    }
+    return restClientBuilder;
+  }
+
+  public static RestClient restClient(final ConfigurationService configurationService) {
+    if (configurationService.getOpenSearchConfiguration().getSecuritySSLEnabled()) {
+      throw new NotSupportedException("Rest client is only supported with HTTP");
+    } else {
+      log.info("Setting up http rest client connection");
+      return buildDefaultRestClient(configurationService).build();
+    }
   }
 
   private static boolean useAwsCredentials(final ConfigurationService configurationService) {
@@ -238,6 +269,19 @@ public class OpenSearchClientBuilder {
     try {
       final URI uri = new URI(uriConfig);
       return new org.apache.hc.core5.http.HttpHost(uri.getScheme(), uri.getHost(), uri.getPort());
+    } catch (final URISyntaxException e) {
+      throw new OptimizeRuntimeException("Error in url: " + uriConfig, e);
+    }
+  }
+
+  private static org.apache.http.HttpHost getHttpHostApache4(
+      final DatabaseConnectionNodeConfiguration configuration, final Boolean isSSLEnabled) {
+    final String protocol = isSSLEnabled ? HTTPS_PREFIX : HTTP_PREFIX;
+    final String uriConfig =
+        String.format("%s%s:%d", protocol, configuration.getHost(), configuration.getHttpPort());
+    try {
+      final URI uri = new URI(uriConfig);
+      return new org.apache.http.HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
     } catch (final URISyntaxException e) {
       throw new OptimizeRuntimeException("Error in url: " + uriConfig, e);
     }
@@ -376,6 +420,17 @@ public class OpenSearchClientBuilder {
                     node,
                     configurationService.getOpenSearchConfiguration().getSecuritySSLEnabled()))
         .toArray(HttpHost[]::new);
+  }
+
+  private static org.apache.http.HttpHost[] buildOpenSearchConnectionNodesApache4(
+      final ConfigurationService configurationService) {
+    return configurationService.getOpenSearchConfiguration().getConnectionNodes().stream()
+        .map(
+            node ->
+                getHttpHostApache4(
+                    node,
+                    configurationService.getOpenSearchConfiguration().getSecuritySSLEnabled()))
+        .toArray(org.apache.http.HttpHost[]::new);
   }
 
   private static HttpAsyncClientBuilder configureHttpClient(

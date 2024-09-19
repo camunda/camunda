@@ -15,7 +15,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.cluster.ComponentTemplate;
 import org.opensearch.client.opensearch.cluster.ComponentTemplateNode;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
-import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
+import org.opensearch.client.opensearch.indices.PutTemplateRequest;
 
 public class OpenSearchTemplateOperations extends OpenSearchRetryOperation {
   public OpenSearchTemplateOperations(
@@ -27,12 +27,12 @@ public class OpenSearchTemplateOperations extends OpenSearchRetryOperation {
     return openSearchClient.indices().existsIndexTemplate(it -> it.name(templatePattern)).value();
   }
 
-  public boolean createTemplateWithRetries(PutIndexTemplateRequest request) {
+  public boolean createTemplateWithRetries(PutTemplateRequest request) {
     return executeWithRetries(
         "CreateTemplate " + request.name(),
         () -> {
           if (!templatesExist(request.name())) {
-            return openSearchClient.indices().putIndexTemplate(request).acknowledged();
+            return openSearchClient.indices().putTemplate(request).acknowledged();
           }
           return true;
         });

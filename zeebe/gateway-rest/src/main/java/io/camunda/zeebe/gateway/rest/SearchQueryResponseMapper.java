@@ -247,22 +247,21 @@ public final class SearchQueryResponseMapper {
     return incidents.stream().map(SearchQueryResponseMapper::toIncident).toList();
   }
 
-  private static IncidentItem toIncident(final IncidentEntity t) {
+  public static IncidentItem toIncident(final IncidentEntity t) {
     return new IncidentItem()
         .key(t.key())
         .processDefinitionKey(t.processDefinitionKey())
+        .bpmnProcessId(t.bpmnProcessId())
         .processInstanceKey(t.processInstanceKey())
-        .type(t.type())
+        .errorType(IncidentItem.ErrorTypeEnum.fromValue(t.errorType().name()))
+        .errorMessage(t.errorMessage())
         .flowNodeId(t.flowNodeId())
-        .flowNodeInstanceId(t.flowNodeInstanceId())
+        .flowNodeInstanceKey(t.flowNodeInstanceKey())
         .creationTime(t.creationTime())
-        .state(t.state())
+        .state(IncidentItem.StateEnum.fromValue(t.state().name()))
         .jobKey(t.jobKey())
-        .tenantId(t.tenantId())
-        .hasActiveOperation(t.hasActiveOperation())
-        .lastOperation(null /*new OperationItem()*/)
-        .rootCauseInstance(null /*new ProcessInstanceReferenceItem()*/)
-        .rootCauseDecision(null /*new DecisionInstanceReferenceItem()*/);
+        .treePath(t.treePath())
+        .tenantId(t.tenantId());
   }
 
   private static UserTaskItem toUserTask(final UserTaskEntity t) {

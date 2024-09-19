@@ -26,6 +26,7 @@ import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeDeleteRequestBuilderES;
 import io.camunda.optimize.service.db.es.builders.OptimizeIndexRequestBuilderES;
 import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES;
+import io.camunda.optimize.service.db.repository.es.TaskRepositoryES;
 import io.camunda.optimize.service.db.schema.index.AlertIndex;
 import io.camunda.optimize.service.db.writer.AlertWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -49,6 +50,7 @@ public class AlertWriterES implements AlertWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+  private final TaskRepositoryES taskRepositoryES;
 
   @Override
   public AlertDefinitionDto createAlert(final AlertDefinitionDto alertDefinitionDto) {
@@ -165,8 +167,7 @@ public class AlertWriterES implements AlertWriter {
   @Override
   public void deleteAlerts(final List<String> alertIds) {
     log.debug("Deleting alerts with ids: {}", alertIds);
-    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-        esClient,
+    taskRepositoryES.tryDeleteByQueryRequest(
         Query.of(
             q ->
                 q.bool(
@@ -208,8 +209,7 @@ public class AlertWriterES implements AlertWriter {
   /** Delete all alerts that are associated with following report ID */
   @Override
   public void deleteAlertsForReport(final String reportId) {
-    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-        esClient,
+    taskRepositoryES.tryDeleteByQueryRequest(
         Query.of(q -> q.term(t -> t.field(AlertIndex.REPORT_ID).value(reportId))),
         String.format("all alerts for report with ID [%s]", reportId),
         true,

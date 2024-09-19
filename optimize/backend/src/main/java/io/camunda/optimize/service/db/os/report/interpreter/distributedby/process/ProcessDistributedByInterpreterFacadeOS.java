@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -62,6 +63,13 @@ public class ProcessDistributedByInterpreterFacadeOS
   public List<DistributedByResult> createEmptyResult(
       ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return interpreter(context.getPlan().getDistributedBy()).createEmptyResult(context);
+  }
+
+  @Override
+  public Builder adjustQuery(
+      final Builder queryBuilder,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    return interpreter(context.getPlan().getDistributedBy()).adjustQuery(queryBuilder, context);
   }
 
   @Override

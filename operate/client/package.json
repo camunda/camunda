@@ -15,8 +15,8 @@
     "@types/loadable__component": "5.13.9",
     "bpmn-js": "17.11.1",
     "bpmn-moddle": "9.0.1",
-    "date-fns": "3.6.0",
-    "dmn-js": "16.7.0",
+    "date-fns": "4.1.0",
+    "dmn-js": "16.7.1",
     "final-form": "4.20.10",
     "final-form-arrays": "3.1.0",
     "history": "5.3.0",
@@ -30,7 +30,7 @@
     "react-final-form-arrays": "3.1.4",
     "react-router-dom": "6.4.2",
     "react-transition-group": "4.4.5",
-    "sass": "1.78.0",
+    "sass": "1.79.1",
     "serve": "14.2.3",
     "styled-components": "6.1.13",
     "stylis": "4.3.4"
@@ -77,7 +77,7 @@
     "@types/lodash": "4.17.7",
     "@types/mixpanel-browser": "2.50.0",
     "@types/node": "20.16.5",
-    "@types/react": "18.3.6",
+    "@types/react": "18.3.7",
     "@types/react-dom": "18.3.0",
     "@types/react-transition-group": "4.4.11",
     "cross-env": "^7.0.3",
@@ -98,7 +98,8 @@
     "react-test-renderer": "18.3.1",
     "source-map-explorer": "2.5.3",
     "ts-toolbelt": "9.6.0",
-    "typescript": "5.6.2"
+    "typescript": "5.6.2",
+    "webpack-license-plugin": "4.5.0"
   },
   "lint-staged": {
     "*": [

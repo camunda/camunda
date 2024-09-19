@@ -80,7 +80,7 @@
     <version.opensearch>2.9.0</version.opensearch>
     <version.opensearch.testcontainers>2.1.0</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
-    <version.protobuf>3.25.4</version.protobuf>
+    <version.protobuf>3.25.5</version.protobuf>
     <version.protobuf-common>2.44.0</version.protobuf-common>
     <version.micrometer>1.13.4</version.micrometer>
     <version.rocksdbjni>9.4.0</version.rocksdbjni>
@@ -113,7 +113,7 @@
     <version.resilience4j>2.2.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.175</version.classgraph>
+    <version.classgraph>4.8.176</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
@@ -123,10 +123,10 @@
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.19</version.jnr-posix>
     <version.zpt>8.5.7</version.zpt>
-    <version.feign>13.3</version.feign>
-    <version.google-sdk>26.45.0</version.google-sdk>
+    <version.feign>13.4</version.feign>
+    <version.google-sdk>26.47.0</version.google-sdk>
     <version.azure-sdk>1.2.27</version.azure-sdk>
-    <version.awssdk>2.28.2</version.awssdk>
+    <version.awssdk>2.28.4</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -146,7 +146,7 @@
     <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
     <version.jna-platform>5.15.0</version.jna-platform>
 
-    <version.commons-io>2.16.1</version.commons-io>
+    <version.commons-io>2.17.0</version.commons-io>
     <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>7.0.1</version.unboundid-ldapsdk>
     <version.parsson>1.1.7</version.parsson>

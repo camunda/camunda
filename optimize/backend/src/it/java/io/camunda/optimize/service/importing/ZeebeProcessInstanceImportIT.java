@@ -250,6 +250,18 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
                           exportedEvents.get(deployedInstance.getBpmnProcessId())));
               assertThat(savedInstance.getEndDate()).isNull();
               assertThat(savedInstance.getDuration()).isNull();
+              final FlowNodeInstanceDto flowNodeInstanceDto =
+                  new FlowNodeInstanceDto(
+                      String.valueOf(deployedInstance.getBpmnProcessId()),
+                      String.valueOf(deployedInstance.getVersion()),
+                      ZEEBE_DEFAULT_TENANT_ID,
+                      String.valueOf(deployedInstance.getProcessInstanceKey()),
+                      USER_TASK,
+                      getBpmnElementTypeNameForType(BpmnElementType.USER_TASK),
+                      String.valueOf(exportedEvents.get(USER_TASK).get(0).getKey()));
+              flowNodeInstanceDto.setStartDate(
+                  getExpectedStartDateForEvents(exportedEvents.get(USER_TASK)));
+              flowNodeInstanceDto.setCanceled(false);
               assertThat(savedInstance.getFlowNodeInstances())
                   .hasSize(2)
                   .containsExactlyInAnyOrder(
@@ -258,17 +270,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
                           exportedEvents,
                           START_EVENT,
                           BpmnElementType.START_EVENT),
-                      new FlowNodeInstanceDto(
-                              String.valueOf(deployedInstance.getBpmnProcessId()),
-                              String.valueOf(deployedInstance.getVersion()),
-                              ZEEBE_DEFAULT_TENANT_ID,
-                              String.valueOf(deployedInstance.getProcessInstanceKey()),
-                              USER_TASK,
-                              getBpmnElementTypeNameForType(BpmnElementType.USER_TASK),
-                              String.valueOf(exportedEvents.get(USER_TASK).get(0).getKey()))
-                          .setStartDate(
-                              getExpectedStartDateForEvents(exportedEvents.get(USER_TASK)))
-                          .setCanceled(false));
+                      flowNodeInstanceDto);
             });
   }
 
@@ -333,11 +335,11 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
                           START_EVENT,
                           BpmnElementType.START_EVENT),
                       createFlowNodeInstance(
-                              deployedInstance,
-                              exportedEvents,
-                              SERVICE_TASK,
-                              BpmnElementType.SERVICE_TASK)
-                          .setCanceled(true));
+                          deployedInstance,
+                          exportedEvents,
+                          SERVICE_TASK,
+                          BpmnElementType.SERVICE_TASK,
+                          true));
             });
   }
 
@@ -865,18 +867,29 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
       final Map<String, List<ZeebeProcessInstanceRecordDto>> events,
       final String eventId,
       final BpmnElementType eventType) {
-    return new FlowNodeInstanceDto(
+    return createFlowNodeInstance(deployedInstance, events, eventId, eventType, false);
+  }
+
+  private FlowNodeInstanceDto createFlowNodeInstance(
+      final ProcessInstanceEvent deployedInstance,
+      final Map<String, List<ZeebeProcessInstanceRecordDto>> events,
+      final String eventId,
+      final BpmnElementType eventType,
+      final boolean canceled) {
+    final FlowNodeInstanceDto flowNodeInstanceDto =
+        new FlowNodeInstanceDto(
             String.valueOf(deployedInstance.getBpmnProcessId()),
             String.valueOf(deployedInstance.getVersion()),
             ZEEBE_DEFAULT_TENANT_ID,
             String.valueOf(deployedInstance.getProcessInstanceKey()),
             eventId,
             getBpmnElementTypeNameForType(eventType),
-            String.valueOf(events.get(eventId).get(0).getKey()))
-        .setStartDate(getExpectedStartDateForEvents(events.get(eventId)))
-        .setEndDate(getExpectedEndDateForEvents(events.get(eventId)))
-        .setTotalDurationInMs(getExpectedDurationForEvents(events.get(eventId)))
-        .setCanceled(false);
+            String.valueOf(events.get(eventId).get(0).getKey()));
+    flowNodeInstanceDto.setStartDate(getExpectedStartDateForEvents(events.get(eventId)));
+    flowNodeInstanceDto.setEndDate(getExpectedEndDateForEvents(events.get(eventId)));
+    flowNodeInstanceDto.setTotalDurationInMs(getExpectedDurationForEvents(events.get(eventId)));
+    flowNodeInstanceDto.setCanceled(canceled);
+    return flowNodeInstanceDto;
   }
 
   private long getExpectedDurationForEvents(

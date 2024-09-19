@@ -50,6 +50,12 @@ export class Diagram {
       .filter({hasText: new RegExp(`^${flowNodeName}$`, 'i')});
   }
 
+  showMetaData() {
+    return this.popover
+      .getByRole('button', {name: /show more metadata/i})
+      .click();
+  }
+
   getExecutionCount(elementId: string) {
     return this.diagram.evaluate(
       (node, {elementId}) => {

@@ -47,12 +47,14 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
+import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.db.os.OpenSearchCompositeAggregationScroller;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.db.os.reader.OpensearchReaderUtil;
+import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.os.schema.index.DecisionInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ExternalProcessVariableIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
@@ -86,7 +88,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.SortOptions;
@@ -138,6 +139,7 @@ public class VariableRepositoryOS implements VariableRepository {
   private final DateTimeFormatter dateTimeFormatter;
   private final DecisionDefinitionReader decisionDefinitionReader;
   private final ProcessDefinitionReader processDefinitionReader;
+  private final ProcessQueryFilterEnhancerOS processQueryFilterEnhancer;
 
   @Override
   public void deleteVariableDataByProcessInstanceIds(
@@ -388,27 +390,30 @@ public class VariableRepositoryOS implements VariableRepository {
       final List<ProcessToQueryDto> validNameRequests,
       final List<String> processDefinitionKeys,
       final Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos) {
-    BoolQuery.Builder query = new BoolQuery.Builder().minimumShouldMatch("1");
-    validNameRequests.forEach(
-        request ->
-            query.should(
-                DefinitionQueryUtilOS.createDefinitionQuery(
-                    request.getProcessDefinitionKey(),
-                    request.getProcessDefinitionVersions(),
-                    request.getTenantIds(),
-                    new ProcessInstanceIndexES(request.getProcessDefinitionKey()),
-                    processDefinitionReader::getLatestVersionToKey)));
-
-    List<ProcessFilterDto<?>> filtersToApply =
+    final List<Query> definitionQueries =
+        validNameRequests.stream()
+            .map(
+                request ->
+                    createDefinitionQuery(
+                        request.getProcessDefinitionKey(),
+                        request.getProcessDefinitionVersions(),
+                        request.getTenantIds(),
+                        new ProcessInstanceIndexES(request.getProcessDefinitionKey()),
+                        processDefinitionReader::getLatestVersionToKey))
+            .toList();
+    final List<ProcessFilterDto<?>> processFilterDtos =
         variableNameRequest.getFilter().stream()
             .filter(filter -> filter.getAppliedTo().contains(APPLIED_TO_ALL_DEFINITIONS))
             .toList();
-
-    if (!filtersToApply.isEmpty()) {
-      throw new NotImplementedException(
-          "getVariableNames with filters is not yet implemented for OpenSearch");
-    }
-
+    final FilterContext filterContext =
+        FilterContext.builder().timezone(variableNameRequest.getTimezone()).build();
+    final List<Query> filterQueries =
+        processQueryFilterEnhancer.filterQueries(processFilterDtos, filterContext);
+    final BoolQuery.Builder query =
+        new BoolQuery.Builder()
+            .minimumShouldMatch("1")
+            .should(definitionQueries)
+            .filter(filterQueries);
     return getVariableNamesForInstancesMatchingQuery(
         processDefinitionKeys, query, definitionLabelsDtos);
   }

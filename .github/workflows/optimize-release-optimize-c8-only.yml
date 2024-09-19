@@ -161,6 +161,7 @@ jobs:
           mvn -f optimize \
             -DpushChanges=false \
             -DskipTests=true \
+            -DignoreSnapshots=true \
             -Prelease,runAssembly \
             release:prepare \
             -Dtag=${TAG} \

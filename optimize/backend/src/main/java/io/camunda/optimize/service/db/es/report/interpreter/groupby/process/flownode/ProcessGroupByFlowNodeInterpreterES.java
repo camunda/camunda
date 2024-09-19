@@ -45,11 +45,10 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class ProcessGroupByFlowNodeInterpreterES extends AbstractGroupByFlowNodeInterpreterES {
   private static final String NESTED_EVENTS_AGGREGATION = "nestedEvents";
-
-  private final ConfigurationService configurationService;
-  @Getter private final DefinitionService definitionService;
   @Getter final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
   @Getter final ProcessViewInterpreterFacadeES viewInterpreter;
+  private final ConfigurationService configurationService;
+  @Getter private final DefinitionService definitionService;
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
@@ -60,7 +59,7 @@ public class ProcessGroupByFlowNodeInterpreterES extends AbstractGroupByFlowNode
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
       final BoolQuery boolQuery,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    Aggregation.Builder.ContainerBuilder builder =
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder()
             .terms(
                 t ->
@@ -88,19 +87,21 @@ public class ProcessGroupByFlowNodeInterpreterES extends AbstractGroupByFlowNode
             byFlowNodeIdAggregation -> {
               final Map<String, String> flowNodeNames = getFlowNodeNames(context.getReportData());
               final List<GroupByResult> groupedData = new ArrayList<>();
-              for (StringTermsBucket flowNodeBucket : byFlowNodeIdAggregation.buckets().array()) {
+              for (final StringTermsBucket flowNodeBucket :
+                  byFlowNodeIdAggregation.buckets().array()) {
                 final String flowNodeKey = flowNodeBucket.key().stringValue();
                 if (flowNodeNames.containsKey(flowNodeKey)) {
                   final List<CompositeCommandResult.DistributedByResult> singleResult =
                       distributedByInterpreter.retrieveResult(
                           response, flowNodeBucket.aggregations(), context);
-                  String label = flowNodeNames.get(flowNodeKey);
+                  final String label = flowNodeNames.get(flowNodeKey);
                   groupedData.add(
                       GroupByResult.createGroupByResult(flowNodeKey, label, singleResult));
                   flowNodeNames.remove(flowNodeKey);
                 }
               }
               addMissingGroupByKeys(flowNodeNames, groupedData, context);
+              removeHiddenModelElements(groupedData, context);
               compositeCommandResult.setGroups(groupedData);
             });
   }
@@ -123,6 +124,15 @@ public class ProcessGroupByFlowNodeInterpreterES extends AbstractGroupByFlowNode
               groupedData.add(
                   GroupByResult.createGroupByResult(
                       key, value, distributedByInterpreter.createEmptyResult(context))));
+    }
+  }
+
+  private void removeHiddenModelElements(
+      final List<GroupByResult> groupedData,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    if (context.getHiddenFlowNodeIds() != null && !context.getHiddenFlowNodeIds().isEmpty()) {
+      groupedData.removeIf(
+          dataPoint -> context.getHiddenFlowNodeIds().contains(dataPoint.getKey()));
     }
   }
 
