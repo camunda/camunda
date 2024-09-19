@@ -1568,12 +1568,12 @@ paths:
     get:
       tags:
         - Forms
-      summary: Return form by a Form Key
+      summary: Return form by a Form Key.
       description: |
         Get the form by the form key.
 
         :::note
-        This endpoint will return only linked foms. Embedded forms are not supported.
+        This endpoint will return only linked forms, Embedded forms are not retrieved for this endpoint.
         :::
 
         :::note
