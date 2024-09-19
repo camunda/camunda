@@ -27,6 +27,7 @@ import org.opensearch.client.opensearch._types.analysis.CustomAnalyzer;
 import org.opensearch.client.opensearch._types.analysis.LowercaseNormalizer;
 import org.opensearch.client.opensearch._types.analysis.NGramTokenizer;
 import org.opensearch.client.opensearch._types.analysis.Normalizer;
+import org.opensearch.client.opensearch._types.analysis.TokenChar;
 import org.opensearch.client.opensearch._types.analysis.TokenFilter;
 import org.opensearch.client.opensearch._types.analysis.TokenFilterDefinition;
 import org.opensearch.client.opensearch._types.analysis.Tokenizer;
@@ -41,8 +42,8 @@ import org.springframework.context.annotation.Conditional;
 public class OpenSearchIndexSettingsBuilder {
 
   public static IndexSettings buildAllSettings(
-      ConfigurationService configurationService,
-      IndexMappingCreator<IndexSettings.Builder> indexMappingCreator)
+      final ConfigurationService configurationService,
+      final IndexMappingCreator<IndexSettings.Builder> indexMappingCreator)
       throws IOException {
     IndexSettings.Builder builder = new IndexSettings.Builder();
     addDynamicSettings(configurationService, builder);
@@ -51,7 +52,8 @@ public class OpenSearchIndexSettingsBuilder {
     return builder.build();
   }
 
-  public static IndexSettings buildDynamicSettings(ConfigurationService configurationService) {
+  public static IndexSettings buildDynamicSettings(
+      final ConfigurationService configurationService) {
     IndexSettings.Builder builder = new IndexSettings.Builder();
     builder = addDynamicSettings(configurationService, builder);
     return builder.build();
@@ -91,7 +93,7 @@ public class OpenSearchIndexSettingsBuilder {
 
   private static IndexSettings.Builder addAnalysis(final IndexSettings.Builder settingsBuilder) {
 
-    Map<String, Analyzer> analyzers = new HashMap<>();
+    final Map<String, Analyzer> analyzers = new HashMap<>();
     analyzers.put(
         LOWERCASE_NGRAM,
         new Analyzer.Builder()
@@ -106,7 +108,7 @@ public class OpenSearchIndexSettingsBuilder {
                 new CustomAnalyzer.Builder().tokenizer("keyword").filter(IS_PRESENT_FILTER).build())
             .build());
 
-    IndexSettingsAnalysis analysis =
+    final IndexSettingsAnalysis analysis =
         new IndexSettingsAnalysis.Builder()
             .analyzer(analyzers)
             .normalizer(
@@ -121,7 +123,13 @@ public class OpenSearchIndexSettingsBuilder {
                         new NGramTokenizer.Builder()
                             .minGram(1)
                             .maxGram(MAX_GRAM)
-                            .tokenChars(List.of())
+                            .tokenChars(
+                                List.of(
+                                    TokenChar.Letter,
+                                    TokenChar.Digit,
+                                    TokenChar.Whitespace,
+                                    TokenChar.Punctuation,
+                                    TokenChar.Symbol))
                             .build()
                             ._toTokenizerDefinition())
                     .build())
