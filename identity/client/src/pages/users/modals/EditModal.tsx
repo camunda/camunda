@@ -16,7 +16,7 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
   open,
   onClose,
   onSuccess,
-  entity: { id, email: currentEmail, name: currentName, username },
+  entity: { key, email: currentEmail, name: currentName, username },
 }) => {
   const { t } = useTranslate();
   const [apiCall, { loading, namedErrors }] = useApiCall(updateUser);
@@ -26,7 +26,7 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
-      id,
+      key,
       name,
       email,
       username,

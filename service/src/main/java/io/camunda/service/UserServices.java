@@ -52,5 +52,14 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
             .setPassword(request.password()));
   }
 
+  public UserEntity getUser(final Long key) {
+    return executor
+        .search(UserQuery.of(q -> q.filter(f -> f.key(key))), UserEntity.class)
+        .items()
+        .stream()
+        .findFirst()
+        .orElseThrow();
+  }
+
   public record CreateUserRequest(String username, String name, String email, String password) {}
 }

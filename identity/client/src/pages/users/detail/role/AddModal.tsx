@@ -55,7 +55,7 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
     setShowSelectRoleError(false);
 
     const results = await Promise.all(
-      selectedRoles.map((roleId) => callAssignRole({ id: user.id, roleId })),
+      selectedRoles.map((roleId) => callAssignRole({ id: user.key, roleId })),
     );
 
     if (results.every(({ success }) => success)) {

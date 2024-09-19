@@ -32,9 +32,9 @@ const AssignMembersModal: FC<
 
   const unassignedUsers =
     userSearchResults?.items.filter(
-      ({ id }) =>
-        !assignedUsers.some((user) => user.id === id) &&
-        !selectedUsers.some((user) => user.id === id),
+      ({ key }) =>
+        !assignedUsers.some((user) => user.key === key) &&
+        !selectedUsers.some((user) => user.key === key),
     ) || [];
 
   const onSelectUser = (user: User) => {
@@ -42,9 +42,9 @@ const AssignMembersModal: FC<
   };
 
   const onUnselectUser =
-    ({ id }: User) =>
+    ({ key }: User) =>
     () => {
-      setSelectedUsers(selectedUsers.filter((user) => user.id !== id));
+      setSelectedUsers(selectedUsers.filter((user) => user.key !== key));
     };
 
   const canSubmit = group && selectedUsers.length;
@@ -55,8 +55,8 @@ const AssignMembersModal: FC<
     setLoadingAssignUser(true);
 
     const results = await Promise.all(
-      selectedUsers.map(({ id }) =>
-        callAssignUser({ userId: id, groupId: group.id }),
+      selectedUsers.map(({ key }) =>
+        callAssignUser({ userId: key, groupId: group.id }),
       ),
     );
 
@@ -92,7 +92,7 @@ const AssignMembersModal: FC<
         <SelectedUsers>
           {selectedUsers.map((user) => (
             <Tag
-              key={user.id}
+              key={user.key}
               onClose={onUnselectUser(user)}
               size="md"
               type="blue"

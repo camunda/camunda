@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.service.UserServices;
+import io.camunda.service.entities.UserEntity;
 import io.camunda.service.search.query.UserQuery;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
@@ -18,6 +19,8 @@ import io.camunda.zeebe.gateway.rest.controller.CamundaRestQueryController;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,6 +43,20 @@ public class UserQueryController {
       @RequestBody(required = false) final UserSearchQueryRequest query) {
     return SearchQueryRequestMapper.toUserQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  @GetMapping(
+      path = "/{key}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public ResponseEntity<UserEntity> getUser(@PathVariable("key") final Long key) {
+    try {
+      return ResponseEntity.ok(userServices.getUser(key));
+    } catch (final Throwable e) {
+      final var problemDetail =
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST, e.getMessage(), "Failed to get User");
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    }
   }
 
   private ResponseEntity<UserSearchResponse> search(final UserQuery query) {
