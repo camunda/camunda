@@ -1040,14 +1040,14 @@ paths:
       responses:
         "200":
           description: >
-            The Decision Instance Search successful response.
+            The decision instance search successful response.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/DecisionInstanceSearchQueryResponse"
         "400":
           description: >
-            The Decision Instance Search Query failed.
+            The decision instance search query failed.
             More details are provided in the response body.
           content:
             application/problem+json:
