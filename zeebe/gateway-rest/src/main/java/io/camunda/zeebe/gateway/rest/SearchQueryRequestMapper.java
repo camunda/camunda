@@ -276,62 +276,22 @@ public final class SearchQueryRequestMapper {
   private static UserTaskFilter toUserTaskFilter(final UserTaskFilterRequest filter) {
     final var builder = FilterBuilders.userTask();
 
-    if (filter != null) {
-      // key
-      if (filter.getKey() != null) {
-        builder.keys(filter.getKey());
-      }
+    Optional.ofNullable(filter).ifPresent(f -> {
+      Optional.ofNullable(f.getKey()).ifPresent(builder::keys);
+      Optional.ofNullable(f.getState()).ifPresent(builder::states);
+      Optional.ofNullable(f.getBpmnDefinitionId()).ifPresent(builder::bpmnProcessIds);
+      Optional.ofNullable(f.getElementId()).ifPresent(builder::elementIds);
+      Optional.ofNullable(f.getAssignee()).ifPresent(builder::assignees);
+      Optional.ofNullable(f.getCandidateGroup()).ifPresent(builder::candidateGroups);
+      Optional.ofNullable(f.getCandidateUser()).ifPresent(builder::candidateUsers);
+      Optional.ofNullable(f.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
+      Optional.ofNullable(f.getProcessInstanceKey()).ifPresent(builder::processInstanceKeys);
+      Optional.ofNullable(f.getTenantIds()).ifPresent(builder::tenantIds);
 
-      // state
-      if (filter.getState() != null && !filter.getState().isEmpty()) {
-        builder.states(filter.getState());
-      }
-
-      // bpmnProcessId
-      if (filter.getBpmnDefinitionId() != null && !filter.getBpmnDefinitionId().isEmpty()) {
-        builder.bpmnProcessIds(filter.getBpmnDefinitionId());
-      }
-
-      // elementId
-      if (filter.getElementId() != null && !filter.getElementId().isEmpty()) {
-        builder.elementIds(filter.getElementId());
-      }
-
-      // assignee
-      if (filter.getAssignee() != null && !filter.getAssignee().isEmpty()) {
-        builder.assignees(filter.getAssignee());
-      }
-
-      // candidateGroup
-      if (filter.getCandidateGroup() != null && !filter.getCandidateGroup().isEmpty()) {
-        builder.candidateGroups(filter.getCandidateGroup());
-      }
-
-      // candidateUser
-      if (filter.getCandidateUser() != null && !filter.getCandidateUser().isEmpty()) {
-        builder.candidateUsers(filter.getCandidateUser());
-      }
-
-      // processDefinitionKey
-      if (filter.getProcessDefinitionKey() != null) {
-        builder.processDefinitionKeys(filter.getProcessDefinitionKey());
-      }
-
-      // processInstanceKey
-      if (filter.getProcessInstanceKey() != null) {
-        builder.processInstanceKeys(filter.getProcessInstanceKey());
-      }
-
-      // tenantIds
-      if (filter.getTenantIds() != null) {
-        builder.tenantIds(filter.getTenantIds());
-      }
-
-      // variables
-      if (filter.getVariables() != null && !filter.getVariables().isEmpty()) {
-        builder.variable(toVariableValueFilters(filter.getVariables()));
-      }
-    }
+      Optional.ofNullable(f.getVariables())
+          .filter(variables -> !variables.isEmpty())
+          .ifPresent(vars -> builder.variable(toVariableValueFilters(vars)));
+    });
 
     return builder.build();
   }
