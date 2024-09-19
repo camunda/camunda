@@ -57,11 +57,10 @@ const BottomPanel: React.FC = observer(() => {
 
   const filteredSourceFlowNodeMappings = mappableFlowNodes.filter(
     ({sourceFlowNode}) => {
-      if (!isMappedFilterEnabled) {
-        return true;
-      } else {
-        return flowNodeMapping[sourceFlowNode.id] === undefined;
-      }
+      return (
+        !isMappedFilterEnabled ||
+        flowNodeMapping[sourceFlowNode.id] === undefined
+      );
     },
   );
 
