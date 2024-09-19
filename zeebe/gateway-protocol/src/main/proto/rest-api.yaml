@@ -749,7 +749,47 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-
+  /process-definitions/search:
+    post:
+      tags:
+        - Process definition
+      summary: process definitions (alpha)
+      description: |
+        Search for process definitions based on given criteria.
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessDefinitionSearchQueryRequest"
+      responses:
+        "200":
+          description: >
+            The Process Definition Search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessDefinitionSearchQueryResponse"
+        "400":
+          description: >
+            The Process Definition Search Query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /process-instances:
     post:
       tags:
@@ -2341,6 +2381,79 @@ components:
           minimum: 0
           maximum: 100
           default: 50
+    ProcessDefinitionSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/ProcessDefinitionFilterRequest"
+    ProcessDefinitionFilterRequest:
+      type: object
+      properties:
+        processDefinitionKey:
+          description: The key for this process definition.
+          type: integer
+          format: int64
+        processName:
+          description: Name of this process definition.
+          type: string
+        processVersion:
+          description: Version of this process definition.
+          type: integer
+          format: int32
+        processVersionTag:
+          description: Version tag of this process definition.
+          type: integer
+          format: int32
+        bpmnProcessId:
+          description: BPMN process id of this process definition.
+          type: string
+        tenantId:
+          description: Tenant id of this process definition.
+          type: string
+        formKey:
+          description: The key of the form related to this process definition.
+          type: integer
+          format: int64
+    ProcessDefinitionSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessDefinitionItem"
+    ProcessDefinitionItem:
+      type: object
+      properties:
+        processDefinitionKey:
+          description: The key for this process definition.
+          type: integer
+          format: int64
+        processName:
+          description: Name of this process definition.
+          type: string
+        processVersion:
+          description: Version of this process definition.
+          type: integer
+          format: int32
+        processVersionTag:
+          description: Version tag of this process definition.
+          type: integer
+          format: int32
+        bpmnProcessId:
+          description: BPMN process id of this process definition.
+          type: string
+        tenantId:
+          description: Tenant id of this process definition.
+          type: string
+        formKey:
+          description: The key of the form related to this process definition.
+          type: integer
+          format: int64
     ProcessInstanceSearchQueryRequest:
       description: Process instance search request.
       allOf:
