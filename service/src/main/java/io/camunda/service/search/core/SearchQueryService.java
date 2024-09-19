@@ -24,13 +24,18 @@ public abstract class SearchQueryService<T extends ApiServices<T>, Q extends Sea
       final BrokerClient brokerClient,
       final CamundaSearchClient searchClient,
       final ServiceTransformers transformers,
-      final Authentication authentication) {
+      final Authentication authentication,
+      final boolean withResourceAuthorization) {
     super(brokerClient, searchClient, transformers, authentication);
-    executor = initiateExecutor();
+    executor = initiateExecutor(withResourceAuthorization);
   }
 
-  private SearchClientBasedQueryExecutor initiateExecutor() {
-    return new SearchClientBasedQueryExecutor(searchClient, transformers, authentication);
+  private SearchClientBasedQueryExecutor initiateExecutor(final boolean withResourceAuthorization) {
+    var executor = new SearchClientBasedQueryExecutor(searchClient, transformers, authentication);
+    if (withResourceAuthorization) {
+      executor = executor.withResourceAuthorization();
+    }
+    return executor;
   }
 
   public abstract SearchQueryResult<D> search(final Q query);

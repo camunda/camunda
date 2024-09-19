@@ -7,6 +7,8 @@
  */
 package io.camunda.service.search.core;
 
+import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.service.search.filter.FilterBase;
@@ -14,6 +16,7 @@ import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.TypedSearchQuery;
 import io.camunda.service.search.sort.SortOption;
 import io.camunda.service.security.auth.Authentication;
+import io.camunda.service.security.auth.ResourceAuthorizationSearchChecker;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.service.transformers.filter.AuthenticationTransformer;
 import io.camunda.service.transformers.filter.FilterTransformer;
@@ -25,19 +28,37 @@ public final class SearchClientBasedQueryExecutor {
   private final CamundaSearchClient searchClient;
   private final ServiceTransformers transformers;
   private final Authentication authentication;
+  private final ResourceAuthorizationSearchChecker resourceAuthorizationSearchChecker;
 
   public SearchClientBasedQueryExecutor(
       final CamundaSearchClient searchClient,
       final ServiceTransformers transformers,
       final Authentication authentication) {
+    this(searchClient, transformers, authentication, null);
+  }
+
+  public SearchClientBasedQueryExecutor(
+      final CamundaSearchClient searchClient,
+      final ServiceTransformers transformers,
+      final Authentication authentication,
+      final ResourceAuthorizationSearchChecker resourceAuthorizationSearchChecker) {
     this.searchClient = searchClient;
     this.transformers = transformers;
     this.authentication = authentication;
+    this.resourceAuthorizationSearchChecker = resourceAuthorizationSearchChecker;
+  }
+
+  public SearchClientBasedQueryExecutor withResourceAuthorization() {
+    return new SearchClientBasedQueryExecutor(
+        searchClient,
+        transformers,
+        authentication,
+        new ResourceAuthorizationSearchChecker(searchClient, transformers));
   }
 
   public <T extends FilterBase, S extends SortOption, R> SearchQueryResult<R> search(
       final TypedSearchQuery<T, S> query, final Class<R> documentClass) {
-    final var authCheck = getAuthenticationCheckIfPresent();
+    final var authCheck = getAuthenticationCheckIfPresent(documentClass);
     final var transformer = getSearchQueryRequestTransformer(query);
     final var searchRequest = transformer.applyWithAuthentication(query, authCheck);
 
@@ -51,12 +72,20 @@ public final class SearchClientBasedQueryExecutor {
             responseTransformer::apply);
   }
 
-  private SearchQuery getAuthenticationCheckIfPresent() {
+  private SearchQuery getAuthenticationCheckIfPresent(final Class<?> documentClass) {
+    SearchQuery authCheck = null;
     if (authentication != null) {
       final var transformer = getAuthenticationTransformer();
-      return transformer.apply(authentication);
+      authCheck = transformer.apply(authentication);
+      if (resourceAuthorizationSearchChecker != null) {
+        authCheck =
+            and(
+                authCheck,
+                resourceAuthorizationSearchChecker.getResourceAuthorizationCheck(
+                    authentication, documentClass));
+      }
     }
-    return null;
+    return authCheck;
   }
 
   private <T extends FilterBase, S extends SortOption>
