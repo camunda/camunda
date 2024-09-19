@@ -391,4 +391,13 @@ public class UserTaskFilterTest {
                       });
             });
   }
+
+  @Test
+  public void shouldReturnSingleUserTask() {
+    // when
+    final var searchQueryResult = services.getByKey(1L);
+
+    // then
+    assertThat(searchQueryResult.key()).isEqualTo(123L);
+  }
 }

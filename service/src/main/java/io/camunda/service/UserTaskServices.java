@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.entities.UserTaskEntity;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
@@ -86,5 +87,20 @@ public final class UserTaskServices
   public CompletableFuture<UserTaskRecord> updateUserTask(
       final long userTaskKey, final UserTaskRecord changeset, final String action) {
     return sendBrokerRequest(new BrokerUserTaskUpdateRequest(userTaskKey, changeset, action));
+  }
+
+  public UserTaskEntity getByKey(final Long key) {
+    final SearchQueryResult<UserTaskEntity> result =
+        executor.search(
+            SearchQueryBuilders.userTaskSearchQuery().filter(f -> f.keys(key)).build(),
+            UserTaskEntity.class);
+    if (result.total() < 1) {
+      throw new NotFoundException(String.format("User Task with key %d not found", key));
+    } else if (result.total() > 1) {
+      throw new CamundaServiceException(
+          String.format("Found User Task with key %d more than once", key));
+    } else {
+      return result.items().stream().findFirst().orElseThrow();
+    }
   }
 }
