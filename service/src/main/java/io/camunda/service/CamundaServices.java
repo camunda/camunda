@@ -32,6 +32,10 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
         brokerClient, activateJobsHandler, searchClient, transformers, authentication);
   }
 
+  public ProcessDefinitionServices processDefinitionServices() {
+    return new ProcessDefinitionServices(brokerClient, searchClient, transformers, authentication);
+  }
+
   public ProcessInstanceServices processInstanceServices() {
     return new ProcessInstanceServices(brokerClient, searchClient, transformers, authentication);
   }
