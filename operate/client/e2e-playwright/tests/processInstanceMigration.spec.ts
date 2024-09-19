@@ -378,7 +378,7 @@ test.describe.serial('Process Instance Migration', () => {
      */
     await processInstancePage.diagram.clickFlowNode('Task A2');
     await processInstancePage.diagram.showMetaData();
-    await page.waitForTimeout(500); // wait until metadata modal is fully rendered
+    await page.waitForSelector('.monaco-aria-container'); // wait until monaco is fully loaded
     await expect(
       processInstancePage.metadataModal.getByText(
         '"correlationKey": "mySecondCorrelationKey"',
@@ -401,7 +401,6 @@ test.describe.serial('Process Instance Migration', () => {
      */
     await processInstancePage.diagram.clickFlowNode('Task C2');
     await processInstancePage.diagram.showMetaData();
-    await page.waitForTimeout(500); // wait until metadata modal is fully rendered
     await expect(
       processInstancePage.metadataModal.getByText(
         '"correlationKey": "myFirstCorrelationKey"',
