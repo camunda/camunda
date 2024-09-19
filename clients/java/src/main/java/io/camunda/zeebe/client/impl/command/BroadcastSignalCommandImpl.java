@@ -117,13 +117,12 @@ public final class BroadcastSignalCommandImpl
 
   private ZeebeFuture<BroadcastSignalResponse> sendRestRequest() {
     final HttpZeebeFuture<BroadcastSignalResponse> result = new HttpZeebeFuture<>();
-    final BroadcastSignalResponseImpl response = new BroadcastSignalResponseImpl();
     httpClient.post(
         "/signals/broadcast",
         objectMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         SignalBroadcastResponse.class,
-        response::setResponse,
+        BroadcastSignalResponseImpl::new,
         result);
     return result;
   }

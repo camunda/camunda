@@ -21,20 +21,17 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
 public final class BroadcastSignalResponseImpl implements BroadcastSignalResponse {
 
-  private long key;
-  private String tenantId;
-
-  public BroadcastSignalResponseImpl() {}
+  private final long key;
+  private final String tenantId;
 
   public BroadcastSignalResponseImpl(final GatewayOuterClass.BroadcastSignalResponse response) {
     key = response.getKey();
     tenantId = response.getTenantId();
   }
 
-  public BroadcastSignalResponseImpl setResponse(final SignalBroadcastResponse response) {
+  public BroadcastSignalResponseImpl(final SignalBroadcastResponse response) {
     key = response.getKey();
     tenantId = response.getTenantId();
-    return this;
   }
 
   @Override

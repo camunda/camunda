@@ -87,31 +87,31 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
               .decisionInstanceKey(DECISION_INSTANCE_KEY)
               .addEvaluatedDecisionsItem(EVALUATED_DECISION);
 
-    @Test
-    public void shouldEvaluateStandaloneDecisionWithDecisionKey() {
-      // given
-      gatewayService.onEvaluateDecisionRequest(EVALUATE_DECISION_RESPONSE);
+  @Test
+  public void shouldEvaluateStandaloneDecisionWithDecisionKey() {
+    // given
+    gatewayService.onEvaluateDecisionRequest(EVALUATE_DECISION_RESPONSE);
 
-      // when
-      final EvaluateDecisionResponse response =
-          client.newEvaluateDecisionCommand().decisionKey(DECISION_KEY).send().join();
+    // when
+    final EvaluateDecisionResponse response =
+        client.newEvaluateDecisionCommand().decisionKey(DECISION_KEY).send().join();
 
-      // then
-      assertResponse(response);
-    }
+    // then
+    assertResponse(response);
+  }
 
-    @Test
-    public void shouldEvaluateStandaloneDecisionWithDecisionId() {
-      // given
-      gatewayService.onEvaluateDecisionRequest(EVALUATE_DECISION_RESPONSE);
+  @Test
+  public void shouldEvaluateStandaloneDecisionWithDecisionId() {
+    // given
+    gatewayService.onEvaluateDecisionRequest(EVALUATE_DECISION_RESPONSE);
 
-      // when
-      final EvaluateDecisionResponse response =
-          client.newEvaluateDecisionCommand().decisionId("my-decision").send().join();
+    // when
+    final EvaluateDecisionResponse response =
+        client.newEvaluateDecisionCommand().decisionId("my-decision").send().join();
 
-      // then
-      assertResponse(response);
-    }
+    // then
+    assertResponse(response);
+  }
 
   @Test
   public void shouldEvaluateStandaloneDecisionWithStringVariables() {
