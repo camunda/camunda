@@ -21,12 +21,15 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
 public final class PublishMessageResponseImpl implements PublishMessageResponse {
 
-  private long key;
-  private String tenantId;
-
-  public PublishMessageResponseImpl() {}
+  private final long key;
+  private final String tenantId;
 
   public PublishMessageResponseImpl(final GatewayOuterClass.PublishMessageResponse response) {
+    key = response.getKey();
+    tenantId = response.getTenantId();
+  }
+
+  public PublishMessageResponseImpl(final MessagePublicationResponse response) {
     key = response.getKey();
     tenantId = response.getTenantId();
   }
@@ -39,11 +42,5 @@ public final class PublishMessageResponseImpl implements PublishMessageResponse 
   @Override
   public String getTenantId() {
     return tenantId;
-  }
-
-  public PublishMessageResponseImpl setResponse(final MessagePublicationResponse response) {
-    key = response.getKey();
-    tenantId = response.getTenantId();
-    return this;
   }
 }

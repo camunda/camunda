@@ -186,13 +186,12 @@ public final class CreateProcessInstanceCommandImpl
 
   private ZeebeFuture<ProcessInstanceEvent> sendRestRequest() {
     final HttpZeebeFuture<ProcessInstanceEvent> result = new HttpZeebeFuture<>();
-    final CreateProcessInstanceResponseImpl response = new CreateProcessInstanceResponseImpl();
     httpClient.post(
         "/process-instances",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceResponse.class,
-        response::setResponse,
+        CreateProcessInstanceResponseImpl::new,
         result);
     return result;
   }

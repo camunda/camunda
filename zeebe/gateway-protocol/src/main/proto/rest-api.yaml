@@ -3702,7 +3702,7 @@ components:
     CreateProcessInstanceResponse:
       type: object
       properties:
-        processKey:
+        processDefinitionKey:
           description: |
             The key of the process definition which was used to create the process instance.
           type: integer

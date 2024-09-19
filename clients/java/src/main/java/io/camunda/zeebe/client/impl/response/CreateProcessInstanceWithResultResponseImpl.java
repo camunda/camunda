@@ -24,18 +24,25 @@ import java.util.Map;
 
 public final class CreateProcessInstanceWithResultResponseImpl implements ProcessInstanceResult {
 
-  private JsonMapper jsonMapper;
-  private long processDefinitionKey;
-  private String bpmnProcessId;
-  private int version;
-  private long processInstanceKey;
-  private String tenantId;
-  private String variables;
+  private final JsonMapper jsonMapper;
+  private final long processDefinitionKey;
+  private final String bpmnProcessId;
+  private final int version;
+  private final long processInstanceKey;
+  private final String tenantId;
+  private final String variables;
 
   private Map<String, Object> variablesAsMap;
 
-  public CreateProcessInstanceWithResultResponseImpl(final JsonMapper jsonMapper) {
+  public CreateProcessInstanceWithResultResponseImpl(
+      final JsonMapper jsonMapper, final CreateProcessInstanceResponse response) {
     this.jsonMapper = jsonMapper;
+    processDefinitionKey = response.getProcessDefinitionKey();
+    bpmnProcessId = response.getBpmnProcessId();
+    version = response.getVersion();
+    processInstanceKey = response.getProcessInstanceKey();
+    tenantId = response.getTenantId();
+    variables = jsonMapper.toJson(response.getVariables());
   }
 
   public CreateProcessInstanceWithResultResponseImpl(
@@ -120,16 +127,5 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
         + tenantId
         + '\''
         + '}';
-  }
-
-  public CreateProcessInstanceWithResultResponseImpl setResponse(
-      final CreateProcessInstanceResponse response) {
-    processDefinitionKey = response.getProcessKey();
-    bpmnProcessId = response.getBpmnProcessId();
-    version = response.getVersion();
-    processInstanceKey = response.getProcessInstanceKey();
-    tenantId = response.getTenantId();
-    variables = jsonMapper.toJson(response.getVariables());
-    return this;
   }
 }

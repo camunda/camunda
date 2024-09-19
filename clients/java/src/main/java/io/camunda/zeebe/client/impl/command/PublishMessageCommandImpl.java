@@ -144,13 +144,12 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
 
   private ZeebeFuture<PublishMessageResponse> sendRestRequest() {
     final HttpZeebeFuture<PublishMessageResponse> result = new HttpZeebeFuture<>();
-    final PublishMessageResponseImpl response = new PublishMessageResponseImpl();
     httpClient.post(
         "/messages/publication",
         objectMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         MessagePublicationResponse.class,
-        response::setResponse,
+        PublishMessageResponseImpl::new,
         result);
     return result;
   }
