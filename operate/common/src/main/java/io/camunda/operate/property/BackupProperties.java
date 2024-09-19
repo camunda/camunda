@@ -11,7 +11,7 @@ public class BackupProperties {
 
   private String repositoryName;
 
-  private long snapshotTimeoutMillis = 0;
+  private int snapshotTimeout = 0;
 
   public String getRepositoryName() {
     return repositoryName;
@@ -22,12 +22,12 @@ public class BackupProperties {
     return this;
   }
 
-  public long getSnapshotTimeoutMillis() {
-    return snapshotTimeoutMillis;
+  public int getSnapshotTimeout() {
+    return snapshotTimeout;
   }
 
-  public BackupProperties setSnapshotTimeoutMillis(final long snapshotTimeoutMillis) {
-    this.snapshotTimeoutMillis = snapshotTimeoutMillis;
+  public BackupProperties setSnapshotTimeout(final int snapshotTimeout) {
+    this.snapshotTimeout = snapshotTimeout;
     return this;
   }
 }

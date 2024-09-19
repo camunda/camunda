@@ -58,18 +58,18 @@ public class ElasticsearchBackupRepositoryTest {
 
   @Test
   public void testWaitingForSnapshotWithTimeout() {
-    final long timeout = 1000L;
+    final int timeout = 1;
     final SnapshotState snapshotState = SnapshotState.IN_PROGRESS;
 
     // mock calls to `findSnapshot` and `operateProperties`
     final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
     when(snapshotInfo.state()).thenReturn(snapshotState);
     when(snapshotInfo.snapshotId().getName()).thenReturn(snapshotName);
-    when(operateProperties.getBackup().getSnapshotTimeoutMillis()).thenReturn(timeout);
+    when(operateProperties.getBackup().getSnapshotTimeout()).thenReturn(timeout);
     doReturn(List.of(snapshotInfo)).when(backupRepository).findSnapshots(any(), any());
 
     final boolean finished =
-        backupRepository.waitForFinishedSnapshotWithTimeout(repositoryName, snapshotName);
+        backupRepository.isSnapshotFinishedWithinTimeout(repositoryName, snapshotName);
 
     assertFalse(finished);
     verify(backupRepository, atLeast(5)).findSnapshots(repositoryName, backupId);
@@ -77,7 +77,7 @@ public class ElasticsearchBackupRepositoryTest {
 
   @Test
   public void testWaitingForSnapshotTillCompleted() {
-    final long timeout = 0L;
+    final int timeout = 0;
 
     // mock calls to `findSnapshot` and `operateProperties`
     final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
@@ -86,11 +86,11 @@ public class ElasticsearchBackupRepositoryTest {
         .thenReturn(SnapshotState.IN_PROGRESS)
         .thenReturn(SnapshotState.SUCCESS);
     when(snapshotInfo.snapshotId().getName()).thenReturn(snapshotName);
-    when(operateProperties.getBackup().getSnapshotTimeoutMillis()).thenReturn(timeout);
+    when(operateProperties.getBackup().getSnapshotTimeout()).thenReturn(timeout);
     doReturn(List.of(snapshotInfo)).when(backupRepository).findSnapshots(any(), any());
 
     final boolean finished =
-        backupRepository.waitForFinishedSnapshotWithTimeout(repositoryName, snapshotName);
+        backupRepository.isSnapshotFinishedWithinTimeout(repositoryName, snapshotName);
 
     assertTrue(finished);
     verify(backupRepository, times(3)).findSnapshots(repositoryName, backupId);
@@ -98,14 +98,14 @@ public class ElasticsearchBackupRepositoryTest {
 
   @Test
   public void testWaitingForSnapshotWithoutTimeout() {
-    final long timeout = 0L;
+    final int timeout = 0;
     final SnapshotState snapshotState = SnapshotState.IN_PROGRESS;
 
     // mock calls to `findSnapshot` and `operateProperties`
     final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
     when(snapshotInfo.state()).thenReturn(snapshotState);
     when(snapshotInfo.snapshotId().getName()).thenReturn(snapshotName);
-    when(operateProperties.getBackup().getSnapshotTimeoutMillis()).thenReturn(timeout);
+    when(operateProperties.getBackup().getSnapshotTimeout()).thenReturn(timeout);
     doReturn(List.of(snapshotInfo)).when(backupRepository).findSnapshots(any(), any());
 
     // we expect infinite loop, so we call snapshotting in separate thread
@@ -113,7 +113,7 @@ public class ElasticsearchBackupRepositoryTest {
     final Future<?> future =
         executor.submit(
             () -> {
-              backupRepository.waitForFinishedSnapshotWithTimeout(repositoryName, snapshotName);
+              backupRepository.isSnapshotFinishedWithinTimeout(repositoryName, snapshotName);
             });
 
     try {

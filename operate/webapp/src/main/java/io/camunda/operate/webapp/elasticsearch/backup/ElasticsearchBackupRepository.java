@@ -313,13 +313,14 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     }
   }
 
-  protected boolean waitForFinishedSnapshotWithTimeout(
+  protected boolean isSnapshotFinishedWithinTimeout(
       final String repositoryName, final String snapshotName) {
     int count = 0;
     final long startTime = System.currentTimeMillis();
-    final long snapshotTimeout = operateProperties.getBackup().getSnapshotTimeoutMillis();
+    final int snapshotTimeout = operateProperties.getBackup().getSnapshotTimeout();
     final long backupId = Metadata.extractBackupIdFromSnapshotName(snapshotName);
-    do {
+    while (snapshotTimeout == 0
+        || System.currentTimeMillis() - startTime <= snapshotTimeout * 1000) {
       final List<SnapshotInfo> snapshotInfos = findSnapshots(repositoryName, backupId);
       final SnapshotInfo currentSnapshot =
           snapshotInfos.stream()
@@ -343,7 +344,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       } else {
         return handleSnapshotReceived(currentSnapshot);
       }
-    } while (snapshotTimeout == 0 || System.currentTimeMillis() - startTime <= snapshotTimeout);
+    }
     LOGGER.error(
         String.format(
             "Snapshot [%s] did not finish after configured timeout. Snapshot process won't continue.",
@@ -466,11 +467,16 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     public void onFailure(final Exception ex) {
       if (ex instanceof SocketTimeoutException) {
         // This is thrown even if the backup is still running
+        final int snapshotTimeout = operateProperties.getBackup().getSnapshotTimeout();
         LOGGER.warn(
             String.format(
-                "Timeout while creating snapshot [%s] for backup id [%d]. Need to keep waiting with polling...",
-                snapshotRequest.snapshotName(), backupId));
-        if (waitForFinishedSnapshotWithTimeout(
+                "Socket timeout while creating snapshot [%s] for backup id [%d]. Start waiting with polling timeout, %s",
+                snapshotRequest.snapshotName(),
+                backupId,
+                (snapshotTimeout == 0)
+                    ? "until completion."
+                    : "at most " + snapshotTimeout + " seconds."));
+        if (isSnapshotFinishedWithinTimeout(
             snapshotRequest.snapshotName(), snapshotRequest.repositoryName())) {
           onSuccess.run();
         } else {
