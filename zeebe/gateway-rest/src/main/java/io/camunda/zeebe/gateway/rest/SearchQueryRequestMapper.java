@@ -276,22 +276,26 @@ public final class SearchQueryRequestMapper {
   private static UserTaskFilter toUserTaskFilter(final UserTaskFilterRequest filter) {
     final var builder = FilterBuilders.userTask();
 
-    Optional.ofNullable(filter).ifPresent(f -> {
-      Optional.ofNullable(f.getKey()).ifPresent(builder::keys);
-      Optional.ofNullable(f.getState()).ifPresent(builder::states);
-      Optional.ofNullable(f.getBpmnDefinitionId()).ifPresent(builder::bpmnProcessIds);
-      Optional.ofNullable(f.getElementId()).ifPresent(builder::elementIds);
-      Optional.ofNullable(f.getAssignee()).ifPresent(builder::assignees);
-      Optional.ofNullable(f.getCandidateGroup()).ifPresent(builder::candidateGroups);
-      Optional.ofNullable(f.getCandidateUser()).ifPresent(builder::candidateUsers);
-      Optional.ofNullable(f.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
-      Optional.ofNullable(f.getProcessInstanceKey()).ifPresent(builder::processInstanceKeys);
-      Optional.ofNullable(f.getTenantIds()).ifPresent(builder::tenantIds);
+    Optional.ofNullable(filter)
+        .ifPresent(
+            f -> {
+              Optional.ofNullable(f.getKey()).ifPresent(builder::keys);
+              Optional.ofNullable(f.getState()).ifPresent(builder::states);
+              Optional.ofNullable(f.getBpmnDefinitionId()).ifPresent(builder::bpmnProcessIds);
+              Optional.ofNullable(f.getElementId()).ifPresent(builder::elementIds);
+              Optional.ofNullable(f.getAssignee()).ifPresent(builder::assignees);
+              Optional.ofNullable(f.getCandidateGroup()).ifPresent(builder::candidateGroups);
+              Optional.ofNullable(f.getCandidateUser()).ifPresent(builder::candidateUsers);
+              Optional.ofNullable(f.getProcessDefinitionKey())
+                  .ifPresent(builder::processDefinitionKeys);
+              Optional.ofNullable(f.getProcessInstanceKey())
+                  .ifPresent(builder::processInstanceKeys);
+              Optional.ofNullable(f.getTenantIds()).ifPresent(builder::tenantIds);
 
-      Optional.ofNullable(f.getVariables())
-          .filter(variables -> !variables.isEmpty())
-          .ifPresent(vars -> builder.variable(toVariableValueFilters(vars)));
-    });
+              Optional.ofNullable(f.getVariables())
+                  .filter(variables -> !variables.isEmpty())
+                  .ifPresent(vars -> builder.variable(toVariableValueFilters(vars)));
+            });
 
     return builder.build();
   }
