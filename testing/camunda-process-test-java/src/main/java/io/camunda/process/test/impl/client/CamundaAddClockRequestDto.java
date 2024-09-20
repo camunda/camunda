@@ -15,24 +15,15 @@
  */
 package io.camunda.process.test.impl.client;
 
-public class ZeebeClockResponseDto {
+public class CamundaAddClockRequestDto {
 
-  private long epochMilli;
-  private String instant;
+  private long offsetMilli;
 
-  public long getEpochMilli() {
-    return epochMilli;
+  public long getOffsetMilli() {
+    return offsetMilli;
   }
 
-  public void setEpochMilli(final long epochMilli) {
-    this.epochMilli = epochMilli;
-  }
-
-  public String getInstant() {
-    return instant;
-  }
-
-  public void setInstant(final String instant) {
-    this.instant = instant;
+  public void setOffsetMilli(final long offsetMilli) {
+    this.offsetMilli = offsetMilli;
   }
 }

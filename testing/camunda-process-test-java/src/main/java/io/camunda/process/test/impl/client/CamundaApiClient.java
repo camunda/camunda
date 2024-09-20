@@ -27,12 +27,13 @@ import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 
-public class OperateApiClient {
+public class CamundaApiClient {
 
   private static final String LOGIN_ENDPOINT = "/api/login?username=%s&password=%s";
   private static final String LOGIN_USERNAME = "demo";
   private static final String LOGIN_PASSWORD = "demo";
 
+  // Operate v1 endpoints
   private static final String PROCESS_INSTANCE_GET_ENDPOINT = "/v1/process-instances/%d";
   private static final String FLOW_NODE_INSTANCES_SEARCH_ENDPOINT = "/v1/flownode-instances/search";
   private static final String VARIABLES_SEARCH_ENDPOINT = "/v1/variables/search";
@@ -42,12 +43,12 @@ public class OperateApiClient {
 
   private boolean isLoggedIn = false;
 
-  private final String operateRestApi;
+  private final String restApiAddress;
 
   private final CloseableHttpClient httpClient;
 
-  public OperateApiClient(final String operateRestApi) {
-    this.operateRestApi = operateRestApi;
+  public CamundaApiClient(final String restApiAddress) {
+    this.restApiAddress = restApiAddress;
 
     final BasicCookieStore cookieStore = new BasicCookieStore();
     httpClient = HttpClientBuilder.create().setDefaultCookieStore(cookieStore).build();
@@ -63,7 +64,7 @@ public class OperateApiClient {
   private void sendLoginRequest() throws IOException {
     httpClient.execute(
         new HttpPost(
-            String.format(operateRestApi + LOGIN_ENDPOINT, LOGIN_USERNAME, LOGIN_PASSWORD)),
+            String.format(restApiAddress + LOGIN_ENDPOINT, LOGIN_USERNAME, LOGIN_PASSWORD)),
         response -> {
           if (response.getCode() != 204) {
             throw new IllegalStateException(
@@ -77,7 +78,7 @@ public class OperateApiClient {
 
   private static void verifyStatusCode(final ClassicHttpResponse response) {
     if (response.getCode() == 404) {
-      throw new ZeebeClientNotFoundException(
+      throw new CamundaClientNotFoundException(
           String.format(
               "Failed send request. Object not found. [code: %d, message: %s]",
               response.getCode(), HttpClientUtil.getReponseAsString(response)));
@@ -123,7 +124,7 @@ public class OperateApiClient {
 
   private String sendGetRequest(final String endpoint) throws IOException {
     return httpClient.execute(
-        new HttpGet(operateRestApi + endpoint),
+        new HttpGet(restApiAddress + endpoint),
         response -> {
           verifyStatusCode(response);
           return HttpClientUtil.getReponseAsString(response);
@@ -132,7 +133,7 @@ public class OperateApiClient {
 
   private String sendPostRequest(final String endpoint, final String body) throws IOException {
 
-    final HttpPost request = new HttpPost(operateRestApi + endpoint);
+    final HttpPost request = new HttpPost(restApiAddress + endpoint);
     request.setEntity(HttpEntities.create(body, ContentType.APPLICATION_JSON));
 
     return httpClient.execute(

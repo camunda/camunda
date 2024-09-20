@@ -15,13 +15,24 @@
  */
 package io.camunda.process.test.impl.client;
 
-public class ZeebeClientNotFoundException extends RuntimeException {
+public class CamundaClockResponseDto {
 
-  public ZeebeClientNotFoundException() {
-    super();
+  private long epochMilli;
+  private String instant;
+
+  public long getEpochMilli() {
+    return epochMilli;
   }
 
-  public ZeebeClientNotFoundException(final String message) {
-    super(message);
+  public void setEpochMilli(final long epochMilli) {
+    this.epochMilli = epochMilli;
+  }
+
+  public String getInstant() {
+    return instant;
+  }
+
+  public void setInstant(final String instant) {
+    this.instant = instant;
   }
 }

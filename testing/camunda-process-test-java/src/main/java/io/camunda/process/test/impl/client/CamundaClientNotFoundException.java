@@ -15,15 +15,13 @@
  */
 package io.camunda.process.test.impl.client;
 
-public class ZeebeAddClockRequestDto {
+public class CamundaClientNotFoundException extends RuntimeException {
 
-  private long offsetMilli;
-
-  public long getOffsetMilli() {
-    return offsetMilli;
+  public CamundaClientNotFoundException() {
+    super();
   }
 
-  public void setOffsetMilli(final long offsetMilli) {
-    this.offsetMilli = offsetMilli;
+  public CamundaClientNotFoundException(final String message) {
+    super(message);
   }
 }
