@@ -52,19 +52,10 @@ const isMigratableFlowNode = (businessObject: BusinessObject) => {
       businessObject,
     })
   ) {
-    if (
-      isEventSubProcess({
-        businessObject,
-        eventTypes: [
-          'bpmn:MessageEventDefinition',
-          'bpmn:TimerEventDefinition',
-        ],
-      })
-    ) {
-      return true; // message and timer event sub processes
-    } else {
-      return false; // any other event sub process
-    }
+    return isEventSubProcess({
+      businessObject,
+      eventTypes: ['bpmn:MessageEventDefinition', 'bpmn:TimerEventDefinition'],
+    });
   }
 
   return hasType({
