@@ -146,7 +146,7 @@ public class IdentityController {
       HttpServletRequest req, HttpServletResponse res, Throwable t) throws IOException {
     logger.error("Error in authentication callback: ", t);
     cleanup(req);
-    res.sendRedirect(NO_PERMISSION);
+    res.sendRedirect(req.getContextPath() + NO_PERMISSION);
   }
 
   protected void cleanup(HttpServletRequest req) {
