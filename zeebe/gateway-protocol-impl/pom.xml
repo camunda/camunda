@@ -97,49 +97,4 @@
     </plugins>
   </build>
 
-  <profiles>
-    <!-- profile to generate Golang protobuf code -->
-    <profile>
-      <id>golang</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.xolstice.maven.plugins</groupId>
-            <artifactId>protobuf-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>compile-custom</goal>
-                </goals>
-                <configuration>
-                  <pluginId>go</pluginId>
-                  <pluginExecutable>${env.GOPATH}/bin/protoc-gen-go</pluginExecutable>
-                  <pluginParameter>plugins=grpc</pluginParameter>
-
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <artifactId>maven-antrun-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>copy-golang-proto</id>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-                <phase>generate-sources</phase>
-                <configuration>
-                  <target>
-                    <copy failonerror="true" file="${project.build.directory}/generated-sources/protobuf/go/gateway.pb.go" tofile="${maven.multiModuleProjectDirectory}/clients/go/pkg/pb/gateway.pb.go"></copy>
-                  </target>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
-
 </project>
