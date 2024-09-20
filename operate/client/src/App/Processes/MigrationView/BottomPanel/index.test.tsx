@@ -30,6 +30,11 @@ const {
   TimerNonInterrupting,
   MessageIntermediateCatch,
   TimerIntermediateCatch,
+  TaskX,
+  TaskY,
+  MessageEventSubProcess,
+  TimerEventSubProcess,
+  MessageReceiveTask,
 } = elements;
 
 /**
@@ -56,9 +61,14 @@ describe('MigrationView/BottomPanel', () => {
     expect(screen.getByText(TimerNonInterrupting.name)).toBeInTheDocument();
     expect(screen.getByText(MessageIntermediateCatch.name)).toBeInTheDocument();
     expect(screen.getByText(TimerIntermediateCatch.name)).toBeInTheDocument();
+    expect(screen.getByText(TaskX.name)).toBeInTheDocument();
+    expect(screen.getByText(TaskY.name)).toBeInTheDocument();
+    expect(screen.getByText(MessageEventSubProcess.name)).toBeInTheDocument();
+    expect(screen.getByText(TimerEventSubProcess.name)).toBeInTheDocument();
+    expect(screen.getByText(MessageReceiveTask.name)).toBeInTheDocument();
 
-    // expect table to have 1 header + 11 content rows
-    expect(screen.getAllByRole('row')).toHaveLength(12);
+    // expect table to have 1 header + 16 content rows
+    expect(screen.getAllByRole('row')).toHaveLength(17);
   });
 
   it.each([
@@ -70,6 +80,9 @@ describe('MigrationView/BottomPanel', () => {
     {source: MessageInterrupting, target: MessageNonInterrupting},
     {source: MessageIntermediateCatch, target: MessageIntermediateCatch},
     {source: TimerIntermediateCatch, target: TimerIntermediateCatch},
+    {source: MessageEventSubProcess, target: MessageEventSubProcess},
+    {source: TimerEventSubProcess, target: TimerEventSubProcess},
+    {source: TaskX, target: TaskX},
   ])(
     'should allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -117,6 +130,7 @@ describe('MigrationView/BottomPanel', () => {
     {source: MessageIntermediateCatch, target: MessageInterrupting},
     {source: TimerInterrupting, target: TimerIntermediateCatch},
     {source: MessageIntermediateCatch, target: TimerIntermediateCatch},
+    {source: MessageEventSubProcess, target: TimerEventSubProcess},
   ])(
     'should not allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -180,6 +194,21 @@ describe('MigrationView/BottomPanel', () => {
     const comboboxMessageIntermediateCatch = await screen.findByLabelText(
       new RegExp(`target flow node for ${MessageIntermediateCatch.name}`, 'i'),
     );
+    const comboboxMessageEventSubProcess = await screen.findByLabelText(
+      new RegExp(`target flow node for ${MessageEventSubProcess.name}`, 'i'),
+    );
+    const comboboxTimerEventSubProcess = await screen.findByLabelText(
+      new RegExp(`target flow node for ${TimerEventSubProcess.name}`, 'i'),
+    );
+    const comboboxTaskX = await screen.findByLabelText(
+      new RegExp(`target flow node for ${TaskX.name}`, 'i'),
+    );
+    const comboboxTaskY = await screen.findByLabelText(
+      new RegExp(`target flow node for ${TaskY.name}`, 'i'),
+    );
+    const comboboxMessageReceiveTask = await screen.findByLabelText(
+      new RegExp(`target flow node for ${MessageReceiveTask.name}`, 'i'),
+    );
 
     screen.getByRole('button', {name: /fetch target process/i}).click();
 
@@ -189,6 +218,8 @@ describe('MigrationView/BottomPanel', () => {
 
     // Expect auto-mapping (same id, same bpmn type)
     expect(comboboxCheckPayment).toHaveValue(checkPayment.id);
+    expect(comboboxTaskX).toHaveValue(TaskX.id);
+    expect(comboboxMessageReceiveTask).toHaveValue(MessageReceiveTask.id);
 
     // Expect auto-mapping (same id, same bpmn type)
     expect(comboboxShipArticles).toHaveValue(shipArticles.id);
@@ -203,6 +234,12 @@ describe('MigrationView/BottomPanel', () => {
     expect(comboboxMessageIntermediateCatch).toHaveValue(
       comboboxMessageIntermediateCatch.id,
     );
+
+    // Expect auto-mapping (same event sub process type)
+    expect(comboboxMessageEventSubProcess).toHaveValue(
+      MessageEventSubProcess.id,
+    );
+    expect(comboboxTimerEventSubProcess).toHaveValue(TimerEventSubProcess.id);
 
     // Expect no auto-mapping (flow node does not exist in target)
     expect(comboboxShippingSubProcess).toHaveValue('');
@@ -219,6 +256,10 @@ describe('MigrationView/BottomPanel', () => {
 
     // Expect no auto-mapping (different bpmn type)
     expect(comboboxRequestForPayment).toHaveValue('');
+
+    // Expect no auto-mapping (different id)
+    expect(comboboxTaskY).toHaveValue('');
+    expect(comboboxTaskY).toBeEnabled();
   });
 
   it('should add tags for unmapped flow nodes', async () => {
@@ -232,25 +273,44 @@ describe('MigrationView/BottomPanel', () => {
       name: new RegExp(`target flow node for ${requestForPayment.name}`, 'i'),
     });
 
-    const rowCheckPayment = screen.getByText(checkPayment.name).closest('tr');
-    const rowShippingSubProcess = screen
-      .getByText(shippingSubProcess.name)
+    const rowCheckPayment = screen
+      .getByText(getMatcherFunction(checkPayment.name))
       .closest('tr');
-    const rowShipArticles = screen.getByText(shipArticles.name).closest('tr');
+    const rowShippingSubProcess = screen
+      .getByText(getMatcherFunction(shippingSubProcess.name))
+      .closest('tr');
+    const rowShipArticles = screen
+      .getByText(getMatcherFunction(shipArticles.name))
+      .closest('tr');
     const rowRequestForPayment = screen
-      .getByText(requestForPayment.name)
+      .getByText(getMatcherFunction(requestForPayment.name))
       .closest('tr');
     const rowMessageInterrupting = screen
-      .getByText(MessageInterrupting.name)
+      .getByText(getMatcherFunction(MessageInterrupting.name))
       .closest('tr');
     const rowTimerInterrupting = screen
-      .getByText(TimerInterrupting.name)
+      .getByText(getMatcherFunction(TimerInterrupting.name))
       .closest('tr');
     const rowMessageNonInterrupting = screen
-      .getByText(MessageNonInterrupting.name)
+      .getByText(getMatcherFunction(MessageNonInterrupting.name))
       .closest('tr');
     const rowTimerNonInterrupting = screen
-      .getByText(TimerNonInterrupting.name)
+      .getByText(getMatcherFunction(TimerNonInterrupting.name))
+      .closest('tr');
+    const rowTaskY = screen
+      .getByText(getMatcherFunction(TaskY.name))
+      .closest('tr');
+    const rowMessageEventSubProcess = screen
+      .getByText(getMatcherFunction(MessageEventSubProcess.name))
+      .closest('tr');
+    const rowTimerEventSubProcess = screen
+      .getByText(getMatcherFunction(TimerEventSubProcess.name))
+      .closest('tr');
+    const rowTaskX = screen
+      .getByText(getMatcherFunction(TaskX.name))
+      .closest('tr');
+    const rowMessageReceiveTask = screen
+      .getByText(getMatcherFunction(MessageReceiveTask.name))
       .closest('tr');
 
     await waitFor(() => {
@@ -271,8 +331,17 @@ describe('MigrationView/BottomPanel', () => {
       within(rowTimerNonInterrupting!).queryByText(/not mapped/i),
     ).not.toBeInTheDocument();
     expect(
-      within(rowShippingSubProcess!).getByText(/not mapped/i),
-    ).toBeInTheDocument();
+      within(rowMessageEventSubProcess!).queryByText(/not mapped/i),
+    ).not.toBeInTheDocument();
+    expect(
+      within(rowTimerEventSubProcess!).queryByText(/not mapped/i),
+    ).not.toBeInTheDocument();
+    expect(
+      within(rowTaskX!).queryByText(/not mapped/i),
+    ).not.toBeInTheDocument();
+    expect(
+      within(rowMessageReceiveTask!).queryByText(/not mapped/i),
+    ).not.toBeInTheDocument();
 
     // expect to have "not mapped" tag (not auto-mapped)
     expect(
@@ -284,6 +353,10 @@ describe('MigrationView/BottomPanel', () => {
     expect(
       within(rowTimerInterrupting!).getByText(/not mapped/i),
     ).toBeInTheDocument();
+    expect(
+      within(rowShippingSubProcess!).getByText(/not mapped/i),
+    ).toBeInTheDocument();
+    expect(within(rowTaskY!).getByText(/not mapped/i)).toBeInTheDocument();
 
     // expect tag not to be visible after selecting a target flow node
     await user.selectOptions(comboboxRequestForPayment, checkPayment.name);
@@ -313,7 +386,7 @@ describe('MigrationView/BottomPanel', () => {
     ).toBeVisible();
 
     // Expect all 11 rows to be visible (+1 header row)
-    expect(await screen.findAllByRole('row')).toHaveLength(12);
+    expect(await screen.findAllByRole('row')).toHaveLength(17);
 
     // Toggle on unmapped flow nodes
     await user.click(screen.getByLabelText(/show only not mapped/i));
@@ -334,9 +407,21 @@ describe('MigrationView/BottomPanel', () => {
     expect(
       screen.queryByText(getMatcherFunction(MessageIntermediateCatch.name)),
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(MessageEventSubProcess.name)),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(TimerEventSubProcess.name)),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(TaskX.name)),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(MessageReceiveTask.name)),
+    ).not.toBeInTheDocument();
 
     // Expect 6 not mapped rows (+1 header row)
-    expect(await screen.findAllByRole('row')).toHaveLength(7);
+    expect(await screen.findAllByRole('row')).toHaveLength(8);
 
     // Expect the following rows to be visible (because they're not mapped)
     expect(
@@ -357,6 +442,9 @@ describe('MigrationView/BottomPanel', () => {
     expect(
       screen.getByText(getMatcherFunction(TimerIntermediateCatch.name)),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(TaskY.name)),
+    ).toBeInTheDocument();
 
     expect(screen.getByLabelText(/show only not mapped/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/show only not mapped/i)).toBeVisible();
@@ -365,6 +453,6 @@ describe('MigrationView/BottomPanel', () => {
     await user.click(screen.getByLabelText(/show only not mapped/i));
 
     // Expect all rows to be visible again
-    expect(await screen.findAllByRole('row')).toHaveLength(12);
+    expect(await screen.findAllByRole('row')).toHaveLength(17);
   });
 });

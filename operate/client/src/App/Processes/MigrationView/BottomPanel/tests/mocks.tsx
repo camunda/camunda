@@ -69,6 +69,31 @@ const elements = {
     name: 'Timer intermediate catch',
     type: 'timerIntermediateCatch',
   },
+  TaskX: {
+    id: 'TaskX',
+    name: 'Task X',
+    type: 'serviceTask',
+  },
+  TaskY: {
+    id: 'TaskY',
+    name: 'Task Y',
+    type: 'serviceTask',
+  },
+  MessageEventSubProcess: {
+    id: 'MessageEventSubProcess',
+    name: 'Message event sub process',
+    type: 'eventSubProcess',
+  },
+  TimerEventSubProcess: {
+    id: 'TimerEventSubProcess',
+    name: 'Timer event sub process',
+    type: 'eventSubProcess',
+  },
+  MessageReceiveTask: {
+    id: 'MessageReceiveTask',
+    name: 'Message receive task',
+    type: 'receiveTask',
+  },
 };
 
 type Props = {

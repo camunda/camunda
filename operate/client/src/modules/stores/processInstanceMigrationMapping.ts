@@ -11,6 +11,8 @@ import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/
 import {processXmlStore as processXmlMigrationTargetStore} from 'modules/stores/processXml/processXml.migration.target';
 import {hasType} from 'modules/bpmn-js/utils/hasType';
 import {getEventType} from 'modules/bpmn-js/utils/getEventType';
+import {getEventSubProcessType} from 'modules/bpmn-js/utils/getEventSubProcessType';
+import {isEventSubProcess} from 'modules/bpmn-js/utils/isEventSubProcess';
 
 type State = {
   isMappedFilterEnabled: boolean;
@@ -96,6 +98,28 @@ class ProcessInstanceMigrationMappingStore {
                   sourceFlowNode.$type === flowNode.$type &&
                   getEventType(sourceFlowNode) === getEventType(flowNode)
                 );
+              }
+
+              /**
+               * For event sub processes allow only mapping with the same event type (message or timer)
+               */
+              if (isEventSubProcess({businessObject: sourceFlowNode})) {
+                return (
+                  getEventSubProcessType({businessObject: sourceFlowNode}) ===
+                  getEventSubProcessType({businessObject: flowNode})
+                );
+              }
+
+              /**
+               * Prevent mapping between event and non-event sub processes
+               */
+              if (
+                (isEventSubProcess({businessObject: sourceFlowNode}) &&
+                  !isEventSubProcess({businessObject: flowNode})) ||
+                (!isEventSubProcess({businessObject: sourceFlowNode}) &&
+                  isEventSubProcess({businessObject: flowNode}))
+              ) {
+                return false;
               }
 
               /**

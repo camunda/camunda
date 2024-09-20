@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.26.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.27.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0">
   <bpmn:process id="orderProcessMigration" name="orderProcessMigration" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" name="Order received">
       <bpmn:outgoing>SequenceFlow_0j6tsnn</bpmn:outgoing>
@@ -53,6 +53,7 @@
       <bpmn:outgoing>Flow_0vrcdpx</bpmn:outgoing>
       <bpmn:outgoing>Flow_143wmxd</bpmn:outgoing>
       <bpmn:outgoing>Flow_08ahq87</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1jeea8a</bpmn:outgoing>
     </bpmn:parallelGateway>
     <bpmn:sequenceFlow id="Flow_0qko2kt" sourceRef="Gateway_2" targetRef="EndEvent_1" />
     <bpmn:endEvent id="Event_2">
@@ -85,10 +86,6 @@
       <bpmn:incoming>Flow_0vrcdpx</bpmn:incoming>
       <bpmn:outgoing>Flow_18qdbnx</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:boundaryEvent id="MessageInterrupting" name="Message interrupting" attachedToRef="TaskA">
-      <bpmn:outgoing>Flow_14ee2ym</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_144v54n" messageRef="Message_0so1os3" />
-    </bpmn:boundaryEvent>
     <bpmn:boundaryEvent id="TimerInterrupting" name="Timer interrupting" attachedToRef="TaskB">
       <bpmn:outgoing>Flow_1ym4tee</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_04oq8h5">
@@ -112,6 +109,7 @@
       <bpmn:incoming>Flow_0yq74mw</bpmn:incoming>
       <bpmn:incoming>Flow_0e569q0</bpmn:incoming>
       <bpmn:incoming>Flow_1wxn661</bpmn:incoming>
+      <bpmn:incoming>Flow_17dl770</bpmn:incoming>
       <bpmn:outgoing>Flow_0qko2kt</bpmn:outgoing>
     </bpmn:parallelGateway>
     <bpmn:sequenceFlow id="Flow_1o99cpi" sourceRef="TaskB" targetRef="TimerIntermediateCatch" />
@@ -151,6 +149,69 @@
     <bpmn:sequenceFlow id="Flow_0e569q0" sourceRef="TaskA" targetRef="Gateway_2" />
     <bpmn:sequenceFlow id="Flow_08ahq87" sourceRef="Gateway_1" targetRef="MessageIntermediateCatch" />
     <bpmn:sequenceFlow id="Flow_1wxn661" sourceRef="MessageIntermediateCatch" targetRef="Gateway_2" />
+    <bpmn:subProcess id="MessageEventSubProcess" name="Message event sub process" triggeredByEvent="true">
+      <bpmn:endEvent id="Event_13rtwuo">
+        <bpmn:incoming>Flow_006eqia</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_1f7mn63" sourceRef="MessageStartEvent" targetRef="TaskE" />
+      <bpmn:sequenceFlow id="Flow_006eqia" sourceRef="TaskE" targetRef="Event_13rtwuo" />
+      <bpmn:serviceTask id="TaskE" name="Task E">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="foo" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_1f7mn63</bpmn:incoming>
+        <bpmn:outgoing>Flow_006eqia</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:startEvent id="MessageStartEvent" name="Message start event" isInterrupting="false">
+        <bpmn:outgoing>Flow_1f7mn63</bpmn:outgoing>
+        <bpmn:messageEventDefinition id="MessageEventDefinition_047sqmx" messageRef="Message_2u2g7tt" />
+      </bpmn:startEvent>
+    </bpmn:subProcess>
+    <bpmn:subProcess id="TimerEventSubProcess" name="Timer event sub process" triggeredByEvent="true">
+      <bpmn:endEvent id="Event_0lk89tk">
+        <bpmn:incoming>Flow_1rrwh6x</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_0eemr1n" sourceRef="TimerStartEvent" targetRef="TaskF" />
+      <bpmn:sequenceFlow id="Flow_1rrwh6x" sourceRef="TaskF" targetRef="Event_0lk89tk" />
+      <bpmn:serviceTask id="TaskF" name="Task F">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="foo" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_0eemr1n</bpmn:incoming>
+        <bpmn:outgoing>Flow_1rrwh6x</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:startEvent id="TimerStartEvent" name="Timer start event" isInterrupting="false">
+        <bpmn:outgoing>Flow_0eemr1n</bpmn:outgoing>
+        <bpmn:timerEventDefinition id="TimerEventDefinition_1e0y77m">
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:startEvent>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_1jeea8a" sourceRef="Gateway_1" targetRef="MessageReceiveTask" />
+    <bpmn:sequenceFlow id="Flow_17dl770" sourceRef="MessageReceiveTask" targetRef="Gateway_2" />
+    <bpmn:receiveTask id="MessageReceiveTask" name="Message receive task" messageRef="Message_14us09o">
+      <bpmn:incoming>Flow_1jeea8a</bpmn:incoming>
+      <bpmn:outgoing>Flow_17dl770</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:subProcess id="ErrorEventSubProcess" name="Error event sub process" triggeredByEvent="true">
+      <bpmn:startEvent id="ErrorStartEvent" name="Error start event">
+        <bpmn:outgoing>Flow_0vpdnw8</bpmn:outgoing>
+        <bpmn:errorEventDefinition id="ErrorEventDefinition_189rgdh" />
+      </bpmn:startEvent>
+      <bpmn:task id="Activity_00hyyoh" name="Task G">
+        <bpmn:incoming>Flow_0vpdnw8</bpmn:incoming>
+        <bpmn:outgoing>Flow_08cj9mr</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:sequenceFlow id="Flow_0vpdnw8" sourceRef="ErrorStartEvent" targetRef="Activity_00hyyoh" />
+      <bpmn:endEvent id="Event_1mvw93n">
+        <bpmn:incoming>Flow_08cj9mr</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_08cj9mr" sourceRef="Activity_00hyyoh" targetRef="Event_1mvw93n" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="MessageInterrupting" name="Message interrupting" attachedToRef="TaskA">
+      <bpmn:outgoing>Flow_14ee2ym</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_144v54n" messageRef="Message_0so1os3" />
+    </bpmn:boundaryEvent>
   </bpmn:process>
   <bpmn:message id="Message_0so1os3" name="Message_1">
     <bpmn:extensionElements>
@@ -173,6 +234,16 @@
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_2530hhv" name="Message_3">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=key1" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_2u2g7tt" name="Message_4">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=key3" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_14us09o" name="Message_5">
     <bpmn:extensionElements>
       <zeebe:subscription correlationKey="=key1" />
     </bpmn:extensionElements>
@@ -209,9 +280,6 @@
       <bpmndi:BPMNShape id="Gateway_1p3ovhb_di" bpmnElement="Gateway_1">
         <dc:Bounds x="305" y="113" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_1bflyvp_di" bpmnElement="Gateway_2">
-        <dc:Bounds x="945" y="113" width="50" height="50" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1q5nldo_di" bpmnElement="Event_2">
         <dc:Bounds x="562" y="585" width="36" height="36" />
       </bpmndi:BPMNShape>
@@ -230,17 +298,14 @@
       <bpmndi:BPMNShape id="Activity_0epoqda_di" bpmnElement="TaskC">
         <dc:Bounds x="440" y="792" width="100" height="80" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1bflyvp_di" bpmnElement="Gateway_2">
+        <dc:Bounds x="945" y="113" width="50" height="50" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1ptwud8_di" bpmnElement="Event_5">
         <dc:Bounds x="562" y="1055" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1pu1nmm_di" bpmnElement="TaskD">
         <dc:Bounds x="440" y="952" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1wu1wpo_di" bpmnElement="TimerIntermediateCatch">
-        <dc:Bounds x="742" y="654" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="715" y="698" width="90" height="27" />
-        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0bkpnr3_di" bpmnElement="MessageIntermediateCatch">
         <dc:Bounds x="722" y="382" width="36" height="36" />
@@ -248,16 +313,95 @@
           <dc:Bounds x="696" y="425" width="90" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0ebm1nl_di" bpmnElement="MessageInterrupting">
-        <dc:Bounds x="492" y="532" width="36" height="36" />
+      <bpmndi:BPMNShape id="Event_1wu1wpo_di" bpmnElement="TimerIntermediateCatch">
+        <dc:Bounds x="742" y="654" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="442" y="559" width="56" height="27" />
+          <dc:Bounds x="715" y="698" width="90" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0qunf6g_di" bpmnElement="TimerInterrupting">
-        <dc:Bounds x="492" y="694" width="36" height="36" />
+      <bpmndi:BPMNShape id="Activity_0tgxt6v_di" bpmnElement="MessageEventSubProcess" isExpanded="true">
+        <dc:Bounds x="1090" y="290" width="350" height="200" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_13rtwuo_di" bpmnElement="Event_13rtwuo">
+        <dc:Bounds x="1352" y="372" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1d9lzza_di" bpmnElement="TaskE">
+        <dc:Bounds x="1210" y="350" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1t7lt05_di" bpmnElement="MessageStartEvent">
+        <dc:Bounds x="1130" y="372" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="417" y="726" width="86" height="14" />
+          <dc:Bounds x="1112" y="415" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1f7mn63_di" bpmnElement="Flow_1f7mn63">
+        <di:waypoint x="1166" y="390" />
+        <di:waypoint x="1210" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_006eqia_di" bpmnElement="Flow_006eqia">
+        <di:waypoint x="1310" y="390" />
+        <di:waypoint x="1352" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_0cz53c2_di" bpmnElement="TimerEventSubProcess" isExpanded="true">
+        <dc:Bounds x="1090" y="540" width="350" height="200" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0lk89tk_di" bpmnElement="Event_0lk89tk">
+        <dc:Bounds x="1352" y="622" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0x898wf_di" bpmnElement="TaskF">
+        <dc:Bounds x="1210" y="600" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_01ol322_di" bpmnElement="TimerStartEvent">
+        <dc:Bounds x="1130" y="622" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1107" y="665" width="83" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0eemr1n_di" bpmnElement="Flow_0eemr1n">
+        <di:waypoint x="1166" y="640" />
+        <di:waypoint x="1210" y="640" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1rrwh6x_di" bpmnElement="Flow_1rrwh6x">
+        <di:waypoint x="1310" y="640" />
+        <di:waypoint x="1352" y="640" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_0jap8wu_di" bpmnElement="MessageReceiveTask">
+        <dc:Bounds x="440" y="1150" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1aznn99_di" bpmnElement="ErrorEventSubProcess" isExpanded="true">
+        <dc:Bounds x="1090" y="790" width="350" height="200" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_03dewb3_di" bpmnElement="ErrorStartEvent">
+        <dc:Bounds x="1130" y="872" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1109" y="915" width="79" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_00hyyoh_di" bpmnElement="Activity_00hyyoh">
+        <dc:Bounds x="1220" y="850" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1mvw93n_di" bpmnElement="Event_1mvw93n">
+        <dc:Bounds x="1382" y="872" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0vpdnw8_di" bpmnElement="Flow_0vpdnw8">
+        <di:waypoint x="1166" y="890" />
+        <di:waypoint x="1220" y="890" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_08cj9mr_di" bpmnElement="Flow_08cj9mr">
+        <di:waypoint x="1320" y="890" />
+        <di:waypoint x="1382" y="890" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_09ic20e_di" bpmnElement="TimerNonInterrupting">
+        <dc:Bounds x="492" y="1014" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="442" y="1049" width="56" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0uzff2d_di" bpmnElement="MessageNonInterrupting">
@@ -266,10 +410,16 @@
           <dc:Bounds x="434" y="889" width="71" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_09ic20e_di" bpmnElement="TimerNonInterrupting">
-        <dc:Bounds x="492" y="1014" width="36" height="36" />
+      <bpmndi:BPMNShape id="Event_0qunf6g_di" bpmnElement="TimerInterrupting">
+        <dc:Bounds x="492" y="694" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="442" y="1049" width="56" height="27" />
+          <dc:Bounds x="417" y="726" width="86" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0ebm1nl_di" bpmnElement="MessageInterrupting">
+        <dc:Bounds x="492" y="532" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="442" y="559" width="56" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0j6tsnn_di" bpmnElement="SequenceFlow_0j6tsnn">
@@ -395,6 +545,16 @@
       <bpmndi:BPMNEdge id="Flow_1wxn661_di" bpmnElement="Flow_1wxn661">
         <di:waypoint x="758" y="400" />
         <di:waypoint x="970" y="400" />
+        <di:waypoint x="970" y="163" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1jeea8a_di" bpmnElement="Flow_1jeea8a">
+        <di:waypoint x="330" y="163" />
+        <di:waypoint x="330" y="1190" />
+        <di:waypoint x="440" y="1190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17dl770_di" bpmnElement="Flow_17dl770">
+        <di:waypoint x="540" y="1190" />
+        <di:waypoint x="970" y="1190" />
         <di:waypoint x="970" y="163" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>

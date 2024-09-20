@@ -9,6 +9,7 @@
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {hasEventType} from 'modules/bpmn-js/utils/hasEventType';
 import {hasType} from 'modules/bpmn-js/utils/hasType';
+import {isEventSubProcess} from 'modules/bpmn-js/utils/isEventSubProcess';
 
 const isMigratableFlowNode = (businessObject: BusinessObject) => {
   /**
@@ -43,6 +44,20 @@ const isMigratableFlowNode = (businessObject: BusinessObject) => {
     return true;
   }
 
+  /**
+   * Check event sub processes
+   */
+  if (
+    isEventSubProcess({
+      businessObject,
+    })
+  ) {
+    return isEventSubProcess({
+      businessObject,
+      eventTypes: ['bpmn:MessageEventDefinition', 'bpmn:TimerEventDefinition'],
+    });
+  }
+
   return hasType({
     businessObject,
     types: [
@@ -50,6 +65,7 @@ const isMigratableFlowNode = (businessObject: BusinessObject) => {
       'bpmn:UserTask',
       'bpmn:SubProcess',
       'bpmn:CallActivity',
+      'bpmn:ReceiveTask',
     ],
   });
 };

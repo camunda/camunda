@@ -26,6 +26,13 @@ import {waitFor} from '@testing-library/react';
  * - TimerNonInterrupting (event)
  * - MessageIntermediateCatch (event)
  * - TimerIntermediateCatch (event)
+ * - MessageEventSubProcess
+ * - TimerEventSubProcess
+ * - ErrorEventSubProcess
+ * - MessageStartEvent
+ * - TimerStartEvent
+ * - ErrorStartEvent
+ * - MessageReceiveTask
  *
  * orderProcess_v2.bpmn contains:
  * - checkPayment (service task)
@@ -34,6 +41,13 @@ import {waitFor} from '@testing-library/react';
  * - MessageInterrupting (event)
  * - TimerNonInterrupting (event)
  * - MessageIntermediateCatch (event)
+ * - MessageEventSubProcess (sub process)
+ * - TimerEventSubProcess (sub process)
+ * - ErrorEventSubProcess (sub process)
+ * - MessageStartEvent
+ * - TimerStartEvent
+ * - ErrorStartEvent
+ * - MessageReceiveTask
  */
 describe('processInstanceMigrationMappingStore', () => {
   afterEach(() => {
@@ -80,6 +94,22 @@ describe('processInstanceMigrationMappingStore', () => {
         id: 'MessageIntermediateCatch',
         type: 'bpmn:IntermediateCatchEvent',
       },
+      {
+        id: 'MessageEventSubProcess',
+        type: 'bpmn:SubProcess',
+      },
+      {
+        id: 'TaskX',
+        type: 'bpmn:ServiceTask',
+      },
+      {
+        id: 'TimerEventSubProcess',
+        type: 'bpmn:SubProcess',
+      },
+      {
+        id: 'MessageReceiveTask',
+        type: 'bpmn:ReceiveTask',
+      },
     ]);
 
     expect(isAutoMappable('checkPayment')).toBe(true);
@@ -87,11 +117,17 @@ describe('processInstanceMigrationMappingStore', () => {
     expect(isAutoMappable('MessageInterrupting')).toBe(true);
     expect(isAutoMappable('TimerNonInterrupting')).toBe(true);
     expect(isAutoMappable('MessageIntermediateCatch')).toBe(true);
+    expect(isAutoMappable('MessageEventSubProcess')).toBe(true);
+    expect(isAutoMappable('TimerEventSubProcess')).toBe(true);
+    expect(isAutoMappable('TaskX')).toBe(true);
 
     expect(isAutoMappable('requestForPayment')).toBe(false);
     expect(isAutoMappable('TimerInterrupting')).toBe(false);
     expect(isAutoMappable('MessageNonInterrupting')).toBe(false);
     expect(isAutoMappable('TimerIntermediateCatch')).toBe(false);
+    expect(isAutoMappable('ErrorEventSubProcess')).toBe(false);
+    expect(isAutoMappable('TaskY')).toBe(false);
+    expect(isAutoMappable('TaskZ')).toBe(false);
 
     expect(isAutoMappable('unknownFlowNodeId')).toBe(false);
     expect(isAutoMappable('')).toBe(false);
@@ -123,6 +159,14 @@ describe('processInstanceMigrationMappingStore', () => {
             id: 'checkPayment',
             name: 'Check payment',
           },
+          {
+            id: 'TaskX',
+            name: 'Task X',
+          },
+          {
+            id: 'TaskYY',
+            name: 'Task YY',
+          },
         ],
       },
       {
@@ -134,6 +178,14 @@ describe('processInstanceMigrationMappingStore', () => {
           {
             id: 'checkPayment',
             name: 'Check payment',
+          },
+          {
+            id: 'TaskX',
+            name: 'Task X',
+          },
+          {
+            id: 'TaskYY',
+            name: 'Task YY',
           },
         ],
       },
@@ -233,6 +285,82 @@ describe('processInstanceMigrationMappingStore', () => {
           name: 'Timer intermediate catch',
         },
         selectableTargetFlowNodes: [],
+      },
+      {
+        sourceFlowNode: {
+          id: 'MessageEventSubProcess',
+          name: 'Message event sub process',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'MessageEventSubProcess',
+            name: 'Message event sub process',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'TaskX',
+          name: 'Task X',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'checkPayment',
+            name: 'Check payment',
+          },
+          {
+            id: 'TaskX',
+            name: 'Task X',
+          },
+          {
+            id: 'TaskYY',
+            name: 'Task YY',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'TimerEventSubProcess',
+          name: 'Timer event sub process',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'TimerEventSubProcess',
+            name: 'Timer event sub process',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'TaskY',
+          name: 'Task Y',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'checkPayment',
+            name: 'Check payment',
+          },
+          {
+            id: 'TaskX',
+            name: 'Task X',
+          },
+          {
+            id: 'TaskYY',
+            name: 'Task YY',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'MessageReceiveTask',
+          name: 'Message receive task',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'MessageReceiveTask',
+            name: 'Message receive task',
+          },
+        ],
       },
     ]);
   });
