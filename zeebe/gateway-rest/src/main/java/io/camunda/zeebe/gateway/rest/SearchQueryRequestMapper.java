@@ -179,6 +179,17 @@ public final class SearchQueryRequestMapper {
   private static ProcessDefinitionFilter toProcessDefinitionFilter(
       final ProcessDefinitionFilterRequest filter) {
     final var builder = FilterBuilders.processDefinition();
+    Optional.ofNullable(filter)
+        .ifPresent(
+            f -> {
+              Optional.ofNullable(f.getProcessDefinitionKey())
+                  .ifPresent(builder::processDefinitionKeys);
+              Optional.ofNullable(f.getProcessName()).ifPresent(builder::names);
+              Optional.ofNullable(f.getProcessVersion()).ifPresent(builder::versions);
+              Optional.ofNullable(f.getProcessVersionTag()).ifPresent(builder::versionTags);
+              Optional.ofNullable(f.getBpmnProcessId()).ifPresent(builder::bpmnProcessIds);
+              Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
+            });
     return builder.build();
   }
 
@@ -413,6 +424,19 @@ public final class SearchQueryRequestMapper {
   private static List<String> applyProcessDefinitionSortField(
       final String field, final ProcessDefinitionSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "processDefinitionKey" -> builder.processDefinitionKey();
+        case "processName" -> builder.processName();
+        case "processVersion" -> builder.processVersion();
+        case "processVersionTag" -> builder.processVersionTag();
+        case "bpmnProcessId" -> builder.bpmnProcessId();
+        case "tenantId" -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
     return validationErrors;
   }
 
