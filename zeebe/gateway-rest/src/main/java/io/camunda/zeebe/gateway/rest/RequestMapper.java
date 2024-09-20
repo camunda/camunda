@@ -367,7 +367,7 @@ public class RequestMapper {
         validateTenantId(request.getTenantId(), multiTenancyEnabled, "Broadcast Signal")
             .flatMap(
                 tenantId ->
-                    validateAuthorization(tenantId, multiTenancyEnabled, "Correlate Message")
+                    validateAuthorization(tenantId, multiTenancyEnabled, "Broadcast Signal")
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)))
             .flatMap(
@@ -534,10 +534,10 @@ public class RequestMapper {
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
       final EvaluateDecisionRequest request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Broadcast Signal")
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision")
             .flatMap(
                 tenantId ->
-                    validateAuthorization(tenantId, multiTenancyEnabled, "Correlate Message")
+                    validateAuthorization(tenantId, multiTenancyEnabled, "Evaluate Decision")
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)))
             .flatMap(
