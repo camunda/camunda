@@ -777,7 +777,7 @@ paths:
                 $ref: "#/components/schemas/ProcessDefinitionSearchQueryResponse"
         "400":
           description: >
-            The Process Definition Search Query failed.
+            The process definition search query failed.
             More details are provided in the response body.
           content:
             application/problem+json:
