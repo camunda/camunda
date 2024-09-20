@@ -52,7 +52,16 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   static final SearchQueryResult<ProcessDefinitionEntity> SEARCH_QUERY_RESULT =
       new Builder<ProcessDefinitionEntity>()
           .total(1L)
-          .items(List.of(new ProcessDefinitionEntity()))
+          .items(
+              List.of(
+                  new ProcessDefinitionEntity(
+                      1L,
+                      "Complex process",
+                      "complexProcess",
+                      "complexProcess.bpmn",
+                      5,
+                      "alpha",
+                      "<default>")))
           .sortValues(new Object[] {"v"})
           .build();
 

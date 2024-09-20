@@ -7,8 +7,12 @@
  */
 package io.camunda.service.transformers.filter;
 
+import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.service.search.filter.ProcessDefinitionFilter;
 import io.camunda.service.transformers.ServiceTransformers;
 import java.util.List;
@@ -24,11 +28,18 @@ public class ProcessDefinitionFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final ProcessDefinitionFilter filter) {
-    return SearchQueryBuilders.matchAll();
+    return and(
+        longTerms("key", filter.processDefinitionKeys()),
+        stringTerms("name", filter.names()),
+        stringTerms("bpmnProcessId", filter.bpmnProcessIds()),
+        stringTerms("resourceName", filter.resourceNames()),
+        intTerms("version", filter.versions()),
+        stringTerms("versionTag", filter.versionTags()),
+        stringTerms("tenantId", filter.tenantIds()));
   }
 
   @Override
   public List<String> toIndices(final ProcessDefinitionFilter filter) {
-    return List.of("operate-process-8.3.1_alias");
+    return List.of("operate-process-8.3.0_alias");
   }
 }
