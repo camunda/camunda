@@ -204,7 +204,7 @@ public class PublishMessageRestTest extends ClientRestTest {
                     .messageId("foo")
                     .send()
                     .join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Invalid request");
   }
 

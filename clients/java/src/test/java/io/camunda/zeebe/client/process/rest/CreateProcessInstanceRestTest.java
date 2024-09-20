@@ -171,7 +171,7 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     // when
     assertThatThrownBy(
             () -> client.newCreateInstanceCommand().processDefinitionKey(123).send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Invalid request");
   }
 
