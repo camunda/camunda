@@ -6,159 +6,59 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor, within} from 'modules/testing-library';
-import {useEffect} from 'react';
-import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
-import {processXmlStore as processXmlMigrationTargetStore} from 'modules/stores/processXml/processXml.migration.target';
-import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
+import {
+  MatcherFunction,
+  render,
+  screen,
+  waitFor,
+  within,
+} from 'modules/testing-library';
 import {BottomPanel} from '.';
 import {open} from 'modules/mocks/diagrams';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {elements, Wrapper} from './tests/mocks';
 
-type Props = {
-  children?: React.ReactNode;
-};
+const {
+  requestForPayment,
+  checkPayment,
+  shipArticles,
+  shippingSubProcess,
+  confirmDelivery,
+  MessageInterrupting,
+  TimerInterrupting,
+  MessageNonInterrupting,
+  TimerNonInterrupting,
+  MessageIntermediateCatch,
+  TimerIntermediateCatch,
+} = elements;
 
-const checkPayment = {
-  id: 'checkPayment',
-  name: 'Check payment',
-  type: 'serviceTask',
-};
-
-const requestForPayment = {
-  id: 'requestForPayment',
-  name: 'Request for payment',
-  type: 'serviceTask',
-};
-
-const shippingSubProcess = {
-  id: 'shippingSubProcess',
-  name: 'Shipping Sub Process',
-  type: 'subProcess',
-};
-
-const shipArticles = {
-  id: 'shipArticles',
-  name: 'Ship Articles',
-  type: 'userTask',
-};
-
-const confirmDelivery = {
-  id: 'confirmDelivery',
-  name: 'Confirm delivery',
-  type: 'callActivity',
-};
-
-const MessageInterrupting = {
-  id: 'MessageInterrupting',
-  name: 'Message interrupting',
-  type: 'messageBoundaryEventInterrupting',
-};
-
-const TimerInterrupting = {
-  id: 'TimerInterrupting',
-  name: 'Timer interrupting',
-  type: 'timerBoundaryEventInterrupting',
-};
-
-const MessageNonInterrupting = {
-  id: 'MessageNonInterrupting',
-  name: 'Message non-interrupting',
-  type: 'messageBoundaryEventNonInterrupting',
-};
-
-const TimerNonInterrupting = {
-  id: 'TimerNonInterrupting',
-  name: 'Timer non-interrupting',
-  type: 'timerBoundaryEventNonInterrupting',
-};
-
-const Wrapper = ({children}: Props) => {
-  processXmlMigrationSourceStore.setProcessXml(open('instanceMigration.bpmn'));
-  processInstanceMigrationStore.enable();
-
-  useEffect(() => {
-    return () => {
-      processInstanceMigrationStore.reset();
-      processXmlMigrationSourceStore.reset();
-      processXmlMigrationTargetStore.reset();
-      processStatisticsStore.reset();
-    };
-  }, []);
-
-  return (
-    <>
-      {children}
-      <button
-        onClick={() => {
-          processXmlMigrationTargetStore.fetchProcessXml();
-        }}
-      >
-        Fetch Target Process
-      </button>
-    </>
-  );
+/**
+ * Returns a custom matcher function which ignores all option elements from comboboxes.
+ */
+const getMatcherFunction = (flowNodeName: string): MatcherFunction => {
+  return (content, element) => {
+    return content === flowNodeName && element?.tagName !== 'OPTION';
+  };
 };
 
 describe('MigrationView/BottomPanel', () => {
   it('should render source flow nodes', async () => {
     render(<BottomPanel />, {wrapper: Wrapper});
 
-    expect(
-      await screen.findByRole('cell', {
-        name: new RegExp(`^${requestForPayment.name}`),
-      }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(requestForPayment.name)).toBeInTheDocument();
+    expect(screen.getByText(checkPayment.name)).toBeInTheDocument();
+    expect(screen.getByText(shipArticles.name)).toBeInTheDocument();
+    expect(screen.getByText(shippingSubProcess.name)).toBeInTheDocument();
+    expect(screen.getByText(confirmDelivery.name)).toBeInTheDocument();
+    expect(screen.getByText(MessageInterrupting.name)).toBeInTheDocument();
+    expect(screen.getByText(TimerInterrupting.name)).toBeInTheDocument();
+    expect(screen.getByText(MessageNonInterrupting.name)).toBeInTheDocument();
+    expect(screen.getByText(TimerNonInterrupting.name)).toBeInTheDocument();
+    expect(screen.getByText(MessageIntermediateCatch.name)).toBeInTheDocument();
+    expect(screen.getByText(TimerIntermediateCatch.name)).toBeInTheDocument();
 
-    expect(
-      screen.getByRole('cell', {
-        name: new RegExp(`^${checkPayment.name}`),
-      }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('cell', {
-        name: new RegExp(`^${shipArticles.name}`),
-      }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('cell', {
-        name: new RegExp(`^${shippingSubProcess.name}`),
-      }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('cell', {name: new RegExp(`^${confirmDelivery.name}`)}),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('cell', {
-        name: new RegExp(`^${MessageInterrupting.name}`),
-      }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('cell', {
-        name: new RegExp(`^${TimerInterrupting.name}`),
-      }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('cell', {
-        name: new RegExp(`^${MessageNonInterrupting.name}`),
-      }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('cell', {
-        name: new RegExp(`^${TimerNonInterrupting.name}`),
-      }),
-    ).toBeInTheDocument();
-
-    // expect table to have 1 header + 9 content rows
-    expect(screen.getAllByRole('row')).toHaveLength(10);
+    // expect table to have 1 header + 11 content rows
+    expect(screen.getAllByRole('row')).toHaveLength(12);
   });
 
   it.each([
@@ -168,6 +68,8 @@ describe('MigrationView/BottomPanel', () => {
     {source: confirmDelivery, target: confirmDelivery},
     {source: MessageInterrupting, target: MessageInterrupting},
     {source: MessageInterrupting, target: MessageNonInterrupting},
+    {source: MessageIntermediateCatch, target: MessageIntermediateCatch},
+    {source: TimerIntermediateCatch, target: TimerIntermediateCatch},
   ])(
     'should allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -181,7 +83,10 @@ describe('MigrationView/BottomPanel', () => {
 
       expect(combobox).toBeDisabled();
 
-      screen.getByRole('button', {name: /fetch target process/i}).click();
+      await user.click(
+        screen.getByRole('button', {name: /fetch target process/i}),
+      );
+
       await waitFor(() => {
         expect(combobox).toBeEnabled();
       });
@@ -209,6 +114,9 @@ describe('MigrationView/BottomPanel', () => {
     {source: confirmDelivery, target: shippingSubProcess},
     {source: MessageInterrupting, target: TimerInterrupting},
     {source: TimerInterrupting, target: MessageNonInterrupting},
+    {source: MessageIntermediateCatch, target: MessageInterrupting},
+    {source: TimerInterrupting, target: TimerIntermediateCatch},
+    {source: MessageIntermediateCatch, target: TimerIntermediateCatch},
   ])(
     'should not allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -242,43 +150,36 @@ describe('MigrationView/BottomPanel', () => {
 
     render(<BottomPanel />, {wrapper: Wrapper});
 
-    const comboboxCheckPayment = await screen.findByRole('combobox', {
-      name: new RegExp(`target flow node for ${checkPayment.name}`, 'i'),
-    });
-
-    const comboboxShippingSubProcess = await screen.findByRole('combobox', {
-      name: new RegExp(`target flow node for ${shippingSubProcess.name}`, 'i'),
-    });
-
-    const comboboxShipArticles = await screen.findByRole('combobox', {
-      name: new RegExp(`target flow node for ${shipArticles.name}`, 'i'),
-    });
-
-    const comboboxRequestForPayment = await screen.findByRole('combobox', {
-      name: new RegExp(`target flow node for ${requestForPayment.name}`, 'i'),
-    });
-
-    const comboboxMessageInterrupting = await screen.findByRole('combobox', {
-      name: new RegExp(`target flow node for ${MessageInterrupting.name}`, 'i'),
-    });
-
-    const comboboxTimerInterrupting = await screen.findByRole('combobox', {
-      name: new RegExp(`target flow node for ${TimerInterrupting.name}`, 'i'),
-    });
-
-    const comboboxMessageNonInterrupting = await screen.findByRole('combobox', {
-      name: new RegExp(
-        `target flow node for ${MessageNonInterrupting.name}`,
-        'i',
-      ),
-    });
-
-    const comboboxTimerNonInterrupting = await screen.findByRole('combobox', {
-      name: new RegExp(
-        `target flow node for ${TimerNonInterrupting.name}`,
-        'i',
-      ),
-    });
+    const comboboxCheckPayment = await screen.findByLabelText(
+      new RegExp(`target flow node for ${checkPayment.name}`, 'i'),
+    );
+    const comboboxShippingSubProcess = await screen.findByLabelText(
+      new RegExp(`target flow node for ${shippingSubProcess.name}`, 'i'),
+    );
+    const comboboxShipArticles = await screen.findByLabelText(
+      new RegExp(`target flow node for ${shipArticles.name}`, 'i'),
+    );
+    const comboboxRequestForPayment = await screen.findByLabelText(
+      new RegExp(`target flow node for ${requestForPayment.name}`, 'i'),
+    );
+    const comboboxMessageInterrupting = await screen.findByLabelText(
+      new RegExp(`target flow node for ${MessageInterrupting.name}`, 'i'),
+    );
+    const comboboxTimerInterrupting = await screen.findByLabelText(
+      new RegExp(`target flow node for ${TimerInterrupting.name}`, 'i'),
+    );
+    const comboboxMessageNonInterrupting = await screen.findByLabelText(
+      new RegExp(`target flow node for ${MessageNonInterrupting.name}`, 'i'),
+    );
+    const comboboxTimerNonInterrupting = await screen.findByLabelText(
+      new RegExp(`target flow node for ${TimerNonInterrupting.name}`, 'i'),
+    );
+    const comboboxTimerIntermediateCatch = await screen.findByLabelText(
+      new RegExp(`target flow node for ${TimerIntermediateCatch.name}`, 'i'),
+    );
+    const comboboxMessageIntermediateCatch = await screen.findByLabelText(
+      new RegExp(`target flow node for ${MessageIntermediateCatch.name}`, 'i'),
+    );
 
     screen.getByRole('button', {name: /fetch target process/i}).click();
 
@@ -298,6 +199,11 @@ describe('MigrationView/BottomPanel', () => {
       comboboxTimerNonInterrupting.id,
     );
 
+    // Expect auto-mapping (same id, intermediate catch event, same event type)
+    expect(comboboxMessageIntermediateCatch).toHaveValue(
+      comboboxMessageIntermediateCatch.id,
+    );
+
     // Expect no auto-mapping (flow node does not exist in target)
     expect(comboboxShippingSubProcess).toHaveValue('');
     expect(comboboxShippingSubProcess).toBeDisabled();
@@ -307,6 +213,9 @@ describe('MigrationView/BottomPanel', () => {
 
     expect(comboboxTimerInterrupting).toHaveValue('');
     expect(comboboxTimerInterrupting).toBeEnabled();
+
+    expect(comboboxTimerIntermediateCatch).toHaveValue('');
+    expect(comboboxTimerIntermediateCatch).toBeDisabled();
 
     // Expect no auto-mapping (different bpmn type)
     expect(comboboxRequestForPayment).toHaveValue('');
@@ -323,37 +232,26 @@ describe('MigrationView/BottomPanel', () => {
       name: new RegExp(`target flow node for ${requestForPayment.name}`, 'i'),
     });
 
-    const rowCheckPayment = screen.getByRole('row', {
-      name: new RegExp(`^${checkPayment.name}`),
-    });
-
-    const rowShippingSubProcess = screen.getByRole('row', {
-      name: new RegExp(`^${shippingSubProcess.name}`),
-    });
-
-    const rowShipArticles = screen.getByRole('row', {
-      name: new RegExp(`^${shipArticles.name}`),
-    });
-
-    const rowRequestForPayment = screen.getByRole('row', {
-      name: new RegExp(`^${requestForPayment.name}`),
-    });
-
-    const rowMessageInterrupting = screen.getByRole('row', {
-      name: new RegExp(`^${MessageInterrupting.name}`),
-    });
-
-    const rowTimerInterrupting = screen.getByRole('row', {
-      name: new RegExp(`^${TimerInterrupting.name}`),
-    });
-
-    const rowMessageNonInterrupting = screen.getByRole('row', {
-      name: new RegExp(`^${MessageNonInterrupting.name}`),
-    });
-
-    const rowTimerNonInterrupting = screen.getByRole('row', {
-      name: new RegExp(`^${TimerNonInterrupting.name}`),
-    });
+    const rowCheckPayment = screen.getByText(checkPayment.name).closest('tr');
+    const rowShippingSubProcess = screen
+      .getByText(shippingSubProcess.name)
+      .closest('tr');
+    const rowShipArticles = screen.getByText(shipArticles.name).closest('tr');
+    const rowRequestForPayment = screen
+      .getByText(requestForPayment.name)
+      .closest('tr');
+    const rowMessageInterrupting = screen
+      .getByText(MessageInterrupting.name)
+      .closest('tr');
+    const rowTimerInterrupting = screen
+      .getByText(TimerInterrupting.name)
+      .closest('tr');
+    const rowMessageNonInterrupting = screen
+      .getByText(MessageNonInterrupting.name)
+      .closest('tr');
+    const rowTimerNonInterrupting = screen
+      .getByText(TimerNonInterrupting.name)
+      .closest('tr');
 
     await waitFor(() => {
       expect(comboboxRequestForPayment).toBeEnabled();
@@ -361,46 +259,46 @@ describe('MigrationView/BottomPanel', () => {
 
     // expect to have no "not mapped" tag (auto-mapped)
     expect(
-      within(rowCheckPayment).queryByText(/not mapped/i),
+      within(rowCheckPayment!).queryByText(/not mapped/i),
     ).not.toBeInTheDocument();
     expect(
-      within(rowShipArticles).queryByText(/not mapped/i),
+      within(rowShipArticles!).queryByText(/not mapped/i),
     ).not.toBeInTheDocument();
     expect(
-      within(rowMessageInterrupting).queryByText(/not mapped/i),
+      within(rowMessageInterrupting!).queryByText(/not mapped/i),
     ).not.toBeInTheDocument();
     expect(
-      within(rowTimerNonInterrupting).queryByText(/not mapped/i),
+      within(rowTimerNonInterrupting!).queryByText(/not mapped/i),
     ).not.toBeInTheDocument();
     expect(
-      within(rowShippingSubProcess).getByText(/not mapped/i),
+      within(rowShippingSubProcess!).getByText(/not mapped/i),
     ).toBeInTheDocument();
 
     // expect to have "not mapped" tag (not auto-mapped)
     expect(
-      within(rowRequestForPayment).getByText(/not mapped/i),
+      within(rowRequestForPayment!).getByText(/not mapped/i),
     ).toBeInTheDocument();
     expect(
-      within(rowMessageNonInterrupting).getByText(/not mapped/i),
+      within(rowMessageNonInterrupting!).getByText(/not mapped/i),
     ).toBeInTheDocument();
     expect(
-      within(rowTimerInterrupting).getByText(/not mapped/i),
+      within(rowTimerInterrupting!).getByText(/not mapped/i),
     ).toBeInTheDocument();
 
     // expect tag not to be visible after selecting a target flow node
     await user.selectOptions(comboboxRequestForPayment, checkPayment.name);
     expect(
-      within(rowRequestForPayment).queryByText(/not mapped/i),
+      within(rowRequestForPayment!).queryByText(/not mapped/i),
     ).not.toBeInTheDocument();
 
     // expect tag not to be visible after selecting a target flow node
     await user.selectOptions(comboboxRequestForPayment, '');
     expect(
-      within(rowRequestForPayment).getByText(/not mapped/i),
+      within(rowRequestForPayment!).getByText(/not mapped/i),
     ).toBeInTheDocument();
   });
 
-  it.only('should hide mapped flow nodes', async () => {
+  it('should hide mapped flow nodes', async () => {
     mockFetchProcessXML().withSuccess(open('instanceMigration_v2.bpmn'));
 
     const {user} = render(<BottomPanel />, {wrapper: Wrapper});
@@ -414,62 +312,50 @@ describe('MigrationView/BottomPanel', () => {
       }),
     ).toBeVisible();
 
-    // Expect all 9 rows to be visible (+1 header row)
-    expect(await screen.findAllByRole('row')).toHaveLength(10);
+    // Expect all 11 rows to be visible (+1 header row)
+    expect(await screen.findAllByRole('row')).toHaveLength(12);
 
     // Toggle on unmapped flow nodes
     await user.click(screen.getByLabelText(/show only not mapped/i));
 
     // Expect the following rows to be hidden (because they're mapped)
     expect(
-      screen.queryByRole('row', {
-        name: new RegExp(`^${checkPayment.name}`),
-      }),
+      screen.queryByText(getMatcherFunction(checkPayment.name)),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('row', {
-        name: new RegExp(`^${shipArticles.name}`),
-      }),
+      screen.queryByText(getMatcherFunction(shipArticles.name)),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('row', {
-        name: new RegExp(`^${MessageInterrupting.name}`),
-      }),
+      screen.queryByText(getMatcherFunction(MessageInterrupting.name)),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('row', {
-        name: new RegExp(`^${TimerNonInterrupting.name}`),
-      }),
+      screen.queryByText(getMatcherFunction(TimerNonInterrupting.name)),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(MessageIntermediateCatch.name)),
     ).not.toBeInTheDocument();
 
-    // Expect 5 not mapped rows (+1 header row)
-    expect(await screen.findAllByRole('row')).toHaveLength(6);
+    // Expect 6 not mapped rows (+1 header row)
+    expect(await screen.findAllByRole('row')).toHaveLength(7);
 
     // Expect the following rows to be visible (because they're not mapped)
     expect(
-      screen.getByRole('row', {
-        name: new RegExp(`^${requestForPayment.name}`),
-      }),
+      screen.getByText(getMatcherFunction(requestForPayment.name)),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('row', {
-        name: new RegExp(`^${shippingSubProcess.name}`),
-      }),
+      screen.getByText(getMatcherFunction(shippingSubProcess.name)),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('row', {
-        name: new RegExp(`^${confirmDelivery.name}`),
-      }),
+      screen.getByText(getMatcherFunction(confirmDelivery.name)),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('row', {
-        name: new RegExp(`^${MessageNonInterrupting.name}`),
-      }),
+      screen.getByText(getMatcherFunction(MessageNonInterrupting.name)),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('row', {
-        name: new RegExp(`^${TimerInterrupting.name}`),
-      }),
+      screen.getByText(getMatcherFunction(TimerInterrupting.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(TimerIntermediateCatch.name)),
     ).toBeInTheDocument();
 
     expect(screen.getByLabelText(/show only not mapped/i)).toBeInTheDocument();
@@ -479,6 +365,6 @@ describe('MigrationView/BottomPanel', () => {
     await user.click(screen.getByLabelText(/show only not mapped/i));
 
     // Expect all rows to be visible again
-    expect(await screen.findAllByRole('row')).toHaveLength(10);
+    expect(await screen.findAllByRole('row')).toHaveLength(12);
   });
 });

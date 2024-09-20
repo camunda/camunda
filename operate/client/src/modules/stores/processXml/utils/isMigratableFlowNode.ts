@@ -11,13 +11,29 @@ import {hasEventType} from 'modules/bpmn-js/utils/hasEventType';
 import {hasType} from 'modules/bpmn-js/utils/hasType';
 
 const isMigratableFlowNode = (businessObject: BusinessObject) => {
+  /**
+   * Check boundary events
+   */
   if (
-    /**
-     * Check boundary events
-     */
     hasType({
       businessObject,
       types: ['bpmn:BoundaryEvent'],
+    }) &&
+    hasEventType({
+      businessObject,
+      types: ['bpmn:MessageEventDefinition', 'bpmn:TimerEventDefinition'],
+    })
+  ) {
+    return true;
+  }
+
+  /**
+   * Check intermediate catch events
+   */
+  if (
+    hasType({
+      businessObject,
+      types: ['bpmn:IntermediateCatchEvent'],
     }) &&
     hasEventType({
       businessObject,

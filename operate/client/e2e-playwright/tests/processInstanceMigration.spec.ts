@@ -80,7 +80,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(11);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(13);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
@@ -115,6 +115,12 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       page.getByLabel(/target flow node for timer non-interrupting/i),
     ).toHaveValue('TimerNonInterrupting');
+    await expect(
+      page.getByLabel(/target flow node for message intermediate catch/i),
+    ).toHaveValue('MessageIntermediateCatch');
+    await expect(
+      page.getByLabel(/target flow node for timer intermediate catch/i),
+    ).toHaveValue('TimerIntermediateCatch');
 
     // Expect pre-selected process and version
     await expect(migrationView.targetProcessComboBox).toHaveValue(
@@ -274,6 +280,18 @@ test.describe.serial('Process Instance Migration', () => {
       targetFlowNodeName: 'Timer non-interrupting 2',
     });
 
+    /**
+     * Map intermediate catch events
+     */
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Message intermediate catch',
+      targetFlowNodeName: 'Message intermediate catch 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Timer intermediate catch',
+      targetFlowNodeName: 'Timer intermediate catch 2',
+    });
+
     await migrationView.nextButton.click();
 
     await expect(migrationView.summaryNotification).toContainText(
@@ -338,9 +356,10 @@ test.describe.serial('Process Instance Migration', () => {
     await commonPage.collapseOperationsPanel();
   });
 
-  test('Migrated message boundary events', async ({
+  test('Migrated message events', async ({
     processesPage,
     processInstancePage,
+    page,
   }) => {
     const {processV3} = initialData;
 
@@ -359,6 +378,7 @@ test.describe.serial('Process Instance Migration', () => {
      */
     await processInstancePage.diagram.clickFlowNode('Task A2');
     await processInstancePage.diagram.showMetaData();
+    await page.waitForSelector('.monaco-aria-container'); // wait until monaco is fully loaded
     await expect(
       processInstancePage.metadataModal.getByText(
         '"correlationKey": "mySecondCorrelationKey"',
@@ -373,6 +393,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processInstancePage.metadataModal
       .getByRole('button', {name: /close/i})
       .click();
+
     await processInstancePage.diagram.clickFlowNode('Task A2'); // deselect Task A2
 
     /**
@@ -388,6 +409,28 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       processInstancePage.metadataModal.getByText(
         '"messageName": "Message_1",',
+      ),
+    ).toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+
+    await processInstancePage.diagram.clickFlowNode('Task C2'); // deselect Task C2
+
+    /**
+     * Expect that the correlation key has been updated if source and target message event have the same message id
+     */
+    await processInstancePage.diagram.clickEvent('Message intermediate catch');
+    await processInstancePage.diagram.showMetaData();
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"correlationKey": "myFirstCorrelationKey"',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"messageName": "Message_3",',
       ),
     ).toBeVisible();
   });
