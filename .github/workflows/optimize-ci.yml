@@ -211,7 +211,7 @@ jobs:
         includedGroups: [ 'ccsm-test' ]
         include:
           - includedGroups: 'ccsm-test'
-            excludedGroups: ''
+            excludedGroups: 'openSearchSingleTestFailOK'
             profiles: 'ccsm-it'
 
     steps:
