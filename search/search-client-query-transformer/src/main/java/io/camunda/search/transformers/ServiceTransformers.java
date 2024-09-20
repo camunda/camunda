@@ -112,7 +112,7 @@ public final class ServiceTransformers {
     mappers.put(
         FlowNodeInstanceQuery.class,
         new TypedSearchQueryTransformer<FlowNodeInstanceFilter, FlowNodeInstanceSort>(mappers));
-
+    mappers.put(ProcessDefinitionQuery.class, new TypedSearchQueryTransformer<>(mappers));
     // search query response -> search query result
     mappers.put(SearchQueryResult.class, new SearchQueryResultTransformer());
 
@@ -137,6 +137,7 @@ public final class ServiceTransformers {
     mappers.put(FlowNodeInstanceFilter.class, new FlownodeInstanceFilterTransformer());
     mappers.put(IncidentFilter.class, new IncidentFilterTransformer(mappers));
     mappers.put(FormFilter.class, new FormFilterTransformer(mappers));
+    mappers.put(ProcessDefinitionFilter.class, new ProcessDefinitionFilterTransformer(mappers));
 
     // result config -> source config
     mappers.put(QueryResultConfig.class, new ResultConfigTransformer());
