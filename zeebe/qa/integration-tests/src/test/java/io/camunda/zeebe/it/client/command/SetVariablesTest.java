@@ -149,9 +149,15 @@ public final class SetVariablesTest {
             .send();
 
     // then
-    final String expectedMessage =
-        "Expected to handle REST API request, but request could not be delivered";
-    assertThatThrownBy(command::join).hasMessageContaining(expectedMessage);
+    if (useRest) {
+      final String expectedMessage =
+          "Expected to handle REST API request, but request could not be delivered";
+      assertThatThrownBy(command::join).hasMessageContaining(expectedMessage);
+    } else {
+      final String expectedMessage =
+          "Expected to execute command on partition 0, but either it does not exist, or the gateway is not yet aware of it";
+      assertThatThrownBy(command::join).hasMessageContaining(expectedMessage);
+    }
   }
 
   private SetVariablesCommandStep1 getCommand(
