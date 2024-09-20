@@ -26,8 +26,8 @@
     "imprint": "Imprint",
     "academy": "Camunda Academy",
     "feedback": "Feedback and Support",
-    "opensearchPreview": "Opensearch preview release",
-    "opensearchWarningText": "This is a preview release of Optimize with OpenSearch support. The data import is fully functional, however the data visualization and evaluation features are in an experimental stage and should not be used for production use-cases."
+    "opensearchPreview": "OpenSearch release info",
+    "opensearchWarningText": "This Optimize release for OpenSearch can be used in production. The data import is fully functional, however the data visualization and evaluation features are limited."
   },
   "login": {
     "label": "Log in",
