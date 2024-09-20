@@ -641,7 +641,7 @@ paths:
     post:
       tags:
         - Process definition
-      summary: process definitions (alpha)
+      summary: Search process definitions (alpha)
       description: |
         Search for process definitions based on given criteria.
         :::note
