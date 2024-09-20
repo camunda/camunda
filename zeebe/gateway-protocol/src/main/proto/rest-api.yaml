@@ -3208,7 +3208,8 @@ components:
           type: string
         ruleIndex:
           description: The index of the matched rule.
-          type: string
+          type: integer
+          format: int32
         evaluatedOutputs:
           type: array
           items:

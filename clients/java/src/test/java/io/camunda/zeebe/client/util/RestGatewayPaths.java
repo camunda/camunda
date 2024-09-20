@@ -32,6 +32,10 @@ public class RestGatewayPaths {
   private static final String URL_CLOCK_PIN = REST_API_PATH + "/clock";
   private static final String URL_CLOCK_RESET = REST_API_PATH + "/clock/reset";
   private static final String URL_INCIDENT_RESOLUTION = REST_API_PATH + "/incidents/%s/resolution";
+  private static final String URL_CANCEL_PROCESS =
+      REST_API_PATH + "/process-instances/%s/cancellation";
+  private static final String URL_BROADCAST_SIGNAL = REST_API_PATH + "/signals/broadcast";
+  private static final String URL_EVALUATE_DECISION = REST_API_PATH + "/decisions/evaluation";
 
   /**
    * @return the topology request URL
@@ -103,5 +107,17 @@ public class RestGatewayPaths {
    */
   public static String getIncidentResolutionUrl(final long incidentKey) {
     return String.format(URL_INCIDENT_RESOLUTION, incidentKey);
+  }
+
+  public static String getCancelProcessUrl(final long processInstanceKey) {
+    return String.format(URL_CANCEL_PROCESS, processInstanceKey);
+  }
+
+  public static String getBroadcastSignalUrl() {
+    return URL_BROADCAST_SIGNAL;
+  }
+
+  public static String getEvaluateDecisionUrl() {
+    return URL_EVALUATE_DECISION;
   }
 }

@@ -373,8 +373,9 @@ public final class ZeebeClientImpl implements ZeebeClient {
         processInstanceKey,
         jsonMapper,
         asyncStub,
-        config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config);
   }
 
   @Override
@@ -383,8 +384,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new MigrateProcessInstanceCommandImpl(
         processInstanceKey,
         asyncStub,
-        config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config,
+        jsonMapper);
   }
 
   @Override
@@ -392,8 +395,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new CancelProcessInstanceCommandImpl(
         asyncStub,
         processInstanceKey,
-        config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config,
+        jsonMapper);
   }
 
   @Override
@@ -409,7 +414,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public EvaluateDecisionCommandStep1 newEvaluateDecisionCommand() {
     return new EvaluateDecisionCommandImpl(
-        asyncStub, jsonMapper, config, credentialsProvider::shouldRetryRequest);
+        asyncStub, jsonMapper, config, credentialsProvider::shouldRetryRequest, httpClient);
   }
 
   @Override
@@ -426,7 +431,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public BroadcastSignalCommandStep1 newBroadcastSignalCommand() {
     return new BroadcastSignalCommandImpl(
-        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest, httpClient);
   }
 
   @Override
@@ -485,7 +490,9 @@ public final class ZeebeClientImpl implements ZeebeClient {
         resourceKey,
         asyncStub,
         credentialsProvider::shouldRetryRequest,
-        config.getDefaultRequestTimeout());
+        httpClient,
+        config,
+        jsonMapper);
   }
 
   @Override

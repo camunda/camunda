@@ -16,8 +16,10 @@ import static org.mockito.Mockito.when;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +28,7 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @WebMvcTest(DecisionController.class)
 public class DecisionControllerTest extends RestControllerTest {
@@ -49,6 +52,7 @@ public class DecisionControllerTest extends RestControllerTest {
          "evaluatedDecisions":[]
       }""";
 
+  @MockBean MultiTenancyCfg multiTenancyCfg;
   @MockBean private DecisionDefinitionServices decisionServices;
 
   @BeforeEach
@@ -60,8 +64,9 @@ public class DecisionControllerTest extends RestControllerTest {
   @Test
   void shouldEvaluateDecisionWithDecisionKey() {
     // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString()))
-        .thenReturn((buildResponse()));
+        .thenReturn((buildResponse("tenantId")));
 
     final var request =
         """
@@ -74,6 +79,43 @@ public class DecisionControllerTest extends RestControllerTest {
         }""";
 
     // when/then
+    final ResponseSpec response =
+        withMultiTenancy(
+            "tenantId",
+            client ->
+                client
+                    .post()
+                    .uri(EVALUATION_URL)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(request)
+                    .exchange()
+                    .expectStatus()
+                    .isOk());
+
+    response.expectBody().json(EXPECTED_EVALUATION_RESPONSE);
+    Mockito.verify(decisionServices)
+        .evaluateDecision("", 123456L, Map.of("key", "value"), "tenantId");
+  }
+
+  @Test
+  void shouldEvaluateDecisionWithMultitenancyDisabled() {
+    // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(false);
+    when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString()))
+        .thenReturn((buildResponse(TenantOwned.DEFAULT_TENANT_IDENTIFIER)));
+
+    final var request =
+        """
+        {
+          "decisionKey": 123456,
+          "variables": {
+            "key": "value"
+          },
+          "tenantId": "<default>"
+        }""";
+
+    // when/then
     webClient
         .post()
         .uri(EVALUATION_URL)
@@ -82,19 +124,18 @@ public class DecisionControllerTest extends RestControllerTest {
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isOk()
-        .expectBody()
-        .json(EXPECTED_EVALUATION_RESPONSE);
-
+        .isOk();
     Mockito.verify(decisionServices)
-        .evaluateDecision("", 123456L, Map.of("key", "value"), "tenantId");
+        .evaluateDecision(
+            "", 123456L, Map.of("key", "value"), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
   void shouldEvaluateDecisionWithDecisionId() {
     // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString()))
-        .thenReturn((buildResponse()));
+        .thenReturn((buildResponse("tenantId")));
 
     final var request =
         """
@@ -107,18 +148,21 @@ public class DecisionControllerTest extends RestControllerTest {
         }""";
 
     // when/then
-    webClient
-        .post()
-        .uri(EVALUATION_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectBody()
-        .json(EXPECTED_EVALUATION_RESPONSE);
+    final ResponseSpec response =
+        withMultiTenancy(
+            "tenantId",
+            client ->
+                client
+                    .post()
+                    .uri(EVALUATION_URL)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(request)
+                    .exchange()
+                    .expectStatus()
+                    .isOk());
 
+    response.expectBody().json(EXPECTED_EVALUATION_RESPONSE);
     Mockito.verify(decisionServices)
         .evaluateDecision("decisionId", -1L, Map.of("key", "value"), "tenantId");
   }
@@ -133,9 +177,9 @@ public class DecisionControllerTest extends RestControllerTest {
           "decisionKey": 123456,
           "variables": {
             "key": "value"
-          },
-          "tenantId": "tenantId"
+          }
         }""";
+
     final var expectedBody =
         """
         {
@@ -168,9 +212,9 @@ public class DecisionControllerTest extends RestControllerTest {
         {
           "variables": {
             "key": "value"
-          },
-          "tenantId": "tenantId"
+          }
         }""";
+
     final var expectedBody =
         """
         {
@@ -195,7 +239,8 @@ public class DecisionControllerTest extends RestControllerTest {
         .json(expectedBody);
   }
 
-  private CompletableFuture<BrokerResponse<DecisionEvaluationRecord>> buildResponse() {
+  private CompletableFuture<BrokerResponse<DecisionEvaluationRecord>> buildResponse(
+      final String tenantId) {
     final var record =
         new DecisionEvaluationRecord()
             .setDecisionId("decisionId")
@@ -204,7 +249,7 @@ public class DecisionControllerTest extends RestControllerTest {
             .setDecisionVersion(1)
             .setDecisionRequirementsId("decisionRequirementsId")
             .setDecisionRequirementsKey(123456L)
-            .setTenantId("tenantId");
+            .setTenantId(tenantId);
     return CompletableFuture.completedFuture(new BrokerResponse<>(record, 1, 123));
   }
 }

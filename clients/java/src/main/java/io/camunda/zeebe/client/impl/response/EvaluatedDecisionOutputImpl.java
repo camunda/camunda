@@ -18,14 +18,21 @@ package io.camunda.zeebe.client.impl.response;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionOutput;
+import io.camunda.zeebe.client.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
 public class EvaluatedDecisionOutputImpl implements EvaluatedDecisionOutput {
 
-  @JsonIgnore private final JsonMapper jsonMapper;
+  @JsonIgnore private JsonMapper jsonMapper;
   private final String outputId;
   private final String outputName;
   private final String outputValue;
+
+  public EvaluatedDecisionOutputImpl(final EvaluatedDecisionOutputItem item) {
+    this.outputId = item.getOutputId();
+    this.outputName = item.getOutputName();
+    this.outputValue = item.getOutputValue();
+  }
 
   public EvaluatedDecisionOutputImpl(
       final JsonMapper jsonMapper,
