@@ -86,13 +86,13 @@ public class RestErrorMapper {
         final var teMsg =
             "Expected to handle REST API request, but request timed out between gateway and broker";
         REST_GATEWAY_LOGGER.debug(teMsg, te);
-        yield createProblemDetail(HttpStatus.BAD_GATEWAY, teMsg, te.getClass().getName());
+        yield createProblemDetail(HttpStatus.GATEWAY_TIMEOUT, teMsg, te.getClass().getName());
       case final MessagingException.ConnectionClosed cc:
         final var ccMsg =
             "Expected to handle REST API request, but the connection was cut prematurely with the broker; "
                 + "the request may or may not have been accepted, and may not be safe to retry";
         REST_GATEWAY_LOGGER.warn(ccMsg, cc);
-        yield createProblemDetail(HttpStatus.BAD_GATEWAY, ccMsg, cc.getClass().getName());
+        yield createProblemDetail(HttpStatus.GATEWAY_TIMEOUT, ccMsg, cc.getClass().getName());
       case final ConnectTimeoutException cte:
         final var cteMsg =
             "Expected to handle REST API request, but a connection timeout exception occurred";

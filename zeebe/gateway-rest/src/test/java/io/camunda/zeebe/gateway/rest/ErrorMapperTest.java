@@ -232,7 +232,7 @@ public class ErrorMapperTest {
   }
 
   @Test
-  public void shouldReturnBadGatewayOnTimeoutException() {
+  public void shouldReturnGatewayTimeoutOnTimeoutException() {
     // given
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(CompletableFuture.failedFuture(new TimeoutException("Oh noes, timeouts!")));
@@ -240,7 +240,7 @@ public class ErrorMapperTest {
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
-            HttpStatus.BAD_GATEWAY,
+            HttpStatus.GATEWAY_TIMEOUT,
             "Expected to handle REST API request, but request timed out between gateway and broker");
     expectedBody.setTitle(TimeoutException.class.getName());
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
@@ -254,7 +254,7 @@ public class ErrorMapperTest {
         .body(Mono.just(request), UserTaskCompletionRequest.class)
         .exchange()
         .expectStatus()
-        .isEqualTo(HttpStatus.BAD_GATEWAY)
+        .isEqualTo(HttpStatus.GATEWAY_TIMEOUT)
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody(ProblemDetail.class)
@@ -262,7 +262,7 @@ public class ErrorMapperTest {
   }
 
   @Test
-  public void shouldReturnBadGatewayOnConnectionClosed() {
+  public void shouldReturnGatewayTimeoutOnConnectionClosed() {
     // given
     final var errorMsg = "Oh noes, connection closed!";
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
@@ -271,7 +271,7 @@ public class ErrorMapperTest {
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
-            HttpStatus.BAD_GATEWAY,
+            HttpStatus.GATEWAY_TIMEOUT,
             "Expected to handle REST API request, but the connection was cut prematurely with the broker; "
                 + "the request may or may not have been accepted, and may not be safe to retry");
     expectedBody.setTitle(ConnectionClosed.class.getName());
@@ -286,7 +286,7 @@ public class ErrorMapperTest {
         .body(Mono.just(request), UserTaskCompletionRequest.class)
         .exchange()
         .expectStatus()
-        .isEqualTo(HttpStatus.BAD_GATEWAY)
+        .isEqualTo(HttpStatus.GATEWAY_TIMEOUT)
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody(ProblemDetail.class)
