@@ -220,7 +220,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     // when
     assertThatThrownBy(
             () -> client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Invalid request");
   }
 
