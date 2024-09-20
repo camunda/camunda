@@ -40,7 +40,7 @@ public final class ExceptionHandlingRestTest extends ClientRestTest {
   }
 
   @Test
-  public void shouldProvideProblemExceptionOnFailedRequest() {
+  public void shouldProvideProblemExceptionOnFailedRequestWithTimeout() {
     // given
     gatewayService.errorOnRequest(
         RestGatewayPaths.getTopologyUrl(),
