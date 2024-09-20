@@ -21,6 +21,7 @@ import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayPaths;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 public final class ExceptionHandlingRestTest extends ClientRestTest {
@@ -34,6 +35,20 @@ public final class ExceptionHandlingRestTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(() -> client.newTopologyRequest().useRest().send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Invalid request");
+  }
+
+  @Test
+  public void shouldProvideProblemExceptionOnFailedRequest() {
+    // given
+    gatewayService.errorOnRequest(
+        RestGatewayPaths.getTopologyUrl(),
+        () -> new ProblemDetail().title("Invalid request").status(400));
+
+    // when / then
+    assertThatThrownBy(
+            () -> client.newTopologyRequest().useRest().send().join(1L, TimeUnit.SECONDS))
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Invalid request");
   }
