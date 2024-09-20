@@ -133,7 +133,6 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -PskipFrontendBuild -Dmaven.test.skip=true -am -pl :camunda-zeebe
-          go: false
       - uses: google-github-actions/auth@v2
         id: auth
         with:
