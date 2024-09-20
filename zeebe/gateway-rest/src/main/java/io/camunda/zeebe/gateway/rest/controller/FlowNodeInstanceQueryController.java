@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 
 import io.camunda.service.FlowNodeInstanceServices;
-import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.query.FlowNodeInstanceQuery;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryRequest;
@@ -19,7 +18,6 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import jakarta.validation.ValidationException;
 import java.nio.charset.StandardCharsets;
 import org.springframework.http.HttpStatus;
@@ -62,11 +60,6 @@ public class FlowNodeInstanceQueryController {
           .body(
               SearchQueryResponseMapper.toFlowNodeInstance(
                   flownodeInstanceServices.getByKey(flowNodeInstanceKey)));
-    } catch (final NotFoundException nfe) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.NOT_FOUND, nfe.getMessage(), RejectionType.NOT_FOUND.name());
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
     } catch (final Exception e) {
       REST_LOGGER.warn("An exception occurred in get flow node instance by key.", e);
       final var problemDetail =

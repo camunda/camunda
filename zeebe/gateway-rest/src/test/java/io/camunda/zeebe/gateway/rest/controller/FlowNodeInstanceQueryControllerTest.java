@@ -318,7 +318,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .uri(FLOW_NODE_INSTANCES_URL + "5")
         .exchange()
         .expectStatus()
-        .isNotFound()
+        .is5xxServerError()
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
         .expectBody()
@@ -326,8 +326,8 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
             """
           {
               "type":"about:blank",
-              "title":"NOT_FOUND",
-              "status":404,
+              "title":"Failed to execute Get Flow node instance by key.",
+              "status":500,
               "instance":"/v2/flownode-instances/5"
           }
         """);
