@@ -337,10 +337,24 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, PublicationMessageRequest> toMessagePublicationRequest(
-      final MessagePublicationRequest messagePublicationRequest) {
-    return getResult(
-        validateMessagePublicationRequest(messagePublicationRequest),
-        () ->
+      final MessagePublicationRequest messagePublicationRequest,
+      final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(
+                messagePublicationRequest.getTenantId(), multiTenancyEnabled, "Publish Message")
+            .flatMap(
+                tenantId ->
+                    validateAuthorization(tenantId, multiTenancyEnabled, "Publish Message")
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)))
+            .flatMap(
+                tenantId ->
+                    validateMessagePublicationRequest(messagePublicationRequest)
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)));
+
+    return validationResponse.map(
+        tenantId ->
             new PublicationMessageRequest(
                 messagePublicationRequest.getName(),
                 messagePublicationRequest.getCorrelationKey(),
@@ -348,8 +362,7 @@ public class RequestMapper {
                 getStringOrEmpty(
                     messagePublicationRequest, MessagePublicationRequest::getMessageId),
                 getMapOrEmpty(messagePublicationRequest, MessagePublicationRequest::getVariables),
-                getStringOrEmpty(
-                    messagePublicationRequest, MessagePublicationRequest::getTenantId)));
+                tenantId));
   }
 
   public static Either<ProblemDetail, ResourceDeletionRequest> toResourceDeletion(
@@ -483,7 +496,8 @@ public class RequestMapper {
                             new io.camunda.zeebe.protocol.impl.record.value.processinstance
                                     .ProcessInstanceCreationStartInstruction()
                                 .setElementId(instruction.getElementId()))
-                    .toList()));
+                    .toList(),
+                request.getFetchVariables()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceCancelRequest> toCancelProcessInstance(

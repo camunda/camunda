@@ -258,7 +258,7 @@ public final class ResponseMapper {
       final Map<String, Object> variables) {
     final var response =
         new CreateProcessInstanceResponse()
-            .processKey(processDefinitionKey)
+            .processDefinitionKey(processDefinitionKey)
             .bpmnProcessId(bpmnProcessId)
             .version(version)
             .processInstanceKey(processInstanceKey)

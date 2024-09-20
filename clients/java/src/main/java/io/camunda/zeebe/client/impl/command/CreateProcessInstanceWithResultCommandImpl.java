@@ -22,6 +22,8 @@ import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.Cre
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.CreateProcessInstanceWithResultResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -35,6 +37,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CreateProcessInstanceWithResultCommandImpl
     implements CreateProcessInstanceWithResultCommandStep1 {
@@ -43,35 +46,69 @@ public final class CreateProcessInstanceWithResultCommandImpl
   private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
   private final CreateProcessInstanceRequest.Builder createProcessInstanceRequestBuilder;
-  private final Builder builder;
+  private final Builder grpcRequestObject;
   private final Predicate<StatusCode> retryPredicate;
   private Duration requestTimeout;
+  private final boolean useRest;
+  private final HttpClient httpClient;
+  private final RequestConfig.Builder httpRequestConfig;
+  private final io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest
+      httpRequestObject;
 
   public CreateProcessInstanceWithResultCommandImpl(
       final JsonMapper jsonMapper,
       final GatewayStub asyncStub,
-      final CreateProcessInstanceRequest.Builder builder,
+      final CreateProcessInstanceRequest.Builder grpcRequestObject,
       final Predicate<StatusCode> retryPredicate,
-      final Duration requestTimeout) {
+      final Duration requestTimeout,
+      final HttpClient httpClient,
+      final boolean preferRestOverGrpc,
+      final io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest httpRequestObject) {
     this.jsonMapper = jsonMapper;
     this.asyncStub = asyncStub;
-    createProcessInstanceRequestBuilder = builder;
+    createProcessInstanceRequestBuilder = grpcRequestObject;
     this.retryPredicate = retryPredicate;
     this.requestTimeout = requestTimeout;
-    this.builder = CreateProcessInstanceWithResultRequest.newBuilder();
+    this.grpcRequestObject = CreateProcessInstanceWithResultRequest.newBuilder();
+    this.httpRequestObject = httpRequestObject.awaitCompletion(true);
+    this.httpClient = httpClient;
+    httpRequestConfig = httpClient.newRequestConfig();
+    useRest = preferRestOverGrpc;
+    requestTimeout(requestTimeout);
   }
 
   @Override
   public FinalCommandStep<ProcessInstanceResult> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
-    builder.setRequestTimeout(requestTimeout.toMillis());
+    grpcRequestObject.setRequestTimeout(requestTimeout.toMillis());
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
   public ZeebeFuture<ProcessInstanceResult> send() {
+    if (useRest) {
+      return sendRestRequest();
+    } else {
+      return sendGrpcRequest();
+    }
+  }
+
+  private ZeebeFuture<ProcessInstanceResult> sendRestRequest() {
+    final HttpZeebeFuture<ProcessInstanceResult> result = new HttpZeebeFuture<>();
+    httpClient.post(
+        "/process-instances",
+        jsonMapper.toJson(httpRequestObject),
+        httpRequestConfig.build(),
+        io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceResponse.class,
+        response -> new CreateProcessInstanceWithResultResponseImpl(jsonMapper, response),
+        result);
+    return result;
+  }
+
+  private ZeebeFuture<ProcessInstanceResult> sendGrpcRequest() {
     final CreateProcessInstanceWithResultRequest request =
-        builder
+        grpcRequestObject
             .setRequest(createProcessInstanceRequestBuilder)
             .setRequestTimeout(requestTimeout.toMillis())
             .build();
@@ -81,13 +118,13 @@ public final class CreateProcessInstanceWithResultCommandImpl
             new RetriableClientFutureImpl<>(
                 response -> new CreateProcessInstanceWithResultResponseImpl(jsonMapper, response),
                 retryPredicate,
-                streamObserver -> send(request, streamObserver));
+                streamObserver -> sendGrpcRequest(request, streamObserver));
 
-    send(request, future);
+    sendGrpcRequest(request, future);
     return future;
   }
 
-  private void send(
+  private void sendGrpcRequest(
       final CreateProcessInstanceWithResultRequest request,
       final StreamObserver<GatewayOuterClass.CreateProcessInstanceWithResultResponse> future) {
     asyncStub
@@ -98,20 +135,33 @@ public final class CreateProcessInstanceWithResultCommandImpl
   @Override
   public CreateProcessInstanceWithResultCommandStep1 fetchVariables(
       final List<String> fetchVariables) {
-    builder.addAllFetchVariables(fetchVariables);
+    grpcRequestObject.addAllFetchVariables(fetchVariables);
+    httpRequestObject.setFetchVariables(fetchVariables);
     return this;
   }
 
   @Override
   public CreateProcessInstanceWithResultCommandStep1 fetchVariables(
       final String... fetchVariables) {
-    builder.addAllFetchVariables(Arrays.asList(fetchVariables));
+    grpcRequestObject.addAllFetchVariables(Arrays.asList(fetchVariables));
+    httpRequestObject.setFetchVariables(Arrays.asList(fetchVariables));
     return this;
   }
 
   @Override
   public CreateProcessInstanceWithResultCommandStep1 tenantId(final String tenantId) {
     // todo(#13536): replace dummy implementation
+    httpRequestObject.setTenantId(tenantId);
     return this;
+  }
+
+  @Override
+  public CreateProcessInstanceWithResultCommandStep1 useRest() {
+    return null;
+  }
+
+  @Override
+  public CreateProcessInstanceWithResultCommandStep1 useGrpc() {
+    return null;
   }
 }

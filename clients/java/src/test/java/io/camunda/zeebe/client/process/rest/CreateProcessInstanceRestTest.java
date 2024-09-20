@@ -13,54 +13,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.process;
+package io.camunda.zeebe.client.process.rest;
 
 import static io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.LATEST_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
+import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.client.util.ClientTest;
-import io.camunda.zeebe.client.util.JsonUtil;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
+import io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest;
+import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceCreationStartInstruction;
+import io.camunda.zeebe.client.util.ClientRestTest;
+import io.camunda.zeebe.client.util.RestGatewayPaths;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public final class CreateProcessInstanceTest extends ClientTest {
+public class CreateProcessInstanceRestTest extends ClientRestTest {
 
   public static final String ELEMENT_ID_A = "elementId_A";
   public static final String ELEMENT_ID_B = "elementId_B";
 
   @Test
   public void shouldCreateProcessInstanceByProcessInstanceKey() {
-    // given
-    gatewayService.onCreateProcessInstanceRequest(123, "testProcess", 12, 32);
-
     // when
     final ProcessInstanceEvent response =
         client.newCreateInstanceCommand().processDefinitionKey(123).send().join();
 
     // then
-    assertThat(response.getProcessDefinitionKey()).isEqualTo(123);
-    assertThat(response.getBpmnProcessId()).isEqualTo("testProcess");
-    assertThat(response.getVersion()).isEqualTo(12);
-    assertThat(response.getProcessInstanceKey()).isEqualTo(32);
-    assertThat(response.getTenantId()).isEqualTo("");
-
-    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceRequest request =
+        gatewayService.getLastRequest(CreateProcessInstanceRequest.class);
     assertThat(request.getProcessDefinitionKey()).isEqualTo(123);
-
-    rule.verifyDefaultRequestTimeout();
   }
 
   @Test
@@ -69,7 +59,8 @@ public final class CreateProcessInstanceTest extends ClientTest {
     client.newCreateInstanceCommand().bpmnProcessId("testProcess").latestVersion().send().join();
 
     // then
-    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceRequest request =
+        gatewayService.getLastRequest(CreateProcessInstanceRequest.class);
     assertThat(request.getBpmnProcessId()).isEqualTo("testProcess");
     assertThat(request.getVersion()).isEqualTo(LATEST_VERSION);
   }
@@ -80,7 +71,8 @@ public final class CreateProcessInstanceTest extends ClientTest {
     client.newCreateInstanceCommand().bpmnProcessId("testProcess").version(123).send().join();
 
     // then
-    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceRequest request =
+        gatewayService.getLastRequest(CreateProcessInstanceRequest.class);
     assertThat(request.getBpmnProcessId()).isEqualTo("testProcess");
     assertThat(request.getVersion()).isEqualTo(123);
   }
@@ -96,9 +88,9 @@ public final class CreateProcessInstanceTest extends ClientTest {
         .join();
 
     // then
-    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
-    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
-        .containsOnly(entry("foo", "bar"));
+    final CreateProcessInstanceRequest request =
+        gatewayService.getLastRequest(CreateProcessInstanceRequest.class);
+    Assertions.assertThat(request.getVariables()).containsOnly(entry("foo", "bar"));
   }
 
   @Test
@@ -117,9 +109,9 @@ public final class CreateProcessInstanceTest extends ClientTest {
         .join();
 
     // then
-    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
-    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
-        .containsOnly(entry("foo", "bar"));
+    final CreateProcessInstanceRequest request =
+        gatewayService.getLastRequest(CreateProcessInstanceRequest.class);
+    Assertions.assertThat(request.getVariables()).containsOnly(entry("foo", "bar"));
   }
 
   @Test
@@ -132,9 +124,9 @@ public final class CreateProcessInstanceTest extends ClientTest {
     client.newCreateInstanceCommand().processDefinitionKey(123).variable(key, value).send().join();
 
     // then
-    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
-    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
-        .containsOnly(entry(key, value));
+    final CreateProcessInstanceRequest request =
+        gatewayService.getLastRequest(CreateProcessInstanceRequest.class);
+    Assertions.assertThat(request.getVariables()).containsOnly(entry(key, value));
   }
 
   @Test
@@ -148,9 +140,9 @@ public final class CreateProcessInstanceTest extends ClientTest {
         .join();
 
     // then
-    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
-    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
-        .containsOnly(entry("foo", "bar"));
+    final CreateProcessInstanceRequest request =
+        gatewayService.getLastRequest(CreateProcessInstanceRequest.class);
+    Assertions.assertThat(request.getVariables()).containsOnly(entry("foo", "bar"));
   }
 
   @Test
@@ -159,44 +151,28 @@ public final class CreateProcessInstanceTest extends ClientTest {
     client
         .newCreateInstanceCommand()
         .processDefinitionKey(123)
-        .variables(new VariableDocument())
+        .variables(new CreateProcessInstanceRestTest.VariableDocument())
         .send()
         .join();
 
     // then
-    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
-    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
-        .containsOnly(entry("foo", "bar"));
+    final CreateProcessInstanceRequest request =
+        gatewayService.getLastRequest(CreateProcessInstanceRequest.class);
+    Assertions.assertThat(request.getVariables()).containsOnly(entry("foo", "bar"));
   }
 
   @Test
   public void shouldRaiseAnErrorIfRequestFails() {
     // given
     gatewayService.errorOnRequest(
-        CreateProcessInstanceRequest.class, () -> new ClientException("Invalid request"));
+        RestGatewayPaths.getCreateProcessInstanceUrl(),
+        () -> new ProblemDetail().title("Invalid request").status(400));
 
     // when
     assertThatThrownBy(
             () -> client.newCreateInstanceCommand().processDefinitionKey(123).send().join())
-        .isInstanceOf(ClientException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Invalid request");
-  }
-
-  @Test
-  public void shouldSetRequestTimeout() {
-    // given
-    final Duration requestTimeout = Duration.ofHours(124);
-
-    // when
-    client
-        .newCreateInstanceCommand()
-        .processDefinitionKey(123)
-        .requestTimeout(requestTimeout)
-        .send()
-        .join();
-
-    // then
-    rule.verifyRequestTimeout(requestTimeout);
   }
 
   @Test
@@ -210,10 +186,11 @@ public final class CreateProcessInstanceTest extends ClientTest {
         .join();
 
     // then
-    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceRequest request =
+        gatewayService.getLastRequest(CreateProcessInstanceRequest.class);
 
     final List<ProcessInstanceCreationStartInstruction> startInstructionList =
-        request.getStartInstructionsList();
+        request.getStartInstructions();
     assertThat(startInstructionList).hasSize(1);
     final ProcessInstanceCreationStartInstruction startInstructionA = startInstructionList.get(0);
     assertThat(startInstructionA.getElementId()).isEqualTo(ELEMENT_ID_A);
@@ -231,10 +208,11 @@ public final class CreateProcessInstanceTest extends ClientTest {
         .join();
 
     // then
-    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceRequest request =
+        gatewayService.getLastRequest(CreateProcessInstanceRequest.class);
 
     final List<ProcessInstanceCreationStartInstruction> startInstructionList =
-        request.getStartInstructionsList();
+        request.getStartInstructions();
     assertThat(startInstructionList).hasSize(2);
     final ProcessInstanceCreationStartInstruction startInstructionA = startInstructionList.get(0);
     assertThat(startInstructionA.getElementId()).isEqualTo(ELEMENT_ID_A);
@@ -248,7 +226,8 @@ public final class CreateProcessInstanceTest extends ClientTest {
     client.newCreateInstanceCommand().bpmnProcessId("test").latestVersion().send().join();
 
     // then
-    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceRequest request =
+        gatewayService.getLastRequest(CreateProcessInstanceRequest.class);
     assertThat(request.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
@@ -268,7 +247,8 @@ public final class CreateProcessInstanceTest extends ClientTest {
         .join();
 
     // then
-    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceRequest request =
+        gatewayService.getLastRequest(CreateProcessInstanceRequest.class);
     assertThat(request.getTenantId()).isEqualTo(tenantId);
   }
 
@@ -289,7 +269,8 @@ public final class CreateProcessInstanceTest extends ClientTest {
         .join();
 
     // then
-    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceRequest request =
+        gatewayService.getLastRequest(CreateProcessInstanceRequest.class);
     assertThat(request.getTenantId()).isEqualTo(tenantId);
   }
 
@@ -308,7 +289,8 @@ public final class CreateProcessInstanceTest extends ClientTest {
         .join();
 
     // then
-    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceRequest request =
+        gatewayService.getLastRequest(CreateProcessInstanceRequest.class);
     assertThat(request.getTenantId()).isEqualTo(customTenantId);
     assertThat(request.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
   }
