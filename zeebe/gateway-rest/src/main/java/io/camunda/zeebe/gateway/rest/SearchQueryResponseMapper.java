@@ -180,7 +180,13 @@ public final class SearchQueryResponseMapper {
   }
 
   public static ProcessDefinitionItem toProcessDefinition(final ProcessDefinitionEntity entity) {
-    return new ProcessDefinitionItem();
+    return new ProcessDefinitionItem()
+        .processDefinitionKey(entity.key())
+        .processName(entity.name())
+        .processVersion(entity.version())
+        .processVersionTag(entity.versionTag())
+        .bpmnProcessId(entity.bpmnProcessId())
+        .tenantId(entity.tenantId());
   }
 
   private static List<ProcessInstanceItem> toProcessInstances(
