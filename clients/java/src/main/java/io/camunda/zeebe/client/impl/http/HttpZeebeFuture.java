@@ -60,7 +60,7 @@ public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements 
     try {
       return super.get(timeout, unit);
     } catch (final ExecutionException e) {
-      throw new ClientException(e);
+      throw unwrapExecutionException(e);
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new ClientException("Failed: interrupted while awaiting response", e);
