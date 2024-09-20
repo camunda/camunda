@@ -658,7 +658,7 @@ paths:
       responses:
         "200":
           description: >
-            The Process Definition Search successful response.
+            The process definition search successful response.
           content:
             application/json:
               schema:
