@@ -46,7 +46,7 @@ public class CancelProcessInstanceRestTest extends ClientRestTest {
         () -> new ProblemDetail().title("Invalid request").status(400));
 
     assertThatThrownBy(() -> client.newCancelInstanceCommand(123).send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Invalid request");
   }
 }

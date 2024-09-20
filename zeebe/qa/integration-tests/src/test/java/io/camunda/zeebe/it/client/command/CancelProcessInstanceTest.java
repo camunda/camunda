@@ -80,7 +80,7 @@ public final class CancelProcessInstanceTest {
     // then
     if (useRest) {
       assertThatThrownBy(command::join)
-          .hasCauseInstanceOf(ProblemException.class)
+          .isInstanceOf(ProblemException.class)
           .hasMessageContaining(
               String.format(
                   "Expected to cancel a process instance with key '%s', but no such process was found",
@@ -112,7 +112,7 @@ public final class CancelProcessInstanceTest {
     // then
     if (useRest) {
       assertThatThrownBy(command::join)
-          .hasCauseInstanceOf(ProblemException.class)
+          .isInstanceOf(ProblemException.class)
           .hasMessageContaining(
               String.format(
                   "Expected to cancel a process instance with key '%s', but no such process was found",

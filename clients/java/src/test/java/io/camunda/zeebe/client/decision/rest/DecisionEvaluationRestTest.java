@@ -232,7 +232,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
     // then
     assertThatThrownBy(
             () -> client.newEvaluateDecisionCommand().decisionKey(DECISION_KEY).send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Invalid request");
   }
 

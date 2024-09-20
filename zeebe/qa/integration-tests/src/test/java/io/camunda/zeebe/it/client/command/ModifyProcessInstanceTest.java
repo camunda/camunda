@@ -211,7 +211,7 @@ public class ModifyProcessInstanceTest {
     // then
     if (useRest) {
       assertThatThrownBy(command::join)
-          .hasCauseInstanceOf(ProblemException.class)
+          .isInstanceOf(ProblemException.class)
           .hasMessageContaining(
               String.format(
                   "Expected to modify process instance but no process instance found with key '%d'",

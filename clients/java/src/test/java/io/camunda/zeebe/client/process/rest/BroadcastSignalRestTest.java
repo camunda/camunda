@@ -122,7 +122,7 @@ public class BroadcastSignalRestTest extends ClientRestTest {
 
     // when
     assertThatThrownBy(() -> client.newBroadcastSignalCommand().signalName("name").send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Invalid request");
   }
 
