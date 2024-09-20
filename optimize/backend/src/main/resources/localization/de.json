@@ -26,8 +26,8 @@
     "imprint": "Impressum",
     "academy": "Camunda Academy",
     "feedback": "Feedback und Support",
-    "opensearchPreview": "Opensearch Vorschauversion",
-    "opensearchWarningText": "Dies ist eine Vorschauversion von Optimize mit OpenSearch-Unterstützung. Der Datenimport ist voll funktionsfähig, jedoch befinden sich die Datenvisualisierungs- und Auswertungsfunktionen in einem experimentellen Stadium und sollten nicht für Produktionszwecke verwendet werden."
+    "opensearchPreview": "OpenSearch Release Informationen",
+    "opensearchWarningText": "Diese Optimize-Version für OpenSearch kann in Produktionsumgebungen genutzt werden. Der Datenimport ist vollständig funktionsfähig, jedoch sind die Datenvisualisierungs- und Berichtsauswertungsfunktionen eingeschränkt."
   },
   "login": {
     "label": "Einloggen",
