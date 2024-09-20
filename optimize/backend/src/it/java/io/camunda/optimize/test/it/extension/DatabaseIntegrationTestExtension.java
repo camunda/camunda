@@ -69,6 +69,19 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     this(null, haveToClean);
   }
 
+  public void cleanSnapshots(final String snapshotRepositoryName) {
+    databaseTestService.cleanSnapshots(snapshotRepositoryName);
+  }
+
+  public void createRepoSnapshot(final String snapshotRepositoryName) {
+    databaseTestService.createRepoSnapshot(snapshotRepositoryName);
+  }
+
+  public void createSnapshot(
+      final String snapshotRepositoryName, final String snapshotName, final String[] indexNames) {
+    databaseTestService.createSnapshot(snapshotRepositoryName, snapshotName, indexNames);
+  }
+
   public DatabaseIntegrationTestExtension(final String customIndexPrefix) {
     this(customIndexPrefix, true);
   }
