@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 public class EvaluatedDecisionImpl implements EvaluatedDecision {
 
-  @JsonIgnore private JsonMapper jsonMapper;
+  @JsonIgnore private final JsonMapper jsonMapper;
   private final String decisionId;
   private final long decisionKey;
   private final int decisionVersion;
@@ -39,7 +39,9 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
   private final List<EvaluatedDecisionInput> evaluatedInputs = new ArrayList<>();
   private final String tenantId;
 
-  public EvaluatedDecisionImpl(final EvaluatedDecisionItem evaluatedDecisionItem) {
+  public EvaluatedDecisionImpl(
+      final EvaluatedDecisionItem evaluatedDecisionItem, final JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
     decisionId = evaluatedDecisionItem.getDecisionId();
     decisionKey = evaluatedDecisionItem.getDecisionKey();
     decisionVersion = evaluatedDecisionItem.getDecisionVersion();
@@ -78,7 +80,7 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
     }
     evaluatedInputs.addAll(
         evaluatedDecisionItem.getEvaluatedInputs().stream()
-            .map(EvaluatedDecisionInputImpl::new)
+            .map(input -> new EvaluatedDecisionInputImpl(input, jsonMapper))
             .collect(Collectors.toList()));
   }
 
@@ -88,7 +90,7 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
     }
     matchedRules.addAll(
         evaluatedDecisionItem.getMatchedRules().stream()
-            .map(MatchedDecisionRuleImpl::new)
+            .map(rule -> new MatchedDecisionRuleImpl(rule, jsonMapper))
             .collect(Collectors.toList()));
   }
 

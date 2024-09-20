@@ -27,12 +27,14 @@ import java.util.stream.Collectors;
 
 public class MatchedDecisionRuleImpl implements MatchedDecisionRule {
 
-  @JsonIgnore private JsonMapper jsonMapper;
+  @JsonIgnore private final JsonMapper jsonMapper;
   private final String ruleId;
   private final int ruleIndex;
   private final List<EvaluatedDecisionOutput> evaluatedOutputs = new ArrayList<>();
 
-  public MatchedDecisionRuleImpl(final MatchedDecisionRuleItem ruleItem) {
+  public MatchedDecisionRuleImpl(
+      final MatchedDecisionRuleItem ruleItem, final JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
     ruleId = ruleItem.getRuleId();
     ruleIndex = ruleItem.getRuleIndex();
     buildDecisionOutput(ruleItem);

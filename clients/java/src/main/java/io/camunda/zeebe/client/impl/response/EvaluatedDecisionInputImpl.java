@@ -28,7 +28,9 @@ public class EvaluatedDecisionInputImpl implements EvaluatedDecisionInput {
   private final String inputName;
   private final String inputValue;
 
-  public EvaluatedDecisionInputImpl(final EvaluatedDecisionInputItem item) {
+  public EvaluatedDecisionInputImpl(
+      final EvaluatedDecisionInputItem item, final JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
     inputId = item.getInputId();
     inputName = item.getInputName();
     inputValue = item.getInputValue();

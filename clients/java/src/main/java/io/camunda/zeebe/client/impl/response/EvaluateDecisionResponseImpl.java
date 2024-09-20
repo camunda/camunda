@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
 
-  @JsonIgnore private JsonMapper jsonMapper;
+  @JsonIgnore private final JsonMapper jsonMapper;
   private final String decisionId;
   private final long decisionKey;
   private final int decisionVersion;
@@ -41,7 +41,9 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
   private final long decisionInstanceKey;
 
   public EvaluateDecisionResponseImpl(
-      final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse response) {
+      final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse response,
+      final JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
     decisionId = response.getDecisionId();
     decisionKey = response.getDecisionKey();
     decisionVersion = response.getDecisionVersion();
@@ -84,7 +86,7 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
     }
     evaluatedDecisions.addAll(
         response.getEvaluatedDecisions().stream()
-            .map(EvaluatedDecisionImpl::new)
+            .map(decision -> new EvaluatedDecisionImpl(decision, jsonMapper))
             .collect(Collectors.toList()));
   }
 

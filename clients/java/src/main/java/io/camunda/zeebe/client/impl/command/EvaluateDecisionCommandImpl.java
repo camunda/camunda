@@ -154,7 +154,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse.class,
-        EvaluateDecisionResponseImpl::new,
+        response -> new EvaluateDecisionResponseImpl(response, jsonMapper),
         result);
     return result;
   }
