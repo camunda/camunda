@@ -34,7 +34,8 @@ public class ProcessDefinitionSearchQueryStub implements RequestStub<ProcessDefi
     }
 
     final var processDefinition =
-        new ProcessDefinitionEntity(1L, "CAFE", "black-coffee", "cafe.bpmn", 2L, "alpha");
+        new ProcessDefinitionEntity(
+            1L, "CAFE", "black-coffee", "cafe.bpmn", 2, "alpha", "<default>");
 
     final SearchQueryHit<ProcessDefinitionEntity> hit =
         new SearchQueryHit.Builder<ProcessDefinitionEntity>()

@@ -12,5 +12,6 @@ public record ProcessDefinitionEntity(
     String name,
     String bpmnProcessId,
     String resourceName,
-    Long version,
-    String versionTag) {}
+    Integer version,
+    String versionTag,
+    String tenantId) {}
