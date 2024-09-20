@@ -150,7 +150,7 @@ public final class SetVariablesTest {
 
     // then
     final String expectedMessage =
-        "Expected to execute command on partition 0, but either it does not exist, or the gateway is not yet aware of it";
+        "Expected to handle REST API request, but request could not be delivered";
     assertThatThrownBy(command::join).hasMessageContaining(expectedMessage);
   }
 
