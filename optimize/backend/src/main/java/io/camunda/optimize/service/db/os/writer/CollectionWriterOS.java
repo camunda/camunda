@@ -36,6 +36,7 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.Script;
@@ -277,9 +278,19 @@ public class CollectionWriterOS implements CollectionWriter {
         OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
             UPDATE_ROLE_IN_COLLECTION_SCRIPT_CODE, params);
 
-    final UpdateResponse updateResponse =
-        executeUpdateRequest(
-            collectionId, addEntityScript, "Was not able to update collection with id [%s].");
+    final UpdateResponse updateResponse;
+    try {
+      updateResponse =
+          executeUpdateRequest(
+              collectionId, addEntityScript, "Was not able to update collection with id [%s].");
+    } catch (final OpenSearchException e) {
+      final String errorMessage =
+          String.format(
+              "Was not able to update role with id [%s] on collection with id [%s]. Collection or role does not exist!",
+              roleEntryId, collectionId);
+      log.error(errorMessage, e);
+      throw new NotFoundException(errorMessage, e);
+    }
 
     if (updateResponse.result().equals(Result.NoOp)) {
       final String message =
@@ -350,11 +361,21 @@ public class CollectionWriterOS implements CollectionWriter {
         OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
             REMOVE_ROLE_FROM_COLLECTION_UNLESS_IS_LAST_MANAGER, params);
 
-    final UpdateResponse updateResponse =
-        executeUpdateRequest(
-            collectionId,
-            addEntityScript,
-            "Was not able to delete role from collection with id [%s].");
+    final UpdateResponse updateResponse;
+    try {
+      updateResponse =
+          executeUpdateRequest(
+              collectionId,
+              addEntityScript,
+              "Was not able to delete role from collection with id [%s].");
+    } catch (final OpenSearchException e) {
+      final String errorMessage =
+          String.format(
+              "Was not able to update role with id [%s] on collection with id [%s]. Collection or role does not exist!",
+              roleEntryId, collectionId);
+      log.error(errorMessage, e);
+      throw new NotFoundException(errorMessage, e);
+    }
 
     if (updateResponse.result() == Result.NoOp) {
       final String message =
