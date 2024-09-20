@@ -40,7 +40,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
-import org.springframework.web.servlet.View;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
@@ -53,7 +52,6 @@ public class ErrorMapperTest {
 
   @MockBean BrokerClient brokerClient;
   Supplier<CompletableFuture<BrokerResponse<Object>>> brokerResponseFutureSupplier;
-  @Autowired private View error;
 
   @Autowired private WebTestClient webClient;
 
@@ -262,7 +260,7 @@ public class ErrorMapperTest {
   }
 
   @Test
-  public void shouldReturnGatewayTimeoutOnConnectionClosed() {
+  public void shouldReturnBadGatewayOnConnectionClosed() {
     // given
     final var errorMsg = "Oh noes, connection closed!";
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
@@ -271,7 +269,7 @@ public class ErrorMapperTest {
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
-            HttpStatus.GATEWAY_TIMEOUT,
+            HttpStatus.BAD_GATEWAY,
             "Expected to handle REST API request, but the connection was cut prematurely with the broker; "
                 + "the request may or may not have been accepted, and may not be safe to retry");
     expectedBody.setTitle(ConnectionClosed.class.getName());
@@ -286,7 +284,7 @@ public class ErrorMapperTest {
         .body(Mono.just(request), UserTaskCompletionRequest.class)
         .exchange()
         .expectStatus()
-        .isEqualTo(HttpStatus.GATEWAY_TIMEOUT)
+        .isEqualTo(HttpStatus.BAD_GATEWAY)
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody(ProblemDetail.class)
