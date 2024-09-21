@@ -2,12 +2,12 @@
 # This Dockerfile requires BuildKit to be enabled, by setting the environment variable
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
-# We use the ubuntu release name only as otherwise renovate fails to update the tag & both digests
-# see https://github.com/camunda/zeebe/pull/14071#discussion_r1311176361
-ARG BASE_IMAGE="ubuntu:jammy"
-ARG BASE_DIGEST="sha256:58b87898e82351c6cf9cf5b9f3c20257bb9e2dcf33af051e12ce532d7f94e3fe"
-ARG JDK_IMAGE="eclipse-temurin:17-jdk-jammy"
-ARG JDK_DIGEST="sha256:d41eff8f20494968aaa1f5bbea4547303076b915d38f7d642441bd16538b45e3"
+# Both ubuntu and eclipse-temurin are pinned via digest and not by a strict version tag, as Renovate
+# has trouble with custom versioning schemes
+ARG BASE_IMAGE="ubuntu:noble"
+ARG BASE_DIGEST="sha256:dfc10878be8d8fc9c61cbff33166cb1d1fe44391539243703c72766894fa834a"
+ARG JDK_IMAGE="eclipse-temurin:17-jdk-noble"
+ARG JDK_DIGEST="sha256:9cf6a3ddf658fd87970dbaa1192fc23af49a025c8206315c458b3e40ae2707f0"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
@@ -152,7 +152,7 @@ VOLUME ${ZB_HOME}/data
 VOLUME ${ZB_HOME}/logs
 
 RUN groupadd -g 1000 zeebe && \
-    adduser -u 1000 zeebe --system --ingroup zeebe && \
+    useradd -u 1000 zeebe --system --gid 1000 && \
     chmod g=u /etc/passwd && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
     # helps to avoid potential permission issues due to default volume ownership.
