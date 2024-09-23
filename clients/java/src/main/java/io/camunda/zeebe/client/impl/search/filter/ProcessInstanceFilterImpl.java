@@ -15,16 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.search.filter;
 
-import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.variableValueFilter;
-
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
-import io.camunda.zeebe.client.api.search.filter.VariableValueFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.impl.util.CollectionUtil;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.VariableValueFilterRequest;
-import java.util.List;
-import java.util.function.Consumer;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
 
 public class ProcessInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<ProcessInstanceFilterRequest>
@@ -37,26 +31,93 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter processInstanceKeys(final Long... values) {
-    return processInstanceKeys(CollectionUtil.toList(values));
-  }
-
-  @Override
-  public ProcessInstanceFilter processInstanceKeys(final List<Long> values) {
-    filter.setKey(CollectionUtil.addValuesToList(filter.getKey(), values));
+  public ProcessInstanceFilter key(Long key) {
+    filter.setKey(key);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter variable(final VariableValueFilter value) {
-    final VariableValueFilterRequest variableFilter = provideSearchRequestProperty(value);
-    filter.addVariablesItem(variableFilter);
+  public ProcessInstanceFilter bpmnProcessId(String bpmnProcessId) {
+    filter.setBpmnProcessId(bpmnProcessId);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter variable(final Consumer<VariableValueFilter> fn) {
-    return variable(variableValueFilter(fn));
+  public ProcessInstanceFilter processName(String processName) {
+    filter.setProcessName(processName);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter processVersion(Integer processVersion) {
+    filter.setProcessVersion(processVersion);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter processVersionTag(String processVersionTag) {
+    filter.setProcessVersionTag(processVersionTag);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter processDefinitionKey(Long processDefinitionKey) {
+    filter.setProcessDefinitionKey(processDefinitionKey);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter rootProcessInstanceKey(Long rootProcessInstanceKey) {
+    filter.setRootProcessInstanceKey(rootProcessInstanceKey);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter parentProcessInstanceKey(Long parentProcessInstanceKey) {
+    filter.setParentProcessInstanceKey(parentProcessInstanceKey);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter parentFlowNodeInstanceKey(Long parentFlowNodeInstanceKey) {
+    filter.setParentFlowNodeInstanceKey(parentFlowNodeInstanceKey);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter treePath(String treePath) {
+    filter.setTreePath(treePath);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter startDate(String startDate) {
+    filter.setStartDate(startDate);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter endDate(String endDate) {
+    filter.setEndDate(endDate);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter state(String state) {
+    filter.setState((state == null) ? null : ProcessInstanceStateEnum.fromValue(state));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter incident(Boolean incident) {
+    filter.setIncident(incident);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter tenantId(final String tenantId) {
+    filter.setTenantId(tenantId);
+    return this;
   }
 
   @Override

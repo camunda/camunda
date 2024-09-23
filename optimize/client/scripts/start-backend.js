@@ -6,24 +6,31 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const {spawn} = require('child_process');
-const path = require('path');
-const os = require('os');
-const fetch = require('node-fetch');
-const fs = require('fs');
-const xml2js = require('xml2js');
+import {spawn} from 'child_process';
+import {resolve as _resolve, dirname} from 'path';
+import {platform} from 'os';
+import {readFile} from 'fs';
+import {parseString} from 'xml2js';
+import {fileURLToPath} from 'url';
+import {config} from 'dotenv';
 
-const createServer = require('./managementServer/server.js');
+import createServer from './managementServer/server.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // argument to determine if we are in CI mode
 const ciMode = process.argv.indexOf('ci') > -1;
 if (!ciMode) {
-  require('dotenv').config();
+  config();
 }
 
 let mode = 'self-managed';
+let database = 'elasticsearch';
 if (process.argv.indexOf('cloud') > -1) {
   mode = 'cloud';
+}
+if (process.argv.indexOf('opensearch') > -1) {
+  database = 'opensearch';
 }
 
 // if we are in ci mode we assume data generation is already complete
@@ -34,11 +41,13 @@ let dockerProcess;
 
 let backendVersion;
 let elasticSearchVersion;
+let opensearchVersion;
 let zeebeVersion;
 let identityVersion;
 
 const commonEnv = {
   OPTIMIZE_API_ACCESS_TOKEN: 'secret',
+  CAMUNDA_OPTIMIZE_DATABASE: database,
 };
 
 const cloudEnv = {
@@ -76,6 +85,8 @@ const selfManagedEnv = {
   CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL: 'http://localhost:8081/',
   OPTIMIZE_ELASTICSEARCH_HOST: 'localhost',
   OPTIMIZE_ELASTICSEARCH_HTTP_PORT: '9200',
+  OPTIMIZE_OPENSEARCH_HOST: 'localhost',
+  OPTIMIZE_OPENSEARCH_HTTP_PORT: '9200',
   CAMUNDA_OPTIMIZE_API_AUDIENCE: 'optimize',
   CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED: true,
   SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:
@@ -88,7 +99,7 @@ setVersionInfo().then(setupEnvironment).then(startBackend);
 
 function startBackend() {
   return new Promise((resolve, reject) => {
-    const pathSep = os.platform() === 'win32' ? ';' : ':';
+    const pathSep = platform() === 'win32' ? ';' : ':';
     const classPaths = [
       '../src/main/resources/',
       './lib/*',
@@ -104,7 +115,7 @@ function startBackend() {
     backendProcess = spawnWithArgs(
       `java -cp ${classPaths}  -Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m -Dfile.encoding=UTF-8 io.camunda.optimize.Main`,
       {
-        cwd: path.resolve(__dirname, '..', '..', 'backend', 'target'),
+        cwd: _resolve(__dirname, '..', '..', 'backend', 'target'),
         shell: true,
         env: {
           ...process.env,
@@ -148,7 +159,7 @@ async function setupEnvironment() {
   await Promise.all([
     startDocker(),
     buildBackend().catch(() => {
-      console.log('Optimize build interrupted');
+      console.err('Optimize build interrupted');
     }),
   ]);
 }
@@ -156,9 +167,9 @@ async function setupEnvironment() {
 function buildBackend() {
   return new Promise((resolve, reject) => {
     buildBackendProcess = spawnWithArgs(
-      'mvn clean install -DskipTests -Dskip.docker -Dskip.fe.build -pl optimize/backend -am',
+      'mvn clean install -DskipTests -Dskip.docker -Dskip.fe.build -pl optimize/backend -am -T1C',
       {
-        cwd: path.resolve(__dirname, '..', '..', '..'),
+        cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,
       }
     );
@@ -183,14 +194,19 @@ function startDocker() {
 
   return new Promise((resolve) => {
     dockerProcess = spawnWithArgs('docker-compose up --force-recreate --no-color', {
-      cwd: path.resolve(__dirname, '..'),
+      cwd: _resolve(__dirname, '..'),
       shell: true,
       env: {
         ...process.env, // https://github.com/nodejs/node/issues/12986#issuecomment-301101354
         ES_VERSION: elasticSearchVersion,
+        OS_VERSION: opensearchVersion,
         ZEEBE_VERSION: zeebeVersion,
         IDENTITY_VERSION: identityVersion,
-        COMPOSE_PROFILES: mode,
+        // we assume that the version of operate is the same as zeebe
+        OPERATE_VERSION: zeebeVersion,
+        // to start only the opensearch services, we create profiles for mode + database
+        // so we can better control which services are started
+        COMPOSE_PROFILES: [`${mode}:${database}`].join(','),
       },
     });
 
@@ -207,8 +223,8 @@ function startDocker() {
 
 function setVersionInfo() {
   return new Promise((resolve) => {
-    fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) => {
-      xml2js.parseString(data, {explicitArray: false}, (err, data) => {
+    readFile(_resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) => {
+      parseString(data, {explicitArray: false}, (err, data) => {
         if (err) {
           return console.error(err);
         }
@@ -216,6 +232,7 @@ function setVersionInfo() {
         backendVersion = data.project.version;
         const properties = data.project.properties;
         elasticSearchVersion = properties['elasticsearch.test.version'];
+        opensearchVersion = properties['opensearch.test.version'];
         zeebeVersion = properties['zeebe.version'];
         identityVersion = properties['identity.version'];
         resolve();
@@ -226,8 +243,12 @@ function setVersionInfo() {
 
 function stopDocker() {
   const dockerStopProcess = spawnWithArgs('docker-compose rm -sfv', {
-    cwd: path.resolve(__dirname, '..'),
+    cwd: _resolve(__dirname, '..'),
     shell: true,
+    env: {
+      // this ensures that all started containers are stopped
+      COMPOSE_PROFILES: [mode, database, `${mode}:${database}`].join(','),
+    },
   });
 
   dockerStopProcess.on('close', () => {

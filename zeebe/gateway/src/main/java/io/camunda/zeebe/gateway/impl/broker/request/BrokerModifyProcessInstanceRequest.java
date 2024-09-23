@@ -56,6 +56,12 @@ public final class BrokerModifyProcessInstanceRequest
     return this;
   }
 
+  public BrokerModifyProcessInstanceRequest addActivationInstructions(
+      final List<ProcessInstanceModificationActivateInstruction> instructions) {
+    instructions.forEach(requestDto::addActivateInstruction);
+    return this;
+  }
+
   private ProcessInstanceModificationVariableInstruction mapVariableInstruction(
       final VariableInstruction instruction) {
     return new ProcessInstanceModificationVariableInstruction()
@@ -71,6 +77,12 @@ public final class BrokerModifyProcessInstanceRequest
                 new ProcessInstanceModificationTerminateInstruction()
                     .setElementInstanceKey(terminateInstruction.getElementInstanceKey()))
         .forEach(requestDto::addTerminateInstruction);
+    return this;
+  }
+
+  public BrokerModifyProcessInstanceRequest addTerminationInstructions(
+      final List<ProcessInstanceModificationTerminateInstruction> instructions) {
+    instructions.forEach(requestDto::addTerminateInstruction);
     return this;
   }
 

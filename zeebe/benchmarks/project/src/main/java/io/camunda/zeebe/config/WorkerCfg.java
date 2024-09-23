@@ -25,10 +25,12 @@ public class WorkerCfg {
   private int capacity;
   private Duration pollingDelay;
   private Duration completionDelay;
-  private boolean completeJobsAsync;
   private String payloadPath;
   private boolean isStreamEnabled;
   private Duration timeout;
+  private boolean sendMessage = false;
+  private String messageName = "defaultMessage";
+  private String correlationKeyVariableName = "correlationKey-var";
 
   public String getJobType() {
     return jobType;
@@ -86,14 +88,6 @@ public class WorkerCfg {
     this.payloadPath = payloadPath;
   }
 
-  public boolean isCompleteJobsAsync() {
-    return completeJobsAsync;
-  }
-
-  public void setCompleteJobsAsync(final boolean completeJobsAsync) {
-    this.completeJobsAsync = completeJobsAsync;
-  }
-
   public boolean isStreamEnabled() {
     return isStreamEnabled;
   }
@@ -108,5 +102,29 @@ public class WorkerCfg {
 
   public void setTimeout(final Duration timeout) {
     this.timeout = timeout;
+  }
+
+  public boolean isSendMessage() {
+    return sendMessage;
+  }
+
+  public void setSendMessage(final boolean sendMessage) {
+    this.sendMessage = sendMessage;
+  }
+
+  public String getMessageName() {
+    return messageName;
+  }
+
+  public void setMessageName(final String messageName) {
+    this.messageName = messageName;
+  }
+
+  public String getCorrelationKeyVariableName() {
+    return correlationKeyVariableName;
+  }
+
+  public void setCorrelationKeyVariableName(final String correlationKeyVariableName) {
+    this.correlationKeyVariableName = correlationKeyVariableName;
   }
 }

@@ -1,5 +1,5 @@
-ARG BASE_IMAGE_NAME="alpine:3.20.2"
-ARG BASE_SHA="sha256:0a4eaa0eecf5f8c050e5bba433f58c052be7587ee8af3e8b3910ef9ab5fbe9f5"
+ARG BASE_IMAGE_NAME="alpine:3.20.3"
+ARG BASE_SHA="sha256:beefdbd8a1da6d2915566fde36db9db0b524eb737fc57cd1367effd16dc0d06d"
 
 FROM ${BASE_IMAGE_NAME}@${BASE_SHA} AS base
 WORKDIR /
@@ -65,7 +65,7 @@ EXPOSE 8090 8091
 
 VOLUME /tmp
 
-RUN apk add --no-cache bash curl tini openjdk17-jre tzdata && \
+RUN apk add --no-cache bash curl tini openjdk21-jre tzdata && \
     apk -U upgrade && \
     curl "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" --output /usr/local/bin/wait-for-it.sh && \
     chmod +x /usr/local/bin/wait-for-it.sh && \

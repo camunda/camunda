@@ -44,6 +44,7 @@ export function DownloadButton({
 }: DownloadButtonProps) {
   const [exportLimit, setExportLimit] = useState(1000);
   const [modalOpen, setModalOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const {mightFail} = useErrorHandling();
   const {generateDocsLink} = useDocs();
 
@@ -64,9 +65,14 @@ export function DownloadButton({
     }
   }
 
+  function startDownloadProcess() {
+    setIsDownloading(true);
+    return retriever ? retriever() : getData(href);
+  }
+
   function triggerDownload() {
     mightFail(
-      retriever ? retriever() : getData(href),
+      startDownloadProcess(),
       (data) => {
         const hiddenElement = document.createElement('a');
         hiddenElement.href = window.URL.createObjectURL(data);
@@ -74,7 +80,8 @@ export function DownloadButton({
         hiddenElement.click();
         setModalOpen(false);
       },
-      showError
+      showError,
+      () => setIsDownloading(false)
     );
   }
 
@@ -93,6 +100,7 @@ export function DownloadButton({
         iconDescription={t('report.downloadCSV').toString()}
         {...props}
         onClick={() => (totalCount > exportLimit ? setModalOpen(true) : triggerDownload())}
+        disabled={isDownloading}
       />
       <Modal open={modalOpen} onClose={closeModal} className="DownloadButtonConfirmationModal">
         <Modal.Header title={t('report.downloadCSV')} />
@@ -111,7 +119,9 @@ export function DownloadButton({
           <Button kind="secondary" onClick={closeModal}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={triggerDownload}>{t('common.download')}</Button>
+          <Button onClick={triggerDownload} disabled={isDownloading}>
+            {t('common.download')}
+          </Button>
         </Modal.Footer>
       </Modal>
     </>

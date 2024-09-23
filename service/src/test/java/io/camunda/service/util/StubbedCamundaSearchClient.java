@@ -14,11 +14,13 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class StubbedCamundaSearchClient implements CamundaSearchClient {
 
-  private SearchRequestHandler<?> searchRequestHandler;
+  private final Map<Class<?>, SearchRequestHandler<?>> searchRequestHandlerMap = new HashMap<>();
   private final List<SearchQueryRequest> searchRequests = new ArrayList<>();
 
   public StubbedCamundaSearchClient() {}
@@ -29,7 +31,8 @@ public class StubbedCamundaSearchClient implements CamundaSearchClient {
     searchRequests.add(searchRequest);
 
     try {
-      final SearchQueryResponse response = searchRequestHandler.handle(searchRequest);
+      final SearchQueryResponse response =
+          searchRequestHandlerMap.get(documentClass).handle(searchRequest);
       return Either.right(response);
     } catch (final Exception e) {
       return Either.left(e);
@@ -46,8 +49,8 @@ public class StubbedCamundaSearchClient implements CamundaSearchClient {
   }
 
   public <DocumentT> void registerHandler(
-      final SearchRequestHandler<DocumentT> searchRequestHandler) {
-    this.searchRequestHandler = searchRequestHandler;
+      final SearchRequestHandler<DocumentT> searchRequestHandler, Class<DocumentT> documentClass) {
+    this.searchRequestHandlerMap.put(documentClass, searchRequestHandler);
   }
 
   @Override

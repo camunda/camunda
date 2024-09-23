@@ -83,7 +83,7 @@ jobs:
   scan:
     name: Snyk Scan
     # Run on self-hosted to make building Zeebe much faster
-    runs-on: [ self-hosted, linux, amd64, "16" ]
+    runs-on: gcp-perf-core-8-default
     permissions:
       security-events: write # required to upload SARIF files
     steps:
@@ -177,10 +177,6 @@ jobs:
           #
           # Since the snyk CLI here pass the command as a string, any parenthesis will break the eval
           # call. As such, we need to double escape the `--project-name` in single quotes
-          PROJECT_NAME="zeebe(${TARGET}):clients/go/go.mod"
-          ensureExists "clients/go/go.mod"
-          snyk "${SNYK_COMMAND}" --file=clients/go/go.mod "'--project-name=${PROJECT_NAME}'" ${SNYK_ARGS} "$(output "${SARIF}" 'go')" || exitCode=1
-
           for project in "${JAVA_PROJECTS[@]}"; do
             PROJECT_NAME="zeebe(${TARGET}):${project}/pom.xml"
             ensureExists "${project}/pom.xml"
@@ -207,3 +203,12 @@ jobs:
             ## Result Links
             - [Snyk projects](https://app.snyk.io/org/team-zeebe/projects)
           EOF
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

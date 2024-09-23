@@ -7,19 +7,14 @@
  */
 package io.camunda.optimize.service.db.schema.index.report;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_BOOLEAN;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_DATE;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
-import static io.camunda.optimize.service.db.DatabaseConstants.TYPE_TEXT;
 
+import co.elastic.clients.elasticsearch._types.mapping.Property;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class AbstractReportIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -42,48 +37,22 @@ public abstract class AbstractReportIndex<TBuilder> extends DefaultIndexMappingC
       SingleReportConfigurationDto.Fields.aggregationTypes;
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    XContentBuilder newBuilder =
-        xContentBuilder
-            .startObject(ID)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(NAME)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(DESCRIPTION)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
-            .field("index", false)
-            .endObject()
-            .startObject(LAST_MODIFIED)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-            .field("format", OPTIMIZE_DATE_FORMAT)
-            .endObject()
-            .startObject(CREATED)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-            .field("format", OPTIMIZE_DATE_FORMAT)
-            .endObject()
-            .startObject(OWNER)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(LAST_MODIFIER)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(COLLECTION_ID)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(REPORT_TYPE)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-            .endObject()
-            .startObject(COMBINED)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
-            .endObject();
-    // @formatter:on
-    newBuilder = addReportTypeSpecificFields(newBuilder);
-    return newBuilder;
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+    return addReportTypeSpecificFields(
+        builder
+            .properties(ID, Property.of(p -> p.keyword(k -> k)))
+            .properties(NAME, Property.of(p -> p.keyword(k -> k)))
+            .properties(DESCRIPTION, Property.of(p -> p.text(k -> k.index(false))))
+            .properties(
+                LAST_MODIFIED, Property.of(p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT))))
+            .properties(CREATED, Property.of(p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT))))
+            .properties(OWNER, Property.of(p -> p.keyword(k -> k)))
+            .properties(LAST_MODIFIER, Property.of(p -> p.keyword(k -> k)))
+            .properties(COLLECTION_ID, Property.of(p -> p.keyword(k -> k)))
+            .properties(REPORT_TYPE, Property.of(p -> p.keyword(k -> k)))
+            .properties(COMBINED, Property.of(p -> p.boolean_(k -> k))));
   }
 
-  protected abstract XContentBuilder addReportTypeSpecificFields(XContentBuilder xContentBuilder)
-      throws IOException;
+  protected abstract TypeMapping.Builder addReportTypeSpecificFields(
+      TypeMapping.Builder xContentBuilder);
 }

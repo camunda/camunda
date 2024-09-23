@@ -15,7 +15,7 @@ jobs:
     if: github.event.pull_request.state != 'closed' && (github.event.label.name == 'update-snapshots' || contains( github.event.pull_request.labels.*.name, 'update-snapshots'))
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.46.1
+      image: mcr.microsoft.com/playwright:v1.47.2
       options: --user 1001:1000
 
     steps:
@@ -25,7 +25,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: ./.github/actions/setup-yarn-cache
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
         with:
           directory: tasklist/client
       - name: Install node dependencies

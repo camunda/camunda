@@ -7,35 +7,28 @@
  */
 package io.camunda.optimize.service.db.es.schema.index;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.SORT_FIELD_SETTING;
-import static io.camunda.optimize.service.db.DatabaseConstants.SORT_ORDER_SETTING;
-import static io.camunda.optimize.service.db.DatabaseConstants.SORT_SETTING;
-
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
+import co.elastic.clients.elasticsearch.indices.SegmentSortOrder;
 import io.camunda.optimize.service.db.schema.index.ExternalProcessVariableIndex;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
-public class ExternalProcessVariableIndexES extends ExternalProcessVariableIndex<XContentBuilder> {
+public class ExternalProcessVariableIndexES
+    extends ExternalProcessVariableIndex<IndexSettings.Builder> {
 
   @Override
-  public XContentBuilder getStaticSettings(
-      XContentBuilder xContentBuilder, ConfigurationService configurationService)
+  public IndexSettings.Builder getStaticSettings(
+      final IndexSettings.Builder builder, final ConfigurationService configurationService)
       throws IOException {
-    // @formatter:off
-    final XContentBuilder newXContentBuilder =
-        super.getStaticSettings(xContentBuilder, configurationService);
-    return newXContentBuilder
-        .startObject(SORT_SETTING)
-        .field(SORT_FIELD_SETTING, INGESTION_TIMESTAMP)
-        .field(SORT_ORDER_SETTING, "desc")
-        .endObject();
-    // @formatter:on
+
+    final IndexSettings.Builder newXContentBuilder =
+        super.getStaticSettings(builder, configurationService);
+    return newXContentBuilder.sort(s -> s.field(INGESTION_TIMESTAMP).order(SegmentSortOrder.Desc));
   }
 
   @Override
-  public XContentBuilder addStaticSetting(
-      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
-    return contentBuilder.field(key, value);
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder builder) throws IOException {
+    return builder.numberOfShards(Integer.toString(value));
   }
 }

@@ -22,6 +22,9 @@
             "partitionId": {
               "type": "integer"
             },
+            "queueId": {
+              "type": "keyword"
+            },
             "valueType": {
               "type": "keyword"
             },

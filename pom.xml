@@ -25,6 +25,7 @@
     <module>tasklist</module>
     <module>identity</module>
     <module>webapps-common</module>
+    <module>webapps-schema</module>
     <module>authentication</module>
     <module>search</module>
     <module>service</module>
@@ -32,7 +33,8 @@
     <module>clients/spring-boot-starter-camunda-sdk</module>
     <module>testing/camunda-process-test-java</module>
     <module>testing/camunda-process-test-spring</module>
-    <module>search-plugins</module>
+    <module>testing/camunda-process-test-example</module>
+    <module>document</module>
   </modules>
 
   <scm>
@@ -58,7 +60,6 @@
             </includes>
             <excludes>
               <exclude>**/target/**/*.md</exclude>
-              <exclude>clients/go/vendor/**/*.md</exclude>
               <exclude>**/node_modules/**/*.md</exclude>
               <exclude>tasklist/client/**/*.md</exclude>
               <exclude>optimize/client/**/*.md</exclude>

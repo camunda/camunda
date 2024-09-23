@@ -92,13 +92,13 @@ public abstract class DatabaseMetadataService<CLIENT extends DatabaseClient> {
     final Map<String, Object> params = new HashMap<>();
     params.put("newInstallationId", newInstallationId);
     String scriptString =
-        "if (ctx._source."
-            + MetadataDto.Fields.installationId.name()
-            + " == null) {\n"
-            + "    ctx._source."
-            + MetadataDto.Fields.installationId.name()
-            + " = params.newInstallationId;\n"
-            + "}\n";
+        """
+                    if (ctx._source.$type == null) {
+                       ctx._source.$type = params.newInstallationId;
+                    }
+                    """
+            .replace("$type", MetadataDto.Fields.installationId.name());
+
     if (!StringUtils.isBlank(newSchemaVersion)) {
       params.put("newSchemaVersion", newSchemaVersion);
       scriptString +=

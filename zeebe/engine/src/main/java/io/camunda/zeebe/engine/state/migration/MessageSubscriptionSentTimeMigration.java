@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
 /**
@@ -23,16 +21,17 @@ public class MessageSubscriptionSentTimeMigration implements MigrationTask {
   }
 
   @Override
-  public boolean needsToRun(final ProcessingState processingState) {
-    return !processingState.isEmpty(ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_SENT_TIME);
+  public boolean needsToRun(final MigrationTaskContext context) {
+    return !context.processingState().isEmpty(ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_SENT_TIME);
   }
 
   @Override
-  public void runMigration(final MutableProcessingState processingState) {
-    processingState
+  public void runMigration(final MutableMigrationTaskContext context) {
+    context
+        .processingState()
         .getMigrationState()
         .migrateMessageSubscriptionSentTime(
-            processingState.getMessageSubscriptionState(),
-            processingState.getPendingMessageSubscriptionState());
+            context.processingState().getMessageSubscriptionState(),
+            context.processingState().getPendingMessageSubscriptionState());
   }
 }

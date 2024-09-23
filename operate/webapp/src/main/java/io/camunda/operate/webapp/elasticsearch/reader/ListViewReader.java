@@ -8,6 +8,7 @@
 package io.camunda.operate.webapp.elasticsearch.reader;
 
 import static io.camunda.operate.schema.templates.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
+import static io.camunda.operate.util.ElasticsearchUtil.reverseOrder;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -219,14 +220,6 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
       return sortBy;
     }
     return null;
-  }
-
-  private SortOrder reverseOrder(final SortOrder sortOrder) {
-    if (sortOrder.equals(SortOrder.ASC)) {
-      return SortOrder.DESC;
-    } else {
-      return SortOrder.ASC;
-    }
   }
 
   private void findCalledProcessInstance(

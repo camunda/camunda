@@ -53,6 +53,11 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
             });
   }
 
+  @Override
+  public int getPriority() {
+    throw new UnsupportedOperationException("Operation not supported");
+  }
+
   public static final class Fields {
 
     public static final String userTaskKey = "userTaskKey";

@@ -19,7 +19,6 @@ import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.util.StubbedBrokerClient;
 import io.camunda.service.util.StubbedCamundaSearchClient;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +28,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class UserFilterTest {
-  private UserServices<UserRecord> services;
+  private UserServices services;
   private StubbedCamundaSearchClient client;
   private StubbedBrokerClient brokerClient;
 
@@ -37,7 +36,7 @@ public class UserFilterTest {
   public void before() {
     client = new StubbedCamundaSearchClient();
     new UserSearchQueryStub().registerWith(client);
-    services = new UserServices<>(brokerClient, client);
+    services = new UserServices(brokerClient, client);
   }
 
   @Test
@@ -53,7 +52,7 @@ public class UserFilterTest {
     assertThat(searchQueryResult.total()).isEqualTo(2);
     assertThat(searchQueryResult.items()).hasSize(2);
     final UserEntity item = searchQueryResult.items().get(0);
-    assertThat(item.value().name()).isEqualTo("name1");
+    assertThat(item.name()).isEqualTo("name1");
   }
 
   @ParameterizedTest
@@ -61,7 +60,7 @@ public class UserFilterTest {
   public void shouldQueryByField(
       final Function<Builder, ObjectBuilder<UserFilter>> fn,
       final String column,
-      final String value) {
+      final Object value) {
     // given
     final var userFilter = FilterBuilders.user(fn);
     final var searchQuery = SearchQueryBuilders.userSearchQuery(q -> q.filter(userFilter));
@@ -78,23 +77,22 @@ public class UserFilterTest {
             SearchTermQuery.class,
             t -> {
               assertThat(t.field()).isEqualTo(column);
-              assertThat(t.value().stringValue()).isEqualTo(value);
+              assertThat(t.value().value()).isEqualTo(value);
             });
   }
 
   public static Stream<Arguments> queryFilterParameters() {
     return Stream.of(
+        Arguments.of((Function<Builder, ObjectBuilder<UserFilter>>) f -> f.key(1L), "key", 1L),
         Arguments.of(
             (Function<Builder, ObjectBuilder<UserFilter>>) f -> f.username("username1"),
-            "value.username",
+            "username",
             "username1"),
         Arguments.of(
-            (Function<Builder, ObjectBuilder<UserFilter>>) f -> f.name("name1"),
-            "value.name",
-            "name1"),
+            (Function<Builder, ObjectBuilder<UserFilter>>) f -> f.name("name1"), "name", "name1"),
         Arguments.of(
             (Function<Builder, ObjectBuilder<UserFilter>>) f -> f.email("email1"),
-            "value.email",
+            "email",
             "email1"));
   }
 }

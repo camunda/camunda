@@ -10,12 +10,35 @@ package io.camunda.service.entities;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public final record ProcessInstanceEntity(
-    String tenantId,
+public record ProcessInstanceEntity(
     Long key,
-    Integer processVersion,
     String bpmnProcessId,
-    Long parentKey,
+    String processName,
+    Integer processVersion,
+    String processVersionTag,
+    Long processDefinitionKey,
+    Long rootProcessInstanceKey,
+    Long parentProcessInstanceKey,
     Long parentFlowNodeInstanceKey,
+    String treePath,
     String startDate,
-    String endDate) {}
+    String endDate,
+    ProcessInstanceState state,
+    Boolean incident,
+    String tenantId) {
+
+  public enum ProcessInstanceState {
+    ACTIVE,
+    COMPLETED,
+    CANCELED;
+
+    public static ProcessInstanceState fromValue(String value) {
+      for (ProcessInstanceState state : ProcessInstanceState.values()) {
+        if (state.name().equals(value)) {
+          return state;
+        }
+      }
+      throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    }
+  }
+}

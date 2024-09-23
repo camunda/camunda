@@ -12,11 +12,15 @@ import static io.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGA
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
+import static io.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager.createIndexFromJson;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static io.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
 
+import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
+import co.elastic.clients.util.ContentType;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Iterables;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
@@ -26,7 +30,10 @@ import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.service.db.DatabaseClient;
+import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
+import io.camunda.optimize.service.db.os.ExtendedOpenSearchClient;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import io.camunda.optimize.service.db.os.builders.OptimizeIndexOperationOS;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
@@ -38,10 +45,13 @@ import io.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndex
 import io.camunda.optimize.service.db.os.schema.index.VariableUpdateInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.report.SingleProcessReportIndexOS;
 import io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil;
+import io.camunda.optimize.service.db.schema.DatabaseSchemaManager;
+import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
+import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.DatabaseHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -51,6 +61,7 @@ import io.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import io.camunda.optimize.test.it.extension.MockServerUtil;
 import io.camunda.optimize.test.repository.TestIndexRepositoryOS;
 import io.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
+import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -65,8 +76,12 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
+import org.apache.http.HttpEntity;
+import org.apache.http.nio.entity.NStringEntity;
 import org.jetbrains.annotations.NotNull;
 import org.mockserver.integration.ClientAndServer;
+import org.opensearch.client.Request;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -86,15 +101,19 @@ import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.TrackHits;
 import org.opensearch.client.opensearch.indices.Alias;
+import org.opensearch.client.opensearch.indices.AliasDefinition;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
+import org.opensearch.client.opensearch.indices.ExistsTemplateRequest;
+import org.opensearch.client.opensearch.indices.GetAliasRequest;
 import org.opensearch.client.opensearch.indices.GetAliasResponse;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
+import org.opensearch.client.opensearch.indices.GetMappingRequest;
+import org.opensearch.client.opensearch.indices.GetMappingResponse;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
 import org.opensearch.client.opensearch.indices.get_alias.IndexAliases;
-import org.testcontainers.shaded.org.apache.commons.lang3.NotImplementedException;
 
 @Slf4j
 public class OpenSearchDatabaseTestService extends DatabaseTestService {
@@ -106,6 +125,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   private String opensearchDatabaseVersion;
 
   private OptimizeOpenSearchClient prefixAwareOptimizeOpenSearchClient;
+  private ExtendedOpenSearchClient extendedOpenSearchClient;
 
   public OpenSearchDatabaseTestService(final String customIndexPrefix, final boolean haveToClean) {
     super(customIndexPrefix, haveToClean);
@@ -258,6 +278,12 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     }
   }
 
+  @Override
+  public void deleteAllDocumentsInIndex(String optimizeIndexAliasForIndex) {
+    getOptimizeOpenSearchClient()
+        .deleteByQuery(QueryDSL.matchAll(), true, optimizeIndexAliasForIndex);
+  }
+
   @SneakyThrows
   @Override
   public void deleteAllIndicesContainingTerm(final String indexTerm) {
@@ -276,6 +302,99 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
             QueryDSL.matchAll(),
             true,
             getIndexNameService().getOptimizeIndexAliasForIndex(new SingleProcessReportIndexOS()));
+  }
+
+  @Override
+  public void insertTestDocuments(int amount, String indexName, String jsonDocument)
+      throws IOException {
+    getOptimizeOpenSearchClient()
+        .getOpenSearchClient()
+        .bulk(
+            BulkRequest.of(
+                r -> {
+                  for (int i = 0; i < amount; i++) {
+                    int finalI = i;
+                    r.operations(
+                        o ->
+                            o.index(
+                                OptimizeIndexOperationOS.of(
+                                    b -> {
+                                      try {
+                                        return b.optimizeIndex(
+                                                getOptimizeOpenSearchClient(), indexName)
+                                            .document(
+                                                getObjectMapper()
+                                                    .readValue(
+                                                        String.format(jsonDocument, finalI),
+                                                        Map.class));
+                                      } catch (JsonProcessingException e) {
+                                        throw new RuntimeException(e);
+                                      }
+                                    })));
+                  }
+                  return r;
+                }));
+    getOptimizeOpenSearchClient().refresh(indexName);
+  }
+
+  @Override
+  public void performLowLevelBulkRequest(String methodName, String endpoint, String bulkPayload)
+      throws IOException {
+    final HttpEntity entity = new NStringEntity(bulkPayload, ContentType.APPLICATION_JSON);
+    final Request request = new Request(methodName, endpoint);
+    request.setEntity(entity);
+    getOptimizeOpenSearchClient().getRestClient().performRequest(request);
+  }
+
+  @Override
+  public void initSchema(final DatabaseSchemaManager schemaManager) {
+    schemaManager.initializeSchema(getOptimizeOpenSearchClient());
+  }
+
+  private IndexSettings createIndexSettings(
+      final IndexMappingCreator indexMappingCreator, ConfigurationService configurationService) {
+    try {
+      return OpenSearchIndexSettingsBuilder.buildAllSettings(
+          configurationService, indexMappingCreator);
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not create index settings");
+    }
+  }
+
+  @Override
+  public Map<String, ? extends Object> getMappingFields(String indexName) throws IOException {
+    GetMappingResponse getMappingResponse =
+        getOptimizeOpenSearchClient().getMapping(new GetMappingRequest.Builder(), indexName);
+    final Object propertiesMap =
+        getMappingResponse.result().values().stream()
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new OptimizeRuntimeException(
+                        "There should be at least one mapping available for the index!"))
+            .mappings()
+            .properties();
+    if (propertiesMap instanceof Map) {
+      return (Map<String, Object>) propertiesMap;
+    } else {
+      throw new OptimizeRuntimeException("Database index mapping properties should be of type map");
+    }
+  }
+
+  @Override
+  public boolean indexExists(final String versionedIndexName, final Boolean addMappingFeatures) {
+    return false;
+  }
+
+  @Override
+  public boolean templateExists(String optimizeIndexTemplateNameWithVersion) throws IOException {
+    final ExistsTemplateRequest.Builder request =
+        new ExistsTemplateRequest.Builder().name(optimizeIndexTemplateNameWithVersion);
+    return getOptimizeOpenSearchClient()
+        .getOpenSearchClient()
+        .indices()
+        .existsTemplate(request.build())
+        .value();
   }
 
   @Override
@@ -436,7 +555,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
         prefixAwareOptimizeOpenSearchClient
             .getRichOpenSearchClient()
             .doc()
-            .getWithRetries(
+            .getRequest(
                 TIMESTAMP_BASED_IMPORT_INDEX_NAME,
                 DatabaseHelper.constructKey(dbType, engine),
                 TimestampBasedImportIndexDto.class);
@@ -585,6 +704,47 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
+  public boolean isAliasReadOnly(String readOnlyAliasForIndex) throws IOException {
+    final GetAliasResponse aliases =
+        getOptimizeOpenSearchClient()
+            .getAlias(
+                GetAliasRequest.of(
+                    a ->
+                        a.name(
+                            getOptimizeOpenSearchClient()
+                                .applyIndexPrefixes(readOnlyAliasForIndex))));
+    return aliases.result().values().stream()
+        .flatMap(a -> a.aliases().values().stream())
+        .collect(Collectors.toSet())
+        .stream()
+        .noneMatch(AliasDefinition::isWriteIndex);
+  }
+
+  @Override
+  public void createIndex(
+      String indexName, Map<String, Boolean> aliases, DefaultIndexMappingCreator indexMapping)
+      throws IOException {
+
+    final IndexSettings indexSettings =
+        createIndexSettings(indexMapping, createConfigurationService());
+
+    final HashMap<String, Alias> aliasData = new HashMap<>();
+    for (Map.Entry<String, Boolean> entry : aliases.entrySet()) {
+      aliasData.put(entry.getKey(), new Alias.Builder().isWriteIndex(entry.getValue()).build());
+    }
+
+    indexMapping.setDynamic(DynamicMapping.False);
+    final CreateIndexRequest request =
+        createIndexFromJson(
+            indexMapping.getSource().toString(), indexName, aliasData, indexSettings);
+    final boolean created =
+        getOptimizeOpenSearchClient().getRichOpenSearchClient().index().createIndex(request);
+    if (!created) {
+      throw new IOException("Could not create index " + indexName);
+    }
+  }
+
+  @Override
   public void setActivityStartDatesToNull(
       final String processDefinitionKey, final ScriptData script) {
     getOptimizeOpenSearchClient()
@@ -658,6 +818,11 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
         .toList();
   }
 
+  @Override
+  public VariableUpdateInstanceIndex getVariableUpdateInstanceIndex() {
+    return new VariableUpdateInstanceIndexOS();
+  }
+
   private OptimizeOpenSearchClient getOptimizeOpenSearchClient() {
     return prefixAwareOptimizeOpenSearchClient;
   }
@@ -678,9 +843,13 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
         "Creating OS Client with host {} and port {}", osConfig.getHost(), osConfig.getHttpPort());
     prefixAwareOptimizeOpenSearchClient =
         new OptimizeOpenSearchClient(
-            OpenSearchClientBuilder.buildOpenSearchClientFromConfig(configurationService),
-            OpenSearchClientBuilder.buildOpenSearchAsyncClientFromConfig(configurationService),
-            new OptimizeIndexNameService(configurationService, DatabaseType.OPENSEARCH));
+            OpenSearchClientBuilder.restClient(configurationService),
+            OpenSearchClientBuilder.buildOpenSearchClientFromConfig(
+                configurationService, new PluginRepository()),
+            OpenSearchClientBuilder.buildOpenSearchAsyncClientFromConfig(
+                configurationService, new PluginRepository()),
+            new OptimizeIndexNameService(configurationService, DatabaseType.OPENSEARCH),
+            new TransportOptionsProvider());
     adjustClusterSettings();
     CLIENT_CACHE.put(clientKey, prefixAwareOptimizeOpenSearchClient);
   }

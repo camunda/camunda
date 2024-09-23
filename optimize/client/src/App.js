@@ -7,6 +7,7 @@
  */
 
 import {HashRouter as Router, Route, Switch, matchPath} from 'react-router-dom';
+import {Button} from '@carbon/react';
 
 import {
   PrivateRoute,
@@ -21,7 +22,7 @@ import {
   ProcessReport,
 } from './components';
 
-import {ErrorBoundary, ErrorPage, Button} from 'components';
+import {ErrorBoundary, ErrorPage} from 'components';
 
 import {Notifications} from 'notifications';
 import {SaveGuard} from 'saveGuard';
@@ -66,7 +67,7 @@ export default function App({error}) {
   if (error) {
     return (
       <ErrorPage noLink text="Optimize could not be loaded, please make sure the server is running">
-        <Button link onClick={() => window.location.reload(true)}>
+        <Button kind="ghost" onClick={() => window.location.reload(true)}>
           Reload
         </Button>
       </ErrorPage>

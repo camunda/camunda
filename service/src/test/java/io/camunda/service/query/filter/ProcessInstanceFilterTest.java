@@ -9,21 +9,17 @@ package io.camunda.service.query.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.clients.query.SearchBoolQuery;
-import io.camunda.search.clients.query.SearchQueryOption;
-import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.clients.query.*;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.entities.ProcessInstanceEntity;
 import io.camunda.service.search.filter.FilterBuilders;
-import io.camunda.service.search.filter.ProcessInstanceFilter.Builder;
-import io.camunda.service.search.filter.VariableValueFilter;
+import io.camunda.service.search.filter.ProcessInstanceFilter;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.util.StubbedBrokerClient;
 import io.camunda.service.util.StubbedCamundaSearchClient;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,43 +28,423 @@ public final class ProcessInstanceFilterTest {
 
   private ProcessInstanceServices services;
   private StubbedCamundaSearchClient client;
-  private StubbedBrokerClient brokerClient;
 
   @BeforeEach
   public void before() {
     client = new StubbedCamundaSearchClient();
     new ProcessInstanceSearchQueryStub().registerWith(client);
-    services = new ProcessInstanceServices(brokerClient, client);
+    services = new ProcessInstanceServices(null, client);
   }
 
   @Test
-  public void shouldQueryOnlyByProcessInstances() {
+  public void shouldQueryWhenEmpty() {
     // given
-    final ProcessInstanceQuery searchQuery =
-        SearchQueryBuilders.processInstanceSearchQuery().build();
+    final var processInstanceFilter = FilterBuilders.processInstance(f -> f);
+    final var searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
     // when
     services.search(searchQuery);
 
     // then
+    final var searchRequest = client.getSingleSearchRequest();
 
-    // Assert: Transformation from ProcessInstanceQuery to DataStoreSearchRequest
+    final var queryVariant = searchRequest.query().queryOption();
+    assertIsSearchTermQuery(queryVariant, "joinRelation", "processInstance");
+  }
 
-    // a) verify search request
-    // The stubbed client collects all received search requests
-    // that can be used for assertions
-    final SearchQueryRequest searchRequest = client.getSingleSearchRequest();
+  @Test
+  public void shouldQueryByKey() {
+    // given
+    final var processInstanceFilter = FilterBuilders.processInstance(f -> f.keys(List.of(123L)));
+    final var searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
-    // b) verify that the search request has been constructed properly
-    // depending on the actual search query
-    final SearchQueryOption queryVariant = searchRequest.query().queryOption();
-    assertThat((queryVariant))
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "key", 123L);
+  }
+
+  @Test
+  public void shouldQueryByBpmnProcessId() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.bpmnProcessIds(List.of("bpmn")));
+    final var searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "bpmnProcessId", "bpmn");
+  }
+
+  @Test
+  public void shouldQueryByProcessName() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.processNames(List.of("Demo Process")));
+    final var searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(),
+        "processName",
+        "Demo Process");
+  }
+
+  @Test
+  public void shouldQueryByProcessVersion() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.processVersions(List.of(33)));
+    final var searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "processVersion", 33);
+  }
+
+  @Test
+  public void shouldQueryByProcessVersionTag() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.processVersionTags(List.of("v1")));
+    final var searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "processVersionTag", "v1");
+  }
+
+  @Test
+  public void shouldQueryByProcessDefinitionKey() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.processDefinitionKeys(List.of(567L)));
+    final var searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "processDefinitionKey", 567L);
+  }
+
+  @Test
+  public void shouldQueryByRootProcessInstanceKey() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.rootProcessInstanceKeys(List.of(567L)));
+    final var searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(),
+        "rootProcessInstanceKey",
+        567L);
+  }
+
+  @Test
+  public void shouldQueryByParentProcessInstanceKey() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.parentProcessInstanceKeys(List.of(567L)));
+    final var searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(),
+        "parentProcessInstanceKey",
+        567L);
+  }
+
+  @Test
+  public void shouldQueryByParentFlowNodeInstanceKey() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.parentFlowNodeInstanceKeys(List.of(567L)));
+    final var searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(),
+        "parentFlowNodeInstanceKey",
+        567L);
+  }
+
+  @Test
+  public void shouldQueryByTreePath() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.treePaths(List.of("PI_12")));
+    final var searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "treePath", "PI_12");
+  }
+
+  @Test
+  public void shouldQueryByStartDateAndEndDate() {
+    // given
+    final var dateAfter = OffsetDateTime.of(2024, 3, 12, 10, 30, 15, 0, ZoneOffset.UTC);
+    final var dateBefore = OffsetDateTime.of(2024, 7, 15, 10, 30, 15, 0, ZoneOffset.UTC);
+    final var startDateFilter =
+        FilterBuilders.dateValue((d) -> d.after(dateAfter).before(dateBefore));
+    final var endDateFilter =
+        FilterBuilders.dateValue((d) -> d.after(dateAfter).before(dateBefore));
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.startDate(startDateFilter).endDate(endDateFilter));
+    final var searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(3);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+
+    assertThat(((SearchBoolQuery) queryVariant).must().get(1).queryOption())
         .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            (t) -> {
-              assertThat(t.field()).isEqualTo("joinRelation");
-              assertThat(t.value().stringValue()).isEqualTo("processInstance");
+            SearchRangeQuery.class,
+            (searchRangeQuery) -> {
+              assertThat(searchRangeQuery.field()).isEqualTo("startDate");
+              assertThat(searchRangeQuery.gte()).isEqualTo("2024-03-12T10:30:15.000+0000");
+              assertThat(searchRangeQuery.lt()).isEqualTo("2024-07-15T10:30:15.000+0000");
+              assertThat(searchRangeQuery.format()).isEqualTo("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
             });
+
+    assertThat(((SearchBoolQuery) queryVariant).must().get(2).queryOption())
+        .isInstanceOfSatisfying(
+            SearchRangeQuery.class,
+            (searchRangeQuery) -> {
+              assertThat(searchRangeQuery.field()).isEqualTo("endDate");
+              assertThat(searchRangeQuery.gte()).isEqualTo("2024-03-12T10:30:15.000+0000");
+              assertThat(searchRangeQuery.lt()).isEqualTo("2024-07-15T10:30:15.000+0000");
+              assertThat(searchRangeQuery.format()).isEqualTo("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
+            });
+  }
+
+  @Test
+  public void shouldQueryByState() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.states(List.of("ACTIVE")));
+    final var searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "state", "ACTIVE");
+  }
+
+  @Test
+  public void shouldQueryByIncident() {
+    // given
+    final var processInstanceFilter = FilterBuilders.processInstance(f -> f.incident(true));
+    final var searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "incident", true);
+  }
+
+  @Test
+  public void shouldQueryByTenantId() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.tenantIds(List.of("tenant")));
+    final var searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "tenantId", "tenant");
   }
 
   @Test
@@ -81,105 +457,10 @@ public final class ProcessInstanceFilterTest {
     final SearchQueryResult<ProcessInstanceEntity> searchQueryResult = services.search(searchQuery);
 
     // then
-
-    // Assert: Transformation from DataStoreSearchResponse to
-    // SearchQueryResult<ProcessInstanceEntity>
-
-    // a) verify search query result
     assertThat(searchQueryResult.total()).isEqualTo(1);
     assertThat(searchQueryResult.items()).hasSize(1);
-
-    // b) assert items
     final ProcessInstanceEntity item = searchQueryResult.items().get(0);
     assertThat(item.key()).isEqualTo(123L);
-  }
-
-  @Test
-  public void shouldQueryByProcessInstanceKey() {
-    // given
-    final var processInstanceFilter =
-        FilterBuilders.processInstance((f) -> f.processInstanceKeys(4503599627370497L));
-    final var searchQuery =
-        SearchQueryBuilders.processInstanceSearchQuery((q) -> q.filter(processInstanceFilter));
-
-    // when
-    services.search(searchQuery);
-
-    // then
-    final var searchRequest = client.getSingleSearchRequest();
-
-    final var queryVariant = searchRequest.query().queryOption();
-    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
-    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
-
-    assertThat(((SearchBoolQuery) queryVariant).must().get(0).queryOption())
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            (t) -> {
-              assertThat(t.field()).isEqualTo("joinRelation");
-              assertThat(t.value().stringValue()).isEqualTo("processInstance");
-            });
-
-    assertThat(((SearchBoolQuery) queryVariant).must().get(1).queryOption())
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            (t) -> {
-              assertThat(t.field()).isEqualTo("processInstanceKey");
-              assertThat(t.value().longValue()).isEqualTo(4503599627370497L);
-            });
-  }
-
-  @Test
-  public void shouldQueryByVariableValues() {
-    // given
-    final var variableFilter = FilterBuilders.variableValue((v) -> v.name("foo").gt(123));
-    final var filter =
-        FilterBuilders.processInstance(
-            (f) -> f.variable(variableFilter).variable((v) -> v.name("bar").neq(789L)));
-    final var searchQuery = SearchQueryBuilders.processInstanceSearchQuery((b) -> b.filter(filter));
-
-    // when
-    services.search(searchQuery);
-
-    // then
-    final var searchRequest = client.getSingleSearchRequest();
-
-    final var queryVariant = searchRequest.query().queryOption();
-    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
-    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
-
-    assertThat(((SearchBoolQuery) queryVariant).must().get(0).queryOption())
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            (t) -> {
-              assertThat(t.field()).isEqualTo("joinRelation");
-              assertThat(t.value().stringValue()).isEqualTo("processInstance");
-            });
-
-    assertThat(((SearchBoolQuery) queryVariant).must().get(1).queryOption())
-        .isInstanceOf(SearchBoolQuery.class);
-  }
-
-  @Test
-  public void shouldQueryByStartAndEndDate() {
-    // given
-    final var startDateFilter =
-        FilterBuilders.dateValue((d) -> d.after(OffsetDateTime.now()).before(OffsetDateTime.now()));
-    final var endDateFilter =
-        FilterBuilders.dateValue((d) -> d.after(OffsetDateTime.now()).before(OffsetDateTime.now()));
-    final var searchQuery =
-        SearchQueryBuilders.processInstanceSearchQuery(
-            (b) -> b.filter((f) -> f.startDate(startDateFilter).endDate(endDateFilter)));
-
-    // when
-    services.search(searchQuery);
-
-    // then
-    final var searchRequest = client.getSingleSearchRequest();
-
-    final var queryVariant = searchRequest.query().queryOption();
-    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
-    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(3);
   }
 
   @Test
@@ -187,47 +468,67 @@ public final class ProcessInstanceFilterTest {
     // given
 
     // when
-    final var processInstanceFilter = new Builder().build();
+    final var processInstanceFilter = (new ProcessInstanceFilter.Builder()).build();
 
     // then
-    assertThat(processInstanceFilter.processInstanceKeys()).isEmpty();
-    //    assertThat(processInstanceFilter.index()).contains("operate-list-view-8.3.0_");
-
-    assertThat(processInstanceFilter.active()).isFalse();
-    assertThat(processInstanceFilter.canceled()).isFalse();
-    assertThat(processInstanceFilter.completed()).isFalse();
-    assertThat(processInstanceFilter.finished()).isFalse();
-    assertThat(processInstanceFilter.running()).isFalse();
-    assertThat(processInstanceFilter.retriesLeft()).isFalse();
+    assertThat(processInstanceFilter.keys()).isEmpty();
+    assertThat(processInstanceFilter.bpmnProcessIds()).isEmpty();
+    assertThat(processInstanceFilter.processNames()).isEmpty();
+    assertThat(processInstanceFilter.processVersions()).isEmpty();
+    assertThat(processInstanceFilter.processVersionTags()).isEmpty();
+    assertThat(processInstanceFilter.processDefinitionKeys()).isEmpty();
+    assertThat(processInstanceFilter.rootProcessInstanceKeys()).isEmpty();
+    assertThat(processInstanceFilter.parentProcessInstanceKeys()).isEmpty();
+    assertThat(processInstanceFilter.parentFlowNodeInstanceKeys()).isEmpty();
+    assertThat(processInstanceFilter.treePaths()).isEmpty();
+    assertThat(processInstanceFilter.startDate()).isNull();
+    assertThat(processInstanceFilter.endDate()).isNull();
+    assertThat(processInstanceFilter.states()).isEmpty();
+    assertThat(processInstanceFilter.incident()).isNull();
+    assertThat(processInstanceFilter.tenantIds()).isEmpty();
   }
 
-  @Test
-  public void shouldSetFilterValues() {
-    // given
-    final var processInstanceFilterBuilder = new Builder();
+  private void assertIsSearchTermQuery(
+      SearchQueryOption searchQueryOption, String expectedField, String expectedValue) {
+    assertThat(searchQueryOption)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            (searchTermQuery) -> {
+              assertThat(searchTermQuery.field()).isEqualTo(expectedField);
+              assertThat(searchTermQuery.value().stringValue()).isEqualTo(expectedValue);
+            });
+  }
 
-    // when
-    final var processInstanceFilter =
-        processInstanceFilterBuilder
-            .active()
-            .canceled()
-            .completed()
-            .finished()
-            .retriesLeft()
-            .running()
-            .processInstanceKeys(List.of(1L))
-            .variable(new VariableValueFilter.Builder().name("foo").build())
-            .build();
+  private void assertIsSearchTermQuery(
+      SearchQueryOption searchQueryOption, String expectedField, Long expectedValue) {
+    assertThat(searchQueryOption)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            (searchTermQuery) -> {
+              assertThat(searchTermQuery.field()).isEqualTo(expectedField);
+              assertThat(searchTermQuery.value().longValue()).isEqualTo(expectedValue);
+            });
+  }
 
-    // then
-    assertThat(processInstanceFilter.processInstanceKeys()).hasSize(1).contains(1L);
-    //    assertThat(processInstanceFilter.index()).contains("operate-list-view-8.3.0_alias");
+  private void assertIsSearchTermQuery(
+      SearchQueryOption searchQueryOption, String expectedField, Integer expectedValue) {
+    assertThat(searchQueryOption)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            (searchTermQuery) -> {
+              assertThat(searchTermQuery.field()).isEqualTo(expectedField);
+              assertThat(searchTermQuery.value().intValue()).isEqualTo(expectedValue);
+            });
+  }
 
-    assertThat(processInstanceFilter.active()).isTrue();
-    assertThat(processInstanceFilter.canceled()).isTrue();
-    assertThat(processInstanceFilter.completed()).isTrue();
-    assertThat(processInstanceFilter.finished()).isTrue();
-    assertThat(processInstanceFilter.running()).isTrue();
-    assertThat(processInstanceFilter.retriesLeft()).isTrue();
+  private void assertIsSearchTermQuery(
+      SearchQueryOption searchQueryOption, String expectedField, Boolean expectedValue) {
+    assertThat(searchQueryOption)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            (searchTermQuery) -> {
+              assertThat(searchTermQuery.field()).isEqualTo(expectedField);
+              assertThat(searchTermQuery.value().booleanValue()).isEqualTo(expectedValue);
+            });
   }
 }

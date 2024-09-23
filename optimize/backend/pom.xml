@@ -12,10 +12,9 @@
   <name>Optimize Backend</name>
 
   <properties>
-    <jetty.version>12.0.12</jetty.version>
     <jersey.version>3.1.3</jersey.version>
     <spring.security.version>6.3.3</spring.security.version>
-    <nimbus.jose.jwt.version>9.40</nimbus.jose.jwt.version>
+    <nimbus.jose.jwt.version>9.41.1</nimbus.jose.jwt.version>
     <it.test.excludedGroups />
     <it.test.includedGroups />
     <test.forkCount />
@@ -73,6 +72,11 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-connect</artifactId>
+      <version>8.6.0-SNAPSHOT</version>
+    </dependency>
 
     <!-- Zeebe dependencies -->
     <dependency>
@@ -85,6 +89,61 @@
       <artifactId>zeebe-client-java</artifactId>
       <version>${zeebe.version}</version>
       <scope>test</scope>
+    </dependency>
+
+    <!-- Jetty-->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>jetty-http2-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-java-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-java-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlets</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-rewrite</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.ws.rs</groupId>
+      <artifactId>jakarta.ws.rs-api</artifactId>
+    </dependency>
+
+    <!-- IDENTITY-->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-spring-boot-starter</artifactId>
+      <version>${identity.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-slf4j2-impl</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- Spring -->
@@ -162,66 +221,6 @@
       <groupId>com.nimbusds</groupId>
       <artifactId>nimbus-jose-jwt</artifactId>
       <version>${nimbus.jose.jwt.version}</version>
-    </dependency>
-
-    <!-- IDENTITY-->
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>identity-spring-boot-starter</artifactId>
-      <version>${identity.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.logging.log4j</groupId>
-          <artifactId>log4j-slf4j2-impl</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <!-- Jetty -->
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
-      <version>${jetty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>jetty-http2-server</artifactId>
-      <version>${jetty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-java-client</artifactId>
-      <version>${jetty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-java-server</artifactId>
-      <version>${jetty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-server</artifactId>
-      <version>${jetty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-servlet</artifactId>
-      <version>${jetty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-servlets</artifactId>
-      <version>${jetty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-rewrite</artifactId>
-      <version>${jetty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.ws.rs</groupId>
-      <artifactId>jakarta.ws.rs-api</artifactId>
-      <version>${jakarta.rs-api.version}</version>
     </dependency>
 
     <!-- Authentication -->
@@ -319,10 +318,29 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-prometheus</artifactId>
-      <version>1.13.3</version>
+      <version>1.13.4</version>
+    </dependency>
+
+    <!--Lucene dependencies-->
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-core</artifactId>
+      <version>${lucene.version}</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>*</artifactId>
+          <groupId>*</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!--Test dependencies-->
+    <dependency>
+      <groupId>com.tdunning</groupId>
+      <artifactId>t-digest</artifactId>
+      <version>3.3</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-test-container</artifactId>
@@ -332,12 +350,6 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.h2database</groupId>
-      <artifactId>h2</artifactId>
-      <version>${h2.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -411,6 +423,17 @@
 
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <fork>false</fork>
+          <meminitial>128m</meminitial>
+          <maxmem>256m</maxmem>
+        </configuration>
+      </plugin>
+
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
         <executions>
@@ -476,7 +499,7 @@
     </plugins>
     <resources>
       <resource>
-        <directory>../client/build</directory>
+        <directory>../client/dist</directory>
         <targetPath>webapp</targetPath>
       </resource>
       <resource>
@@ -514,31 +537,6 @@
   <profiles>
     <profile>
       <id>it</id>
-
-      <properties>
-        <tomcat.connector.http.port>8080</tomcat.connector.http.port>
-        <http.port>${tomcat.connector.http.port}</http.port>
-
-        <cargo.timeout>240000</cargo.timeout>
-        <cargo.deploy.timeout>60000</cargo.deploy.timeout>
-        <test.forkCount>${env.LIMITS_CPU}</test.forkCount>
-      </properties>
-
-      <dependencies>
-        <dependency>
-          <groupId>com.h2database</groupId>
-          <artifactId>h2</artifactId>
-          <version>${h2.version}</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.postgresql</groupId>
-          <artifactId>postgresql</artifactId>
-          <version>${postgres.version}</version>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-
       <build>
         <plugins>
           <plugin>
@@ -593,9 +591,10 @@
                     <OS_VERSION>${opensearch.test.version}</OS_VERSION>
                   </environmentVariables>
                   <skip>${skip.docker}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>-f</argument>
                     <argument>${docker.compose.file}</argument>
                     <argument>--profile</argument>
@@ -615,9 +614,10 @@
                 </goals>
                 <configuration>
                   <skip>${skip.docker}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>-f</argument>
                     <argument>${docker.compose.file}</argument>
                     <argument>rm</argument>
@@ -628,38 +628,6 @@
             </executions>
             <configuration>
               <skip>${skipTests}</skip>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.codehaus.cargo</groupId>
-            <artifactId>cargo-maven3-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>start-container</id>
-                <phase>pre-integration-test</phase>
-                <goals>
-                  <goal>redeploy</goal>
-                </goals>
-              </execution>
-            </executions>
-            <configuration>
-              <skip>${skipTests}</skip>
-              <!-- Container configuration -->
-              <container>
-                <type>remote</type>
-                <containerId>tomcat9x</containerId>
-              </container>
-              <configuration>
-                <type>runtime</type>
-                <properties>
-                  <cargo.remote.username>admin</cargo.remote.username>
-                  <cargo.remote.password>admin</cargo.remote.password>
-                  <cargo.servlet.port>${tomcat.connector.http.port}</cargo.servlet.port>
-                </properties>
-              </configuration>
-              <deployer>
-                <type>remote</type>
-              </deployer>
             </configuration>
           </plugin>
         </plugins>

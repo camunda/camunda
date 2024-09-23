@@ -17,7 +17,8 @@ package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.UpdateRetriesJobResponse;
 
-public interface UpdateRetriesJobCommandStep1 {
+public interface UpdateRetriesJobCommandStep1
+    extends CommandWithCommunicationApiStep<UpdateRetriesJobCommandStep1> {
   /**
    * Set the retries of this job.
    *

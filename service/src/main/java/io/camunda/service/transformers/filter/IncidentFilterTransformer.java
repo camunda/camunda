@@ -10,22 +10,22 @@ package io.camunda.service.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.service.entities.IncidentEntity.ErrorType;
+import io.camunda.service.entities.IncidentEntity.IncidentState;
 import io.camunda.service.search.filter.DateValueFilter;
 import io.camunda.service.search.filter.IncidentFilter;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.service.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
 import java.util.List;
-import java.util.Optional;
 
 public class IncidentFilterTransformer implements FilterTransformer<IncidentFilter> {
 
-  private final ServiceTransformers serviceTransformers;
+  private final ServiceTransformers transformers;
 
   public IncidentFilterTransformer(final ServiceTransformers transformers) {
-    serviceTransformers = transformers;
+    this.transformers = transformers;
   }
 
   @Override
@@ -33,38 +33,37 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
     final var keyQuery = getKeyQuery(filter.keys());
     final var processDefinitionKeyQuery =
         getProcessDefinitionKeyQuery(filter.processDefinitionKeys());
+    final var bpmnProcessIdQuery = getBpmnProcessIdQuery(filter.bpmnProcessIds());
     final var processInstanceKeyQuery = getProcessInstanceKeyQuery(filter.processInstanceKeys());
-    final var typeQuery = getTypeQuery(filter.types());
+    final var errorTypeQuery = getErrorTypeQuery(filter.errorTypes());
+    final var errorMessageQuery = getErrorMessageQuery(filter.errorMessages());
     final var flowNodeIdQuery = getFlowNodeIdQuery(filter.flowNodeIds());
-    final var flowNodeInstanceIdQuery = getFlowNodeInstanceIdQuery(filter.flowNodeInstanceIds());
+    final var flowNodeInstanceKeyQuery = getFlowNodeInstanceKeyQuery(filter.flowNodeInstanceKeys());
+    final var creationTimeQuery = getCreationTimeQuery(filter.creationTime());
     final var stateQuery = getStateQuery(filter.states());
     final var jobKeyQuery = getJobKeyQuery(filter.jobKeys());
+    final var treePathQuery = getTreePathQuery(filter.treePaths());
     final var tenantIdQuery = getTenantIdQuery(filter.tenantIds());
-    final var hasActiveOperationQuery = getHasActiveOperationQuery(filter.hasActiveOperation());
 
     return and(
         keyQuery,
         processDefinitionKeyQuery,
+        bpmnProcessIdQuery,
         processInstanceKeyQuery,
-        typeQuery,
+        errorTypeQuery,
+        errorMessageQuery,
         flowNodeIdQuery,
-        flowNodeInstanceIdQuery,
+        flowNodeInstanceKeyQuery,
+        creationTimeQuery,
         stateQuery,
         jobKeyQuery,
-        tenantIdQuery,
-        hasActiveOperationQuery);
+        treePathQuery,
+        tenantIdQuery);
   }
 
   @Override
   public List<String> toIndices(final IncidentFilter filter) {
-    return List.of("operate-incident-8.3.0_alias");
-  }
-
-  private SearchQuery getHasActiveOperationQuery(final boolean hasActiveOperation) {
-    if (hasActiveOperation) {
-      return term("hasActiveOperation", true);
-    }
-    return null;
+    return List.of("operate-incident-8.3.1_alias");
   }
 
   private SearchQuery getTenantIdQuery(final List<String> tenantIds) {
@@ -75,30 +74,33 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
     return longTerms("jobKey", jobKeys);
   }
 
-  private SearchQuery getStateQuery(final List<String> states) {
-    return stringTerms("state", states);
+  private SearchQuery getStateQuery(final List<IncidentState> states) {
+    return stringTerms("state", states != null ? states.stream().map(Enum::name).toList() : null);
   }
 
-  private SearchQuery getCreationTimeQuery(final DateValueFilter creationTimeFilter) {
-    return Optional.ofNullable(creationTimeFilter)
-        .map(
-            filter -> {
-              final var transformer = getDateValueFilterTransformer();
-              return transformer.apply(new DateFieldFilter("creationTime", creationTimeFilter));
-            })
-        .orElse(null);
+  private SearchQuery getCreationTimeQuery(final DateValueFilter filter) {
+    if (filter != null) {
+      final var transformer = transformers.getFilterTransformer(DateValueFilter.class);
+      return transformer.apply(new DateFieldFilter("creationTime", filter));
+    }
+    return null;
   }
 
-  private SearchQuery getFlowNodeInstanceIdQuery(final List<String> flowNodeInstanceIds) {
-    return stringTerms("flowNodeInstanceId", flowNodeInstanceIds);
+  private SearchQuery getBpmnProcessIdQuery(final List<String> bpmnProcessIds) {
+    return stringTerms("bpmnProcessId", bpmnProcessIds);
+  }
+
+  private SearchQuery getFlowNodeInstanceKeyQuery(final List<Long> flowNodeInstanceKeys) {
+    return longTerms("flowNodeInstanceKey", flowNodeInstanceKeys);
   }
 
   private SearchQuery getFlowNodeIdQuery(final List<String> flowNodeIds) {
     return stringTerms("flowNodeId", flowNodeIds);
   }
 
-  private SearchQuery getTypeQuery(final List<String> types) {
-    return stringTerms("type", types);
+  private SearchQuery getErrorTypeQuery(final List<ErrorType> errorTypes) {
+    return stringTerms(
+        "errorType", errorTypes != null ? errorTypes.stream().map(Enum::name).toList() : null);
   }
 
   private SearchQuery getProcessInstanceKeyQuery(final List<Long> processInstanceKeys) {
@@ -109,11 +111,15 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
     return longTerms("processDefinitionKey", processDefinitionKeys);
   }
 
+  private SearchQuery getErrorMessageQuery(final List<String> errorMessages) {
+    return stringTerms("errorMessage", errorMessages);
+  }
+
   private SearchQuery getKeyQuery(final List<Long> keys) {
     return longTerms("key", keys);
   }
 
-  private FilterTransformer<DateFieldFilter> getDateValueFilterTransformer() {
-    return serviceTransformers.getFilterTransformer(DateValueFilter.class);
+  private SearchQuery getTreePathQuery(final List<String> treePaths) {
+    return stringTerms("treePath", treePaths);
   }
 }

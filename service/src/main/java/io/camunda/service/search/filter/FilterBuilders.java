@@ -18,6 +18,10 @@ public final class FilterBuilders {
     return new ProcessInstanceFilter.Builder();
   }
 
+  public static ProcessInstanceVariableFilter.Builder processInstanceVariable() {
+    return new ProcessInstanceVariableFilter.Builder();
+  }
+
   public static UserTaskFilter.Builder userTask() {
     return new UserTaskFilter.Builder();
   }
@@ -30,13 +34,32 @@ public final class FilterBuilders {
     return new DecisionRequirementsFilter.Builder();
   }
 
+  public static DecisionInstanceFilter.Builder decisionInstance() {
+    return new DecisionInstanceFilter.Builder();
+  }
+
+  public static FlowNodeInstanceFilter.Builder flownodeInstance() {
+    return new FlowNodeInstanceFilter.Builder();
+  }
+
   public static UserFilter.Builder user() {
     return new UserFilter.Builder();
+  }
+
+  public static AuthorizationFilter.Builder authorization() {
+    return new AuthorizationFilter.Builder();
   }
 
   public static ProcessInstanceFilter processInstance(
       final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
     return fn.apply(processInstance()).build();
+  }
+
+  public static ProcessInstanceVariableFilter processInstanceVariable(
+      final Function<
+              ProcessInstanceVariableFilter.Builder, ObjectBuilder<ProcessInstanceVariableFilter>>
+          fn) {
+    return fn.apply(processInstanceVariable()).build();
   }
 
   public static UserTaskFilter userTask(
@@ -56,8 +79,18 @@ public final class FilterBuilders {
     return fn.apply(decisionRequirements()).build();
   }
 
+  public static DecisionInstanceFilter decisionInstance(
+      final Function<DecisionInstanceFilter.Builder, ObjectBuilder<DecisionInstanceFilter>> fn) {
+    return fn.apply(new DecisionInstanceFilter.Builder()).build();
+  }
+
   public static UserFilter user(final Function<UserFilter.Builder, ObjectBuilder<UserFilter>> fn) {
     return fn.apply(new UserFilter.Builder()).build();
+  }
+
+  public static AuthorizationFilter authorization(
+      final Function<AuthorizationFilter.Builder, ObjectBuilder<AuthorizationFilter>> fn) {
+    return fn.apply(new AuthorizationFilter.Builder()).build();
   }
 
   public static VariableFilter.Builder variable() {

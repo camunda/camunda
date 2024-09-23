@@ -11,6 +11,8 @@ import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.service.entities.IncidentEntity;
+import io.camunda.service.entities.IncidentEntity.ErrorType;
+import io.camunda.service.entities.IncidentEntity.IncidentState;
 import io.camunda.service.util.StubbedCamundaSearchClient;
 import io.camunda.service.util.StubbedCamundaSearchClient.RequestStub;
 import java.util.List;
@@ -19,7 +21,7 @@ public class IncidentSearchQueryStub implements RequestStub<IncidentEntity> {
 
   @Override
   public void registerWith(final StubbedCamundaSearchClient client) {
-    client.registerHandler(this);
+    client.registerHandler(this, IncidentEntity.class);
   }
 
   @Override
@@ -29,18 +31,17 @@ public class IncidentSearchQueryStub implements RequestStub<IncidentEntity> {
         new IncidentEntity(
             1L,
             2L,
+            "complexProcess",
             3L,
-            "type",
+            ErrorType.IO_MAPPING_ERROR,
+            "No file found",
             "flowNodeId",
-            "flowNodeInstanceId",
-            "creationTime",
-            "state",
             4L,
-            "tenantId",
-            true,
-            null,
-            null,
-            null);
+            "creationTime",
+            IncidentState.ACTIVE,
+            5L,
+            "PI_1/FN_flowNodeId/FNI_4",
+            "tenantId");
 
     final SearchQueryHit<IncidentEntity> hit =
         new SearchQueryHit.Builder<IncidentEntity>().id("1234").source(incident).build();

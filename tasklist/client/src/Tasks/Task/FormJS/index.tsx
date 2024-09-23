@@ -11,7 +11,7 @@ import {Form, Variable, CurrentUser, Task} from 'modules/types';
 import {useRemoveFormReference} from 'modules/queries/useTask';
 import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
-import {InlineLoadingStatus} from '@carbon/react';
+import {InlineLoadingStatus, Layer} from '@carbon/react';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {notificationsStore} from 'modules/stores/notifications';
 import {FormManager} from 'modules/formManager';
@@ -117,7 +117,7 @@ const FormJS: React.FC<Props> = ({
   return (
     <ScrollableContent data-testid="embedded-form" tabIndex={-1}>
       <TaskDetailsContainer>
-        <TaskDetailsRow>
+        <Layer as={TaskDetailsRow}>
           {match({schema, status})
             .with(
               {
@@ -170,7 +170,7 @@ const FormJS: React.FC<Props> = ({
               ),
             )
             .otherwise(() => null)}
-        </TaskDetailsRow>
+        </Layer>
         <DetailsFooter>
           <CompleteTaskButton
             submissionState={submissionState}

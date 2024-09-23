@@ -15,6 +15,7 @@ import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTe
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -59,7 +60,7 @@ final class OpensearchClientIT {
             RestClientFactory.of(config, true),
             indexRouter,
             templateReader,
-            new OpensearchMetrics(PARTITION_ID));
+            new OpensearchMetrics(new SimpleMeterRegistry()));
   }
 
   @AfterEach
@@ -150,7 +151,7 @@ final class OpensearchClientIT {
             RestClientFactory.of(config, true),
             indexRouter,
             templateReader,
-            new OpensearchMetrics(PARTITION_ID));
+            new OpensearchMetrics(new SimpleMeterRegistry()));
     authenticatedClient.putComponentTemplate();
 
     // then

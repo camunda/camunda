@@ -82,7 +82,7 @@ const apiRequest: <R, P>(
     let data = null;
     try {
       data = await response.json();
-    } catch (_) {
+    } catch {
       // body is empty
     }
     const success = response.ok;
@@ -93,7 +93,7 @@ const apiRequest: <R, P>(
       status: response.status,
       success,
     };
-  } catch (error) {
+  } catch {
     return {
       data: null,
       status: -1,

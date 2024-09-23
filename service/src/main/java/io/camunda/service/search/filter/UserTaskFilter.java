@@ -21,7 +21,8 @@ public record UserTaskFilter(
     List<String> candidateUsers,
     List<String> candidateGroups,
     List<String> tenantIds,
-    ComparableValueFilter priority)
+    List<VariableValueFilter> variableFilters,
+    String type)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
@@ -35,7 +36,8 @@ public record UserTaskFilter(
     private List<String> candidateUsers;
     private List<String> candidateGroups;
     private List<String> tenantIds;
-    private ComparableValueFilter priority;
+    private List<VariableValueFilter> variableFilters;
+    private String type;
 
     // Builder for keys (FieldFilter<List<Long>>)
     public Builder keys(final FilterOperator operator, final List<Long> values) {
@@ -127,8 +129,13 @@ public record UserTaskFilter(
       return this;
     }
 
-    public Builder priority(final ComparableValueFilter value) {
-      priority = value;
+    public Builder variable(final List<VariableValueFilter> values) {
+      variableFilters = addValuesToList(variableFilters, values);
+      return this;
+    }
+
+    public Builder type(final String value) {
+      type = value;
       return this;
     }
 
@@ -145,7 +152,8 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(candidateUsers, Collections.emptyList()),
           Objects.requireNonNullElse(candidateGroups, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
-          priority);
+          Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
+          type);
     }
   }
 }

@@ -129,6 +129,7 @@ public class ProcessInstanceController extends ErrorController
   @Override
   public Results<ProcessInstance> search(
       @RequestBody(required = false) Query<ProcessInstance> query) {
+
     logger.debug("search for query {}", query);
     query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, ProcessInstance.class);

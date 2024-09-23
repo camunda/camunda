@@ -17,9 +17,10 @@ package io.camunda.zeebe.client.usertask;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.protocol.rest.PriorityValueFilter;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryRequest;
+import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
+import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
 
 public final class SearchUserTaskTest extends ClientRestTest {
@@ -135,17 +136,19 @@ public final class SearchUserTaskTest extends ClientRestTest {
   }
 
   @Test
-  void shouldSearchUserTaskByPriority() {
+  void shouldSearchUserTaskByVariable() {
     // when
-    client
-        .newUserTaskQuery()
-        .filter(f -> f.priority(new PriorityValueFilter().eq(20)))
-        .send()
-        .join();
+    final UserTaskVariableFilterRequest userTaskVariableFilterRequest =
+        new UserTaskVariableFilterRequest().name("test").value("test");
+    final ArrayList<UserTaskVariableFilterRequest> listFilter = new ArrayList<>();
+
+    listFilter.add(userTaskVariableFilterRequest);
+
+    client.newUserTaskQuery().filter(f -> f.variables(listFilter)).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getPriority().getEq()).isEqualTo(20);
+    assertThat(request.getFilter().getVariables()).isEqualTo(listFilter);
   }
 }

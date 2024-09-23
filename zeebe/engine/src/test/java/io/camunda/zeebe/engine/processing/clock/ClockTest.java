@@ -16,6 +16,8 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.ClockClient;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -59,6 +61,18 @@ public final class ClockTest {
         .isEqualTo(Modification.pinAt(fakeNow));
     verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(0))
         .tryWriteResponse(anyInt(), anyLong());
+  }
+
+  @Test
+  public void shouldRejectClockPinWithNegativeTimestamp() {
+    // when
+    final var record = clockClient.expectRejection().pinAt(-1);
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ClockIntent.PIN)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason("Expected pin time to be not negative but it was -1");
   }
 
   @Test

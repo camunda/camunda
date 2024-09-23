@@ -59,6 +59,128 @@ jobs:
     with:
       branch: ${{ github.head_ref }}
 
+  es-schema-integrity-test:
+    name: Elasticsearch Schema Integrity Test
+    runs-on: gcp-core-8-default
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+      - name: Login to Harbor registry
+        uses: ./.github/actions/login-registry
+        with:
+          secrets: ${{ toJSON(secrets) }}
+      - name: "Read Java / Version Info"
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
+      - name: Start Elasticsearch - Old
+        uses: ./.github/actions/compose
+        with:
+          compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
+          project_name: elasticsearch-old
+        env:
+          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_previous_optimize_elasticsearch_version }}
+          ELASTIC_JVM_MEMORY: 1
+          ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_old_database_port }}
+      - name: Start Elasticsearch - New
+        uses: ./.github/actions/compose
+        with:
+          compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
+          project_name: elasticsearch-new
+        env:
+          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+          ELASTIC_JVM_MEMORY: 1
+          ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
+      - name: Install
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -pl optimize -am
+      - name: Verify optimize/qa/schema-integrity-tests
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: verify -Dskip.docker -Dskip.fe.build -f optimize/qa/schema-integrity-tests -Pes-schema-integrity-tests
+        env:
+          CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4
+        with:
+          name: es-schema-integrity-test-junit
+          path: |
+            **/failsafe-reports/**/*.xml
+            **/*.log
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        with:
+          archive_name: es-schema-integrity-test-docker
+
+  os-schema-integrity-test:
+    name: OpenSearch Schema Integrity Test
+    runs-on: gcp-core-8-default
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+      - name: Login to Harbor registry
+        uses: ./.github/actions/login-registry
+        with:
+          secrets: ${{ toJSON(secrets) }}
+      - name: "Read Java / Version Info"
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
+      - name: Start OpenSearch - Old
+        uses: ./.github/actions/compose
+        with:
+          compose_file: .github/actions/compose/docker-compose.opensearch.yml
+          project_name: opensearch-old
+        env:
+          OPENSEARCH_VERSION: ${{ steps.pom-info.outputs.x_previous_optimize_opensearch_version }}
+          OPENSEARCH_JVM_MEMORY: 1
+          OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_old_database_port }}
+      - name: Start OpenSearch - New
+        uses: ./.github/actions/compose
+        with:
+          compose_file: .github/actions/compose/docker-compose.opensearch.yml
+          project_name: opensearch-new
+        env:
+          OPENSEARCH_VERSION: ${{ steps.pom-info.outputs.x_opensearch_test_version }}
+          OPENSEARCH_JVM_MEMORY: 1
+          OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
+      - name: Install
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -pl optimize -am
+      - name: Verify optimize/qa/schema-integrity-tests
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: verify -Dskip.docker -Dskip.fe.build -f optimize/qa/schema-integrity-tests -Pos-schema-integrity-tests
+        env:
+          CAMUNDA_OPTIMIZE_DATABASE: opensearch
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4
+        with:
+          name: os-schema-integrity-test-junit
+          path: |
+            **/failsafe-reports/**/*.xml
+            **/*.log
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        with:
+          archive_name: os-schema-integrity-test-docker
+
   integration-tests:
     name: Integration Tests
     runs-on: gcp-core-32-default
@@ -68,13 +190,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cambpm: [ 'latest' ]
         includedGroups: [ 'ccsm-test' ]
         include:
         - includedGroups: 'ccsm-test'
           excludedGroups: ''
           profiles: 'ccsm-it'
-          requiresCambpm: false
 
     steps:
     - name: Checkout repository
@@ -126,7 +246,7 @@ jobs:
 
     - name: Upload Test Results
       if: always()
-      uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4
+      uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
       with:
         name: integration-test-elasticsearch-${{ matrix.includedGroups }}-junit
         path: |
@@ -154,7 +274,6 @@ jobs:
           - includedGroups: 'ccsm-test'
             excludedGroups: ''
             profiles: 'ccsm-it'
-            requiresCambpm: false
 
     steps:
       - name: Checkout repository
@@ -205,7 +324,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
         with:
           name: integration-test-opensearch-${{ matrix.includedGroups }}-junit
           path: |
@@ -233,10 +352,10 @@ jobs:
         include:
           - includedGroups: ''
             excludedGroups: 'ccsm-test,import,reportEvaluation'
-            profiles: 'it,engine-latest'
+            profiles: 'it'
           - includedGroups: 'reportEvaluation'
             excludedGroups: ''
-            profiles: 'it,engine-latest'
+            profiles: 'it'
     steps:
       - name: Checkout repository
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
@@ -260,15 +379,6 @@ jobs:
 
       - name: Expose Parsed OpenSearch Version
         run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"
-
-      - name: Start Cambpm
-        uses: ./.github/actions/compose
-        with:
-          compose_file: .github/actions/compose/docker-compose.cambpm.yml
-          project_name: cambpm
-        env:
-          CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
-          CAMBPM_JVM_MEMORY: 8
 
       - name: Start OpenSearch
         uses: ./.github/actions/compose
@@ -295,7 +405,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
         with:
           name: integration-test-opensearch-dev-${{ matrix.includedGroups }}-junit
           path: |
@@ -313,7 +423,7 @@ jobs:
   deploy-artifacts:
     if: github.event_name == 'push' && (github.ref_name == 'main' || startsWith(github.ref_name, 'stable/'))
     name: Deploy Artifacts
-    needs: [integration-tests]
+    needs: [integration-tests, es-schema-integrity-test, os-schema-integrity-test]
     uses: ./.github/workflows/optimize-deploy-artifacts.yml
     secrets: inherit
 
@@ -322,6 +432,8 @@ jobs:
     needs:
       - integration-tests
       - integration-tests-os
+      - os-schema-integrity-test
+      - es-schema-integrity-test
       - deploy-artifacts
     if: failure() && fromJSON(github.run_attempt) < 3
     runs-on: ubuntu-latest

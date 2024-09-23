@@ -90,7 +90,7 @@ class CompleteUserTaskTest {
 
     // when / then
     assertThatThrownBy(() -> client.newUserTaskCompleteCommand(userTaskKey).send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
 }

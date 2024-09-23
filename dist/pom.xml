@@ -15,11 +15,6 @@
 
   <name>Zeebe Distribution</name>
 
-  <properties>
-    <zbctl.force>false</zbctl.force>
-    <zbctl.rootDir>${maven.multiModuleProjectDirectory}</zbctl.rootDir>
-  </properties>
-
   <dependencies>
 
     <dependency>
@@ -162,12 +157,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>identity-common</artifactId>
+      <artifactId>identity-webjar</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>identity-webjar</artifactId>
+      <artifactId>identity-migration</artifactId>
     </dependency>
 
     <dependency>
@@ -614,28 +609,6 @@
         </executions>
       </plugin>
       <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-zbctl</id>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <target>
-                <?SORTPOM IGNORE?> <!-- ordering is important here, chmod needs to run after copying -->
-                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/camunda-zeebe/bin/zbctl.exe" />
-                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/camunda-zeebe/bin/zbctl.darwin" />
-                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl" tofile="${project.build.directory}/camunda-zeebe/bin/zbctl" />
-                <chmod dir="${project.build.directory}/camunda-zeebe/bin" failonerror="${zbctl.force}" includes="zbctl*" perm="ugo+rx" />
-                <?SORTPOM RESUME?>
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
@@ -683,7 +656,6 @@
 
             <!-- Needed for configuring the Identity SDK by providing an IdentityConfiguration bean -->
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
-            <dependency>io.camunda:identity-common</dependency>
             <dependency>io.camunda:identity-webjar</dependency>
 
             <dependency>io.camunda:operate-data-generator</dependency>

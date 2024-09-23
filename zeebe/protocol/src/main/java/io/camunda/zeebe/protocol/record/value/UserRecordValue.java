@@ -23,6 +23,8 @@ import org.immutables.value.Value;
 @ImmutableProtocol(builder = ImmutableUserRecordValue.Builder.class)
 public interface UserRecordValue extends RecordValue {
 
+  Long getUserKey();
+
   String getUsername();
 
   String getName();
@@ -30,4 +32,6 @@ public interface UserRecordValue extends RecordValue {
   String getEmail();
 
   String getPassword();
+
+  UserType getUserType();
 }

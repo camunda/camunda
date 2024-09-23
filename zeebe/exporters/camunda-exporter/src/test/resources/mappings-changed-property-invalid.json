@@ -1,0 +1,14 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "hello": {
+        "type": "text",
+        "null_value": "NULL"
+      },
+      "world": {
+        "type": "keyword"
+      }
+    }
+  }
+}

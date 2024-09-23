@@ -13,11 +13,9 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
 
 @NoArgsConstructor
 @Data
-@Accessors(chain = true)
 public class ExternalProcessVariableRequestDto implements OptimizeDto {
 
   @NotBlank private String id;
@@ -32,16 +30,20 @@ public class ExternalProcessVariableRequestDto implements OptimizeDto {
       final Long ingestionTimestamp, final List<ExternalProcessVariableRequestDto> variableDtos) {
     return variableDtos.stream()
         .map(
-            varDto ->
-                new ExternalProcessVariableDto()
-                    .setIngestionTimestamp(ingestionTimestamp)
-                    .setVariableId(varDto.getId())
-                    .setVariableName(varDto.getName())
-                    .setVariableValue(varDto.getValue())
-                    .setVariableType(varDto.getType())
-                    .setProcessInstanceId(varDto.getProcessInstanceId())
-                    .setProcessDefinitionKey(varDto.getProcessDefinitionKey())
-                    .setSerializationDataFormat(varDto.getSerializationDataFormat()))
+            varDto -> {
+              final ExternalProcessVariableDto externalProcessVariableDto =
+                  new ExternalProcessVariableDto();
+              externalProcessVariableDto.setIngestionTimestamp(ingestionTimestamp);
+              externalProcessVariableDto.setVariableId(varDto.getId());
+              externalProcessVariableDto.setVariableName(varDto.getName());
+              externalProcessVariableDto.setVariableValue(varDto.getValue());
+              externalProcessVariableDto.setVariableType(varDto.getType());
+              externalProcessVariableDto.setProcessInstanceId(varDto.getProcessInstanceId());
+              externalProcessVariableDto.setProcessDefinitionKey(varDto.getProcessDefinitionKey());
+              externalProcessVariableDto.setSerializationDataFormat(
+                  varDto.getSerializationDataFormat());
+              return externalProcessVariableDto;
+            })
         .toList();
   }
 

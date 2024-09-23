@@ -16,20 +16,51 @@
 package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
-import java.util.List;
-import java.util.function.Consumer;
 
 public interface ProcessInstanceFilter extends SearchRequestFilter {
 
-  /** Filter by process instance keys. */
-  ProcessInstanceFilter processInstanceKeys(final Long... values);
+  /** Filter by key */
+  ProcessInstanceFilter key(final Long key);
 
-  /** Filter by process instance keys. */
-  ProcessInstanceFilter processInstanceKeys(final List<Long> values);
+  /** Filter by bpmnProcessId */
+  ProcessInstanceFilter bpmnProcessId(final String bpmnProcessId);
 
-  /** Filter by variable values. */
-  ProcessInstanceFilter variable(final VariableValueFilter filter);
+  /** Filter by processName */
+  ProcessInstanceFilter processName(final String processName);
 
-  /** Filter by variable values. */
-  ProcessInstanceFilter variable(final Consumer<VariableValueFilter> fn);
+  /** Filter by processVersion */
+  ProcessInstanceFilter processVersion(final Integer processVersion);
+
+  /** Filter by processVersionTag */
+  ProcessInstanceFilter processVersionTag(final String processVersionTag);
+
+  /** Filter by processDefinitionKey */
+  ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey);
+
+  /** Filter by rootProcessInstanceKey */
+  ProcessInstanceFilter rootProcessInstanceKey(final Long rootProcessInstanceKey);
+
+  /** Filter by parentProcessInstanceKey */
+  ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey);
+
+  /** Filter by parentFlowNodeInstanceKey */
+  ProcessInstanceFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey);
+
+  /** Filter by treePath */
+  ProcessInstanceFilter treePath(final String treePath);
+
+  /** Filter by startDate */
+  ProcessInstanceFilter startDate(final String startDate);
+
+  /** Filter by endDate */
+  ProcessInstanceFilter endDate(final String endDate);
+
+  /** Filter by state */
+  ProcessInstanceFilter state(final String state);
+
+  /** Filter by incident */
+  ProcessInstanceFilter incident(final Boolean incident);
+
+  /** Filter by tenantId */
+  ProcessInstanceFilter tenantId(final String tenantId);
 }

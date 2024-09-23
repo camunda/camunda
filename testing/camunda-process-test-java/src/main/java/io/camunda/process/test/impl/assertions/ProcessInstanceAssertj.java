@@ -19,11 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
+import io.camunda.process.test.impl.client.CamundaClientNotFoundException;
 import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
 import io.camunda.process.test.impl.client.FlowNodeInstanceState;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.ProcessInstanceState;
-import io.camunda.process.test.impl.client.ZeebeClientNotFoundException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -113,7 +113,7 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
 
     try {
       Awaitility.await()
-          .ignoreException(ZeebeClientNotFoundException.class)
+          .ignoreException(CamundaClientNotFoundException.class)
           .failFast(() -> waitCondition.test(reference.get()))
           .untilAsserted(
               () -> {
@@ -151,7 +151,7 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
 
     try {
       Awaitility.await()
-          .ignoreException(ZeebeClientNotFoundException.class)
+          .ignoreException(CamundaClientNotFoundException.class)
           .failFast(
               () ->
                   reference.get().stream()

@@ -36,7 +36,6 @@ services:
     container_name: optimize-opensearch
     image: camunda/optimize:latest
     depends_on:
-      - elasticsearch
       - identity
     ports:
       - "8090:8090"
@@ -66,7 +65,7 @@ services:
       - identity-network
   keycloak:
     container_name: keycloak
-    image: bitnami/keycloak:25.0.4@sha256:c9569482317a4235d5a718743b1b57856efe14d973d2612c2b579ca60a5b6d4f
+    image: bitnami/keycloak:25.0.6@sha256:f9c6583ae2b5079824b35f13ecef3ad96e90af185b8df7ae0b686e83c33e257b
     ports:
       - "18080:8080"
     environment:

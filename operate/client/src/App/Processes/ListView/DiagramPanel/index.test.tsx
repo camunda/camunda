@@ -90,6 +90,7 @@ describe('DiagramPanel', () => {
 
     expect(await screen.findByText('Big variable process')).toBeInTheDocument();
     expect(screen.getByText('bigVarProcess')).toBeInTheDocument();
+    expect(screen.getByText(/MyVersionTag/i)).toBeInTheDocument();
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     await user.click(
       screen.getByRole('button', {

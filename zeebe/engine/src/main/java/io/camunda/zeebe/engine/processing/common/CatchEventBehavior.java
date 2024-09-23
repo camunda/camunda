@@ -27,8 +27,9 @@ import io.camunda.zeebe.engine.state.immutable.SignalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
+import io.camunda.zeebe.engine.state.signal.SignalSubscription;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
-import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -48,7 +49,7 @@ public final class CatchEventBehavior {
 
   private final ExpressionProcessor expressionProcessor;
   private final SubscriptionCommandSender subscriptionCommandSender;
-  private final int partitionsCount;
+  private final RoutingInfo routingInfo;
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
 
@@ -73,13 +74,13 @@ public final class CatchEventBehavior {
       final StateWriter stateWriter,
       final SideEffectWriter sideEffectWriter,
       final DueDateTimerChecker timerChecker,
-      final int partitionsCount,
+      final RoutingInfo routingInfo,
       final InstantSource clock) {
     this.expressionProcessor = expressionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.stateWriter = stateWriter;
     this.sideEffectWriter = sideEffectWriter;
-    this.partitionsCount = partitionsCount;
+    this.routingInfo = routingInfo;
 
     timerInstanceState = processingState.getTimerState();
     processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
@@ -294,8 +295,7 @@ public final class CatchEventBehavior {
     final DirectBuffer bpmnProcessId = cloneBuffer(context.getBpmnProcessId());
     final long elementInstanceKey = context.getElementInstanceKey();
 
-    final int subscriptionPartitionId =
-        SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionsCount);
+    final int subscriptionPartitionId = routingInfo.partitionForCorrelationKey(correlationKey);
 
     subscription.setSubscriptionPartitionId(subscriptionPartitionId);
     subscription.setMessageName(messageName);
@@ -394,17 +394,23 @@ public final class CatchEventBehavior {
         subscriptionKey, SignalSubscriptionIntent.CREATED, signalSubscription);
   }
 
-  private void unsubscribeFromSignalEvents(
-      final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
+  public void unsubscribeFromSignalEventsBySubscriptionFilter(
+      final long elementInstanceKey, final Predicate<SignalSubscription> signalSubscriptionFilter) {
     signalSubscriptionState.visitByElementInstanceKey(
         elementInstanceKey,
         subscription -> {
-          final var elementId = subscription.getRecord().getCatchEventIdBuffer();
-          if (elementIdFilter.test(elementId)) {
+          if (signalSubscriptionFilter.test(subscription)) {
             stateWriter.appendFollowUpEvent(
                 subscription.getKey(), SignalSubscriptionIntent.DELETED, subscription.getRecord());
           }
         });
+  }
+
+  public void unsubscribeFromSignalEvents(
+      final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
+    unsubscribeFromSignalEventsBySubscriptionFilter(
+        elementInstanceKey,
+        signal -> elementIdFilter.test(signal.getRecord().getCatchEventIdBuffer()));
   }
 
   public void unsubscribeFromTimerEventsByInstanceFilter(

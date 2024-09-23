@@ -226,7 +226,7 @@ class UpdateUserTaskTest {
   void shouldRejectIfMissingUpdateData() {
     // when / then
     assertThatThrownBy(() -> client.newUserTaskUpdateCommand(userTaskKey).send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }
 
@@ -235,7 +235,7 @@ class UpdateUserTaskTest {
     // when / then
     assertThatThrownBy(
             () -> client.newUserTaskUpdateCommand(userTaskKey).dueDate("foo").send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'")
         .hasMessageContaining("The provided due date 'foo' cannot be parsed as a date");
   }
@@ -245,7 +245,7 @@ class UpdateUserTaskTest {
     // when / then
     assertThatThrownBy(
             () -> client.newUserTaskUpdateCommand(userTaskKey).followUpDate("foo").send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'")
         .hasMessageContaining("The provided follow-up date 'foo' cannot be parsed as a date");
   }
@@ -261,7 +261,7 @@ class UpdateUserTaskTest {
                     .followUpDate("foo")
                     .send()
                     .join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'")
         .hasMessageContaining("The provided due date 'bar' cannot be parsed as a date")
         .hasMessageContaining("The provided follow-up date 'foo' cannot be parsed as a date");

@@ -8,7 +8,6 @@
 
 import {Selector} from 'testcafe';
 
-export const typeaheadInput = Selector('.Modal .Typeahead .Input');
 export const multiSelect = Selector('.Modal.is-visible .cds--multi-select');
 export const multiSelectClearBtn = multiSelect.find('.cds--tag__close-icon');
 export const multiSelectOption = (text) =>
@@ -42,6 +41,4 @@ export const customValueCheckbox = Selector('.Modal .customValueCheckbox');
 export const addValueButton = Selector('.Modal .customValueButton');
 export const customValueInput = Selector('.Modal .customValueInput input');
 export const addValueToListButton = Selector('.Modal .customValueInput button');
-export const removeButtonFor = (text) =>
-  Selector('.Modal .Tag').withText(text).find('.close.Button');
 export const editButton = Selector('.ActionItem .buttons button').nth(0);

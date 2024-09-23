@@ -31,6 +31,11 @@ public interface CommandDistributionRecordValue extends RecordValue {
   int getPartitionId();
 
   /**
+   * @return the queue id for this distribution or null if the queue id is not set.
+   */
+  String getQueueId();
+
+  /**
    * @return the wrapped record value type
    */
   ValueType getValueType();

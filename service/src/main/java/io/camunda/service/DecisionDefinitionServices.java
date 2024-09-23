@@ -7,16 +7,25 @@
  */
 package io.camunda.service;
 
+import static io.camunda.service.search.query.SearchQueryBuilders.decisionDefinitionSearchQuery;
+import static io.camunda.service.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
+
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.entities.DecisionDefinitionEntity;
+import io.camunda.service.entities.DecisionRequirementsEntity;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
-import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerEvaluateDecisionRequest;
+import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 public final class DecisionDefinitionServices
@@ -48,6 +57,50 @@ public final class DecisionDefinitionServices
 
   public SearchQueryResult<DecisionDefinitionEntity> search(
       final Function<DecisionDefinitionQuery.Builder, ObjectBuilder<DecisionDefinitionQuery>> fn) {
-    return search(SearchQueryBuilders.decisionDefinitionSearchQuery(fn));
+    return search(decisionDefinitionSearchQuery(fn));
+  }
+
+  public String getDecisionDefinitionXml(final Long decisionKey) {
+    final var decisionDefinitionQuery =
+        decisionDefinitionSearchQuery(q -> q.filter(f -> f.decisionKeys(decisionKey)));
+    final var decisionDefinition =
+        search(decisionDefinitionQuery).items().stream()
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new NotFoundException(
+                        "DecisionDefinition with decisionKey=%d cannot be found"
+                            .formatted(decisionKey)));
+
+    final Long decisionRequirementsKey = decisionDefinition.decisionRequirementsKey();
+    final var decisionRequirementsQuery =
+        decisionRequirementsSearchQuery(
+            q ->
+                q.filter(f -> f.decisionRequirementsKeys(decisionRequirementsKey))
+                    .resultConfig(r -> r.xml().include()));
+    return executor
+        .search(decisionRequirementsQuery, DecisionRequirementsEntity.class)
+        .items()
+        .stream()
+        .findFirst()
+        .map(DecisionRequirementsEntity::xml)
+        .orElseThrow(
+            () ->
+                new NotFoundException(
+                    "DecisionRequirements with decisionRequirementsKey=%d cannot be found"
+                        .formatted(decisionRequirementsKey)));
+  }
+
+  public CompletableFuture<BrokerResponse<DecisionEvaluationRecord>> evaluateDecision(
+      final String definitionId,
+      final Long definitionKey,
+      final Map<String, Object> variables,
+      final String tenantId) {
+    return sendBrokerRequestWithFullResponse(
+        new BrokerEvaluateDecisionRequest()
+            .setDecisionId(definitionId)
+            .setDecisionKey(definitionKey)
+            .setVariables(getDocumentOrEmpty(variables))
+            .setTenantId(tenantId));
   }
 }

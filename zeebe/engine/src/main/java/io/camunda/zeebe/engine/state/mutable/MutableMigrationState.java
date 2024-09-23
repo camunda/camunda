@@ -50,4 +50,6 @@ public interface MutableMigrationState extends MigrationState {
   void setMigratedByVersion(String version);
 
   void correctColumnFamilyPrefix();
+
+  void migrateOrderedCommandDistribution();
 }

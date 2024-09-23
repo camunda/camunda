@@ -7,12 +7,12 @@
  */
 package io.camunda.optimize.test.repository;
 
+import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
 import java.util.Set;
 import lombok.AllArgsConstructor;
-import org.elasticsearch.client.indices.GetIndexRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -24,14 +24,9 @@ public class TestIndexRepositoryES implements TestIndexRepository {
 
   @Override
   public Set<String> getAllIndexNames() {
-    GetIndexRequest request = new GetIndexRequest("*");
+    GetIndexRequest request = GetIndexRequest.of(i -> i.index("*"));
     try {
-      return Set.of(
-          esClient
-              .getHighLevelClient()
-              .indices()
-              .get(request, esClient.requestOptions())
-              .getIndices());
+      return esClient.elasticsearchClient().indices().get(request).result().keySet();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

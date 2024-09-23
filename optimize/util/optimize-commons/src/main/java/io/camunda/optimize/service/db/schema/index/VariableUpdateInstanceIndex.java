@@ -10,11 +10,10 @@ package io.camunda.optimize.service.db.schema.index;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class VariableUpdateInstanceIndex<TBuilder>
     extends DefaultIndexMappingCreator<TBuilder> {
@@ -51,31 +50,15 @@ public abstract class VariableUpdateInstanceIndex<TBuilder>
   }
 
   @Override
-  public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return xContentBuilder
-        .startObject(INSTANCE_ID)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(NAME)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(TYPE)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(VALUE)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(PROCESS_INSTANCE_ID)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(TENANT_ID)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(TIMESTAMP)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-        .endObject();
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+
+    return builder
+        .properties(INSTANCE_ID, p -> p.keyword(k -> k))
+        .properties(NAME, p -> p.keyword(k -> k))
+        .properties(TYPE, p -> p.keyword(k -> k))
+        .properties(VALUE, p -> p.keyword(k -> k))
+        .properties(PROCESS_INSTANCE_ID, p -> p.keyword(k -> k))
+        .properties(TENANT_ID, p -> p.keyword(k -> k))
+        .properties(TIMESTAMP, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)));
   }
 }

@@ -156,7 +156,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
                   name: variableName,
                   oldValue: variableValue,
                   newValue: input.value ?? '',
-                  isDirty: variableValue !== input.value ?? false,
+                  isDirty: variableValue !== input.value,
                   isValid: isValid ?? false,
                 });
 

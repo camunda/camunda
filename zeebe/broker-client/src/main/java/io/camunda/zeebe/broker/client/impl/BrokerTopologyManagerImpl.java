@@ -165,7 +165,7 @@ public final class BrokerTopologyManagerImpl extends Actor
     // GatewayClusterTopologyService.Listener. BrokerInfo contains the static clusterSize which is
     // the initial clusterSize. However, we still have to initialize it because it should have the
     // correct value even when the dynamic ClusterTopology is disabled.
-    if (topology.getClusterSize() == BrokerClusterStateImpl.UNINITIALIZED_CLUSTER_SIZE) {
+    if (!topology.isInitialized()) {
       topology.setClusterSize(distributedBrokerInfo.getClusterSize());
       topology.setPartitionsCount(distributedBrokerInfo.getPartitionsCount());
       topology.setReplicationFactor(distributedBrokerInfo.getReplicationFactor());

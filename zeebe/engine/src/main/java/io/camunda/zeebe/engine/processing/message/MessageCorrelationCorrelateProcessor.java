@@ -95,8 +95,9 @@ public final class MessageCorrelationCorrelateProcessor
         messageKey, MessageCorrelationIntent.CORRELATING, messageCorrelationRecord);
 
     final var correlatingSubscriptions = new Subscriptions();
-    correlateToMessageStartEventSubscriptions(command, messageKey, correlatingSubscriptions);
-    correlateToMessageEventSubscriptions(command.getValue(), messageKey, correlatingSubscriptions);
+    final var messageData = createMessageData(messageKey, messageCorrelationRecord);
+    correlateBehavior.correlateToMessageEvents(messageData, correlatingSubscriptions);
+    correlateBehavior.correlateToMessageStartEvents(messageData, correlatingSubscriptions);
 
     if (correlatingSubscriptions.isEmpty()) {
       final var errorMessage =
@@ -104,49 +105,37 @@ public final class MessageCorrelationCorrelateProcessor
               command.getValue().getName(), command.getValue().getCorrelationKey());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+    } else {
+      correlatingSubscriptions
+          .getFirstMessageStartEventSubscription()
+          .ifPresent(
+              subscription -> {
+                messageCorrelationRecord.setProcessInstanceKey(
+                    subscription.getProcessInstanceKey());
+
+                stateWriter.appendFollowUpEvent(
+                    messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
+                responseWriter.writeEventOnCommand(
+                    messageKey,
+                    MessageCorrelationIntent.CORRELATED,
+                    messageCorrelationRecord,
+                    command);
+              });
     }
+
+    correlateBehavior.sendCorrelateCommands(messageData, correlatingSubscriptions);
 
     // Message Correlate command cannot have a TTL. As a result the message expires immediately.
     stateWriter.appendFollowUpEvent(messageKey, MessageIntent.EXPIRED, messageRecord);
   }
 
-  private void correlateToMessageStartEventSubscriptions(
-      final TypedRecord<MessageCorrelationRecord> command,
-      final long messageKey,
-      final Subscriptions correlatingSubscriptions) {
-    final var messageCorrelationRecord = command.getValue();
-    final var correlatedSubscriptions =
-        correlateBehavior.correlateToMessageStartEvents(
-            new MessageData(
-                messageKey,
-                messageCorrelationRecord.getNameBuffer(),
-                messageCorrelationRecord.getCorrelationKeyBuffer(),
-                messageCorrelationRecord.getVariablesBuffer(),
-                messageCorrelationRecord.getTenantId()));
-    correlatingSubscriptions.addAll(correlatedSubscriptions);
-
-    if (!correlatedSubscriptions.isEmpty()) {
-      final var subscription = correlatedSubscriptions.peek();
-      messageCorrelationRecord.setProcessInstanceKey(subscription.getProcessInstanceKey());
-
-      stateWriter.appendFollowUpEvent(
-          messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
-      responseWriter.writeEventOnCommand(
-          messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord, command);
-    }
-  }
-
-  private void correlateToMessageEventSubscriptions(
-      final MessageCorrelationRecord messageCorrelationRecord,
-      final long messageKey,
-      final Subscriptions correlatingSubscriptions) {
-    correlatingSubscriptions.addAll(
-        correlateBehavior.correlateToMessageEvents(
-            new MessageData(
-                messageKey,
-                messageCorrelationRecord.getNameBuffer(),
-                messageCorrelationRecord.getCorrelationKeyBuffer(),
-                messageCorrelationRecord.getVariablesBuffer(),
-                messageCorrelationRecord.getTenantId())));
+  private MessageData createMessageData(
+      final long messageKey, final MessageCorrelationRecord messageCorrelationRecord) {
+    return new MessageData(
+        messageKey,
+        messageCorrelationRecord.getNameBuffer(),
+        messageCorrelationRecord.getCorrelationKeyBuffer(),
+        messageCorrelationRecord.getVariablesBuffer(),
+        messageCorrelationRecord.getTenantId());
   }
 }

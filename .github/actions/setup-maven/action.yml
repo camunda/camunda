@@ -38,7 +38,7 @@ runs:
       distribution: ${{ inputs.distribution }}
       cache: "maven"
   - name: Setup Maven
-    uses: stCarolas/setup-maven@v4.5
+    uses: stCarolas/setup-maven@v5
     with:
       maven-version: ${{ inputs.maven-version }}
   - name: 'Create settings.xml'

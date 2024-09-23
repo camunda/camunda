@@ -7,16 +7,18 @@
  */
 package io.camunda.service;
 
+import static java.util.Optional.ofNullable;
+
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
@@ -44,7 +46,7 @@ public abstract class ApiServices<T extends ApiServices<T>> {
     this.brokerClient = brokerClient;
     this.searchClient = searchClient;
     this.authentication = authentication;
-    this.transformers = Objects.requireNonNullElse(transformers, new ServiceTransformers());
+    this.transformers = ofNullable(transformers).orElseGet(ServiceTransformers::newInstance);
   }
 
   public abstract T withAuthentication(final Authentication authentication);
@@ -55,6 +57,11 @@ public abstract class ApiServices<T extends ApiServices<T>> {
   }
 
   protected <R> CompletableFuture<R> sendBrokerRequest(final BrokerRequest<R> brokerRequest) {
+    return sendBrokerRequestWithFullResponse(brokerRequest).thenApply(BrokerResponse::getResponse);
+  }
+
+  protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
+      final BrokerRequest<R> brokerRequest) {
     brokerRequest.setAuthorization(authentication.token());
     return brokerClient
         .sendRequest(brokerRequest)
@@ -69,7 +76,7 @@ public abstract class ApiServices<T extends ApiServices<T>> {
               if (response.isRejection()) {
                 throw new CamundaServiceException(response.getRejection());
               }
-              return response.getResponse();
+              return response;
             });
   }
 

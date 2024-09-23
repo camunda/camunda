@@ -18,7 +18,7 @@ package io.camunda.process.test.api;
 import static org.junit.platform.commons.util.ReflectionUtils.makeAccessible;
 
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.containers.OperateContainer;
+import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
@@ -101,7 +101,9 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
 
     final CamundaProcessTestContext camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
-            containerRuntime.getZeebeContainer(), createdClients::add);
+            containerRuntime.getCamundaContainer(),
+            containerRuntime.getConnectorsContainer(),
+            createdClients::add);
 
     // inject fields
     try {
@@ -152,10 +154,8 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   }
 
   private CamundaDataSource createDataSource(final CamundaContainerRuntime containerRuntime) {
-    final OperateContainer operateContainer = containerRuntime.getOperateContainer();
-    final String operateApiEndpoint =
-        "http://" + operateContainer.getHost() + ":" + operateContainer.getRestApiPort();
-    return new CamundaDataSource(operateApiEndpoint);
+    final CamundaContainer camundaContainer = containerRuntime.getCamundaContainer();
+    return new CamundaDataSource(camundaContainer.getRestApiAddress().toString());
   }
 
   @Override
@@ -178,54 +178,122 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
    */
   public CamundaProcessTestExtension withCamundaVersion(final String camundaVersion) {
     containerRuntimeBuilder
-        .withZeebeDockerImageVersion(camundaVersion)
-        .withOperateDockerImageVersion(camundaVersion)
-        .withTasklistDockerImageVersion(camundaVersion);
+        .withCamundaDockerImageVersion(camundaVersion)
+        .withConnectorsDockerImageVersion(camundaVersion);
     return this;
   }
 
   /**
-   * Configure the Zeebe Docker image name of the runtime.
+   * Configure the Camunda Docker image name of the runtime.
    *
    * @param dockerImageName the Docker image name to use
    * @return the extension builder
    */
-  public CamundaProcessTestExtension withZeebeDockerImageName(final String dockerImageName) {
-    containerRuntimeBuilder.withZeebeDockerImageName(dockerImageName);
+  public CamundaProcessTestExtension withCamundaDockerImageName(final String dockerImageName) {
+    containerRuntimeBuilder.withCamundaDockerImageName(dockerImageName);
     return this;
   }
 
   /**
-   * Add environment variables to the Zeebe runtime.
+   * Add environment variables to the Camunda runtime.
    *
    * @param envVars environment variables to add
    * @return the extension builder
    */
-  public CamundaProcessTestExtension withZeebeEnv(final Map<String, String> envVars) {
-    containerRuntimeBuilder.withZeebeEnv(envVars);
+  public CamundaProcessTestExtension withCamundaEnv(final Map<String, String> envVars) {
+    containerRuntimeBuilder.withCamundaEnv(envVars);
     return this;
   }
 
   /**
-   * Add an environment variable to the Zeebe runtime.
+   * Add an environment variable to the Camunda runtime.
    *
    * @param name the variable name
    * @param value the variable value
    * @return the extension builder
    */
-  public CamundaProcessTestExtension withZeebeEnv(final String name, final String value) {
-    containerRuntimeBuilder.withZeebeEnv(name, value);
+  public CamundaProcessTestExtension withCamundaEnv(final String name, final String value) {
+    containerRuntimeBuilder.withCamundaEnv(name, value);
     return this;
   }
 
   /**
-   * Add an exposed port to the Zeebe runtime.
+   * Add an exposed port to the Camunda runtime.
    *
    * @param port the port to add
    * @return the extension builder
    */
-  public CamundaProcessTestExtension withZeebeExposedPort(final int port) {
-    containerRuntimeBuilder.withZeebeExposedPort(port);
+  public CamundaProcessTestExtension withCamundaExposedPort(final int port) {
+    containerRuntimeBuilder.withCamundaExposedPort(port);
+    return this;
+  }
+
+  /**
+   * Enable or disable the Connectors. By default, the Connectors are disabled.
+   *
+   * @param enabled set {@code true} to enable the Connectors
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsEnabled(final boolean enabled) {
+    containerRuntimeBuilder.withConnectorsEnabled(enabled);
+    return this;
+  }
+
+  /**
+   * Configure the Connectors Docker image name of the runtime.
+   *
+   * @param dockerImageName the Docker image name to use
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsDockerImageName(final String dockerImageName) {
+    containerRuntimeBuilder.withConnectorsDockerImageName(dockerImageName);
+    return this;
+  }
+
+  /**
+   * Configure the Connectors Docker image version of the runtime.
+   *
+   * @param dockerImageVersion the version to use
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsDockerImageVersion(
+      final String dockerImageVersion) {
+    containerRuntimeBuilder.withConnectorsDockerImageVersion(dockerImageVersion);
+    return this;
+  }
+
+  /**
+   * Add environment variables to the Connectors runtime.
+   *
+   * @param envVars environment variables to add
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsEnv(final Map<String, String> envVars) {
+    containerRuntimeBuilder.withConnectorsEnv(envVars);
+    return this;
+  }
+
+  /**
+   * Add an environment variable to the Connectors runtime.
+   *
+   * @param name the variable name
+   * @param value the variable value
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsEnv(final String name, final String value) {
+    containerRuntimeBuilder.withConnectorsEnv(name, value);
+    return this;
+  }
+
+  /**
+   * Add a secret to the Connectors runtime.
+   *
+   * @param name the name of the secret
+   * @param value the value of the secret
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withConnectorsSecret(final String name, final String value) {
+    containerRuntimeBuilder.withConnectorsSecret(name, value);
     return this;
   }
 }

@@ -30,8 +30,8 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
   }
 
   public OptimizeIndexNameService(
-      final ConfigurationService configurationService, final DatabaseType databaseProfile) {
-    setIndexPrefix(configurationService, databaseProfile);
+      final ConfigurationService configurationService, final DatabaseType databaseType) {
+    setIndexPrefix(configurationService, databaseType);
   }
 
   public OptimizeIndexNameService(final String indexPrefix) {
@@ -97,11 +97,11 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
   }
 
   private void setIndexPrefix(
-      ConfigurationService configurationService, DatabaseType databaseProfile) {
-    if (databaseProfile.equals(DatabaseType.OPENSEARCH)) {
-      this.indexPrefix = configurationService.getOpenSearchConfiguration().getIndexPrefix();
+      ConfigurationService configurationService, DatabaseType databaseType) {
+    if (databaseType.equals(DatabaseType.OPENSEARCH)) {
+      indexPrefix = configurationService.getOpenSearchConfiguration().getIndexPrefix();
     } else {
-      this.indexPrefix = configurationService.getElasticSearchConfiguration().getIndexPrefix();
+      indexPrefix = configurationService.getElasticSearchConfiguration().getIndexPrefix();
     }
   }
 
@@ -109,6 +109,13 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
       final String indexAlias, final String version) {
     final String versionSuffix = version != null ? "_v" + version : "";
     return indexAlias + versionSuffix;
+  }
+
+  public String getOptimizeIndexOrTemplateNameForAliasAndVersionWithPrefix(
+      final String indexOrTemplateNameWithoutPrefix, final String version) {
+    return getOptimizeIndexAliasForIndexNameAndPrefix(
+        getOptimizeIndexOrTemplateNameForAliasAndVersion(indexOrTemplateNameWithoutPrefix, version),
+        indexPrefix);
   }
 
   public static String getOptimizeIndexAliasForIndexNameAndPrefix(

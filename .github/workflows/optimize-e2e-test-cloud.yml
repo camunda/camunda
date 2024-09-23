@@ -41,9 +41,9 @@ jobs:
         roleId: ${{ secrets.VAULT_ROLE_ID }}
         secretId: ${{ secrets.VAULT_SECRET_ID }}
         secrets: |
-          secret/data/products/optimize/ci/jenkins AUTH0_CLIENTSECRET;
-          secret/data/products/optimize/ci/jenkins AUTH0_USEREMAIL;
-          secret/data/products/optimize/ci/jenkins AUTH0_USERPASSWORD;
+          secret/data/products/optimize/ci/camunda-optimize AUTH0_CLIENTSECRET;
+          secret/data/products/optimize/ci/camunda-optimize AUTH0_USEREMAIL;
+          secret/data/products/optimize/ci/camunda-optimize AUTH0_USERPASSWORD;
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
@@ -61,12 +61,12 @@ jobs:
       env:
         ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
         ELASTIC_JVM_MEMORY: 1
-        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
+        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
     - name: Setup NodeJS
-      uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4
+      uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4
       with:
         node-version: ${{ steps.pom-info.outputs.x_version_node }}
-    - uses: ./.github/actions/setup-yarn-cache
+    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
       with:
         directory: optimize/client
     - name: Install node dependencies

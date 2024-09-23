@@ -17,6 +17,8 @@ public interface BrokerClusterState {
   int NODE_ID_NULL = UNKNOWN_NODE_ID - 1;
   int PARTITION_ID_NULL = NODE_ID_NULL - 1;
 
+  boolean isInitialized();
+
   int getClusterSize();
 
   int getPartitionsCount();

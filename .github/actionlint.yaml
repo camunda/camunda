@@ -48,6 +48,10 @@ self-hosted-runner:
   - gcp-core-8-default
   - gcp-core-16-default
   - gcp-core-32-default
+  - gcp-perf-core-2-default
+  - gcp-perf-core-4-default
+  - gcp-perf-core-8-default
+  - gcp-perf-core-16-default
   # by Zeebe team, to be deprecated after https://github.com/camunda/camunda/issues/18212
   - amd64
   - '16'

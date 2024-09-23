@@ -1,8 +1,12 @@
 {
   "mappings": {
+    "dynamic": "strict",
     "properties": {
       "hello": {
         "type": "text"
+      },
+      "world": {
+        "type": "keyword"
       }
     }
   }

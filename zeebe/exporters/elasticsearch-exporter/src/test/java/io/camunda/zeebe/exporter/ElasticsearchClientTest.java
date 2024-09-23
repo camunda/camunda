@@ -65,8 +65,7 @@ final class ElasticsearchClientTest {
           restClient,
           indexRouter,
           templateReader,
-          null,
-          new SimpleMeterRegistry());
+          new ElasticsearchMetrics(new SimpleMeterRegistry()));
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")

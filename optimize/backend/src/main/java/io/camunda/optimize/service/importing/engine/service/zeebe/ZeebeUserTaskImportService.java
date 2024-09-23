@@ -130,16 +130,18 @@ public class ZeebeUserTaskImportService
 
   private FlowNodeInstanceDto createSkeletonUserTaskInstance(
       final ZeebeUserTaskDataDto userTaskData) {
-    return new FlowNodeInstanceDto()
-        .setFlowNodeInstanceId(String.valueOf(userTaskData.getElementInstanceKey()))
-        .setFlowNodeId(userTaskData.getElementId())
-        .setFlowNodeType(FLOW_NODE_TYPE_USER_TASK)
-        .setProcessInstanceId(String.valueOf(userTaskData.getProcessInstanceKey()))
-        .setCanceled(false)
-        .setDefinitionKey(userTaskData.getBpmnProcessId())
-        .setDefinitionVersion(String.valueOf(userTaskData.getProcessDefinitionVersion()))
-        .setTenantId(userTaskData.getTenantId())
-        .setUserTaskInstanceId(String.valueOf(userTaskData.getUserTaskKey()));
+    final FlowNodeInstanceDto flowNodeInstanceDto = new FlowNodeInstanceDto();
+    flowNodeInstanceDto.setFlowNodeInstanceId(String.valueOf(userTaskData.getElementInstanceKey()));
+    flowNodeInstanceDto.setFlowNodeId(userTaskData.getElementId());
+    flowNodeInstanceDto.setFlowNodeType(FLOW_NODE_TYPE_USER_TASK);
+    flowNodeInstanceDto.setProcessInstanceId(String.valueOf(userTaskData.getProcessInstanceKey()));
+    flowNodeInstanceDto.setCanceled(false);
+    flowNodeInstanceDto.setDefinitionKey(userTaskData.getBpmnProcessId());
+    flowNodeInstanceDto.setDefinitionVersion(
+        String.valueOf(userTaskData.getProcessDefinitionVersion()));
+    flowNodeInstanceDto.setTenantId(userTaskData.getTenantId());
+    flowNodeInstanceDto.setUserTaskInstanceId(String.valueOf(userTaskData.getUserTaskKey()));
+    return flowNodeInstanceDto;
   }
 
   private void updateUserTaskDurations(final FlowNodeInstanceDto userTaskToAdd) {
@@ -251,14 +253,15 @@ public class ZeebeUserTaskImportService
 
   private AssigneeOperationDto createAssigneeOperationDto(
       final ZeebeUserTaskRecordDto zeebeUserTaskRecord) {
-    return new AssigneeOperationDto()
-        .setId(String.valueOf(zeebeUserTaskRecord.getKey()))
-        .setUserId(parseAssignee(zeebeUserTaskRecord.getValue()))
-        .setOperationType(
-            StringUtil.isNullOrEmpty(zeebeUserTaskRecord.getValue().getAssignee())
-                ? UNCLAIM_OPERATION_TYPE.toString()
-                : CLAIM_OPERATION_TYPE.toString())
-        .setTimestamp(zeebeUserTaskRecord.getDateForTimestamp());
+    final AssigneeOperationDto assigneeOperationDto = new AssigneeOperationDto();
+    assigneeOperationDto.setId(String.valueOf(zeebeUserTaskRecord.getKey()));
+    assigneeOperationDto.setUserId(parseAssignee(zeebeUserTaskRecord.getValue()));
+    assigneeOperationDto.setOperationType(
+        StringUtil.isNullOrEmpty(zeebeUserTaskRecord.getValue().getAssignee())
+            ? UNCLAIM_OPERATION_TYPE.toString()
+            : CLAIM_OPERATION_TYPE.toString());
+    assigneeOperationDto.setTimestamp(zeebeUserTaskRecord.getDateForTimestamp());
+    return assigneeOperationDto;
   }
 
   private String parseAssignee(final ZeebeUserTaskDataDto zeebeUserTaskData) {

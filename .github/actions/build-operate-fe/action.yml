@@ -15,7 +15,7 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: "20"
-    - uses: ./.github/actions/setup-yarn-cache
+    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
       with:
         directory: ${{ inputs.directory }}
     - name: Install node dependencies

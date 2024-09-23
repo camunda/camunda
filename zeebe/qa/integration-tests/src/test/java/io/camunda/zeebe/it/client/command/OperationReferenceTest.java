@@ -24,13 +24,17 @@ import org.junit.jupiter.api.Test;
 public class OperationReferenceTest {
   private static final long OPERATION_REFERENCE = 1234L;
 
-  @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
-      new TestStandaloneBroker().withRecordingExporter(true);
+  @TestZeebe(initMethod = "initTestStandaloneBroker")
+  private static TestStandaloneBroker zeebe;
 
   @AutoCloseResource
   private final ZeebeClient client =
-      ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofMinutes(2)).build();
+      zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofMinutes(2)).build();
+
+  @SuppressWarnings("unused")
+  static void initTestStandaloneBroker() {
+    zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  }
 
   @Test
   void shouldIncludeOperationReferenceInExportedCommandRecord() {

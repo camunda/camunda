@@ -14,8 +14,10 @@ import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
@@ -48,5 +50,13 @@ public final class RequestValidator {
             && changeset.getCandidateGroups() == null
             && changeset.getCandidateUsers() == null
             && changeset.getPriority() == null);
+  }
+
+  public static Optional<ProblemDetail> validate(Consumer<List<String>> customValidation) {
+    final List<String> violations = new ArrayList<>();
+
+    customValidation.accept(violations);
+
+    return createProblemDetail(violations);
   }
 }

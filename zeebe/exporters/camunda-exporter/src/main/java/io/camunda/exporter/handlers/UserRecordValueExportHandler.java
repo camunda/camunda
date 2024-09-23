@@ -45,6 +45,7 @@ public class UserRecordValueExportHandler implements ExportHandler<UserEntity, U
   public void updateEntity(final Record<UserRecordValue> record, final UserEntity entity) {
     final UserRecordValue value = record.getValue();
     entity
+        .setKey(value.getUserKey())
         .setUsername(value.getUsername())
         .setName(value.getName())
         .setEmail(value.getEmail())

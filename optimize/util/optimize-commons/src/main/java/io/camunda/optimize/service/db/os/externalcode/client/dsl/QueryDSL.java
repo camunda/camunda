@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.externalcode.client.dsl;
 
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
+import org.opensearch.client.opensearch._types.ScriptField;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
@@ -52,12 +54,24 @@ public interface QueryDSL {
   }
 
   private static Map<String, JsonData> jsonParams(final Map<String, Object> params) {
-    return params.entrySet().stream()
-        .collect(Collectors.toMap(Map.Entry::getKey, e -> json(e.getValue())));
+    if (params != null) {
+      return params.entrySet().stream()
+          .collect(Collectors.toMap(Map.Entry::getKey, e -> json(e.getValue())));
+    } else {
+      return Map.of();
+    }
   }
 
   static Query and(final Query... queries) {
+    return and(Arrays.asList(queries));
+  }
+
+  static Query and(final Collection<Query> queries) {
     return BoolQuery.of(q -> q.must(nonNull(queries))).toQuery();
+  }
+
+  static <C extends Collection<Boolean>> Query boolTerms(final String field, final C values) {
+    return terms(field, values, FieldValue::of);
   }
 
   static Query constantScore(final Query query) {
@@ -68,8 +82,20 @@ public interface QueryDSL {
     return ExistsQuery.of(q -> q.field(field)).toQuery();
   }
 
+  static Query filter(final List<Query> queries) {
+    return BoolQuery.of(q -> q.filter(nonNull(queries))).toQuery();
+  }
+
+  static Query filter(final Query... queries) {
+    return filter(Arrays.asList(queries));
+  }
+
   static <A> Query gt(final String field, final A gt) {
     return RangeQuery.of(q -> q.field(field).gt(json(gt))).toQuery();
+  }
+
+  static <A> Query gte(final String field, final A gte) {
+    return RangeQuery.of(q -> q.field(field).gte(json(gte))).toQuery();
   }
 
   static <A> Query gteLte(final String field, final A gte, final A lte) {
@@ -115,6 +141,27 @@ public interface QueryDSL {
 
   static <A> Query terms(
       final String field, final Collection<A> values, final Function<A, FieldValue> toFieldValue) {
+    final List<FieldValue> fieldValues = values.stream().map(toFieldValue).toList();
+    return TermsQuery.of(q -> q.field(field).terms(TermsQueryField.of(f -> f.value(fieldValues))))
+        .toQuery();
+  }
+
+  static <A> Query terms(final String field, final Collection<A> values) {
+    Function<A, FieldValue> toFieldValue =
+        (x) -> {
+          if (x instanceof String s) {
+            return FieldValue.of(s);
+          } else if (x instanceof Integer i) {
+            return FieldValue.of(i);
+          } else if (x instanceof Long l) {
+            return FieldValue.of(l);
+          } else if (x instanceof Boolean b) {
+            return FieldValue.of(b);
+          } else {
+            throw new OptimizeRuntimeException("Unsupported terms type: " + x.getClass());
+          }
+        };
+
     final List<FieldValue> fieldValues = values.stream().map(toFieldValue).toList();
     return TermsQuery.of(q -> q.field(field).terms(TermsQueryField.of(f -> f.value(fieldValues))))
         .toQuery();
@@ -166,6 +213,10 @@ public interface QueryDSL {
   }
 
   static Query or(final Query... queries) {
+    return or(Arrays.asList(queries));
+  }
+
+  static Query or(final Collection<Query> queries) {
     return BoolQuery.of(q -> q.should(nonNull(queries))).toQuery();
   }
 
@@ -183,8 +234,21 @@ public interface QueryDSL {
     return sortOrder == SortOrder.Asc ? SortOrder.Desc : SortOrder.Asc;
   }
 
+  static SortOrder transformSortOrder(
+      final io.camunda.optimize.dto.optimize.query.sorting.SortOrder sortOrder) {
+    return sortOrder == sortOrder.ASC ? SortOrder.Asc : SortOrder.Desc;
+  }
+
+  static Script script(final String script) {
+    return scriptFromJsonData(script, Map.of());
+  }
+
   static Script script(final String script, final Map<String, Object> params) {
     return scriptFromJsonData(script, jsonParams(params));
+  }
+
+  static ScriptField scriptField(final Script script) {
+    return ScriptField.of(b -> b.script(script));
   }
 
   static Script scriptFromJsonData(final String script, final Map<String, JsonData> params) {

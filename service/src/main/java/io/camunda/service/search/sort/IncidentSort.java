@@ -35,13 +35,23 @@ public record IncidentSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
+    public Builder bpmnProcessId() {
+      currentOrdering = new FieldSorting("bpmnProcessId", null);
+      return this;
+    }
+
     public Builder processInstanceKey() {
       currentOrdering = new FieldSorting("processInstanceKey", null);
       return this;
     }
 
-    public Builder type() {
-      currentOrdering = new FieldSorting("type", null);
+    public Builder errorType() {
+      currentOrdering = new FieldSorting("errorType", null);
+      return this;
+    }
+
+    public Builder errorMessage() {
+      currentOrdering = new FieldSorting("errorMessage", null);
       return this;
     }
 
@@ -50,8 +60,8 @@ public record IncidentSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
-    public Builder flowNodeInstanceId() {
-      currentOrdering = new FieldSorting("flowNodeInstanceId", null);
+    public Builder flowNodeInstanceKey() {
+      currentOrdering = new FieldSorting("flowNodeInstanceKey", null);
       return this;
     }
 
@@ -67,6 +77,11 @@ public record IncidentSort(List<FieldSorting> orderings) implements SortOption {
 
     public Builder jobKey() {
       currentOrdering = new FieldSorting("jobKey", null);
+      return this;
+    }
+
+    public Builder treePath() {
+      currentOrdering = new FieldSorting("treePath", null);
       return this;
     }
 

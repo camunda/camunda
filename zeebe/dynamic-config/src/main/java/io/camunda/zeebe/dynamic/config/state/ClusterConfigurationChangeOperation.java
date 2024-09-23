@@ -115,7 +115,7 @@ public sealed interface ClusterConfigurationChangeOperation {
      * @param memberId the member id of the member that will apply this operation
      * @param partitionId id of the partition to bootstrap
      */
-    record PartitionBootstrapOperation(MemberId memberId, int partitionId)
+    record PartitionBootstrapOperation(MemberId memberId, int partitionId, int priority)
         implements PartitionChangeOperation {}
   }
 }

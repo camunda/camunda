@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.opensearch;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.Inde
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import org.slf4j.Logger;
@@ -31,11 +33,13 @@ public class OpensearchExporter implements Exporter {
   private final ObjectMapper exporterMetadataObjectMapper = new ObjectMapper();
 
   private final OpensearchExporterMetadata exporterMetadata = new OpensearchExporterMetadata();
+  private final PluginRepository pluginRepository = new PluginRepository();
 
   private Controller controller;
   private OpensearchExporterConfiguration configuration;
   private OpensearchClient client;
   private OpensearchRecordCounters recordCounters;
+  private MeterRegistry meterRegistry;
 
   private long lastPosition = -1;
   private boolean indexTemplatesCreated;
@@ -47,9 +51,11 @@ public class OpensearchExporter implements Exporter {
     log.debug("Exporter configured with {}", configuration);
 
     validate(configuration);
+    pluginRepository.load(configuration.getInterceptorPlugins());
 
     context.setFilter(new OpensearchRecordFilter(configuration));
     indexTemplatesCreated = false;
+    meterRegistry = context.getMeterRegistry();
   }
 
   @Override
@@ -83,6 +89,12 @@ public class OpensearchExporter implements Exporter {
       client.close();
     } catch (final Exception e) {
       log.warn("Failed to close opensearch client", e);
+    }
+
+    try {
+      pluginRepository.close();
+    } catch (final Exception e) {
+      log.warn("Failed to close plugin repository", e);
     }
 
     log.info("Exporter closed");
@@ -145,7 +157,10 @@ public class OpensearchExporter implements Exporter {
 
   // TODO: remove this and instead allow client to be inject-able for testing
   protected OpensearchClient createClient() {
-    return new OpensearchClient(configuration);
+    return new OpensearchClient(
+        configuration,
+        meterRegistry,
+        RestClientFactory.of(configuration, pluginRepository.asRequestInterceptor()));
   }
 
   private void flushAndReschedule() {

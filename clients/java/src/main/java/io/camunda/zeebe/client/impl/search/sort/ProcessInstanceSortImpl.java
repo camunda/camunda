@@ -22,8 +22,53 @@ public class ProcessInstanceSortImpl extends SearchQuerySortBase<ProcessInstance
     implements ProcessInstanceSort {
 
   @Override
-  public ProcessInstanceSort processInstanceKey() {
-    return field("processInstanceKey");
+  public ProcessInstanceSort key() {
+    return field("key");
+  }
+
+  @Override
+  public ProcessInstanceSort bpmnProcessId() {
+    return field("bpmnProcessId");
+  }
+
+  @Override
+  public ProcessInstanceSort processName() {
+    return field("processName");
+  }
+
+  @Override
+  public ProcessInstanceSort processVersion() {
+    return field("processVersion");
+  }
+
+  @Override
+  public ProcessInstanceSort processVersionTag() {
+    return field("processVersionTag");
+  }
+
+  @Override
+  public ProcessInstanceSort processDefinitionKey() {
+    return field("processDefinitionKey");
+  }
+
+  @Override
+  public ProcessInstanceSort rootProcessInstanceKey() {
+    return field("rootProcessInstanceKey");
+  }
+
+  @Override
+  public ProcessInstanceSort parentProcessInstanceKey() {
+    return field("parentProcessInstanceKey");
+  }
+
+  @Override
+  public ProcessInstanceSort parentFlowNodeInstanceKey() {
+    return field("parentFlowNodeInstanceKey");
+  }
+
+  @Override
+  public ProcessInstanceSort treePath() {
+    return field("treePath");
   }
 
   @Override
@@ -34,6 +79,21 @@ public class ProcessInstanceSortImpl extends SearchQuerySortBase<ProcessInstance
   @Override
   public ProcessInstanceSort endDate() {
     return field("endDate");
+  }
+
+  @Override
+  public ProcessInstanceSort state() {
+    return field("state");
+  }
+
+  @Override
+  public ProcessInstanceSort incident() {
+    return field("incident");
+  }
+
+  @Override
+  public ProcessInstanceSort tenantId() {
+    return field("tenantId");
   }
 
   @Override

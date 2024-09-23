@@ -52,6 +52,47 @@ schemas:
     items:
       $ref: "components.yaml#/schemas/BrokerId"
 
+  ClusterConfigPatchRequest:
+    title: ClusterConfigPatchRequest
+    description: Request body for reconfiguring the cluster
+    type: object
+    properties:
+      brokers:
+        type: object
+        description: Specify the required changes to the brokers. You can either provide the set of
+          brokers to add and remove or the new count of brokers.
+        properties:
+          add:
+            type: array
+            description: List of brokers to add. Can be omitted if no brokers are added.
+            items:
+              $ref: "components.yaml#/schemas/BrokerId"
+          remove:
+            type: array
+            description: List of brokers to remove. Can be omitted if no brokers are removed.
+            items:
+              $ref: "components.yaml#/schemas/BrokerId"
+          count:
+            type: integer
+            format: int32
+            description: The new number of brokers. Can be omitted if the broker count is not changed
+              or if the brokers to add or remove is provided.
+            example: 12
+      partitions:
+        type: object
+        properties:
+          count:
+            type: integer
+            format: int32
+            description: The new number of partitions. Can be omitted if the partition count is not
+              changed. This is an experimental feature.
+            example: 12
+          replicationFactor:
+            type: integer
+            format: int32
+            description: The new replication factor. Can be omitted if the replication factor is not changed.
+            example: 3
+
   PlannedOperationsResponse:
     title: PlannedOperationsResponse
     description: Returns the current topology, planned changes and the expected final topology
@@ -93,6 +134,55 @@ schemas:
         $ref: "components.yaml#/schemas/CompletedChange"
       pendingChange:
         $ref: "components.yaml#/schemas/TopologyChange"
+      routing:
+        $ref: "components.yaml#/schemas/RoutingState"
+
+  RoutingState:
+    description: The routing state, i.e. where requests are sent to and how messages are correlated
+    type: object
+    required:
+      - version
+      - activePartitions
+      - messageCorrelation
+    properties:
+      version:
+        type: integer
+        format: int64
+        description: The version of the routing state
+        example: 1
+      activePartitions:
+        type: array
+        description: The list of active partitions that accept round-robin requests
+        example: [ 1, 2, 3 ]
+        items:
+          type: integer
+          format: int32
+      messageCorrelation:
+        $ref: "components.yaml#/schemas/MessageCorrelation"
+
+
+  MessageCorrelation:
+    description: The message correlation strategy
+    oneOf:
+      - $ref: "components.yaml#/schemas/MessageCorrelationHashMod"
+    discriminator:
+      propertyName: strategy
+      mapping:
+        HashMod: "components.yaml#/schemas/MessageCorrelationHashMod"
+
+  MessageCorrelationHashMod:
+    type: object
+    required:
+      - strategy
+      - partitionCount
+    properties:
+      strategy:
+        type: string
+      partitionCount:
+        type: integer
+        format: int32
+        description: The number of partitions
+        example: 3
 
   CompletedChange:
     type: object

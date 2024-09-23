@@ -10,7 +10,7 @@ import React from 'react';
 import {withRouter} from 'react-router';
 
 import {t} from 'translation';
-import {LoadingIndicator, Modal, ReportTemplateModal} from 'components';
+import {Loading, Modal, ReportTemplateModal} from 'components';
 import {useErrorHandling} from 'hooks';
 import {addNotification, showError} from 'notifications';
 import {createEntity, getCollection} from 'services';
@@ -41,7 +41,7 @@ export function ReportCreationModal({onClose, existingReport, onConfirm, locatio
     return (
       <Modal open>
         <Modal.Footer>
-          <LoadingIndicator />
+          <Loading small />
         </Modal.Footer>
       </Modal>
     );

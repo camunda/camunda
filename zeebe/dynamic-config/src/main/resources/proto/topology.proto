@@ -129,6 +129,7 @@ message PartitionEnableExporterOperation {
 
 message PartitionBootstrapOperation {
   int32 partitionId = 1;
+  int32 priority = 2;
 }
 
 message MemberJoinOperation {}
@@ -145,6 +146,7 @@ enum State {
   ACTIVE = 2;
   LEAVING = 3;
   LEFT = 4;
+  BOOTSTRAPPING = 5;
 }
 
 enum ChangeStatus {

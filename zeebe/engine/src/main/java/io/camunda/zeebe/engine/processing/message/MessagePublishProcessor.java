@@ -111,8 +111,11 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     responseWriter.writeEventOnCommand(
         messageKey, MessageIntent.PUBLISHED, command.getValue(), command);
 
-    correlateToSubscriptions(messageKey, messageRecord);
-    correlateToMessageStartEvents(messageRecord);
+    final var correlatingSubscriptions = new Subscriptions();
+    final var messageData = createMessageData(messageKey, messageRecord);
+    correlateBehavior.correlateToMessageEvents(messageData, correlatingSubscriptions);
+    correlateBehavior.correlateToMessageStartEvents(messageData, correlatingSubscriptions);
+    correlateBehavior.sendCorrelateCommands(messageData, correlatingSubscriptions);
 
     if (messageRecord.getTimeToLive() <= 0L) {
       // avoid that the message can be correlated again by writing the EXPIRED event as a follow-up
@@ -120,23 +123,13 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     }
   }
 
-  private void correlateToSubscriptions(final long messageKey, final MessageRecord message) {
-    correlateBehavior.correlateToMessageEvents(
-        new MessageData(
-            messageKey,
-            message.getNameBuffer(),
-            message.getCorrelationKeyBuffer(),
-            message.getVariablesBuffer(),
-            message.getTenantId()));
-  }
-
-  private void correlateToMessageStartEvents(final MessageRecord messageRecord) {
-    correlateBehavior.correlateToMessageStartEvents(
-        new MessageData(
-            messageKey,
-            messageRecord.getNameBuffer(),
-            messageRecord.getCorrelationKeyBuffer(),
-            messageRecord.getVariablesBuffer(),
-            messageRecord.getTenantId()));
+  private MessageData createMessageData(
+      final long messageKey, final MessageRecord messageCorrelationRecord) {
+    return new MessageData(
+        messageKey,
+        messageCorrelationRecord.getNameBuffer(),
+        messageCorrelationRecord.getCorrelationKeyBuffer(),
+        messageCorrelationRecord.getVariablesBuffer(),
+        messageCorrelationRecord.getTenantId());
   }
 }

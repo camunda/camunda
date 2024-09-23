@@ -215,6 +215,10 @@ export default function EntityList({
             }),
           };
 
+          const batchVisible = batchActionProps.shouldShowBatchActions;
+          const batchTabIndex = batchVisible ? 0 : -1;
+          const tabIndex = batchVisible ? -1 : 0;
+
           return (
             <TableContainer
               title={title}
@@ -231,7 +235,8 @@ export default function EntityList({
                     {Children.map(bulkActions, (child, idx) =>
                       cloneElement(child, {
                         key: idx,
-                        tabIndex: batchActionProps.shouldShowBatchActions ? 0 : -1,
+                        tabIndex: batchTabIndex,
+                        disabled: !batchVisible,
                         onDelete: onChange,
                         selectedEntries: rows.filter((row) =>
                           selectedRows.some((selectedRow) => selectedRow.id === row.id)
@@ -240,8 +245,10 @@ export default function EntityList({
                     )}
                   </TableBatchActions>
                 )}
-                <TableToolbarContent aria-hidden={batchActionProps.shouldShowBatchActions}>
+                <TableToolbarContent aria-hidden={batchVisible} tabIndex={tabIndex}>
                   <TableToolbarSearch
+                    tabIndex={tabIndex}
+                    disabled={batchVisible}
                     onChange={(e) => {
                       if (e) {
                         setQuery(e.target.value);
@@ -250,7 +257,12 @@ export default function EntityList({
                     }}
                     persistent
                   />
-                  {action}
+                  {isValidElement<{tabIndex?: number; disabled?: boolean}>(action)
+                    ? cloneElement(action, {
+                        tabIndex,
+                        disabled: batchVisible,
+                      })
+                    : action}
                 </TableToolbarContent>
               </TableToolbar>
               <Table {...getTableProps()}>

@@ -23,9 +23,8 @@ public final class BrokerDeployResourceRequest extends BrokerExecuteCommand<Depl
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public BrokerDeployResourceRequest addResource(final byte[] resource, final String resourceName) {
+  public BrokerDeployResourceRequest addResource(final String resourceName, final byte[] resource) {
     requestDto.resources().add().setResource(resource).setResourceName(resourceName);
-
     return this;
   }
 

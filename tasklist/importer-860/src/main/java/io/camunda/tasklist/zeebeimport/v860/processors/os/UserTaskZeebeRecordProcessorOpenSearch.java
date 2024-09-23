@@ -14,15 +14,16 @@ import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskVariableEntity;
+import io.camunda.tasklist.entities.listview.UserTaskListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
+import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToTaskEntityMapper;
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToVariableEntityMapper;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import jakarta.json.Json;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -55,6 +56,7 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
   @Autowired private UserTaskRecordToTaskEntityMapper userTaskRecordToTaskEntityMapper;
 
   @Autowired private UserTaskRecordToVariableEntityMapper userTaskRecordToVariableEntityMapper;
+  @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
 
   public void processUserTaskRecord(
       final Record<UserTaskRecordValue> record, final List<BulkOperation> operations)
@@ -62,6 +64,7 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
     final Optional<TaskEntity> taskEntity = userTaskRecordToTaskEntityMapper.map(record);
     if (taskEntity.isPresent()) {
       operations.add(getTaskQuery(taskEntity.get(), record));
+      operations.add(persistUserTaskToListView(taskEntity.get(), record));
     }
 
     if (!record.getValue().getVariables().isEmpty()) {
@@ -98,12 +101,12 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
           TaskVariableTemplate.VALUE,
           "null".equals(variable.getValue())
               ? "null"
-              : objectMapper.writeValueAsString(Json.createValue(variable.getValue())));
+              : objectMapper.writeValueAsString(variable.getValue()));
       updateFields.put(
           TaskVariableTemplate.FULL_VALUE,
           "null".equals(variable.getFullValue())
               ? "null"
-              : objectMapper.writeValueAsString(Json.createValue(variable.getFullValue())));
+              : objectMapper.writeValueAsString(variable.getFullValue()));
       updateFields.put(TaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
 
       return new BulkOperation.Builder()
@@ -123,5 +126,25 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
               variable.getId()),
           e);
     }
+  }
+
+  private BulkOperation persistUserTaskToListView(
+      final TaskEntity taskEntity, final Record record) {
+
+    final UserTaskListViewEntity tasklistListViewEntity = new UserTaskListViewEntity(taskEntity);
+
+    final Map<String, Object> updateFields =
+        userTaskRecordToTaskEntityMapper.getUpdateFieldsListViewMap(tasklistListViewEntity, record);
+
+    return new BulkOperation.Builder()
+        .update(
+            up ->
+                up.index(tasklistListViewTemplate.getFullQualifiedName())
+                    .id(tasklistListViewEntity.getId())
+                    .document(CommonUtils.getJsonObjectFromEntity(updateFields))
+                    .upsert(CommonUtils.getJsonObjectFromEntity(tasklistListViewEntity))
+                    .routing(tasklistListViewEntity.getProcessInstanceId())
+                    .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))
+        .build();
   }
 }

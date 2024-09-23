@@ -100,6 +100,9 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     brokerProperties.getData().getDisk().getFreeSpace().setProcessing(DataSize.ofMegabytes(128));
     brokerProperties.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
 
+    brokerProperties.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
+    brokerProperties.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
+
     operateProperties = new OperateProperties();
     tasklistProperties = new TasklistProperties();
 
@@ -135,9 +138,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   public TestStandaloneCamunda stop() {
     // clean up ES/OS indices
     LOGGER.info("Stopping standalone camunda test...");
-    (bean(TestOperateElasticsearchSchemaManager.class)).deleteSchema();
-    (bean(TestTasklistElasticsearchSchemaManager.class)).deleteSchema();
-
+    esContainer.stop();
     return super.stop();
   }
 

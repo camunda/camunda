@@ -10,10 +10,8 @@ package io.camunda.optimize.dto.optimize.rest.report.measure;
 import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SuperBuilder
 public class NumberMeasureResponseDto extends MeasureResponseDto<Double> {
   // overridden to make sure the type is always available and correct for these classes
   @Override

@@ -60,6 +60,24 @@ public final class SearchQueryBuilders {
     return fn.apply(decisionRequirementsSearchQuery()).build();
   }
 
+  public static DecisionInstanceQuery.Builder decisionInstanceSearchQuery() {
+    return new DecisionInstanceQuery.Builder();
+  }
+
+  public static DecisionInstanceQuery decisionInstanceSearchQuery(
+      final Function<DecisionInstanceQuery.Builder, ObjectBuilder<DecisionInstanceQuery>> fn) {
+    return fn.apply(decisionInstanceSearchQuery()).build();
+  }
+
+  public static FlowNodeInstanceQuery.Builder flownodeInstanceSearchQuery() {
+    return new FlowNodeInstanceQuery.Builder();
+  }
+
+  public static FlowNodeInstanceQuery flownodeInstanceSearchQuery(
+      final Function<FlowNodeInstanceQuery.Builder, ObjectBuilder<FlowNodeInstanceQuery>> fn) {
+    return fn.apply(flownodeInstanceSearchQuery()).build();
+  }
+
   public static UserQuery.Builder userSearchQuery() {
     return new UserQuery.Builder();
   }
@@ -67,6 +85,15 @@ public final class SearchQueryBuilders {
   public static UserQuery userSearchQuery(
       final Function<UserQuery.Builder, ObjectBuilder<UserQuery>> fn) {
     return fn.apply(userSearchQuery()).build();
+  }
+
+  public static AuthorizationQuery.Builder authorizationSearchQuery() {
+    return new AuthorizationQuery.Builder();
+  }
+
+  public static AuthorizationQuery authorizationSearchQuery(
+      final Function<AuthorizationQuery.Builder, ObjectBuilder<AuthorizationQuery>> fn) {
+    return fn.apply(authorizationSearchQuery()).build();
   }
 
   public static IncidentQuery.Builder incidentSearchQuery() {

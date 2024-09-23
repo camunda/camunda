@@ -14,14 +14,13 @@ import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {useEffect, useRef, useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {DecisionOperations} from './DecisionOperations';
-import {PanelHeader, Section} from './styled';
+import {CopiableContent, PanelHeader, Section} from './styled';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {reaction} from 'mobx';
 import {deleteSearchParams} from 'modules/utils/filter';
 import {DecisionViewer} from 'modules/components/DecisionViewer';
 import {notificationsStore} from 'modules/stores/notifications';
-import {CopiableContent} from 'modules/components/PanelHeader/CopiableContent';
 
 const Decision: React.FC = observer(() => {
   const location = useLocation();

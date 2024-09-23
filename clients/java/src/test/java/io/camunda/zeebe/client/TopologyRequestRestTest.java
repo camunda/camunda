@@ -171,7 +171,7 @@ public final class TopologyRequestRestTest extends ClientRestTest {
 
     // when
     assertThatThrownBy(() -> client.newTopologyRequest().send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Invalid request");
   }
 }

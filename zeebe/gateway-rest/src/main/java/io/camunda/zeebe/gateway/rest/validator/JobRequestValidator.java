@@ -60,7 +60,7 @@ public final class JobRequestValidator {
       final JobUpdateRequest updateRequest) {
     final List<String> violations = new ArrayList<>();
     final JobChangeset changeset = updateRequest.getChangeset();
-    if (changeset.getRetries() == null && changeset.getTimeout() == null) {
+    if (changeset == null || (changeset.getRetries() == null && changeset.getTimeout() == null)) {
       violations.add(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(List.of("retries", "timeout")));
     }
     return createProblemDetail(violations);

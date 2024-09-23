@@ -36,6 +36,14 @@ public interface IncidentFilter extends SearchRequestFilter {
   IncidentFilter processDefinitionKey(final Long value);
 
   /**
+   * Filters incidents by the bpmn process id.
+   *
+   * @param value the bpmn process id of the process definition
+   * @return the updated filter
+   */
+  IncidentFilter bpmnProcessId(final String value);
+
+  /**
    * Filters incidents by the process instance key.
    *
    * @param value the key of the process instance
@@ -44,12 +52,20 @@ public interface IncidentFilter extends SearchRequestFilter {
   IncidentFilter processInstanceKey(final Long value);
 
   /**
-   * Filters incidents by the type.
+   * Filters incidents by the error type.
    *
-   * @param value the type of incident
+   * @param errorType the error type of incident
    * @return the updated filter
    */
-  IncidentFilter type(final String type);
+  IncidentFilter errorType(final String errorType);
+
+  /**
+   * Filters incidents by error message.
+   *
+   * @param errorMessage the message of incident
+   * @return the updated filter
+   */
+  IncidentFilter errorMessage(final String errorMessage);
 
   /**
    * Filters incidents by the flow node id.
@@ -60,12 +76,20 @@ public interface IncidentFilter extends SearchRequestFilter {
   IncidentFilter flowNodeId(final String value);
 
   /**
-   * Filters incidents by the flow node instance id.
+   * Filters incidents by the flow node instance key.
    *
-   * @param value the id of flow node instance.
+   * @param value the key of flow node instance.
    * @return the updated filter
    */
-  IncidentFilter flowNodeInstanceId(final String value);
+  IncidentFilter flowNodeInstanceKey(final Long value);
+
+  /**
+   * Filters incidents by creation time of incident.
+   *
+   * @param creationTime the creation time of incident
+   * @return the updated filter
+   */
+  IncidentFilter creationTime(final String creationTime);
 
   /**
    * Filters incidents by the state of incident.
@@ -84,18 +108,18 @@ public interface IncidentFilter extends SearchRequestFilter {
   IncidentFilter jobKey(final Long value);
 
   /**
+   * Filters incidents by tree path
+   *
+   * @param treePath the tree path of incident
+   * @return the updated filter
+   */
+  IncidentFilter treePath(final String treePath);
+
+  /**
    * Filters incidents by tenant id.
    *
    * @param value the id of tenant
    * @return the updated filter
    */
   IncidentFilter tenantId(final String value);
-
-  /**
-   * Filters incidents by having an active operation.
-   *
-   * @param value whether the incident has an active operation.
-   * @return the updated filter
-   */
-  IncidentFilter hasActiveOperation(final Boolean value);
 }

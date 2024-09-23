@@ -15,11 +15,35 @@
  */
 package io.camunda.zeebe.client.api.search.response;
 
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+public interface ProcessInstance {
 
-public interface ProcessInstance extends ProcessInstanceEvent {
+  Long getKey();
+
+  String getBpmnProcessId();
+
+  String getProcessName();
+
+  Integer getProcessVersion();
+
+  String getProcessVersionTag();
+
+  Long getProcessDefinitionKey();
+
+  Long getRootProcessInstanceKey();
+
+  Long getParentProcessInstanceKey();
+
+  Long getParentFlowNodeInstanceKey();
+
+  String getTreePath();
 
   String getStartDate();
 
   String getEndDate();
+
+  String getState();
+
+  Boolean getIncident();
+
+  String getTenantId();
 }

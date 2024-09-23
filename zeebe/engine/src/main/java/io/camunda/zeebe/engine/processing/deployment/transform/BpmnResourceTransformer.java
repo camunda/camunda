@@ -133,7 +133,8 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                     .setVersion(
                         processState.getNextProcessVersion(
                             metadata.getBpmnProcessId(), deployment.getTenantId()))
-                    .setDuplicate(false);
+                    .setDuplicate(false)
+                    .setDeploymentKey(deployment.getDeploymentKey());
               }
               stateWriter.appendFollowUpEvent(
                   key,
@@ -202,21 +203,22 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
           .setBpmnProcessId(BufferUtil.wrapString(bpmnProcessId))
           .setChecksum(resourceDigest)
           .setResourceName(deploymentResource.getResourceNameBuffer())
-          .setTenantId(tenantId)
-          .setDeploymentKey(deploymentEvent.getDeploymentKey());
+          .setTenantId(tenantId);
       getOptionalVersionTag(process).ifPresent(processMetadata::setVersionTag);
 
       final var isDuplicate =
           isDuplicateOfLatest(deploymentResource, resourceDigest, lastProcess, lastDigest);
       if (isDuplicate) {
         processMetadata
-            .setVersion(lastProcess.getVersion())
             .setKey(lastProcess.getKey())
+            .setVersion(lastProcess.getVersion())
+            .setDeploymentKey(lastProcess.getDeploymentKey())
             .setDuplicate(true);
       } else {
         processMetadata
             .setKey(keyGenerator.nextKey())
-            .setVersion(processState.getNextProcessVersion(bpmnProcessId, tenantId));
+            .setVersion(processState.getNextProcessVersion(bpmnProcessId, tenantId))
+            .setDeploymentKey(deploymentEvent.getDeploymentKey());
       }
     }
   }

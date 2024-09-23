@@ -19,7 +19,8 @@ import io.camunda.zeebe.client.api.response.BroadcastSignalResponse;
 import java.io.InputStream;
 import java.util.Map;
 
-public interface BroadcastSignalCommandStep1 {
+public interface BroadcastSignalCommandStep1
+    extends CommandWithCommunicationApiStep<BroadcastSignalCommandStep1> {
 
   /**
    * Set the name of the signal.

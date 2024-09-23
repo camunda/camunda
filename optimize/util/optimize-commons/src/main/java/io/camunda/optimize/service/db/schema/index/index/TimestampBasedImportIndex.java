@@ -10,11 +10,11 @@ package io.camunda.optimize.service.db.schema.index.index;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 
+import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class TimestampBasedImportIndex<TBuilder>
     extends DefaultIndexMappingCreator<TBuilder> {
@@ -44,24 +44,13 @@ public abstract class TimestampBasedImportIndex<TBuilder>
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return xContentBuilder
-        .startObject(DATA_SOURCE)
-        .field("type", "object")
-        .field("dynamic", true)
-        .endObject()
-        .startObject(DB_TYPE_INDEX_REFERS_TO)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(TIMESTAMP_OF_LAST_ENTITY)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-        .endObject()
-        .startObject(LAST_IMPORT_EXECUTION_TIMESTAMP)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-        .endObject();
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+
+    return builder
+        .properties(DATA_SOURCE, p -> p.object(o -> o.dynamic(DynamicMapping.True)))
+        .properties(TIMESTAMP_OF_LAST_ENTITY, p -> p.date(o -> o.format(OPTIMIZE_DATE_FORMAT)))
+        .properties(
+            LAST_IMPORT_EXECUTION_TIMESTAMP, p -> p.date(o -> o.format(OPTIMIZE_DATE_FORMAT)))
+        .properties(DB_TYPE_INDEX_REFERS_TO, p -> p.keyword(o -> o));
   }
 }

@@ -30,35 +30,6 @@ Using Camunda 8, you can:
 
 [Learn more at camunda.com](https://camunda.com/platform/).
 
-## Release Lifecycle
-
-Our release cadence within major releases is a minor release every six months, with an alpha release on each of the five months between minor releases. Releases happen on the second Tuesday of the month, Berlin time (CET).
-
-Minor releases are supported with patches for eighteen months after their release.
-
-Here is a diagram illustrating the lifecycle of minor releases over a 27-month period:
-
-```
-2024                       2025                                2026
-Ap Ma Ju Ju Au Se Oc No De Ja Fe Ma Ap Ma Ju Ju Au Se Oc No De Ja Fe Ma Ap Ma Ju
-8.5--------------------------------------------------|
-                  8.6--------------------------------------------------|
-                                    8.7-----------------------------------------
-                                                      8.8-----------------------
-                                                                        8.9-----
-1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27
-```
-
-Here is a diagram illustrating the release schedule of the five alpha releases prior to an upcoming minor release over a 7-month period:
-
-```
-2024                                2025
-Oct       Nov          Dec          Jan          Feb          Mar          Apr
-8.6-----------------------------------------------------------------------------
-          8.6-alpha1   8.6-alpha2   8.6-alpha3   8.6-alpha4   8.6-alpha5   8.7--
-1         2            3            4            5            6            7
-```
-
 ## Status
 
 To learn more about what we're currently working on, check the [GitHub issues](https://github.com/camunda/camunda/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc) and the [latest commits](https://github.com/camunda/camunda/commits/main).
@@ -82,7 +53,6 @@ To learn more about what we're currently working on, check the [GitHub issues](h
 * [BPMN Processes](https://docs.camunda.io/docs/components/modeler/bpmn/bpmn-primer/)
 * [Installation and Configuration](https://docs.camunda.io/docs/self-managed/zeebe-deployment/)
 * [Java Client](https://docs.camunda.io/docs/apis-clients/java-client/)
-* [Go Client](https://docs.camunda.io/docs/apis-clients/go-client/)
 * [Spring SDK](https://docs.camunda.io/docs/apis-tools/spring-zeebe-sdk/getting-started/)
 
 ## Contributing
@@ -95,6 +65,10 @@ This project adheres to the [Camunda Code of Conduct](https://camunda.com/events
 By participating, you are expected to uphold this code. Please [report](https://camunda.com/events/code-conduct/reporting-violations/)
 unacceptable behavior as soon as possible.
 
+## Release Lifecycle
+
+Please refer to our [Release Policy](https://camunda.com/release-policy/) to learn about our release cadence, maintenance periods, etc.
+
 ## License
 
 Zeebe, Operate, and Tasklist source files are made available under the
@@ -104,7 +78,6 @@ below, which are made available under the [Apache License, Version
 
 Available under the [Apache License, Version 2.0](/licenses/APACHE-2.0.txt):
 - Java Client ([clients/java](/clients/java))
-- Go Client ([clients/go](/clients/go))
 - Spring SDK ([spring-boot-starter-camunda-sdk](/clients/spring-boot-starter-camunda-sdk))
 - Exporter API ([exporter-api](/zeebe/exporter-api))
 - Protocol ([protocol](/zeebe/protocol))

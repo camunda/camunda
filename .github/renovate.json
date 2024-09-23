@@ -125,16 +125,6 @@
       "enabled": false
     },
     {
-      "description": "Do not update node-fetch to v3 in optimize related projects",
-      "matchManagers": ["npm", "nvm"],
-      "matchFileNames": [
-        "optimize/**",
-        ".github/optimize/scripts/healthStatusReport/**"
-      ],
-      "matchPackagePrefixes": ["node-fetch"],
-      "enabled": false
-    },
-    {
       "description": "Exclude Optimize backend dependencies",
       "matchManagers": ["maven"],
       "matchFileNames": ["optimize/**"],

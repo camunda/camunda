@@ -97,6 +97,8 @@ public class ZeebeConstants {
 
   public static final String ELEMENT_EXECUTION_LISTENERS = "executionListeners";
   public static final String ELEMENT_EXECUTION_LISTENER = "executionListener";
+  public static final String ELEMENT_TASK_LISTENERS = "taskListeners";
+  public static final String ELEMENT_TASK_LISTENER = "taskListener";
 
   public static final String ELEMENT_VERSION_TAG = "versionTag";
 

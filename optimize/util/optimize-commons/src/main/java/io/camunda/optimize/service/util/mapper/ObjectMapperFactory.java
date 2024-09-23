@@ -89,7 +89,7 @@ public class ObjectMapperFactory {
                 SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS)
             .featuresToEnable(
                 JsonParser.Feature.ALLOW_COMMENTS,
-                SerializationFeature.INDENT_OUTPUT,
+                //                SerializationFeature.INDENT_OUTPUT,
                 DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY,
                 MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
             .build();

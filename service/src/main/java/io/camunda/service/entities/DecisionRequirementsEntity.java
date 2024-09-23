@@ -16,4 +16,5 @@ public record DecisionRequirementsEntity(
     String decisionRequirementsId,
     String name,
     Integer version,
-    String resourceName) {}
+    String resourceName,
+    String xml) {}

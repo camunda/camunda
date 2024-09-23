@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
@@ -82,6 +83,27 @@ final class RestClientFactoryTest {
     final var credentialsProvider =
         (CredentialsProvider) context.getAttribute(HttpClientContext.CREDS_PROVIDER);
     assertThat(credentialsProvider.getCredentials(AuthScope.ANY)).isNull();
+  }
+
+  @Test
+  void shouldApplyRequestInterceptorsInOrder() throws IOException {
+    // given
+    final var context = new BasicHttpContext();
+    try (final var client =
+        RestClientFactory.of(
+            config,
+            (req, ctx) -> ctx.setAttribute("foo", "bar"),
+            (req, ctx) -> ctx.setAttribute("foo", "baz"))) {
+
+      // when
+      client
+          .getHttpClient()
+          .execute(
+              HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
+    }
+
+    // then
+    assertThat(context.getAttribute("foo")).isEqualTo("baz");
   }
 
   private static final class NoopCallback implements FutureCallback<HttpResponse> {

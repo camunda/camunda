@@ -40,7 +40,7 @@ import {
 import {FiltersView} from './filters';
 import {AutoRefreshBehavior, AutoRefreshSelect} from './AutoRefresh';
 import useReportDefinitions from './useReportDefinitions';
-import {ReactComponent as DashboardCopyIcon} from './DashboardCopyIcon.svg';
+import DashboardCopyIcon from './DashboardCopyIcon.svg';
 
 import './DashboardView.scss';
 
@@ -166,9 +166,8 @@ export function DashboardView(props) {
             <div className="info">
               <EntityName
                 details={<LastModifiedInfo entity={{lastModified, lastModifier, owner}} />}
-              >
-                {name}
-              </EntityName>
+                name={name}
+              />
               {description && <EntityDescription description={description} />}
             </div>
             <div className="tools">

@@ -21,6 +21,7 @@ import static java.util.Collections.singletonList;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import java.util.Arrays;
@@ -367,6 +368,84 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
                 ZeebeFormDefinition.class,
                 "Attribute 'bindingType' must be one of: deployment, latest, versionTag"))
       },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "task",
+                task ->
+                    task.zeebeFormId("formId").zeebeFormBindingType(ZeebeBindingType.versionTag))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Attribute 'versionTag' must be present and not empty if 'bindingType' is 'versionTag'"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "task",
+                task ->
+                    task.zeebeFormId("formId")
+                        .zeebeFormBindingType(ZeebeBindingType.versionTag)
+                        .zeebeFormVersionTag(""))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Attribute 'versionTag' must be present and not empty if 'bindingType' is 'versionTag'"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "task",
+                task ->
+                    task.zeebeFormId("formId")
+                        .zeebeFormBindingType(ZeebeBindingType.versionTag)
+                        .zeebeFormVersionTag(" "))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Attribute 'versionTag' must be present and not empty if 'bindingType' is 'versionTag'"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "task",
+                task ->
+                    task.zeebeFormId("formId")
+                        .zeebeFormBindingType(ZeebeBindingType.deployment)
+                        .zeebeFormVersionTag("v1.0"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Attribute 'versionTag' may only be used if 'bindingType' is 'versionTag'"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "task",
+                task ->
+                    task.zeebeFormId("formId")
+                        .zeebeFormBindingType(ZeebeBindingType.latest)
+                        .zeebeFormVersionTag("v1.0"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Attribute 'versionTag' may only be used if 'bindingType' is 'versionTag'"))
+      },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ////////////////////////////////// Native user tasks ////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -661,7 +740,91 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             expect(
                 ZeebeFormDefinition.class,
                 "Attribute 'bindingType' must be one of: deployment, latest, versionTag"))
-      }
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "task",
+                task ->
+                    task.zeebeUserTask()
+                        .zeebeFormId("formId")
+                        .zeebeFormBindingType(ZeebeBindingType.versionTag))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Attribute 'versionTag' must be present and not empty if 'bindingType' is 'versionTag'"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "task",
+                task ->
+                    task.zeebeUserTask()
+                        .zeebeFormId("formId")
+                        .zeebeFormBindingType(ZeebeBindingType.versionTag)
+                        .zeebeFormVersionTag(""))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Attribute 'versionTag' must be present and not empty if 'bindingType' is 'versionTag'"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "task",
+                task ->
+                    task.zeebeUserTask()
+                        .zeebeFormId("formId")
+                        .zeebeFormBindingType(ZeebeBindingType.versionTag)
+                        .zeebeFormVersionTag(" "))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Attribute 'versionTag' must be present and not empty if 'bindingType' is 'versionTag'"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "task",
+                task ->
+                    task.zeebeUserTask()
+                        .zeebeFormId("formId")
+                        .zeebeFormBindingType(ZeebeBindingType.deployment)
+                        .zeebeFormVersionTag("v1.0"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Attribute 'versionTag' may only be used if 'bindingType' is 'versionTag'"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "task",
+                task ->
+                    task.zeebeUserTask()
+                        .zeebeFormId("formId")
+                        .zeebeFormBindingType(ZeebeBindingType.latest)
+                        .zeebeFormVersionTag("v1.0"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Attribute 'versionTag' may only be used if 'bindingType' is 'versionTag'"))
+      },
     };
   }
 }

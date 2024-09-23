@@ -37,7 +37,7 @@ public final class DecisionRequirementsFilterTest {
   public void shouldQueryByDecisionRequirementsKey() {
     // given
     final var decisionRequirementFilter =
-        FilterBuilders.decisionRequirements(f -> f.decisionRequirementsKeys(123L));
+        FilterBuilders.decisionRequirements(f -> f.decisionRequirementsKeys(124L));
     final var searchQuery =
         SearchQueryBuilders.decisionRequirementsSearchQuery(
             q -> q.filter(decisionRequirementFilter));
@@ -54,7 +54,7 @@ public final class DecisionRequirementsFilterTest {
             SearchTermQuery.class,
             t -> {
               assertThat(t.field()).isEqualTo("key");
-              assertThat(t.value().longValue()).isEqualTo(123L);
+              assertThat(t.value().longValue()).isEqualTo(124L);
             });
   }
 
@@ -207,6 +207,6 @@ public final class DecisionRequirementsFilterTest {
     assertThat(searchQueryResult.total()).isEqualTo(1);
     assertThat(searchQueryResult.items()).hasSize(1);
     final DecisionRequirementsEntity item = searchQueryResult.items().get(0);
-    assertThat(item.key()).isEqualTo(123L);
+    assertThat(item.key()).isEqualTo(124L);
   }
 }

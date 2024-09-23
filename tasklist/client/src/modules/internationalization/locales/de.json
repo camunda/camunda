@@ -57,7 +57,7 @@
     "taskDetailsNewVariableNameFieldLabel": "Variablenname",
     "notificationActionButtonLabel": "Aktion",
     "nativeNotificationOneNewTaskAssigned": "1 Aufgabe ist Ihnen zugewiesen.",
-    "nativeNotificationMultipleTasksAssigned": "{{numTasks}} Aufgaben sind Ihnen zugewiesen.",
+    "nativeNotificationMultipleTasksAssigned": "{{count}} Aufgaben sind Ihnen zugewiesen.",
     "nativeNotificationFiftyOrMoreTasksAssigned": "50+ Aufgaben sind Ihnen zugewiesen.",
     "nativeNotificationNewTasksMessageBody": "Klicken Sie hier, um die Details anzuzeigen.",
     "processesFirstTimeModalAriaLabel": "Starten Sie Ihren Prozess auf Abruf",

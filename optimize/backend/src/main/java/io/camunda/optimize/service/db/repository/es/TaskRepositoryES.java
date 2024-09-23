@@ -8,15 +8,27 @@
 package io.camunda.optimize.service.db.repository.es;
 
 import static io.camunda.optimize.service.exceptions.ExceptionHelper.safe;
+import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 
+import co.elastic.clients.elasticsearch._types.Conflicts;
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
+import co.elastic.clients.elasticsearch.core.UpdateByQueryRequest;
+import co.elastic.clients.elasticsearch.tasks.ListRequest;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.repository.TaskRepository;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import io.camunda.optimize.upgrade.es.TaskResponse;
+import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
-import org.elasticsearch.index.reindex.BulkByScrollTask;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.Response;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -24,34 +36,125 @@ import org.springframework.stereotype.Component;
 @Component
 @AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
-public class TaskRepositoryES implements TaskRepository {
+public class TaskRepositoryES extends TaskRepository {
+
   private final OptimizeElasticsearchClient esClient;
 
   @Override
   public List<TaskRepository.TaskProgressInfo> tasksProgress(final String action) {
-    ListTasksRequest request = new ListTasksRequest().setActions(action).setDetailed(true);
+    final ListRequest request = ListRequest.of(b -> b.actions(action).detailed(true));
     return safe(
         () ->
-            esClient.getTaskList(request).getTasks().stream()
-                .filter(taskInfo -> taskInfo.getStatus() instanceof BulkByScrollTask.Status)
-                .map(taskInfo -> (BulkByScrollTask.Status) taskInfo.getStatus())
+            Optional.ofNullable(esClient.getTaskList(request).tasks())
                 .map(
-                    status ->
-                        new TaskProgressInfo(
-                            getProgress(status), status.getTotal(), getProcessedTasksCount(status)))
-                .toList(),
+                    tasks ->
+                        tasks.flat().stream()
+                            .filter(taskInfo -> taskInfo.status() != null)
+                            .map(taskInfo -> taskInfo.status().toJson().asJsonObject())
+                            .map(
+                                status ->
+                                    new TaskProgressInfo(
+                                        getProgress(status),
+                                        status.getInt("total"),
+                                        getProcessedTasksCount(status)))
+                            .toList())
+                .orElse(List.of()),
         e -> "Failed to fetch task progress from Elasticsearch!",
         log);
   }
 
-  private static long getProcessedTasksCount(BulkByScrollTask.Status status) {
-    return status.getDeleted() + status.getCreated() + status.getUpdated();
+  public boolean tryUpdateByQueryRequest(
+      final String updateItemIdentifier,
+      final Script updateScript,
+      final Query filterQuery,
+      final String... indices) {
+    log.debug("Updating {}", updateItemIdentifier);
+    final UpdateByQueryRequest updateByQueryRequest =
+        UpdateByQueryRequest.of(
+            b ->
+                b.index(esClient.addPrefixesToIndices(indices))
+                    .query(filterQuery)
+                    .conflicts(Conflicts.Proceed)
+                    .script(updateScript)
+                    .waitForCompletion(false)
+                    .refresh(true));
+
+    final String taskId;
+    try {
+      taskId = esClient.submitUpdateTask(updateByQueryRequest).task();
+    } catch (IOException e) {
+      final String errorMessage =
+          String.format(
+              "Could not create updateBy task for [%s] with query [%s]!",
+              updateItemIdentifier, filterQuery);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+
+    waitUntilTaskIsFinished(taskId, updateItemIdentifier);
+
+    try {
+      final TaskResponse.Status taskStatus = getTaskResponse(taskId).getTaskStatus();
+      log.debug("Updated [{}] {}.", taskStatus.getDeleted(), updateItemIdentifier);
+      return taskStatus.getUpdated() > 0L;
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException(
+          String.format(
+              "Error while trying to read Elasticsearch task status with ID: [%s]", taskId),
+          e);
+    }
   }
 
-  private static int getProgress(BulkByScrollTask.Status status) {
-    return status.getTotal() > 0
-        ? Double.valueOf((double) getProcessedTasksCount(status) / status.getTotal() * 100.0D)
-            .intValue()
-        : 0;
+  public boolean tryDeleteByQueryRequest(
+      final Query query,
+      final String deletedItemIdentifier,
+      final boolean refresh,
+      final String... indices) {
+    log.debug("Deleting {}", deletedItemIdentifier);
+
+    final DeleteByQueryRequest request =
+        DeleteByQueryRequest.of(
+            b ->
+                b.index(esClient.addPrefixesToIndices(indices))
+                    .query(query)
+                    .refresh(refresh)
+                    .waitForCompletion(false)
+                    .conflicts(Conflicts.Proceed));
+
+    final String taskId;
+    try {
+      taskId = esClient.submitDeleteTask(request).task();
+    } catch (IOException e) {
+      final String errorMessage =
+          String.format(
+              "Could not create delete task for [%s] with query [%s]!",
+              deletedItemIdentifier, query);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+
+    waitUntilTaskIsFinished(taskId, deletedItemIdentifier);
+
+    try {
+      final TaskResponse.Status taskStatus = getTaskResponse(taskId).getTaskStatus();
+      log.debug(
+          "Deleted [{}] out of [{}] {}.",
+          taskStatus.getDeleted(),
+          taskStatus.getTotal(),
+          deletedItemIdentifier);
+      return taskStatus.getDeleted() > 0L;
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException(
+          String.format(
+              "Error while trying to read Elasticsearch task status with ID: [%s]", taskId),
+          e);
+    }
+  }
+
+  @Override
+  public TaskResponse getTaskResponse(final String taskId) throws IOException {
+    final Request request = new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId);
+    final Response response = esClient.performRequest(request);
+    return OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), TaskResponse.class);
   }
 }

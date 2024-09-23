@@ -74,8 +74,6 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private BackupStore backupStore;
   private DynamicPartitionConfig partitionConfig;
-  private CommandApiService commandApiService;
-  private MeterRegistry meterRegistry;
   private ControllableStreamClock clock;
 
   @Override
@@ -179,6 +177,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public void setStreamClock(final ControllableStreamClock clock) {
     this.clock = clock;
+  }
+
+  @Override
+  public int getPartitionCount() {
+    return 1;
   }
 
   @Override
@@ -305,9 +308,17 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public MeterRegistry getMeterRegistry() {
-    return meterRegistry;
+  public MeterRegistry getBrokerMeterRegistry() {
+    return null;
   }
+
+  @Override
+  public MeterRegistry getPartitionMeterRegistry() {
+    return null;
+  }
+
+  @Override
+  public void setPartitionMeterRegistry(final MeterRegistry partitionMeterRegistry) {}
 
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {
     this.gatewayBrokerTransport = gatewayBrokerTransport;
@@ -361,7 +372,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public CommandApiService getCommandApiService() {
-    return commandApiService;
+    return null;
   }
 
   @Override

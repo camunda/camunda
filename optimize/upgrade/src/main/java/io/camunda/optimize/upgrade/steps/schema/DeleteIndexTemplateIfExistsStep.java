@@ -11,7 +11,7 @@ import static io.camunda.optimize.upgrade.steps.UpgradeStepType.SCHEMA_DELETE_TE
 
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import io.camunda.optimize.upgrade.es.SchemaUpgradeClient;
+import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
@@ -32,23 +32,24 @@ public class DeleteIndexTemplateIfExistsStep extends UpgradeStep {
   }
 
   @Override
-  public UpgradeStepType getType() {
-    return SCHEMA_DELETE_TEMPLATE;
-  }
-
-  @Override
   public IndexMappingCreator getIndex() {
     throw new UpgradeRuntimeException(
         "Index class does not exist as its template is being deleted");
   }
 
   @Override
-  public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
-    final String indexAlias =
-        schemaUpgradeClient.getIndexNameService().getOptimizeIndexAliasForIndex(templateName);
-    schemaUpgradeClient.getAliasMap(indexAlias).keySet().stream()
-        .filter(templateName -> templateName.contains(this.templateName))
-        .forEach(schemaUpgradeClient::deleteTemplateIfExists);
+  public UpgradeStepType getType() {
+    return SCHEMA_DELETE_TEMPLATE;
+  }
+
+  @Override
+  public void performUpgradeStep(final SchemaUpgradeClient schemaUpgradeClient) {
+    final String fullTemplateName =
+        schemaUpgradeClient
+            .getIndexNameService()
+            .getOptimizeIndexOrTemplateNameForAliasAndVersionWithPrefix(
+                templateName, String.valueOf(templateVersion));
+    schemaUpgradeClient.deleteTemplateIfExists(fullTemplateName);
   }
 
   public String getVersionedTemplateNameWithTemplateSuffix() {

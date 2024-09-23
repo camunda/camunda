@@ -46,7 +46,7 @@ export default function KpiResult({kpis, displayTip}) {
               <b className="title">
                 {t('report.label')}: {reportName}
               </b>{' '}
-              <Link to={link} target="_blank">
+              <Link className="cds--link" to={link} target="_blank">
                 <Launch />
               </Link>
               <div className="reportValues">

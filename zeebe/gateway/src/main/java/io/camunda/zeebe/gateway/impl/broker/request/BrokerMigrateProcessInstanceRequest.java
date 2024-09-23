@@ -49,6 +49,12 @@ public final class BrokerMigrateProcessInstanceRequest
     return this;
   }
 
+  public BrokerMigrateProcessInstanceRequest setMappingInstructions(
+      final List<ProcessInstanceMigrationMappingInstruction> mappingInstructions) {
+    mappingInstructions.forEach(requestDto::addMappingInstruction);
+    return this;
+  }
+
   @Override
   public ProcessInstanceMigrationRecord getRequestWriter() {
     return requestDto;

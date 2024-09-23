@@ -40,12 +40,13 @@ env:
 jobs:
   integration-tests:
     name: Test
-    runs-on: [ self-hosted, linux, amd64, "16" ]
+    runs-on: gcp-perf-core-16-default
     if: ${{ !startsWith(inputs.branch, 'fe-') && !startsWith(inputs.branch, 'renovate/') }}
     strategy:
       fail-fast: false
       matrix:
         database: [ elasticsearch, opensearch ]
+
         include:
           - database: elasticsearch
             testProfile: docker-es
@@ -54,7 +55,7 @@ jobs:
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@9a9194f87191a7e9055e3e9b95b8cfb13023bb08
+        uses: actions/checkout@6d193bf28034eafb982f37bd894289fe649468fc
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags

@@ -1,11 +1,8 @@
 button.AddDefinition {
-  position: relative;
-  top: -44px;
-  left: 160px;
-  z-index: var(--z-above);
-  padding-right: 40px;
-  margin-bottom: -40px;
-  float: left;
+  position: absolute;
+  top: 0.25rem;
+  right: 2.5rem;
+  padding-right: 2rem;
 }
 
 .AddDefinitionModal {

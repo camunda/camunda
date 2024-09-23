@@ -31,7 +31,7 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
   public int determinePartition(final BrokerTopologyManager topologyManager) {
     final BrokerClusterState topology = topologyManager.getTopology();
 
-    if (topology == null) {
+    if (topology == null || !topology.isInitialized()) {
       return BrokerClusterState.PARTITION_ID_NULL;
     }
 
@@ -87,6 +87,12 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
   }
 
   private record PartitionRing(int[] partitions) {
+    PartitionRing {
+      if (partitions.length == 0) {
+        throw new IllegalArgumentException("Partitions must not be empty");
+      }
+    }
+
     static PartitionRing all(final int partitionCount) {
       final var partitions = new int[partitionCount];
       for (int i = 0; i < partitionCount; i++) {

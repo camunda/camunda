@@ -22,11 +22,26 @@ public class ProcessInstanceSearchQueryStub implements RequestStub<ProcessInstan
       throws Exception {
 
     final var processInstance =
-        new ProcessInstanceEntity("foo", 123L, 1, "bar", null, null, "2020-01-01", "2020-01-02");
+        new ProcessInstanceEntity(
+            123L,
+            "demoProcess",
+            "Demo Process",
+            5,
+            "v5",
+            789L,
+            345L,
+            333L,
+            777L,
+            "PI_1/PI_2",
+            "2024-01-01T00:00:00Z",
+            null,
+            ProcessInstanceEntity.ProcessInstanceState.ACTIVE,
+            false,
+            "tenant");
 
     final SearchQueryHit<ProcessInstanceEntity> hit =
         new SearchQueryHit.Builder<ProcessInstanceEntity>()
-            .id("1234")
+            .id("1000")
             .source(processInstance)
             .build();
 
@@ -42,6 +57,6 @@ public class ProcessInstanceSearchQueryStub implements RequestStub<ProcessInstan
 
   @Override
   public void registerWith(final StubbedCamundaSearchClient client) {
-    client.registerHandler(this);
+    client.registerHandler(this, ProcessInstanceEntity.class);
   }
 }

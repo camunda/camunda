@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.impl.search.response;
 
 import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionItem;
+import java.util.Objects;
 
 public final class DecisionDefinitionImpl implements DecisionDefinition {
 
@@ -29,13 +30,31 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
   private final String tenantId;
 
   public DecisionDefinitionImpl(final DecisionDefinitionItem item) {
-    this.dmnDecisionId = item.getDmnDecisionId();
-    this.dmnDecisionName = item.getDmnDecisionName();
-    this.version = item.getVersion();
-    this.decisionKey = item.getDecisionKey();
-    this.dmnDecisionRequirementsId = item.getDmnDecisionRequirementsId();
-    this.decisionRequirementsKey = item.getDecisionRequirementsKey();
-    this.tenantId = item.getTenantId();
+    this(
+        item.getDmnDecisionId(),
+        item.getDmnDecisionName(),
+        item.getVersion(),
+        item.getDecisionKey(),
+        item.getDmnDecisionRequirementsId(),
+        item.getDecisionRequirementsKey(),
+        item.getTenantId());
+  }
+
+  public DecisionDefinitionImpl(
+      final String dmnDecisionId,
+      final String dmnDecisionName,
+      final int version,
+      final long decisionKey,
+      final String dmnDecisionRequirementsId,
+      final long decisionRequirementsKey,
+      final String tenantId) {
+    this.dmnDecisionId = dmnDecisionId;
+    this.dmnDecisionName = dmnDecisionName;
+    this.version = version;
+    this.decisionKey = decisionKey;
+    this.dmnDecisionRequirementsId = dmnDecisionRequirementsId;
+    this.decisionRequirementsKey = decisionRequirementsKey;
+    this.tenantId = tenantId;
   }
 
   @Override
@@ -71,5 +90,59 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
   @Override
   public String getTenantId() {
     return tenantId;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        dmnDecisionId,
+        dmnDecisionName,
+        version,
+        decisionKey,
+        dmnDecisionRequirementsId,
+        decisionRequirementsKey,
+        tenantId);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionDefinitionImpl decisionDefinition = (DecisionDefinitionImpl) o;
+    return version == decisionDefinition.version
+        && decisionKey == decisionDefinition.decisionKey
+        && decisionRequirementsKey == decisionDefinition.decisionRequirementsKey
+        && Objects.equals(dmnDecisionId, decisionDefinition.dmnDecisionId)
+        && Objects.equals(dmnDecisionName, decisionDefinition.dmnDecisionName)
+        && Objects.equals(dmnDecisionRequirementsId, decisionDefinition.dmnDecisionRequirementsId)
+        && Objects.equals(tenantId, decisionDefinition.tenantId);
+  }
+
+  @Override
+  public String toString() {
+    return "DecisionDefinitionImpl{"
+        + "dmnDecisionId='"
+        + dmnDecisionId
+        + '\''
+        + ", dmnDecisionName='"
+        + dmnDecisionName
+        + '\''
+        + ", version="
+        + version
+        + ", decisionKey="
+        + decisionKey
+        + ", dmnDecisionRequirementsId='"
+        + dmnDecisionRequirementsId
+        + '\''
+        + ", decisionRequirementsKey="
+        + decisionRequirementsKey
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + '}';
   }
 }

@@ -12,13 +12,13 @@ import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.clearScrollRequest;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.deleteByQueryRequestBuilder;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.deleteRequestBuilder;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.getRequest;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.scrollRequest;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.time;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.updateByQueryRequestBuilder;
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 
+import io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import jakarta.ws.rs.NotFoundException;
@@ -136,10 +136,23 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       final Consumer<HitsMetadata<R>> hitsMetadataConsumer,
       final Class<R> clazz)
       throws IOException {
+    SearchResponse<R> response = openSearchClient.search(request, clazz);
+    return scrollWith(
+        request, response, hitsConsumer, hitsMetadataConsumer, clazz, Integer.MAX_VALUE);
+  }
+
+  public <R> Map<String, Aggregate> scrollWith(
+      final SearchRequest request,
+      SearchResponse<R> response,
+      final Consumer<List<Hit<R>>> hitsConsumer,
+      final Consumer<HitsMetadata<R>> hitsMetadataConsumer,
+      final Class<R> clazz,
+      final int limit)
+      throws IOException {
     String scrollId = null;
+    int count = 0;
 
     try {
-      SearchResponse<R> response = openSearchClient.search(request, clazz);
       final var aggregates = response.aggregations();
 
       if (hitsMetadataConsumer != null) {
@@ -149,7 +162,8 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       scrollId = response.scrollId();
       List<Hit<R>> hits = response.hits().hits();
 
-      while (!hits.isEmpty() && scrollId != null) {
+      while (!hits.isEmpty() && scrollId != null && count < limit) {
+        count += response.hits().hits().size();
         checkFailedShards(request, response);
 
         if (hitsConsumer != null) {
@@ -358,24 +372,23 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
         null);
   }
 
-  public <R> Optional<R> getWithRetries(
+  public <R> Optional<R> getRequest(
       final String index, final String id, final Class<R> entityClass) {
-    return executeWithRetries(
-        () -> {
-          try {
-            final GetResponse<R> response =
-                openSearchClient.get(applyIndexPrefix(getRequest(index, id)).build(), entityClass);
-            return response.found() ? Optional.ofNullable(response.source()) : Optional.empty();
-          } catch (final OpenSearchException e) {
-            if (openSearchClient._transport() instanceof AwsSdk2Transport
-                && isAwsNotFoundException(e)) {
-              return Optional.empty();
-            } else {
-              log.error(e.getMessage());
-              throw new OptimizeRuntimeException(e.getMessage());
-            }
-          }
-        });
+    try {
+      final GetResponse<R> response =
+          openSearchClient.get(
+              applyIndexPrefix(RequestDSL.getRequest(index, id)).build(), entityClass);
+      return response.found() ? Optional.ofNullable(response.source()) : Optional.empty();
+    } catch (final OpenSearchException | IOException e) {
+      if (openSearchClient._transport() instanceof AwsSdk2Transport
+          && e instanceof OpenSearchException osException
+          && isAwsNotFoundException(osException)) {
+        return Optional.empty();
+      } else {
+        log.error(e.getMessage());
+        throw new OptimizeRuntimeException(e.getMessage());
+      }
+    }
   }
 
   public DeleteByQueryResponse delete(final String index, final String field, final String value) {
@@ -548,7 +561,17 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
         () -> openSearchClient.mget(requestBuilder.build(), responseClass), errorMessageSupplier);
   }
 
-  private MultiGetOperation getMultiGetOperation(final String index, final String id) {
+  public <T> MgetResponse<T> mget(
+      final Class<T> responseClass,
+      final Function<Exception, String> errorMessageSupplier,
+      final List<MultiGetOperation> operations) {
+
+    final MgetRequest.Builder requestBuilder = new MgetRequest.Builder().docs(operations);
+    return safe(
+        () -> openSearchClient.mget(requestBuilder.build(), responseClass), errorMessageSupplier);
+  }
+
+  public MultiGetOperation getMultiGetOperation(final String index, final String id) {
     return new MultiGetOperation.Builder().id(id).index(index).build();
   }
 

@@ -7,11 +7,11 @@
  */
 package io.camunda.optimize.test.it.extension.db;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import java.util.HashMap;
 import java.util.List;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 
 public class TermsQueryContainer {
@@ -29,12 +29,26 @@ public class TermsQueryContainer {
     termQueries.put(term, List.of(value));
   }
 
-  BoolQueryBuilder toElasticSearchQuery() {
-    BoolQueryBuilder query = new BoolQueryBuilder();
-    for (String term : termQueries.keySet()) {
-      query.must(QueryBuilders.termsQuery(term, termQueries.get(term)));
-    }
-    return query;
+  Query toElasticSearchQuery() {
+    return Query.of(
+        q ->
+            q.bool(
+                b -> {
+                  for (String term : termQueries.keySet()) {
+                    b.must(
+                        m ->
+                            m.terms(
+                                t ->
+                                    t.field(term)
+                                        .terms(
+                                            tt ->
+                                                tt.value(
+                                                    termQueries.get(term).stream()
+                                                        .map(FieldValue::of)
+                                                        .toList()))));
+                  }
+                  return b;
+                }));
   }
 
   BoolQuery toOpenSearchQuery() {

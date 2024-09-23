@@ -246,6 +246,12 @@
     </dependency>
 
     <dependency>
+      <groupId>com.graphql-java</groupId>
+      <artifactId>graphql-java</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <scope>test</scope>
@@ -425,6 +431,54 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-plugin</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-connect</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-java</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -551,8 +605,11 @@
                 <phase>pre-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
+                  <environmentVariables>
+                    <DATABASE>opensearch</DATABASE>
+                  </environmentVariables>
                   <executable>docker-compose</executable>
-                  <workingDirectory>..</workingDirectory>
+                  <workingDirectory>../../config</workingDirectory>
                   <arguments>
                     <argument>up</argument>
                     <argument>-d</argument>
@@ -568,9 +625,12 @@
                 </goals>
                 <phase>post-integration-test</phase>
                 <configuration>
+                  <environmentVariables>
+                    <DATABASE>opensearch</DATABASE>
+                  </environmentVariables>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
-                  <workingDirectory>..</workingDirectory>
+                  <workingDirectory>../../config</workingDirectory>
                   <arguments>
                     <argument>down</argument>
                   </arguments>
@@ -612,8 +672,11 @@
                 <phase>pre-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
+                  <environmentVariables>
+                    <DATABASE>elasticsearch</DATABASE>
+                  </environmentVariables>
                   <executable>docker-compose</executable>
-                  <workingDirectory>..</workingDirectory>
+                  <workingDirectory>../../config</workingDirectory>
                   <arguments>
                     <argument>up</argument>
                     <argument>-d</argument>
@@ -629,9 +692,12 @@
                 </goals>
                 <phase>post-integration-test</phase>
                 <configuration>
+                  <environmentVariables>
+                    <DATABASE>elasticsearch</DATABASE>
+                  </environmentVariables>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
-                  <workingDirectory>..</workingDirectory>
+                  <workingDirectory>../../config</workingDirectory>
                   <arguments>
                     <argument>down</argument>
                   </arguments>

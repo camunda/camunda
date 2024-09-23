@@ -21,10 +21,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.process.test.impl.containers.CamundaContainer;
+import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
-import io.camunda.process.test.impl.containers.OperateContainer;
-import io.camunda.process.test.impl.containers.TasklistContainer;
-import io.camunda.process.test.impl.containers.ZeebeContainer;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,21 +57,17 @@ public class CamundaContainerRuntimeTest {
   private ElasticsearchContainer elasticsearchContainer;
 
   @Mock(answer = Answers.RETURNS_SELF)
-  private ZeebeContainer zeebeContainer;
+  private CamundaContainer camundaContainer;
 
   @Mock(answer = Answers.RETURNS_SELF)
-  private OperateContainer operateContainer;
-
-  @Mock(answer = Answers.RETURNS_SELF)
-  private TasklistContainer tasklistContainer;
+  private ConnectorsContainer connectorsContainer;
 
   @BeforeEach
   void configureMocks() {
     when(containerFactory.createElasticsearchContainer(any(), any()))
         .thenReturn(elasticsearchContainer);
-    when(containerFactory.createZeebeContainer(any(), any())).thenReturn(zeebeContainer);
-    when(containerFactory.createOperateContainer(any(), any())).thenReturn(operateContainer);
-    when(containerFactory.createTasklistContainer(any(), any())).thenReturn(tasklistContainer);
+    when(containerFactory.createCamundaContainer(any(), any())).thenReturn(camundaContainer);
+    when(containerFactory.createConnectorsContainer(any(), any())).thenReturn(connectorsContainer);
   }
 
   @Test
@@ -84,14 +79,12 @@ public class CamundaContainerRuntimeTest {
     // then
     assertThat(runtime).isNotNull();
     assertThat(runtime.getElasticsearchContainer()).isEqualTo(elasticsearchContainer);
-    assertThat(runtime.getZeebeContainer()).isEqualTo(zeebeContainer);
-    assertThat(runtime.getOperateContainer()).isEqualTo(operateContainer);
-    assertThat(runtime.getTasklistContainer()).isEqualTo(tasklistContainer);
+    assertThat(runtime.getCamundaContainer()).isEqualTo(camundaContainer);
+    assertThat(runtime.getConnectorsContainer()).isEqualTo(connectorsContainer);
 
     verify(elasticsearchContainer, never()).start();
-    verify(zeebeContainer, never()).start();
-    verify(operateContainer, never()).start();
-    verify(tasklistContainer, never()).start();
+    verify(camundaContainer, never()).start();
+    verify(connectorsContainer, never()).start();
   }
 
   @Test
@@ -105,18 +98,16 @@ public class CamundaContainerRuntimeTest {
 
     // then
     verify(elasticsearchContainer).start();
-    verify(zeebeContainer).start();
-    verify(operateContainer).start();
-    verify(tasklistContainer).start();
+    verify(camundaContainer).start();
+    verify(connectorsContainer, never()).start();
 
     // and when
     runtime.close();
 
     // then
     verify(elasticsearchContainer).stop();
-    verify(zeebeContainer).stop();
-    verify(operateContainer).stop();
-    verify(tasklistContainer).stop();
+    verify(camundaContainer).stop();
+    verify(connectorsContainer, never()).stop();
   }
 
   @Test
@@ -130,43 +121,39 @@ public class CamundaContainerRuntimeTest {
             ContainerRuntimeDefaults.ELASTICSEARCH_DOCKER_IMAGE_NAME,
             ContainerRuntimeDefaults.ELASTICSEARCH_DOCKER_IMAGE_VERSION);
     verify(containerFactory)
-        .createZeebeContainer(
-            ContainerRuntimeDefaults.ZEEBE_DOCKER_IMAGE_NAME,
-            ContainerRuntimeDefaults.ZEEBE_DOCKER_IMAGE_VERSION);
+        .createCamundaContainer(
+            ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME,
+            ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION);
     verify(containerFactory)
-        .createOperateContainer(
-            ContainerRuntimeDefaults.OPERATE_DOCKER_IMAGE_NAME,
-            ContainerRuntimeDefaults.OPERATE_DOCKER_IMAGE_VERSION);
-    verify(containerFactory)
-        .createTasklistContainer(
-            ContainerRuntimeDefaults.TASKLIST_DOCKER_IMAGE_NAME,
-            ContainerRuntimeDefaults.TASKLIST_DOCKER_IMAGE_VERSION);
+        .createConnectorsContainer(
+            ContainerRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_NAME,
+            ContainerRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_VERSION);
   }
 
   @Test
-  void shouldConfigureZeebeContainer() {
+  void shouldConfigureCamundaContainer() {
     // given
-    final String dockerImageName = "custom-zeebe";
+    final String dockerImageName = "custom-camunda";
     final String dockerImageVersion = "8.6.0-custom";
 
     // when
     CamundaContainerRuntime.newBuilder()
         .withContainerFactory(containerFactory)
-        .withZeebeDockerImageName(dockerImageName)
-        .withZeebeDockerImageVersion(dockerImageVersion)
-        .withZeebeEnv(ENV_VARS)
-        .withZeebeEnv(ADDITIONAL_ENV_VAR_KEY, ADDITIONAL_ENV_VAR_VALUE)
-        .withZeebeExposedPort(100)
-        .withZeebeExposedPort(200)
-        .withZeebeLogger("custom-logger")
+        .withCamundaDockerImageName(dockerImageName)
+        .withCamundaDockerImageVersion(dockerImageVersion)
+        .withCamundaEnv(ENV_VARS)
+        .withCamundaEnv(ADDITIONAL_ENV_VAR_KEY, ADDITIONAL_ENV_VAR_VALUE)
+        .withCamundaExposedPort(100)
+        .withCamundaExposedPort(200)
+        .withCamundaLogger("custom-logger")
         .build();
 
     // then
-    verify(containerFactory).createZeebeContainer(dockerImageName, dockerImageVersion);
-    verify(zeebeContainer).withEnv(EXPECTED_ENV_VARS);
-    verify(zeebeContainer).addExposedPort(100);
-    verify(zeebeContainer).addExposedPort(200);
-    verify(zeebeContainer).withLogConsumer(any());
+    verify(containerFactory).createCamundaContainer(dockerImageName, dockerImageVersion);
+    verify(camundaContainer).withEnv(EXPECTED_ENV_VARS);
+    verify(camundaContainer).addExposedPort(100);
+    verify(camundaContainer).addExposedPort(200);
+    verify(camundaContainer).withLogConsumer(any());
   }
 
   @Test
@@ -196,54 +183,63 @@ public class CamundaContainerRuntimeTest {
   }
 
   @Test
-  void shouldConfigureOperateContainer() {
+  void shouldEnableConnectors() throws Exception {
     // given
-    final String dockerImageVersion = "8.6.0-custom";
+    final CamundaContainerRuntime runtime =
+        CamundaContainerRuntime.newBuilder()
+            .withContainerFactory(containerFactory)
+            .withConnectorsEnabled(true)
+            .build();
 
     // when
-    CamundaContainerRuntime.newBuilder()
-        .withContainerFactory(containerFactory)
-        .withOperateDockerImageVersion(dockerImageVersion)
-        .withOperateEnv(ENV_VARS)
-        .withOperateEnv(ADDITIONAL_ENV_VAR_KEY, ADDITIONAL_ENV_VAR_VALUE)
-        .withOperateExposedPort(100)
-        .withOperateExposedPort(200)
-        .withOperateLogger("custom-logger")
-        .build();
+    runtime.start();
 
     // then
-    verify(containerFactory)
-        .createOperateContainer(
-            ContainerRuntimeDefaults.OPERATE_DOCKER_IMAGE_NAME, dockerImageVersion);
-    verify(operateContainer).withEnv(EXPECTED_ENV_VARS);
-    verify(operateContainer).addExposedPort(100);
-    verify(operateContainer).addExposedPort(200);
-    verify(operateContainer).withLogConsumer(any());
+    verify(connectorsContainer).start();
+
+    // and when
+    runtime.close();
+
+    // then
+    verify(connectorsContainer).stop();
   }
 
   @Test
-  void shouldConfigureTasklistContainer() {
+  void shouldConfigureConnectorsContainer() {
     // given
+    final String dockerImageName = "custom-connectors";
     final String dockerImageVersion = "8.6.0-custom";
+
+    final Map<String, String> connectorSecrets = new HashMap<>();
+    connectorSecrets.put("secret-1", "1");
+    connectorSecrets.put("secret-2", "2");
+
+    final String additionalConnectorSecretKey = "secret-3";
+    final String additionalConnectorSecretValue = "3";
+
+    final Map<String, String> expectedConnectorSecrets = new HashMap<>(connectorSecrets);
+    expectedConnectorSecrets.put(additionalConnectorSecretKey, additionalConnectorSecretValue);
 
     // when
     CamundaContainerRuntime.newBuilder()
         .withContainerFactory(containerFactory)
-        .withTasklistDockerImageVersion(dockerImageVersion)
-        .withTasklistEnv(ENV_VARS)
-        .withTasklistEnv(ADDITIONAL_ENV_VAR_KEY, ADDITIONAL_ENV_VAR_VALUE)
-        .withTasklistExposedPort(100)
-        .withTasklistExposedPort(200)
-        .withTasklistLogger("custom-logger")
+        .withConnectorsDockerImageName(dockerImageName)
+        .withConnectorsDockerImageVersion(dockerImageVersion)
+        .withConnectorsEnv(ENV_VARS)
+        .withConnectorsEnv(ADDITIONAL_ENV_VAR_KEY, ADDITIONAL_ENV_VAR_VALUE)
+        .withConnectorsExposedPort(100)
+        .withConnectorsExposedPort(200)
+        .withConnectorsSecrets(connectorSecrets)
+        .withConnectorsSecret(additionalConnectorSecretKey, additionalConnectorSecretValue)
+        .withConnectorsLogger("custom-logger")
         .build();
 
     // then
-    verify(containerFactory)
-        .createTasklistContainer(
-            ContainerRuntimeDefaults.TASKLIST_DOCKER_IMAGE_NAME, dockerImageVersion);
-    verify(tasklistContainer).withEnv(EXPECTED_ENV_VARS);
-    verify(tasklistContainer).addExposedPort(100);
-    verify(tasklistContainer).addExposedPort(200);
-    verify(tasklistContainer).withLogConsumer(any());
+    verify(containerFactory).createConnectorsContainer(dockerImageName, dockerImageVersion);
+    verify(connectorsContainer).withEnv(EXPECTED_ENV_VARS);
+    verify(connectorsContainer).addExposedPort(100);
+    verify(connectorsContainer).addExposedPort(200);
+    verify(connectorsContainer).withEnv(expectedConnectorSecrets);
+    verify(connectorsContainer).withLogConsumer(any());
   }
 }

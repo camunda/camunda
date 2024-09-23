@@ -20,13 +20,14 @@ public class UserFilterTransformer implements FilterTransformer<UserFilter> {
   public SearchQuery toSearchQuery(final UserFilter filter) {
 
     return and(
-        filter.username() == null ? null : term("value.username", filter.username()),
-        filter.email() == null ? null : term("value.email", filter.email()),
-        filter.name() == null ? null : term("value.name", filter.name()));
+        filter.key() == null ? null : term("key", filter.key()),
+        filter.username() == null ? null : term("username", filter.username()),
+        filter.email() == null ? null : term("email", filter.email()),
+        filter.name() == null ? null : term("name", filter.name()));
   }
 
   @Override
   public List<String> toIndices(final UserFilter filter) {
-    return List.of("zeebe-record-user");
+    return List.of("users");
   }
 }

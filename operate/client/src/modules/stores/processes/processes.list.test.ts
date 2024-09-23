@@ -117,6 +117,7 @@ describe('stores/processes/processes.list', () => {
       id: 'demoProcess2',
       name: 'Demo process',
       version: 2,
+      versionTag: null,
     });
 
     expect(
@@ -128,6 +129,7 @@ describe('stores/processes/processes.list', () => {
       id: '2251799813685911',
       name: 'Event based gateway with message start',
       version: 1,
+      versionTag: null,
     });
 
     expect(
@@ -139,6 +141,7 @@ describe('stores/processes/processes.list', () => {
       name: 'Big variable process',
       version: 1,
       bpmnProcessId: 'bigVarProcess',
+      versionTag: 'MyVersionTag',
     });
 
     expect(
@@ -150,6 +153,7 @@ describe('stores/processes/processes.list', () => {
       name: 'Big variable process',
       version: 1,
       bpmnProcessId: 'bigVarProcess',
+      versionTag: null,
     });
   });
 
