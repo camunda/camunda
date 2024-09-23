@@ -151,7 +151,11 @@ VOLUME /tmp
 VOLUME ${ZB_HOME}/data
 VOLUME ${ZB_HOME}/logs
 
-RUN groupadd -g 1000 zeebe && \
+# ubuntu:noble has a default group with GID 1000; for backwards compatibility, we want to keep that
+# as the zeebe group, so delete the existing one. in newer versions, we use 1001, so this is not an
+# issue
+RUN userdel ubuntu && \
+    groupadd -g 1000 zeebe && \
     useradd -u 1000 zeebe --system --gid 1000 && \
     chmod g=u /etc/passwd && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
