@@ -15,13 +15,29 @@ public class ElasticsearchProperties {
   private String username;
   private String password;
   private final String clusterName = "elasticsearch";
-
+  private String indexPrefix = "zeebe";
+  private boolean createSchema;
   private Integer socketTimeout;
   private Integer connectTimeout;
-
   private IndexSettings defaultSettings = new IndexSettings();
   private Map<String, Integer> replicasByIndexName = new HashMap<>();
   private Map<String, Integer> shardsByIndexName = new HashMap<>();
+
+  public String getIndexPrefix() {
+    return indexPrefix;
+  }
+
+  public void setIndexPrefix(final String indexPrefix) {
+    this.indexPrefix = indexPrefix;
+  }
+
+  public boolean isCreateSchema() {
+    return createSchema;
+  }
+
+  public void setCreateSchema(final boolean createSchema) {
+    this.createSchema = createSchema;
+  }
 
   public IndexSettings getDefaultSettings() {
     return defaultSettings;

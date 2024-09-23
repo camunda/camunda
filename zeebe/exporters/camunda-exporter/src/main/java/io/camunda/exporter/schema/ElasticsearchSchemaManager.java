@@ -12,10 +12,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ElasticsearchProperties;
 import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
+import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,14 +26,14 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private final SearchEngineClient elasticsearchClient;
-  private final List<IndexDescriptor> indexDescriptors;
-  private final List<IndexTemplateDescriptor> indexTemplateDescriptors;
+  private final Set<IndexDescriptor> indexDescriptors;
+  private final Set<IndexTemplateDescriptor> indexTemplateDescriptors;
   private final ElasticsearchProperties elasticsearchProperties;
 
   public ElasticsearchSchemaManager(
       final SearchEngineClient elasticsearchClient,
-      final List<IndexDescriptor> indexDescriptors,
-      final List<IndexTemplateDescriptor> indexTemplateDescriptors,
+      final Set<IndexDescriptor> indexDescriptors,
+      final Set<IndexTemplateDescriptor> indexTemplateDescriptors,
       final ElasticsearchProperties elasticsearchProperties) {
     this.elasticsearchClient = elasticsearchClient;
     this.indexDescriptors = indexDescriptors;
@@ -43,8 +43,22 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   @Override
   public void initialiseResources() {
-    indexTemplateDescriptors.forEach(this::createIndexTemplate);
-    indexDescriptors.forEach(elasticsearchClient::createIndex);
+    final var existingTemplateNames =
+        elasticsearchClient
+            .getMappings(
+                elasticsearchProperties.getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE)
+            .keySet();
+    final var existingIndexNames =
+        elasticsearchClient
+            .getMappings(elasticsearchProperties.getIndexPrefix() + "*", MappingSource.INDEX)
+            .keySet();
+    indexTemplateDescriptors.stream()
+        .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
+        .forEach(descriptor -> createIndexTemplate(descriptor, true));
+
+    indexDescriptors.stream()
+        .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
+        .forEach(elasticsearchClient::createIndex);
   }
 
   @Override
@@ -55,7 +69,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
       if (descriptor instanceof IndexTemplateDescriptor) {
         LOG.info("Updating template: {}", ((IndexTemplateDescriptor) descriptor).getTemplateName());
-        createIndexTemplate((IndexTemplateDescriptor) descriptor);
+        createIndexTemplate((IndexTemplateDescriptor) descriptor, false);
       } else {
         LOG.info(
             "Index alias: {}. New fields will be added {}", descriptor.getAlias(), newProperties);
@@ -94,7 +108,8 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     }
   }
 
-  private void createIndexTemplate(final IndexTemplateDescriptor templateDescriptor) {
+  private void createIndexTemplate(
+      final IndexTemplateDescriptor templateDescriptor, final boolean create) {
     final var templateReplicas =
         elasticsearchProperties
             .getReplicasByIndexName()
@@ -112,6 +127,6 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     settings.setNumberOfShards(templateShards);
     settings.setNumberOfReplicas(templateReplicas);
 
-    elasticsearchClient.createIndexTemplate(templateDescriptor, settings, false);
+    elasticsearchClient.createIndexTemplate(templateDescriptor, settings, create);
   }
 }
