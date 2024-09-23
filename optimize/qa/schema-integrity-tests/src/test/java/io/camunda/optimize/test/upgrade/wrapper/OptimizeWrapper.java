@@ -5,13 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.test.upgrade;
+package io.camunda.optimize.test.upgrade.wrapper;
 
+import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_DATABASE_PROPERTY;
+import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPENSEARCH_DATABASE_PROPERTY;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.optimize.OptimizeRequestExecutor;
+import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.test.optimize.HealthClient;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.core.Response;
@@ -22,23 +25,29 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.io.IOUtils;
+import org.jetbrains.annotations.NotNull;
 
 public class OptimizeWrapper {
   private static final org.slf4j.Logger log =
       org.slf4j.LoggerFactory.getLogger(OptimizeWrapper.class);
   private final String optimizeVersion;
   private final String optimizeDirectory;
+  private final DatabaseType databaseType;
   private Process process;
   private Process upgradeProcess;
   private final OptimizeRequestExecutor requestExecutor;
-  private final int elasticPort;
+  private final int databasePort;
 
   public OptimizeWrapper(
-      final String optimizeVersion, final String baseDirectory, final int elasticPort) {
+      final DatabaseType databaseType,
+      final String optimizeVersion,
+      final String baseDirectory,
+      final int databasePort) {
     this.optimizeVersion = optimizeVersion;
+    this.databaseType = databaseType;
     optimizeDirectory = baseDirectory + "/" + optimizeVersion;
     requestExecutor = new OptimizeRequestExecutor("demo", "demo", "http://localhost:8090/api");
-    this.elasticPort = elasticPort;
+    this.databasePort = databasePort;
   }
 
   public void startUpgrade(final String outputFilePath) throws IOException {
@@ -46,9 +55,10 @@ public class OptimizeWrapper {
       throw new RuntimeException("Upgrade is already running, wait for it to finish.");
     }
     log.info(
-        "Running upgrade to Optimize {} on Elasticsearch with port {}...",
+        "Running upgrade to Optimize {} on {} with port {}...",
         optimizeVersion,
-        elasticPort);
+        databaseType.getId(),
+        databasePort);
 
     final ProcessBuilder processBuilder =
         new ProcessBuilder()
@@ -56,7 +66,8 @@ public class OptimizeWrapper {
             .directory(new File(optimizeDirectory))
             .redirectOutput(Redirect.to(new File(outputFilePath)));
     final Map<String, String> envVars = new HashMap<>();
-    envVars.put("OPTIMIZE_ELASTICSEARCH_HTTP_PORT", String.valueOf(elasticPort));
+    envVars.put("OPTIMIZE_ELASTICSEARCH_HTTP_PORT", String.valueOf(databasePort));
+    envVars.put("CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT", String.valueOf(databasePort));
     processBuilder.environment().putAll(envVars);
     upgradeProcess = processBuilder.start();
   }
@@ -90,11 +101,7 @@ public class OptimizeWrapper {
             .command("bash", "-c", "./optimize-startup.sh")
             .redirectOutput(Redirect.to(new File(outputFilePath)))
             .directory(new File(optimizeDirectory));
-    final Map<String, String> envVars = new HashMap<>();
-    envVars.put("OPTIMIZE_ELASTICSEARCH_HTTP_PORT", String.valueOf(elasticPort));
-    envVars.put("OPTIMIZE_API_ACCESS_TOKEN", "secret");
-    envVars.put("SPRING_PROFILES_ACTIVE", "ccsm");
-    envVars.put("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_REPLICAS", "0");
+    final Map<String, String> envVars = getEnvVarsMap();
 
     processBuilder.environment().putAll(envVars);
     process = processBuilder.start();
@@ -117,6 +124,23 @@ public class OptimizeWrapper {
       stop();
       throw e;
     }
+  }
+
+  @NotNull
+  private Map<String, String> getEnvVarsMap() {
+    final Map<String, String> envVars = new HashMap<>();
+    if (databaseType == DatabaseType.ELASTICSEARCH) {
+      envVars.put("OPTIMIZE_ELASTICSEARCH_HTTP_PORT", String.valueOf(databasePort));
+      envVars.put("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_REPLICAS", "0");
+      envVars.put("CAMUNDA_OPTIMIZE_DATABASE", ELASTICSEARCH_DATABASE_PROPERTY);
+    } else if (databaseType == DatabaseType.OPENSEARCH) {
+      envVars.put("CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT", String.valueOf(databasePort));
+      envVars.put("CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_NUMBER_OF_REPLICAS", "0");
+      envVars.put("CAMUNDA_OPTIMIZE_DATABASE", OPENSEARCH_DATABASE_PROPERTY);
+    }
+    envVars.put("OPTIMIZE_API_ACCESS_TOKEN", "secret");
+    envVars.put("SPRING_PROFILES_ACTIVE", "ccsm");
+    return envVars;
   }
 
   public synchronized void stop() throws InterruptedException {
