@@ -21,6 +21,17 @@ public final class SearchQueryResponseMapper {
 
   private SearchQueryResponseMapper() {}
 
+  public static ProcessDefinitionSearchQueryResponse toProcessDefinitionSearchQueryResponse(
+      final SearchQueryResult<ProcessDefinitionEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new ProcessDefinitionSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toProcessDefinitions)
+                .orElseGet(Collections::emptyList));
+  }
+
   public static ProcessInstanceSearchQueryResponse toProcessInstanceSearchQueryResponse(
       final SearchQueryResult<ProcessInstanceEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -115,6 +126,15 @@ public final class SearchQueryResponseMapper {
         .totalItems(result.total())
         .lastSortValues(
             ofNullable(result.sortValues()).map(Arrays::asList).orElseGet(Collections::emptyList));
+  }
+
+  private static List<ProcessDefinitionItem> toProcessDefinitions(
+      final List<ProcessDefinitionEntity> processDefinitions) {
+    return processDefinitions.stream().map(SearchQueryResponseMapper::toProcessDefinition).toList();
+  }
+
+  public static ProcessDefinitionItem toProcessDefinition(final ProcessDefinitionEntity entity) {
+    return new ProcessDefinitionItem();
   }
 
   private static List<ProcessInstanceItem> toProcessInstances(
