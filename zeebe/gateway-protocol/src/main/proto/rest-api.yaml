@@ -583,7 +583,7 @@ paths:
     get:
       tags:
         - User Task
-      summary: Return user task by a user task Key.
+      summary: Return user task by a user task key.
       description: |
         Get the user task by the user task key.
 

@@ -404,7 +404,7 @@ public class UserTaskFilterTest {
     // then
     assertThat(searchQueryResult.key()).isEqualTo(123L);
   }
-  
+
   public void shouldQueryByVariableValueFilter() {
     // given
     final VariableValueFilter.Builder variableValueFilterBuilder =
