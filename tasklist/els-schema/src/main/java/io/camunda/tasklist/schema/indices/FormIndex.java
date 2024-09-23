@@ -17,6 +17,7 @@ public class FormIndex extends AbstractIndexDescriptor implements Prio4Backup {
   public static final String INDEX_VERSION = "8.4.0";
 
   public static final String ID = "id";
+  public static final String KEY = "key";
   public static final String BPMN_ID = "bpmnId";
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String SCHEMA = "schema";

@@ -12,6 +12,7 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.CamundaServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.DecisionDefinitionServices;
+import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
@@ -78,6 +79,11 @@ public class CamundaServicesConfiguration {
   public DecisionRequirementsServices decisionRequirementsServices(
       final CamundaServices camundaServices) {
     return camundaServices.decisionRequirementsServices();
+  }
+
+  @Bean
+  public DecisionInstanceServices decisionInstanceServices(final CamundaServices camundaServices) {
+    return camundaServices.decisionInstanceServices();
   }
 
   @Bean

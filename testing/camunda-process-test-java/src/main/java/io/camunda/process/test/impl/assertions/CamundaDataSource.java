@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.impl.assertions;
 
+import io.camunda.process.test.impl.client.CamundaApiClient;
 import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
-import io.camunda.process.test.impl.client.OperateApiClient;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.VariableDto;
 import java.io.IOException;
@@ -24,25 +24,25 @@ import java.util.List;
 
 public class CamundaDataSource {
 
-  private final OperateApiClient operateApiClient;
+  private final CamundaApiClient camundaApiClient;
 
-  public CamundaDataSource(final String operateApiEndpoint) {
-    operateApiClient = new OperateApiClient(operateApiEndpoint);
+  public CamundaDataSource(final String camundaApiEndpoint) {
+    camundaApiClient = new CamundaApiClient(camundaApiEndpoint);
   }
 
   public ProcessInstanceDto getProcessInstance(final long processInstanceKey) throws IOException {
-    return operateApiClient.getProcessInstanceByKey(processInstanceKey);
+    return camundaApiClient.getProcessInstanceByKey(processInstanceKey);
   }
 
   public List<FlowNodeInstanceDto> getFlowNodeInstancesByProcessInstanceKey(
       final long processInstanceKey) throws IOException {
-    return operateApiClient
+    return camundaApiClient
         .findFlowNodeInstancesByProcessInstanceKey(processInstanceKey)
         .getItems();
   }
 
   public List<VariableDto> getVariablesByProcessInstanceKey(final long processInstanceKey)
       throws IOException {
-    return operateApiClient.findVariablesByProcessInstanceKey(processInstanceKey).getItems();
+    return camundaApiClient.findVariablesByProcessInstanceKey(processInstanceKey).getItems();
   }
 }

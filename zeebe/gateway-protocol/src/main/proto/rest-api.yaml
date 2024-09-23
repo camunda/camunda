@@ -1072,6 +1072,50 @@ paths:
             The decision requirements search query failed.
             More details are provided in the response body.
 
+  /decision-instances/search:
+    post:
+      tags:
+        - Decision instance
+      summary: Query decision instances (alpha)
+      description: |
+        Search for decision instances based on given criteria.
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionInstanceSearchQueryRequest"
+      responses:
+        "200":
+          description: >
+            The decision instance search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionInstanceSearchQueryResponse"
+        "400":
+          description: >
+            The decision instance search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
+
   /decisions/evaluation:
     post:
       tags:
@@ -1883,6 +1927,17 @@ components:
         tenantIds:
           type: string
         bpmnDefinitionId:
+          type: string
+        variables:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserTaskVariableFilterRequest"
+    UserTaskVariableFilterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
           type: string
     UserTaskItem:
       type: object
@@ -3062,7 +3117,7 @@ components:
           description: the DMN id of the decision requirements.
         tenantId:
           type: string
-          description: The tenant id of the decision requirements.
+          description: The tenant ID of the decision requirements.
     DecisionRequirementsSearchQueryResponse:
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -3207,7 +3262,8 @@ components:
           type: string
         ruleIndex:
           description: The index of the matched rule.
-          type: string
+          type: integer
+          format: int32
         evaluatedOutputs:
           type: array
           items:
@@ -3238,6 +3294,128 @@ components:
         outputValue:
           description: The value of the evaluated decision output.
           type: string
+    DecisionInstanceSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/DecisionInstanceFilterRequest"
+    DecisionInstanceFilterRequest:
+      type: object
+      properties:
+        key:
+          type: integer
+          format: int64
+          description: The key of the decision instance.
+        state:
+          $ref: '#/components/schemas/DecisionInstanceStateEnum'
+          description: The state of the decision instance.
+        evaluationFailure:
+          type: string
+          description: The evaluation failure of the decision instance.
+        processDefinitionKey:
+          type: integer
+          format: int64
+          description: The key of the process definition.
+        processInstanceKey:
+          type: integer
+          format: int64
+          description: The key of the process instance.
+        decisionKey:
+          type: integer
+          format: int64
+          description: The key of the decision.
+        dmnDecisionId:
+          type: string
+          description: The ID of the DMN decision.
+        dmnDecisionName:
+          type: string
+          description: The name of the DMN decision.
+        decisionVersion:
+          type: integer
+          format: int32
+          description: The version of the decision.
+        decisionType:
+          $ref: '#/components/schemas/DecisionInstanceTypeEnum'
+          description: The type of the decision.
+        tenantId:
+          type: string
+          description: The tenant ID of the decision instance.
+    DecisionInstanceSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionInstanceItem"
+
+    DecisionInstanceItem:
+      type: object
+      properties:
+        key:
+          type: integer
+          format: int64
+          description: The key of the decision instance.
+        state:
+          $ref: '#/components/schemas/DecisionInstanceStateEnum'
+          description: The state of the decision instance.
+        evaluationDate:
+          type: string
+          format: date-time
+          description: The evaluation date of the decision instance.
+        evaluationFailure:
+          type: string
+          description: The evaluation failure of the decision instance.
+        processDefinitionKey:
+          type: integer
+          format: int64
+          description: The key of the process definition.
+        processInstanceKey:
+          type: integer
+          format: int64
+          description: The key of the process instance.
+        decisionKey:
+          type: integer
+          format: int64
+          description: The key of the decision.
+        dmnDecisionId:
+          type: string
+          description: The ID of the DMN decision.
+        dmnDecisionName:
+          type: string
+          description: The name of the DMN decision.
+        decisionVersion:
+          type: integer
+          format: int32
+          description: The version of the decision.
+        decisionType:
+          $ref: '#/components/schemas/DecisionInstanceTypeEnum'
+          description: The type of the decision.
+        result:
+          type: string
+          description: The result of the decision instance.
+        tenantId:
+          type: string
+          description: The tenant ID of the decision instance.
+
+    DecisionInstanceTypeEnum:
+      enum:
+        - DECISION
+        - DECISION_TABLE
+        - LITERAL_EXPRESSION
+        - RELATION
+        - UNSPECIFIED
+        - UNKNOWN
+    DecisionInstanceStateEnum:
+      enum:
+        - EVALUATED
+        - FAILED
+        - UNKNOWN
+        - UNSPECIFIED
 
     MessageCorrelationRequest:
       type: object
@@ -3551,6 +3729,13 @@ components:
             not occur within the requestTimeout, the request will be closed. Disabled by default.
           type: boolean
           default: false
+        fetchVariables:
+          description: |
+            List of variables names to be included in the response.
+            If empty, all visible variables in the root scope will be returned.
+          type: array
+          items:
+            type: string
         requestTimeout:
           description: |
             Timeout (in ms) the request waits for the process to complete. By default or
@@ -3571,7 +3756,7 @@ components:
     CreateProcessInstanceResponse:
       type: object
       properties:
-        processKey:
+        processDefinitionKey:
           description: |
             The key of the process definition which was used to create the process instance.
           type: integer

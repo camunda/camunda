@@ -48,7 +48,7 @@ public final class UnassignUserTaskTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(() -> client.newUserTaskUnassignCommand(123L).send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
 }

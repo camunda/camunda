@@ -337,10 +337,24 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, PublicationMessageRequest> toMessagePublicationRequest(
-      final MessagePublicationRequest messagePublicationRequest) {
-    return getResult(
-        validateMessagePublicationRequest(messagePublicationRequest),
-        () ->
+      final MessagePublicationRequest messagePublicationRequest,
+      final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(
+                messagePublicationRequest.getTenantId(), multiTenancyEnabled, "Publish Message")
+            .flatMap(
+                tenantId ->
+                    validateAuthorization(tenantId, multiTenancyEnabled, "Publish Message")
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)))
+            .flatMap(
+                tenantId ->
+                    validateMessagePublicationRequest(messagePublicationRequest)
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)));
+
+    return validationResponse.map(
+        tenantId ->
             new PublicationMessageRequest(
                 messagePublicationRequest.getName(),
                 messagePublicationRequest.getCorrelationKey(),
@@ -348,8 +362,7 @@ public class RequestMapper {
                 getStringOrEmpty(
                     messagePublicationRequest, MessagePublicationRequest::getMessageId),
                 getMapOrEmpty(messagePublicationRequest, MessagePublicationRequest::getVariables),
-                getStringOrEmpty(
-                    messagePublicationRequest, MessagePublicationRequest::getTenantId)));
+                tenantId));
   }
 
   public static Either<ProblemDetail, ResourceDeletionRequest> toResourceDeletion(
@@ -362,12 +375,22 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, BroadcastSignalRequest> toBroadcastSignalRequest(
-      final SignalBroadcastRequest request) {
-    return getResult(
-        validateSignalBroadcastRequest(request),
-        () ->
-            new BroadcastSignalRequest(
-                request.getSignalName(), request.getVariables(), request.getTenantId()));
+      final SignalBroadcastRequest request, final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Broadcast Signal")
+            .flatMap(
+                tenantId ->
+                    validateAuthorization(tenantId, multiTenancyEnabled, "Broadcast Signal")
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)))
+            .flatMap(
+                tenantId ->
+                    validateSignalBroadcastRequest(request)
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)));
+    return validationResponse.map(
+        tenantId ->
+            new BroadcastSignalRequest(request.getSignalName(), request.getVariables(), tenantId));
   }
 
   public static Authentication getAuthentication() {
@@ -473,7 +496,8 @@ public class RequestMapper {
                             new io.camunda.zeebe.protocol.impl.record.value.processinstance
                                     .ProcessInstanceCreationStartInstruction()
                                 .setElementId(instruction.getElementId()))
-                    .toList()));
+                    .toList(),
+                request.getFetchVariables()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceCancelRequest> toCancelProcessInstance(
@@ -522,15 +546,26 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
-      final EvaluateDecisionRequest request) {
-    return getResult(
-        validateEvaluateDecisionRequest(request),
-        () ->
+      final EvaluateDecisionRequest request, final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision")
+            .flatMap(
+                tenantId ->
+                    validateAuthorization(tenantId, multiTenancyEnabled, "Evaluate Decision")
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)))
+            .flatMap(
+                tenantId ->
+                    validateEvaluateDecisionRequest(request)
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)));
+    return validationResponse.map(
+        tenantId ->
             new DecisionEvaluationRequest(
                 getStringOrEmpty(request, EvaluateDecisionRequest::getDecisionId),
                 getLongOrDefault(request, EvaluateDecisionRequest::getDecisionKey, -1L),
                 getMapOrEmpty(request, EvaluateDecisionRequest::getVariables),
-                getStringOrEmpty(request, EvaluateDecisionRequest::getTenantId)));
+                tenantId));
   }
 
   private static List<ProcessInstanceModificationActivateInstruction>

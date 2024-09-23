@@ -27,9 +27,9 @@ import org.springframework.context.annotation.Configuration;
 public class CamundaContainerRuntimeConfiguration {
 
   private String camundaVersion = ContainerRuntimeDefaults.CAMUNDA_VERSION;
-  private String zeebeDockerImageName = ContainerRuntimeDefaults.ZEEBE_DOCKER_IMAGE_NAME;
-  private Map<String, String> zeebeEnvVars = Collections.emptyMap();
-  private List<Integer> zeebeExposedPorts = Collections.emptyList();
+  private String camundaDockerImageName = ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME;
+  private Map<String, String> camundaEnvVars = Collections.emptyMap();
+  private List<Integer> camundaExposedPorts = Collections.emptyList();
 
   private boolean connectorsEnabled = false;
   private String connectorsDockerImageName = ContainerRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_NAME;
@@ -46,28 +46,28 @@ public class CamundaContainerRuntimeConfiguration {
     this.camundaVersion = camundaVersion;
   }
 
-  public String getZeebeDockerImageName() {
-    return zeebeDockerImageName;
+  public String getCamundaDockerImageName() {
+    return camundaDockerImageName;
   }
 
-  public void setZeebeDockerImageName(final String zeebeDockerImageName) {
-    this.zeebeDockerImageName = zeebeDockerImageName;
+  public void setCamundaDockerImageName(final String camundaDockerImageName) {
+    this.camundaDockerImageName = camundaDockerImageName;
   }
 
-  public Map<String, String> getZeebeEnvVars() {
-    return zeebeEnvVars;
+  public Map<String, String> getCamundaEnvVars() {
+    return camundaEnvVars;
   }
 
-  public void setZeebeEnvVars(final Map<String, String> zeebeEnvVars) {
-    this.zeebeEnvVars = zeebeEnvVars;
+  public void setCamundaEnvVars(final Map<String, String> camundaEnvVars) {
+    this.camundaEnvVars = camundaEnvVars;
   }
 
-  public List<Integer> getZeebeExposedPorts() {
-    return zeebeExposedPorts;
+  public List<Integer> getCamundaExposedPorts() {
+    return camundaExposedPorts;
   }
 
-  public void setZeebeExposedPorts(final List<Integer> zeebeExposedPorts) {
-    this.zeebeExposedPorts = zeebeExposedPorts;
+  public void setCamundaExposedPorts(final List<Integer> camundaExposedPorts) {
+    this.camundaExposedPorts = camundaExposedPorts;
   }
 
   public boolean isConnectorsEnabled() {

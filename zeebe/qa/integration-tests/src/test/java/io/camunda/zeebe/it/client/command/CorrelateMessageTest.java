@@ -179,7 +179,7 @@ class CorrelateMessageTest {
 
     //     then
     assertThatThrownBy(responseFuture::join)
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("title: NOT_FOUND")
         .hasMessageContaining("status: 404")
         .hasMessageContaining(

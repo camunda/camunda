@@ -8,18 +8,21 @@
 package io.camunda.service.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
+import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
+import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.not;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.service.search.filter.ComparableValueFilter;
 import io.camunda.service.search.filter.UserTaskFilter;
+import io.camunda.service.search.filter.VariableValueFilter;
 import io.camunda.service.transformers.ServiceTransformers;
-import io.camunda.service.transformers.filter.ComparableValueFilterTransformer.ComparableFieldFilter;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilter> {
 
@@ -46,8 +49,38 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     final var stateQuery = getStateQuery(filter.states());
     final var tenantQuery = getTenantQuery(filter.tenantIds());
 
-    // Temporary internal condition - in order to bring only Zeebe User Tasks from Tasklist Indices
-    final var userTaksImplementationQuery = getUserTasksImplementationOnly();
+    // Task Variable Query: Check if taskVariable with specified varName and varValue exists
+    final var taskVariableQuery = getTaskVariablesQuery(filter.variableFilters());
+
+    // Process Variable Query: Check if processVariable  with specified varName and varValue exists
+    final var processVariableQuery = getProcessVariablesQuery(filter.variableFilters());
+
+    final SearchQuery typeQuery = exists("flowNodeInstanceId"); // Default to task
+
+    SearchQuery variablesQuery = null;
+    if (filter.variableFilters() != null && !filter.variableFilters().isEmpty()) {
+      // Task Variable Name Query
+      final var taskVarNameQuery =
+          filter.variableFilters() != null
+              ? stringTerms(
+                  "name",
+                  filter.variableFilters().stream()
+                      .map(VariableValueFilter::name)
+                      .collect(Collectors.toList()))
+              : null;
+
+      // Process Condition:
+      // 1. Check for process variables in the parent process.
+      // 2. Check for variables in subprocesses.
+      // 3. Ensure there is no overriding taskVariable.
+      final var processVariableCondition =
+          and(
+              hasParentQuery("process", processVariableQuery),
+              not(hasChildQuery("taskVariable", taskVarNameQuery)));
+
+      // Combine taskVariable, processVariable, and subprocessVariable queries with OR logic
+      variablesQuery = or(taskVariableQuery, processVariableCondition);
+    }
 
     return and(
         userTaskKeysQuery,
@@ -59,26 +92,14 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
         processInstanceKeysQuery,
         processDefinitionKeyQuery,
         tenantQuery,
-        userTaksImplementationQuery,
-        elementIdQuery);
+        elementIdQuery,
+        variablesQuery,
+        typeQuery);
   }
 
   @Override
   public List<String> toIndices(final UserTaskFilter filter) {
-    if (filter != null && filter.states() != null && !filter.states().isEmpty()) {
-      if (Objects.equals(filter.states().getFirst(), "CREATED") && filter.states().size() == 1) {
-        return Arrays.asList("tasklist-task-8.5.0_"); // Not necessary to visit alias in this case
-      }
-    }
-    return Arrays.asList("tasklist-task-8.5.0_alias");
-  }
-
-  private SearchQuery getComparableFilter(final ComparableValueFilter filter, final String field) {
-    if (filter != null) {
-      final var transformer = getComparableFilterTransformer();
-      return transformer.apply(new ComparableFieldFilter(field, filter));
-    }
-    return null;
+    return Arrays.asList("tasklist-list-view-8.6.0_");
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
@@ -91,10 +112,6 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   private SearchQuery getUserTaskKeysQuery(final List<Long> userTaskKeys) {
     return longTerms("key", userTaskKeys);
-  }
-
-  private SearchQuery getUserTasksImplementationOnly() {
-    return term("implementation", "ZEEBE_USER_TASK");
   }
 
   private SearchQuery getCandidateUsersQuery(final List<String> candidateUsers) {
@@ -125,7 +142,34 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return stringTerms("flowNodeBpmnId", taskDefinitionId);
   }
 
-  private FilterTransformer<ComparableFieldFilter> getComparableFilterTransformer() {
-    return transformers.getFilterTransformer(ComparableValueFilter.class);
+  private SearchQuery getProcessVariablesQuery(final List<VariableValueFilter> variableFilters) {
+    if (variableFilters != null && !variableFilters.isEmpty()) {
+      final var transformer = getVariableValueFilterTransformer();
+      final var queries =
+          variableFilters.stream()
+              .map(transformer::apply)
+              .map((q) -> hasChildQuery("processVariable", q))
+              .collect(Collectors.toList());
+      return or(queries);
+    }
+    return null;
+  }
+
+  private SearchQuery getTaskVariablesQuery(final List<VariableValueFilter> variableFilters) {
+    if (variableFilters != null && !variableFilters.isEmpty()) {
+      final var transformer = getVariableValueFilterTransformer();
+
+      final var queries =
+          variableFilters.stream()
+              .map(transformer::apply)
+              .map((q) -> hasChildQuery("taskVariable", q))
+              .collect(Collectors.toList());
+      return or(queries);
+    }
+    return null;
+  }
+
+  private FilterTransformer<VariableValueFilter> getVariableValueFilterTransformer() {
+    return transformers.getFilterTransformer(VariableValueFilter.class);
   }
 }
