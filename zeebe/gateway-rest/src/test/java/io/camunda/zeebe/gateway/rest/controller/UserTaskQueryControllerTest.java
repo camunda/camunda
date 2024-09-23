@@ -27,9 +27,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
 @WebMvcTest(value = UserTaskQueryController.class, properties = "camunda.rest.query.enabled=true")
+@Import(GatewayObjectMapper.class)
 public class UserTaskQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -335,6 +337,47 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
           "instance": "%s"
         }""",
             USER_TASKS_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+  }
+
+  @Test
+  void shouldYieldErrorOnSearchWithDecimalPriority() {
+    // given
+    final var request =
+        """
+        {
+            "filter": {
+              "priority": {
+                      "gt": 11.1
+                  }
+            }
+        }""";
+    final var expectedResponse =
+        String.format(
+            """
+        {
+          "type": "about:blank",
+          "title": "INVALID_ARGUMENT",
+          "status": 400,
+          "detail": "Invalid input: '%s' for field 'filter.priority.gt' registered as java.lang.Integer",
+          "instance": "%s"
+        }""",
+            11.1, USER_TASKS_SEARCH_URL);
     // when / then
     webClient
         .post()
