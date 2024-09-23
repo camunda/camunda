@@ -15,7 +15,6 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import jakarta.validation.ValidationException;
-import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -67,17 +66,16 @@ public class UserTaskQueryController {
   @GetMapping(
       path = "/{userTaskKey}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public ResponseEntity<?> getByKey(@PathVariable("userTaskKey") final Long userTaskKey) {
+  public ResponseEntity<Object> getByKey(@PathVariable("userTaskKey") final Long userTaskKey) {
     try {
       // Success case: Return the left side with the UserTaskItem wrapped in ResponseEntity
       return ResponseEntity.ok()
-          .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
           .body(SearchQueryResponseMapper.toUserTask(userTaskServices.getByKey(userTaskKey)));
     } catch (final Exception exc) {
       // Error case: Return the right side with ProblemDetail
       final var problemDetail =
           RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
-      return ResponseEntity.status(problemDetail.getStatus()).body(problemDetail);
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
     }
   }
 }
