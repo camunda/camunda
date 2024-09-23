@@ -87,7 +87,7 @@ jobs:
       - name: Build frontend
         uses: ./.github/actions/build-tasklist-fe
       - name: Build backend
-        run: mvn clean install -B -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        run: mvn clean install -B -T1C -DskipChecks -PskipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
