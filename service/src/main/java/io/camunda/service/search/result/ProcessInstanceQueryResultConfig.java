@@ -27,7 +27,7 @@ public record ProcessInstanceQueryResultConfig(List<FieldFilter> fieldFilters)
   public static final class Builder extends AbstractBuilder<Builder>
       implements ObjectBuilder<ProcessInstanceQueryResultConfig> {
 
-    public Builder processInstanceKey() {
+    public Builder key() {
       currentFieldFilter = new FieldFilter("key", null);
       return this;
     }

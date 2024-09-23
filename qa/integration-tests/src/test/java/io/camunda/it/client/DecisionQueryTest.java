@@ -30,7 +30,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
@@ -180,13 +179,11 @@ class DecisionQueryTest {
   void shouldReturn404ForNotFoundDecisionKey() {
     // when
     final long decisionKey = new Random().nextLong();
-    final var exception =
+    final var problemException =
         assertThrows(
-            CompletionException.class,
+            ProblemException.class,
             () -> zeebeClient.newDecisionDefinitionGetXmlRequest(decisionKey).send().join());
     // then
-    assertThat(exception.getCause()).isInstanceOf(ProblemException.class);
-    final var problemException = (ProblemException) exception.getCause();
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
         .isEqualTo("DecisionDefinition with decisionKey=%d cannot be found".formatted(decisionKey));

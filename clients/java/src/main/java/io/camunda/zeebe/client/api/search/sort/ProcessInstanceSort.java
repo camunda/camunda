@@ -21,15 +21,23 @@ public interface ProcessInstanceSort extends SearchRequestSort<ProcessInstanceSo
 
   ProcessInstanceSort key();
 
+  ProcessInstanceSort bpmnProcessId();
+
   ProcessInstanceSort processName();
 
   ProcessInstanceSort processVersion();
 
-  ProcessInstanceSort bpmnProcessId();
+  ProcessInstanceSort processVersionTag();
+
+  ProcessInstanceSort processDefinitionKey();
+
+  ProcessInstanceSort rootProcessInstanceKey();
 
   ProcessInstanceSort parentProcessInstanceKey();
 
   ProcessInstanceSort parentFlowNodeInstanceKey();
+
+  ProcessInstanceSort treePath();
 
   ProcessInstanceSort startDate();
 
@@ -39,11 +47,5 @@ public interface ProcessInstanceSort extends SearchRequestSort<ProcessInstanceSo
 
   ProcessInstanceSort incident();
 
-  ProcessInstanceSort hasActiveOperation();
-
-  ProcessInstanceSort processDefinitionKey();
-
   ProcessInstanceSort tenantId();
-
-  ProcessInstanceSort rootInstanceId();
 }

@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.response.BroadcastSignalResponse;
+import io.camunda.zeebe.client.protocol.rest.SignalBroadcastResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
 public final class BroadcastSignalResponseImpl implements BroadcastSignalResponse {
@@ -24,6 +25,11 @@ public final class BroadcastSignalResponseImpl implements BroadcastSignalRespons
   private final String tenantId;
 
   public BroadcastSignalResponseImpl(final GatewayOuterClass.BroadcastSignalResponse response) {
+    key = response.getKey();
+    tenantId = response.getTenantId();
+  }
+
+  public BroadcastSignalResponseImpl(final SignalBroadcastResponse response) {
     key = response.getKey();
     tenantId = response.getTenantId();
   }

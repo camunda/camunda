@@ -13,15 +13,37 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public record IncidentEntity(
     Long key,
     Long processDefinitionKey,
+    String bpmnProcessId,
     Long processInstanceKey,
-    String type,
+    ErrorType errorType,
+    String errorMessage,
     String flowNodeId,
-    String flowNodeInstanceId,
+    Long flowNodeInstanceKey,
     String creationTime,
-    String state,
+    IncidentState state,
     Long jobKey,
-    String tenantId,
-    Boolean hasActiveOperation,
-    OperationEntity lastOperation,
-    ProcessInstanceReference rootCauseInstance,
-    DecisionInstanceReference rootCauseDecision) {}
+    String treePath,
+    String tenantId) {
+
+  public enum IncidentState {
+    ACTIVE,
+    MIGRATED,
+    RESOLVED,
+    PENDING
+  }
+
+  public enum ErrorType {
+    UNSPECIFIED,
+    UNKNOWN,
+    IO_MAPPING_ERROR,
+    JOB_NO_RETRIES,
+    CONDITION_ERROR,
+    EXTRACT_VALUE_ERROR,
+    CALLED_ELEMENT_ERROR,
+    UNHANDLED_ERROR_EVENT,
+    MESSAGE_SIZE_EXCEEDED,
+    CALLED_DECISION_ERROR,
+    DECISION_EVALUATION_ERROR,
+    FORM_NOT_FOUND
+  }
+}

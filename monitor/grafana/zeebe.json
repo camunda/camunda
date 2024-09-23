@@ -6251,8 +6251,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -6352,8 +6351,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "transparent",
-                    "value": null
+                    "color": "transparent"
                   },
                   {
                     "color": "red",
@@ -6454,8 +6452,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -8375,6 +8372,7 @@
           },
           "dataFormat": "tsbuckets",
           "datasource": {
+            "type": "prometheus",
             "uid": "$DS_PROMETHEUS"
           },
           "description": "Shows the execution time of a process instance. This means the time (latency) between creating the instance and completing it.",
@@ -8397,7 +8395,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 49
+            "y": 9
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8427,7 +8425,7 @@
               "le": 1e-9
             },
             "legend": {
-              "show": false
+              "show": true
             },
             "rowsFrame": {
               "layout": "auto"
@@ -8435,6 +8433,7 @@
             "showValue": "never",
             "tooltip": {
               "mode": "single",
+              "show": true,
               "showColorScale": false,
               "yHistogram": false
             },
@@ -8444,19 +8443,36 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "10.1.5",
           "reverseYBuckets": false,
           "targets": [
             {
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
+              "editorMode": "code",
               "expr": "sum(increase(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
+              "hide": false,
               "interval": "30s",
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
+              "range": true,
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(increase(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "B"
             }
           ],
           "title": "Process Instance Execution Time",
@@ -8487,7 +8503,6 @@
                 "mode": "palette-classic"
               },
               "custom": {
-                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisLabel": "seconds",
@@ -8524,7 +8539,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -8540,7 +8556,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 49
+            "y": 9
           },
           "id": 222,
           "options": {
@@ -8580,6 +8596,32 @@
               "legendFormat": "quantile-99th",
               "range": true,
               "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "quantile-50th",
+              "range": true,
+              "refId": "C"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "quantile-99th",
+              "range": true,
+              "refId": "D"
             }
           ],
           "title": "Process Instance Execution Time (avg)",
@@ -8596,6 +8638,7 @@
           },
           "dataFormat": "tsbuckets",
           "datasource": {
+            "type": "prometheus",
             "uid": "$DS_PROMETHEUS"
           },
           "description": "Shows the time (latency) between creating the job and activating it.",
@@ -8618,7 +8661,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 57
+            "y": 17
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8648,7 +8691,7 @@
               "le": 1e-9
             },
             "legend": {
-              "show": false
+              "show": true
             },
             "rowsFrame": {
               "layout": "auto"
@@ -8656,6 +8699,7 @@
             "showValue": "never",
             "tooltip": {
               "mode": "single",
+              "show": true,
               "showColorScale": false,
               "yHistogram": false
             },
@@ -8665,19 +8709,35 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "10.1.5",
           "reverseYBuckets": false,
           "targets": [
             {
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
+              "editorMode": "code",
               "expr": "sum(increase(zeebe_job_activation_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
+              "range": true,
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(increase(zeebe_job_activation_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{le}}",
+              "range": true,
+              "refId": "B"
             }
           ],
           "title": "Job Activation Time",
@@ -8707,6 +8767,7 @@
           },
           "dataFormat": "tsbuckets",
           "datasource": {
+            "type": "prometheus",
             "uid": "$DS_PROMETHEUS"
           },
           "description": "Shows the complete lifetime of an job. This means the time (latency) between creating the job and completing it.",
@@ -8729,7 +8790,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 57
+            "y": 17
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8767,6 +8828,7 @@
             "showValue": "never",
             "tooltip": {
               "mode": "single",
+              "show": true,
               "showColorScale": false,
               "yHistogram": false
             },
@@ -8776,19 +8838,35 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "10.1.5",
           "reverseYBuckets": false,
           "targets": [
             {
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
+              "editorMode": "code",
               "expr": "sum(increase(zeebe_job_life_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
+              "range": true,
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(increase(zeebe_job_life_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{le}}",
+              "range": true,
+              "refId": "B"
             }
           ],
           "title": "Job Life Time",
@@ -8841,7 +8919,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 65
+            "y": 25
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8879,6 +8957,7 @@
             "showValue": "never",
             "tooltip": {
               "mode": "single",
+              "show": true,
               "showColorScale": false,
               "yHistogram": false
             },
@@ -8888,7 +8967,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "10.1.5",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -8984,7 +9063,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 72
+            "y": 32
           },
           "id": 593,
           "options": {
@@ -9080,7 +9159,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 82
+            "y": 42
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9193,7 +9272,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 82
+            "y": 42
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9296,7 +9375,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 89
+            "y": 49
           },
           "id": 420,
           "options": {
@@ -9378,7 +9457,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 89
+            "y": 49
           },
           "id": 419,
           "options": {
@@ -9498,7 +9577,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 96
+            "y": 56
           },
           "id": 310,
           "options": {
@@ -9623,7 +9702,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 96
+            "y": 56
           },
           "id": 311,
           "options": {
@@ -9718,7 +9797,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 103
+            "y": 63
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9829,7 +9908,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 103
+            "y": 63
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -22420,6 +22499,6 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "zeebe-dashboard",
-  "version": 17,
+  "version": 18,
   "weekStart": ""
 }

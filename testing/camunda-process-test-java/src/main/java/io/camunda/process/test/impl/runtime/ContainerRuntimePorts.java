@@ -17,21 +17,15 @@ package io.camunda.process.test.impl.runtime;
 
 public class ContainerRuntimePorts {
 
-  // Zeebe
-  public static final int ZEEBE_COMMAND_API = 26501;
-  public static final int ZEEBE_GATEWAY_API = 26500;
-  public static final int ZEEBE_INTERNAL_API = 26502;
-  public static final int ZEEBE_MONITORING_API = 9600;
-  public static final int ZEEBE_REST_API = 8080;
+  // Camunda
+  public static final int CAMUNDA_COMMAND_API = 26501;
+  public static final int CAMUNDA_GATEWAY_API = 26500;
+  public static final int CAMUNDA_INTERNAL_API = 26502;
+  public static final int CAMUNDA_MONITORING_API = 9600;
+  public static final int CAMUNDA_REST_API = 8080;
 
   // Elasticsearch
   public static final int ELASTICSEARCH_REST_API = 9200;
-
-  // Operate
-  public static final int OPERATE_REST_API = 8080;
-
-  // Tasklist
-  public static final int TASKLIST_REST_API = 8080;
 
   // Connectors
   public static final int CONNECTORS_REST_API = 8080;

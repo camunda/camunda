@@ -24,21 +24,20 @@ public class ProcessInstanceSearchQueryStub implements RequestStub<ProcessInstan
     final var processInstance =
         new ProcessInstanceEntity(
             123L,
+            "demoProcess",
             "Demo Process",
             5,
-            "demoProcess",
-            555L,
+            "v5",
             789L,
+            345L,
+            333L,
+            777L,
+            "PI_1/PI_2",
             "2024-01-01T00:00:00Z",
             null,
-            "ACTIVE",
+            ProcessInstanceEntity.ProcessInstanceState.ACTIVE,
             false,
-            false,
-            777L,
-            "default",
-            null,
-            null,
-            null);
+            "tenant");
 
     final SearchQueryHit<ProcessInstanceEntity> hit =
         new SearchQueryHit.Builder<ProcessInstanceEntity>()

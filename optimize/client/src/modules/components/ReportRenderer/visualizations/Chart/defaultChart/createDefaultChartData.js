@@ -22,8 +22,8 @@ export default function createDefaultChartData(props) {
     },
   } = props.report;
   const chartData = measures.map((_, idx) => extractDefaultChartData(props, idx));
-  const refLablesMap = chartData[0].labelsMap;
-  const labels = chartData[0].labels;
+  const refLablesMap = chartData[0]?.labelsMap;
+  const labels = chartData[0]?.labels;
   const datasets = chartData.map(
     ({formattedResult, visualization, targetValue, color, isDark}, idx) => {
       const measure = measures[idx];

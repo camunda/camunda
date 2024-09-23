@@ -85,7 +85,8 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
                     .setFormKey(key)
                     .setVersion(
                         formState.getNextFormVersion(metadata.getFormId(), metadata.getTenantId()))
-                    .setDuplicate(false);
+                    .setDuplicate(false)
+                    .setDeploymentKey(deployment.getDeploymentKey());
               }
               writeFormRecord(metadata, resource);
             });
@@ -139,7 +140,6 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
     formRecord.setChecksum(checksum);
     formRecord.setResourceName(resource.getResourceName());
     formRecord.setTenantId(tenantId);
-    formRecord.setDeploymentKey(deployment.getDeploymentKey());
     Optional.ofNullable(form.versionTag).ifPresent(formRecord::setVersionTag);
 
     formState
@@ -155,14 +155,20 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
                 formRecord
                     .setFormKey(latestForm.getFormKey())
                     .setVersion(latestVersion)
+                    .setDeploymentKey(latestForm.getDeploymentKey())
                     .setDuplicate(true);
               } else {
                 formRecord
                     .setFormKey(newFormKey.getAsLong())
-                    .setVersion(formState.getNextFormVersion(form.id, tenantId));
+                    .setVersion(formState.getNextFormVersion(form.id, tenantId))
+                    .setDeploymentKey(deployment.getDeploymentKey());
               }
             },
-            () -> formRecord.setFormKey(newFormKey.getAsLong()).setVersion(INITIAL_VERSION));
+            () ->
+                formRecord
+                    .setFormKey(newFormKey.getAsLong())
+                    .setVersion(INITIAL_VERSION)
+                    .setDeploymentKey(deployment.getDeploymentKey()));
   }
 
   private void writeFormRecord(

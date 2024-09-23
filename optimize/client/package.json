@@ -54,7 +54,8 @@
     "start-backend-cloud:opensearch": "node scripts/start-backend cloud opensearch",
     "restart-backend": "curl http://localhost:8100/api/restartBackend",
     "dependencies": "node scripts/dependencies.js",
-    "prepare": "cd .. && husky client/.husky"
+    "prepare": "cd .. && husky client/.husky",
+    "extract-sbom": "vite build --mode sbom"
   },
   "lint-staged": {
     "src/**/*.scss": [
@@ -113,6 +114,7 @@
     "patch-package": "^8.0.0",
     "prettier": "^3.3.3",
     "react-scripts": "5.0.1",
+    "rollup-plugin-license": "3.5.3",
     "sass": "^1.77.2",
     "styled-components": "^6.1.9",
     "testcafe": "^3.3.0",

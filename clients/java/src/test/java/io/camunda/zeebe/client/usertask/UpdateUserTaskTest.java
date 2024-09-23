@@ -264,7 +264,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(() -> client.newUserTaskUpdateCommand(123L).send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
 
@@ -293,7 +293,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(() -> client.newUserTaskUpdateCommand(123L).priority(120).send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Priority field must be an integer between 0 and 100. Provided: 120");
   }
 }

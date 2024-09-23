@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.service.DecisionDefinitionServices;
+import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.DecisionEvaluationRequest;
@@ -26,10 +27,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class DecisionController {
 
   private final DecisionDefinitionServices decisionServices;
+  private final MultiTenancyCfg multiTenancyCfg;
 
   @Autowired
-  public DecisionController(final DecisionDefinitionServices decisionServices) {
+  public DecisionController(
+      final DecisionDefinitionServices decisionServices, final MultiTenancyCfg multiTenancyCfg) {
     this.decisionServices = decisionServices;
+    this.multiTenancyCfg = multiTenancyCfg;
   }
 
   @PostMapping(
@@ -38,7 +42,8 @@ public class DecisionController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> evaluateDecision(
       @RequestBody final EvaluateDecisionRequest evaluateDecisionRequest) {
-    return RequestMapper.toEvaluateDecisionRequest(evaluateDecisionRequest)
+    return RequestMapper.toEvaluateDecisionRequest(
+            evaluateDecisionRequest, multiTenancyCfg.isEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::evaluateDecision);
   }
 

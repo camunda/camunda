@@ -40,7 +40,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   static final String EXPECTED_START_RESPONSE =
       """
       {
-         "processKey":123,
+         "processDefinitionKey":123,
          "bpmnProcessId":"bpmnProcessId",
          "version":-1,
          "processInstanceKey":123,
