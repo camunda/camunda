@@ -133,7 +133,7 @@ public class CreateUserTest extends ClientRestTest {
                     .password(PASSWORD)
                     .send()
                     .join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
 }

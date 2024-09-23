@@ -13,11 +13,14 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOW
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_ORDER;
 import static java.util.Optional.ofNullable;
 
+import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
+import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceType;
 import io.camunda.service.entities.IncidentEntity;
 import io.camunda.service.entities.IncidentEntity.IncidentState;
 import io.camunda.service.search.filter.*;
 import io.camunda.service.search.page.SearchQueryPage;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
+import io.camunda.service.search.query.DecisionInstanceQuery;
 import io.camunda.service.search.query.DecisionRequirementsQuery;
 import io.camunda.service.search.query.FlowNodeInstanceQuery;
 import io.camunda.service.search.query.IncidentQuery;
@@ -27,6 +30,7 @@ import io.camunda.service.search.query.TypedSearchQueryBuilder;
 import io.camunda.service.search.query.UserQuery;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.sort.DecisionDefinitionSort;
+import io.camunda.service.search.sort.DecisionInstanceSort;
 import io.camunda.service.search.sort.DecisionRequirementsSort;
 import io.camunda.service.search.sort.FlowNodeInstanceSort;
 import io.camunda.service.search.sort.IncidentSort;
@@ -39,6 +43,7 @@ import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
+import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -111,6 +116,72 @@ public final class SearchQueryRequestMapper {
             SearchQueryRequestMapper::applyFlownodeInstanceSortField);
     final var filter = toFlownodeInstanceFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::flownodeInstanceSearchQuery);
+  }
+
+  public static Either<ProblemDetail, DecisionInstanceQuery> toDecisionInstanceQuery(
+      final DecisionInstanceSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.decisionInstanceSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            request.getSort(),
+            SortOptionBuilders::decisionInstance,
+            SearchQueryRequestMapper::applyDecisionInstanceSortField);
+    final var filter = toDecisionInstanceFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::decisionInstanceSearchQuery);
+  }
+
+  private static DecisionInstanceFilter toDecisionInstanceFilter(
+      final DecisionInstanceFilterRequest filter) {
+    final var builder = FilterBuilders.decisionInstance();
+
+    if (filter != null) {
+      ofNullable(filter.getKey()).ifPresent(builder::keys);
+      ofNullable(filter.getState())
+          .map(s -> convertEnum(s, DecisionInstanceState.class))
+          .ifPresent(builder::states);
+      ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
+      ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
+      ofNullable(filter.getDecisionKey()).ifPresent(builder::decisionKeys);
+      ofNullable(filter.getDmnDecisionId()).ifPresent(builder::dmnDecisionIds);
+      ofNullable(filter.getDmnDecisionName()).ifPresent(builder::dmnDecisionNames);
+      ofNullable(filter.getDecisionVersion()).ifPresent(builder::decisionVersions);
+      ofNullable(filter.getDecisionType())
+          .map(t -> convertEnum(t, DecisionInstanceType.class))
+          .ifPresent(builder::decisionTypes);
+      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+    }
+    return builder.build();
+  }
+
+  private static List<String> applyDecisionInstanceSortField(
+      final String field, final DecisionInstanceSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "key" -> builder.key();
+        case "state" -> builder.state();
+        case "evaluationDate" -> builder.evaluationDate();
+        case "processDefinitionKey" -> builder.processDefinitionKey();
+        case "decisionKey" -> builder.decisionKey();
+        case "dmnDecisionId" -> builder.dmnDecisionId();
+        case "dmnDecisionName" -> builder.dmnDecisionName();
+        case "decisionVersion" -> builder.decisionVersion();
+        case "decisionType" -> builder.decisionType();
+        case "tenantId" -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static <Q extends Enum<Q>, E extends Enum<E>> E convertEnum(
+      @NotNull final Q sourceEnum, @NotNull final Class<E> targetEnumType) {
+    return Enum.valueOf(targetEnumType, sourceEnum.name());
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
@@ -204,6 +275,15 @@ public final class SearchQueryRequestMapper {
     return null;
   }
 
+  private static VariableValueFilter toUserTaskVariableFilter(
+      final ProcessInstanceVariableFilterRequest filter) {
+    if (filter != null && filter.getName() != null) {
+      final var builder = FilterBuilders.variableValue();
+      return builder.name(filter.getName()).eq(filter.getValues()).build();
+    }
+    return null;
+  }
+
   private static DecisionDefinitionFilter toDecisionDefinitionFilter(
       final DecisionDefinitionFilterRequest filter) {
     final var builder = FilterBuilders.decisionDefinition();
@@ -269,57 +349,26 @@ public final class SearchQueryRequestMapper {
   private static UserTaskFilter toUserTaskFilter(final UserTaskFilterRequest filter) {
     final var builder = FilterBuilders.userTask();
 
-    if (filter != null) {
-      // key
-      if (filter.getKey() != null) {
-        builder.keys(filter.getKey());
-      }
+    Optional.ofNullable(filter)
+        .ifPresent(
+            f -> {
+              Optional.ofNullable(f.getKey()).ifPresent(builder::keys);
+              Optional.ofNullable(f.getState()).ifPresent(builder::states);
+              Optional.ofNullable(f.getBpmnDefinitionId()).ifPresent(builder::bpmnProcessIds);
+              Optional.ofNullable(f.getElementId()).ifPresent(builder::elementIds);
+              Optional.ofNullable(f.getAssignee()).ifPresent(builder::assignees);
+              Optional.ofNullable(f.getCandidateGroup()).ifPresent(builder::candidateGroups);
+              Optional.ofNullable(f.getCandidateUser()).ifPresent(builder::candidateUsers);
+              Optional.ofNullable(f.getProcessDefinitionKey())
+                  .ifPresent(builder::processDefinitionKeys);
+              Optional.ofNullable(f.getProcessInstanceKey())
+                  .ifPresent(builder::processInstanceKeys);
+              Optional.ofNullable(f.getTenantIds()).ifPresent(builder::tenantIds);
 
-      // state
-      if (filter.getState() != null && !filter.getState().isEmpty()) {
-        builder.states(filter.getState());
-      }
-
-      // bpmnProcessId
-      if (filter.getBpmnDefinitionId() != null && !filter.getBpmnDefinitionId().isEmpty()) {
-        builder.bpmnProcessIds(filter.getBpmnDefinitionId());
-      }
-
-      // elementId
-      if (filter.getElementId() != null && !filter.getElementId().isEmpty()) {
-        builder.elementIds(filter.getElementId());
-      }
-
-      // assignee
-      if (filter.getAssignee() != null && !filter.getAssignee().isEmpty()) {
-        builder.assignees(filter.getAssignee());
-      }
-
-      // candidateGroup
-      if (filter.getCandidateGroup() != null && !filter.getCandidateGroup().isEmpty()) {
-        builder.candidateGroups(filter.getCandidateGroup());
-      }
-
-      // candidateUser
-      if (filter.getCandidateUser() != null && !filter.getCandidateUser().isEmpty()) {
-        builder.candidateUsers(filter.getCandidateUser());
-      }
-
-      // processDefinitionKey
-      if (filter.getProcessDefinitionKey() != null) {
-        builder.processDefinitionKeys(filter.getProcessDefinitionKey());
-      }
-
-      // processInstanceKey
-      if (filter.getProcessInstanceKey() != null) {
-        builder.processInstanceKeys(filter.getProcessInstanceKey());
-      }
-
-      // tenantIds
-      if (filter.getTenantIds() != null) {
-        builder.tenantIds(filter.getTenantIds());
-      }
-    }
+              Optional.ofNullable(f.getVariables())
+                  .filter(variables -> !variables.isEmpty())
+                  .ifPresent(vars -> builder.variable(toVariableValueFilters(vars)));
+            });
 
     return builder.build();
   }
@@ -490,10 +539,19 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<VariableValueFilter> toVariableValueFilters(
-      final List<VariableValueFilterRequest> filters) {
+      final List<UserTaskVariableFilterRequest> filters) {
+
     if (filters != null && !filters.isEmpty()) {
-      return filters.stream().map(SearchQueryRequestMapper::toVariableValueFilter).toList();
+      return filters.stream()
+          .map(
+              filter ->
+                  new VariableValueFilter.Builder()
+                      .name(filter.getName())
+                      .eq(filter.getValue())
+                      .build())
+          .toList();
     }
+
     return null;
   }
 
@@ -606,5 +664,18 @@ public final class SearchQueryRequestMapper {
     }
     final var date = OffsetDateTime.parse(text);
     return new DateValueFilter.Builder().before(date).after(date).build();
+  }
+
+  private static DateValueFilter toDateValueFilter(final String after, final String before) {
+    final Optional<OffsetDateTime> beforeDateTime = ofNullable(before).map(OffsetDateTime::parse);
+    final Optional<OffsetDateTime> afterDateTime =
+        Optional.ofNullable(after).map(OffsetDateTime::parse);
+    if (beforeDateTime.isEmpty() && afterDateTime.isEmpty()) {
+      return null;
+    }
+    return new DateValueFilter.Builder()
+        .before(beforeDateTime.orElse(null))
+        .after(afterDateTime.orElse(null))
+        .build();
   }
 }

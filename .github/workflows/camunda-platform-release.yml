@@ -35,7 +35,7 @@ env:
   GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
 jobs:
   release:
-    name: Maven & Go Release
+    name: Maven Release
     runs-on: gcp-core-16-release
     outputs:
       releaseTagRevision: ${{ steps.maven-perform-release.outputs.tagRevision }}
@@ -96,17 +96,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-      - name: Set and commit Go Client version
-        run: |
-          pushd clients/go/internal/embedded
-          echo "${RELEASE_VERSION}" > data/VERSION
-
-          git commit -am "build(project): update go embedded version data"
-      - name: Build Go Client
-        uses: ./.github/actions/build-zeebe
-        with:
-          java: false
       - uses: s4u/maven-settings-action@v3.0.0
         with:
           servers: |
@@ -169,11 +158,6 @@ jobs:
           # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
           # https://maven.apache.org/maven-release/maven-release-plugin/usage/perform-release.html
 
-          # The following env var is used to include the previously built go artifacts into the final maven release build.
-          # As the maven build of the tag happens in a sub-directory to which maven checks out the release tag to build it.
-          # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
-          export ZBCTL_ROOT_DIR=${PWD}
-
           # -DskipQaBuild=true -P-autoFormat
           #   In order to disable QA/IT and the auto formatting during the release.
           #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
@@ -183,7 +167,7 @@ jobs:
             -DskipQaBuild=true \
             -DskipOptimize \
             -P-autoFormat \
-            -Darguments='-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -Dzbctl.force -Dzbctl.rootDir=${ZBCTL_ROOT_DIR} -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
+            -Darguments='-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
 
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
@@ -197,9 +181,6 @@ jobs:
           ARTIFACT_DIR=$(mktemp -d)
           cp target/checkout/dist/target/camunda-zeebe-${RELEASE_VERSION}.tar.gz "${ARTIFACT_DIR}/"
           cp target/checkout/dist/target/camunda-zeebe-${RELEASE_VERSION}.zip "${ARTIFACT_DIR}/"
-          cp clients/go/cmd/zbctl/dist/zbctl "${ARTIFACT_DIR}/"
-          cp clients/go/cmd/zbctl/dist/zbctl.exe "${ARTIFACT_DIR}/"
-          cp clients/go/cmd/zbctl/dist/zbctl.darwin "${ARTIFACT_DIR}/"
           echo "dir=${ARTIFACT_DIR}" >> $GITHUB_OUTPUT
       - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
@@ -218,20 +199,6 @@ jobs:
           FILE=$(./mvnw -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout)
           rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
           git commit -am "build(project): update java compat versions"
-      - name: Go Post-Release
-        run: |
-          # Publish Go tag for the release
-          git tag "clients/go/v${RELEASE_VERSION}"
-          if [ "$PUSH_CHANGES" = "true" ]; then
-            git push origin "clients/go/v${RELEASE_VERSION}"
-          fi
-
-          # Prepare Go version for the next release
-          pushd "clients/go/internal/embedded" || exit $?
-
-          echo "${DEVELOPMENT_VERSION}" > data/VERSION
-
-          git commit -am "build(project): prepare next development version (Go client)"
       - name: Push Changes to Release branch
         if: ${{ inputs.dryRun == false }}
         run: git push origin "${RELEASE_BRANCH}"

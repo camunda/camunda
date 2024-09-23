@@ -114,7 +114,7 @@ class AssignUserTaskTest {
                     .allowOverride(false)
                     .send()
                     .join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'");
   }
 
@@ -122,7 +122,7 @@ class AssignUserTaskTest {
   void shouldRejectIfMissingAssignee() {
     // when / then
     assertThatThrownBy(() -> client.newUserTaskAssignCommand(userTaskKey).send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }
 
@@ -131,7 +131,7 @@ class AssignUserTaskTest {
     // when / then
     assertThatThrownBy(
             () -> client.newUserTaskAssignCommand(userTaskKey).allowOverride(false).send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }
 }

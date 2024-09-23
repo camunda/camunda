@@ -264,7 +264,7 @@ const getSVGComponent = (
     case 'bpmn:IntermediateThrowEvent':
       return FlowNodeEventIntermediateThrow;
     case 'bpmn:SubProcess':
-      return isEventSubProcess(businessObject)
+      return isEventSubProcess({businessObject})
         ? FlowNodeEventSubprocess
         : FlowNodeTaskSubProcess;
   }

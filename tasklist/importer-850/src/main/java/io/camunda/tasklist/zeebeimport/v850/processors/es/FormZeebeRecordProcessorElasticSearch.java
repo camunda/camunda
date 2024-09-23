@@ -80,7 +80,7 @@ public class FormZeebeRecordProcessorElasticSearch {
       final BulkRequest bulkRequest)
       throws PersistenceException {
     final FormEntity formEntity =
-        new FormEntity(null, formId, schema, version, tenantId, formKey.toString(), false, false);
+        new FormEntity(null, formId, schema, version, tenantId, formKey, false, false);
     try {
       if (isDelete) {
         // Delete operation

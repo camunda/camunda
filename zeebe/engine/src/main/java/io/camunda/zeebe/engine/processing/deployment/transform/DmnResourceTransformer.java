@@ -138,7 +138,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                               .setDecisionKey(decisionKey)
                               .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
                               .setVersion(decision.getVersion() + 1)
-                              .setDuplicate(false);
+                              .setDuplicate(false)
+                              .setDeploymentKey(deployment.getDeploymentKey());
                         }
                         stateWriter.appendFollowUpEvent(
                             decisionKey,
@@ -283,8 +284,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                   .setDecisionName(decision.getName())
                   .setDecisionRequirementsId(parsedDrg.getId())
                   .setDecisionRequirementsKey(drgRecord.getDecisionRequirementsKey())
-                  .setTenantId(drgRecord.getTenantId())
-                  .setDeploymentKey(deploymentEvent.getDeploymentKey());
+                  .setTenantId(drgRecord.getTenantId());
               getOptionalVersionTag(parsedDrg, decision.getId())
                   .ifPresent(decisionRecord::setVersionTag);
 
@@ -301,17 +301,20 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                           decisionRecord
                               .setDecisionKey(latestDecision.getDecisionKey())
                               .setVersion(latestVersion)
+                              .setDeploymentKey(latestDecision.getDeploymentKey())
                               .setDuplicate(true);
                         } else {
                           decisionRecord
                               .setDecisionKey(newDecisionKey.getAsLong())
-                              .setVersion(latestVersion + 1);
+                              .setVersion(latestVersion + 1)
+                              .setDeploymentKey(deploymentEvent.getDeploymentKey());
                         }
                       },
                       () ->
                           decisionRecord
                               .setDecisionKey(newDecisionKey.getAsLong())
-                              .setVersion(INITIAL_VERSION));
+                              .setVersion(INITIAL_VERSION)
+                              .setDeploymentKey(deploymentEvent.getDeploymentKey()));
             });
   }
 

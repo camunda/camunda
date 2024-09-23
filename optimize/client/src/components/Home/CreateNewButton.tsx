@@ -10,6 +10,8 @@ import {ComponentProps} from 'react';
 import {MenuButton, MenuItem} from '@carbon/react';
 
 import {t} from 'translation';
+import {useUiConfig} from 'hooks';
+import {Link} from 'react-router-dom';
 
 interface CreateNewButtonProps
   extends Pick<ComponentProps<typeof MenuButton>, 'kind' | 'size' | 'tabIndex' | 'disabled'> {
@@ -27,6 +29,8 @@ export default function CreateNewButton({
   disabled,
   tabIndex,
 }: CreateNewButtonProps): JSX.Element {
+  const {optimizeDatabase} = useUiConfig();
+
   return (
     <MenuButton
       size={size}
@@ -42,18 +46,26 @@ export default function CreateNewButton({
           label={t('home.createBtn.collection').toString()}
         />
       )}
-      <MenuItem
-        onClick={() => create('dashboard')}
-        label={t('home.createBtn.dashboard').toString()}
-      />
+      {optimizeDatabase !== 'opensearch' ? (
+        <MenuItem
+          onClick={() => create('dashboard')}
+          label={t('home.createBtn.dashboard').toString()}
+        />
+      ) : (
+        <Link to="dashboard/new/edit">
+          <MenuItem label={t('home.createBtn.dashboard').toString()} />
+        </Link>
+      )}
       <MenuItem
         onClick={() => create('report')}
         label={t('home.createBtn.report.default').toString()}
       />
-      <MenuItem
-        onClick={() => create('kpi')}
-        label={t('report.kpiTemplates.processKpi').toString()}
-      />
+      {optimizeDatabase !== 'opensearch' && (
+        <MenuItem
+          onClick={() => create('kpi')}
+          label={t('report.kpiTemplates.processKpi').toString()}
+        />
+      )}
       <MenuItem onClick={importEntity} label={t('common.importReportDashboard').toString()} />
     </MenuButton>
   );

@@ -19,7 +19,8 @@ import io.camunda.zeebe.client.api.response.ModifyProcessInstanceResponse;
 import java.io.InputStream;
 import java.util.Map;
 
-public interface ModifyProcessInstanceCommandStep1 {
+public interface ModifyProcessInstanceCommandStep1
+    extends CommandWithCommunicationApiStep<ModifyProcessInstanceCommandStep1> {
 
   /**
    * Create an {@link

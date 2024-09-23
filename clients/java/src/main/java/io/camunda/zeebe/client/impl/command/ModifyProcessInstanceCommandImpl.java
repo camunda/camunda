@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
@@ -23,7 +24,12 @@ import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3;
 import io.camunda.zeebe.client.api.response.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.ModifyProcessInstanceResponseImpl;
+import io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceActivateInstruction;
+import io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceTerminateInstruction;
+import io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceVariableInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
@@ -37,6 +43,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class ModifyProcessInstanceCommandImpl
     implements ModifyProcessInstanceCommandStep1, ModifyProcessInstanceCommandStep3 {
@@ -49,19 +56,33 @@ public final class ModifyProcessInstanceCommandImpl
   private final GatewayStub asyncStub;
   private final Predicate<StatusCode> retryPredicate;
   private ActivateInstruction latestActivateInstruction;
+  private ModifyProcessInstanceActivateInstruction latestActivateInstructionRest;
   private Duration requestTimeout;
+  private final HttpClient httpClient;
+  private final RequestConfig.Builder httpRequestConfig;
+  private final io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceRequest
+      httpRequestObject;
+  private boolean useRest;
+  private final long processInstanceKey;
 
   public ModifyProcessInstanceCommandImpl(
       final long processInstanceKey,
       final JsonMapper jsonMapper,
       final GatewayStub asyncStub,
-      final Duration requestTimeout,
-      final Predicate<StatusCode> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate,
+      final HttpClient httpClient,
+      final ZeebeClientConfiguration config) {
     requestBuilder.setProcessInstanceKey(processInstanceKey);
     this.jsonMapper = jsonMapper;
     this.asyncStub = asyncStub;
-    this.requestTimeout = requestTimeout;
+    requestTimeout = config.getDefaultRequestTimeout();
     this.retryPredicate = retryPredicate;
+    this.httpClient = httpClient;
+    httpRequestConfig = httpClient.newRequestConfig();
+    httpRequestObject = new io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceRequest();
+    useRest = config.preferRestOverGrpc();
+    this.processInstanceKey = processInstanceKey;
+    requestTimeout(requestTimeout);
   }
 
   @Override
@@ -79,6 +100,8 @@ public final class ModifyProcessInstanceCommandImpl
   public ModifyProcessInstanceCommandStep2 terminateElement(final long elementInstanceKey) {
     requestBuilder.addTerminateInstructions(
         TerminateInstruction.newBuilder().setElementInstanceKey(elementInstanceKey).build());
+    httpRequestObject.addTerminateInstructionsItem(
+        new ModifyProcessInstanceTerminateInstruction().elementInstanceKey(elementInstanceKey));
     return this;
   }
 
@@ -91,12 +114,19 @@ public final class ModifyProcessInstanceCommandImpl
             .build();
     latestActivateInstruction = activateInstruction;
     requestBuilder.addActivateInstructions(activateInstruction);
+    final ModifyProcessInstanceActivateInstruction activateInstructionsItem =
+        new ModifyProcessInstanceActivateInstruction()
+            .elementId(elementId)
+            .ancestorElementInstanceKey(ancestorElementInstanceKey);
+    latestActivateInstructionRest = activateInstructionsItem;
+    httpRequestObject.addActivateInstructionsItem(activateInstructionsItem);
     return this;
   }
 
   @Override
   public ModifyProcessInstanceCommandStep1 and() {
     latestActivateInstruction = null;
+    latestActivateInstructionRest = null;
     return this;
   }
 
@@ -108,6 +138,12 @@ public final class ModifyProcessInstanceCommandImpl
   @Override
   public ModifyProcessInstanceCommandStep3 withVariables(
       final InputStream variables, final String scopeId) {
+    if (useRest) {
+      ArgumentUtil.ensureNotNull("variables", variables);
+      final String variablesString = jsonMapper.validateJson("variables", variables);
+      buildRestRequest(variablesString, scopeId);
+      return this;
+    }
     final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
     addVariableInstructionToLatestActivateInstruction(variableInstruction);
     return this;
@@ -121,6 +157,11 @@ public final class ModifyProcessInstanceCommandImpl
   @Override
   public ModifyProcessInstanceCommandStep3 withVariables(
       final String variables, final String scopeId) {
+    if (useRest) {
+      ArgumentUtil.ensureNotNull("variables", variables);
+      buildRestRequest(variables, scopeId);
+      return this;
+    }
     final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
     addVariableInstructionToLatestActivateInstruction(variableInstruction);
     return this;
@@ -134,6 +175,12 @@ public final class ModifyProcessInstanceCommandImpl
   @Override
   public ModifyProcessInstanceCommandStep3 withVariables(
       final Map<String, Object> variables, final String scopeId) {
+    if (useRest) {
+      ArgumentUtil.ensureNotNull("variables", variables);
+      final String variablesString = jsonMapper.toJson(variables);
+      buildRestRequest(variablesString, scopeId);
+      return this;
+    }
     final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
     addVariableInstructionToLatestActivateInstruction(variableInstruction);
     return this;
@@ -147,6 +194,12 @@ public final class ModifyProcessInstanceCommandImpl
   @Override
   public ModifyProcessInstanceCommandStep3 withVariables(
       final Object variables, final String scopeId) {
+    if (useRest) {
+      ArgumentUtil.ensureNotNull("variables", variables);
+      final String variablesString = jsonMapper.toJson(variables);
+      buildRestRequest(variablesString, scopeId);
+      return this;
+    }
     final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
     addVariableInstructionToLatestActivateInstruction(variableInstruction);
     return this;
@@ -191,6 +244,13 @@ public final class ModifyProcessInstanceCommandImpl
         .build();
   }
 
+  private ModifyProcessInstanceVariableInstruction buildVariableRequest(
+      final String variables, final String scopeId) {
+    return new ModifyProcessInstanceVariableInstruction()
+        .scopeId(scopeId)
+        .variables(jsonMapper.fromJsonAsMap(variables));
+  }
+
   private void addVariableInstructionToLatestActivateInstruction(
       final VariableInstruction variableInstruction) {
     // Grpc created immutable objects. Since we have already build the activate instruction before
@@ -204,15 +264,50 @@ public final class ModifyProcessInstanceCommandImpl
     requestBuilder.addActivateInstructions(latestActivateInstruction);
   }
 
+  private void addVariableInstructionToLatestActivateInstruction(
+      final ModifyProcessInstanceVariableInstruction variableInstruction) {
+    httpRequestObject
+        .getActivateInstructions()
+        .remove(httpRequestObject.getActivateInstructions().indexOf(latestActivateInstructionRest));
+    latestActivateInstructionRest =
+        latestActivateInstructionRest.addVariableInstructionsItem(variableInstruction);
+    httpRequestObject.addActivateInstructionsItem(latestActivateInstructionRest);
+  }
+
+  private void buildRestRequest(final String variables, final String scopeId) {
+    final ModifyProcessInstanceVariableInstruction instruction =
+        buildVariableRequest(variables, scopeId);
+    addVariableInstructionToLatestActivateInstruction(instruction);
+  }
+
   @Override
   public FinalCommandStep<ModifyProcessInstanceResponse> requestTimeout(
       final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
   public ZeebeFuture<ModifyProcessInstanceResponse> send() {
+    if (useRest) {
+      return sendRestRequest();
+    } else {
+      return sendGrpcRequest();
+    }
+  }
+
+  private ZeebeFuture<ModifyProcessInstanceResponse> sendRestRequest() {
+    final HttpZeebeFuture<ModifyProcessInstanceResponse> result = new HttpZeebeFuture<>();
+    httpClient.post(
+        "/process-instances/" + processInstanceKey + "/modification",
+        jsonMapper.toJson(httpRequestObject),
+        httpRequestConfig.build(),
+        result);
+    return result;
+  }
+
+  private ZeebeFuture<ModifyProcessInstanceResponse> sendGrpcRequest() {
     final ModifyProcessInstanceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<
@@ -221,14 +316,14 @@ public final class ModifyProcessInstanceCommandImpl
             new RetriableClientFutureImpl<>(
                 ModifyProcessInstanceResponseImpl::new,
                 retryPredicate,
-                streamObserver -> send(request, streamObserver));
+                streamObserver -> sendGrpcRequest(request, streamObserver));
 
-    send(request, future);
+    sendGrpcRequest(request, future);
 
     return future;
   }
 
-  private void send(
+  private void sendGrpcRequest(
       final ModifyProcessInstanceRequest request,
       final StreamObserver<GatewayOuterClass.ModifyProcessInstanceResponse> streamObserver) {
     asyncStub
@@ -239,6 +334,19 @@ public final class ModifyProcessInstanceCommandImpl
   @Override
   public ModifyProcessInstanceCommandStep2 operationReference(final long operationReference) {
     requestBuilder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep1 useRest() {
+    useRest = true;
+    return this;
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep1 useGrpc() {
+    useRest = false;
     return this;
   }
 }
