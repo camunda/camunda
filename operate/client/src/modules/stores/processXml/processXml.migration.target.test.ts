@@ -42,6 +42,9 @@ describe('stores/processXml/processXml.list', () => {
       'TimerEventSubProcess',
       'TaskY',
       'MessageReceiveTask',
+      'BusinessRuleTask',
+      'ScriptTask',
+      'SendTask',
     ]);
   });
 
@@ -74,6 +77,9 @@ describe('stores/processXml/processXml.list', () => {
       'TimerEventSubProcess',
       'TaskY',
       'MessageReceiveTask',
+      'BusinessRuleTask',
+      'ScriptTask',
+      'SendTask',
     ]);
   });
 });
