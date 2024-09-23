@@ -10,9 +10,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.service.FormServices;
 import io.camunda.service.entities.FormEntity;
@@ -21,11 +18,9 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(value = FormController.class, properties = "camunda.rest.query.enabled=true")
 public class FormControllerTest extends RestControllerTest {
@@ -42,8 +37,6 @@ public class FormControllerTest extends RestControllerTest {
         "version": 1
       }
       """;
-
-  @Autowired private MockMvc mockMvc;
 
   @MockBean private FormServices formServices;
 
@@ -62,31 +55,38 @@ public class FormControllerTest extends RestControllerTest {
 
   @Test
   public void shouldReturnFormItemForValidFormKey() throws Exception {
-    mockMvc
-        .perform(get("/v2/forms/{formKey}", VALID_FORM_KEY).contentType(MediaType.APPLICATION_JSON))
-        .andExpect(status().isOk())
-        .andExpect(content().json(FORM_ITEM_JSON));
+    webClient
+        .get()
+        .uri("/v2/forms/{formKey}", VALID_FORM_KEY)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(FORM_ITEM_JSON);
 
     verify(formServices, times(1)).getByKey(VALID_FORM_KEY);
   }
 
   @Test
   public void shouldReturn404ForInvalidFormKey() throws Exception {
-    mockMvc
-        .perform(
-            get("/v2/forms/{formKey}", INVALID_FORM_KEY).contentType(MediaType.APPLICATION_JSON))
-        .andExpect(status().isNotFound())
-        .andExpect(
-            content()
-                .json(
-                    """
-                {
-                  "type": "about:blank",
-                  "title": "NOT_FOUND",
-                  "status": 404,
-                  "detail": "Form not found"
-                }
-                """));
+    webClient
+        .get()
+        .uri("/v2/forms/{formKey}", INVALID_FORM_KEY)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "NOT_FOUND",
+              "status": 404,
+              "detail": "Form not found"
+            }
+            """);
 
     verify(formServices, times(1)).getByKey(INVALID_FORM_KEY);
   }
@@ -95,20 +95,24 @@ public class FormControllerTest extends RestControllerTest {
   public void shouldReturn500OnUnexpectedException() throws Exception {
     when(formServices.getByKey(VALID_FORM_KEY)).thenThrow(new RuntimeException("Unexpected error"));
 
-    mockMvc
-        .perform(get("/v2/forms/{formKey}", VALID_FORM_KEY).contentType(MediaType.APPLICATION_JSON))
-        .andExpect(status().isInternalServerError())
-        .andExpect(
-            content()
-                .json(
-                    """
-                    {
-                        "type":"about:blank",
-                        "title":"Failed to execute Get Form by key.",
-                        "status":500,
-                        "detail":"Unexpected error",
-                         "instance":"/v2/forms/1"}
-                    """));
+    webClient
+        .get()
+        .uri("/v2/forms/{formKey}", VALID_FORM_KEY)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .is5xxServerError()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "Failed to execute Get Form by key.",
+              "status": 500,
+              "detail": "Unexpected error",
+              "instance": "/v2/forms/1"
+            }
+            """);
 
     verify(formServices, times(1)).getByKey(VALID_FORM_KEY);
   }
