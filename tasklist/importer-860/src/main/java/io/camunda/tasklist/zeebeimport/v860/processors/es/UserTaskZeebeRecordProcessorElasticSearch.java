@@ -23,7 +23,6 @@ import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToTa
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToVariableEntityMapper;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import jakarta.json.Json;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -108,16 +107,8 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     try {
       LOGGER.debug("Variable instance for list view: id {}", variable.getId());
       final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(
-          TaskVariableTemplate.VALUE,
-          "null".equals(variable.getValue())
-              ? "null"
-              : objectMapper.writeValueAsString(Json.createValue(variable.getValue())));
-      updateFields.put(
-          TaskVariableTemplate.FULL_VALUE,
-          "null".equals(variable.getFullValue())
-              ? "null"
-              : objectMapper.writeValueAsString(Json.createValue(variable.getFullValue())));
+      updateFields.put(TaskVariableTemplate.VALUE, variable.getValue());
+      updateFields.put(TaskVariableTemplate.FULL_VALUE, variable.getFullValue());
       updateFields.put(TaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
 
       return new UpdateRequest()
@@ -135,7 +126,7 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     }
   }
 
-  private UpdateRequest persistUserTaskToListView(final TaskEntity taskEntity, Record record)
+  private UpdateRequest persistUserTaskToListView(final TaskEntity taskEntity, final Record record)
       throws PersistenceException {
     try {
       final UserTaskListViewEntity userTaskListViewEntity = new UserTaskListViewEntity(taskEntity);
