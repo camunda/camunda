@@ -76,9 +76,9 @@
           <schemaVersion>1.5</schemaVersion>
           <includeBomSerialNumber>true</includeBomSerialNumber>
           <includeCompileScope>true</includeCompileScope>
-          <includeProvidedScope>true</includeProvidedScope>
+          <includeProvidedScope>false</includeProvidedScope>
           <includeRuntimeScope>true</includeRuntimeScope>
-          <includeSystemScope>true</includeSystemScope>
+          <includeSystemScope>false</includeSystemScope>
           <includeTestScope>false</includeTestScope>
           <includeLicenseText>false</includeLicenseText>
           <outputName>bom</outputName>
