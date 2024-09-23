@@ -107,9 +107,9 @@ public class FormControllerTest extends RestControllerTest {
             """
             {
               "type": "about:blank",
-              "title": "Failed to execute Get Form by key.",
+              "title": "java.lang.RuntimeException",
               "status": 500,
-              "detail": "Unexpected error",
+              "detail": "Unexpected error occurred during the request processing: Unexpected error",
               "instance": "/v2/forms/1"
             }
             """);
