@@ -22,7 +22,7 @@ public record FlowNodeInstanceQuery(
 
   public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<Builder>
       implements TypedSearchQueryBuilder<
-      FlowNodeInstanceQuery, Builder, FlowNodeInstanceFilter, FlowNodeInstanceSort> {
+          FlowNodeInstanceQuery, Builder, FlowNodeInstanceFilter, FlowNodeInstanceSort> {
 
     private static final FlowNodeInstanceFilter EMPTY_FILTER =
         FilterBuilders.flowNodeInstance().build();

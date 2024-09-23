@@ -17,7 +17,6 @@ import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,7 +33,6 @@ public class ResourceController {
   private final ResourceServices resourceServices;
   private final MultiTenancyCfg multiTenancyCfg;
 
-  @Autowired
   public ResourceController(
       final ResourceServices resourceServices, final MultiTenancyCfg multiTenancyCfg) {
     this.resourceServices = resourceServices;

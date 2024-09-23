@@ -12,7 +12,6 @@ import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,7 +25,6 @@ public class ClockController {
 
   private final ClockServices clockServices;
 
-  @Autowired
   public ClockController(final ClockServices clockServices) {
     this.clockServices = clockServices;
   }

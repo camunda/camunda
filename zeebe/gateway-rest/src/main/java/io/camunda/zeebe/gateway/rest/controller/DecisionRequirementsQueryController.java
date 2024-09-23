@@ -19,7 +19,6 @@ import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import jakarta.validation.ValidationException;
 import java.nio.charset.StandardCharsets;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +32,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/decision-requirements")
 public class DecisionRequirementsQueryController {
 
-  @Autowired private DecisionRequirementsServices decisionRequirementsServices;
+  private final DecisionRequirementsServices decisionRequirementsServices;
+
+  public DecisionRequirementsQueryController(
+      final DecisionRequirementsServices decisionRequirementsServices) {
+    this.decisionRequirementsServices = decisionRequirementsServices;
+  }
 
   @PostMapping(
       path = "/search",

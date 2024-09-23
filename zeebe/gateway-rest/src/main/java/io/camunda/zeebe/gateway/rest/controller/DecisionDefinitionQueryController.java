@@ -20,7 +20,6 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import java.nio.charset.StandardCharsets;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,7 +32,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/decision-definitions")
 public class DecisionDefinitionQueryController {
 
-  @Autowired private DecisionDefinitionServices decisionDefinitionServices;
+  private final DecisionDefinitionServices decisionDefinitionServices;
+
+  public DecisionDefinitionQueryController(
+      final DecisionDefinitionServices decisionDefinitionServices) {
+    this.decisionDefinitionServices = decisionDefinitionServices;
+  }
 
   @PostMapping(
       path = "/search",
