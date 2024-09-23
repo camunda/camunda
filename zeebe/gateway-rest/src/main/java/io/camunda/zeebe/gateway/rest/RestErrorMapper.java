@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.zeebe.transport.stream.impl.messages.ErrorCode.NOT_FOUND;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.document.api.DocumentError.DocumentNotFound;
@@ -14,6 +16,7 @@ import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.OperationNotSupported;
 import io.camunda.service.CamundaServiceException;
 import io.camunda.service.DocumentServices.DocumentException;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
@@ -21,6 +24,7 @@ import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.msgpack.spec.MsgpackException;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
 import java.util.Optional;
@@ -79,6 +83,9 @@ public class RestErrorMapper {
       return null;
     }
     return switch (error) {
+      case final NotFoundException nfe:
+        yield createProblemDetail(
+            HttpStatus.NOT_FOUND, nfe.getMessage(), RejectionType.NOT_FOUND.name());
       case final CamundaServiceException cse:
         yield cse.getCause() != null ? mapErrorToProblem(cse.getCause(), rejectionMapper) : null;
       case final BrokerErrorException bee:

@@ -263,7 +263,7 @@ public final class SearchQueryResponseMapper {
         .tenantId(t.tenantId());
   }
 
-  private static UserTaskItem toUserTask(final UserTaskEntity t) {
+  public static UserTaskItem toUserTask(final UserTaskEntity t) {
     return new UserTaskItem()
         .tenantIds(t.tenantId())
         .key(t.key())
