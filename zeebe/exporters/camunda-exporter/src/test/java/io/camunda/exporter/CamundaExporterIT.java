@@ -19,9 +19,9 @@ import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
 import io.camunda.exporter.entities.AuthorizationEntity;
 import io.camunda.exporter.entities.UserEntity;
 import io.camunda.exporter.schema.SchemaTestUtil;
-import io.camunda.exporter.schema.descriptors.IndexDescriptor;
-import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.exporter.utils.TestSupport;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -34,10 +34,10 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Objects;
-import java.util.Set;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -270,6 +270,11 @@ final class CamundaExporterIT {
   @Test
   void shouldExportAuthorizationRecord() throws IOException {
     // given
+    final var context = getContext();
+    final var exporter = new CamundaExporter();
+    exporter.configure(context);
+    exporter.open(controller);
+
     final Record<AuthorizationRecordValue> record = factory.generateRecord(ValueType.AUTHORIZATION);
 
     // when

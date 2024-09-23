@@ -68,7 +68,7 @@ public class IndexSchemaValidatorTest {
 
     // when
     final var index =
-        TestUtil.mockIndex(
+        SchemaTestUtil.mockIndex(
             "qualified_name", "aliasx", "qualified_name", "mappings-added-property.json");
 
     final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
