@@ -33,7 +33,7 @@ public class FormZeebeRecordProcessorOpenSearch {
 
   @Autowired private FormIndex formIndex;
 
-  public void processFormRecord(Record record, List<BulkOperation> operations)
+  public void processFormRecord(final Record record, final List<BulkOperation> operations)
       throws PersistenceException {
 
     final FormRecordImpl recordValue = (FormRecordImpl) record.getValue();
@@ -62,17 +62,16 @@ public class FormZeebeRecordProcessorOpenSearch {
   }
 
   private void persistForm(
-      Long formKey,
-      String schema,
-      Long version,
-      String tenantId,
-      String formId,
-      boolean isDelete,
-      List<BulkOperation> operations)
+      final Long formKey,
+      final String schema,
+      final Long version,
+      final String tenantId,
+      final String formId,
+      final boolean isDelete,
+      final List<BulkOperation> operations)
       throws PersistenceException {
     final FormEntity formEntity =
-        new FormEntity(
-            null, formId, schema, version, tenantId, formKey.toString(), false, isDelete);
+        new FormEntity(null, formId, schema, version, tenantId, formKey, false, isDelete);
     try {
 
       if (isDelete) {
@@ -101,14 +100,14 @@ public class FormZeebeRecordProcessorOpenSearch {
                                 .document(CommonUtils.getJsonObjectFromEntity(formEntity))))
                 .build());
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new PersistenceException(
           String.format("Error preparing the form query for the formId: [%s]", formEntity.getId()),
           e);
     }
   }
 
-  public static String bytesToXml(byte[] bytes) {
+  public static String bytesToXml(final byte[] bytes) {
     return new String(bytes, StandardCharsets.UTF_8);
   }
 }

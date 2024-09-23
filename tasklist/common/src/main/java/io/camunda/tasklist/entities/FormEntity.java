@@ -13,6 +13,7 @@ import java.util.Objects;
 
 public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
 
+  private Long key;
   private String bpmnId;
   private String processDefinitionId;
   private String schema;
@@ -30,13 +31,14 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
       final String schema,
       final Long version,
       final String tenantId,
-      final String formKey,
+      final Long formKey,
       final Boolean embedded,
       final Boolean isDeleted) {
     if (embedded) {
       setId(createId(processDefinitionId, bpmnId));
     } else {
-      setId(formKey);
+      setId(String.valueOf(formKey));
+      setKey(formKey);
     }
     this.bpmnId = bpmnId;
     this.processDefinitionId = processDefinitionId;
@@ -125,6 +127,11 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), bpmnId, processDefinitionId, schema, version);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -142,12 +149,8 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(embedded, that.embedded)
         && Objects.equals(isDeleted, that.isDeleted)
-        && Objects.equals(version, that.version);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), bpmnId, processDefinitionId, schema, version);
+        && Objects.equals(version, that.version)
+        && Objects.equals(key, that.key);
   }
 
   @Override
@@ -168,6 +171,15 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
         + ", isDeleted="
         + isDeleted
         + '}';
+  }
+
+  public Long getKey() {
+    return key;
+  }
+
+  public FormEntity setKey(final Long key) {
+    this.key = key;
+    return this;
   }
 
   public Boolean getIsDeleted() {
