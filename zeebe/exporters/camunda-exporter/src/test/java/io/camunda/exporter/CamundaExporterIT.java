@@ -134,15 +134,18 @@ final class CamundaExporterIT {
 
   @Test
   void shouldCreateAllSchemasIfCreateEnabled() throws IOException {
+    // given
     config.elasticsearch.setCreateSchema(true);
 
     final var exporter =
         new CamundaExporter(mockResourceProvider(Set.of(index), Set.of(indexTemplate)));
 
+    // when
     final var context = getContext();
     exporter.configure(context);
     exporter.open(controller);
 
+    // then
     final var indices = testClient.indices().get(req -> req.index("*"));
     final var indexTemplates =
         testClient.indices().getIndexTemplate(req -> req.name("template_name"));
@@ -157,18 +160,23 @@ final class CamundaExporterIT {
 
   @Test
   void shouldUpdateSchemasCorrectlyIfCreateEnabled() throws IOException {
+    // given
     config.elasticsearch.setCreateSchema(true);
 
     final var exporter =
         new CamundaExporter(mockResourceProvider(Set.of(index), Set.of(indexTemplate)));
+
     final var context = getContext();
     exporter.configure(context);
     exporter.open(controller);
 
+    // when
     when(index.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
     when(indexTemplate.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
 
     exporter.open(controller);
+
+    // then
     final var indices = testClient.indices().get(req -> req.index("*"));
     final var indexTemplates =
         testClient.indices().getIndexTemplate(req -> req.name("template_name"));
@@ -183,6 +191,7 @@ final class CamundaExporterIT {
 
   @Test
   void shouldCreateNewSchemasIfNewIndexDescriptorAddedToExistingSchemas() throws IOException {
+    // given
     config.elasticsearch.setCreateSchema(true);
     final var resourceProvider = mockResourceProvider(Set.of(index), Set.of(indexTemplate));
     final var exporter = new CamundaExporter(resourceProvider);
@@ -190,6 +199,7 @@ final class CamundaExporterIT {
     exporter.configure(context);
     exporter.open(controller);
 
+    // when
     final var newIndex =
         SchemaTestUtil.mockIndex(
             "new_index_qualified", "new_alias", "new_index", "mappings-added-property.json");
@@ -208,6 +218,7 @@ final class CamundaExporterIT {
 
     exporter.open(controller);
 
+    // then
     final var indices = testClient.indices().get(req -> req.index("*"));
     final var indexTemplates = testClient.indices().getIndexTemplate(req -> req.name("*"));
 
@@ -227,14 +238,17 @@ final class CamundaExporterIT {
 
   @Test
   void shouldNotPutAnySchemasIfCreatedDisabled() throws IOException {
+    // given
     config.elasticsearch.setCreateSchema(false);
 
     final var exporter =
         new CamundaExporter(mockResourceProvider(Set.of(index), Set.of(indexTemplate)));
+    // when
     final var context = getContext();
     exporter.configure(context);
     exporter.open(controller);
 
+    // then
     final var indices = testClient.indices().get(req -> req.index("*"));
     final var indexTemplates =
         testClient.indices().getIndexTemplate(req -> req.name("template_name*"));
