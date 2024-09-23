@@ -32,7 +32,7 @@ jobs:
 
       - name: Generate SBOM (CycloneDX)
         run: |
-          mvn org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom -DincludeScope=runtime -DskipTests=true
+          mvn org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom -DskipTests=true -DskipOptmize=true
 
       - name: Upload SBOM as artifact
         uses: actions/upload-artifact@v3
