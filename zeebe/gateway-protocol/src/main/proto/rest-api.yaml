@@ -579,6 +579,60 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
+  /user-tasks:
+    get:
+      tags:
+        - User Task
+      summary: Return user task by a user task Key.
+      description: |
+        Get the user task by the user task key.
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The user task key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: >
+            The form is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserTaskItem"
+        "400":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Not found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
   /clock:
     put:
       tags:
@@ -588,7 +642,7 @@ paths:
         Set a precise, static time for the Zeebe engine’s internal clock.
         When the clock is pinned, it remains at the specified time and does not advance.
         To change the time, the clock must be pinned again with a new timestamp.
-        
+
         :::note
         This endpoint is an [alpha feature](/reference/alpha-features.md) and may be subject to change
         in future releases.
@@ -624,7 +678,7 @@ paths:
         Resets the Zeebe engine’s internal clock to the current system time, enabling it to tick in real-time.
         This operation is useful for returning the clock to
         normal behavior after it has been pinned to a specific time.
-        
+
         :::note
         This endpoint is an [alpha feature](/reference/alpha-features.md) and may be subject to change
         in future releases.
