@@ -2721,10 +2721,10 @@
   dependencies:
     "@types/react" "*"
 
-"@types/lodash@4.17.8":
-  version "4.17.8"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.17.8.tgz#c5cd912b46772585b50c3627dd7befe04c80047d"
-  integrity sha512-4FqegKZALpA1NvUMkVbA033lzR9wQh7GcSj458jv+SU9VKhbNEV/n+N9r6nshwB+SHUH8M7PCPQLS3nWZTl3nQ==
+"@types/lodash@4.17.9":
+  version "4.17.9"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.17.9.tgz#0dc4902c229f6b8e2ac5456522104d7b1a230290"
+  integrity sha512-w9iWudx1XWOHW5lQRS9iKpK/XuRhnN+0T7HvdCCd802FYkT1AMTnxndJHGrNJwRoRHkslGr4S29tjm1cT7x/7w==
 
 "@types/mdast@^3.0.0":
   version "3.0.15"
