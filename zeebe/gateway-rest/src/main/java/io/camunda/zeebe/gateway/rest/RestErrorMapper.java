@@ -12,6 +12,7 @@ import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.OperationNotSupported;
 import io.camunda.service.CamundaServiceException;
 import io.camunda.service.DocumentServices.DocumentException;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
@@ -71,6 +72,8 @@ public class RestErrorMapper {
       return null;
     }
     return switch (error) {
+      case final NotFoundException nfe:
+        yield mapErrorToProblem(nfe.getCause(), rejectionMapper);
       case final CamundaServiceException cse:
         yield cse.getCause() != null ? mapErrorToProblem(cse.getCause(), rejectionMapper) : null;
       case final BrokerErrorException bee:
