@@ -136,21 +136,20 @@ public final class SearchQueryResponseMapper {
   private static ProcessInstanceItem toProcessInstance(final ProcessInstanceEntity p) {
     return new ProcessInstanceItem()
         .key(p.key())
+        .bpmnProcessId(p.bpmnProcessId())
         .processName(p.processName())
         .processVersion(p.processVersion())
-        .bpmnProcessId(p.bpmnProcessId())
-        .parentKey(p.parentProcessInstanceKey())
+        .processVersionTag(p.processVersionTag())
+        .processDefinitionKey(p.processDefinitionKey())
+        .rootProcessInstanceKey(p.rootProcessInstanceKey())
+        .parentProcessInstanceKey(p.parentProcessInstanceKey())
         .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())
+        .treePath(p.treePath())
         .startDate(p.startDate())
         .endDate(p.endDate())
-        .state((p.state() == null) ? null : ProcessInstanceItem.StateEnum.fromValue(p.state()))
+        .state((p.state() == null) ? null : ProcessInstanceStateEnum.fromValue(p.state().name()))
         .incident(p.incident())
-        .hasActiveOperation(p.hasActiveOperation())
-        .processDefinitionKey(p.processDefinitionKey())
-        .tenantId(p.tenantId())
-        .rootInstanceId(p.rootInstanceId())
-        .operations(toOperations(p.operations()))
-        .callHierarchy(toCallHierarchy(p.callHierarchy()));
+        .tenantId(p.tenantId());
   }
 
   private static List<OperationItem> toOperations(final List<OperationEntity> instances) {

@@ -235,31 +235,22 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.processInstance();
 
     if (filter != null) {
-      ofNullable(filter.getRunning())
-          .ifPresentOrElse(builder::running, () -> builder.running(false));
-      ofNullable(filter.getActive()).ifPresentOrElse(builder::active, () -> builder.active(false));
-      ofNullable(filter.getIncidents())
-          .ifPresentOrElse(builder::incidents, () -> builder.incidents(false));
-      ofNullable(filter.getFinished())
-          .ifPresentOrElse(builder::finished, () -> builder.finished(false));
-      ofNullable(filter.getCompleted())
-          .ifPresentOrElse(builder::completed, () -> builder.completed(false));
-      ofNullable(filter.getCanceled())
-          .ifPresentOrElse(builder::canceled, () -> builder.canceled(false));
-      ofNullable(filter.getRetriesLeft())
-          .ifPresentOrElse(builder::retriesLeft, () -> builder.retriesLeft(false));
-      ofNullable(filter.getErrorMessage()).ifPresent(builder::errorMessage);
-      ofNullable(filter.getActivityId()).ifPresent(builder::activityId);
-      ofNullable(toDateValueFilter(filter.getStartDate())).ifPresent(builder::startDate);
-      ofNullable(toDateValueFilter(filter.getEndDate())).ifPresent(builder::endDate);
+      ofNullable(filter.getKey()).ifPresent(builder::keys);
       ofNullable(filter.getBpmnProcessId()).ifPresent(builder::bpmnProcessIds);
-      ofNullable(filter.getProcessDefinitionVersion())
-          .ifPresent(builder::processDefinitionVersions);
-      ofNullable(toProcessInstanceVariableFilter(filter.getVariable()))
-          .ifPresent(builder::variable);
-      ofNullable(filter.getBatchOperationId()).ifPresent(builder::batchOperationIds);
+      ofNullable(filter.getProcessName()).ifPresent(builder::processNames);
+      ofNullable(filter.getProcessVersion()).ifPresent(builder::processVersions);
+      ofNullable(filter.getProcessVersionTag()).ifPresent(builder::processVersionTags);
+      ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
+      ofNullable(filter.getRootProcessInstanceKey()).ifPresent(builder::rootProcessInstanceKeys);
       ofNullable(filter.getParentProcessInstanceKey())
           .ifPresent(builder::parentProcessInstanceKeys);
+      ofNullable(filter.getParentFlowNodeInstanceKey())
+          .ifPresent(builder::parentFlowNodeInstanceKeys);
+      ofNullable(filter.getTreePath()).ifPresent(builder::treePaths);
+      ofNullable(toDateValueFilter(filter.getStartDate())).ifPresent(builder::startDate);
+      ofNullable(toDateValueFilter(filter.getEndDate())).ifPresent(builder::endDate);
+      ofNullable(filter.getState()).ifPresent(state -> builder.states(state.getValue()));
+      ofNullable(filter.getIncident()).ifPresent(builder::incident);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
 
@@ -417,19 +408,20 @@ public final class SearchQueryRequestMapper {
     } else {
       switch (field) {
         case "key" -> builder.key();
+        case "bpmnProcessId" -> builder.bpmnProcessId();
         case "processName" -> builder.processName();
         case "processVersion" -> builder.processVersion();
-        case "bpmnProcessId" -> builder.bpmnProcessId();
-        case "parentKey" -> builder.parentKey();
+        case "processVersionTag" -> builder.processVersionTag();
+        case "processDefinitionKey" -> builder.processDefinitionKey();
+        case "rootProcessInstanceKey" -> builder.rootProcessInstanceKey();
+        case "parentProcessInstanceKey" -> builder.parentProcessInstanceKey();
         case "parentFlowNodeInstanceKey" -> builder.parentFlowNodeInstanceKey();
+        case "treePath" -> builder.treePath();
         case "startDate" -> builder.startDate();
         case "endDate" -> builder.endDate();
         case "state" -> builder.state();
         case "incident" -> builder.incident();
-        case "hasActiveOperation" -> builder.hasActiveOperation();
-        case "processDefinitionKey" -> builder.processDefinitionKey();
         case "tenantId" -> builder.tenantId();
-        case "rootInstanceId" -> builder.rootInstanceId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

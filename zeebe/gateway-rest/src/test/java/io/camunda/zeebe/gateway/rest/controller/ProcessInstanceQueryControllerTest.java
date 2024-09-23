@@ -38,17 +38,19 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           "items": [
             {
               "key": 123,
+              "bpmnProcessId": "demoProcess",
               "processName": "Demo Process",
               "processVersion": 5,
-              "bpmnProcessId": "demoProcess",
-              "parentKey": 555,
-              "parentFlowNodeInstanceKey": 789,
+              "processVersionTag": "v5",
+              "processDefinitionKey": 789,
+              "rootProcessInstanceKey": 345,
+              "parentProcessInstanceKey": 333,
+              "parentFlowNodeInstanceKey": 777,
+              "treePath": "PI_1/PI_2",
               "startDate": "2024-01-01T00:00:00Z",
               "state": "ACTIVE",
               "incident": false,
-              "hasActiveOperation": false,
-              "processDefinitionKey": 777,
-              "tenantId": "default"
+              "tenantId": "tenant"
             }
           ],
           "page": {
@@ -67,21 +69,20 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               List.of(
                   new ProcessInstanceEntity(
                       123L,
+                      "demoProcess",
                       "Demo Process",
                       5,
-                      "demoProcess",
-                      555L,
+                      "v5",
                       789L,
+                      345L,
+                      333L,
+                      777L,
+                      "PI_1/PI_2",
                       "2024-01-01T00:00:00Z",
                       null,
-                      "ACTIVE",
+                      ProcessInstanceEntity.ProcessInstanceState.ACTIVE,
                       false,
-                      false,
-                      777L,
-                      "default",
-                      null,
-                      null,
-                      null)))
+                      "tenant")))
           .sortValues(new Object[] {"v"})
           .build();
   @MockBean ProcessInstanceServices processInstanceServices;
