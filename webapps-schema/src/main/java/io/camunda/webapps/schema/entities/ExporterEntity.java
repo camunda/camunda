@@ -14,8 +14,6 @@ package io.camunda.webapps.schema.entities;
  */
 public interface ExporterEntity<T extends ExporterEntity<T>> {
 
-  String DEFAULT_TENANT_IDENTIFIER = "<default>";
-
   /**
    * @return the id of the entity
    */

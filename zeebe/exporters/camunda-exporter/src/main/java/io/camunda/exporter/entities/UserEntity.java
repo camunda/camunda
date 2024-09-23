@@ -10,6 +10,8 @@ package io.camunda.exporter.entities;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 
 public class UserEntity implements ExporterEntity<UserEntity> {
+
+  public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
   private String id;
   private Long key;
   private String username;
