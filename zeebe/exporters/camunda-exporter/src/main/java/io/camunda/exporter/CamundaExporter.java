@@ -50,9 +50,6 @@ public class CamundaExporter implements Exporter {
   private Controller controller;
   private ElasticsearchExporterConfiguration configuration;
   private ElasticsearchClient client;
-  private SearchEngineClient searchEngineClient;
-  private SchemaManager schemaManager;
-  private IndexSchemaValidator schemaValidator;
   private ExporterBatchWriter writer;
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
@@ -79,11 +76,11 @@ public class CamundaExporter implements Exporter {
   public void open(final Controller controller) {
     this.controller = controller;
     client = createClient();
-    searchEngineClient = new ElasticsearchEngineClient(client);
-    schemaManager = createSchemaManager();
-    schemaValidator = new IndexSchemaValidator(schemaManager);
+    final var searchEngineClient = new ElasticsearchEngineClient(client);
+    final var schemaManager = createSchemaManager(searchEngineClient);
+    final var schemaValidator = new IndexSchemaValidator(schemaManager);
 
-    schemaStartup();
+    schemaStartup(schemaManager, schemaValidator, searchEngineClient);
     writer = createBatchWriter();
 
     scheduleDelayedFlush();
@@ -121,15 +118,19 @@ public class CamundaExporter implements Exporter {
     }
   }
 
-  private void schemaStartup() {
+  private void schemaStartup(
+      final SchemaManager schemaManager,
+      final IndexSchemaValidator schemaValidator,
+      final SearchEngineClient searchEngineClient) {
     if (!configuration.elasticsearch.isCreateSchema()) {
       LOG.info(
           "Will not make any changes to indices and index templates as [createSchema] is false");
       return;
     }
 
-    final var newIndexProperties = validateIndices();
-    final var newIndexTemplateProperties = validateIndexTemplates();
+    final var newIndexProperties = validateIndices(schemaValidator, searchEngineClient);
+    final var newIndexTemplateProperties =
+        validateIndexTemplates(schemaValidator, searchEngineClient);
     //  used to create any indices/templates which don't exist
     schemaManager.initialiseResources();
 
@@ -138,7 +139,8 @@ public class CamundaExporter implements Exporter {
     schemaManager.updateSchema(newIndexTemplateProperties);
   }
 
-  private Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndices() {
+  private Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndices(
+      final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
     final var currentIndices =
         searchEngineClient.getMappings(
             configuration.elasticsearch.getIndexPrefix() + "*", MappingSource.INDEX);
@@ -146,7 +148,8 @@ public class CamundaExporter implements Exporter {
     return schemaValidator.validateIndexMappings(currentIndices, provider.getIndexDescriptors());
   }
 
-  private Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexTemplates() {
+  private Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexTemplates(
+      final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
     final var currentTemplates =
         searchEngineClient.getMappings(
             configuration.elasticsearch.getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE);
@@ -158,7 +161,7 @@ public class CamundaExporter implements Exporter {
             .collect(Collectors.toSet()));
   }
 
-  private SchemaManager createSchemaManager() {
+  private SchemaManager createSchemaManager(final SearchEngineClient searchEngineClient) {
     return new ElasticsearchSchemaManager(
         searchEngineClient,
         provider.getIndexDescriptors(),
