@@ -33,7 +33,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
-import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
@@ -166,9 +165,11 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     }
 
     final ErrorType errorType =
-        value.getJobKind() == JobKind.EXECUTION_LISTENER
-            ? ErrorType.EXECUTION_LISTENER_NO_RETRIES
-            : ErrorType.JOB_NO_RETRIES;
+        switch (value.getJobKind()) {
+          case EXECUTION_LISTENER -> ErrorType.EXECUTION_LISTENER_NO_RETRIES;
+          case TASK_LISTENER -> ErrorType.TASK_LISTENER_NO_RETRIES;
+          default -> ErrorType.JOB_NO_RETRIES;
+        };
 
     final var treePathProperties =
         new ElementTreePathBuilder()

@@ -13,6 +13,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.ProcessElementProperties;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
@@ -101,7 +102,7 @@ public final class BpmnUserTaskBehavior {
                         userTaskProps.getFormId(),
                         userTaskProps.getFormBindingType(),
                         userTaskProps.getFormVersionTag(),
-                        context,
+                        ProcessElementProperties.from(context),
                         scopeKey)
                     .map(p::formKey))
         .flatMap(
@@ -185,7 +186,7 @@ public final class BpmnUserTaskBehavior {
       final Expression formIdExpression,
       final ZeebeBindingType bindingType,
       final String versionTag,
-      final BpmnElementContext context,
+      final ProcessElementProperties elementProperties,
       final long scopeKey) {
     if (formIdExpression == null) {
       return Either.right(null);
@@ -194,7 +195,8 @@ public final class BpmnUserTaskBehavior {
         .evaluateStringExpression(formIdExpression, scopeKey)
         .flatMap(
             formId -> {
-              final var form = findLinkedForm(formId, bindingType, versionTag, context, scopeKey);
+              final var form =
+                  findLinkedForm(formId, bindingType, versionTag, elementProperties, scopeKey);
               return form.map(PersistedForm::getFormKey);
             });
   }
@@ -203,25 +205,26 @@ public final class BpmnUserTaskBehavior {
       final String formId,
       final ZeebeBindingType bindingType,
       final String versionTag,
-      final BpmnElementContext context,
+      final ProcessElementProperties elementProperties,
       final long scopeKey) {
     return switch (bindingType) {
-      case deployment -> findFormByIdInSameDeployment(formId, context, scopeKey);
-      case latest -> findLatestFormById(formId, context.getTenantId(), scopeKey);
+      case deployment -> findFormByIdInSameDeployment(formId, elementProperties, scopeKey);
+      case latest -> findLatestFormById(formId, elementProperties.getTenantId(), scopeKey);
       case versionTag ->
-          findFormByIdAndVersionTag(formId, versionTag, context.getTenantId(), scopeKey);
+          findFormByIdAndVersionTag(formId, versionTag, elementProperties.getTenantId(), scopeKey);
     };
   }
 
   private Either<Failure, PersistedForm> findFormByIdInSameDeployment(
-      final String formId, final BpmnElementContext context, final long scopeKey) {
+      final String formId, final ProcessElementProperties elementProperties, final long scopeKey) {
     return stateBehavior
-        .getDeploymentKey(context.getProcessDefinitionKey(), context.getTenantId())
+        .getDeploymentKey(
+            elementProperties.getProcessDefinitionKey(), elementProperties.getTenantId())
         .flatMap(
             deploymentKey ->
                 formState
                     .findFormByIdAndDeploymentKey(
-                        wrapString(formId), deploymentKey, context.getTenantId())
+                        wrapString(formId), deploymentKey, elementProperties.getTenantId())
                     .<Either<Failure, PersistedForm>>map(Either::right)
                     .orElseGet(
                         () ->

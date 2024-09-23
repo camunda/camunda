@@ -11,12 +11,13 @@ import com.google.common.base.Strings;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.ProcessElementProperties;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
+import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -86,7 +88,12 @@ public final class BpmnJobBehavior {
 
   public Either<Failure, JobProperties> evaluateJobExpressions(
       final JobWorkerProperties jobWorkerProps, final BpmnElementContext context) {
-    final var scopeKey = context.getElementInstanceKey();
+    return evaluateJobExpressions(jobWorkerProps, ProcessElementProperties.from(context));
+  }
+
+  public Either<Failure, JobProperties> evaluateJobExpressions(
+      final JobWorkerProperties jobWorkerProps, final ProcessElementProperties elementProperties) {
+    final var scopeKey = elementProperties.getElementInstanceKey();
     return Either.<Failure, JobProperties>right(new JobProperties())
         .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey).map(p::type))
         .flatMap(p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey).map(p::retries))
@@ -125,7 +132,7 @@ public final class BpmnJobBehavior {
                         jobWorkerProps.getFormId(),
                         jobWorkerProps.getFormBindingType(),
                         jobWorkerProps.getFormVersionTag(),
-                        context,
+                        elementProperties,
                         scopeKey)
                     .map(key -> Objects.toString(key, null))
                     .map(p::formKey));
@@ -133,6 +140,47 @@ public final class BpmnJobBehavior {
 
   private static String asListLiteralOrNull(final List<String> list) {
     return list == null ? null : ExpressionTransformer.asListLiteral(list);
+  }
+
+  public void createNewJob(
+      final BpmnElementContext context,
+      final ExecutableJobWorkerElement element,
+      final JobProperties jobProperties) {
+
+    writeJobCreatedEvent(
+        ProcessElementProperties.from(context),
+        jobProperties,
+        JobKind.BPMN_ELEMENT,
+        JobListenerEventType.UNSPECIFIED,
+        element.getJobWorkerProperties().getTaskHeaders());
+  }
+
+  public void createNewExecutionListenerJob(
+      final BpmnElementContext context,
+      final JobProperties jobProperties,
+      final ExecutionListener executionListener) {
+
+    final var jobListenerEventType =
+        fromExecutionListenerEventType(executionListener.getEventType());
+    writeJobCreatedEvent(
+        ProcessElementProperties.from(context),
+        jobProperties,
+        JobKind.EXECUTION_LISTENER,
+        jobListenerEventType,
+        Collections.emptyMap());
+  }
+
+  public void createNewTaskListenerJob(
+      final ProcessElementProperties elementProperties,
+      final JobProperties jobProperties,
+      final TaskListener taskListener) {
+
+    writeJobCreatedEvent(
+        elementProperties,
+        jobProperties,
+        JobKind.TASK_LISTENER,
+        fromTaskListenerEventType(taskListener.getEventType()),
+        Collections.emptyMap());
   }
 
   private static JobListenerEventType fromExecutionListenerEventType(
@@ -143,37 +191,15 @@ public final class BpmnJobBehavior {
     };
   }
 
-  public void createNewJob(
-      final BpmnElementContext context,
-      final ExecutableJobWorkerElement element,
-      final JobProperties jobProperties) {
-
-    writeJobCreatedEvent(
-        context,
-        element,
-        jobProperties,
-        JobKind.BPMN_ELEMENT,
-        JobListenerEventType.UNSPECIFIED,
-        element.getJobWorkerProperties().getTaskHeaders());
-    jobMetrics.jobCreated(jobProperties.getType(), JobKind.BPMN_ELEMENT);
-  }
-
-  public void createNewExecutionListenerJob(
-      final BpmnElementContext context,
-      final ExecutableFlowElement element,
-      final JobProperties jobProperties,
-      final ExecutionListener executionListener) {
-
-    final var jobListenerEventType =
-        fromExecutionListenerEventType(executionListener.getEventType());
-    writeJobCreatedEvent(
-        context,
-        element,
-        jobProperties,
-        JobKind.EXECUTION_LISTENER,
-        jobListenerEventType,
-        Collections.emptyMap());
-    jobMetrics.jobCreated(jobProperties.getType(), JobKind.EXECUTION_LISTENER);
+  private static JobListenerEventType fromTaskListenerEventType(
+      final ZeebeTaskListenerEventType eventType) {
+    return switch (eventType) {
+      case create -> JobListenerEventType.CREATE;
+      case assignment -> JobListenerEventType.ASSIGNMENT;
+      case update -> JobListenerEventType.UPDATE;
+      case complete -> JobListenerEventType.COMPLETE;
+      case cancel -> JobListenerEventType.CANCEL;
+    };
   }
 
   private Either<Failure, String> evalTypeExp(final Expression type, final long scopeKey) {
@@ -197,8 +223,7 @@ public final class BpmnJobBehavior {
   }
 
   private void writeJobCreatedEvent(
-      final BpmnElementContext context,
-      final ExecutableFlowElement element,
+      final ProcessElementProperties elementProperties,
       final JobProperties props,
       final JobKind jobKind,
       final JobListenerEventType jobListenerEventType,
@@ -212,17 +237,18 @@ public final class BpmnJobBehavior {
         .setListenerEventType(jobListenerEventType)
         .setRetries(props.getRetries().intValue())
         .setCustomHeaders(encodedHeaders)
-        .setBpmnProcessId(context.getBpmnProcessId())
-        .setProcessDefinitionVersion(context.getProcessVersion())
-        .setProcessDefinitionKey(context.getProcessDefinitionKey())
-        .setProcessInstanceKey(context.getProcessInstanceKey())
-        .setElementId(element.getId())
-        .setElementInstanceKey(context.getElementInstanceKey())
-        .setTenantId(context.getTenantId());
+        .setBpmnProcessId(elementProperties.getBpmnProcessId())
+        .setProcessDefinitionVersion(elementProperties.getProcessVersion())
+        .setProcessDefinitionKey(elementProperties.getProcessDefinitionKey())
+        .setProcessInstanceKey(elementProperties.getProcessInstanceKey())
+        .setElementId(elementProperties.getElementId())
+        .setElementInstanceKey(elementProperties.getElementInstanceKey())
+        .setTenantId(elementProperties.getTenantId());
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
     jobActivationBehavior.publishWork(jobKey, jobRecord);
+    jobMetrics.jobCreated(props.getType(), jobKind);
   }
 
   private DirectBuffer encodeHeaders(

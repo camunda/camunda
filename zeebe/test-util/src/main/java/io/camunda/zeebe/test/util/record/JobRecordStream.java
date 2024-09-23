@@ -9,6 +9,7 @@ package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import java.util.stream.Stream;
 
@@ -34,6 +35,10 @@ public final class JobRecordStream
 
   public JobRecordStream withJobKind(final JobKind jobKind) {
     return valueFilter(v -> v.getJobKind() == jobKind);
+  }
+
+  public JobRecordStream withJobListenerEventType(final JobListenerEventType eventType) {
+    return valueFilter(v -> v.getJobListenerEventType() == eventType);
   }
 
   public JobRecordStream withProcessInstanceKey(final long processInstanceKey) {
