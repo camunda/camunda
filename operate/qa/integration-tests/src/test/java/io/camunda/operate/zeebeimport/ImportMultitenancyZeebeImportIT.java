@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 
 import io.camunda.operate.OperateProfileService;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.IdentityTester;
 import io.camunda.operate.util.IdentityOperateZeebeAbstractIT;
@@ -23,6 +22,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.security.tenant.TenantService;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.Ignore;

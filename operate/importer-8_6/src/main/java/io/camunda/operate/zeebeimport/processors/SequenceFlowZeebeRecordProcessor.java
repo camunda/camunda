@@ -9,10 +9,10 @@ package io.camunda.operate.zeebeimport.processors;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
-import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.store.BatchRequest;
+import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;

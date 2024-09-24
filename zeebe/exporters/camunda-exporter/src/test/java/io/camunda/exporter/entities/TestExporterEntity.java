@@ -10,6 +10,8 @@ package io.camunda.exporter.entities;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 
 public class TestExporterEntity implements ExporterEntity<TestExporterEntity> {
+
+  public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
   private String id;
 
   @Override

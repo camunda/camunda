@@ -9,8 +9,8 @@ package io.camunda.operate.webapp.rest.dto.metadata;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.camunda.operate.entities.EventEntity;
-import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.webapps.schema.entities.operate.EventEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import java.time.OffsetDateTime;
 
 @JsonInclude(Include.NON_NULL)

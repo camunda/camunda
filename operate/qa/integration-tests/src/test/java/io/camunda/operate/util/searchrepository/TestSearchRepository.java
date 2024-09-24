@@ -8,8 +8,8 @@
 package io.camunda.operate.util.searchrepository;
 
 import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.VariableEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;

@@ -9,9 +9,9 @@ package io.camunda.operate.cache;
 
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
-import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.entities.ProcessFlowNodeEntity;
 import io.camunda.operate.store.ProcessStore;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.ProcessFlowNodeEntity;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;

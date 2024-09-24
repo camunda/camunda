@@ -13,7 +13,7 @@ public class EnterpriseDto {
 
   private final boolean enterprise;
 
-  public EnterpriseDto(boolean enterprise) {
+  public EnterpriseDto(final boolean enterprise) {
     this.enterprise = enterprise;
   }
 
@@ -27,7 +27,7 @@ public class EnterpriseDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

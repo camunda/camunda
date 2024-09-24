@@ -34,7 +34,7 @@ public class AuthenticationRestService extends InternalAPIErrorController {
   public UserDto getCurrentAuthentication() {
     try {
       return userService.getCurrentUser();
-    } catch (UsernameNotFoundException e) {
+    } catch (final UsernameNotFoundException e) {
       throw new UserNotFoundException("Current user couldn't be found", e);
     }
   }

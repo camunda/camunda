@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.rest.dto.activity;
 
-import io.camunda.operate.entities.FlowNodeState;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 
 public enum FlowNodeStateDto {
   ACTIVE,

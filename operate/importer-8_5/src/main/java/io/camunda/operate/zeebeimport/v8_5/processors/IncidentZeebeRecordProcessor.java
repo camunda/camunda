@@ -14,8 +14,6 @@ import static io.camunda.operate.schema.templates.VariableTemplate.PROCESS_DEFIN
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.*;
-import io.camunda.operate.entities.post.PostImporterActionType;
-import io.camunda.operate.entities.post.PostImporterQueueEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.IncidentTemplate;
@@ -25,6 +23,11 @@ import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.zeebeimport.IncidentNotifier;
+import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.IncidentState;
+import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
+import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;

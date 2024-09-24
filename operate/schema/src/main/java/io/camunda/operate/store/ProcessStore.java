@@ -7,9 +7,9 @@
  */
 package io.camunda.operate.store;
 
-import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import java.io.IOException;
 import java.util.*;
 import org.springframework.lang.Nullable;
@@ -63,7 +63,7 @@ public interface ProcessStore {
     private String bpmnProcessId;
     private String tenantId;
 
-    public ProcessKey(String bpmnProcessId, String tenantId) {
+    public ProcessKey(final String bpmnProcessId, final String tenantId) {
       this.bpmnProcessId = bpmnProcessId;
       this.tenantId = tenantId;
     }
@@ -72,7 +72,7 @@ public interface ProcessStore {
       return bpmnProcessId;
     }
 
-    public ProcessKey setBpmnProcessId(String bpmnProcessId) {
+    public ProcessKey setBpmnProcessId(final String bpmnProcessId) {
       this.bpmnProcessId = bpmnProcessId;
       return this;
     }
@@ -81,7 +81,7 @@ public interface ProcessStore {
       return tenantId;
     }
 
-    public ProcessKey setTenantId(String tenantId) {
+    public ProcessKey setTenantId(final String tenantId) {
       this.tenantId = tenantId;
       return this;
     }
@@ -92,7 +92,7 @@ public interface ProcessStore {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
       if (this == o) {
         return true;
       }
