@@ -937,7 +937,8 @@ public class MigrateSequentialMultiInstanceBodyTest {
                             t.zeebeJobType("A")
                                 .multiInstance(
                                     b ->
-                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                        b.sequential()
+                                            .zeebeInputCollectionExpression("[1,2,3]")
                                             .zeebeInputElement("index")
                                             .zeebeOutputElementExpression("index")
                                             .zeebeOutputCollection("results")))
@@ -952,7 +953,8 @@ public class MigrateSequentialMultiInstanceBodyTest {
                             t.zeebeJobType("B")
                                 .multiInstance(
                                     b ->
-                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                        b.sequential()
+                                            .zeebeInputCollectionExpression("[1,2,3]")
                                             .zeebeInputElement("index")
                                             .zeebeOutputElementExpression("index")
                                             .zeebeOutputCollection("results2")))
