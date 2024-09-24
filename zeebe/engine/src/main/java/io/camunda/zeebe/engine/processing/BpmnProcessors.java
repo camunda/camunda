@@ -24,7 +24,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreatio
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableProcessDefinitionProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -121,7 +121,7 @@ public final class BpmnProcessors {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.CANCEL,
-        new AuthorizableProcessDefinitionProcessor<>(
+        new AuthorizableProcessor<>(
             new AuthorizationCheckBehavior(
                 processingState.getAuthorizationState(), processingState.getUserState()),
             writers,

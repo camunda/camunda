@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
-import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableProcessDefinitionProcessor.AuthorizationResource;
-import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableProcessDefinitionProcessor.AuthorizedProcessorInterface;
+import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableProcessor.AuthorizationResource;
+import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableProcessor.AuthorizedProcessorInterface;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;

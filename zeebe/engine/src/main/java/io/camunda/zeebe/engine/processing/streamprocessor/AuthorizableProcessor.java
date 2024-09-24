@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Map;
 
-public final class AuthorizableProcessDefinitionProcessor<T extends UnifiedRecordValue, Resource>
+public final class AuthorizableProcessor<T extends UnifiedRecordValue, Resource>
     implements TypedRecordProcessor<T> {
 
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
@@ -26,7 +26,7 @@ public final class AuthorizableProcessDefinitionProcessor<T extends UnifiedRecor
   private final TypedResponseWriter responseWriter;
   private final AuthorizedProcessorInterface<T, Resource> delegate;
 
-  public AuthorizableProcessDefinitionProcessor(
+  public AuthorizableProcessor(
       final AuthorizationCheckBehavior authorizationCheckBehavior,
       final Writers writers,
       final AuthorizedProcessorInterface<T, Resource> delegate) {
