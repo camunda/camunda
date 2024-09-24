@@ -908,7 +908,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * warning is removed, anything described below may not yet have taken effect, and the interface
    * and its description are subject to change.</strong>
    *
-   * @return a builder for the request to get the XML of a decision definition
+   * @return a builder for the request to get form by key
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   FormGetRequest newFormGetRequest(long key);
