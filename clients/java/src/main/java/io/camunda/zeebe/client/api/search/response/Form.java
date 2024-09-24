@@ -18,7 +18,7 @@ package io.camunda.zeebe.client.api.search.response;
 public interface Form {
 
   /**
-   * @return the BPMN ID of the form
+   * @return the associated bpmn id of the form
    */
   String getBpmnId();
 
