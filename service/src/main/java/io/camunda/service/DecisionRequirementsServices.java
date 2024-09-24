@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.entities.DecisionRequirementsEntity;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.search.query.DecisionRequirementsQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
@@ -34,6 +35,23 @@ public final class DecisionRequirementsServices
       final ServiceTransformers transformers,
       final Authentication authentication) {
     super(brokerClient, searchClient, transformers, authentication);
+  }
+
+  public DecisionRequirementsEntity getByKey(final Long key) {
+    final SearchQueryResult<DecisionRequirementsEntity> result =
+        executor.search(
+            SearchQueryBuilders.decisionRequirementsSearchQuery()
+                .filter(f -> f.decisionRequirementsKeys(key))
+                .build(),
+            DecisionRequirementsEntity.class);
+    if (result.total() < 1) {
+      throw new NotFoundException(String.format("Decision requirements with key %d not found", key));
+    } else if (result.total() > 1) {
+      throw new CamundaServiceException(
+          String.format("Found decision requirements with key %d more than once", key));
+    } else {
+      return result.items().stream().findFirst().orElseThrow();
+    }
   }
 
   @Override
