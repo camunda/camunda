@@ -29,7 +29,7 @@ gh api -X GET "repos/${OWNER_NAME}/${REPO_NAME}/actions/runs?sha=${PR_HEAD_SHA}"
     >&2 echo "Checking failed job ${job_id} for well known failure reasons..."
 
     workflow_name=$(gh api -X GET "repos/${OWNER_NAME}/${REPO_NAME}/actions/jobs/${job_id}" --jq '.workflow_name')
-    job_name=$(gh api -X GET "repos/${OWNER_NAME}/${REPO_NAME}/actions/jobs/${job_id}" --jq '.job_name')
+    job_name=$(gh api -X GET "repos/${OWNER_NAME}/${REPO_NAME}/actions/jobs/${job_id}" --jq '.name')
     job_url="https://github.com/${OWNER_NAME}/${REPO_NAME}/actions/runs/${workflow_run_id}/job/${job_id}?pr=${PR_NUMBER}"
     job_annotations=$(gh api -X GET "/repos/${OWNER_NAME}/${REPO_NAME}/check-runs/${job_id}/annotations")
 
