@@ -1710,6 +1710,63 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /forms:
+    get:
+      tags:
+        - Form
+      summary: Return form by a Form Key.
+      description: |
+        Get the form by the form key.
+
+        :::note
+        This endpoint will return only linked forms, Embedded forms are not retrieved for this endpoint.
+        :::
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: formKey
+          in: path
+          required: true
+          description: The form key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: >
+            The form is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormItem"
+        "400":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Not found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /deployments:
     post:
       tags:
@@ -3988,7 +4045,26 @@ components:
         tenantId:
           description: The tenant ID of the signal that was broadcast.
           type: string
-
+    FormItem:
+      type: object
+      properties:
+        key:
+          description: The key of the form.
+          type: integer
+          format: int64
+        tenantId:
+          description: The tenant ID of the form.
+          type: string
+        bpmnId:
+          description: The BPMN ID of the form.
+          type: string
+        schema:
+          description: The schema of the form.
+          type: object
+        version:
+          description: The version of the form.
+          type: integer
+          format: int64
   securitySchemes:
     bearerAuth:
       type: http
