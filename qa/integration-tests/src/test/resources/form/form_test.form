@@ -1,0 +1,23 @@
+{
+  "components": [
+    {
+      "label": "Text area",
+      "type": "textarea",
+      "layout": {
+        "row": "Row_1pkn1na",
+        "columns": null
+      },
+      "id": "Field_1wfz06e",
+      "key": "textarea_5yn9cc"
+    }
+  ],
+  "type": "default",
+  "id": "ertte",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.5.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.23.0"
+  },
+  "schemaVersion": 16
+}

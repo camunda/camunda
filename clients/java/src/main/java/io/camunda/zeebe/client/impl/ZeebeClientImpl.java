@@ -54,6 +54,7 @@ import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
+import io.camunda.zeebe.client.api.fetch.FormGetRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionRequirementsQuery;
@@ -90,6 +91,7 @@ import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
 import io.camunda.zeebe.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.FormGetRequestImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpClientFactory;
 import io.camunda.zeebe.client.impl.search.query.DecisionDefinitionQueryImpl;
@@ -591,6 +593,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public AddPermissionsCommandStep1 newAddPermissionsCommand(final long ownerKey) {
     return new AddPermissionsCommandImpl(ownerKey, httpClient, jsonMapper);
+  }
+
+  @Override
+  public FormGetRequest newFormGetRequest(final long key) {
+    return new FormGetRequestImpl(httpClient, key, jsonMapper);
   }
 
   private JobClient newJobClient() {
