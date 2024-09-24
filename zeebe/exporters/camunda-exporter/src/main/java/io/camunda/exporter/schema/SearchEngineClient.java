@@ -31,4 +31,7 @@ public interface SearchEngineClient {
 
   Map<String, IndexMapping> getMappings(
       final String namePattern, final MappingSource mappingSource);
+
+  void putSettings(
+      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings);
 }

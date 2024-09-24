@@ -13,6 +13,7 @@ import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
+import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import co.elastic.clients.json.JsonpDeserializer;
@@ -24,10 +25,13 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,6 +117,40 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           String.format(
               "Failed retrieving mappings from index/index templates with pattern [%s]",
               namePattern),
+          e);
+    }
+  }
+
+  @Override
+  public void putSettings(
+      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings) {
+    final var request = putIndexSettingsRequest(indexDescriptor, toAppendSettings);
+
+    try {
+      client.indices().putSettings(request);
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format("Index [%s] settings PUT failed", indexDescriptor.getIndexName());
+      LOG.error(errMsg, e);
+      throw new ElasticsearchExporterException(errMsg, e);
+    }
+  }
+
+  private PutIndicesSettingsRequest putIndexSettingsRequest(
+      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings) {
+    try (final var settingsStream =
+        IOUtils.toInputStream(
+            MAPPER.writeValueAsString(toAppendSettings), StandardCharsets.UTF_8)) {
+
+      return new PutIndicesSettingsRequest.Builder()
+          .index(indexDescriptor.getFullQualifiedName())
+          .withJson(settingsStream)
+          .build();
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          String.format(
+              "Failed to serialise settings in PutSettingsRequest for index %s",
+              indexDescriptor.getFullQualifiedName()),
           e);
     }
   }
