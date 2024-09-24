@@ -1,9 +1,11 @@
 
 # C8 Run
 
-This is a deployment method very similar to C7 Run.
+C8 Run is a packaged distribution of Camunda 8, which allows you to spin up Camunda 8 within seconds. It packages Camunda, ElasticSearch, and Connectors. The only prerequisite to run it, is to have a JDK 21+ installed locally.
 
-## Options
+Please see the [Camunda 8 Run Installation Guide](https://docs.camunda.io/docs/next/self-managed/setup/deploy/local/c8run/) for more details.
+
+## Linux / Mac Options
 
 ```
 Usage: run.sh [start|stop] (options...)
@@ -12,10 +14,17 @@ Options:
   --detached   - Starts Camunda Run as a detached process
 ```
 
+## Windows options
+
+```
+Usage: c8run.exe [start|stop] (options...)
+
+There are currently no options for windows, but we plan to add support for --config and --detached.
+```
 
 ## Note about connectors
 
-Connectors is configured to run on port `8085` just like the docker compose file. Other camunda applications are expected to be accessible via `localhost:8080/<component>`.
+Connectors is configured to run on port `8085`. Other camunda applications are expected to be accessible via `localhost:8080/<component>`.
 
 ```
 -------------------------------------------
