@@ -39,14 +39,14 @@ jobs:
 
       - if: ${{ matrix.os == 'ubuntu-latest' }}
         name: Linux - Run c8run
-        run: nohup ./start.sh --detached
+        run: ./start.sh --detached
         working-directory: ./c8run
         env:
           JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
 
       - if: ${{ startsWith(matrix.os, 'macos') }}
         name: Mac - Run c8run
-        run: nohup ./start.sh --detached
+        run: ./start.sh --detached
         working-directory: ./c8run
 
       - uses: actions/setup-node@v4
