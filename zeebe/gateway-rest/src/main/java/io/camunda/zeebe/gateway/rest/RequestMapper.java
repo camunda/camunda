@@ -316,9 +316,21 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, DeployResourcesRequest> toDeployResourceRequest(
-      final List<MultipartFile> resources, final String tenantId) {
+      final List<MultipartFile> resources,
+      final String tenantId,
+      final boolean multiTenancyEnabled) {
     try {
-      return Either.right(createDeployResourceRequest(resources, tenantId));
+      final Either<ProblemDetail, String> validationResponse =
+          validateTenantId(tenantId, multiTenancyEnabled, "Deploy Resources")
+              .flatMap(
+                  tenant ->
+                      validateAuthorization(tenant, multiTenancyEnabled, "Deploy Resources")
+                          .map(Either::<ProblemDetail, String>left)
+                          .orElseGet(() -> Either.right(tenant)));
+      if (validationResponse.isLeft()) {
+        return Either.left(validationResponse.getLeft());
+      }
+      return Either.right(createDeployResourceRequest(resources, validationResponse.get()));
     } catch (final IOException e) {
       return Either.left(createInternalErrorProblemDetail(e, "Failed to read resources content"));
     }
