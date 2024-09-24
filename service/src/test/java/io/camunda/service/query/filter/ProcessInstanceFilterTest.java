@@ -8,10 +8,13 @@
 package io.camunda.service.query.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.search.clients.query.*;
+import io.camunda.service.CamundaServiceException;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.entities.ProcessInstanceEntity;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.filter.ProcessInstanceFilter;
 import io.camunda.service.search.query.ProcessInstanceQuery;
@@ -34,6 +37,43 @@ public final class ProcessInstanceFilterTest {
     client = new StubbedCamundaSearchClient();
     new ProcessInstanceSearchQueryStub().registerWith(client);
     services = new ProcessInstanceServices(null, client);
+  }
+
+  @Test
+  public void shouldReturnProcessInstanceByKey() {
+    // given
+    final var key = 123L;
+
+    // when
+    final var searchQueryResult = services.getByKey(key);
+
+    // then
+    assertThat(searchQueryResult.key()).isEqualTo(123L);
+    assertThat(searchQueryResult.bpmnProcessId()).isEqualTo("demoProcess");
+    assertThat(searchQueryResult.processName()).isEqualTo("Demo Process");
+  }
+
+  @Test
+  public void shouldThrownExceptionIfNotFoundByKey() {
+    // given
+    final var key = 100L;
+
+    // when / then
+    final var exception =
+        assertThrowsExactly(NotFoundException.class, () -> services.getByKey(key));
+    assertThat(exception.getMessage()).isEqualTo("Process Instance with key 100 not found");
+  }
+
+  @Test
+  public void shouldThrownExceptionIfDuplicateFoundByKey() {
+    // given
+    final var key = 200L;
+
+    // when / then
+    final var exception =
+        assertThrowsExactly(CamundaServiceException.class, () -> services.getByKey(key));
+    assertThat(exception.getMessage())
+        .isEqualTo("Found Process Instance with key 200 more than once");
   }
 
   @Test

@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.entities.ProcessInstanceEntity;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
@@ -66,6 +67,21 @@ public final class ProcessInstanceServices
   public SearchQueryResult<ProcessInstanceEntity> search(
       final Function<ProcessInstanceQuery.Builder, ObjectBuilder<ProcessInstanceQuery>> fn) {
     return search(SearchQueryBuilders.processInstanceSearchQuery(fn));
+  }
+
+  public ProcessInstanceEntity getByKey(final Long key) {
+    final SearchQueryResult<ProcessInstanceEntity> result =
+        executor.search(
+            SearchQueryBuilders.processInstanceSearchQuery().filter(f -> f.keys(key)).build(),
+            ProcessInstanceEntity.class);
+    if (result.total() < 1) {
+      throw new NotFoundException(String.format("Process Instance with key %d not found", key));
+    } else if (result.total() > 1) {
+      throw new CamundaServiceException(
+          String.format("Found Process Instance with key %d more than once", key));
+    } else {
+      return result.items().stream().findFirst().orElseThrow();
+    }
   }
 
   public CompletableFuture<ProcessInstanceCreationRecord> createProcessInstance(
