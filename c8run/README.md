@@ -23,6 +23,10 @@ Options:
   --detached   - Starts Camunda Run as a detached process
 ```
 
+### Shutdown
+
+To stop c8run on Linux or Mac, run `./shutdown.sh`
+
 ## Windows options
 
 ```
