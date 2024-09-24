@@ -120,6 +120,7 @@ public final class DeploymentCreateProcessor
   @Override
   public void processNewCommand(final TypedRecord<DeploymentRecord> command) {
 
+    // TODO this should use the decorator pattern similar to ProcessInstanceCancelProcessor
     if (!authorizationCheckBehavior.isAuthorized(
         command, AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE)) {
       final var error = "Not authorized to create process instance";

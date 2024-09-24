@@ -18,38 +18,38 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Map;
 
-public abstract class AuthorizableProcessDefinitionProcessor<T extends UnifiedRecordValue, Resource>
+public final class AuthorizableProcessDefinitionProcessor<T extends UnifiedRecordValue, Resource>
     implements TypedRecordProcessor<T> {
-
-  private static final String BPMN_PROCESS_ID_RECOURCE_ID = "bpmnProcessId";
-  private static final AuthorizationResourceType AUTHORIZATION_RESOURCE_TYPE =
-      AuthorizationResourceType.PROCESS_DEFINITION;
 
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final AuthorizedProcessorInterface<T, Resource> delegate;
 
   public AuthorizableProcessDefinitionProcessor(
-      final AuthorizationCheckBehavior authorizationCheckBehavior, final Writers writers) {
+      final AuthorizationCheckBehavior authorizationCheckBehavior,
+      final Writers writers,
+      final AuthorizedProcessorInterface<T, Resource> delegate) {
     this.authorizationCheckBehavior = authorizationCheckBehavior;
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    this.delegate = delegate;
   }
 
   @Override
   public void processRecord(final TypedRecord<T> command) {
     // Check authorization
-    final var resource = getResource(command);
+    final var resource = delegate.getResource(command);
     final var isAuthorized =
         authorizationCheckBehavior.isAuthorized(
             command,
-            AUTHORIZATION_RESOURCE_TYPE,
+            resource.resourceType,
             resource.permissionType,
-            resource.getResourceIds());
+            delegate.getResourceIds(resource.resource));
 
     // Reject if not authorized
     if (isAuthorized) {
-      processRecord(command, resource.resource);
+      delegate.processRecord(command, resource.resource);
     } else {
       rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, resource.errorMessage);
       responseWriter.writeRejectionOnCommand(
@@ -57,29 +57,30 @@ public abstract class AuthorizableProcessDefinitionProcessor<T extends UnifiedRe
     }
   }
 
-  public abstract void processRecord(final TypedRecord<T> command, final Resource resource);
-
-  public abstract AuthorizationResource getResource(final TypedRecord<T> command);
-
-  public final class AuthorizationResource {
+  public static final class AuthorizationResource<Resource> {
     private final Resource resource;
+    private final AuthorizationResourceType resourceType;
     private final PermissionType permissionType;
-    private final String bpmnProcessId;
     private final String errorMessage;
 
     public AuthorizationResource(
         final Resource resource,
+        final AuthorizationResourceType resourceType,
         final PermissionType permissionType,
         final String bpmnProcessId,
         final String errorMessage) {
       this.resource = resource;
+      this.resourceType = resourceType;
       this.permissionType = permissionType;
-      this.bpmnProcessId = bpmnProcessId;
       this.errorMessage = errorMessage;
     }
+  }
 
-    public Map<String, String> getResourceIds() {
-      return Map.of(BPMN_PROCESS_ID_RECOURCE_ID, bpmnProcessId);
-    }
+  public interface AuthorizedProcessorInterface<T extends UnifiedRecordValue, Resource> {
+    void processRecord(final TypedRecord<T> command, final Resource resource);
+
+    AuthorizationResource<Resource> getResource(final TypedRecord<T> command);
+
+    Map<String, String> getResourceIds(Resource resource);
   }
 }

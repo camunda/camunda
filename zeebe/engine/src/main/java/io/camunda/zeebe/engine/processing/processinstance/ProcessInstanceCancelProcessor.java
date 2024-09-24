@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
-import io.camunda.zeebe.engine.processing.identity.behavior.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableProcessDefinitionProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableProcessDefinitionProcessor.AuthorizationResource;
+import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableProcessDefinitionProcessor.AuthorizedProcessorInterface;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -20,11 +20,13 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.Map;
 
 public final class ProcessInstanceCancelProcessor
-    extends AuthorizableProcessDefinitionProcessor<ProcessInstanceRecord, ElementInstance> {
+    implements AuthorizedProcessorInterface<ProcessInstanceRecord, ElementInstance> {
 
   private static final String MESSAGE_PREFIX =
       "Expected to cancel a process instance with key '%d', but ";
@@ -43,10 +45,6 @@ public final class ProcessInstanceCancelProcessor
 
   public ProcessInstanceCancelProcessor(
       final ProcessingState processingState, final Writers writers) {
-    super(
-        new AuthorizationCheckBehavior(
-            processingState.getAuthorizationState(), processingState.getUserState()),
-        writers);
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
     commandWriter = writers.command();
@@ -70,14 +68,21 @@ public final class ProcessInstanceCancelProcessor
   }
 
   @Override
-  public AuthorizationResource getResource(final TypedRecord<ProcessInstanceRecord> command) {
+  public AuthorizationResource<ElementInstance> getResource(
+      final TypedRecord<ProcessInstanceRecord> command) {
     final var elementInstance = elementInstanceState.getInstance(command.getKey());
     // TODO what if elementInstance doesn't exist?
-    return new AuthorizationResource(
+    return new AuthorizationResource<>(
         elementInstance,
+        AuthorizationResourceType.PROCESS_DEFINITION,
         PermissionType.UPDATE,
         elementInstance.getValue().getBpmnProcessId(),
         "Not authorized to cancel process instance with key '%s'".formatted(command.getKey()));
+  }
+
+  @Override
+  public Map<String, String> getResourceIds(final ElementInstance elementInstance) {
+    return Map.of("bpmnProcessId", elementInstance.getValue().getBpmnProcessId());
   }
 
   private boolean validateCommand(

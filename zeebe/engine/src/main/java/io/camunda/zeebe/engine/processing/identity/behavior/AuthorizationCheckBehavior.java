@@ -73,6 +73,8 @@ public final class AuthorizationCheckBehavior {
       final PermissionType permissionType,
       final Map<String, String> requiredResourceIdentifiers) {
 
+    // TODO return true if authorization is disabled.
+
     // TODO what if no userkey on authorizations
     final var userKey = (Long) command.getAuthorizations().get("userKey");
     final var user = userState.getUserByKey(userKey);
