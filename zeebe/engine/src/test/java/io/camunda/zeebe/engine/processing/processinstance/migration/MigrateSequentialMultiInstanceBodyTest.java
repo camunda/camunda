@@ -753,20 +753,6 @@ public class MigrateSequentialMultiInstanceBodyTest {
     // after migrating, we can successfully resolve the incident
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
-    // and complete the second active job without problems
-    ENGINE.job().withKey(job.getKey()).complete();
-
-    assertThat(
-            RecordingExporter.jobRecords(JobIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withType("B") // new job is created with target job type
-                .withElementId("serviceTask2")
-                .getFirst()
-                .getValue())
-        .describedAs(
-            "Expect that second job in the multi-instance body is created with target job type")
-        .isNotNull();
-
     final var secondJob =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -891,20 +877,6 @@ public class MigrateSequentialMultiInstanceBodyTest {
 
     // after migrating, we can successfully resolve the incident
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
-
-    // and complete the second active job without problems
-    ENGINE.job().withKey(job.getKey()).complete();
-
-    assertThat(
-            RecordingExporter.jobRecords(JobIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withType("B") // new job is created with target job type
-                .withElementId("serviceTask2")
-                .getFirst()
-                .getValue())
-        .describedAs(
-            "Expect that second job in the multi-instance body is created with target job type")
-        .isNotNull();
 
     final var secondJob =
         RecordingExporter.jobRecords(JobIntent.CREATED)
