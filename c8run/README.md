@@ -5,10 +5,19 @@ C8 Run is a packaged distribution of Camunda 8, which allows you to spin up Camu
 
 Please see the [Camunda 8 Run Installation Guide](https://docs.camunda.io/docs/next/self-managed/setup/deploy/local/c8run/) for more details.
 
+## Installation
+
+To install C8 Run, go to the [Camunda Releases page](https://github.com/camunda/camunda/releases), and search for "c8run". Then download and extract the artifact for your distribution.
+
+insert image
+
+Once extracted, go to the extracted folder and run one of the following commands:
+
+
 ## Linux / Mac Options
 
 ```
-Usage: run.sh [start|stop] (options...)
+Usage: start.sh
 Options:
   --config     - Applies the specified configuration file
   --detached   - Starts Camunda Run as a detached process
