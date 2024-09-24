@@ -991,7 +991,7 @@ public class MigrateSequentialMultiInstanceBodyTest {
         .migrate();
 
     // then
-    // after migrating, we can complete one of the still active jobs
+    // after migrating, we can complete the second job
     final var secondJob =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
