@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
 
-      - if: ${{ matrix.os == "ubuntu-latest" }}
+      - if: ${{ matrix.os == 'ubuntu-latest' }}
         name: disable and stop mono-xsp4.service
         run: |
              sudo systemctl stop mono-xsp4.service || true
