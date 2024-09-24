@@ -15,8 +15,6 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceType;
-import io.camunda.service.entities.IncidentEntity;
-import io.camunda.service.entities.IncidentEntity.IncidentState;
 import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.service.entities.IncidentEntity;
