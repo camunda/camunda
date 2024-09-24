@@ -9,6 +9,7 @@
   </parent>
 
   <artifactId>optimize-schema-integrity-tests</artifactId>
+  <name>Optimize Schema Integrity Tests</name>
 
   <properties>
     <old.database.port>9250</old.database.port>
