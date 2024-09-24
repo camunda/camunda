@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - "c8run/**"
-      - ".github/workflows/c8run-linux-x86-build.yaml"
+      - ".github/workflows/c8run-build.yaml"
 
 jobs:
   test_c8run:
@@ -12,7 +12,7 @@ jobs:
       matrix:
         # macos-latest is ARM, mac os 13 will execute on x86 runner.
         os: [ubuntu-latest, macos-latest, macos-13]
-    name: Test deploying camunda platform on c8run
+    name: C8Run Test ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     steps:
 
@@ -85,7 +85,7 @@ jobs:
           retention-days: 10
 
   test_c8run_windows:
-    name: Build c8run on windows
+    name: C8Run Test Windows
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
