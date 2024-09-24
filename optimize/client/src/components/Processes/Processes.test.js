@@ -219,3 +219,13 @@ it('should not display adoption dashboard when running optimize with opensearch'
 
   expect(node.find('.processOverview')).not.toExist();
 });
+
+it('should not display the link to view the dashboard in opensearch mode', async () => {
+  getOptimizeDatabase.mockReturnValue('opensearch');
+  const node = shallow(<Processes {...props} />);
+
+  await runAllEffects();
+  await flushPromises();
+
+  expect(node.find(EntityList).prop('rows')[0].link).not.toBeDefined();
+});
