@@ -83,3 +83,64 @@ jobs:
           name: c8run-logs
           path: ./c8run/log/*.log
           retention-days: 10
+
+  test_c8run_windows:
+    name: Build c8run on windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: make a package
+        run: .\package.bat
+        working-directory: .\c8run
+
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '22'
+
+      - name: Set env
+        run: echo "JAVA_HOME=$env:JAVA_HOME_22_x64" >> $env:GITHUB_ENV
+
+      - name: Run c8run
+        run: .\c8run.exe start
+        working-directory: .\c8run
+        shell: cmd
+        env:
+          JAVA_VERSION: "22.0.2"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: .\c8run\e2e_tests
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+        working-directory: .\c8run\e2e_tests
+
+      - name: Run Playwright tests
+        run: npx playwright test
+        working-directory: .\c8run\e2e_tests
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: .\c8run\e2e_tests\playwright-report
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: camunda8-run-build
+          path: .\c8run\camunda8-run*
+          retention-days: 1
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: c8run-logs
+          path: .\c8run\log\*.log
+          retention-days: 10
