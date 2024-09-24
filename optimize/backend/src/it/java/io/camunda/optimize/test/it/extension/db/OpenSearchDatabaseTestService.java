@@ -614,6 +614,12 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
+  public void createSnapshot(
+      String snapshotRepositoryName, String snapshotName, String[] indexNames) {
+    // not implemented
+  }
+
+  @Override
   protected <T extends OptimizeDto> List<T> getInstancesById(
       final String indexName,
       final List<String> instanceIds,
@@ -718,6 +724,16 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
         .collect(Collectors.toSet())
         .stream()
         .noneMatch(AliasDefinition::isWriteIndex);
+  }
+
+  @Override
+  public void createRepoSnapshot(String snapshotRepositoryName) {
+    // not implemented
+  }
+
+  @Override
+  public void cleanSnapshots(String snapshotRepositoryName) {
+    // not implemented
   }
 
   @Override
