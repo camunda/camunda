@@ -35,7 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class MigrateMultiInstanceBodyTest {
+public class MigrateParallelMultiInstanceBodyTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
@@ -43,7 +43,7 @@ public class MigrateMultiInstanceBodyTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
-  public void shouldMigrateParallelMultiInstanceServiceTask() {
+  public void shouldMigrateMultiInstanceServiceTask() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
@@ -173,7 +173,7 @@ public class MigrateMultiInstanceBodyTest {
   }
 
   @Test
-  public void shouldMigrateParallelMultiInstanceReceiveTask() {
+  public void shouldMigrateMultiInstanceReceiveTask() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
@@ -317,7 +317,7 @@ public class MigrateMultiInstanceBodyTest {
   }
 
   @Test
-  public void shouldMigrateParallelMultiInstanceSubprocess() {
+  public void shouldMigrateMultiInstanceSubprocess() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
@@ -455,7 +455,7 @@ public class MigrateMultiInstanceBodyTest {
   }
 
   @Test
-  public void shouldMigrateParallelMultiInstanceCallActivity() {
+  public void shouldMigrateMultiInstanceCallActivity() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
@@ -580,7 +580,7 @@ public class MigrateMultiInstanceBodyTest {
   }
 
   @Test
-  public void shouldMigratePartiallyCompleteParallelMultiInstance() {
+  public void shouldMigratePartiallyCompleteMultiInstance() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
