@@ -588,7 +588,7 @@ paths:
         Set a precise, static time for the Zeebe engine’s internal clock.
         When the clock is pinned, it remains at the specified time and does not advance.
         To change the time, the clock must be pinned again with a new timestamp.
-        
+
         :::note
         This endpoint is an [alpha feature](/reference/alpha-features.md) and may be subject to change
         in future releases.
@@ -624,7 +624,7 @@ paths:
         Resets the Zeebe engine’s internal clock to the current system time, enabling it to tick in real-time.
         This operation is useful for returning the clock to
         normal behavior after it has been pinned to a specific time.
-        
+
         :::note
         This endpoint is an [alpha feature](/reference/alpha-features.md) and may be subject to change
         in future releases.
@@ -3280,7 +3280,7 @@ components:
     DecisionInstanceFilterRequest:
       type: object
       properties:
-        key:
+        decisionInstanceKey:
           type: integer
           format: int64
           description: The key of the decision instance.
@@ -3331,7 +3331,7 @@ components:
     DecisionInstanceItem:
       type: object
       properties:
-        key:
+        decisionInstanceKey:
           type: integer
           format: int64
           description: The key of the decision instance.
@@ -3379,18 +3379,16 @@ components:
 
     DecisionInstanceTypeEnum:
       enum:
-        - DECISION
         - DECISION_TABLE
         - LITERAL_EXPRESSION
-        - RELATION
         - UNSPECIFIED
         - UNKNOWN
     DecisionInstanceStateEnum:
       enum:
         - EVALUATED
         - FAILED
-        - UNKNOWN
         - UNSPECIFIED
+        - UNKNOWN
 
     MessageCorrelationRequest:
       type: object

@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Objects;
 
 public record DecisionInstanceFilter(
-    List<Long> keys,
+    List<Long> decisionInstanceKeys,
     List<DecisionInstanceState> states,
     DateValueFilter evaluationDate,
     List<String> evaluationFailures,
@@ -33,7 +33,7 @@ public record DecisionInstanceFilter(
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<DecisionInstanceFilter> {
-    private List<Long> keys;
+    private List<Long> decisionInstanceKeys;
     private List<DecisionInstanceState> states;
     private DateValueFilter evaluationDate;
     private List<String> evaluationFailures;
@@ -46,13 +46,13 @@ public record DecisionInstanceFilter(
     private List<DecisionInstanceType> decisionTypes;
     private List<String> tenantIds;
 
-    public Builder keys(final List<Long> values) {
-      keys = addValuesToList(keys, values);
+    public Builder decisionInstanceKeys(final List<Long> values) {
+      decisionInstanceKeys = addValuesToList(decisionInstanceKeys, values);
       return this;
     }
 
-    public Builder keys(final Long... values) {
-      return keys(collectValuesAsList(values));
+    public Builder decisionInstanceKeys(final Long... values) {
+      return decisionInstanceKeys(collectValuesAsList(values));
     }
 
     public Builder states(final List<DecisionInstanceState> values) {
@@ -153,7 +153,7 @@ public record DecisionInstanceFilter(
     @Override
     public DecisionInstanceFilter build() {
       return new DecisionInstanceFilter(
-          Objects.requireNonNullElse(keys, Collections.emptyList()),
+          Objects.requireNonNullElse(decisionInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(states, Collections.emptyList()),
           evaluationDate,
           Objects.requireNonNullElse(evaluationFailures, Collections.emptyList()),

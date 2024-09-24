@@ -308,7 +308,7 @@ public final class SearchQueryResponseMapper {
 
   private static DecisionInstanceItem toDecisionInstance(final DecisionInstanceEntity entity) {
     return new DecisionInstanceItem()
-        .key(entity.key())
+        .decisionInstanceKey(entity.key())
         .state(
             (entity.state() == null)
                 ? null

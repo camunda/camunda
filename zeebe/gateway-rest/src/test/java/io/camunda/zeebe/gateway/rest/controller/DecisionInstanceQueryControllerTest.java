@@ -42,7 +42,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
           {
                "items": [
                    {
-                       "key": 123,
+                       "decisionInstanceKey": 123,
                        "state": "EVALUATED",
                        "evaluationDate": "2024-06-05T08:29:15.027+0000",
                        "processDefinitionKey": 2251799813688736,
