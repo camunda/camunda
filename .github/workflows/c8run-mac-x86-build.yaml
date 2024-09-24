@@ -24,11 +24,8 @@ jobs:
         run: echo "JAVA_HOME=$(echo $JAVA_HOME_21_X64)" >> $GITHUB_ENV
 
       - name: Run c8run
-        run: nohup ./start.sh &
+        run: nohup ./start.sh --detached
         working-directory: ./c8run
-
-      - name: Sleep 2 mins
-        run: sleep 120
 
       - uses: actions/setup-node@v4
         with:

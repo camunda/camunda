@@ -29,13 +29,10 @@ jobs:
         working-directory: ./c8run
 
       - name: Run c8run
-        run: nohup ./start.sh &
+        run: nohup ./start.sh --detached
         working-directory: ./c8run
         env:
           JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
-
-      - name: Sleep 2 mins
-        run: sleep 120
 
       - uses: actions/setup-node@v4
         with:
