@@ -15,12 +15,15 @@ PR_HEAD_SHA=$(gh api -X GET "repos/${OWNER_NAME}/${REPO_NAME}/pulls/${PR_NUMBER}
 # stdout of the script is Markdown available in "result" output (via `echo`) for end users
 # stderr shows the progress of the script while working (via `>&2 echo`), for debugging purposes
 
+# Limitations:
+# * no pagination in GH API calls, over 100 workflows per commit or 100 jobs per workflow wont be recognized
+
 echo "## 🔎 GHA problems for PR #${PR_NUMBER}"
 echo ""
 echo "For most recent commit ${PR_HEAD_SHA}:"
 echo ""
 
-gh api -X GET "repos/${OWNER_NAME}/${REPO_NAME}/actions/runs?sha=${PR_HEAD_SHA}" --jq '.workflow_runs[]' | while read -r workflow_run; do
+gh api -X GET "repos/${OWNER_NAME}/${REPO_NAME}/actions/runs?sha=${PR_HEAD_SHA}&per_page=100" --jq '.workflow_runs[]' | while read -r workflow_run; do
   workflow_run_id=$(echo "${workflow_run}" | jq -r '.id')
   workflow_run_attempt=$(echo "${workflow_run}" | jq -r '.run_attempt')
   >&2 echo "Checking workflow run ${workflow_run_id} attempt ${workflow_run_attempt} for problems..."
