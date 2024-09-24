@@ -3389,7 +3389,7 @@ components:
     DecisionInstanceFilterRequest:
       type: object
       properties:
-        key:
+        decisionInstanceKey:
           type: integer
           format: int64
           description: The key of the decision instance.
@@ -3440,7 +3440,7 @@ components:
     DecisionInstanceItem:
       type: object
       properties:
-        key:
+        decisionInstanceKey:
           type: integer
           format: int64
           description: The key of the decision instance.
@@ -3488,18 +3488,16 @@ components:
 
     DecisionInstanceTypeEnum:
       enum:
-        - DECISION
         - DECISION_TABLE
         - LITERAL_EXPRESSION
-        - RELATION
         - UNSPECIFIED
         - UNKNOWN
     DecisionInstanceStateEnum:
       enum:
         - EVALUATED
         - FAILED
-        - UNKNOWN
         - UNSPECIFIED
+        - UNKNOWN
 
     MessageCorrelationRequest:
       type: object

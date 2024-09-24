@@ -26,7 +26,7 @@ public record DecisionInstanceSort(List<FieldSorting> orderings) implements Sort
   public static final class Builder extends AbstractBuilder<Builder>
       implements ObjectBuilder<DecisionInstanceSort> {
 
-    public Builder key() {
+    public Builder decisionInstanceKey() {
       currentOrdering = new FieldSorting("key", null);
       return this;
     }

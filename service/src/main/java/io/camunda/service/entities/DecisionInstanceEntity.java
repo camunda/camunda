@@ -28,13 +28,14 @@ public record DecisionInstanceEntity(
       String id, String name, String value, String ruleId, int ruleIndex) {}
 
   public enum DecisionInstanceType {
+    DECISION,
     DECISION_TABLE,
     LITERAL_EXPRESSION,
     UNSPECIFIED,
     UNKNOWN;
 
-    public static DecisionInstanceType fromValue(String value) {
-      for (DecisionInstanceType b : DecisionInstanceType.values()) {
+    public static DecisionInstanceType fromValue(final String value) {
+      for (final DecisionInstanceType b : DecisionInstanceType.values()) {
         if (b.name().equals(value)) {
           return b;
         }
@@ -49,8 +50,8 @@ public record DecisionInstanceEntity(
     UNKNOWN,
     UNSPECIFIED;
 
-    public static DecisionInstanceState fromValue(String value) {
-      for (DecisionInstanceState b : DecisionInstanceState.values()) {
+    public static DecisionInstanceState fromValue(final String value) {
+      for (final DecisionInstanceState b : DecisionInstanceState.values()) {
         if (b.name().equals(value)) {
           return b;
         }

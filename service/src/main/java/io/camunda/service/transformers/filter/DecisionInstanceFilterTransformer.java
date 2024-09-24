@@ -32,7 +32,7 @@ public final class DecisionInstanceFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final DecisionInstanceFilter filter) {
-    final var keysQuery = getKeysQuery(filter.keys());
+    final var keysQuery = getKeysQuery(filter.decisionInstanceKeys());
     final var statesQuery = getStatesQuery(filter.states());
     final var evaluationDateQuery = getEvaluationDateQuery(filter.evaluationDate());
     final var evaluationFailuresQuery = getEvaluationFailuresQuery(filter.evaluationFailures());

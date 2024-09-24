@@ -42,7 +42,8 @@ class DecisionInstanceFilterTest {
   @Test
   void shouldQueryByKey() {
     // given
-    final var decisionInstanceFilter = FilterBuilders.decisionInstance(f -> f.keys(124L));
+    final var decisionInstanceFilter =
+        FilterBuilders.decisionInstance(f -> f.decisionInstanceKeys(124L));
     final var searchQuery =
         SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.filter(decisionInstanceFilter));
 
