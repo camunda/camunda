@@ -9,8 +9,48 @@ on:
       - main
 
 jobs:
-  build:
+  frontend_sbom:
     runs-on: ubuntu-latest
+    name: Generate frontend SBOM
+    strategy:
+      matrix:
+        include:
+          - component: "tasklist"
+            folder: "build"
+          - component: "operate"
+            folder: "build"
+          - component: "identity"
+            folder: "dist"
+          - component: "optimize"
+            folder: "dist"
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.component }}/client
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: ${{ matrix.component }}/client
+      - name: Install node dependencies
+        run: yarn
+      - name: Extract SBOM
+        run: yarn run extract-sbom
+      - name: Upload SBOM as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.component }}-fe-sbom
+          path: ${{ matrix.component }}/client/${{ matrix.folder }}/dependencies.json
+
+  backend_sbom:
+    runs-on: ubuntu-latest
+    name: Generate backend SBOM
 
     steps:
       - name: Checkout code
@@ -35,7 +75,7 @@ jobs:
           mvn org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
 
       - name: Upload SBOM as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: sbom
+          name: backend-sbom
           path: target/bom.xml
