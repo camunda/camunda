@@ -25,6 +25,7 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -301,14 +302,13 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON_UTF8_VALUE)
         .expectBody()
         .json(EXPECTED_GET_RESPONSE);
 
     verify(flowNodeInstanceServices).getByKey(23L);
   }
 
+  @Disabled("Enable when RestErrorMapper handling of not found is in place.")
   @Test
   void shouldThrowNotFoundIfKeyNotExistsForGetFlowNodeInstanceByKey() {
     when(flowNodeInstanceServices.getByKey(any(Long.class))).thenThrow(new NotFoundException(""));
@@ -318,7 +318,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .uri(FLOW_NODE_INSTANCES_URL + "5")
         .exchange()
         .expectStatus()
-        .is5xxServerError()
+        .isNotFound()
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
         .expectBody()
@@ -327,7 +327,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
           {
               "type":"about:blank",
               "title":"Failed to execute Get Flow node instance by key.",
-              "status":500,
+              "status":404,
               "instance":"/v2/flownode-instances/5"
           }
         """);

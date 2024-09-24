@@ -19,7 +19,6 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import jakarta.validation.ValidationException;
-import java.nio.charset.StandardCharsets;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -56,7 +55,6 @@ public class FlowNodeInstanceQueryController {
       @PathVariable("flowNodeInstanceKey") final Long flowNodeInstanceKey) {
     try {
       return ResponseEntity.ok()
-          .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
           .body(
               SearchQueryResponseMapper.toFlowNodeInstance(
                   flownodeInstanceServices.getByKey(flowNodeInstanceKey)));
