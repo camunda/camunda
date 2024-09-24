@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.fetch;
 
-import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.fetch.FormGetRequest;
 import io.camunda.zeebe.client.impl.http.HttpClient;
@@ -30,14 +29,11 @@ public class FormGetRequestImpl implements FormGetRequest {
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private final long key;
-  private final JsonMapper jsonMapper;
 
-  public FormGetRequestImpl(
-      final HttpClient httpClient, final long key, final JsonMapper jsonMapper) {
+  public FormGetRequestImpl(final HttpClient httpClient, final long key) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     this.key = key;
-    this.jsonMapper = jsonMapper;
   }
 
   @Override

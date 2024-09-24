@@ -597,7 +597,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public FormGetRequest newFormGetRequest(final long key) {
-    return new FormGetRequestImpl(httpClient, key, jsonMapper);
+    return new FormGetRequestImpl(httpClient, key);
   }
 
   private JobClient newJobClient() {
