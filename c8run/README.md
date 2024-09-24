@@ -1,7 +1,9 @@
 
 # C8 Run
 
-C8 Run is a packaged distribution of Camunda 8, which allows you to spin up Camunda 8 within seconds. It packages Camunda, ElasticSearch, and Connectors. The only prerequisite to run it, is to have a JDK 21+ installed locally.
+C8 Run is a packaged distribution of Camunda 8, which allows you to spin up Camunda 8 within seconds. It packages Camunda Core, ElasticSearch, and Connectors. The only prerequisite to run it, is to have a JDK 21+ installed locally.
+
+C8 Run does not include Identity, Keycloak, or Optimize.
 
 Please see the [Camunda 8 Run Installation Guide](https://docs.camunda.io/docs/next/self-managed/setup/deploy/local/c8run/) for more details.
 
