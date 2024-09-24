@@ -1,4 +1,4 @@
-name: "C8Run: build/test on linux"
+name: "C8Run: build/test"
 
 on:
   push:
@@ -8,11 +8,16 @@ on:
 
 jobs:
   test_c8run:
+    strategy:
+      matrix:
+        # macos-latest is ARM, mac os 13 will execute on x86 runner.
+        os: [ubuntu-latest, macos-latest, macos-13]
     name: Test deploying camunda platform on c8run
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     steps:
 
-      - name: disable and stop mono-xsp4.service
+      - if: ${{ matrix.os }} == "ubuntu-latest"
+        name: disable and stop mono-xsp4.service
         run: |
              sudo systemctl stop mono-xsp4.service || true
              sudo systemctl disable mono-xsp4.service || true
@@ -28,11 +33,21 @@ jobs:
         run: ./package.sh
         working-directory: ./c8run
 
-      - name: Run c8run
+      - if: ${{ matrix.os }} == 'macos-latest'
+        name: Set env
+        run: echo "JAVA_HOME=$(echo $JAVA_HOME_21_X64)" >> $GITHUB_ENV
+
+      - if: ${{ matrix.os }} == 'ubuntu-latest'
+        name: Linux - Run c8run
         run: nohup ./start.sh --detached
         working-directory: ./c8run
         env:
           JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
+
+      - if: ${{ startsWith(matrix.os, 'macos') }}
+        name: Mac - Run c8run
+        run: nohup ./start.sh --detached
+        working-directory: ./c8run
 
       - uses: actions/setup-node@v4
         with:
