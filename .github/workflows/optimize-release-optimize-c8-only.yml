@@ -152,7 +152,7 @@ jobs:
         with:
           token_format: 'access_token'
           workload_identity_provider: 'projects/271764561088/locations/global/workloadIdentityPools/github/providers/camunda'
-          service_account: 'github-actions@team-infosec.iam.gserviceaccount.com'
+          service_account: 'github-actions-camunda@team-infosec.iam.gserviceaccount.com'
 
       - name: Login to infosec registry
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
