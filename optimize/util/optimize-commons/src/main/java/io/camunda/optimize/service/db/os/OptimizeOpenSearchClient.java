@@ -71,6 +71,7 @@ import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.DeleteResponse;
+import org.opensearch.client.opensearch.core.ExistsRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
@@ -366,6 +367,15 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
           String.format("Could not retrieve index names for alias {%s}.", aliasName);
       throw new OptimizeRuntimeException(message, e);
     }
+  }
+
+  @Override
+  public boolean exists(final String indexName) throws IOException {
+    final ExistsRequest existsRequest =
+        new ExistsRequest.Builder()
+            .index(indexNameService.getOptimizeIndexAliasForIndex(indexName))
+            .build();
+    return openSearchClient.exists(existsRequest).value();
   }
 
   @Override

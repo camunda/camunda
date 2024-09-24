@@ -9,7 +9,6 @@ package io.camunda.optimize.upgrade.plan.factories;
 
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -23,12 +22,9 @@ public interface UpgradePlanFactory {
   default boolean isC7LicenseDataPresent(
       final DatabaseClient databaseClient, final OptimizeIndexNameService indexNameService) {
     try {
-      return databaseClient.countWithoutPrefix(
+      return databaseClient.countWithoutPrefixWithExistsCheck(
               indexNameService.getOptimizeIndexAliasForIndex("license"))
           > 0;
-    } catch (OptimizeRuntimeException e) {
-      // This gets thrown if the index is not found, so we can safely assume that there is no data
-      return false;
     } catch (IOException e) {
       final String reason = "Was not able to determine existence of C7 data.";
       logErrorMessage(reason);
