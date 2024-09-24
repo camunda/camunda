@@ -13,9 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.fetch;
+package io.camunda.zeebe.client.api.search.response;
 
-import io.camunda.zeebe.client.api.command.FinalCommandStep;
-import io.camunda.zeebe.client.api.search.response.Form;
+public interface Form {
 
-public interface FormGetRequest extends FinalCommandStep<Form> {}
+  /**
+   * @return the BPMN ID of the form
+   */
+  String getBpmnId();
+
+  /**
+   * @return the assigned form version
+   */
+  long getVersion();
+
+  /**
+   * @return the assigned form key, which acts as a unique identifier for this form
+   */
+  long getKey();
+
+  /**
+   * @return the schema of the form
+   */
+  Object getSchema();
+
+  /**
+   * @return the tenant identifier that owns this form
+   */
+  String getTenantId();
+}

@@ -17,8 +17,10 @@ package io.camunda.zeebe.client.impl.fetch;
 
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.fetch.FormGetRequest;
+import io.camunda.zeebe.client.api.search.response.Form;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
+import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.protocol.rest.FormItem;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -43,10 +45,14 @@ public class FormGetRequestImpl implements FormGetRequest {
   }
 
   @Override
-  public ZeebeFuture<FormItem> send() {
-    final HttpZeebeFuture<FormItem> result = new HttpZeebeFuture<>();
+  public ZeebeFuture<Form> send() {
+    final HttpZeebeFuture<Form> result = new HttpZeebeFuture<>();
     httpClient.get(
-        String.format("/forms/%d", key), httpRequestConfig.build(), FormItem.class, s -> s, result);
+        String.format("/forms/%d", key),
+        httpRequestConfig.build(),
+        FormItem.class,
+        SearchResponseMapper::toForm,
+        result);
     return result;
   }
 }

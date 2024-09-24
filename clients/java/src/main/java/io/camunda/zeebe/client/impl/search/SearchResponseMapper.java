@@ -18,6 +18,7 @@ package io.camunda.zeebe.client.impl.search;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
 import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
+import io.camunda.zeebe.client.api.search.response.Form;
 import io.camunda.zeebe.client.api.search.response.Incident;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.client.api.search.response.UserTask;
 import io.camunda.zeebe.client.impl.search.response.DecisionDefinitionImpl;
 import io.camunda.zeebe.client.impl.search.response.DecisionRequirementsImpl;
 import io.camunda.zeebe.client.impl.search.response.FlowNodeInstanceImpl;
+import io.camunda.zeebe.client.impl.search.response.FormImpl;
 import io.camunda.zeebe.client.impl.search.response.IncidentImpl;
 import io.camunda.zeebe.client.impl.search.response.ProcessInstanceImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchQueryResponseImpl;
@@ -34,6 +36,7 @@ import io.camunda.zeebe.client.impl.search.response.UserTaskImpl;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQueryResponse;
 import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsSearchQueryResponse;
 import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceSearchQueryResponse;
+import io.camunda.zeebe.client.protocol.rest.FormItem;
 import io.camunda.zeebe.client.protocol.rest.IncidentSearchQueryResponse;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.client.protocol.rest.SearchQueryPageResponse;
@@ -110,5 +113,9 @@ public final class SearchResponseMapper {
     return Optional.ofNullable(items)
         .map(i -> i.stream().map(mapper).collect(Collectors.toList()))
         .orElse(Collections.emptyList());
+  }
+
+  public static Form toForm(final FormItem item) {
+    return new FormImpl(item);
   }
 }
