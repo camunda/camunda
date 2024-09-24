@@ -23,6 +23,7 @@ import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
+import io.camunda.zeebe.client.protocol.rest.ResourceResponse;
 import io.camunda.zeebe.client.protocol.rest.TopologyResponse;
 import java.util.List;
 import java.util.function.Supplier;
@@ -75,6 +76,14 @@ public class RestGatewayService {
         .getWireMock()
         .register(
             WireMock.post(RestGatewayPaths.getEvaluateDecisionUrl())
+                .willReturn(WireMock.okJson(JSON_MAPPER.toJson(response))));
+  }
+
+  public void onDeploymentsRequest(final ResourceResponse response) {
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.post(RestGatewayPaths.getDeploymentsUrl())
                 .willReturn(WireMock.okJson(JSON_MAPPER.toJson(response))));
   }
 
