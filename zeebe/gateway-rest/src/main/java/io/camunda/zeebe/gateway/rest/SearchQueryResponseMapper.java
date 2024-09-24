@@ -227,7 +227,7 @@ public final class SearchQueryResponseMapper {
         .dmnDecisionRequirementsId(d.decisionRequirementsId());
   }
 
-  private static DecisionRequirementsItem toDecisionRequirements(
+  public static DecisionRequirementsItem toDecisionRequirements(
       final DecisionRequirementsEntity d) {
     return new DecisionRequirementsItem()
         .tenantId(d.tenantId())

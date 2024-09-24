@@ -1069,6 +1069,57 @@ paths:
           description: >
             The decision requirements search query failed.
             More details are provided in the response body.
+  /decision-requirements/{decisionRequirementsKey}:
+    get:
+      tags:
+        - Decision requirements
+      summary: |
+        Returns Decision Requirements as JSON.
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: decisionRequirementsKey
+          in: path
+          required: true
+          description: The assigned key of the decision requirements, which acts as a unique identifier for this decision requirements.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: >
+            The decision requirements is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionRequirementsItem"
+        "400":
+          description: >
+            The decision requirements Get failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: >
+            The decision requirements with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
   /decision-instances/search:
     post:
