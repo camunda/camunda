@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
 
-      - if: ${{ matrix.os }} == "ubuntu-latest"
+      - if: ${{ matrix.os == "ubuntu-latest" }}
         name: disable and stop mono-xsp4.service
         run: |
              sudo systemctl stop mono-xsp4.service || true
@@ -33,11 +33,11 @@ jobs:
         run: ./package.sh
         working-directory: ./c8run
 
-      - if: ${{ matrix.os }} == 'macos-latest'
+      - if: ${{ matrix.os == 'macos-latest' }}
         name: Set env
         run: echo "JAVA_HOME=$(echo $JAVA_HOME_21_X64)" >> $GITHUB_ENV
 
-      - if: ${{ matrix.os }} == 'ubuntu-latest'
+      - if: ${{ matrix.os == 'ubuntu-latest' }}
         name: Linux - Run c8run
         run: nohup ./start.sh --detached
         working-directory: ./c8run
