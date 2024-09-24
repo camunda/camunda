@@ -22,6 +22,24 @@ public class ElasticsearchProperties {
   private IndexSettings defaultSettings = new IndexSettings();
   private Map<String, Integer> replicasByIndexName = new HashMap<>();
   private Map<String, Integer> shardsByIndexName = new HashMap<>();
+  private boolean ilmEnabled;
+  private String ilmMinDeletionAge = "30d";
+
+  public boolean isIlmEnabled() {
+    return ilmEnabled;
+  }
+
+  public void setIlmEnabled(final boolean ilmEnabled) {
+    this.ilmEnabled = ilmEnabled;
+  }
+
+  public String getIlmMinDeletionAge() {
+    return ilmMinDeletionAge;
+  }
+
+  public void setIlmMinDeletionAge(final String ilmMinDeletionAge) {
+    this.ilmMinDeletionAge = ilmMinDeletionAge;
+  }
 
   public String getIndexPrefix() {
     return indexPrefix;
