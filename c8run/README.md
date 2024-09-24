@@ -9,7 +9,7 @@ Please see the [Camunda 8 Run Installation Guide](https://docs.camunda.io/docs/n
 
 To install C8 Run, go to the [Camunda Releases page](https://github.com/camunda/camunda/releases), and search for "c8run". Then download and extract the artifact for your distribution.
 
-insert image
+![2024-09-24-144839_grim](https://github.com/user-attachments/assets/02f76946-fd43-4f92-8bad-6a3fa8f2e2f4)
 
 Once extracted, go to the extracted folder and run one of the following commands:
 
