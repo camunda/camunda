@@ -66,7 +66,7 @@
     <version.yarn>v1.22.19</version.yarn>
 
     <!-- lucene config-->
-    <lucene.version>8.11.3</lucene.version>
+    <lucene.version>8.11.4</lucene.version>
     <!-- testing config -->
     <mockito.version>5.13.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
