@@ -234,6 +234,26 @@ class DecisionQueryTest {
   }
 
   @Test
+  void shouldGetDecisionRequirementsXml() throws IOException {
+    // when
+    final long decisionRequirementKey =
+        DEPLOYED_DECISION_REQUIREMENTS.get(0).getDecisionRequirementsKey();
+
+    final var result =
+        zeebeClient.newDecisionRequirementsGetXmlRequest(decisionRequirementKey).send().join();
+
+    // then
+    final String expected =
+        Files.readString(
+            Paths.get(
+                Objects.requireNonNull(
+                        getClass().getClassLoader().getResource("decisions/decision_model.dmn"))
+                    .getPath()));
+    assertThat(result).isNotEmpty();
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
   void shouldRetrieveByDecisionRequirementsId() {
     // given
     final String decisionRequirementId =

@@ -23,6 +23,7 @@ import io.camunda.service.search.query.SearchQueryResult.Builder;
 import io.camunda.service.search.sort.DecisionRequirementsSort;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,6 +65,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
           .build();
 
   static final String DECISION_REQUIREMENTS_SEARCH_URL = "/v2/decision-requirements/search";
+  static final String DECISION_REQUIREMENTS_GET_XML_URL = "/v2/decision-requirements/%d/xml";
 
   private static final Long VALID_DECISION_REQUIREMENTS_KEY = 1L;
   private static final Long INVALID_DECISION_REQUIREMENTS_KEY = 999L;
@@ -365,5 +367,113 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
             """);
 
     verify(decisionRequirementsServices, times(1)).getByKey(VALID_DECISION_REQUIREMENTS_KEY);
+  }
+
+  @Test
+  public void shouldGetRequirementsXml() {
+    // given
+    final Long decisionRequirementsKey = 1L;
+    final String xml = "<xml/>";
+    when(decisionRequirementsServices.getDecisionRequirementsXml(decisionRequirementsKey))
+        .thenReturn(xml);
+
+    // when/then
+    webClient
+        .get()
+        .uri(DECISION_REQUIREMENTS_GET_XML_URL.formatted(decisionRequirementsKey))
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(new MediaType("text", "xml", StandardCharsets.UTF_8))
+        .expectBody()
+        .xml(xml);
+  }
+
+  @Test
+  public void shouldReturn404ForNotFoundDecisionRequirements() {
+    // given
+    final Long decisionRequirementsKey = 1L;
+    when(decisionRequirementsServices.getDecisionRequirementsXml(decisionRequirementsKey))
+        .thenThrow(new NotFoundException("Decision with key 1 was not found."));
+
+    // when/then
+    final var expectedResponse =
+        """
+        {
+          "type": "about:blank",
+          "title": "NOT_FOUND",
+          "status": 404,
+          "detail": "Decision with key 1 was not found.",
+          "instance": "%s"
+        }"""
+            .formatted(DECISION_REQUIREMENTS_GET_XML_URL.formatted(decisionRequirementsKey));
+    webClient
+        .get()
+        .uri(DECISION_REQUIREMENTS_GET_XML_URL.formatted(decisionRequirementsKey))
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+  }
+
+  @Test
+  public void shouldReturn500ForInternalError() {
+    // given
+    final Long decisionRequirementsKey = 1L;
+    when(decisionRequirementsServices.getDecisionRequirementsXml(decisionRequirementsKey))
+        .thenThrow(new RuntimeException("Failed to get decision requirements xml."));
+
+    // when/then
+    final var expectedResponse =
+        """
+        {
+          "type": "about:blank",
+          "title": "Failed to execute Get Decision Requirements XML Query.",
+          "status": 500,
+          "detail": "Failed to get decision requirements xml.",
+          "instance": "%s"
+        }"""
+            .formatted(DECISION_REQUIREMENTS_GET_XML_URL.formatted(decisionRequirementsKey));
+    webClient
+        .get()
+        .uri(DECISION_REQUIREMENTS_GET_XML_URL.formatted(decisionRequirementsKey))
+        .exchange()
+        .expectStatus()
+        .is5xxServerError()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+  }
+
+  @Test
+  public void shouldReturn400ForInvalidKey() {
+    // given
+    final String decisionRequirementsKey = "invalidKey";
+
+    // when/then
+    final var expectedResponse =
+        """
+        {
+          "type": "about:blank",
+          "title": "Bad Request",
+          "status": 400,
+          "detail": "Failed to convert 'decisionRequirementsKey' with value: 'invalidKey'",
+          "instance": "/v2/decision-requirements/invalidKey/xml"
+        }""";
+    webClient
+        .get()
+        .uri("/v2/decision-requirements/%s/xml".formatted(decisionRequirementsKey))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
   }
 }
