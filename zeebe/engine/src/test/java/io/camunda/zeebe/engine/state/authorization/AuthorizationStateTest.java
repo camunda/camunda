@@ -59,6 +59,7 @@ public class AuthorizationStateTest {
     final var resourceIdentifiers =
         authorizationState
             .getResourceIdentifiers(ownerKey, resourceType, permissionType)
+            .get()
             .getResourceIdentifiers();
     assertThat(resourceIdentifiers).containsExactly("foo", "bar");
   }
@@ -80,6 +81,7 @@ public class AuthorizationStateTest {
     final var resourceIdentifiers =
         authorizationState
             .getResourceIdentifiers(ownerKey, resourceType, permissionType)
+            .get()
             .getResourceIdentifiers();
     assertThat(resourceIdentifiers).containsExactly("foo", "bar", "baz");
   }

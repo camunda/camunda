@@ -120,7 +120,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   }
 
   @Override
-  public ResourceIdentifiers getResourceIdentifiers(
+  public Optional<ResourceIdentifiers> getResourceIdentifiers(
       final Long ownerKey,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
@@ -132,7 +132,9 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
         resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.get(
             ownerKeyAndResourceTypeAndPermissionCompositeKey);
 
-    return persistedPermissions == null ? null : persistedPermissions.copy();
+    return persistedPermissions == null
+        ? Optional.empty()
+        : Optional.of(persistedPermissions.copy());
   }
 
   @Override

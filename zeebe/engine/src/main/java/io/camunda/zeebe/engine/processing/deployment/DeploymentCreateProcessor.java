@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.behavior.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -47,6 +48,8 @@ import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -76,6 +79,7 @@ public final class DeploymentCreateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
+  private final AuthorizationCheckBehavior authorizationCheckBehavior;
 
   public DeploymentCreateProcessor(
       final ProcessingState processingState,
@@ -108,10 +112,22 @@ public final class DeploymentCreateProcessor
             clock);
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
+    authorizationCheckBehavior =
+        new AuthorizationCheckBehavior(
+            processingState.getAuthorizationState(), processingState.getUserState());
   }
 
   @Override
   public void processNewCommand(final TypedRecord<DeploymentRecord> command) {
+
+    if (!authorizationCheckBehavior.isAuthorized(
+        command, AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE)) {
+      final var error = "Not authorized to create process instance";
+      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, error);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, error);
+      return;
+    }
+
     transformAndDistributeDeployment(command);
     // manage the top-level start event subscriptions except for timers
     startEventSubscriptionManager.tryReOpenStartEventSubscription(command.getValue());

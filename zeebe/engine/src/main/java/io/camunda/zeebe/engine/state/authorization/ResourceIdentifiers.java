@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class ResourceIdentifiers extends UnpackedObject implements DbValue {
+  // TODO consider adding a Map objectproperty
   private final ArrayProperty<StringValue> resourceIds =
       new ArrayProperty<>("resourceIds", StringValue::new);
 

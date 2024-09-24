@@ -14,7 +14,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Optional;
 
 public interface AuthorizationState {
-  ResourceIdentifiers getResourceIdentifiers(
+  Optional<ResourceIdentifiers> getResourceIdentifiers(
       Long ownerKey, AuthorizationResourceType resourceType, final PermissionType permissionType);
 
   Optional<AuthorizationOwnerType> getOwnerType(final long ownerKey);

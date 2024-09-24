@@ -16,5 +16,7 @@ public interface UserState {
 
   UserRecord getUser(final String username);
 
+  UserRecord getUserByKey(final long userKey);
+
   void updateUser(final UserRecord user);
 }
