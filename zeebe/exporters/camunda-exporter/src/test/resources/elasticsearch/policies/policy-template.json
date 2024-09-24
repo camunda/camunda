@@ -1,0 +1,16 @@
+{
+  "policy": {
+    "phases": {
+      "warm": {
+        "min_age": "10d",
+        "actions": {}
+      },
+      "delete": {
+        "min_age": "%DELETION_MIN_AGE",
+        "actions": {
+          "delete": {}
+        }
+      }
+    }
+  }
+}
