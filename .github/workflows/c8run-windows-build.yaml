@@ -1,4 +1,4 @@
-name: "build c8run on windows"
+name: "C8Run: build/test on windows"
 
 on:
   push:

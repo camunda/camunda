@@ -1,4 +1,4 @@
-name: "build c8run on mac arm"
+name: "C8Run: build/test on mac arm"
 
 on:
   push:
