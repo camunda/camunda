@@ -9,6 +9,7 @@ package io.camunda.exporter.schema;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
@@ -38,6 +39,7 @@ import org.slf4j.LoggerFactory;
 public class ElasticsearchEngineClient implements SearchEngineClient {
   private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchEngineClient.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final String DELETION_MIN_AGE_HANDLE = "%DELETION_MIN_AGE";
   private final ElasticsearchClient client;
 
   public ElasticsearchEngineClient(final ElasticsearchClient client) {
@@ -136,6 +138,22 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
+  @Override
+  public void putIndexLifeCyclePolicy(
+      final String policyName, final String policyFile, final String deletionMinAge) {
+    final PutLifecycleRequest request = putLifecycleRequest(policyName, policyFile, deletionMinAge);
+
+    try {
+      client.ilm().putLifecycle(request);
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format(
+              "Index lifecycle policy [%s] with file [%s] failed to PUT", policyName, policyFile);
+      LOG.error(errMsg, e);
+      throw new ElasticsearchExporterException(errMsg, e);
+    }
+  }
+
   private PutIndicesSettingsRequest putIndexSettingsRequest(
       final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings) {
     try (final var settingsStream =
@@ -152,6 +170,20 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
               "Failed to serialise settings in PutSettingsRequest for index %s",
               indexDescriptor.getFullQualifiedName()),
           e);
+    }
+  }
+
+  private PutLifecycleRequest putLifecycleRequest(
+      final String policyName, final String policyFile, final String deletionMinAge) {
+    try (final var policy = getResourceAsStream(policyFile)) {
+      final var policyStr = new String(policy.readAllBytes(), StandardCharsets.UTF_8);
+      return new PutLifecycleRequest.Builder()
+          .name(policyName)
+          .withJson(new StringReader(policyStr.replace(DELETION_MIN_AGE_HANDLE, deletionMinAge)))
+          .build();
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          "Failed to load file " + policyFile + " from classpath.", e);
     }
   }
 
