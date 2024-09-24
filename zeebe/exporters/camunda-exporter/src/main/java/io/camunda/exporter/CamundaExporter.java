@@ -128,6 +128,15 @@ public class CamundaExporter implements Exporter {
       return;
     }
 
+    if (configuration.elasticsearch.isIlmEnabled()) {
+      provider
+          .getIndexLifeCyclePolicies()
+          .forEach(
+              (k, v) ->
+                  searchEngineClient.putIndexLifeCyclePolicy(
+                      k, v, configuration.elasticsearch.getIlmMinDeletionAge()));
+    }
+
     final var newIndexProperties = validateIndices(schemaValidator, searchEngineClient);
     final var newIndexTemplateProperties =
         validateIndexTemplates(schemaValidator, searchEngineClient);
