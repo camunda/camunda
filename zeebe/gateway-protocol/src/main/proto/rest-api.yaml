@@ -588,7 +588,7 @@ paths:
         Set a precise, static time for the Zeebe engine’s internal clock.
         When the clock is pinned, it remains at the specified time and does not advance.
         To change the time, the clock must be pinned again with a new timestamp.
-        
+
         :::note
         This endpoint is an [alpha feature](/reference/alpha-features.md) and may be subject to change
         in future releases.
@@ -624,7 +624,7 @@ paths:
         Resets the Zeebe engine’s internal clock to the current system time, enabling it to tick in real-time.
         This operation is useful for returning the clock to
         normal behavior after it has been pinned to a specific time.
-        
+
         :::note
         This endpoint is an [alpha feature](/reference/alpha-features.md) and may be subject to change
         in future releases.
@@ -2008,6 +2008,7 @@ components:
           format: date-time
         bpmnProcessId:
           type: string
+          description: The bpmn process ID.
         processDefinitionVersion:
           type: integer
           format: int32
@@ -2047,7 +2048,8 @@ components:
           format: int64
         processName:
           type: string
-        processVersion:
+          description: The process name.
+        processDefinitionVersion:
           type: integer
           format: int32
         bpmnProcessId:
@@ -3553,7 +3555,7 @@ components:
           description: |
             The bpmn process ID, as parsed during deployment, together with the version forms a
             unique identifier for a specific process definition.
-        version:
+        processDefinitionVersion:
           type: integer
           format: int32
           description: The assigned process version.
@@ -3661,7 +3663,7 @@ components:
             The BPMN process ID of the process definition to start an instance of.
             Cannot be used together with processDefinitionKey.
           type: string
-        version:
+        processDefinitionVersion:
           description: |
             The version of the process. Only considered when a bpmnProcessId is provided.
             By default, the latest version of the process is used.
@@ -3735,7 +3737,7 @@ components:
             The BPMN process ID of the process definition which was used to create the process.
             instance
           type: string
-        version:
+        processDefinitionVersion:
           description: |
             The version of the process definition which was used to create the process instance.
           type: integer

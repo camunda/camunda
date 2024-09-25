@@ -43,7 +43,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
   public ProcessInstanceImpl(final ProcessInstanceItem item) {
     this.key = item.getKey();
     this.processName = item.getProcessName();
-    this.processVersion = item.getProcessVersion();
+    this.processVersion = item.getProcessDefinitionVersion();
     this.bpmnProcessId = item.getBpmnProcessId();
     this.parentProcessInstanceKey = item.getParentKey();
     this.parentFlowNodeInstanceKey = item.getParentFlowNodeInstanceKey();

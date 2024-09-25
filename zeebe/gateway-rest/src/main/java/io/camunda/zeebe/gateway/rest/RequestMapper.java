@@ -496,7 +496,8 @@ public class RequestMapper {
                 getLongOrDefault(
                     request, CreateProcessInstanceRequest::getProcessDefinitionKey, -1L),
                 getStringOrEmpty(request, CreateProcessInstanceRequest::getBpmnProcessId),
-                getIntOrDefault(request, CreateProcessInstanceRequest::getVersion, -1),
+                getIntOrDefault(
+                    request, CreateProcessInstanceRequest::getProcessDefinitionVersion, -1),
                 getMapOrEmpty(request, CreateProcessInstanceRequest::getVariables),
                 request.getTenantId(),
                 request.getAwaitCompletion(),

@@ -219,7 +219,7 @@ public final class ResponseMapper {
             process ->
                 new DeploymentProcess()
                     .bpmnProcessId(process.getBpmnProcessId())
-                    .version(process.getVersion())
+                    .processDefinitionVersion(process.getVersion())
                     .processDefinitionKey(process.getProcessDefinitionKey())
                     .tenantId(process.getTenantId())
                     .resourceName(process.getResourceName()))
@@ -260,7 +260,7 @@ public final class ResponseMapper {
         new CreateProcessInstanceResponse()
             .processDefinitionKey(processDefinitionKey)
             .bpmnProcessId(bpmnProcessId)
-            .version(version)
+            .processDefinitionVersion(version)
             .processInstanceKey(processInstanceKey)
             .tenantId(tenantId);
     if (variables != null) {

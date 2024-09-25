@@ -137,7 +137,7 @@ public final class SearchQueryResponseMapper {
     return new ProcessInstanceItem()
         .key(p.key())
         .processName(p.processName())
-        .processVersion(p.processVersion())
+        .processDefinitionVersion(p.processVersion())
         .bpmnProcessId(p.bpmnProcessId())
         .parentKey(p.parentProcessInstanceKey())
         .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())

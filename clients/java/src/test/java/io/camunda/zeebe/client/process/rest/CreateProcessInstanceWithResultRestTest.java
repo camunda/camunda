@@ -59,7 +59,7 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
     final CreateProcessInstanceRequest request =
         gatewayService.getLastRequest(CreateProcessInstanceRequest.class);
     assertThat(request.getBpmnProcessId()).isEqualTo("testProcess");
-    assertThat(request.getVersion()).isEqualTo(123);
+    assertThat(request.getProcessDefinitionVersion()).isEqualTo(123);
   }
 
   @Test
