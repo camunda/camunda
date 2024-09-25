@@ -64,6 +64,7 @@ jobs:
 
       - name: Wait for camunda process to start
         run: bash -c 'while ! curl -s -f "http://localhost:8080/operate/login"; do sleep 5; done'
+        timeout-minutes: 5
 
       - name: Run Playwright tests
         run: npx playwright test
