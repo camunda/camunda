@@ -18,6 +18,7 @@ package io.camunda.zeebe.client.impl.http;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.api.command.ClientException;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -30,7 +31,6 @@ import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.Method;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.util.TimeValue;
@@ -187,7 +187,10 @@ public final class HttpClient implements AutoCloseable {
         final HttpEntity entity = (HttpEntity) body;
         final byte[] entityBytes;
         try {
-          entityBytes = EntityUtils.toByteArray(entity);
+          final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+          entity.writeTo(byteArrayOutputStream);
+          entityBytes = byteArrayOutputStream.toByteArray();
+          byteArrayOutputStream.close();
         } catch (final IOException e) {
           result.completeExceptionally(
               new ClientException("Failed to convert multipart entity to bytes", e));
