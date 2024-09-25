@@ -92,7 +92,9 @@ test.describe.serial('Process Instance Migration', () => {
     const targetVersion = initialData.processV2.version.toString();
     const targetBpmnProcessId = initialData.processV2.bpmnProcessId;
 
-    await processesPage.navigateToProcesses({searchParams: {active: 'true'}});
+    await processesPage.navigateToProcesses({
+      searchParams: {active: 'true', incidents: 'true'},
+    });
 
     await filtersPanel.selectProcess(sourceBpmnProcessId);
     await filtersPanel.selectVersion(sourceVersion);
@@ -113,7 +115,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(18);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(19);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
@@ -169,6 +171,9 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       page.getByLabel(/target flow node for message receive task/i),
     ).toHaveValue('MessageReceiveTask');
+    await expect(
+      page.getByLabel(/target flow node for business rule task/i),
+    ).toHaveValue('BusinessRuleTask');
 
     // Expect pre-selected process and version
     await expect(migrationView.targetProcessComboBox).toHaveValue(
@@ -251,6 +256,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.navigateToProcesses({
       searchParams: {
         active: 'true',
+        incidents: 'true',
       },
     });
     await commonPage.expandOperationsPanel();
@@ -266,6 +272,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.navigateToProcesses({
       searchParams: {
         active: 'true',
+        incidents: 'true',
         process: processV2.bpmnProcessId,
         version: processV2.version.toString(),
         operationId,
@@ -296,7 +303,9 @@ test.describe.serial('Process Instance Migration', () => {
     const targetVersion = initialData.processV3.version.toString();
     const targetBpmnProcessId = initialData.processV3.bpmnProcessId;
 
-    await processesPage.navigateToProcesses({searchParams: {active: 'true'}});
+    await processesPage.navigateToProcesses({
+      searchParams: {active: 'true', incidents: 'true'},
+    });
 
     await filtersPanel.selectProcess(sourceBpmnProcessId);
     await filtersPanel.selectVersion(sourceVersion);
@@ -397,11 +406,15 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     /**
-     * Map message receive task
+     * Map other tasks
      */
     await migrationView.mapFlowNode({
       sourceFlowNodeName: 'Message receive task',
       targetFlowNodeName: 'Message receive task 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Business rule task',
+      targetFlowNodeName: 'Business rule task 2',
     });
 
     await migrationView.nextButton.click();
@@ -468,6 +481,43 @@ test.describe.serial('Process Instance Migration', () => {
     await commonPage.collapseOperationsPanel();
   });
 
+  test('Migrated business rule task', async ({
+    processesPage,
+    processInstancePage,
+    page,
+  }) => {
+    const {processV3} = initialData;
+
+    await processesPage.navigateToProcesses({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+        process: processV3.bpmnProcessId,
+
+        version: processV3.version.toString(),
+      },
+    });
+
+    await processesPage.getNthProcessInstanceLink(0).click();
+
+    await processInstancePage.diagram.resetDiagramZoomButton.click();
+
+    await processInstancePage.diagram.clickFlowNode('Business rule task 2');
+    await processInstancePage.diagram.showMetaData();
+    await page.waitForSelector('.monaco-aria-container'); // wait until monaco is fully loaded
+
+    /**
+     * Expect that the incident for the business rule task has been migrated.
+     * The target task "Business rule task 2" has a different called decision "invalid2"
+     * which is expected to be overwritten with the decision key "invalid".
+     */
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        "Expected to evaluate decision 'invalid', but no decision found for id 'invalid'",
+      ),
+    ).toBeVisible();
+  });
+
   test('Migrated message events', async ({
     processesPage,
     processInstancePage,
@@ -478,6 +528,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.navigateToProcesses({
       searchParams: {
         active: 'true',
+        incidents: 'true',
         process: processV3.bpmnProcessId,
         version: processV3.version.toString(),
       },
@@ -581,6 +632,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.navigateToProcesses({
       searchParams: {
         active: 'true',
+        incidents: 'true',
         process: targetBpmnProcessId,
         version: targetVersion,
       },
