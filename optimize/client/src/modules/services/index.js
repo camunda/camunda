@@ -21,7 +21,13 @@ export {default as getTooltipText} from './getTooltipText';
 export {default as getScreenBounds} from './getScreenBounds';
 export {loadEntity, loadReports, updateEntity, deleteEntity, copyReport} from './entityService';
 export {UNAUTHORIZED_TENANT_ID} from './tenantService.ts';
-export {loadEntities, copyEntity, createEntity, getEntityIcon} from './entityService.tsx';
+export {
+  loadEntities,
+  copyEntity,
+  createEntity,
+  getEntityIcon,
+  isReportEntity,
+} from './entityService.tsx';
 
 export {
   evaluateReport,
@@ -37,7 +43,7 @@ export {
   isTextTileValid,
 } from './reportService';
 
-export {addSources, getCollection} from './collectionService';
+export {addSources, getCollection, loadCollectionEntities} from './collectionService';
 
 export * as formatters from './formatters';
 

@@ -12,6 +12,8 @@ import {get, post} from 'request';
 import {EntityListEntity, GenericReport} from 'types';
 import {track} from 'tracking';
 
+import {loadCollectionEntities} from './collectionService';
+
 export async function loadReports(collection?: string | null): Promise<GenericReport[]> {
   let url = 'api/report';
   if (collection) {
@@ -22,6 +24,7 @@ export async function loadReports(collection?: string | null): Promise<GenericRe
 }
 
 export async function loadEntities<T extends Record<string, unknown>>(
+  collectionId?: string | null,
   sortBy?: string,
   sortOrder?: string
 ): Promise<EntityListEntity<T>[]> {
@@ -29,6 +32,10 @@ export async function loadEntities<T extends Record<string, unknown>>(
   if (sortBy && sortOrder) {
     params.sortBy = sortBy;
     params.sortOrder = sortOrder;
+  }
+
+  if (collectionId) {
+    return loadCollectionEntities(collectionId, sortBy, sortOrder);
   }
 
   const response = await get('api/entities', params);
@@ -86,4 +93,10 @@ export function getEntityIcon(type: 'report' | 'dashboard' | 'collection') {
     case 'report':
       return <ChartColumn />;
   }
+}
+
+export function isReportEntity(
+  entity: EntityListEntity
+): entity is EntityListEntity & {entityType: 'report'} {
+  return entity.entityType === 'report';
 }
