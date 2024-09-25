@@ -16,88 +16,129 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record ProcessInstanceFilter(
-    boolean running,
-    boolean active,
-    boolean incidents,
-    boolean finished,
-    boolean completed,
-    boolean canceled,
-    boolean retriesLeft,
-    String errorMessage,
-    String activityId,
+    List<Long> keys,
+    List<String> bpmnProcessIds,
+    List<String> processNames,
+    List<Integer> processVersions,
+    List<String> processVersionTags,
+    List<Long> processDefinitionKeys,
+    List<Long> rootProcessInstanceKeys,
+    List<Long> parentProcessInstanceKeys,
+    List<Long> parentFlowNodeInstanceKeys,
+    List<String> treePaths,
     DateValueFilter startDate,
     DateValueFilter endDate,
-    List<String> bpmnProcessIds,
-    List<Integer> processDefinitionVersions,
-    ProcessInstanceVariableFilter variable,
-    List<String> batchOperationIds,
-    List<Long> parentProcessInstanceKeys,
+    List<String> states,
+    Boolean incident,
     List<String> tenantIds)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<ProcessInstanceFilter> {
 
-    private boolean running;
-    private boolean active;
-    private boolean incidents;
-    private boolean finished;
-    private boolean completed;
-    private boolean canceled;
-    private boolean retriesLeft;
-    private String errorMessage;
-    private String activityId;
+    private List<Long> keys;
+    private List<String> bpmnProcessIds;
+    private List<String> processNames;
+    private List<Integer> processVersions;
+    private List<String> processVersionTags;
+    private List<Long> processDefinitionKeys;
+    private List<Long> rootProcessInstanceKeys;
+    private List<Long> parentProcessInstanceKeys;
+    private List<Long> parentFlowNodeInstanceKeys;
+    private List<String> treePaths;
     private DateValueFilter startDate;
     private DateValueFilter endDate;
-    private List<String> bpmnProcessIds;
-    private List<Integer> processDefinitionVersions;
-    private ProcessInstanceVariableFilter variable;
-    private List<String> batchOperationIds;
-    private List<Long> parentProcessInstanceKeys;
+    private List<String> states;
+    private Boolean incident;
     private List<String> tenantIds;
 
-    public Builder running(final boolean running) {
-      this.running = running;
+    public Builder keys(final List<Long> values) {
+      keys = addValuesToList(keys, values);
       return this;
     }
 
-    public Builder active(final boolean active) {
-      this.active = active;
+    public Builder keys(final Long... values) {
+      return keys(collectValuesAsList(values));
+    }
+
+    public Builder bpmnProcessIds(final List<String> values) {
+      bpmnProcessIds = addValuesToList(bpmnProcessIds, values);
       return this;
     }
 
-    public Builder incidents(final boolean incidents) {
-      this.incidents = incidents;
+    public Builder bpmnProcessIds(final String... values) {
+      return bpmnProcessIds(collectValuesAsList(values));
+    }
+
+    public Builder processNames(final List<String> values) {
+      processNames = addValuesToList(processNames, values);
       return this;
     }
 
-    public Builder finished(final boolean finished) {
-      this.finished = finished;
+    public Builder processNames(final String... values) {
+      return processNames(collectValuesAsList(values));
+    }
+
+    public Builder processVersions(final List<Integer> values) {
+      processVersions = addValuesToList(processVersions, values);
       return this;
     }
 
-    public Builder completed(final boolean completed) {
-      this.completed = completed;
+    public Builder processVersions(final Integer... values) {
+      return processVersions(collectValuesAsList(values));
+    }
+
+    public Builder processVersionTags(final List<String> values) {
+      processVersionTags = addValuesToList(processVersionTags, values);
       return this;
     }
 
-    public Builder canceled(final boolean canceled) {
-      this.canceled = canceled;
+    public Builder processVersionTags(final String... values) {
+      return processVersionTags(collectValuesAsList(values));
+    }
+
+    public Builder processDefinitionKeys(final List<Long> values) {
+      processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
       return this;
     }
 
-    public Builder retriesLeft(final boolean retriesLeft) {
-      this.retriesLeft = retriesLeft;
+    public Builder processDefinitionKeys(final Long... values) {
+      return processDefinitionKeys(collectValuesAsList(values));
+    }
+
+    public Builder rootProcessInstanceKeys(final List<Long> values) {
+      rootProcessInstanceKeys = addValuesToList(rootProcessInstanceKeys, values);
       return this;
     }
 
-    public Builder errorMessage(final String errorMessage) {
-      this.errorMessage = errorMessage;
+    public Builder rootProcessInstanceKeys(final Long... values) {
+      return rootProcessInstanceKeys(collectValuesAsList(values));
+    }
+
+    public Builder parentProcessInstanceKeys(final List<Long> values) {
+      parentProcessInstanceKeys = addValuesToList(parentProcessInstanceKeys, values);
       return this;
     }
 
-    public Builder activityId(final String activityId) {
-      this.activityId = activityId;
+    public Builder parentProcessInstanceKeys(final Long... values) {
+      return parentProcessInstanceKeys(collectValuesAsList(values));
+    }
+
+    public Builder parentFlowNodeInstanceKeys(final List<Long> values) {
+      parentFlowNodeInstanceKeys = addValuesToList(parentFlowNodeInstanceKeys, values);
       return this;
+    }
+
+    public Builder parentFlowNodeInstanceKeys(final Long... values) {
+      return parentFlowNodeInstanceKeys(collectValuesAsList(values));
+    }
+
+    public Builder treePaths(final List<String> values) {
+      treePaths = addValuesToList(treePaths, values);
+      return this;
+    }
+
+    public Builder treePaths(final String... values) {
+      return treePaths(collectValuesAsList(values));
     }
 
     public Builder startDate(final DateValueFilter startDate) {
@@ -120,52 +161,18 @@ public record ProcessInstanceFilter(
       return endDate(FilterBuilders.dateValue(fn));
     }
 
-    public Builder bpmnProcessIds(final List<String> values) {
-      bpmnProcessIds = addValuesToList(bpmnProcessIds, values);
+    public Builder states(final List<String> values) {
+      states = addValuesToList(states, values);
       return this;
     }
 
-    public Builder bpmnProcessIds(final String... values) {
-      return bpmnProcessIds(collectValuesAsList(values));
+    public Builder states(final String... values) {
+      return states(collectValuesAsList(values));
     }
 
-    public Builder processDefinitionVersions(final List<Integer> values) {
-      processDefinitionVersions = addValuesToList(processDefinitionVersions, values);
+    public Builder incident(final Boolean value) {
+      incident = value;
       return this;
-    }
-
-    public Builder processDefinitionVersions(final Integer... values) {
-      return processDefinitionVersions(collectValuesAsList(values));
-    }
-
-    public Builder variable(final ProcessInstanceVariableFilter variable) {
-      this.variable = variable;
-      return this;
-    }
-
-    public Builder variable(
-        final Function<
-                ProcessInstanceVariableFilter.Builder, ObjectBuilder<ProcessInstanceVariableFilter>>
-            fn) {
-      return variable(FilterBuilders.processInstanceVariable(fn));
-    }
-
-    public Builder batchOperationIds(final List<String> values) {
-      batchOperationIds = addValuesToList(batchOperationIds, values);
-      return this;
-    }
-
-    public Builder batchOperationIds(final String... values) {
-      return batchOperationIds(collectValuesAsList(values));
-    }
-
-    public Builder parentProcessInstanceKeys(final List<Long> values) {
-      parentProcessInstanceKeys = addValuesToList(parentProcessInstanceKeys, values);
-      return this;
-    }
-
-    public Builder parentProcessInstanceKeys(final Long... values) {
-      return parentProcessInstanceKeys(collectValuesAsList(values));
     }
 
     public Builder tenantIds(final List<String> values) {
@@ -180,22 +187,20 @@ public record ProcessInstanceFilter(
     @Override
     public ProcessInstanceFilter build() {
       return new ProcessInstanceFilter(
-          running,
-          active,
-          incidents,
-          finished,
-          completed,
-          canceled,
-          retriesLeft,
-          errorMessage,
-          activityId,
+          Objects.requireNonNullElse(keys, Collections.emptyList()),
+          Objects.requireNonNullElse(bpmnProcessIds, Collections.emptyList()),
+          Objects.requireNonNullElse(processNames, Collections.emptyList()),
+          Objects.requireNonNullElse(processVersions, Collections.emptyList()),
+          Objects.requireNonNullElse(processVersionTags, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(rootProcessInstanceKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(parentProcessInstanceKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(parentFlowNodeInstanceKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(treePaths, Collections.emptyList()),
           startDate,
           endDate,
-          Objects.requireNonNullElse(bpmnProcessIds, Collections.emptyList()),
-          Objects.requireNonNullElse(processDefinitionVersions, Collections.emptyList()),
-          variable,
-          Objects.requireNonNullElse(batchOperationIds, Collections.emptyList()),
-          Objects.requireNonNullElse(parentProcessInstanceKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(states, Collections.emptyList()),
+          incident,
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
     }
   }

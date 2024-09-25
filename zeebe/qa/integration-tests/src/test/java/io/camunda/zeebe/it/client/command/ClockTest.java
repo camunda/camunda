@@ -78,8 +78,8 @@ class ClockTest {
   void shouldRejectPinOperationIfNoTimestampProvided() {
     // when / then
     assertThatThrownBy(() -> client.newClockPinCommand().send().join())
-        .hasCauseInstanceOf(ProblemException.class)
-        .extracting(e -> (ProblemException) e.getCause())
+        .isInstanceOf(ProblemException.class)
+        .extracting(e -> (ProblemException) e)
         .satisfies(
             e -> {
               assertThat(e.getMessage()).startsWith("Failed with code 400: 'Bad Request'");

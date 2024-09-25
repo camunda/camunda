@@ -26,6 +26,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
@@ -70,14 +71,19 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
         BulkRequest.of(
             b ->
                 b.operations(
-                    o -> {
-                      processInstanceIds.forEach(
-                          id ->
-                              o.delete(
-                                  d ->
-                                      d.id(id).index(esClient.addPrefixesToIndices(index).get(0))));
-                      return o;
-                    }));
+                    processInstanceIds.stream()
+                        .map(
+                            id ->
+                                BulkOperation.of(
+                                    o ->
+                                        o.delete(
+                                            d ->
+                                                d.id(id)
+                                                    .index(
+                                                        esClient
+                                                            .addPrefixesToIndices(index)
+                                                            .get(0)))))
+                        .toList()));
     esClient.doBulkRequest(bulkRequest, index, false);
   }
 

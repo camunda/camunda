@@ -7,12 +7,12 @@
  */
 package io.camunda.operate.qa.migration.v110;
 
-import static io.camunda.operate.entities.listview.ProcessInstanceState.COMPLETED;
 import static io.camunda.operate.schema.templates.ListViewTemplate.BPMN_PROCESS_ID;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.STATE;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState.COMPLETED;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.qa.util.TestContext;

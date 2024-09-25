@@ -65,6 +65,17 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
+  public static DecisionInstanceSearchQueryResponse toDecisionInstanceSearchQueryResponse(
+      final SearchQueryResult<DecisionInstanceEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new DecisionInstanceSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toDecisionInstances)
+                .orElseGet(Collections::emptyList));
+  }
+
   public static UserTaskSearchQueryResponse toUserTaskSearchQueryResponse(
       final SearchQueryResult<UserTaskEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -122,24 +133,23 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toProcessInstance).toList();
   }
 
-  private static ProcessInstanceItem toProcessInstance(final ProcessInstanceEntity p) {
+  public static ProcessInstanceItem toProcessInstance(final ProcessInstanceEntity p) {
     return new ProcessInstanceItem()
         .key(p.key())
+        .bpmnProcessId(p.bpmnProcessId())
         .processName(p.processName())
         .processVersion(p.processVersion())
-        .bpmnProcessId(p.bpmnProcessId())
-        .parentKey(p.parentProcessInstanceKey())
+        .processVersionTag(p.processVersionTag())
+        .processDefinitionKey(p.processDefinitionKey())
+        .rootProcessInstanceKey(p.rootProcessInstanceKey())
+        .parentProcessInstanceKey(p.parentProcessInstanceKey())
         .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())
+        .treePath(p.treePath())
         .startDate(p.startDate())
         .endDate(p.endDate())
-        .state((p.state() == null) ? null : ProcessInstanceItem.StateEnum.fromValue(p.state()))
+        .state((p.state() == null) ? null : ProcessInstanceStateEnum.fromValue(p.state().name()))
         .incident(p.incident())
-        .hasActiveOperation(p.hasActiveOperation())
-        .processDefinitionKey(p.processDefinitionKey())
-        .tenantId(p.tenantId())
-        .rootInstanceId(p.rootInstanceId())
-        .operations(toOperations(p.operations()))
-        .callHierarchy(toCallHierarchy(p.callHierarchy()));
+        .tenantId(p.tenantId());
   }
 
   private static List<OperationItem> toOperations(final List<OperationEntity> instances) {
@@ -189,20 +199,20 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toFlowNodeInstance).toList();
   }
 
-  private static FlowNodeInstanceItem toFlowNodeInstance(final FlowNodeInstanceEntity instance) {
+  public static FlowNodeInstanceItem toFlowNodeInstance(final FlowNodeInstanceEntity instance) {
     return new FlowNodeInstanceItem()
         .flowNodeInstanceKey(instance.key())
         .flowNodeId(instance.flowNodeId())
-        .flowNodeName(instance.flowNodeName())
         .processDefinitionKey(instance.processDefinitionKey())
+        .bpmnProcessId(instance.bpmnProcessId())
         .processInstanceKey(instance.processInstanceKey())
         .incidentKey(instance.incidentKey())
         .incident(instance.incident())
         .startDate(instance.startDate())
         .endDate(instance.endDate())
-        .state(instance.state())
+        .state(FlowNodeInstanceItem.StateEnum.fromValue(instance.state().name()))
         .treePath(instance.treePath())
-        .type(instance.type())
+        .type(FlowNodeInstanceItem.TypeEnum.fromValue(instance.type().name()))
         .tenantId(instance.tenantId());
   }
 
@@ -217,7 +227,7 @@ public final class SearchQueryResponseMapper {
         .dmnDecisionRequirementsId(d.decisionRequirementsId());
   }
 
-  private static DecisionRequirementsItem toDecisionRequirements(
+  public static DecisionRequirementsItem toDecisionRequirements(
       final DecisionRequirementsEntity d) {
     return new DecisionRequirementsItem()
         .tenantId(d.tenantId())
@@ -253,7 +263,7 @@ public final class SearchQueryResponseMapper {
         .tenantId(t.tenantId());
   }
 
-  private static UserTaskItem toUserTask(final UserTaskEntity t) {
+  public static UserTaskItem toUserTask(final UserTaskEntity t) {
     return new UserTaskItem()
         .tenantIds(t.tenantId())
         .key(t.key())
@@ -277,6 +287,15 @@ public final class SearchQueryResponseMapper {
         .priority(t.priority());
   }
 
+  public static FormItem toFormItem(final FormEntity f) {
+    return new FormItem()
+        .key(Long.valueOf(f.id()))
+        .bpmnId(f.bpmnId())
+        .version(f.version())
+        .schema(f.schema())
+        .tenantId(f.tenantId());
+  }
+
   public static Either<ProblemDetail, List<UserResponse>> toUsers(final List<UserEntity> users) {
     return Either.right(
         users.stream().map(SearchQueryResponseMapper::toUser).map(Either::get).toList());
@@ -289,5 +308,32 @@ public final class SearchQueryResponseMapper {
             .username(user.username())
             .email(user.email())
             .name(user.name()));
+  }
+
+  private static List<DecisionInstanceItem> toDecisionInstances(
+      final List<DecisionInstanceEntity> instances) {
+    return instances.stream().map(SearchQueryResponseMapper::toDecisionInstance).toList();
+  }
+
+  private static DecisionInstanceItem toDecisionInstance(final DecisionInstanceEntity entity) {
+    return new DecisionInstanceItem()
+        .decisionInstanceKey(entity.key())
+        .state(
+            (entity.state() == null)
+                ? null
+                : DecisionInstanceStateEnum.fromValue(entity.state().name()))
+        .evaluationDate(entity.evaluationDate())
+        .evaluationFailure(entity.evaluationFailure())
+        .processDefinitionKey(entity.processDefinitionKey())
+        .processInstanceKey(entity.processInstanceKey())
+        .decisionKey(Long.valueOf(entity.decisionDefinitionId()))
+        .dmnDecisionId(entity.decisionId())
+        .dmnDecisionName(entity.decisionName())
+        .decisionVersion(entity.decisionVersion())
+        .decisionType(
+            (entity.decisionType() == null)
+                ? null
+                : DecisionInstanceTypeEnum.fromValue(entity.decisionType().name()))
+        .result(entity.result());
   }
 }

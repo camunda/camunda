@@ -22,6 +22,7 @@ import io.camunda.zeebe.client.api.response.EvaluatedDecision;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
 
@@ -38,6 +39,24 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
   private final String failureMessage;
   private final String tenantId;
   private final long decisionInstanceKey;
+
+  public EvaluateDecisionResponseImpl(
+      final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse response,
+      final JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
+    decisionId = response.getDecisionId();
+    decisionKey = response.getDecisionKey();
+    decisionVersion = response.getDecisionVersion();
+    decisionName = response.getDecisionName();
+    decisionRequirementsId = response.getDecisionRequirementsId();
+    decisionRequirementsKey = response.getDecisionRequirementsKey();
+    decisionOutput = response.getDecisionOutput();
+    failedDecisionId = response.getFailedDecisionId();
+    failureMessage = response.getFailureMessage();
+    tenantId = response.getTenantId();
+    decisionInstanceKey = response.getDecisionInstanceKey();
+    buildEvaluatedDecisions(response);
+  }
 
   public EvaluateDecisionResponseImpl(
       final JsonMapper jsonMapper, final GatewayOuterClass.EvaluateDecisionResponse response) {
@@ -58,6 +77,17 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
     response.getEvaluatedDecisionsList().stream()
         .map(evaluatedDecision -> new EvaluatedDecisionImpl(jsonMapper, evaluatedDecision))
         .forEach(evaluatedDecisions::add);
+  }
+
+  private void buildEvaluatedDecisions(
+      final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse response) {
+    if (response.getEvaluatedDecisions() == null) {
+      return;
+    }
+    evaluatedDecisions.addAll(
+        response.getEvaluatedDecisions().stream()
+            .map(decision -> new EvaluatedDecisionImpl(decision, jsonMapper))
+            .collect(Collectors.toList()));
   }
 
   @Override

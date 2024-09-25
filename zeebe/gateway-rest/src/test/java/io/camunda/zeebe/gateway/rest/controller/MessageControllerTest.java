@@ -18,25 +18,20 @@ import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @WebMvcTest(MessageController.class)
@@ -595,16 +590,5 @@ public class MessageControllerTest extends RestControllerTest {
             .setTimeToLive(123L)
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     return CompletableFuture.completedFuture(new BrokerResponse<>(record, 1, 123));
-  }
-
-  private ResponseSpec withMultiTenancy(
-      final String tenantId, final Function<WebTestClient, ResponseSpec> function) {
-    try (final MockedStatic<RequestMapper> mockRequestMapper =
-        Mockito.mockStatic(RequestMapper.class, Mockito.CALLS_REAL_METHODS)) {
-      mockRequestMapper
-          .when(RequestMapper::getAuthentication)
-          .thenReturn(new Authentication("user", List.of("group"), List.of(tenantId), "token"));
-      return function.apply(webClient);
-    }
   }
 }

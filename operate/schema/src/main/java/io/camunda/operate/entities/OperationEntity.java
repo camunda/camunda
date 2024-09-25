@@ -7,11 +7,12 @@
  */
 package io.camunda.operate.entities;
 
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
-public class OperationEntity extends OperateEntity<OperationEntity> {
+public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
 
   private Long processInstanceKey;
 

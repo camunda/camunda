@@ -18,15 +18,11 @@ package io.camunda.process.test.impl.runtime;
 public class ContainerRuntimeDefaults {
 
   public static final String ELASTICSEARCH_DOCKER_IMAGE_NAME = "elasticsearch";
-  public static final String ZEEBE_DOCKER_IMAGE_NAME = "camunda/zeebe";
-  public static final String OPERATE_DOCKER_IMAGE_NAME = "camunda/operate";
-  public static final String TASKLIST_DOCKER_IMAGE_NAME = "camunda/tasklist";
+  public static final String CAMUNDA_DOCKER_IMAGE_NAME = "camunda/camunda";
   public static final String CONNECTORS_DOCKER_IMAGE_NAME = "camunda/connectors-bundle";
 
   public static final String ELASTICSEARCH_LOGGER_NAME = "tc.elasticsearch";
-  public static final String ZEEBE_LOGGER_NAME = "tc.zeebe";
-  public static final String OPERATE_LOGGER_NAME = "tc.operate";
-  public static final String TASKLIST_LOGGER_NAME = "tc.tasklist";
+  public static final String CAMUNDA_LOGGER_NAME = "tc.camunda";
   public static final String CONNECTORS_LOGGER_NAME = "tc.connectors";
 
   private static final ContainerRuntimeVersionUtil VERSION_UTIL =
@@ -35,8 +31,6 @@ public class ContainerRuntimeDefaults {
   public static final String ELASTICSEARCH_DOCKER_IMAGE_VERSION =
       VERSION_UTIL.getElasticsearchVersion();
   public static final String CAMUNDA_VERSION = VERSION_UTIL.getCamundaVersion();
-  public static final String ZEEBE_DOCKER_IMAGE_VERSION = CAMUNDA_VERSION;
-  public static final String OPERATE_DOCKER_IMAGE_VERSION = CAMUNDA_VERSION;
-  public static final String TASKLIST_DOCKER_IMAGE_VERSION = CAMUNDA_VERSION;
+  public static final String CAMUNDA_DOCKER_IMAGE_VERSION = CAMUNDA_VERSION;
   public static final String CONNECTORS_DOCKER_IMAGE_VERSION = CAMUNDA_VERSION;
 }

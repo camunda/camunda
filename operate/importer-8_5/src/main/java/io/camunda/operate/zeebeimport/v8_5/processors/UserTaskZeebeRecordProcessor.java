@@ -9,12 +9,12 @@ package io.camunda.operate.zeebeimport.v8_5.processors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.UserTaskEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.UserTaskTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.Tuple;
+import io.camunda.webapps.schema.entities.operate.UserTaskEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;

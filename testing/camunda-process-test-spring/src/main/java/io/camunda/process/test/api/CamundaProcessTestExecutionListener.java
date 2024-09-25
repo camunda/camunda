@@ -17,7 +17,7 @@ package io.camunda.process.test.api;
 
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
-import io.camunda.process.test.impl.containers.OperateContainer;
+import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
@@ -78,7 +78,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     final CamundaProcessTestContext camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
-            containerRuntime.getZeebeContainer(),
+            containerRuntime.getCamundaContainer(),
             containerRuntime.getConnectorsContainer(),
             createdClients::add);
 
@@ -125,15 +125,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         testContext.getApplicationContext().getBean(CamundaContainerRuntimeConfiguration.class);
 
     containerRuntimeBuilder
-        .withZeebeDockerImageVersion(runtimeConfiguration.getCamundaVersion())
-        .withOperateDockerImageVersion(runtimeConfiguration.getCamundaVersion())
-        .withTasklistDockerImageVersion(runtimeConfiguration.getCamundaVersion())
-        .withZeebeDockerImageName(runtimeConfiguration.getZeebeDockerImageName())
-        .withZeebeEnv(runtimeConfiguration.getZeebeEnvVars());
+        .withCamundaDockerImageVersion(runtimeConfiguration.getCamundaVersion())
+        .withCamundaDockerImageName(runtimeConfiguration.getCamundaDockerImageName())
+        .withCamundaEnv(runtimeConfiguration.getCamundaEnvVars());
 
     runtimeConfiguration
-        .getZeebeExposedPorts()
-        .forEach(containerRuntimeBuilder::withZeebeExposedPort);
+        .getCamundaExposedPorts()
+        .forEach(containerRuntimeBuilder::withCamundaExposedPort);
 
     containerRuntimeBuilder
         .withConnectorsEnabled(runtimeConfiguration.isConnectorsEnabled())
@@ -162,10 +160,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   }
 
   private CamundaDataSource createDataSource(final CamundaContainerRuntime containerRuntime) {
-    final OperateContainer operateContainer = containerRuntime.getOperateContainer();
-    final String operateApiEndpoint =
-        "http://" + operateContainer.getHost() + ":" + operateContainer.getRestApiPort();
-    return new CamundaDataSource(operateApiEndpoint);
+    final CamundaContainer camundaContainer = containerRuntime.getCamundaContainer();
+    return new CamundaDataSource(camundaContainer.getRestApiAddress().toString());
   }
 
   @Override

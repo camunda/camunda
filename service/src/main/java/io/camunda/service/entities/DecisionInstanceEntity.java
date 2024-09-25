@@ -15,13 +15,11 @@ public record DecisionInstanceEntity(
     long processDefinitionKey,
     long processInstanceKey,
     String bpmnProcessId,
-    long elementInstanceKey,
-    String elementId,
     String decisionId,
     String decisionDefinitionId,
     String decisionName,
     int decisionVersion,
-    DecisionType decisionType,
+    DecisionInstanceType decisionType,
     String result) {
 
   public record DecisionInstanceInputEntity(String id, String name, String value) {}
@@ -29,11 +27,21 @@ public record DecisionInstanceEntity(
   public record DecisionInstanceOutputEntity(
       String id, String name, String value, String ruleId, int ruleIndex) {}
 
-  public enum DecisionType {
+  public enum DecisionInstanceType {
+    DECISION,
     DECISION_TABLE,
     LITERAL_EXPRESSION,
     UNSPECIFIED,
     UNKNOWN;
+
+    public static DecisionInstanceType fromValue(final String value) {
+      for (final DecisionInstanceType b : DecisionInstanceType.values()) {
+        if (b.name().equals(value)) {
+          return b;
+        }
+      }
+      throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    }
   }
 
   public enum DecisionInstanceState {
@@ -41,5 +49,14 @@ public record DecisionInstanceEntity(
     FAILED,
     UNKNOWN,
     UNSPECIFIED;
+
+    public static DecisionInstanceState fromValue(final String value) {
+      for (final DecisionInstanceState b : DecisionInstanceState.values()) {
+        if (b.name().equals(value)) {
+          return b;
+        }
+      }
+      throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    }
   }
 }

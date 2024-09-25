@@ -25,7 +25,9 @@ public final record UserTaskFilter(
     List<Long> processDefinitionKeys,
     List<String> candidateUsers,
     List<String> candidateGroups,
-    List<String> tenantIds)
+    List<String> tenantIds,
+    List<VariableValueFilter> variableFilters,
+    String type)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
@@ -39,6 +41,8 @@ public final record UserTaskFilter(
     private List<String> candidateUsers;
     private List<String> candidateGroups;
     private List<String> tenantIds;
+    private List<VariableValueFilter> variableFilters;
+    private String type;
 
     public Builder keys(final Long... values) {
       return keys(collectValuesAsList(values));
@@ -130,6 +134,16 @@ public final record UserTaskFilter(
       return this;
     }
 
+    public Builder variable(final List<VariableValueFilter> values) {
+      variableFilters = addValuesToList(variableFilters, values);
+      return this;
+    }
+
+    public Builder type(final String value) {
+      type = value;
+      return this;
+    }
+
     @Override
     public UserTaskFilter build() {
       return new UserTaskFilter(
@@ -142,7 +156,9 @@ public final record UserTaskFilter(
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUsers, Collections.emptyList()),
           Objects.requireNonNullElse(candidateGroups, Collections.emptyList()),
-          Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
+          Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
+          Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
+          type);
     }
   }
 }

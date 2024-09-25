@@ -179,7 +179,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
             className={styles.fullWidthAndHeight}
             data-testid={`task-${taskId}`}
             gap={3}
-            ref={ref}
+            ref={ref as React.LegacyRef<React.ReactNode>}
           >
             <div className={cn(styles.flex, styles.flexColumn)}>
               <span className={styles.name}>{name}</span>

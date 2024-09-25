@@ -258,7 +258,7 @@ public final class ResponseMapper {
       final Map<String, Object> variables) {
     final var response =
         new CreateProcessInstanceResponse()
-            .processKey(processDefinitionKey)
+            .processDefinitionKey(processDefinitionKey)
             .bpmnProcessId(bpmnProcessId)
             .version(version)
             .processInstanceKey(processInstanceKey)
@@ -330,7 +330,7 @@ public final class ResponseMapper {
             matchedRuleValue ->
                 new MatchedDecisionRuleItem()
                     .ruleId(matchedRuleValue.getRuleId())
-                    .ruleIndex(String.valueOf(matchedRuleValue.getRuleIndex()))
+                    .ruleIndex(matchedRuleValue.getRuleIndex())
                     .evaluatedOutputs(
                         buildEvaluatedOutputs(matchedRuleValue.getEvaluatedOutputs())))
         .toList();

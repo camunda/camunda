@@ -38,13 +38,13 @@ public final class SortOptionBuilders {
     return new DecisionInstanceSort.Builder();
   }
 
-  public static FlowNodeInstanceSort.Builder flownodeInstance() {
+  public static FlowNodeInstanceSort.Builder flowNodeInstance() {
     return new FlowNodeInstanceSort.Builder();
   }
 
-  public static FlowNodeInstanceSort flownodeInstance(
+  public static FlowNodeInstanceSort flowNodeInstance(
       final Function<FlowNodeInstanceSort.Builder, ObjectBuilder<FlowNodeInstanceSort>> fn) {
-    return fn.apply(flownodeInstance()).build();
+    return fn.apply(flowNodeInstance()).build();
   }
 
   public static UserSort.Builder user() {
@@ -88,6 +88,14 @@ public final class SortOptionBuilders {
 
   public static UserSort user(final Function<UserSort.Builder, ObjectBuilder<UserSort>> fn) {
     return fn.apply(user()).build();
+  }
+
+  public static FormSort.Builder form() {
+    return new FormSort.Builder();
+  }
+
+  public static FormSort form(final Function<FormSort.Builder, ObjectBuilder<FormSort>> fn) {
+    return fn.apply(form()).build();
   }
 
   public static IncidentSort.Builder incident() {

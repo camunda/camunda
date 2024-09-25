@@ -9,11 +9,13 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.entities.DecisionRequirementsEntity;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.filter.DecisionRequirementsFilter;
 import io.camunda.service.search.query.DecisionRequirementsQuery;
 import io.camunda.service.search.query.SearchQueryResult;
@@ -54,7 +56,6 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
               ]
           }
       }""";
-
   static final SearchQueryResult<DecisionRequirementsEntity> SEARCH_QUERY_RESULT =
       new Builder<DecisionRequirementsEntity>()
           .total(1L)
@@ -64,12 +65,36 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
 
   static final String DECISION_REQUIREMENTS_SEARCH_URL = "/v2/decision-requirements/search";
 
+  private static final Long VALID_DECISION_REQUIREMENTS_KEY = 1L;
+  private static final Long INVALID_DECISION_REQUIREMENTS_KEY = 999L;
+
+  private static final String DECISION_REQUIREMENTS_ITEM_JSON =
+      """
+      {
+        "tenantId": "t",
+        "decisionRequirementsKey": 1,
+        "dmnDecisionRequirementsName": "name",
+        "version": 1,
+        "dmnDecisionRequirementsId": "id",
+        "resourceName": "rN"
+      }
+      """;
   @MockBean DecisionRequirementsServices decisionRequirementsServices;
 
   @BeforeEach
   void setupServices() {
     when(decisionRequirementsServices.withAuthentication(any(Authentication.class)))
         .thenReturn(decisionRequirementsServices);
+
+    when(decisionRequirementsServices.getByKey(VALID_DECISION_REQUIREMENTS_KEY))
+        .thenReturn(new DecisionRequirementsEntity("t", 1L, "id", "name", 1, "rN", null));
+
+    when(decisionRequirementsServices.getByKey(INVALID_DECISION_REQUIREMENTS_KEY))
+        .thenThrow(
+            new NotFoundException(
+                "Decision requirements with key "
+                    + INVALID_DECISION_REQUIREMENTS_KEY
+                    + " not found"));
   }
 
   @Test
@@ -273,5 +298,72 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .json(expectedResponse);
 
     verify(decisionRequirementsServices, never()).search(any(DecisionRequirementsQuery.class));
+  }
+
+  @Test
+  public void shouldReturnDecisionRequirementsForValidKey() throws Exception {
+    webClient
+        .get()
+        .uri("/v2/decision-requirements/{decisionRequirementsKey}", VALID_DECISION_REQUIREMENTS_KEY)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(DECISION_REQUIREMENTS_ITEM_JSON);
+
+    verify(decisionRequirementsServices, times(1)).getByKey(VALID_DECISION_REQUIREMENTS_KEY);
+  }
+
+  @Test
+  public void shouldReturn404ForInvalidDecisionRequirementsKey() throws Exception {
+    webClient
+        .get()
+        .uri(
+            "/v2/decision-requirements/{decisionRequirementsKey}",
+            INVALID_DECISION_REQUIREMENTS_KEY)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "NOT_FOUND",
+              "status": 404,
+              "detail": "Decision requirements with key 999 not found"
+            }
+            """);
+
+    verify(decisionRequirementsServices, times(1)).getByKey(INVALID_DECISION_REQUIREMENTS_KEY);
+  }
+
+  @Test
+  public void shouldReturn500OnUnexpectedException() throws Exception {
+    when(decisionRequirementsServices.getByKey(VALID_DECISION_REQUIREMENTS_KEY))
+        .thenThrow(new RuntimeException("Unexpected error"));
+
+    webClient
+        .get()
+        .uri("/v2/decision-requirements/{decisionRequirementsKey}", VALID_DECISION_REQUIREMENTS_KEY)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .is5xxServerError()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "java.lang.RuntimeException",
+              "status": 500,
+              "detail": "Unexpected error occurred during the request processing: Unexpected error",
+              "instance": "/v2/decision-requirements/1"
+            }
+            """);
+
+    verify(decisionRequirementsServices, times(1)).getByKey(VALID_DECISION_REQUIREMENTS_KEY);
   }
 }

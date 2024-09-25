@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.client.flownodeinstance;
 
+import static io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest.StateEnum.ACTIVE;
+import static io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest.TypeEnum.SERVICE_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest;
@@ -44,12 +46,12 @@ public class FlownodeInstanceTest extends ClientRestTest {
         .filter(
             f ->
                 f.flowNodeInstanceKey(1L)
-                    .type("type")
-                    .state("state")
+                    .type("SERVICE_TASK")
+                    .state("ACTIVE")
                     .processDefinitionKey(2L)
+                    .bpmnProcessId("complexProcess")
                     .processInstanceKey(3L)
                     .flowNodeId("flowNodeId")
-                    .flowNodeName("flowNodeName")
                     .incident(true)
                     .incidentKey(4L)
                     .treePath("processInstanceKey/flowNodeId")
@@ -61,12 +63,12 @@ public class FlownodeInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(FlowNodeInstanceSearchQueryRequest.class);
     final FlowNodeInstanceFilterRequest filter = request.getFilter();
     assertThat(filter.getFlowNodeInstanceKey()).isEqualTo(1L);
-    assertThat(filter.getType()).isEqualTo("type");
-    assertThat(filter.getState()).isEqualTo("state");
+    assertThat(filter.getType()).isEqualTo(SERVICE_TASK);
+    assertThat(filter.getState()).isEqualTo(ACTIVE);
     assertThat(filter.getProcessDefinitionKey()).isEqualTo(2L);
+    assertThat(filter.getBpmnProcessId()).isEqualTo("complexProcess");
     assertThat(filter.getProcessInstanceKey()).isEqualTo(3L);
     assertThat(filter.getFlowNodeId()).isEqualTo("flowNodeId");
-    assertThat(filter.getFlowNodeName()).isEqualTo("flowNodeName");
     assertThat(filter.getIncident()).isTrue();
     assertThat(filter.getIncidentKey()).isEqualTo(4L);
     assertThat(filter.getTreePath()).isEqualTo("processInstanceKey/flowNodeId");
@@ -85,7 +87,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
                     .asc()
                     .processInstanceKey()
                     .asc()
-                    .flowNodeName()
+                    .bpmnProcessId()
                     .asc()
                     .type()
                     .asc()
@@ -109,7 +111,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
     assertThat(sorts.size()).isEqualTo(9);
     assertSort(sorts.get(0), "processDefinitionKey", "asc");
     assertSort(sorts.get(1), "processInstanceKey", "asc");
-    assertSort(sorts.get(2), "flowNodeName", "asc");
+    assertSort(sorts.get(2), "bpmnProcessId", "asc");
     assertSort(sorts.get(3), "type", "asc");
     assertSort(sorts.get(4), "state", "asc");
     assertSort(sorts.get(5), "startDate", "desc");

@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
-import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.util.ConversionUtils;
+import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
 
 public class SequenceFlowDto implements CreatableFromEntity<SequenceFlowDto, SequenceFlowEntity> {
 
@@ -20,7 +20,7 @@ public class SequenceFlowDto implements CreatableFromEntity<SequenceFlowDto, Seq
     return processInstanceId;
   }
 
-  public SequenceFlowDto setProcessInstanceId(String processInstanceId) {
+  public SequenceFlowDto setProcessInstanceId(final String processInstanceId) {
     this.processInstanceId = processInstanceId;
     return this;
   }
@@ -29,14 +29,14 @@ public class SequenceFlowDto implements CreatableFromEntity<SequenceFlowDto, Seq
     return activityId;
   }
 
-  public SequenceFlowDto setActivityId(String activityId) {
+  public SequenceFlowDto setActivityId(final String activityId) {
     this.activityId = activityId;
     return this;
   }
 
   @Override
   public SequenceFlowDto fillFrom(final SequenceFlowEntity entity) {
-    return this.setProcessInstanceId(ConversionUtils.toStringOrNull(entity.getProcessInstanceKey()))
+    return setProcessInstanceId(ConversionUtils.toStringOrNull(entity.getProcessInstanceKey()))
         .setActivityId(entity.getActivityId());
   }
 
@@ -48,7 +48,7 @@ public class SequenceFlowDto implements CreatableFromEntity<SequenceFlowDto, Seq
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

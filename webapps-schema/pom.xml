@@ -19,6 +19,18 @@
   <artifactId>webapps-schema</artifactId>
   <name>Webapps Schema</name>
 
-  <dependencies></dependencies>
+  <dependencies>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+
+  </dependencies>
 
 </project>

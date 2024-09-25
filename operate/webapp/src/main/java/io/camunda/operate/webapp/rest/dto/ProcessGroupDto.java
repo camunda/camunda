@@ -7,9 +7,9 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
-import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -34,13 +34,13 @@ public class ProcessGroupDto {
   private List<ProcessDto> processes;
 
   public static List<ProcessGroupDto> createFrom(
-      Map<ProcessStore.ProcessKey, List<ProcessEntity>> processesGrouped) {
+      final Map<ProcessStore.ProcessKey, List<ProcessEntity>> processesGrouped) {
     return createFrom(processesGrouped, null);
   }
 
   public static List<ProcessGroupDto> createFrom(
-      Map<ProcessStore.ProcessKey, List<ProcessEntity>> processesGrouped,
-      PermissionsService permissionsService) {
+      final Map<ProcessStore.ProcessKey, List<ProcessEntity>> processesGrouped,
+      final PermissionsService permissionsService) {
     final List<ProcessGroupDto> groups = new ArrayList<>();
     processesGrouped.values().stream()
         .forEach(
@@ -66,7 +66,7 @@ public class ProcessGroupDto {
     return bpmnProcessId;
   }
 
-  public void setBpmnProcessId(String bpmnProcessId) {
+  public void setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
   }
 
@@ -74,7 +74,7 @@ public class ProcessGroupDto {
     return tenantId;
   }
 
-  public ProcessGroupDto setTenantId(String tenantId) {
+  public ProcessGroupDto setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -83,7 +83,7 @@ public class ProcessGroupDto {
     return name;
   }
 
-  public void setName(String name) {
+  public void setName(final String name) {
     this.name = name;
   }
 
@@ -91,7 +91,7 @@ public class ProcessGroupDto {
     return permissions;
   }
 
-  public void setPermissions(Set<String> permissions) {
+  public void setPermissions(final Set<String> permissions) {
     this.permissions = permissions;
   }
 
@@ -99,7 +99,7 @@ public class ProcessGroupDto {
     return processes;
   }
 
-  public void setProcesses(List<ProcessDto> processes) {
+  public void setProcesses(final List<ProcessDto> processes) {
     this.processes = processes;
   }
 
@@ -109,7 +109,7 @@ public class ProcessGroupDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -126,7 +126,7 @@ public class ProcessGroupDto {
 
   public static class ProcessGroupComparator implements Comparator<ProcessGroupDto> {
     @Override
-    public int compare(ProcessGroupDto o1, ProcessGroupDto o2) {
+    public int compare(final ProcessGroupDto o1, final ProcessGroupDto o2) {
 
       // when sorting "name" field has higher priority than "bpmnProcessId" field
       if (o1.getName() == null && o2.getName() == null) {

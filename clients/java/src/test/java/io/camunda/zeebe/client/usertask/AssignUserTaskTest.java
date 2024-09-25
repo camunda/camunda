@@ -98,7 +98,7 @@ public final class AssignUserTaskTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(() -> client.newUserTaskAssignCommand(123L).send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
 }

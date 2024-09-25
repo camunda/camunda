@@ -43,25 +43,20 @@ public class SearchProcessInstanceTest extends ClientRestTest {
         .newProcessInstanceQuery()
         .filter(
             f ->
-                f.running(true)
-                    .active(false)
-                    .incidents(true)
-                    .finished(false)
-                    .completed(false)
-                    .canceled(true)
-                    .retriesLeft(true)
-                    .errorMessage("error")
-                    .activityId("activity")
+                f.key(123L)
+                    .bpmnProcessId("bpmnProcessId")
+                    .processName("Demo process")
+                    .processVersion(7)
+                    .processVersionTag("v7")
+                    .processDefinitionKey(15L)
+                    .rootProcessInstanceKey(20L)
+                    .parentProcessInstanceKey(25L)
+                    .parentFlowNodeInstanceKey(30L)
+                    .treePath("PI_1")
                     .startDate("startDate")
                     .endDate("endDate")
-                    .bpmnProcessId("bpmnProcessId")
-                    .processDefinitionVersion(3)
-                    .variable(
-                        new ProcessInstanceVariableFilterRequest()
-                            .name("varName")
-                            .addValuesItem("val1"))
-                    .batchOperationId("batchOperationId")
-                    .parentProcessInstanceKey(1234L)
+                    .state("ACTIVE")
+                    .incident(true)
                     .tenantId("tenant"))
         .send()
         .join();
@@ -70,24 +65,20 @@ public class SearchProcessInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
     final ProcessInstanceFilterRequest filter = request.getFilter();
     assertThat(filter).isNotNull();
-    assertThat(filter.getRunning()).isEqualTo(true);
-    assertThat(filter.getActive()).isEqualTo(false);
-    assertThat(filter.getIncidents()).isEqualTo(true);
-    assertThat(filter.getFinished()).isEqualTo(false);
-    assertThat(filter.getCompleted()).isEqualTo(false);
-    assertThat(filter.getCanceled()).isEqualTo(true);
-    assertThat(filter.getRetriesLeft()).isEqualTo(true);
-    assertThat(filter.getErrorMessage()).isEqualTo("error");
-    assertThat(filter.getActivityId()).isEqualTo("activity");
+    assertThat(filter.getKey()).isEqualTo(123L);
+    assertThat(filter.getBpmnProcessId()).isEqualTo("bpmnProcessId");
+    assertThat(filter.getProcessName()).isEqualTo("Demo process");
+    assertThat(filter.getProcessVersion()).isEqualTo(7);
+    assertThat(filter.getProcessVersionTag()).isEqualTo("v7");
+    assertThat(filter.getProcessDefinitionKey()).isEqualTo(15L);
+    assertThat(filter.getRootProcessInstanceKey()).isEqualTo(20L);
+    assertThat(filter.getParentProcessInstanceKey()).isEqualTo(25L);
+    assertThat(filter.getParentFlowNodeInstanceKey()).isEqualTo(30L);
+    assertThat(filter.getTreePath()).isEqualTo("PI_1");
     assertThat(filter.getStartDate()).isEqualTo("startDate");
     assertThat(filter.getEndDate()).isEqualTo("endDate");
-    assertThat(filter.getBpmnProcessId()).isEqualTo("bpmnProcessId");
-    assertThat(filter.getProcessDefinitionVersion()).isEqualTo(3);
-    assertThat(filter.getVariable()).isNotNull();
-    assertThat(filter.getVariable().getName()).isEqualTo("varName");
-    assertThat(filter.getVariable().getValues()).containsExactlyInAnyOrder("val1");
-    assertThat(filter.getBatchOperationId()).isEqualTo("batchOperationId");
-    assertThat(filter.getParentProcessInstanceKey()).isEqualTo(1234L);
+    assertThat(filter.getState()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
+    assertThat(filter.getIncident()).isEqualTo(true);
     assertThat(filter.getTenantId()).isEqualTo("tenant");
   }
 
@@ -100,16 +91,24 @@ public class SearchProcessInstanceTest extends ClientRestTest {
             s ->
                 s.key()
                     .asc()
+                    .bpmnProcessId()
+                    .desc()
                     .processName()
                     .asc()
                     .processVersion()
                     .asc()
-                    .bpmnProcessId()
+                    .processVersionTag()
+                    .desc()
+                    .processDefinitionKey()
+                    .desc()
+                    .rootProcessInstanceKey()
                     .asc()
                     .parentProcessInstanceKey()
                     .asc()
                     .parentFlowNodeInstanceKey()
                     .asc()
+                    .treePath()
+                    .desc()
                     .startDate()
                     .asc()
                     .endDate()
@@ -118,13 +117,7 @@ public class SearchProcessInstanceTest extends ClientRestTest {
                     .asc()
                     .incident()
                     .desc()
-                    .hasActiveOperation()
-                    .desc()
-                    .processDefinitionKey()
-                    .desc()
                     .tenantId()
-                    .asc()
-                    .rootInstanceId()
                     .asc())
         .send()
         .join();
@@ -133,21 +126,22 @@ public class SearchProcessInstanceTest extends ClientRestTest {
     final ProcessInstanceSearchQueryRequest request =
         gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
     final List<SearchQuerySortRequest> sorts = request.getSort();
-    assertThat(sorts).hasSize(14);
+    assertThat(sorts).hasSize(15);
     assertSort(sorts.get(0), "key", "asc");
-    assertSort(sorts.get(1), "processName", "asc");
-    assertSort(sorts.get(2), "processVersion", "asc");
-    assertSort(sorts.get(3), "bpmnProcessId", "asc");
-    assertSort(sorts.get(4), "parentProcessInstanceKey", "asc");
-    assertSort(sorts.get(5), "parentFlowNodeInstanceKey", "asc");
-    assertSort(sorts.get(6), "startDate", "asc");
-    assertSort(sorts.get(7), "endDate", "asc");
-    assertSort(sorts.get(8), "state", "asc");
-    assertSort(sorts.get(9), "incident", "desc");
-    assertSort(sorts.get(10), "hasActiveOperation", "desc");
-    assertSort(sorts.get(11), "processDefinitionKey", "desc");
-    assertSort(sorts.get(12), "tenantId", "asc");
-    assertSort(sorts.get(13), "rootInstanceId", "asc");
+    assertSort(sorts.get(1), "bpmnProcessId", "desc");
+    assertSort(sorts.get(2), "processName", "asc");
+    assertSort(sorts.get(3), "processVersion", "asc");
+    assertSort(sorts.get(4), "processVersionTag", "desc");
+    assertSort(sorts.get(5), "processDefinitionKey", "desc");
+    assertSort(sorts.get(6), "rootProcessInstanceKey", "asc");
+    assertSort(sorts.get(7), "parentProcessInstanceKey", "asc");
+    assertSort(sorts.get(8), "parentFlowNodeInstanceKey", "asc");
+    assertSort(sorts.get(9), "treePath", "desc");
+    assertSort(sorts.get(10), "startDate", "asc");
+    assertSort(sorts.get(11), "endDate", "asc");
+    assertSort(sorts.get(12), "state", "asc");
+    assertSort(sorts.get(13), "incident", "desc");
+    assertSort(sorts.get(14), "tenantId", "asc");
   }
 
   @Test

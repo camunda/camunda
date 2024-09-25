@@ -25,18 +25,9 @@ public class ContainerFactory {
     return new ElasticsearchContainer(asDockerImageName(imageName, imageVersion));
   }
 
-  public ZeebeContainer createZeebeContainer(final String imageName, final String imageVersion) {
-    return new ZeebeContainer(asDockerImageName(imageName, imageVersion));
-  }
-
-  public OperateContainer createOperateContainer(
+  public CamundaContainer createCamundaContainer(
       final String imageName, final String imageVersion) {
-    return new OperateContainer(asDockerImageName(imageName, imageVersion));
-  }
-
-  public TasklistContainer createTasklistContainer(
-      final String imageName, final String imageVersion) {
-    return new TasklistContainer(asDockerImageName(imageName, imageVersion));
+    return new CamundaContainer(asDockerImageName(imageName, imageVersion));
   }
 
   public ConnectorsContainer createConnectorsContainer(

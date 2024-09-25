@@ -84,9 +84,10 @@ jobs:
       - name: Start Test
         shell: bash
         run: |
-          chmod +x clients/go/cmd/zbctl/dist/zbctl
+          curl -LO https://github.com/camunda/camunda/releases/download/8.5.7/zbctl
+          chmod +x zbctl
           variables=$(echo "${{ inputs.variables }}" | envsubst)
-          clients/go/cmd/zbctl/dist/zbctl create instance ${{ inputs.processId }} --variables "$variables"
+          ./zbctl create instance ${{ inputs.processId }} --variables "$variables"
         env:
           IMAGE: ${{ steps.build-zeebe-docker.outputs.image }}
           ZEEBE_CLIENT_SECRET: ${{ steps.secrets.outputs.TESTBENCH_PROD_CLIENT_SECRET }}

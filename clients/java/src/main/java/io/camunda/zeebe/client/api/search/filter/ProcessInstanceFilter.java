@@ -16,36 +16,38 @@
 package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 
 public interface ProcessInstanceFilter extends SearchRequestFilter {
 
-  /** Filter by running */
-  ProcessInstanceFilter running(final Boolean running);
+  /** Filter by key */
+  ProcessInstanceFilter key(final Long key);
 
-  /** Filter by active */
-  ProcessInstanceFilter active(final Boolean active);
+  /** Filter by bpmnProcessId */
+  ProcessInstanceFilter bpmnProcessId(final String bpmnProcessId);
 
-  /** Filter by incidents */
-  ProcessInstanceFilter incidents(final Boolean incidents);
+  /** Filter by processName */
+  ProcessInstanceFilter processName(final String processName);
 
-  /** Filter by finished */
-  ProcessInstanceFilter finished(final Boolean finished);
+  /** Filter by processVersion */
+  ProcessInstanceFilter processVersion(final Integer processVersion);
 
-  /** Filter by completed */
-  ProcessInstanceFilter completed(final Boolean completed);
+  /** Filter by processVersionTag */
+  ProcessInstanceFilter processVersionTag(final String processVersionTag);
 
-  /** Filter by canceled */
-  ProcessInstanceFilter canceled(final Boolean canceled);
+  /** Filter by processDefinitionKey */
+  ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey);
 
-  /** Filter by retriesLeft */
-  ProcessInstanceFilter retriesLeft(final Boolean retriesLeft);
+  /** Filter by rootProcessInstanceKey */
+  ProcessInstanceFilter rootProcessInstanceKey(final Long rootProcessInstanceKey);
 
-  /** Filter by errorMessage */
-  ProcessInstanceFilter errorMessage(final String errorMessage);
+  /** Filter by parentProcessInstanceKey */
+  ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey);
 
-  /** Filter by activityId */
-  ProcessInstanceFilter activityId(final String activityId);
+  /** Filter by parentFlowNodeInstanceKey */
+  ProcessInstanceFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey);
+
+  /** Filter by treePath */
+  ProcessInstanceFilter treePath(final String treePath);
 
   /** Filter by startDate */
   ProcessInstanceFilter startDate(final String startDate);
@@ -53,20 +55,11 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by endDate */
   ProcessInstanceFilter endDate(final String endDate);
 
-  /** Filter by bpmnProcessId */
-  ProcessInstanceFilter bpmnProcessId(final String bpmnProcessId);
+  /** Filter by state */
+  ProcessInstanceFilter state(final String state);
 
-  /** Filter by processDefinitionVersion */
-  ProcessInstanceFilter processDefinitionVersion(final Integer processDefinitionVersion);
-
-  /** Filter by variable */
-  ProcessInstanceFilter variable(final ProcessInstanceVariableFilterRequest variable);
-
-  /** Filter by batchOperationId */
-  ProcessInstanceFilter batchOperationId(final String batchOperationId);
-
-  /** Filter by parentProcessInstanceKey */
-  ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey);
+  /** Filter by incident */
+  ProcessInstanceFilter incident(final Boolean incident);
 
   /** Filter by tenantId */
   ProcessInstanceFilter tenantId(final String tenantId);

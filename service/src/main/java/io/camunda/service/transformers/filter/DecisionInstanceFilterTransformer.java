@@ -14,7 +14,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.service.entities.DecisionInstanceEntity.DecisionType;
+import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceType;
 import io.camunda.service.search.filter.DateValueFilter;
 import io.camunda.service.search.filter.DecisionInstanceFilter;
 import io.camunda.service.transformers.ServiceTransformers;
@@ -32,7 +32,7 @@ public final class DecisionInstanceFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final DecisionInstanceFilter filter) {
-    final var keysQuery = getKeysQuery(filter.keys());
+    final var keysQuery = getKeysQuery(filter.decisionInstanceKeys());
     final var statesQuery = getStatesQuery(filter.states());
     final var evaluationDateQuery = getEvaluationDateQuery(filter.evaluationDate());
     final var evaluationFailuresQuery = getEvaluationFailuresQuery(filter.evaluationFailures());
@@ -96,7 +96,7 @@ public final class DecisionInstanceFilterTransformer
 
   private SearchQuery getDecisionKeysQuery(final List<Long> decisionKeys) {
     return stringTerms(
-        "decisionId",
+        "decisionDefinitionId",
         decisionKeys != null ? decisionKeys.stream().map(String::valueOf).toList() : null);
   }
 
@@ -112,7 +112,7 @@ public final class DecisionInstanceFilterTransformer
     return intTerms("decisionVersion", decisionVersions);
   }
 
-  private SearchQuery getDecisionTypesQuery(final List<DecisionType> decisionTypes) {
+  private SearchQuery getDecisionTypesQuery(final List<DecisionInstanceType> decisionTypes) {
     return stringTerms(
         "decisionType",
         decisionTypes != null ? decisionTypes.stream().map(Enum::name).toList() : null);

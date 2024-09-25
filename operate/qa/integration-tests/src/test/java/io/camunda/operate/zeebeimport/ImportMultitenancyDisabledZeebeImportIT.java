@@ -11,7 +11,6 @@ import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInst
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.TestApplication;
@@ -21,6 +20,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.security.tenant.TenantService;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;

@@ -8,9 +8,6 @@
 package io.camunda.operate.webapp.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.EventEntity;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.webapp.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.reader.EventReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
@@ -21,6 +18,9 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadata;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.ServiceTaskInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.UserTaskInstanceMetadataDto;
+import io.camunda.webapps.schema.entities.operate.EventEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Map;

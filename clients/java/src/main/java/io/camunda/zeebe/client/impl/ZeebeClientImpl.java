@@ -56,6 +56,7 @@ import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
+import io.camunda.zeebe.client.api.search.query.DecisionInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionRequirementsQuery;
 import io.camunda.zeebe.client.api.search.query.FlownodeInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.IncidentQuery;
@@ -93,6 +94,7 @@ import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpClientFactory;
 import io.camunda.zeebe.client.impl.search.query.DecisionDefinitionQueryImpl;
+import io.camunda.zeebe.client.impl.search.query.DecisionInstanceQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.DecisionRequirementsQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.FlowNodeInstanceQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.IncidentQueryImpl;
@@ -363,7 +365,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public CreateProcessInstanceCommandStep1 newCreateInstanceCommand() {
     return new CreateProcessInstanceCommandImpl(
-        asyncStub, jsonMapper, config, credentialsProvider::shouldRetryRequest);
+        asyncStub,
+        jsonMapper,
+        config,
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config.preferRestOverGrpc());
   }
 
   @Override
@@ -373,8 +380,9 @@ public final class ZeebeClientImpl implements ZeebeClient {
         processInstanceKey,
         jsonMapper,
         asyncStub,
-        config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config);
   }
 
   @Override
@@ -383,8 +391,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new MigrateProcessInstanceCommandImpl(
         processInstanceKey,
         asyncStub,
-        config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config,
+        jsonMapper);
   }
 
   @Override
@@ -392,8 +402,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new CancelProcessInstanceCommandImpl(
         asyncStub,
         processInstanceKey,
-        config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config,
+        jsonMapper);
   }
 
   @Override
@@ -403,19 +415,26 @@ public final class ZeebeClientImpl implements ZeebeClient {
         jsonMapper,
         elementInstanceKey,
         config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config.preferRestOverGrpc());
   }
 
   @Override
   public EvaluateDecisionCommandStep1 newEvaluateDecisionCommand() {
     return new EvaluateDecisionCommandImpl(
-        asyncStub, jsonMapper, config, credentialsProvider::shouldRetryRequest);
+        asyncStub, jsonMapper, config, credentialsProvider::shouldRetryRequest, httpClient);
   }
 
   @Override
   public PublishMessageCommandStep1 newPublishMessageCommand() {
     return new PublishMessageCommandImpl(
-        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+        asyncStub,
+        config,
+        jsonMapper,
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config.preferRestOverGrpc());
   }
 
   @Override
@@ -426,7 +445,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public BroadcastSignalCommandStep1 newBroadcastSignalCommand() {
     return new BroadcastSignalCommandImpl(
-        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest, httpClient);
   }
 
   @Override
@@ -485,7 +504,9 @@ public final class ZeebeClientImpl implements ZeebeClient {
         resourceKey,
         asyncStub,
         credentialsProvider::shouldRetryRequest,
-        config.getDefaultRequestTimeout());
+        httpClient,
+        config,
+        jsonMapper);
   }
 
   @Override
@@ -557,6 +578,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public DecisionDefinitionGetXmlRequest newDecisionDefinitionGetXmlRequest(
       final long decisionKey) {
     return new DecisionDefinitionGetXmlRequestImpl(httpClient, decisionKey);
+  }
+
+  @Override
+  public DecisionInstanceQuery newDecisionInstanceQuery() {
+    return new DecisionInstanceQueryImpl(httpClient, jsonMapper);
   }
 
   @Override

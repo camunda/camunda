@@ -12,11 +12,11 @@ import static io.camunda.operate.entities.OperationType.DELETE_PROCESS_INSTANCE;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -47,13 +47,13 @@ public class DeleteProcessInstanceHandler extends AbstractOperationHandler
   }
 
   @Override
-  protected boolean canForceFailOperation(final OperationEntity operation) {
-    return operation.getState().equals(OperationState.SENT);
+  public Set<OperationType> getTypes() {
+    return Set.of(DELETE_PROCESS_INSTANCE);
   }
 
   @Override
-  public Set<OperationType> getTypes() {
-    return Set.of(DELETE_PROCESS_INSTANCE);
+  protected boolean canForceFailOperation(final OperationEntity operation) {
+    return operation.getState().equals(OperationState.SENT);
   }
 
   private void completeOperation(final OperationEntity operation) throws PersistenceException {

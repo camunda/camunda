@@ -15,7 +15,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.ProcessIndex;
@@ -23,6 +22,7 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -47,7 +47,8 @@ public class ElasticsearchProcessStoreTest {
 
   @Mock private ListViewTemplate listViewTemplate;
 
-  private List<ProcessInstanceDependant> processInstanceDependantTemplates = new LinkedList<>();
+  private final List<ProcessInstanceDependant> processInstanceDependantTemplates =
+      new LinkedList<>();
 
   @Mock private ObjectMapper objectMapper;
 

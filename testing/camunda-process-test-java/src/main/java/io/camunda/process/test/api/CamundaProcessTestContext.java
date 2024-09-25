@@ -42,14 +42,14 @@ public interface CamundaProcessTestContext {
   ZeebeClient createClient(final Consumer<ZeebeClientBuilder> modifier);
 
   /**
-   * @return the URI of Zeebe's gRPC API address
+   * @return the URI of Camunda's gRPC API address
    */
-  URI getZeebeGrpcAddress();
+  URI getCamundaGrpcAddress();
 
   /**
-   * @return the URI of Zeebe's REST API address
+   * @return the URI of Camunda's REST API address
    */
-  URI getZeebeRestAddress();
+  URI getCamundaRestAddress();
 
   /**
    * @return the URI of the connectors REST API address

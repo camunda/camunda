@@ -7,10 +7,10 @@
  */
 package io.camunda.operate.webapp.zeebe.operation.process.modify;
 
-import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import java.util.Iterator;
 import java.util.List;

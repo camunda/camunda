@@ -38,8 +38,13 @@ public final class FilterBuilders {
     return new DecisionInstanceFilter.Builder();
   }
 
-  public static FlowNodeInstanceFilter.Builder flownodeInstance() {
+  public static FlowNodeInstanceFilter.Builder flowNodeInstance() {
     return new FlowNodeInstanceFilter.Builder();
+  }
+
+  public static FlowNodeInstanceFilter flowNodeInstance(
+      final Function<FlowNodeInstanceFilter.Builder, ObjectBuilder<FlowNodeInstanceFilter>> fn) {
+    return fn.apply(flowNodeInstance()).build();
   }
 
   public static UserFilter.Builder user() {
@@ -136,5 +141,13 @@ public final class FilterBuilders {
   public static IncidentFilter incident(
       final Function<IncidentFilter.Builder, ObjectBuilder<IncidentFilter>> fn) {
     return fn.apply(incident()).build();
+  }
+
+  public static FormFilter.Builder form() {
+    return new FormFilter.Builder();
+  }
+
+  public static FormFilter form(final Function<FormFilter.Builder, ObjectBuilder<FormFilter>> fn) {
+    return fn.apply(form()).build();
   }
 }

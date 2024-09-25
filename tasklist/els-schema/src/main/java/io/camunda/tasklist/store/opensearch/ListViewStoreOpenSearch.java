@@ -9,6 +9,7 @@ package io.camunda.tasklist.store.opensearch;
 
 import static io.camunda.tasklist.util.OpenSearchUtil.UPDATE_RETRY_COUNT;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.listview.VariableListViewEntity;
@@ -23,6 +24,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Logger;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
@@ -47,6 +49,10 @@ public class ListViewStoreOpenSearch implements ListViewStore {
   private OpenSearchClient osClient;
 
   @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
+
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
   public void removeVariableByFlowNodeInstanceId(final String flowNodeInstanceId) {
@@ -123,11 +129,12 @@ public class ListViewStoreOpenSearch implements ListViewStore {
       OpenSearchUtil.scrollWith(
           searchRequest,
           osClient,
-          hits -> {
-            for (final Hit<VariableListViewEntity> hit : hits) {
-              variableList.add(hit.source());
-            }
-          },
+          hits ->
+              hits.stream()
+                  .map(Hit::source)
+                  .filter(Objects::nonNull)
+                  .map(v -> objectMapper.convertValue(v, VariableListViewEntity.class))
+                  .forEach(variableList::add),
           null, // No need for an aggregation processor
           VariableListViewEntity.class,
           null // No need for processing first response metadata

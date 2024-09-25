@@ -209,4 +209,14 @@ public final class DecisionRequirementsFilterTest {
     final DecisionRequirementsEntity item = searchQueryResult.items().get(0);
     assertThat(item.key()).isEqualTo(124L);
   }
+
+  @Test
+  public void shouldReturnDecisionRequirementByKey() {
+    // when
+    final var searchQueryResult = services.getByKey(124L);
+
+    // then
+    final DecisionRequirementsEntity item = searchQueryResult;
+    assertThat(item.key()).isEqualTo(124L);
+  }
 }

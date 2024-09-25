@@ -163,7 +163,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final IndexDescriptor indexDescriptor, final Set<IndexMappingProperty> newProperties) {
 
     return new PutMappingRequest.Builder()
-        .index(indexDescriptor.getIndexName())
+        .index(indexDescriptor.getFullQualifiedName())
         .withJson(IndexMappingProperty.toPropertiesJson(newProperties, MAPPER))
         .build();
   }

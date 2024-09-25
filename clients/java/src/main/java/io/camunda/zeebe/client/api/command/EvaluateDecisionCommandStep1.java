@@ -19,7 +19,8 @@ import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import java.io.InputStream;
 import java.util.Map;
 
-public interface EvaluateDecisionCommandStep1 {
+public interface EvaluateDecisionCommandStep1
+    extends CommandWithCommunicationApiStep<EvaluateDecisionCommandStep1> {
 
   /**
    * Set the id of the decision to evaluate. This is the static id of the decision in the DMN XML

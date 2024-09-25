@@ -84,7 +84,7 @@ public class SnapshotRepositoryES implements SnapshotRepository {
             }
           } else {
             final SnapshotInfo snapshotInfo = v.snapshot();
-            switch (SnapshotState.fromValue(snapshotInfo.state())) {
+            switch (SnapshotState.valueOf(snapshotInfo.state())) {
               // should not be null as waitForCompletion is true on snapshot request
               case SUCCESS:
                 log.info("Successfully taken snapshot [{}].", snapshotInfo.snapshot());

@@ -7,19 +7,31 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.zeebe.transport.stream.impl.messages.ErrorCode.NOT_FOUND;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.document.api.DocumentError.DocumentNotFound;
 import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.OperationNotSupported;
 import io.camunda.service.CamundaServiceException;
 import io.camunda.service.DocumentServices.DocumentException;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
+import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.msgpack.spec.MsgpackException;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.netty.channel.ConnectTimeoutException;
+import java.net.ConnectException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +83,9 @@ public class RestErrorMapper {
       return null;
     }
     return switch (error) {
+      case final NotFoundException nfe:
+        yield createProblemDetail(
+            HttpStatus.NOT_FOUND, nfe.getMessage(), RejectionType.NOT_FOUND.name());
       case final CamundaServiceException cse:
         yield cse.getCause() != null ? mapErrorToProblem(cse.getCause(), rejectionMapper) : null;
       case final BrokerErrorException bee:
@@ -85,6 +100,51 @@ public class RestErrorMapper {
         yield mapErrorToProblem(ee.getCause(), rejectionMapper);
       case final CompletionException ce:
         yield mapErrorToProblem(ce.getCause(), rejectionMapper);
+      case final MsgpackException mpe:
+        final var mpeMsg =
+            "Expected to handle REST API request, but messagepack property was invalid";
+        REST_GATEWAY_LOGGER.debug(mpeMsg, mpe);
+        yield createProblemDetail(HttpStatus.BAD_REQUEST, mpeMsg, mpe.getClass().getName());
+      case final JsonParseException jpe:
+        final var jpeMsg = "Expected to handle REST API request, but JSON property was invalid";
+        REST_GATEWAY_LOGGER.debug(jpeMsg, jpe);
+        yield createProblemDetail(HttpStatus.BAD_REQUEST, jpeMsg, jpe.getClass().getName());
+      case final IllegalArgumentException iae:
+        final var iaeMsg = "Expected to handle REST API request, but JSON property was invalid";
+        REST_GATEWAY_LOGGER.debug(iaeMsg, iae);
+        yield createProblemDetail(HttpStatus.BAD_REQUEST, iaeMsg, iae.getClass().getName());
+      case final RequestRetriesExhaustedException rree:
+        final var rreeMsg =
+            "Expected to handle REST API request, but all retries have been exhausted";
+        REST_GATEWAY_LOGGER.trace(rreeMsg, rree);
+        yield createProblemDetail(HttpStatus.TOO_MANY_REQUESTS, rreeMsg, rree.getClass().getName());
+      case final TimeoutException te:
+        final var teMsg =
+            "Expected to handle REST API request, but request timed out between gateway and broker";
+        REST_GATEWAY_LOGGER.debug(teMsg, te);
+        yield createProblemDetail(HttpStatus.GATEWAY_TIMEOUT, teMsg, te.getClass().getName());
+      case final MessagingException.ConnectionClosed cc:
+        final var ccMsg =
+            "Expected to handle REST API request, but the connection was cut prematurely with the broker; "
+                + "the request may or may not have been accepted, and may not be safe to retry";
+        REST_GATEWAY_LOGGER.warn(ccMsg, cc);
+        yield createProblemDetail(HttpStatus.BAD_GATEWAY, ccMsg, cc.getClass().getName());
+      case final ConnectTimeoutException cte:
+        final var cteMsg =
+            "Expected to handle REST API request, but a connection timeout exception occurred";
+        REST_GATEWAY_LOGGER.warn(cteMsg, cte);
+        yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, cteMsg, cte.getClass().getName());
+      case final ConnectException ce:
+        final var ceMsg =
+            "Expected to handle REST API request, but there was a connection error with one of the brokers";
+        REST_GATEWAY_LOGGER.warn(ceMsg, ce);
+        yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, ceMsg, ce.getClass().getName());
+      case final PartitionNotFoundException pnfe:
+        final var pnfeMsg =
+            "Expected to handle REST API request, but request could not be delivered";
+        REST_GATEWAY_LOGGER.debug(pnfeMsg, pnfe);
+        yield createProblemDetail(
+            HttpStatus.SERVICE_UNAVAILABLE, pnfeMsg, pnfe.getClass().getName());
       default:
         REST_GATEWAY_LOGGER.error(
             "Expected to handle REST request, but an unexpected error occurred", error);

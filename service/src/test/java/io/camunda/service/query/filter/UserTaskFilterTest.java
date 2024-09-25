@@ -11,6 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchExistsQuery;
+import io.camunda.search.clients.query.SearchHasChildQuery;
+import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.sort.SortOrder;
@@ -19,10 +22,12 @@ import io.camunda.service.entities.UserTaskEntity;
 import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.filter.UserTaskFilter;
 import io.camunda.service.search.filter.UserTaskFilter.Builder;
+import io.camunda.service.search.filter.VariableValueFilter;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.util.StubbedBrokerClient;
 import io.camunda.service.util.StubbedCamundaSearchClient;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -53,10 +58,9 @@ public class UserTaskFilterTest {
     final SearchQueryOption queryVariant = searchRequest.query().queryOption();
     assertThat(queryVariant)
         .isInstanceOfSatisfying(
-            SearchTermQuery.class,
+            SearchExistsQuery.class,
             (t) -> {
-              assertThat(t.field()).isEqualTo("implementation");
-              assertThat(t.value().stringValue()).isEqualTo("ZEEBE_USER_TASK");
+              assertThat(t.field()).isEqualTo("flowNodeInstanceId"); // Retrieve only User Task
             });
   }
 
@@ -388,6 +392,81 @@ public class UserTaskFilterTest {
                       (term) -> {
                         assertThat(term.field()).isEqualTo("candidateGroups");
                         assertThat(term.value().stringValue()).isEqualTo("candidateGroup1");
+                      });
+            });
+  }
+
+  @Test
+  public void shouldReturnSingleUserTask() {
+    // when
+    final var searchQueryResult = services.getByKey(1L);
+
+    // then
+    assertThat(searchQueryResult.key()).isEqualTo(123L);
+  }
+
+  public void shouldQueryByVariableValueFilter() {
+    // given
+    final VariableValueFilter.Builder variableValueFilterBuilder =
+        new VariableValueFilter.Builder();
+    variableValueFilterBuilder.name("test").eq("test").build();
+
+    final VariableValueFilter variableFilterValue = variableValueFilterBuilder.build();
+
+    final var variableValueFilter =
+        FilterBuilders.userTask((f) -> f.variable(List.of(variableFilterValue)));
+    final var searchQuery =
+        SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(variableValueFilter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+    final var queryVariant = searchRequest.query().queryOption();
+
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            outerBoolQuery -> {
+              assertThat(outerBoolQuery.must()).isNotEmpty();
+
+              final SearchQuery outerMustQuery = outerBoolQuery.must().get(0);
+              assertThat(outerMustQuery.queryOption()).isInstanceOf(SearchBoolQuery.class);
+
+              // Drill down into the nested SearchBoolQuery
+              final SearchBoolQuery nestedBoolQuery =
+                  (SearchBoolQuery) outerMustQuery.queryOption();
+              assertThat(nestedBoolQuery.should()).isNotEmpty();
+
+              final SearchQuery shouldQuery = nestedBoolQuery.should().get(0);
+              assertThat(shouldQuery.queryOption()).isInstanceOf(SearchHasChildQuery.class);
+
+              final SearchHasChildQuery childQuery =
+                  (SearchHasChildQuery) shouldQuery.queryOption();
+              assertThat(childQuery.type()).isEqualTo("taskVariable");
+
+              // Check the inner bool query inside the child query
+              final SearchQuery innerQuery = childQuery.query();
+              assertThat(innerQuery.queryOption()).isInstanceOf(SearchBoolQuery.class);
+
+              final SearchBoolQuery innerBoolQuery = (SearchBoolQuery) innerQuery.queryOption();
+              assertThat(innerBoolQuery.must()).hasSize(2);
+
+              assertThat(innerBoolQuery.must().get(0).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      termQuery -> {
+                        assertThat(termQuery.field()).isEqualTo("name");
+                        assertThat(termQuery.value().value()).isEqualTo("test");
+                      });
+
+              assertThat(innerBoolQuery.must().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      termQuery -> {
+                        assertThat(termQuery.field()).isEqualTo("value");
+                        assertThat(termQuery.value().value()).isEqualTo("test");
                       });
             });
   }

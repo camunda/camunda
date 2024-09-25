@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.service.SignalServices;
+import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.BroadcastSignalRequest;
@@ -26,10 +27,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class SignalController {
 
   private final SignalServices signalServices;
+  private final MultiTenancyCfg multiTenancyCfg;
 
   @Autowired
-  public SignalController(final SignalServices signalServices) {
+  public SignalController(
+      final SignalServices signalServices, final MultiTenancyCfg multiTenancyCfg) {
     this.signalServices = signalServices;
+    this.multiTenancyCfg = multiTenancyCfg;
   }
 
   @PostMapping(
@@ -38,7 +42,7 @@ public class SignalController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> broadcastSignal(
       @RequestBody final SignalBroadcastRequest request) {
-    return RequestMapper.toBroadcastSignalRequest(request)
+    return RequestMapper.toBroadcastSignalRequest(request, multiTenancyCfg.isEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::broadcastSignal);
   }
 

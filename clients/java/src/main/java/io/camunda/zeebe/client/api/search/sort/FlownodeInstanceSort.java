@@ -25,13 +25,13 @@ public interface FlownodeInstanceSort extends SearchRequestSort<FlownodeInstance
 
   FlownodeInstanceSort processDefinitionKey();
 
+  FlownodeInstanceSort bpmnProcessId();
+
   FlownodeInstanceSort startDate();
 
   FlownodeInstanceSort endDate();
 
   FlownodeInstanceSort flowNodeId();
-
-  FlownodeInstanceSort flowNodeName();
 
   FlownodeInstanceSort type();
 
