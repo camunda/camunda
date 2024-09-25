@@ -15,12 +15,14 @@
  */
 package io.camunda.zeebe.client.api.command;
 
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
-public interface DeployResourceCommandStep1 {
+public interface DeployResourceCommandStep1
+    extends CommandWithCommunicationApiStep<DeployResourceCommandStep1> {
 
   /**
    * Add the given resource to the deployment.

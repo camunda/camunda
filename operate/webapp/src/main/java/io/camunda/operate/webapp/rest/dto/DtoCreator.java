@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 public abstract class DtoCreator {
 
   public static <T extends CreatableFromEntity<T, E>, E extends Object> T create(
-      E from, Class<T> clazz) {
+      final E from, final Class<T> clazz) {
     if (from == null) {
       return null;
     }
@@ -24,7 +24,7 @@ public abstract class DtoCreator {
       final T newDto = clazz.getDeclaredConstructor().newInstance();
       newDto.fillFrom(from);
       return newDto;
-    } catch (InstantiationException
+    } catch (final InstantiationException
         | IllegalAccessException
         | InvocationTargetException
         | NoSuchMethodException e) {
@@ -33,7 +33,7 @@ public abstract class DtoCreator {
   }
 
   public static <T extends CreatableFromEntity<T, E>, E extends Object> List<T> create(
-      List<E> entities, Class<T> clazz) {
+      final List<E> entities, final Class<T> clazz) {
     if (entities == null) {
       return new ArrayList<>();
     }

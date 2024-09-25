@@ -15,11 +15,11 @@ public class NotAuthorizedException extends InternalAPIException {
 
   private static final long serialVersionUID = 1L;
 
-  public NotAuthorizedException(String message) {
+  public NotAuthorizedException(final String message) {
     super(message);
   }
 
-  public NotAuthorizedException(String message, Throwable cause) {
+  public NotAuthorizedException(final String message, final Throwable cause) {
     super(message, cause);
   }
 }

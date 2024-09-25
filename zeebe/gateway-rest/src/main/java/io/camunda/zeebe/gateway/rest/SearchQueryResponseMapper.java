@@ -133,7 +133,7 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toProcessInstance).toList();
   }
 
-  private static ProcessInstanceItem toProcessInstance(final ProcessInstanceEntity p) {
+  public static ProcessInstanceItem toProcessInstance(final ProcessInstanceEntity p) {
     return new ProcessInstanceItem()
         .key(p.key())
         .bpmnProcessId(p.bpmnProcessId())
@@ -199,20 +199,20 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toFlowNodeInstance).toList();
   }
 
-  private static FlowNodeInstanceItem toFlowNodeInstance(final FlowNodeInstanceEntity instance) {
+  public static FlowNodeInstanceItem toFlowNodeInstance(final FlowNodeInstanceEntity instance) {
     return new FlowNodeInstanceItem()
         .flowNodeInstanceKey(instance.key())
         .flowNodeId(instance.flowNodeId())
-        .flowNodeName(instance.flowNodeName())
         .processDefinitionKey(instance.processDefinitionKey())
+        .bpmnProcessId(instance.bpmnProcessId())
         .processInstanceKey(instance.processInstanceKey())
         .incidentKey(instance.incidentKey())
         .incident(instance.incident())
         .startDate(instance.startDate())
         .endDate(instance.endDate())
-        .state(instance.state())
+        .state(FlowNodeInstanceItem.StateEnum.fromValue(instance.state().name()))
         .treePath(instance.treePath())
-        .type(instance.type())
+        .type(FlowNodeInstanceItem.TypeEnum.fromValue(instance.type().name()))
         .tenantId(instance.tenantId());
   }
 

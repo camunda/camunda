@@ -7,19 +7,17 @@
  */
 package io.camunda.operate.webapp.opensearch.reader;
 
-import static io.camunda.operate.entities.dmn.DecisionInstanceState.EVALUATED;
-import static io.camunda.operate.entities.dmn.DecisionInstanceState.FAILED;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.*;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.CollectionUtil.toSafeListOfStrings;
 import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_PROCESS_INSTANCE_ID;
+import static io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState.EVALUATED;
+import static io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState.FAILED;
 import static java.util.stream.Collectors.groupingBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
-import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
@@ -37,6 +35,8 @@ import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDt
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;

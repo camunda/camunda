@@ -7,22 +7,22 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
+import static io.camunda.webapps.schema.entities.operate.ErrorType.JOB_NO_RETRIES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.camunda.operate.entities.ErrorType;
-import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.*;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
+import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;

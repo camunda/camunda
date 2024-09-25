@@ -20,7 +20,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.VariableTemplate;
@@ -29,6 +28,7 @@ import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;

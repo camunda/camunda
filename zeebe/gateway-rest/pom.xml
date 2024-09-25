@@ -172,7 +172,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-authentication</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <!-- dependencies required for OpenAPI model generation -->
@@ -200,6 +199,11 @@
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
       <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-core</artifactId>
     </dependency>
 
     <!-- test dependencies -->

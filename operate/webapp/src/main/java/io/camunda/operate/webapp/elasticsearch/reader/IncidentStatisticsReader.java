@@ -16,8 +16,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.*;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.IncidentTemplate;
@@ -31,6 +29,8 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatistic
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;

@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.zeebeimport.post.elasticsearch;
 
-import static io.camunda.operate.entities.IncidentState.ACTIVE;
 import static io.camunda.operate.entities.OperationState.COMPLETED;
 import static io.camunda.operate.entities.OperationState.SENT;
 import static io.camunda.operate.entities.OperationType.DELETE_PROCESS_INSTANCE;
@@ -19,15 +18,13 @@ import static io.camunda.operate.schema.templates.PostImporterQueueTemplate.*;
 import static io.camunda.operate.schema.templates.TemplateDescriptor.PARTITION_ID;
 import static io.camunda.operate.util.ElasticsearchUtil.*;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static io.camunda.webapps.schema.entities.operate.IncidentState.ACTIVE;
 import static java.util.stream.Collectors.toMap;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.entities.post.PostImporterActionType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.*;
@@ -35,6 +32,9 @@ import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.TreePath;
 import io.camunda.operate.zeebeimport.post.*;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.IncidentState;
+import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;

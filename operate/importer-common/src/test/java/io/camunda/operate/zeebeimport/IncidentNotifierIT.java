@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_ALERTS;
 import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_BPMN_PROCESS_ID;
 import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_CREATION_TIME;
@@ -23,6 +22,7 @@ import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_PROCESS
 import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_PROCESS_VERSION;
 import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_STATE;
 import static io.camunda.operate.zeebeimport.IncidentNotifier.MESSAGE;
+import static io.camunda.webapps.schema.entities.operate.ErrorType.JOB_NO_RETRIES;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,12 +42,12 @@ import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
-import io.camunda.operate.entities.ErrorType;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.zeebeimport.util.TestApplicationWithNoBeans;
+import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.IncidentState;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;

@@ -15,13 +15,13 @@ import static io.camunda.operate.schema.templates.VariableTemplate.PROCESS_DEFIN
 import static io.camunda.operate.schema.templates.VariableTemplate.VALUE;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
-import io.camunda.operate.entities.VariableEntity;
-import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.Tuple;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;

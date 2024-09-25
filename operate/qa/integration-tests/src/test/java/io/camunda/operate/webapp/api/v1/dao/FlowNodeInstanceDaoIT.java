@@ -16,15 +16,15 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;

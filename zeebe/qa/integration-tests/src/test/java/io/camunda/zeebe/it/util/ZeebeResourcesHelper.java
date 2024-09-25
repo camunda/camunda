@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.util;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
@@ -134,20 +135,33 @@ public class ZeebeResourcesHelper implements CloseableSilently {
         .done();
   }
 
+  public long deployProcess(final BpmnModelInstance modelInstance, final boolean useRest) {
+    return deployProcess(modelInstance, "", useRest);
+  }
+
   public long deployProcess(final BpmnModelInstance modelInstance) {
     return deployProcess(modelInstance, "");
   }
 
   public long deployProcess(final BpmnModelInstance modelInstance, final String tenantId) {
+    return deployProcess(modelInstance, tenantId, false);
+  }
+
+  public long deployProcess(
+      final BpmnModelInstance modelInstance, final String tenantId, final boolean useRest) {
     final DeploymentEvent deploymentEvent =
-        client
-            .newDeployResourceCommand()
+        getDeployCommand(useRest)
             .addProcessModel(modelInstance, "process.bpmn")
             .tenantId(tenantId)
             .send()
             .join();
     waitUntilDeploymentIsDone(deploymentEvent.getKey());
-    return deploymentEvent.getProcesses().get(0).getProcessDefinitionKey();
+    return deploymentEvent.getProcesses().getFirst().getProcessDefinitionKey();
+  }
+
+  private DeployResourceCommandStep1 getDeployCommand(final boolean useRest) {
+    final DeployResourceCommandStep1 deployResourceCommand = client.newDeployResourceCommand();
+    return useRest ? deployResourceCommand.useRest() : deployResourceCommand.useGrpc();
   }
 
   public long createProcessInstance(final long processDefinitionKey, final String variables) {

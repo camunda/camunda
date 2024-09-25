@@ -11,11 +11,11 @@ import static io.camunda.operate.schema.templates.JobTemplate.*;
 import static io.camunda.operate.schema.templates.TemplateDescriptor.POSITION;
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
 
-import io.camunda.operate.entities.*;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.JobTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.DateUtil;
+import io.camunda.webapps.schema.entities.operate.JobEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;

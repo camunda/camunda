@@ -1244,10 +1244,10 @@
   dependencies:
     defer-to-connect "^2.0.0"
 
-"@tanstack/eslint-plugin-query@5.57.1":
-  version "5.57.1"
-  resolved "https://registry.yarnpkg.com/@tanstack/eslint-plugin-query/-/eslint-plugin-query-5.57.1.tgz#e3bce3c69916a7bcdc0fbad5b197b8997af19270"
-  integrity sha512-HrfX4NqVseUZiRFBEOjS61bYIU5Qb9TeLEraOj0yMruCFIXz4reP62Cpq6BwZfMMASV7GfWAFiRvMbg7J/U05Q==
+"@tanstack/eslint-plugin-query@5.57.2":
+  version "5.57.2"
+  resolved "https://registry.yarnpkg.com/@tanstack/eslint-plugin-query/-/eslint-plugin-query-5.57.2.tgz#7f47055f3855a94b65c8b94e20864c5d60a59070"
+  integrity sha512-JEvKhL4cRV0vMwvjg8LSYE7tiaxr1zzBEgNC9n/vexrUKkLeM7rxt4iIXMYphMGzuTYdSBYBo5CQy1Iio7LhSA==
   dependencies:
     "@typescript-eslint/utils" "^8.3.0"
 
@@ -1256,17 +1256,17 @@
   resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.56.2.tgz#2def2fb0290cd2836bbb08afb0c175595bb8109b"
   integrity sha512-gor0RI3/R5rVV3gXfddh1MM+hgl0Z4G7tj6Xxpq6p2I03NGPaJ8dITY9Gz05zYYb/EJq9vPas/T4wn9EaDPd4Q==
 
-"@tanstack/query-devtools@5.56.1":
-  version "5.56.1"
-  resolved "https://registry.yarnpkg.com/@tanstack/query-devtools/-/query-devtools-5.56.1.tgz#319c362dd19c6cfe005e74a8777baefa4a4f72de"
-  integrity sha512-xnp9jq/9dHfSCDmmf+A5DjbIjYqbnnUL2ToqlaaviUQGRTapXQ8J+GxusYUu1IG0vZMaWdiVUA4HRGGZYAUU+A==
+"@tanstack/query-devtools@5.58.0":
+  version "5.58.0"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-devtools/-/query-devtools-5.58.0.tgz#5c68ce90562e154004de4372bc0a28fcd94cdf31"
+  integrity sha512-iFdQEFXaYYxqgrv63ots+65FGI+tNp5ZS5PdMU1DWisxk3fez5HG3FyVlbUva+RdYS5hSLbxZ9aw3yEs97GNTw==
 
-"@tanstack/react-query-devtools@5.56.2":
-  version "5.56.2"
-  resolved "https://registry.yarnpkg.com/@tanstack/react-query-devtools/-/react-query-devtools-5.56.2.tgz#c129cdb811927085434ea27691e4b7f605eb4128"
-  integrity sha512-7nINJtRZZVwhTTyDdMIcSaXo+EHMLYJu1S2e6FskvvD5prx87LlAXXWZDfU24Qm4HjshEtM5lS3HIOszNGblcw==
+"@tanstack/react-query-devtools@5.58.0":
+  version "5.58.0"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query-devtools/-/react-query-devtools-5.58.0.tgz#0d541cf8f755402553da540bcf7a1f802f49a8d5"
+  integrity sha512-qF0xCyBeVuNLygTO1sAl1X4Gv52w52SeaDdbjYQmtTOooUJ3aAVlBEtiRJFfJblWQ9p/UQG8NIcC/65RjX8Jkw==
   dependencies:
-    "@tanstack/query-devtools" "5.56.1"
+    "@tanstack/query-devtools" "5.58.0"
 
 "@tanstack/react-query@5.56.2":
   version "5.56.2"
@@ -1437,10 +1437,17 @@
   dependencies:
     "@types/node" "*"
 
-"@types/node@*", "@types/node@20.16.6", "@types/node@>=12.12.47", "@types/node@>=13.7.0", "@types/node@^20.12.7":
+"@types/node@*", "@types/node@>=12.12.47", "@types/node@>=13.7.0", "@types/node@^20.12.7":
   version "20.16.6"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-20.16.6.tgz#0bf99fcebcee68ecdc2c45b160a10a0fe5c652b8"
   integrity sha512-T7PpxM/6yeDE+AdlVysT62BX6/bECZOmQAgiFg5NoBd5MQheZ3tzal7f1wvzfiEcmrcJNRi2zRr2nY2zF+0uqw==
+  dependencies:
+    undici-types "~6.19.2"
+
+"@types/node@20.16.7":
+  version "20.16.7"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.16.7.tgz#0a245bf5805add998a22b8b5adac612ee70190bc"
+  integrity sha512-QkDQjAY3gkvJNcZOWwzy3BN34RweT0OQ9zJyvLCU0kSK22dO2QYh/NHGfbEAYylPYzRB1/iXcojS79wOg5gFSw==
   dependencies:
     undici-types "~6.19.2"
 
@@ -2029,7 +2036,17 @@ browserslist-to-esbuild@2.1.1:
   dependencies:
     meow "^13.0.0"
 
-browserslist@4.23.3, browserslist@^4.22.2:
+browserslist@4.24.0:
+  version "4.24.0"
+  resolved "https://registry.yarnpkg.com/browserslist/-/browserslist-4.24.0.tgz#a1325fe4bc80b64fda169629fc01b3d6cecd38d4"
+  integrity sha512-Rmb62sR1Zpjql25eSanFGEhAxcFwfA1K0GuQcLoaJBAcENegrQut3hYdhXFF1obQfiDyqIW/cLM5HSJ/9k884A==
+  dependencies:
+    caniuse-lite "^1.0.30001663"
+    electron-to-chromium "^1.5.28"
+    node-releases "^2.0.18"
+    update-browserslist-db "^1.1.0"
+
+browserslist@^4.22.2:
   version "4.23.3"
   resolved "https://registry.yarnpkg.com/browserslist/-/browserslist-4.23.3.tgz#debb029d3c93ebc97ffbc8d9cbb03403e227c800"
   integrity sha512-btwCFJVjI4YWDNfau8RhZ+B1Q/VLoUITrm3RlP6y1tYGWIOa+InuYiRGXUBXo8nA1qKmHMyLB/iVQg5TT4eFoA==
@@ -2096,6 +2113,11 @@ caniuse-lite@^1.0.30001646:
   version "1.0.30001646"
   resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001646.tgz#d472f2882259ba032dd73ee069ff01bfd059b25d"
   integrity sha512-dRg00gudiBDDTmUhClSdv3hqRfpbOnU28IpI1T6PBTLWa+kOj0681C8uML3PifYfREuBrVjDGhL3adYpBT6spw==
+
+caniuse-lite@^1.0.30001663:
+  version "1.0.30001663"
+  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001663.tgz#1529a723505e429fdfd49532e9fc42273ba7fed7"
+  integrity sha512-o9C3X27GLKbLeTYZ6HBOLU1tsAcBZsLis28wrVzddShCS16RujjHp9GDHKZqrB3meE0YjhawvMFsGb/igqiPzA==
 
 chai@^5.1.1:
   version "5.1.1"
@@ -2654,6 +2676,11 @@ ejs@^3.1.5:
   integrity sha512-UeJmFfOrAQS8OJWPZ4qtgHyWExa088/MtK5UEyoJGFH67cDEXkZSviOiKRCZ4Xij0zxI3JECgYs3oKx+AizQBA==
   dependencies:
     jake "^10.8.5"
+
+electron-to-chromium@^1.5.28:
+  version "1.5.28"
+  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.5.28.tgz#aee074e202c6ee8a0030a9c2ef0b3fe9f967d576"
+  integrity sha512-VufdJl+rzaKZoYVUijN13QcXVF5dWPZANeFTLNy+OSpHdDL5ynXTF35+60RSBbaQYB1ae723lQXHCrf4pyLsMw==
 
 electron-to-chromium@^1.5.4:
   version "1.5.4"
@@ -6126,7 +6153,18 @@ vite-tsconfig-paths@5.0.1:
     globrex "^0.1.2"
     tsconfck "^3.0.3"
 
-vite@5.4.7, vite@^5.0.0:
+vite@5.4.8:
+  version "5.4.8"
+  resolved "https://registry.yarnpkg.com/vite/-/vite-5.4.8.tgz#af548ce1c211b2785478d3ba3e8da51e39a287e8"
+  integrity sha512-FqrItQ4DT1NC4zCUqMB4c4AZORMKIa0m8/URVCZ77OZ/QSNeJ54bU1vrFADbDsuwfIPcgknRkmqakQcgnL4GiQ==
+  dependencies:
+    esbuild "^0.21.3"
+    postcss "^8.4.43"
+    rollup "^4.20.0"
+  optionalDependencies:
+    fsevents "~2.3.3"
+
+vite@^5.0.0:
   version "5.4.7"
   resolved "https://registry.yarnpkg.com/vite/-/vite-5.4.7.tgz#d226f57c08b61379e955f3836253ed3efb2dcf00"
   integrity sha512-5l2zxqMEPVENgvzTuBpHer2awaetimj2BGkhBPdnwKbPNOlHsODU+oiazEZzLK7KhAnOrO+XGYJYn4ZlUhDtDQ==

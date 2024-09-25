@@ -17,10 +17,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
-import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification.Type;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3;

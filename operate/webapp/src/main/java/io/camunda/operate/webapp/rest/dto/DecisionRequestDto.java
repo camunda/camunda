@@ -17,7 +17,7 @@ public class DecisionRequestDto {
     return tenantId;
   }
 
-  public DecisionRequestDto setTenantId(String tenantId) {
+  public DecisionRequestDto setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -28,7 +28,7 @@ public class DecisionRequestDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

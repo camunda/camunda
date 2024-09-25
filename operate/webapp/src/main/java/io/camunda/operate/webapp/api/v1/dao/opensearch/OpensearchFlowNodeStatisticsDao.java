@@ -7,16 +7,15 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
-import static io.camunda.operate.entities.FlowNodeState.ACTIVE;
-import static io.camunda.operate.entities.FlowNodeState.COMPLETED;
-import static io.camunda.operate.entities.FlowNodeState.TERMINATED;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.FLOW_NODE_ID;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.INCIDENT;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.STATE;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TYPE;
+import static io.camunda.webapps.schema.entities.operate.FlowNodeState.ACTIVE;
+import static io.camunda.webapps.schema.entities.operate.FlowNodeState.COMPLETED;
+import static io.camunda.webapps.schema.entities.operate.FlowNodeState.TERMINATED;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeStatisticsDao;
@@ -24,6 +23,7 @@ import io.camunda.operate.webapp.api.v1.entities.FlowNodeStatistics;
 import io.camunda.operate.webapp.opensearch.OpensearchAggregationDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import java.util.List;
 import java.util.Map;
 import org.springframework.context.annotation.Conditional;

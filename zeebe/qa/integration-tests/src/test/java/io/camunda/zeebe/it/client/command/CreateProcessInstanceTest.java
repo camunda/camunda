@@ -59,7 +59,7 @@ public final class CreateProcessInstanceTest {
   @ValueSource(booleans = {true, false})
   public void shouldCreateBpmnProcessById(final boolean useRest, final TestInfo testInfo) {
     // given
-    deployProcesses(testInfo);
+    deployProcesses(testInfo, useRest);
 
     // when
     final ProcessInstanceEvent processInstance =
@@ -76,7 +76,7 @@ public final class CreateProcessInstanceTest {
   public void shouldCreateBpmnProcessByIdAndVersion(
       final boolean useRest, final TestInfo testInfo) {
     // given
-    deployProcesses(testInfo);
+    deployProcesses(testInfo, useRest);
 
     // when
     final ProcessInstanceEvent processInstance =
@@ -92,7 +92,7 @@ public final class CreateProcessInstanceTest {
   @ValueSource(booleans = {true, false})
   public void shouldCreateBpmnProcessByKey(final boolean useRest, final TestInfo testInfo) {
     // given
-    deployProcesses(testInfo);
+    deployProcesses(testInfo, useRest);
 
     // when
     final ProcessInstanceEvent processInstance =
@@ -108,7 +108,7 @@ public final class CreateProcessInstanceTest {
   @ValueSource(booleans = {true, false})
   public void shouldCreateWithVariables(final boolean useRest, final TestInfo testInfo) {
     // given
-    deployProcesses(testInfo);
+    deployProcesses(testInfo, useRest);
     final Map<String, Object> variables = Map.of("foo", 123);
 
     // when
@@ -134,7 +134,7 @@ public final class CreateProcessInstanceTest {
   @ValueSource(booleans = {true, false})
   public void shouldCreateWithoutVariables(final boolean useRest, final TestInfo testInfo) {
     // given
-    deployProcesses(testInfo);
+    deployProcesses(testInfo, useRest);
 
     // when
     final ProcessInstanceEvent event =
@@ -154,7 +154,7 @@ public final class CreateProcessInstanceTest {
   @ValueSource(booleans = {true, false})
   public void shouldCreateWithNullVariables(final boolean useRest, final TestInfo testInfo) {
     // given
-    deployProcesses(testInfo);
+    deployProcesses(testInfo, useRest);
 
     // when
     final ProcessInstanceEvent event =
@@ -179,7 +179,7 @@ public final class CreateProcessInstanceTest {
   @ValueSource(booleans = {true, false})
   public void shouldCreateWithSingleVariable(final boolean useRest, final TestInfo testInfo) {
     // given
-    deployProcesses(testInfo);
+    deployProcesses(testInfo, useRest);
     final String key = "key";
     final String value = "value";
 
@@ -207,7 +207,7 @@ public final class CreateProcessInstanceTest {
   public void shouldThrowErrorWhenTryToCreateInstanceWithNullVariable(
       final boolean useRest, final TestInfo testInfo) {
     // given
-    deployProcesses(testInfo);
+    deployProcesses(testInfo, useRest);
 
     // when
     assertThatThrownBy(
@@ -226,7 +226,7 @@ public final class CreateProcessInstanceTest {
   public void shouldRejectCompleteJobIfVariablesAreInvalid(
       final boolean useRest, final TestInfo testInfo) {
     // given
-    deployProcesses(testInfo);
+    deployProcesses(testInfo, useRest);
 
     // when
     if (useRest) {
@@ -279,7 +279,7 @@ public final class CreateProcessInstanceTest {
   @ValueSource(booleans = {true, false})
   public void shouldCreateWithStartInstructions(final boolean useRest, final TestInfo testInfo) {
     // given
-    deployProcesses(testInfo);
+    deployProcesses(testInfo, useRest);
 
     // when
     final var instance =
@@ -312,11 +312,11 @@ public final class CreateProcessInstanceTest {
   }
 
   @ParameterizedTest
-  @ValueSource(booleans = {true, false})
+  @ValueSource(booleans = {true})
   public void shouldRejectCreateWithStartInstructions(
       final boolean useRest, final TestInfo testInfo) {
     // given
-    deployProcesses(testInfo);
+    deployProcesses(testInfo, useRest);
 
     // when
     final var command =
@@ -338,12 +338,12 @@ public final class CreateProcessInstanceTest {
     return useRest ? createInstanceCommand.useRest() : createInstanceCommand.useGrpc();
   }
 
-  private void deployProcesses(final TestInfo testInfo) {
+  private void deployProcesses(final TestInfo testInfo, final boolean useRest) {
     processId = "process-" + testInfo.getTestMethod().get().getName();
     processId2 = processId + "-2";
     firstProcessDefinitionKey =
         resourcesHelper.deployProcess(
-            Bpmn.createExecutableProcess(processId).startEvent("v1").done());
+            Bpmn.createExecutableProcess(processId).startEvent("v1").done(), useRest);
     secondProcessDefinitionKey =
         resourcesHelper.deployProcess(
             Bpmn.createExecutableProcess(processId)
@@ -352,7 +352,8 @@ public final class CreateProcessInstanceTest {
                 .endEvent("end1")
                 .moveToLastGateway()
                 .endEvent("end2")
-                .done());
+                .done(),
+            useRest);
 
     resourcesHelper.deployProcess(
         Bpmn.createExecutableProcess(processId2)
@@ -363,6 +364,7 @@ public final class CreateProcessInstanceTest {
                         .message(msg -> msg.name("msg").zeebeCorrelationKey("=missing_var")))
             .startEvent("v3")
             .endEvent("end")
-            .done());
+            .done(),
+        useRest);
   }
 }

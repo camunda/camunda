@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.reader;
 
-import io.camunda.operate.entities.UserTaskEntity;
+import io.camunda.webapps.schema.entities.operate.UserTaskEntity;
 import java.util.List;
 import java.util.Optional;
 

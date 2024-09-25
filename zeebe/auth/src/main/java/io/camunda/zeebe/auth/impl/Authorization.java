@@ -10,6 +10,7 @@ package io.camunda.zeebe.auth.impl;
 public class Authorization {
 
   public static final String AUTHORIZED_TENANTS = "authorized_tenants";
+  public static final String AUTHORIZED_USER_KEY = "authorized_user_key";
 
   public static JwtAuthorizationEncoder jwtEncoder() {
     return new JwtAuthorizationEncoder();

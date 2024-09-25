@@ -36,6 +36,14 @@ public interface FlownodeInstanceFilter extends SearchRequestFilter {
   FlownodeInstanceFilter processDefinitionKey(final long value);
 
   /**
+   * Filters flow node instances by bpmn process id.
+   *
+   * @param value the bpmn process id of flow node instance
+   * @return the updated filter
+   */
+  FlownodeInstanceFilter bpmnProcessId(final String value);
+
+  /**
    * Filters flow node instances by process instance key.
    *
    * @param value the process instance key of flow node instance
@@ -50,14 +58,6 @@ public interface FlownodeInstanceFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   FlownodeInstanceFilter flowNodeId(final String value);
-
-  /**
-   * Filters flow node instances by flow node name.
-   *
-   * @param value the flow node name of flow node instance
-   * @return the updated filter
-   */
-  FlownodeInstanceFilter flowNodeName(final String value);
 
   /**
    * Filters flow node instances by state.

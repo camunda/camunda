@@ -12,8 +12,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
-import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
@@ -25,6 +23,8 @@ import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
+import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
