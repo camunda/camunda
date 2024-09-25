@@ -61,6 +61,28 @@ public class JwtAuthorizationTest {
   }
 
   @Test
+  public void shouldEncodeJwtTokenWithAuthenticatedUserKey() {
+    // given
+    final Long authenticatedUserKey = 123L;
+
+    // when
+    final AuthorizationEncoder encoder =
+        Authorization.jwtEncoder()
+            .withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedUserKey);
+    final String jwtToken = encoder.encode();
+
+    // then
+    final Map<String, Claim> claims = JWT.decode(jwtToken).getClaims();
+    // assert default claims are also present
+    assertDefaultClaims(claims);
+    // and authorized tenants claim is present
+    assertThat(claims).containsKey(Authorization.AUTHORIZED_USER_KEY);
+    final Long authenticatedUserKeyClaim =
+        claims.get(Authorization.AUTHORIZED_USER_KEY).as(Long.class);
+    assertThat(authenticatedUserKeyClaim).isEqualTo(authenticatedUserKey);
+  }
+
+  @Test
   public void shouldValidateAndDecodeJwtTokenWithDefaultClaims() {
     // given
     final String jwtToken =
@@ -110,7 +132,6 @@ public class JwtAuthorizationTest {
             .withIssuer(DEFAULT_ISSUER)
             .withAudience(DEFAULT_AUDIENCE)
             .withSubject(DEFAULT_SUBJECT)
-            .withClaim(Authorization.AUTHORIZED_USER_KEY, 1234L)
             .sign(Algorithm.none());
 
     // when
