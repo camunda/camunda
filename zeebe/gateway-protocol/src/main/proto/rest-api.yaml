@@ -1826,7 +1826,51 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-
+  /users/{userKey}:
+    get:
+      tags:
+        - User
+      summary: |
+        Returns the user.
+      parameters:
+        - name: userKey
+          in: path
+          required: true
+          description: The assigned key of the user, which acts as a unique identifier for this user.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: >
+            The user is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: >
+            The user Get failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: >
+            The user with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /users/search:
     post:
       tags:
