@@ -359,7 +359,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public DeployResourceCommandStep1 newDeployResourceCommand() {
     return new DeployResourceCommandImpl(
-        asyncStub, config, credentialsProvider::shouldRetryRequest);
+        asyncStub,
+        config,
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config.preferRestOverGrpc(),
+        jsonMapper);
   }
 
   @Override

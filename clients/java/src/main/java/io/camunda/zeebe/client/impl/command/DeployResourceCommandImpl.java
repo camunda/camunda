@@ -20,6 +20,7 @@ import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 import com.google.protobuf.ByteString;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
@@ -28,7 +29,10 @@ import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployReso
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.DeploymentEventImpl;
+import io.camunda.zeebe.client.protocol.rest.ResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
@@ -46,23 +50,44 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
+import org.apache.hc.core5.http.ContentType;
 
 public final class DeployResourceCommandImpl
     implements DeployResourceCommandStep1, DeployResourceCommandStep2 {
 
+  private static final String RESOURCES_FIELD_NAME = "resources";
+  private static final String TENANT_FIELD_NAME = "tenantId";
+
+  private final MultipartEntityBuilder multipartEntityBuilder =
+      MultipartEntityBuilder.create().setContentType(ContentType.MULTIPART_FORM_DATA);
   private final DeployResourceRequest.Builder requestBuilder = DeployResourceRequest.newBuilder();
   private final GatewayStub asyncStub;
   private final Predicate<StatusCode> retryPredicate;
   private Duration requestTimeout;
+  private final HttpClient httpClient;
+  private final RequestConfig.Builder httpRequestConfig;
+  private boolean useRest;
+  private final JsonMapper jsonMapper;
+  private String tenantId;
 
   public DeployResourceCommandImpl(
       final GatewayStub asyncStub,
       final ZeebeClientConfiguration config,
-      final Predicate<StatusCode> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate,
+      final HttpClient httpClient,
+      final boolean preferRestOverGrpc,
+      final JsonMapper jsonMapper) {
     this.asyncStub = asyncStub;
     requestTimeout = config.getDefaultRequestTimeout();
     this.retryPredicate = retryPredicate;
     tenantId(config.getDefaultTenantId());
+    this.httpClient = httpClient;
+    httpRequestConfig = httpClient.newRequestConfig();
+    useRest = preferRestOverGrpc;
+    this.jsonMapper = jsonMapper;
+    requestTimeout(requestTimeout);
   }
 
   /**
@@ -80,23 +105,36 @@ public final class DeployResourceCommandImpl
   public DeployResourceCommandImpl(
       final GatewayStub asyncStub,
       final Duration requestTimeout,
-      final Predicate<StatusCode> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate,
+      final HttpClient httpClient,
+      final boolean preferRestOverGrpc,
+      final JsonMapper jsonMapper) {
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
+    this.httpClient = httpClient;
+    httpRequestConfig = httpClient.newRequestConfig();
+    useRest = preferRestOverGrpc;
+    this.jsonMapper = jsonMapper;
     tenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+    requestTimeout(requestTimeout);
   }
 
   @Override
   public DeployResourceCommandStep2 addResourceBytes(
       final byte[] resource, final String resourceName) {
 
+    if (useRest) {
+      multipartEntityBuilder.addBinaryBody(
+          RESOURCES_FIELD_NAME, resource, ContentType.APPLICATION_OCTET_STREAM, resourceName);
+      return this;
+    }
+
     requestBuilder.addResources(
         Resource.newBuilder()
             .setName(resourceName)
             .setContent(ByteString.copyFrom(resource))
             .build());
-
     return this;
   }
 
@@ -173,31 +211,68 @@ public final class DeployResourceCommandImpl
   @Override
   public FinalCommandStep<DeploymentEvent> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
   public ZeebeFuture<DeploymentEvent> send() {
+    if (useRest) {
+      // adding here the tenantId because in the multipart request fields are only appended
+      multipartEntityBuilder.addTextBody(TENANT_FIELD_NAME, tenantId);
+      return sendRestRequest();
+    } else {
+      return sendGrpcRequest();
+    }
+  }
+
+  @Override
+  public DeployResourceCommandStep2 tenantId(final String tenantId) {
+    this.tenantId = tenantId;
+    requestBuilder.setTenantId(tenantId);
+    return this;
+  }
+
+  @Override
+  public DeployResourceCommandStep2 useRest() {
+    useRest = true;
+    return this;
+  }
+
+  @Override
+  public DeployResourceCommandStep2 useGrpc() {
+    useRest = false;
+    return this;
+  }
+
+  private ZeebeFuture<DeploymentEvent> sendRestRequest() {
+    final HttpZeebeFuture<DeploymentEvent> result = new HttpZeebeFuture<>();
+    httpClient.postMultipart(
+        "/deployments",
+        multipartEntityBuilder,
+        httpRequestConfig.build(),
+        ResourceResponse.class,
+        DeploymentEventImpl::new,
+        result);
+    return result;
+  }
+
+  private ZeebeFuture<DeploymentEvent> sendGrpcRequest() {
     final DeployResourceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<DeploymentEvent, DeployResourceResponse> future =
         new RetriableClientFutureImpl<>(
             DeploymentEventImpl::new,
             retryPredicate,
-            streamObserver -> send(request, streamObserver));
+            streamObserver -> sendGrpcRequest(request, streamObserver));
 
-    send(request, future);
+    sendGrpcRequest(request, future);
 
     return future;
   }
 
-  @Override
-  public DeployResourceCommandStep2 tenantId(final String tenantId) {
-    requestBuilder.setTenantId(tenantId);
-    return this;
-  }
-
-  private void send(final DeployResourceRequest request, final StreamObserver streamObserver) {
+  private void sendGrpcRequest(
+      final DeployResourceRequest request, final StreamObserver streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .deployResource(request, streamObserver);

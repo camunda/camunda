@@ -16,6 +16,7 @@ import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.security.auth.Authentication;
+import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
@@ -39,6 +40,7 @@ public class ResourceControllerTest extends RestControllerTest {
   static final String DELETE_RESOURCE_ENDPOINT = RESOURCES_BASE_URL + "/resources/%s/deletion";
 
   @MockBean ResourceServices resourceServices;
+  @MockBean MultiTenancyCfg multiTenancyCfg;
   @Captor ArgumentCaptor<DeployResourcesRequest> deployRequestCaptor;
   @Captor ArgumentCaptor<ResourceDeletionRequest> deleteRequestCaptor;
 
@@ -102,6 +104,137 @@ public class ResourceControllerTest extends RestControllerTest {
                       "processDefinitionKey":123456,
                       "resourceName":"process.bpmn",
                       "tenantId":"<default>"
+                   }
+                }
+             ],
+             "tenantId":"<default>"
+          }
+         """);
+  }
+
+  @Test
+  void shouldDeployResourceWithMultitenancyDisabled() {
+    // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(false);
+    final var filename = "process.bpmn";
+    final var contentType = MediaType.APPLICATION_OCTET_STREAM;
+    final var content = new byte[] {1, 2, 3};
+
+    final var mockedResponse = new DeploymentRecord().setDeploymentKey(123);
+    mockedResponse
+        .processesMetadata()
+        .add()
+        .setResourceName(filename)
+        .setBpmnProcessId("processId")
+        .setDeploymentKey(123L)
+        .setVersion(1)
+        .setKey(123456L)
+        .setChecksum(BufferUtil.wrapString("checksum"));
+    when(resourceServices.deployResources(any()))
+        .thenReturn(CompletableFuture.completedFuture(mockedResponse));
+
+    final var multipartBodyBuilder = new MultipartBodyBuilder();
+    multipartBodyBuilder.part("resources", content).contentType(contentType).filename(filename);
+
+    // when/then
+    final var response =
+        webClient
+            .post()
+            .uri(DEPLOY_RESOURCES_ENDPOINT)
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .bodyValue(multipartBodyBuilder.build())
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus()
+            .isOk();
+
+    verify(resourceServices).deployResources(deployRequestCaptor.capture());
+    final var capturedRequest = deployRequestCaptor.getValue();
+    assertThat(capturedRequest.resources()).isNotEmpty();
+    assertThat(capturedRequest.resources()).size().isEqualTo(1);
+
+    response
+        .expectBody()
+        .json(
+            """
+          {
+             "key":123,
+             "deployments":[
+                {
+                   "process":{
+                      "bpmnProcessId":"processId",
+                      "version":1,
+                      "processDefinitionKey":123456,
+                      "resourceName":"process.bpmn",
+                      "tenantId":"<default>"
+                   }
+                }
+             ],
+             "tenantId":"<default>"
+          }
+         """);
+  }
+
+  @Test
+  void shouldDeployResourceWithMultitenancyEnabled() {
+    // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
+    final var filename = "process.bpmn";
+    final var contentType = MediaType.APPLICATION_OCTET_STREAM;
+    final var content = new byte[] {1, 2, 3};
+
+    final var mockedResponse = new DeploymentRecord().setDeploymentKey(123);
+    mockedResponse
+        .processesMetadata()
+        .add()
+        .setResourceName(filename)
+        .setBpmnProcessId("processId")
+        .setDeploymentKey(123L)
+        .setVersion(1)
+        .setKey(123456L)
+        .setTenantId("tenantId")
+        .setChecksum(BufferUtil.wrapString("checksum"));
+    when(resourceServices.deployResources(any()))
+        .thenReturn(CompletableFuture.completedFuture(mockedResponse));
+
+    final var multipartBodyBuilder = new MultipartBodyBuilder();
+    multipartBodyBuilder.part("resources", content).contentType(contentType).filename(filename);
+    multipartBodyBuilder.part("tenantId", "tenantId");
+
+    // when/then
+    final var response =
+        withMultiTenancy(
+            "tenantId",
+            client ->
+                client
+                    .post()
+                    .uri(DEPLOY_RESOURCES_ENDPOINT)
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .bodyValue(multipartBodyBuilder.build())
+                    .accept(MediaType.APPLICATION_JSON)
+                    .exchange()
+                    .expectStatus()
+                    .isOk());
+
+    verify(resourceServices).deployResources(deployRequestCaptor.capture());
+    final var capturedRequest = deployRequestCaptor.getValue();
+    assertThat(capturedRequest.resources()).isNotEmpty();
+    assertThat(capturedRequest.resources()).size().isEqualTo(1);
+
+    response
+        .expectBody()
+        .json(
+            """
+          {
+             "key":123,
+             "deployments":[
+                {
+                   "process":{
+                      "bpmnProcessId":"processId",
+                      "version":1,
+                      "processDefinitionKey":123456,
+                      "resourceName":"process.bpmn",
+                      "tenantId":"tenantId"
                    }
                 }
              ],
