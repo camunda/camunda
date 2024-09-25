@@ -142,4 +142,49 @@ public class UserStateTest {
     assertThat(persistedUserAfterUpdate.getPassword()).isEqualTo(updatedPassword);
     assertThat(persistedUserAfterUpdate.getEmail()).isEqualTo(updatedEmail);
   }
+
+  @Test
+  void shouldReturnUserByKey() {
+    // given
+    final long userKey = 1L;
+    final var username = "username";
+    final var name = "Foo";
+    final var email = "foo@bar.com";
+    final var password = "password";
+    userState.create(
+        userKey,
+        new UserRecord()
+            .setUserKey(userKey)
+            .setUsername(username)
+            .setName(name)
+            .setEmail(email)
+            .setPassword(password));
+
+    // when
+    final var persistedUser = userState.getUser(userKey);
+
+    // then
+    assertThat(persistedUser).isNotEmpty();
+    assertThat(persistedUser.get())
+        .extracting(
+            UserRecord::getUserKey,
+            UserRecord::getUsername,
+            UserRecord::getName,
+            UserRecord::getEmail,
+            UserRecord::getPassword)
+        .containsExactly(userKey, username, name, email, password);
+  }
+
+  @Test
+  void shouldReturnEmptyOptionalIfUserByKeyNotFound() {
+    // given
+    final var username = "username";
+    userState.create(1L, new UserRecord().setUsername(username));
+
+    // when
+    final var persistedUser = userState.getUser(2L);
+
+    // then
+    assertThat(persistedUser).isEmpty();
+  }
 }

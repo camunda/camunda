@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public class DbUserState implements UserState, MutableUserState {
@@ -71,6 +72,17 @@ public class DbUserState implements UserState, MutableUserState {
   @Override
   public UserRecord getUser(final String username) {
     return getUser(wrapString(username));
+  }
+
+  @Override
+  public Optional<UserRecord> getUser(final long userKey) {
+    this.userKey.wrapLong(userKey);
+    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+
+    if (persistedUser == null) {
+      return Optional.empty();
+    }
+    return Optional.of(persistedUser.getUser().copy());
   }
 
   @Override
