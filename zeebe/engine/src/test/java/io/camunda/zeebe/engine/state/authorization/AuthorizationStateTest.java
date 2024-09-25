@@ -33,15 +33,15 @@ public class AuthorizationStateTest {
     authorizationState = processingState.getAuthorizationState();
   }
 
-  @DisplayName("should return null if no authorization for owner and resource is not exist")
+  @DisplayName("should return empty list if no authorization for owner and resource is not exist")
   @Test
-  void shouldReturnNullIfNoAuthorizationForOwnerAndResourceExists() {
+  void shouldReturnEmptyListIfNoAuthorizationForOwnerAndResourceExists() {
     // when
     final var persistedAuth =
         authorizationState.getResourceIdentifiers(
             1L, AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
     // then
-    assertThat(persistedAuth).isNull();
+    assertThat(persistedAuth).isEmpty();
   }
 
   @Test
@@ -57,9 +57,7 @@ public class AuthorizationStateTest {
 
     // then
     final var resourceIdentifiers =
-        authorizationState
-            .getResourceIdentifiers(ownerKey, resourceType, permissionType)
-            .getResourceIdentifiers();
+        authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType);
     assertThat(resourceIdentifiers).containsExactly("foo", "bar");
   }
 
@@ -78,9 +76,7 @@ public class AuthorizationStateTest {
 
     // then
     final var resourceIdentifiers =
-        authorizationState
-            .getResourceIdentifiers(ownerKey, resourceType, permissionType)
-            .getResourceIdentifiers();
+        authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType);
     assertThat(resourceIdentifiers).containsExactly("foo", "bar", "baz");
   }
 
