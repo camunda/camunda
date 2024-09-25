@@ -139,14 +139,10 @@ jobs:
   java-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [detect-changes]
-    runs-on: [ self-hosted, linux, amd64, "16" ]
+    runs-on: gcp-perf-core-16-default
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Install and allow strace tests
-        run: |
-          sudo apt-get -qq update && sudo apt-get install -y strace
-          sudo sysctl -w kernel.yama.ptrace_scope=0
       - uses: ./.github/actions/setup-zeebe
         with:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
