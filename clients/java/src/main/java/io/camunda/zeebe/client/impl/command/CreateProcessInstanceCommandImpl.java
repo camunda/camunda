@@ -159,7 +159,7 @@ public final class CreateProcessInstanceCommandImpl
   @Override
   public CreateProcessInstanceCommandStep3 version(final int version) {
     grpcRequestObjectBuilder.setVersion(version);
-    httpRequestObject.setVersion(version);
+    httpRequestObject.setProcessDefinitionVersion(version);
     return this;
   }
 

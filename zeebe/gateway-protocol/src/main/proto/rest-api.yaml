@@ -2358,7 +2358,7 @@ components:
         processName:
           type: string
           description: The process name.
-        processVersion:
+        processDefinitionVersion:
           type: integer
           description: The process version.
           format: int32
@@ -2437,7 +2437,7 @@ components:
         processName:
           type: string
           description: The process name.
-        processVersion:
+        processDefinitionVersion:
           type: integer
           description: The process version.
           format: int32
@@ -4022,7 +4022,7 @@ components:
           description: |
             The bpmn process ID, as parsed during deployment, together with the version forms a
             unique identifier for a specific process definition.
-        version:
+        processDefinitionVersion:
           type: integer
           format: int32
           description: The assigned process version.
@@ -4130,7 +4130,7 @@ components:
             The BPMN process ID of the process definition to start an instance of.
             Cannot be used together with processDefinitionKey.
           type: string
-        version:
+        processDefinitionVersion:
           description: |
             The version of the process. Only considered when a bpmnProcessId is provided.
             By default, the latest version of the process is used.
@@ -4204,7 +4204,7 @@ components:
             The BPMN process ID of the process definition which was used to create the process.
             instance
           type: string
-        version:
+        processDefinitionVersion:
           description: |
             The version of the process definition which was used to create the process instance.
           type: integer

@@ -31,85 +31,85 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter key(Long key) {
+  public ProcessInstanceFilter key(final Long key) {
     filter.setKey(key);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter bpmnProcessId(String bpmnProcessId) {
+  public ProcessInstanceFilter bpmnProcessId(final String bpmnProcessId) {
     filter.setBpmnProcessId(bpmnProcessId);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processName(String processName) {
+  public ProcessInstanceFilter processName(final String processName) {
     filter.setProcessName(processName);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processVersion(Integer processVersion) {
-    filter.setProcessVersion(processVersion);
+  public ProcessInstanceFilter processVersion(final Integer processVersion) {
+    filter.setProcessDefinitionVersion(processVersion);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processVersionTag(String processVersionTag) {
+  public ProcessInstanceFilter processVersionTag(final String processVersionTag) {
     filter.setProcessVersionTag(processVersionTag);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processDefinitionKey(Long processDefinitionKey) {
+  public ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey) {
     filter.setProcessDefinitionKey(processDefinitionKey);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter rootProcessInstanceKey(Long rootProcessInstanceKey) {
+  public ProcessInstanceFilter rootProcessInstanceKey(final Long rootProcessInstanceKey) {
     filter.setRootProcessInstanceKey(rootProcessInstanceKey);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter parentProcessInstanceKey(Long parentProcessInstanceKey) {
+  public ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey) {
     filter.setParentProcessInstanceKey(parentProcessInstanceKey);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter parentFlowNodeInstanceKey(Long parentFlowNodeInstanceKey) {
+  public ProcessInstanceFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey) {
     filter.setParentFlowNodeInstanceKey(parentFlowNodeInstanceKey);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter treePath(String treePath) {
+  public ProcessInstanceFilter treePath(final String treePath) {
     filter.setTreePath(treePath);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter startDate(String startDate) {
+  public ProcessInstanceFilter startDate(final String startDate) {
     filter.setStartDate(startDate);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter endDate(String endDate) {
+  public ProcessInstanceFilter endDate(final String endDate) {
     filter.setEndDate(endDate);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter state(String state) {
+  public ProcessInstanceFilter state(final String state) {
     filter.setState((state == null) ? null : ProcessInstanceStateEnum.fromValue(state));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter incident(Boolean incident) {
+  public ProcessInstanceFilter incident(final Boolean incident) {
     filter.setIncident(incident);
     return this;
   }

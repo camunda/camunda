@@ -138,7 +138,7 @@ public final class SearchQueryResponseMapper {
         .key(p.key())
         .bpmnProcessId(p.bpmnProcessId())
         .processName(p.processName())
-        .processVersion(p.processVersion())
+        .processDefinitionVersion(p.processVersion())
         .processVersionTag(p.processVersionTag())
         .processDefinitionKey(p.processDefinitionKey())
         .rootProcessInstanceKey(p.rootProcessInstanceKey())
