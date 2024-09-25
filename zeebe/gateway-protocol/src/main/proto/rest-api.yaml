@@ -708,6 +708,18 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateProcessInstanceRequest"
+            examples:
+              "By process decision key":
+                summary: "Create a process instance by processDefinitionKey."
+                value:
+                  processDefinitionKey: 12345
+                  variables: {}
+              "By BPMN process ID":
+                summary: "Create a process instance by bpmnProcessID and version."
+                value:
+                  bpmnProcessId: "1234-5678"
+                  version: 1
+                  variables: {}
       responses:
         "200":
           description: The process instance was created.
@@ -1281,6 +1293,17 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/EvaluateDecisionRequest"
+            examples:
+              "By decision key":
+                summary: "Evaluate the decision by decisionKey."
+                value:
+                  decisionKey: 12345
+                  variables: {}
+              "By decision ID":
+                summary: "Evaluate the decision by decisionId."
+                value:
+                  decisionId: "1234-5678"
+                  variables: {}
       responses:
         "200":
           description: The decision was evaluated.
