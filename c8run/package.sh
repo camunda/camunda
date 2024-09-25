@@ -27,21 +27,21 @@ fi
 
 # Retrieve elasticsearch
 if [ ! -d "elasticsearch-$ELASTICSEARCH_VERSION" ]; then
-  wget "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELASTICSEARCH_VERSION}-${PLATFORM}-${architecture}.tar.gz"
-  tar -xzvf elasticsearch-${ELASTICSEARCH_VERSION}-${PLATFORM}-${architecture}.tar.gz
+  wget -q "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELASTICSEARCH_VERSION}-${PLATFORM}-${architecture}.tar.gz"
+  tar -xzf elasticsearch-${ELASTICSEARCH_VERSION}-${PLATFORM}-${architecture}.tar.gz
 fi
 
 if [ ! -d "camunda-zeebe-$CAMUNDA_VERSION" ]; then
-  wget "https://github.com/camunda/camunda/releases/download/$CAMUNDA_VERSION/camunda-zeebe-$CAMUNDA_VERSION.tar.gz"
-  tar -xzvf camunda-zeebe-$CAMUNDA_VERSION.tar.gz
+  wget -q "https://github.com/camunda/camunda/releases/download/$CAMUNDA_VERSION/camunda-zeebe-$CAMUNDA_VERSION.tar.gz"
+  tar -xzf camunda-zeebe-$CAMUNDA_VERSION.tar.gz
 fi
 
 connectorsFileName="connector-runtime-bundle-$CAMUNDA_CONNECTORS_VERSION-with-dependencies.jar"
 if [ ! -f "$connectorsFileName" ]; then
-  wget "https://repo1.maven.org/maven2/io/camunda/connector/connector-runtime-bundle/$CAMUNDA_CONNECTORS_VERSION/$connectorsFileName"
+  wget -q "https://repo1.maven.org/maven2/io/camunda/connector/connector-runtime-bundle/$CAMUNDA_CONNECTORS_VERSION/$connectorsFileName"
 fi
 
-tar -czvf camunda8-run-$CAMUNDA_VERSION-$architecture.tar.gz \
+tar -czf camunda8-run-$CAMUNDA_VERSION-$architecture.tar.gz \
   -C ../ \
   c8run/start.sh \
   c8run/shutdown.sh \

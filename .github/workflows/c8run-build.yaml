@@ -63,7 +63,7 @@ jobs:
         working-directory: ./c8run/e2e_tests
 
       - name: Wait for camunda process to start
-        run: bash -c 'while ! curl -f "http://localhost:8080/operate/login"; do sleep 5; done'
+        run: bash -c 'while ! curl -s -f "http://localhost:8080/operate/login"; do sleep 5; done'
 
       - name: Run Playwright tests
         run: npx playwright test
@@ -71,20 +71,20 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.os }}
           path: ./c8run/e2e_tests/playwright-report
           retention-days: 30
 
       - uses: actions/upload-artifact@v4
         with:
-          name: camunda8-run-build
+          name: camunda8-run-build-${{ matrix.os }}
           path: ./c8run/camunda8-run*
           retention-days: 1
 
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: c8run-logs
+          name: c8run-logs-${{ matrix.os }}
           path: ./c8run/log/*.log
           retention-days: 10
 
