@@ -186,11 +186,9 @@ public final class HttpClient implements AutoCloseable {
       } else if (body instanceof HttpEntity) {
         final HttpEntity entity = (HttpEntity) body;
         final byte[] entityBytes;
-        try {
-          final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        try (final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
           entity.writeTo(byteArrayOutputStream);
           entityBytes = byteArrayOutputStream.toByteArray();
-          byteArrayOutputStream.close();
         } catch (final IOException e) {
           result.completeExceptionally(
               new ClientException("Failed to convert multipart entity to bytes", e));
