@@ -38,8 +38,13 @@ public final class FilterBuilders {
     return new DecisionInstanceFilter.Builder();
   }
 
-  public static FlowNodeInstanceFilter.Builder flownodeInstance() {
+  public static FlowNodeInstanceFilter.Builder flowNodeInstance() {
     return new FlowNodeInstanceFilter.Builder();
+  }
+
+  public static FlowNodeInstanceFilter flowNodeInstance(
+      final Function<FlowNodeInstanceFilter.Builder, ObjectBuilder<FlowNodeInstanceFilter>> fn) {
+    return fn.apply(flowNodeInstance()).build();
   }
 
   public static UserFilter.Builder user() {

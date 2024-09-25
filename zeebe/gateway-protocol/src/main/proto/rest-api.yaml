@@ -944,6 +944,56 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /flownode-instances/{flownodeInstanceKey}:
+    get:
+      tags:
+        - Flow node instance
+      summary: |
+        Returns flow node instance as JSON.
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: flownodeInstanceKey
+          in: path
+          required: true
+          description: The assigned key of the flow node instance, which acts as a unique identifier for this flow node instance.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: >
+            The flow node instance is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowNodeInstanceItem"
+        "400":
+          description: >
+            The flow node instance Get failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: >
+            The flow node instance with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /decision-definitions/search:
     post:
       tags:
@@ -2284,40 +2334,73 @@ components:
       properties:
         flowNodeInstanceKey:
           type: integer
-          description: The key of this flow node instance.
+          description: The assigned key, which acts as a unique identifier for this flow node instance.
           format: int64
         processInstanceKey:
           type: integer
-          description: The process instance key.
+          description: The process instance key associated to this flow node instance.
           format: int64
         processDefinitionKey:
           type: integer
-          description: The process definition key.
+          description: The process definition key associated to this flow node instance.
           format: int64
+        bpmnProcessId:
+          description: The bpmn process id associated to this flow node instance.
+          type: string
         state:
+          description: State of flow node instance as defined set of values.
           type: string
-          description: The state, one of ACTIVE, COMPLETED, TERMINATED.
+          enum:
+            - ACTIVE
+            - COMPLETED
+            - TERMINATED
         type:
+          description: Type of flow node as defined set of values.
           type: string
-          description: The flow node type
+          enum:
+            - UNSPECIFIED
+            - PROCESS
+            - SUB_PROCESS
+            - EVENT_SUB_PROCESS
+            - START_EVENT
+            - INTERMEDIATE_CATCH_EVENT
+            - INTERMEDIATE_THROW_EVENT
+            - BOUNDARY_EVENT
+            - END_EVENT
+            - SERVICE_TASK
+            - RECEIVE_TASK
+            - USER_TASK
+            - MANUAL_TASK
+            - TASK
+            - EXCLUSIVE_GATEWAY
+            - INCLUSIVE_GATEWAY
+            - PARALLEL_GATEWAY
+            - EVENT_BASED_GATEWAY
+            - SEQUENCE_FLOW
+            - MULTI_INSTANCE_BODY
+            - CALL_ACTIVITY
+            - BUSINESS_RULE_TASK
+            - SCRIPT_TASK
+            - SEND_TASK
+            - UNKNOWN
         flowNodeId:
           type: string
-          description: The flow node id
+          description: The flow node id for this flow node instance.
         flowNodeName:
           type: string
-          description: The flow node name
+          description: The flow node name.
         treePath:
           type: string
-          description: The path of keys from process instance to this flow node instance separated by '/'
+          description: The path of keys from process instance to this flow node instance separated by '/'.
         incident:
           type: boolean
-          description: Shows whether this flow node instance has an incident related to
+          description: Shows whether this flow node instance has an incident related to.
         incidentKey:
           type: integer
-          description: The key of incident if field incident is true
+          description: The key of incident if field incident is true.
           format: int64
         tenantId:
-          description: The tenant id
+          description: The tenant id.
           type: string
     FlowNodeInstanceSearchQueryResponse:
       allOf:
@@ -2333,33 +2416,78 @@ components:
       properties:
         flowNodeInstanceKey:
           type: integer
+          description: The assigned key, which acts as a unique identifier for this flow node instance.
           format: int64
         processInstanceKey:
+          description: The process instance key associated to this flow node instance.
           type: integer
           format: int64
         processDefinitionKey:
+          description: The process definition key associated to this flow node instance.
           type: integer
           format: int64
+        bpmnProcessId:
+          description: The bpmn process id associated to this flow node instance.
+          type: string
         startDate:
+          description: Date when flow node instance started.
           type: string
+          format: date-time
         endDate:
+          description: Date when flow node instance finished.
           type: string
+          format: date-time
         flowNodeId:
-          type: string
-        flowNodeName:
+          description: The flow node id for this flow node instance.
           type: string
         treePath:
+          description: The path from process instance leading to this flow node instance.
           type: string
         type:
+          description: Type of flow node as defined set of values.
           type: string
+          enum:
+            - UNSPECIFIED
+            - PROCESS
+            - SUB_PROCESS
+            - EVENT_SUB_PROCESS
+            - START_EVENT
+            - INTERMEDIATE_CATCH_EVENT
+            - INTERMEDIATE_THROW_EVENT
+            - BOUNDARY_EVENT
+            - END_EVENT
+            - SERVICE_TASK
+            - RECEIVE_TASK
+            - USER_TASK
+            - MANUAL_TASK
+            - TASK
+            - EXCLUSIVE_GATEWAY
+            - INCLUSIVE_GATEWAY
+            - PARALLEL_GATEWAY
+            - EVENT_BASED_GATEWAY
+            - SEQUENCE_FLOW
+            - MULTI_INSTANCE_BODY
+            - CALL_ACTIVITY
+            - BUSINESS_RULE_TASK
+            - SCRIPT_TASK
+            - SEND_TASK
+            - UNKNOWN
         state:
+          description: State of flow node instance as defined set of values.
           type: string
+          enum:
+            - ACTIVE
+            - COMPLETED
+            - TERMINATED
         incident:
+          description: Shows whether this flow node instance has an incident. If true also an incidentKey is provided.
           type: boolean
         incidentKey:
+          description: Incident key associated with this flow node instance.
           type: integer
           format: int64
         tenantId:
+          description: The tenant id of the incident.
           type: string
     DecisionDefinitionSearchQueryRequest:
       allOf:
