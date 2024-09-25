@@ -2046,7 +2046,7 @@ components:
         key:
           type: integer
           format: int64
-        processName:
+        processDefinitionName:
           type: string
           description: The process name.
         processDefinitionVersion:
