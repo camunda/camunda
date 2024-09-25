@@ -70,6 +70,9 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
+    userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
+    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
+
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
     completeElementInstance(userTaskRecord);
     responseWriter.writeEventOnCommand(

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.task;
 
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
+import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -30,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Optional;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -54,7 +56,7 @@ public class TaskListenerTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE.userTask().ofInstance(processInstanceKey).withVariable("boo", "bar").complete();
 
     completeJobs(processInstanceKey, "listener_1", "listener_2", "listener_3");
 
@@ -70,6 +72,18 @@ public class TaskListenerTest {
         .extracting(Record::getValue)
         .extracting(JobRecordValue::getType)
         .containsExactly("listener_1", "listener_2", "listener_3");
+
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst())
+        .extracting(Record::getValue)
+        .satisfies(
+            recordValue -> {
+              assertThat(recordValue.getAction()).isEqualTo("complete");
+              assertThat(recordValue.getVariables()).isEmpty();
+              // assertThat(recordValue.getVariables()).containsEntry("boo", "bar");
+            });
 
     assertThat(
             RecordingExporter.userTaskRecords()
@@ -147,7 +161,7 @@ public class TaskListenerTest {
         .hasErrorType(ErrorType.TASK_LISTENER_NO_RETRIES)
         .hasErrorMessage("No more retries left.");
 
-    // resolve incident & complete start EL jobs
+    // resolve incident & complete failed TL job
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -229,6 +243,122 @@ public class TaskListenerTest {
               assertThat(jobRecordValue.getRetries()).isEqualTo(8);
             });
     assertThatProcessInstanceCompleted(processInstanceKey);
+  }
+
+  @Test
+  public void shouldAllowSubsequentListenersHaveAccessProducedByThePreviousListener() {
+    final BpmnModelInstance modelInstance =
+        createProcessWithCompleteTaskListeners("listener_1", "listener_2");
+
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("listener_1")
+        .withVariable("listener_1_var", "foo")
+        .complete();
+
+    // then: `listener_1_var` variable accessible in subsequent TL
+    final Optional<JobRecordValue> jobActivated =
+        ENGINE.jobs().withType("listener_2").activate().getValue().getJobs().stream()
+            .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
+            .findFirst();
+
+    assertThat(jobActivated)
+        .hasValueSatisfying(
+            job -> assertThat(job.getVariables()).contains(entry("listener_1_var", "foo")));
+  }
+
+  @Test
+  public void shouldRestrictTaskListenerVariablesToOwningElementScope() {
+    // given: Deploy process with a user task having complete TL and another service task following
+    // it
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .userTask(
+                "my_user_task",
+                t ->
+                    t.zeebeUserTask()
+                        .zeebeAssignee("foo")
+                        .zeebeTaskListener(l -> l.complete().type("my_listener")))
+            .serviceTask(
+                "subsequent_service_task", tb -> tb.zeebeJobType("subsequent_service_task"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // when: complete TL job with a variable 'my_listener_var'
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("my_listener")
+        .withVariable("my_listener_var", "bar")
+        .complete();
+
+    // then: assert the variable 'my_listener_var' is not accessible in the subsequent service task
+    // element
+    final var subsequentServiceTaskJob =
+        ENGINE.jobs().withType("subsequent_service_task").activate().getValue().getJobs().stream()
+            .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
+            .findFirst();
+
+    assertThat(subsequentServiceTaskJob)
+        .hasValueSatisfying(
+            job -> assertThat(job.getVariables()).doesNotContainKey("my_listener_var"));
+    ENGINE.job().ofInstance(processInstanceKey).withType("subsequent_service_task").complete();
+  }
+
+  @Test
+  public void shouldAllowTaskListenerVariablesUseInUserTaskOutputMappings() {
+    // given: Deploy process with a user task having complete TL and another service task following
+    // it
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .userTask(
+                "my_user_task",
+                t ->
+                    t.zeebeUserTask()
+                        .zeebeAssignee("foo")
+                        .zeebeTaskListener(l -> l.complete().type("my_listener"))
+                        .zeebeOutput("=my_listener_var+\"_abc\"", "userTaskOutput"))
+            .serviceTask(
+                "subsequent_service_task", tb -> tb.zeebeJobType("subsequent_service_task"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // when: complete TL job with a variable 'my_listener_var'
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("my_listener")
+        .withVariable("my_listener_var", "bar")
+        .complete();
+
+    // then: assert the variable 'my_listener_var' is not accessible in the subsequent service task
+    // element
+    final var subsequentServiceTaskJob =
+        ENGINE.jobs().withType("subsequent_service_task").activate().getValue().getJobs().stream()
+            .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
+            .findFirst();
+
+    assertThat(subsequentServiceTaskJob)
+        .hasValueSatisfying(
+            job -> assertThat(job.getVariables()).containsEntry("userTaskOutput", "bar_abc"));
+    ENGINE.job().ofInstance(processInstanceKey).withType("subsequent_service_task").complete();
   }
 
   private void assertThatProcessInstanceCompleted(final long processInstanceKey) {

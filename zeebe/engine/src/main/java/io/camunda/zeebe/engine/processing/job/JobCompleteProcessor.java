@@ -84,6 +84,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             // to store the variable for merge, to handle concurrent commands
             eventHandle.triggeringProcessEvent(value);
 
+            // TODO retrieve user task state saved in `UserTaskProcessor.handleCommandProcessing`
             final var userTask = userTaskState.getUserTask(elementInstance.getUserTaskKey());
             commandWriter.appendFollowUpCommand(
                 userTask.getUserTaskKey(), UserTaskIntent.COMPLETE_TASK_LISTENER, userTask);

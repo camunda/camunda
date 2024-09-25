@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.bpmn.ProcessElementProperties;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -18,7 +19,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
@@ -28,6 +31,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,9 +41,12 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private final ProcessState processState;
   private final UserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
+  private final EventScopeInstanceState eventScopeInstanceState;
 
   private final BpmnJobBehavior jobBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final VariableBehavior variableBehavior;
+  private final EventTriggerBehavior eventTriggerBehavior;
 
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
@@ -52,9 +59,12 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     this.processState = state.getProcessState();
     this.userTaskState = state.getUserTaskState();
     this.elementInstanceState = state.getElementInstanceState();
+    this.eventScopeInstanceState = state.getEventScopeInstanceState();
 
     this.jobBehavior = bpmnBehaviors.jobBehavior();
     this.incidentBehavior = bpmnBehaviors.incidentBehavior();
+    this.variableBehavior = bpmnBehaviors.variableBehavior();
+    this.eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
 
     this.rejectionWriter = writers.rejection();
     this.responseWriter = writers.response();
@@ -72,7 +82,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   private void processCompleteTaskListener(final TypedRecord<UserTaskRecord> command) {
     final var lifecycleState = userTaskState.getLifecycleState(command.getKey());
-    final UserTaskIntent userTaskIntent = mapLifecycleStateToIntent(lifecycleState);
+    final var userTaskIntent = mapLifecycleStateToIntent(lifecycleState);
     final var commandProcessor = commandProcessors.getCommandProcessor(userTaskIntent);
 
     final var userTaskElementInstanceKey = command.getValue().getElementInstanceKey();
@@ -83,10 +93,12 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var userTaskElement = getUserTaskElement(command.getValue());
     final var taskListeners = userTaskElement.getTaskListeners(eventType);
     final int taskListenerIndex = userTaskElementInstance.getTaskListenerIndex(eventType);
+    final var elementProperties = ProcessElementProperties.from(command.getValue());
 
+    mergeVariablesOfTaskListener(elementProperties);
     findNextTaskListener(taskListeners, taskListenerIndex)
         .ifPresentOrElse(
-            listener -> createTaskListenerJob(listener, command.getValue()),
+            listener -> createTaskListenerJob(listener, elementProperties),
             () -> commandProcessor.onFinalizeCommand(command, command.getValue()));
   }
 
@@ -114,8 +126,10 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var eventType = mapIntentToEventType(intent);
 
     if (userTaskElement.hasTaskListeners(eventType)) {
+      // TODO save current `command.getValue()`
       final var listener = userTaskElement.getTaskListeners(eventType).getFirst();
-      createTaskListenerJob(listener, persistedRecord);
+      final var elementProperties = ProcessElementProperties.from(persistedRecord);
+      createTaskListenerJob(listener, elementProperties);
     } else {
       processor.onFinalizeCommand(command, persistedRecord);
     }
@@ -135,10 +149,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   }
 
   private void createTaskListenerJob(
-      final TaskListener listener, final UserTaskRecord userTaskRecord) {
-
-    final var elementProperties = ProcessElementProperties.from(userTaskRecord);
-
+      final TaskListener listener, final ProcessElementProperties elementProperties) {
     jobBehavior
         .evaluateJobExpressions(listener.getJobWorkerProperties(), elementProperties)
         .thenDo(
@@ -192,5 +203,32 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
           throw new IllegalArgumentException(
               "Unexpected user task lifecycle state: '%s'".formatted(lifecycleState));
     };
+  }
+
+  private void mergeVariablesOfTaskListener(final ProcessElementProperties elementProperties) {
+    Optional.ofNullable(
+            eventScopeInstanceState.peekEventTrigger(elementProperties.getElementInstanceKey()))
+        .ifPresent(
+            eventTrigger -> {
+              if (eventTrigger.getVariables().capacity() > 0) {
+                final long scopeKey = elementProperties.getElementInstanceKey();
+
+                variableBehavior.mergeLocalDocument(
+                    scopeKey,
+                    elementProperties.getProcessDefinitionKey(),
+                    elementProperties.getProcessInstanceKey(),
+                    BufferUtil.wrapString(elementProperties.getBpmnProcessId()),
+                    elementProperties.getTenantId(),
+                    eventTrigger.getVariables());
+              }
+
+              eventTriggerBehavior.processEventTriggered(
+                  eventTrigger.getEventKey(),
+                  elementProperties.getProcessDefinitionKey(),
+                  eventTrigger.getProcessInstanceKey(),
+                  elementProperties.getTenantId(),
+                  elementProperties.getElementInstanceKey(),
+                  eventTrigger.getElementId());
+            });
   }
 }
