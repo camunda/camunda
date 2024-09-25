@@ -70,6 +70,7 @@ public final class DeployResourceCommandImpl
   private final RequestConfig.Builder httpRequestConfig;
   private boolean useRest;
   private final JsonMapper jsonMapper;
+  private String tenantId;
 
   public DeployResourceCommandImpl(
       final GatewayStub asyncStub,
@@ -86,6 +87,7 @@ public final class DeployResourceCommandImpl
     httpRequestConfig = httpClient.newRequestConfig();
     useRest = preferRestOverGrpc;
     this.jsonMapper = jsonMapper;
+    requestTimeout(requestTimeout);
   }
 
   /**
@@ -115,6 +117,7 @@ public final class DeployResourceCommandImpl
     useRest = preferRestOverGrpc;
     this.jsonMapper = jsonMapper;
     tenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+    requestTimeout(requestTimeout);
   }
 
   @Override
@@ -215,6 +218,8 @@ public final class DeployResourceCommandImpl
   @Override
   public ZeebeFuture<DeploymentEvent> send() {
     if (useRest) {
+      // adding here the tenantId because in the multipart request fields are only appended
+      multipartEntityBuilder.addTextBody(TENANT_FIELD_NAME, tenantId);
       return sendRestRequest();
     } else {
       return sendGrpcRequest();
@@ -223,8 +228,8 @@ public final class DeployResourceCommandImpl
 
   @Override
   public DeployResourceCommandStep2 tenantId(final String tenantId) {
+    this.tenantId = tenantId;
     requestBuilder.setTenantId(tenantId);
-    multipartEntityBuilder.addTextBody(TENANT_FIELD_NAME, tenantId);
     return this;
   }
 
