@@ -44,7 +44,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processName(final String processName) {
-    filter.setProcessName(processName);
+    filter.setProcessDefinitionName(processName);
     return this;
   }
 

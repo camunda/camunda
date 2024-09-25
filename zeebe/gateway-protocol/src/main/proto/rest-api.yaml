@@ -2355,7 +2355,7 @@ components:
         bpmnProcessId:
           type: string
           description: The bpmn process id.
-        processName:
+        processDefinitionName:
           type: string
           description: The process name.
         processDefinitionVersion:
@@ -2434,7 +2434,7 @@ components:
         bpmnProcessId:
           type: string
           description: The bpmn process id.
-        processName:
+        processDefinitionName:
           type: string
           description: The process name.
         processDefinitionVersion:

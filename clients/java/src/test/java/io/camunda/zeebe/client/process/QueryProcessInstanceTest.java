@@ -82,7 +82,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter).isNotNull();
     assertThat(filter.getKey()).isEqualTo(123L);
     assertThat(filter.getBpmnProcessId()).isEqualTo("bpmnProcessId");
-    assertThat(filter.getProcessName()).isEqualTo("Demo process");
+    assertThat(filter.getProcessDefinitionName()).isEqualTo("Demo process");
     assertThat(filter.getProcessDefinitionVersion()).isEqualTo(7);
     assertThat(filter.getProcessVersionTag()).isEqualTo("v7");
     assertThat(filter.getProcessDefinitionKey()).isEqualTo(15L);
