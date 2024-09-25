@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.processinstance.migration;
 
 import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -23,8 +22,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
-import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -35,7 +32,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class MigrateMultiInstanceBodyTest {
+public class MigrateSequentialMultiInstanceBodyTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
@@ -43,7 +40,7 @@ public class MigrateMultiInstanceBodyTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
-  public void shouldMigrateParallelMultiInstanceServiceTask() {
+  public void shouldMigrateMultiInstanceServiceTask() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
@@ -60,7 +57,8 @@ public class MigrateMultiInstanceBodyTest {
                             t.zeebeJobTypeExpression("jobType")
                                 .multiInstance(
                                     b ->
-                                        b.zeebeInputCollectionExpression("jobTypes")
+                                        b.sequential()
+                                            .zeebeInputCollectionExpression("jobTypes")
                                             .zeebeInputElement("jobType")))
                     .endEvent()
                     .done())
@@ -73,7 +71,8 @@ public class MigrateMultiInstanceBodyTest {
                             t.zeebeJobTypeExpression("jobType")
                                 .multiInstance(
                                     b ->
-                                        b.zeebeInputCollectionExpression("jobTypes")
+                                        b.sequential()
+                                            .zeebeInputCollectionExpression("jobTypes")
                                             .zeebeInputElement("jobType")))
                     .endEvent("multi_instance_target_process_end")
                     .done())
@@ -92,11 +91,22 @@ public class MigrateMultiInstanceBodyTest {
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(3))
-        .hasSize(3)
-        .extracting(Record::getValue)
-        .extracting(JobRecordValue::getType)
-        .containsExactly("a", "b", "c");
+                .withType("a")
+                .withElementId("serviceTask1")
+                .findAny())
+        .describedAs("Expect that first job in the multi-instance body is created")
+        .isPresent();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("a").complete();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withType("b")
+                .withElementId("serviceTask1")
+                .findAny())
+        .describedAs("Expect that second job in the multi-instance body is created")
+        .isPresent();
 
     // when
     ENGINE
@@ -122,43 +132,47 @@ public class MigrateMultiInstanceBodyTest {
         .describedAs("Expect that version number did not change")
         .hasVersion(1);
 
-    assertThat(
+    Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.SERVICE_TASK)
-                .limit(3))
-        .extracting(Record::getValue)
-        .extracting(
-            r ->
-                tuple(
-                    r.getProcessDefinitionKey(),
-                    r.getBpmnProcessId(),
-                    r.getElementId(),
-                    r.getVersion()))
-        .containsExactly(
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1),
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1),
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1));
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition key is changed")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that bpmn process id and element id changed")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("serviceTask2")
+        .describedAs("Expect that version number did not change")
+        .hasVersion(1);
 
-    assertThat(
+    Assertions.assertThat(
             RecordingExporter.jobRecords(JobIntent.MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(3))
-        .extracting(Record::getValue)
-        .extracting(
-            r ->
-                tuple(
-                    r.getProcessDefinitionKey(),
-                    r.getBpmnProcessId(),
-                    r.getElementId(),
-                    r.getType()))
-        .containsExactly(
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "a"),
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "b"),
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "c"));
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
+        .hasProcessDefinitionVersion(1)
+        .describedAs("Expect that element id changed due to mapping")
+        .hasElementId("serviceTask2")
+        .describedAs(
+            "Expect that the type did not change even though it's different in the target process."
+                + " Re-evaluation of the job type expression is not enabled for this migration")
+        .hasType("b");
 
-    ENGINE.job().ofInstance(processInstanceKey).withType("a").complete();
     ENGINE.job().ofInstance(processInstanceKey).withType("b").complete();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withType("c")
+                .withElementId("serviceTask2")
+                .findAny())
+        .describedAs("Expect that third job in the multi-instance body is created")
+        .isPresent();
+
     ENGINE.job().ofInstance(processInstanceKey).withType("c").complete();
 
     assertThat(
@@ -173,7 +187,7 @@ public class MigrateMultiInstanceBodyTest {
   }
 
   @Test
-  public void shouldMigrateParallelMultiInstanceReceiveTask() {
+  public void shouldMigrateMultiInstanceReceiveTask() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
@@ -195,7 +209,8 @@ public class MigrateMultiInstanceBodyTest {
                                             .zeebeCorrelationKeyExpression("key"))
                                 .multiInstance(
                                     b ->
-                                        b.zeebeInputCollectionExpression("keys")
+                                        b.sequential()
+                                            .zeebeInputCollectionExpression("keys")
                                             .zeebeInputElement("key")))
                     .endEvent()
                     .done())
@@ -211,7 +226,8 @@ public class MigrateMultiInstanceBodyTest {
                                             .zeebeCorrelationKeyExpression("key"))
                                 .multiInstance(
                                     b ->
-                                        b.zeebeInputCollectionExpression("keys")
+                                        b.sequential()
+                                            .zeebeInputCollectionExpression("keys")
                                             .zeebeInputElement("key")))
                     .endEvent("multi_instance_target_process_end")
                     .done())
@@ -230,11 +246,23 @@ public class MigrateMultiInstanceBodyTest {
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(3))
-        .hasSize(3)
-        .extracting(Record::getValue)
-        .extracting(MessageSubscriptionRecordValue::getCorrelationKey)
-        .containsExactly("a", "b", "c");
+                .withMessageName(sourceMessageName)
+                .withCorrelationKey("a")
+                .findAny())
+        .describedAs("Expect that first message subscription in the multi-instance body is created")
+        .isPresent();
+
+    ENGINE.message().withName(sourceMessageName).withCorrelationKey("a").publish();
+
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName(sourceMessageName)
+                .withCorrelationKey("b")
+                .findAny())
+        .describedAs(
+            "Expect that second message subscription in the multi-instance body is created")
+        .isPresent();
 
     // when
     ENGINE
@@ -260,50 +288,58 @@ public class MigrateMultiInstanceBodyTest {
         .describedAs("Expect that version number did not change")
         .hasVersion(1);
 
-    assertThat(
+    Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.RECEIVE_TASK)
-                .limit(3))
-        .extracting(Record::getValue)
-        .extracting(
-            r ->
-                tuple(
-                    r.getProcessDefinitionKey(),
-                    r.getBpmnProcessId(),
-                    r.getElementId(),
-                    r.getVersion()))
-        .containsExactly(
-            tuple(targetProcessDefinitionKey, targetProcessId, "receive2", 1),
-            tuple(targetProcessDefinitionKey, targetProcessId, "receive2", 1),
-            tuple(targetProcessDefinitionKey, targetProcessId, "receive2", 1));
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition key is changed")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that bpmn process id and element id changed")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("receive2")
+        .describedAs("Expect that version number did not change")
+        .hasVersion(1);
 
-    assertThat(
+    Assertions.assertThat(
             RecordingExporter.processMessageSubscriptionRecords(
                     ProcessMessageSubscriptionIntent.MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withMessageName(sourceMessageName)
-                .limit(3))
-        .extracting(Record::getValue)
-        .extracting(r -> tuple(r.getBpmnProcessId(), r.getElementId(), r.getCorrelationKey()))
-        .containsExactly(
-            tuple(targetProcessId, "receive2", "a"),
-            tuple(targetProcessId, "receive2", "b"),
-            tuple(targetProcessId, "receive2", "c"));
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("receive2")
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("b");
 
-    assertThat(
+    Assertions.assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withMessageName(sourceMessageName)
-                .limit(3))
-        .extracting(Record::getValue)
-        .extracting(r -> tuple(r.getBpmnProcessId(), r.getCorrelationKey()))
-        .containsExactly(
-            tuple(targetProcessId, "a"), tuple(targetProcessId, "b"), tuple(targetProcessId, "c"));
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("b");
 
-    ENGINE.message().withName(sourceMessageName).withCorrelationKey("a").publish();
     ENGINE.message().withName(sourceMessageName).withCorrelationKey("b").publish();
-    ENGINE.message().withName(sourceMessageName).withCorrelationKey("c").publish();
+
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName(targetMessageName) // msg sub is created with target message name
+                .withCorrelationKey("c")
+                .findAny())
+        .describedAs(
+            "Expect that third message subscription in the multi-instance body is created "
+                + "but with the target message name")
+        .isPresent();
+
+    ENGINE.message().withName(targetMessageName).withCorrelationKey("c").publish();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -317,7 +353,7 @@ public class MigrateMultiInstanceBodyTest {
   }
 
   @Test
-  public void shouldMigrateParallelMultiInstanceSubprocess() {
+  public void shouldMigrateMultiInstanceSubprocess() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
@@ -333,7 +369,8 @@ public class MigrateMultiInstanceBodyTest {
                         sub ->
                             sub.multiInstance(
                                 b ->
-                                    b.zeebeInputCollectionExpression("[1,2,3]")
+                                    b.sequential()
+                                        .zeebeInputCollectionExpression("[1,2,3]")
                                         .zeebeInputElement("index")))
                     .embeddedSubProcess()
                     .startEvent()
@@ -350,7 +387,8 @@ public class MigrateMultiInstanceBodyTest {
                         sub ->
                             sub.multiInstance(
                                 b ->
-                                    b.zeebeInputCollectionExpression("[1,2,3]")
+                                    b.sequential()
+                                        .zeebeInputCollectionExpression("[1,2,3]")
                                         .zeebeInputElement("index")))
                     .embeddedSubProcess()
                     .startEvent()
@@ -366,13 +404,18 @@ public class MigrateMultiInstanceBodyTest {
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            RecordingExporter.jobRecords(JobIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
+                .withType("A")
                 .withElementId("A")
-                .limit(3))
-        .describedAs("Wait until all service tasks have activated")
-        .hasSize(3);
+                .skip(1)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that second job in the multi-instance body is created")
+        .isNotNull();
 
     // when
     ENGINE
@@ -399,49 +442,63 @@ public class MigrateMultiInstanceBodyTest {
         .describedAs("Expect that version number did not change")
         .hasVersion(1);
 
-    assertThat(
+    Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.SUB_PROCESS)
-                .limit(3))
-        .extracting(Record::getValue)
-        .extracting(
-            r ->
-                tuple(
-                    r.getProcessDefinitionKey(),
-                    r.getBpmnProcessId(),
-                    r.getElementId(),
-                    r.getVersion()))
-        .containsExactly(
-            tuple(targetProcessDefinitionKey, targetProcessId, "sub2", 1),
-            tuple(targetProcessDefinitionKey, targetProcessId, "sub2", 1),
-            tuple(targetProcessDefinitionKey, targetProcessId, "sub2", 1));
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition key changed")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that bpmn process id and element id changed")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("sub2")
+        .describedAs("Expect that version number did not change")
+        .hasVersion(1);
 
-    assertThat(
+    Assertions.assertThat(
             RecordingExporter.jobRecords(JobIntent.MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(3))
-        .extracting(Record::getValue)
-        .extracting(
-            r ->
-                tuple(
-                    r.getProcessDefinitionKey(),
-                    r.getBpmnProcessId(),
-                    r.getElementId(),
-                    r.getType()))
-        .containsExactly(
-            tuple(targetProcessDefinitionKey, targetProcessId, "B", "A"),
-            tuple(targetProcessDefinitionKey, targetProcessId, "B", "A"),
-            tuple(targetProcessDefinitionKey, targetProcessId, "B", "A"));
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
+        .hasProcessDefinitionVersion(1)
+        .describedAs("Expect that element id changed due to mapping")
+        .hasElementId("B")
+        .describedAs(
+            "Expect that the type did not change even though it's different in the target process."
+                + " Re-evaluation of the job type expression is not enabled for this migration")
+        .hasType("A");
 
-    final var jobs =
+    final var secondJob =
         RecordingExporter.jobRecords(JobIntent.MIGRATED)
-            .withType("A")
             .withProcessInstanceKey(processInstanceKey)
-            .limit(3)
-            .toList();
+            .withType("A")
+            .getFirst();
 
-    jobs.forEach(job -> ENGINE.job().withKey(job.getKey()).complete());
+    ENGINE.job().ofInstance(processInstanceKey).withKey(secondJob.getKey()).complete();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withType("B") // new job is created with target job type
+                .withElementId("B")
+                .getFirst()
+                .getValue())
+        .describedAs(
+            "Expect that third job in the multi-instance body is created with target job type")
+        .isNotNull();
+
+    final var thirdJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("B")
+            .withElementId("B")
+            .getFirst();
+
+    ENGINE.job().ofInstance(processInstanceKey).withKey(thirdJob.getKey()).complete();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -455,7 +512,7 @@ public class MigrateMultiInstanceBodyTest {
   }
 
   @Test
-  public void shouldMigrateParallelMultiInstanceCallActivity() {
+  public void shouldMigrateMultiInstanceCallActivity() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
@@ -473,7 +530,8 @@ public class MigrateMultiInstanceBodyTest {
                             c.zeebeProcessId(childProcessId)
                                 .multiInstance(
                                     b ->
-                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                        b.sequential()
+                                            .zeebeInputCollectionExpression("[1,2,3]")
                                             .zeebeInputElement("index")))
                     .endEvent()
                     .done())
@@ -486,7 +544,8 @@ public class MigrateMultiInstanceBodyTest {
                             c.zeebeProcessId(childProcessId)
                                 .multiInstance(
                                     b ->
-                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                        b.sequential()
+                                            .zeebeInputCollectionExpression("[1,2,3]")
                                             .zeebeInputElement("index")))
                     .endEvent("multi_instance_target_process_end")
                     .done())
@@ -503,20 +562,28 @@ public class MigrateMultiInstanceBodyTest {
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withParentProcessInstanceKey(processInstanceKey)
-                .withElementId("A")
-                .limit(3))
-        .describedAs("Wait until all service tasks have activated")
-        .hasSize(3);
-
-    final var childProcessInstances =
+    final var firstChildProcessInstance =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withParentProcessInstanceKey(processInstanceKey)
             .withElementId("A")
-            .limit(3)
-            .toList();
+            .getFirst()
+            .getValue();
+
+    ENGINE
+        .job()
+        .ofInstance(firstChildProcessInstance.getProcessInstanceKey())
+        .withType("A")
+        .complete();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withType("A")
+                .withElementId("A")
+                .skip(1)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that second job in the multi-instance body is created")
+        .isNotNull();
 
     // when
     ENGINE
@@ -542,169 +609,57 @@ public class MigrateMultiInstanceBodyTest {
         .describedAs("Expect that version number did not change")
         .hasVersion(1);
 
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.CALL_ACTIVITY)
-                .limit(3))
-        .extracting(Record::getValue)
-        .extracting(
-            r ->
-                tuple(
-                    r.getProcessDefinitionKey(),
-                    r.getBpmnProcessId(),
-                    r.getElementId(),
-                    r.getVersion()))
-        .containsExactly(
-            tuple(targetProcessDefinitionKey, targetProcessId, "callActivity2", 1),
-            tuple(targetProcessDefinitionKey, targetProcessId, "callActivity2", 1),
-            tuple(targetProcessDefinitionKey, targetProcessId, "callActivity2", 1));
-
-    childProcessInstances.forEach(
-        instance ->
-            ENGINE
-                .job()
-                .ofInstance(instance.getValue().getProcessInstanceKey())
-                .withType("A")
-                .complete());
-
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withProcessDefinitionKey(targetProcessDefinitionKey)
-                .withElementType(BpmnElementType.END_EVENT)
-                .withElementId("multi_instance_target_process_end")
-                .findAny())
-        .describedAs("Expect that the process instance is continued in the target process")
-        .isPresent();
-  }
-
-  @Test
-  public void shouldMigratePartiallyCompleteParallelMultiInstance() {
-    // given
-    final String processId = helper.getBpmnProcessId();
-    final String targetProcessId = helper.getBpmnProcessId() + "2";
-
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(processId)
-                    .startEvent()
-                    .serviceTask(
-                        "serviceTask1",
-                        t ->
-                            t.zeebeJobTypeExpression("jobType")
-                                .multiInstance(
-                                    b ->
-                                        b.zeebeInputCollectionExpression("jobTypes")
-                                            .zeebeInputElement("jobType")))
-                    .endEvent()
-                    .done())
-            .withXmlResource(
-                Bpmn.createExecutableProcess(targetProcessId)
-                    .startEvent()
-                    .serviceTask(
-                        "serviceTask2",
-                        t ->
-                            t.zeebeJobTypeExpression("jobType")
-                                .multiInstance(
-                                    b ->
-                                        b.zeebeInputCollectionExpression("jobTypes")
-                                            .zeebeInputElement("jobType")))
-                    .endEvent("multi_instance_target_process_end")
-                    .done())
-            .deploy();
-
-    final long targetProcessDefinitionKey =
-        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
-
-    final var processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(processId)
-            .withVariable("jobTypes", Arrays.asList("a", "b", "c"))
-            .create();
-
-    assertThat(
-            RecordingExporter.jobRecords(JobIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(3))
-        .hasSize(3)
-        .extracting(Record::getValue)
-        .extracting(JobRecordValue::getType)
-        .containsExactly("a", "b", "c");
-
-    ENGINE.job().ofInstance(processInstanceKey).withType("a").complete();
-
-    assertThat(
-            RecordingExporter.jobRecords(JobIntent.COMPLETED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withType("a")
-                .withElementId("serviceTask1")
-                .findAny())
-        .describedAs("Expect that one of the service tasks in the multi-instance body is completed")
-        .isPresent();
-
-    // when
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("serviceTask1", "serviceTask2")
-        .migrate();
-
-    // then
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+                .withElementType(BpmnElementType.CALL_ACTIVITY)
                 .getFirst()
                 .getValue())
         .describedAs("Expect that process definition key is changed")
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .describedAs("Expect that bpmn process id and element id changed")
         .hasBpmnProcessId(targetProcessId)
-        .hasElementId("serviceTask2")
+        .hasElementId("callActivity2")
         .describedAs("Expect that version number did not change")
         .hasVersion(1);
 
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.SERVICE_TASK)
-                .limit(2))
-        .extracting(Record::getValue)
-        .extracting(
-            r ->
-                tuple(
-                    r.getProcessDefinitionKey(),
-                    r.getBpmnProcessId(),
-                    r.getElementId(),
-                    r.getVersion()))
-        .containsExactly(
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1),
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", 1));
+    final var secondChildProcessInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .skip(1)
+            .getFirst()
+            .getValue();
+
+    ENGINE
+        .job()
+        .ofInstance(secondChildProcessInstance.getProcessInstanceKey())
+        .withType("A")
+        .complete();
 
     assertThat(
-            RecordingExporter.jobRecords(JobIntent.MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(2))
-        .extracting(Record::getValue)
-        .extracting(
-            r ->
-                tuple(
-                    r.getProcessDefinitionKey(),
-                    r.getBpmnProcessId(),
-                    r.getElementId(),
-                    r.getType()))
-        .containsExactly(
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "b"),
-            tuple(targetProcessDefinitionKey, targetProcessId, "serviceTask2", "c"));
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withType("A")
+                .withElementId("A")
+                .skip(2)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that third job in the multi-instance body is created")
+        .isNotNull();
 
-    ENGINE.job().ofInstance(processInstanceKey).withType("b").complete();
-    ENGINE.job().ofInstance(processInstanceKey).withType("c").complete();
+    final var thirdChildProcessInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .skip(2)
+            .getFirst()
+            .getValue();
+
+    ENGINE
+        .job()
+        .ofInstance(thirdChildProcessInstance.getProcessInstanceKey())
+        .withType("A")
+        .complete();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -735,7 +690,8 @@ public class MigrateMultiInstanceBodyTest {
                             t.zeebeJobType("A")
                                 .multiInstance(
                                     b ->
-                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                        b.sequential()
+                                            .zeebeInputCollectionExpression("[1,2,3]")
                                             .zeebeInputElement("index")
                                             .zeebeOutputElementExpression("assert(x, x != null)")
                                             .zeebeOutputCollection("results")))
@@ -747,10 +703,11 @@ public class MigrateMultiInstanceBodyTest {
                     .serviceTask(
                         "serviceTask2",
                         t ->
-                            t.zeebeJobType("A")
+                            t.zeebeJobType("B")
                                 .multiInstance(
                                     b ->
-                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                        b.sequential()
+                                            .zeebeInputCollectionExpression("[1,2,3]")
                                             .zeebeInputElement("index")
                                             .zeebeOutputElementExpression("result")
                                             .zeebeOutputCollection("results")))
@@ -763,14 +720,13 @@ public class MigrateMultiInstanceBodyTest {
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
-    final var jobs =
+    final var job =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType("A")
-            .limit(3)
-            .toList();
+            .getFirst();
 
-    ENGINE.job().withKey(jobs.getFirst().getKey()).complete();
+    ENGINE.job().withKey(job.getKey()).complete();
 
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
@@ -797,8 +753,35 @@ public class MigrateMultiInstanceBodyTest {
     // after migrating, we can successfully resolve the incident
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
-    // and complete the two still active jobs without problems
-    jobs.stream().skip(1).forEach(job -> ENGINE.job().withKey(job.getKey()).complete());
+    final var secondJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("B")
+            .withElementId("serviceTask2")
+            .getFirst();
+
+    ENGINE.job().ofInstance(processInstanceKey).withKey(secondJob.getKey()).complete();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withType("B") // new job is created with target job type
+                .withElementId("serviceTask2")
+                .getFirst()
+                .getValue())
+        .describedAs(
+            "Expect that third job in the multi-instance body is created with target job type")
+        .isNotNull();
+
+    final var thirdJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("B")
+            .withElementId("serviceTask2")
+            .skip(1)
+            .getFirst();
+
+    ENGINE.job().ofInstance(processInstanceKey).withKey(thirdJob.getKey()).complete();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -829,7 +812,8 @@ public class MigrateMultiInstanceBodyTest {
                             t.zeebeJobType("A")
                                 .multiInstance(
                                     b ->
-                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                        b.sequential()
+                                            .zeebeInputCollectionExpression("[1,2,3]")
                                             .zeebeInputElement("index")
                                             .zeebeOutputElementExpression("result")
                                             .zeebeOutputCollection("results")
@@ -842,10 +826,11 @@ public class MigrateMultiInstanceBodyTest {
                     .serviceTask(
                         "serviceTask2",
                         t ->
-                            t.zeebeJobType("A")
+                            t.zeebeJobType("B")
                                 .multiInstance(
                                     b ->
-                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                        b.sequential()
+                                            .zeebeInputCollectionExpression("[1,2,3]")
                                             .zeebeInputElement("index")
                                             .zeebeOutputElementExpression("result")
                                             .zeebeOutputCollection("results")
@@ -860,14 +845,13 @@ public class MigrateMultiInstanceBodyTest {
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
-    final var jobs =
+    final var job =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType("A")
-            .limit(3)
-            .toList();
+            .getFirst();
 
-    ENGINE.job().withKey(jobs.getFirst().getKey()).complete();
+    ENGINE.job().withKey(job.getKey()).complete();
 
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
@@ -894,8 +878,35 @@ public class MigrateMultiInstanceBodyTest {
     // after migrating, we can successfully resolve the incident
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
-    // and complete the two still active jobs without problems
-    jobs.stream().skip(1).forEach(job -> ENGINE.job().withKey(job.getKey()).complete());
+    final var secondJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("B")
+            .withElementId("serviceTask2")
+            .getFirst();
+
+    ENGINE.job().ofInstance(processInstanceKey).withKey(secondJob.getKey()).complete();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withType("B") // new job is created with target job type
+                .withElementId("serviceTask2")
+                .getFirst()
+                .getValue())
+        .describedAs(
+            "Expect that third job in the multi-instance body is created with target job type")
+        .isNotNull();
+
+    final var thirdJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("B")
+            .withElementId("serviceTask2")
+            .skip(1)
+            .getFirst();
+
+    ENGINE.job().ofInstance(processInstanceKey).withKey(thirdJob.getKey()).complete();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -926,7 +937,8 @@ public class MigrateMultiInstanceBodyTest {
                             t.zeebeJobType("A")
                                 .multiInstance(
                                     b ->
-                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                        b.sequential()
+                                            .zeebeInputCollectionExpression("[1,2,3]")
                                             .zeebeInputElement("index")
                                             .zeebeOutputElementExpression("index")
                                             .zeebeOutputCollection("results")))
@@ -938,10 +950,11 @@ public class MigrateMultiInstanceBodyTest {
                     .serviceTask(
                         "serviceTask2",
                         t ->
-                            t.zeebeJobType("A")
+                            t.zeebeJobType("B")
                                 .multiInstance(
                                     b ->
-                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                        b.sequential()
+                                            .zeebeInputCollectionExpression("[1,2,3]")
                                             .zeebeInputElement("index")
                                             .zeebeOutputElementExpression("index")
                                             .zeebeOutputCollection("results2")))
@@ -955,14 +968,13 @@ public class MigrateMultiInstanceBodyTest {
     final var processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
 
-    final var jobs =
+    final var job =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType("A")
-            .limit(3)
-            .toList();
+            .getFirst();
 
-    ENGINE.job().withKey(jobs.getFirst().getKey()).complete();
+    ENGINE.job().withKey(job.getKey()).complete();
 
     final var resultsVariable =
         RecordingExporter.variableRecords(VariableIntent.UPDATED)
@@ -981,8 +993,16 @@ public class MigrateMultiInstanceBodyTest {
         .migrate();
 
     // then
-    // after migrating, we can complete one of the still active jobs
-    ENGINE.job().withKey(jobs.get(1).getKey()).complete();
+    // after migrating, we can complete the second job
+    final var secondJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("A")
+            .withElementId("serviceTask1")
+            .skip(1)
+            .getFirst();
+
+    ENGINE.job().ofInstance(processInstanceKey).withKey(secondJob.getKey()).complete();
 
     // but that raises an incident
     final var incident =
@@ -1013,5 +1033,127 @@ public class MigrateMultiInstanceBodyTest {
                 .getValue())
         .describedAs("Expect that the second entry is collected as output")
         .hasValue("[1,2,null]");
+  }
+
+  @Test
+  public void shouldRaiseIncidentOnCompletionAfterChangingInputCollection() {
+    // given
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .serviceTask(
+                        "serviceTask1",
+                        t ->
+                            t.zeebeJobType("A")
+                                .multiInstance(
+                                    b ->
+                                        b.sequential()
+                                            .zeebeInputCollectionExpression("input1")
+                                            .zeebeInputElement("index")
+                                            .zeebeOutputElementExpression("index")
+                                            .zeebeOutputCollection("results")))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask(
+                        "serviceTask2",
+                        t ->
+                            t.zeebeJobType("B")
+                                .multiInstance(
+                                    b ->
+                                        b.sequential()
+                                            .zeebeInputCollectionExpression("input2")
+                                            .zeebeInputElement("index")
+                                            .zeebeOutputElementExpression("index")
+                                            .zeebeOutputCollection("results")))
+                    .endEvent("multi_instance_target_process_end")
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(sourceProcessId)
+            .withVariable("input1", Arrays.asList("1", "2", "3"))
+            .create();
+
+    final var inputVariable =
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("input1")
+            .withValue("[\"1\",\"2\",\"3\"]")
+            .getFirst();
+
+    final var job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("A")
+            .getFirst();
+
+    ENGINE.job().withKey(job.getKey()).complete();
+
+    final var secondJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("A")
+            .withElementId("serviceTask1")
+            .skip(1)
+            .getFirst();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("serviceTask1", "serviceTask2")
+        .migrate();
+
+    // then
+    // after migrating, we can complete the second job
+    ENGINE.job().ofInstance(processInstanceKey).withKey(secondJob.getKey()).complete();
+
+    // but that raises an incident
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    Assertions.assertThat(incident.getValue())
+        .hasErrorMessage(
+            "Expected result of the expression 'input2' to be 'ARRAY', but was 'NULL'. "
+                + "The evaluation reported the following warnings:\n"
+                + "[NO_VARIABLE_FOUND] No variable found with name 'input2'");
+
+    // we can resolve the incident by creating the new input collection variable 'input2'
+    ENGINE
+        .variables()
+        .ofScope(inputVariable.getValue().getScopeKey())
+        .withDocument("{\"input2\": [1, 2, 3]}")
+        .withUpdateSemantic(VariableDocumentUpdateSemantic.LOCAL)
+        .update();
+
+    // and when we resolve the incident
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then the third job should be created
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withType("B")
+                .withElementId("serviceTask2")
+                .getFirst())
+        .describedAs("Expect that the third job is created")
+        .isNotNull();
   }
 }
