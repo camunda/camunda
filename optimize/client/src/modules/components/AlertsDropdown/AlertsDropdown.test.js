@@ -11,7 +11,7 @@ import {shallow} from 'enzyme';
 import {OverflowMenu, OverflowMenuItem} from '@carbon/react';
 
 import {AlertModal, Deleter} from 'components';
-import {loadReports, loadAlerts, editAlert, addAlert, removeAlert, getCollection} from 'services';
+import {loadEntities, loadAlerts, editAlert, addAlert, removeAlert, getCollection} from 'services';
 import {getWebhooks} from 'config';
 
 import {AlertsDropdown} from './AlertsDropdown';
@@ -20,33 +20,21 @@ jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
     ...rest,
-    loadReports: jest.fn().mockReturnValue([
+    loadEntities: jest.fn().mockReturnValue([
       {
         id: '1',
-        data: {
-          visualization: 'table',
-          view: {properties: ['frequency']},
-          configuration: {aggregationTypes: [{type: 'avg', value: null}]},
-        },
         name: 'Report 1',
+        entityType: 'report',
       },
       {
         id: '2',
-        data: {
-          visualization: 'number',
-          view: {properties: ['duration']},
-          configuration: {aggregationTypes: [{type: 'avg', value: null}]},
-        },
+        entityType: 'report',
         name: 'Report 2',
       },
-      {id: '3', data: {visualization: 'number'}, name: 'Report 3'},
+      {id: '3', entityType: 'report', name: 'Report 3'},
       {
         id: '4',
-        data: {
-          visualization: 'number',
-          view: {properties: ['duration']},
-          configuration: {aggregationTypes: [{type: 'avg', value: null}]},
-        },
+        entityType: 'report',
         name: 'Report 4',
       },
     ]),
@@ -99,7 +87,7 @@ it('should load existing alerts, reports and webhooks', () => {
 
   runAllEffects();
 
-  expect(loadReports).toHaveBeenCalled();
+  expect(loadEntities).toHaveBeenCalled();
   expect(loadAlerts).toHaveBeenCalled();
   expect(getWebhooks).toHaveBeenCalled();
 });

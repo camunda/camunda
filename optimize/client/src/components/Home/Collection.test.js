@@ -8,17 +8,15 @@
 
 import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
-import {Tag} from '@carbon/react';
 
 import {Deleter} from 'components';
 import {refreshBreadcrumbs} from 'components/navigation';
-import {loadEntity, updateEntity} from 'services';
+import {loadEntity, updateEntity, loadCollectionEntities} from 'services';
 import {isUserSearchAvailable} from 'config';
 
 import {Collection} from './Collection';
 import Copier from './Copier';
 import CollectionModal from './modals/CollectionModal';
-import {loadCollectionEntities} from './service';
 import UserList from './UserList';
 
 jest.mock('config', () => ({
@@ -55,45 +53,42 @@ jest.mock('services', () => {
         scope: [], // array of scope objects, for details see scope endpoints
       },
     }),
+    loadCollectionEntities: jest.fn().mockReturnValue([
+      {
+        id: 'aDashboardId',
+        name: 'aDashboard',
+        description: 'a description',
+        lastModified: '2017-11-11T11:11:11.1111+0200',
+        created: '2017-11-11T11:11:11.1111+0200',
+        owner: 'user_id',
+        lastModifier: 'user_id',
+        entityType: 'dashboard',
+        currentUserRole: 'editor', // or viewer
+        data: {
+          subEntityCounts: {
+            report: 8,
+          },
+          roleCounts: {},
+        },
+      },
+      {
+        id: 'aReportId',
+        name: 'aReport',
+        lastModified: '2017-11-11T11:11:11.1111+0200',
+        created: '2017-11-11T11:11:11.1111+0200',
+        owner: 'user_id',
+        lastModifier: 'user_id',
+        reportType: 'process',
+        entityType: 'report',
+        data: {
+          subEntityCounts: {},
+          roleCounts: {},
+        },
+        currentUserRole: 'editor', // or viewer
+      },
+    ]),
   };
 });
-
-jest.mock('./service', () => ({
-  loadCollectionEntities: jest.fn().mockReturnValue([
-    {
-      id: 'aDashboardId',
-      name: 'aDashboard',
-      description: 'a description',
-      lastModified: '2017-11-11T11:11:11.1111+0200',
-      created: '2017-11-11T11:11:11.1111+0200',
-      owner: 'user_id',
-      lastModifier: 'user_id',
-      entityType: 'dashboard',
-      currentUserRole: 'editor', // or viewer
-      data: {
-        subEntityCounts: {
-          report: 8,
-        },
-        roleCounts: {},
-      },
-    },
-    {
-      id: 'aReportId',
-      name: 'aReport',
-      lastModified: '2017-11-11T11:11:11.1111+0200',
-      created: '2017-11-11T11:11:11.1111+0200',
-      owner: 'user_id',
-      lastModifier: 'user_id',
-      reportType: 'process',
-      entityType: 'report',
-      data: {
-        subEntityCounts: {},
-        roleCounts: {},
-      },
-      currentUserRole: 'editor', // or viewer
-    },
-  ]),
-}));
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb, err, final) => {

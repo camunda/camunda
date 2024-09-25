@@ -82,7 +82,7 @@ it('should load collection entities with sort parameters', () => {
 
   node.find('EntityList').prop('onChange')('lastModifier', 'desc');
 
-  expect(loadEntities).toHaveBeenCalledWith('lastModifier', 'desc');
+  expect(loadEntities).toHaveBeenCalledWith(null, 'lastModifier', 'desc');
 });
 
 it('should pass loading state to entitylist', async () => {

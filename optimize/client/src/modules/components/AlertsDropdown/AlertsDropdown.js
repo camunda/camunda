@@ -20,7 +20,8 @@ import {
   removeAlert,
   getCollection,
   isAlertCompatibleReport,
-  loadReports,
+  loadEntities,
+  isReportEntity,
 } from 'services';
 import {t} from 'translation';
 import {getWebhooks} from 'config';
@@ -47,8 +48,11 @@ export function AlertsDropdown({dashboardTiles, numberReport, location}) {
       return setReports([numberReport]);
     }
     mightFail(
-      loadReports(collection),
-      (reports) => setReports(reports.filter((report) => isAlertCompatibleReport(report))),
+      loadEntities(collection),
+      (entities) =>
+        setReports(
+          entities.filter(isReportEntity).filter((report) => isAlertCompatibleReport(report))
+        ),
       showError
     );
   }, [mightFail, numberReport, collection]);
