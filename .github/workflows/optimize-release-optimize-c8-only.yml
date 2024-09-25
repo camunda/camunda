@@ -209,8 +209,10 @@ jobs:
       - name: Remove tag for RC release
         if: env.IS_RC == 'true' || failure()
         run: |
-          git tag -d ${TAG}
-          git push origin :refs/tags/${TAG}
+          if [ $(git tag -l "$TAG") ]; then
+            git tag -d ${TAG}
+            git push origin :refs/tags/${TAG}
+          fi
 
       - name: Create a GitHub release
         if: ${{ env.IS_RC == 'false' && env.DRY_RUN == 'false' }}
