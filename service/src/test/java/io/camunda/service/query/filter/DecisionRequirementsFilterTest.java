@@ -8,14 +8,11 @@
 package io.camunda.service.query.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
-import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.entities.DecisionRequirementsEntity;
-import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.query.DecisionRequirementsQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
@@ -224,27 +221,12 @@ public final class DecisionRequirementsFilterTest {
   }
 
   @Test
-  public void shouldReturnDecisionRequirementsXLM() {
+  public void shouldReturnDecisionRequirementsXLMyKey() {
     // when
     final String expectedXml = "<xml/>";
     final var searchQueryResult = services.getDecisionRequirementsXml(124L);
 
     // then
     assertThat(searchQueryResult).isEqualTo(expectedXml);
-  }
-
-  @Test
-  public void shouldReturn404ForNotFoundDecisionRequirementsKeyXML() {
-    // when
-    when(services.getDecisionRequirementsXml(125L))
-        .thenThrow(new NotFoundException("Decision Requirements not found"));
-    final var searchQueryResult = services.getDecisionRequirementsXml(125L);
-
-    // then
-    assertThrows(
-        NotFoundException.class,
-        () -> {
-          services.getDecisionRequirementsXml(125L);
-        });
   }
 }

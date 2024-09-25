@@ -391,7 +391,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
   }
 
   @Test
-  public void shouldReturn404ForNotFoundDecisionRequirements() {
+  public void shouldReturn404ForNotFoundDecisionRequirementsXml() {
     // given
     final Long decisionRequirementsKey = 1L;
     when(decisionRequirementsServices.getDecisionRequirementsXml(decisionRequirementsKey))
@@ -432,9 +432,9 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         """
         {
           "type": "about:blank",
-          "title": "Failed to execute Get Decision Requirements XML Query.",
+          "title": "java.lang.RuntimeException",
           "status": 500,
-          "detail": "Failed to get decision requirements xml.",
+          "detail": "Unexpected error occurred during the request processing: Failed to get decision requirements xml.",
           "instance": "%s"
         }"""
             .formatted(DECISION_REQUIREMENTS_GET_XML_URL.formatted(decisionRequirementsKey));
