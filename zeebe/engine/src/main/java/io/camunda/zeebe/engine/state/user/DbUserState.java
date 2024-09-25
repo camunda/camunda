@@ -47,9 +47,9 @@ public class DbUserState implements UserState, MutableUserState {
   }
 
   @Override
-  public void create(final long key, final UserRecord user) {
+  public void create(final UserRecord user) {
     username.wrapBuffer(user.getUsernameBuffer());
-    userKey.wrapLong(key);
+    userKey.wrapLong(user.getUserKey());
     persistedUser.setUser(user);
 
     userByUserKeyColumnFamily.insert(userKey, persistedUser);

@@ -51,7 +51,7 @@ public class UserStateTest {
             .setName("U")
             .setPassword("P")
             .setEmail("email" + UUID.randomUUID());
-    userState.create(1L, user);
+    userState.create(user);
 
     // then
     final var persistedUser = userState.getUser(user.getUsername());
@@ -65,14 +65,15 @@ public class UserStateTest {
     // given
     final UserRecord user =
         new UserRecord()
+            .setUserKey(2L)
             .setUsername(username)
             .setName("U")
             .setPassword("P")
             .setEmail("email" + UUID.randomUUID());
-    userState.create(2L, user);
+    userState.create(user);
 
     // when/then
-    assertThatThrownBy(() -> userState.create(2L, user))
+    assertThatThrownBy(() -> userState.create(user))
         .isInstanceOf(ZeebeDbInconsistentException.class)
         .hasMessage("Key DbLong{2} in ColumnFamily USERS already exists");
   }
@@ -84,20 +85,22 @@ public class UserStateTest {
     // given
     final UserRecord userOne =
         new UserRecord()
+            .setUserKey(1L)
             .setUsername(usernameOne)
             .setName("U")
             .setPassword("P")
             .setEmail("email" + UUID.randomUUID());
-    userState.create(3L, userOne);
+    userState.create(userOne);
 
     final var usernameTwo = "username" + UUID.randomUUID();
     final UserRecord userTwo =
         new UserRecord()
+            .setUserKey(2L)
             .setUsername(usernameTwo)
             .setName("U")
             .setPassword("P")
             .setEmail("email" + UUID.randomUUID());
-    userState.create(4L, userTwo);
+    userState.create(userTwo);
 
     // when
     final var persistedUserOne = userState.getUser(usernameOne);
@@ -113,14 +116,20 @@ public class UserStateTest {
   @DisplayName("should update a user")
   @Test
   void shouldUpdateAUser() {
+    final var userKey = 1L;
     final var username = "username" + UUID.randomUUID();
     final var name = "name" + UUID.randomUUID();
     final var password = "password" + UUID.randomUUID();
     final var email = "email" + UUID.randomUUID();
 
     final UserRecord user =
-        new UserRecord().setUsername(username).setName(name).setPassword(password).setEmail(email);
-    userState.create(5L, user);
+        new UserRecord()
+            .setUserKey(userKey)
+            .setUsername(username)
+            .setName(name)
+            .setPassword(password)
+            .setEmail(email);
+    userState.create(user);
 
     final var persistedUserBeforeUpdate = userState.getUser(username);
     assertThat(persistedUserBeforeUpdate.getName()).isEqualTo(name);
@@ -152,7 +161,6 @@ public class UserStateTest {
     final var email = "foo@bar.com";
     final var password = "password";
     userState.create(
-        userKey,
         new UserRecord()
             .setUserKey(userKey)
             .setUsername(username)
@@ -179,7 +187,7 @@ public class UserStateTest {
   void shouldReturnEmptyOptionalIfUserByKeyNotFound() {
     // given
     final var username = "username";
-    userState.create(1L, new UserRecord().setUsername(username));
+    userState.create(new UserRecord().setUserKey(1L).setUsername(username));
 
     // when
     final var persistedUser = userState.getUser(2L);
