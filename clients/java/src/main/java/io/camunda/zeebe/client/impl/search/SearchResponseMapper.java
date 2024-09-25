@@ -33,14 +33,7 @@ import io.camunda.zeebe.client.impl.search.response.ProcessInstanceImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchQueryResponseImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchResponsePageImpl;
 import io.camunda.zeebe.client.impl.search.response.UserTaskImpl;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQueryResponse;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceSearchQueryResponse;
-import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsSearchQueryResponse;
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceSearchQueryResponse;
-import io.camunda.zeebe.client.protocol.rest.IncidentSearchQueryResponse;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResponse;
-import io.camunda.zeebe.client.protocol.rest.SearchQueryPageResponse;
-import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryResponse;
+import io.camunda.zeebe.client.protocol.rest.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -50,6 +43,10 @@ import java.util.stream.Collectors;
 public final class SearchResponseMapper {
 
   private SearchResponseMapper() {}
+
+  public static ProcessInstance toProcessInstanceGetResponse(final ProcessInstanceItem response) {
+    return new ProcessInstanceImpl(response);
+  }
 
   public static SearchQueryResponse<ProcessInstance> toProcessInstanceSearchResponse(
       final ProcessInstanceSearchQueryResponse response) {

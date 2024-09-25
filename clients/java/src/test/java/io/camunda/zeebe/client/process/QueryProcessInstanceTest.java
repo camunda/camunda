@@ -17,13 +17,28 @@ package io.camunda.zeebe.client.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.tomakehurst.wiremock.http.RequestMethod;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.zeebe.client.protocol.rest.*;
 import io.camunda.zeebe.client.util.ClientRestTest;
+import io.camunda.zeebe.client.util.RestGatewayService;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-public class SearchProcessInstanceTest extends ClientRestTest {
+public class QueryProcessInstanceTest extends ClientRestTest {
+
+  @Test
+  public void shouldGetProcessInstanceByKey() {
+    // when
+    client.newProcessInstanceGetRequest(123L).send().join();
+
+    // then
+    final LoggedRequest request = RestGatewayService.getLastRequest();
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/123");
+    assertThat(request.getBodyAsString()).isEmpty();
+  }
 
   @Test
   public void shouldSearchProcessInstanceWithEmptyQuery() {

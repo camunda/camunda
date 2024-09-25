@@ -8,10 +8,12 @@
 package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.*;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
@@ -82,6 +84,55 @@ public class ProcessQueryTest {
   static void afterAll() {
     DEPLOYED_PROCESSES.clear();
     PROCESS_INSTANCES.clear();
+  }
+
+  @Test
+  void shouldGetProcessInstanceByKey() {
+    // given
+    final String bpmnProcessId = "service_tasks_v1";
+    final ProcessInstanceEvent processInstanceEvent =
+        PROCESS_INSTANCES.stream()
+            .filter(p -> Objects.equals(bpmnProcessId, p.getBpmnProcessId()))
+            .findFirst()
+            .orElseThrow();
+    final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();
+    final long processDefinitionKey = processInstanceEvent.getProcessDefinitionKey();
+
+    // when
+    final var result = zeebeClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.getKey()).isEqualTo(processInstanceKey);
+    assertThat(result.getBpmnProcessId()).isEqualTo(bpmnProcessId);
+    assertThat(result.getProcessName()).isEqualTo("Service tasks v1");
+    assertThat(result.getProcessVersion()).isEqualTo(1);
+    assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(result.getTreePath()).isEqualTo("PI_" + processInstanceKey);
+    assertThat(result.getStartDate()).isNotNull();
+    assertThat(result.getEndDate()).isNull();
+    assertThat(result.getState()).isEqualTo("ACTIVE");
+    assertThat(result.getIncident()).isFalse();
+    assertThat(result.getTenantId()).isEqualTo("<default>");
+  }
+
+  @Test
+  void shouldThrownExceptionIfProcessInstanceNotFoundByKey() {
+    // given
+    final long invalidProcessInstanceKey = 100L;
+
+    // when / then
+    final var exception =
+        assertThrowsExactly(
+            ProblemException.class,
+            () ->
+                zeebeClient.newProcessInstanceGetRequest(invalidProcessInstanceKey).send().join());
+    assertThat(exception.getMessage()).startsWith("Failed with code 404");
+    assertThat(exception.details()).isNotNull();
+    assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");
+    assertThat(exception.details().getStatus()).isEqualTo(404);
+    assertThat(exception.details().getDetail())
+        .isEqualTo("Process Instance with key 100 not found");
   }
 
   @Test
