@@ -133,7 +133,7 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toProcessInstance).toList();
   }
 
-  private static ProcessInstanceItem toProcessInstance(final ProcessInstanceEntity p) {
+  public static ProcessInstanceItem toProcessInstance(final ProcessInstanceEntity p) {
     return new ProcessInstanceItem()
         .key(p.key())
         .bpmnProcessId(p.bpmnProcessId())

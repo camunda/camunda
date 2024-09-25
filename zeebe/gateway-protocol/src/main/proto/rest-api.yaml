@@ -723,6 +723,58 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /process-instances/{processInstanceKey}:
+    get:
+      tags:
+        - Process instance
+      summary: Get process instance (alpha)
+      description: |
+        Get the process instance by the process instance key.
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The process instance key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: The process instance is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessInstanceItem"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: The request lacks valid authentication credentials.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The process instance with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /process-instances/search:
     post:
       tags:
@@ -744,23 +796,21 @@ paths:
               $ref: "#/components/schemas/ProcessInstanceSearchQueryRequest"
       responses:
         "200":
-          description: >
-            The Process Instance Search successful response.
+          description: The process instance search successful response.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProcessInstanceSearchQueryResponse"
         "400":
           description: >
-            The Process Instance Search Query failed.
+            The process instance search query failed.
             More details are provided in the response body.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
+          description: An internal error occurred while processing the request.
           content:
             application/problem+json:
               schema:
