@@ -26,6 +26,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.msgpack.spec.MsgpackException;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.netty.channel.ConnectTimeoutException;
+import jakarta.validation.constraints.NotNull;
 import java.net.ConnectException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -153,6 +154,10 @@ public class RestErrorMapper {
             "Unexpected error occurred during the request processing: " + error.getMessage(),
             error.getClass().getName());
     };
+  }
+
+  public static <T> ResponseEntity<T> mapErrorToResponse(@NotNull final Throwable error) {
+    return mapProblemToResponse(mapErrorToProblem(error, DEFAULT_REJECTION_MAPPER));
   }
 
   private static Optional<ProblemDetail> mapBrokerErrorToProblem(final Throwable exception) {

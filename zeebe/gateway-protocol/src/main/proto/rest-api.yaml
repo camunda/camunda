@@ -1036,6 +1036,58 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /decision-definitions/{decisionKey}:
+    get:
+      tags:
+        - Decision definition
+      summary: Get decision definition by key (alpha)
+      description: |
+        Returns a decision definition.
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: decisionKey
+          in: path
+          required: true
+          description: The assigned key of the decision definition, which acts as a unique identifier for this decision.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: >
+            The decision definition is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionDefinitionItem"
+        "400":
+          description: >
+            The decision definition Get by key failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: >
+            The decision with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /decision-definitions/{decisionKey}/xml:
     get:
       tags:
