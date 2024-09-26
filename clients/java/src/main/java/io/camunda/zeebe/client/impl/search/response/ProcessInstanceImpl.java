@@ -42,7 +42,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
     bpmnProcessId = item.getBpmnProcessId();
     processName = item.getProcessDefinitionName();
     processVersion = item.getProcessDefinitionVersion();
-    processVersionTag = item.getProcessVersionTag();
+    processVersionTag = item.getProcessDefinitionVersionTag();
     processDefinitionKey = item.getProcessDefinitionKey();
     rootProcessInstanceKey = item.getRootProcessInstanceKey();
     parentProcessInstanceKey = item.getParentProcessInstanceKey();

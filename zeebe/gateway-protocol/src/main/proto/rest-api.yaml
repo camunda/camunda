@@ -2362,7 +2362,7 @@ components:
           type: integer
           description: The process version.
           format: int32
-        processVersionTag:
+        processDefinitionVersionTag:
           type: string
           description: The process version tag.
         processDefinitionKey:
@@ -2441,7 +2441,7 @@ components:
           type: integer
           description: The process version.
           format: int32
-        processVersionTag:
+        processDefinitionVersionTag:
           type: string
           description: The process version tag.
         processDefinitionKey:

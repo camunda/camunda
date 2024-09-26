@@ -241,7 +241,7 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getBpmnProcessId()).ifPresent(builder::bpmnProcessIds);
       ofNullable(filter.getProcessDefinitionName()).ifPresent(builder::processNames);
       ofNullable(filter.getProcessDefinitionVersion()).ifPresent(builder::processVersions);
-      ofNullable(filter.getProcessVersionTag()).ifPresent(builder::processVersionTags);
+      ofNullable(filter.getProcessDefinitionVersionTag()).ifPresent(builder::processVersionTags);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.getRootProcessInstanceKey()).ifPresent(builder::rootProcessInstanceKeys);
       ofNullable(filter.getParentProcessInstanceKey())

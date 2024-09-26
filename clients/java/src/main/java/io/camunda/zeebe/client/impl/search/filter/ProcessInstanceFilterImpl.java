@@ -56,7 +56,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processVersionTag(final String processVersionTag) {
-    filter.setProcessVersionTag(processVersionTag);
+    filter.setProcessDefinitionVersionTag(processVersionTag);
     return this;
   }
 
