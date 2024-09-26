@@ -809,7 +809,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *   long decisionDefinitionKey = ...;
    *
    *   zeebeClient
-   *   .newDecisionDefinitionGetRequest(decisionKey)
+   *   .newDecisionDefinitionGetRequest(decisionDefinitionKey)
    *   .send();
    *   </pre>
    *
@@ -832,7 +832,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * long decisionDefinitionKey = ...;
    *
    * zeebeClient
-   *  .newDecisionDefinitionGetXmlRequest(decisionKey)
+   *  .newDecisionDefinitionGetXmlRequest(decisionDefinitionKey)
    *  .send();
    * </pre>
    *
