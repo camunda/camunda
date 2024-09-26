@@ -96,6 +96,7 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(TaskVariableTemplate.VALUE, variable.getValue());
     updateFields.put(TaskVariableTemplate.FULL_VALUE, variable.getFullValue());
+    updateFields.put(TaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
 
     return new BulkOperation.Builder()
         .update(
