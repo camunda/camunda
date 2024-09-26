@@ -163,12 +163,12 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                 .filter(
                     new DecisionDefinitionFilter.Builder()
                         .tenantIds("t")
-                        .decisionKeys(0L)
-                        .dmnDecisionNames("name")
-                        .versions(1)
-                        .dmnDecisionRequirementsIds("drId")
+                        .decisionDefinitionKeys(0L)
+                        .decisionDefinitionNames("name")
+                        .decisionDefinitionVersions(1)
+                        .decisionRequirementsIds("drId")
                         .decisionRequirementsKeys(2L)
-                        .dmnDecisionIds("dId")
+                        .decisionDefinitionIds("dId")
                         .build())
                 .build());
   }
@@ -183,25 +183,25 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         {
             "sort": [
                 {
-                    "field": "decisionKey",
+                    "field": "decisionDefinitionKey",
                     "order": "asc"
                 },
                 {
-                    "field": "dmnDecisionName",
+                    "field": "decisionDefinitionName",
                     "order": "desc"
                 },
                 {
-                    "field": "version",
+                    "field": "decisionDefinitionVersion",
                     "order": "asc"
                 },
                 {
-                     "field": "dmnDecisionId"
+                     "field": "decisionDefinitionId"
                 },
                 {
                      "field": "decisionRequirementsKey"
                 },
                 {
-                     "field": "dmnDecisionRequirementsId"
+                     "field": "decisionRequirementsId"
                 },
                 {
                      "field": "tenantId"
@@ -228,17 +228,17 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
             new DecisionDefinitionQuery.Builder()
                 .sort(
                     new DecisionDefinitionSort.Builder()
-                        .decisionKey()
+                        .decisionDefinitionKey()
                         .asc()
-                        .dmnDecisionName()
+                        .decisionDefinitionName()
                         .desc()
-                        .version()
+                        .decisionDefinitionVersion()
                         .asc()
-                        .dmnDecisionId()
+                        .decisionDefinitionId()
                         .asc()
                         .decisionRequirementsKey()
                         .asc()
-                        .dmnDecisionRequirementsId()
+                        .decisionRequirementsId()
                         .asc()
                         .tenantId()
                         .asc()
