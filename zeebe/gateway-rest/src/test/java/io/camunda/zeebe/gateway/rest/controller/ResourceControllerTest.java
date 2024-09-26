@@ -99,7 +99,7 @@ public class ResourceControllerTest extends RestControllerTest {
              "deployments":[
                 {
                    "process":{
-                      "bpmnProcessId":"processId",
+                      "processDefinitionId":"processId",
                       "processDefinitionVersion":1,
                       "processDefinitionKey":123456,
                       "resourceName":"process.bpmn",
@@ -322,7 +322,7 @@ public class ResourceControllerTest extends RestControllerTest {
              "deployments":[
                 {
                    "process":{
-                      "bpmnProcessId":"processId",
+                      "processDefinitionId":"processId",
                       "processDefinitionVersion":1,
                       "processDefinitionKey":123456,
                       "resourceName":"process.bpmn",
@@ -331,7 +331,7 @@ public class ResourceControllerTest extends RestControllerTest {
                 },
                 {
                    "process":{
-                      "bpmnProcessId":"secondProcessId",
+                      "processDefinitionId":"secondProcessId",
                       "processDefinitionVersion":1,
                       "processDefinitionKey":7890123,
                       "resourceName":"second.bpmn",

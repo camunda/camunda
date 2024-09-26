@@ -92,7 +92,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
               "tenantId": "default",
               "variables": {},
               "customHeaders": {},
-              "bpmnProcessId": "stubProcess",
+              "processDefinitionId": "stubProcess",
               "elementId": "stubActivity",
               "worker": "bar"
             },
@@ -108,7 +108,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
               "tenantId": "default",
               "variables": {},
               "customHeaders": {},
-              "bpmnProcessId": "stubProcess",
+              "processDefinitionId": "stubProcess",
               "elementId": "stubActivity",
               "worker": "bar"
             }
