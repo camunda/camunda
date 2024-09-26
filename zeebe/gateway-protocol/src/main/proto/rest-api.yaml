@@ -4006,7 +4006,7 @@ components:
     DeploymentMetadata:
       type: object
       properties:
-        process:
+        processDefinition:
           $ref: "#/components/schemas/DeploymentProcess"
         decisionDefinition:
           $ref: "#/components/schemas/DeploymentDecision"
