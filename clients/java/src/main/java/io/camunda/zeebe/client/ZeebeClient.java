@@ -990,7 +990,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
       long decisionRequirementsKey);
 
   /**
-   * Gets a userTask by key.
+   * Gets a User Task by key.
    *
    * <pre>
    *   long userTaskKey = ...;
