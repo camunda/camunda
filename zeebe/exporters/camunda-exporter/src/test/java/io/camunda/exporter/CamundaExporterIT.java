@@ -14,12 +14,12 @@ import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.GetResponse;
-import io.camunda.exporter.clients.elasticsearch.ElasticsearchClientFactory;
 import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
 import io.camunda.exporter.entities.AuthorizationEntity;
 import io.camunda.exporter.entities.UserEntity;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.TestSupport;
+import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -74,7 +74,7 @@ final class CamundaExporterIT {
     config.elasticsearch.setIndexPrefix("");
     config.bulk.setSize(1); // force flushing on the first record
 
-    testClient = ElasticsearchClientFactory.INSTANCE.create(config.elasticsearch);
+    testClient = new ElasticsearchConnector(config.elasticsearch).createClient();
   }
 
   @AfterAll
