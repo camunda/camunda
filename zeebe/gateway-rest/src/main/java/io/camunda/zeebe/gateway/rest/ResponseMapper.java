@@ -84,7 +84,7 @@ public final class ResponseMapper {
     return new ActivatedJob()
         .key(jobKey)
         .type(job.getType())
-        .bpmnProcessId(job.getBpmnProcessId())
+        .processDefinitionId(job.getBpmnProcessId())
         .elementId(job.getElementId())
         .processInstanceKey(job.getProcessInstanceKey())
         .processDefinitionVersion(job.getProcessDefinitionVersion())
@@ -218,7 +218,7 @@ public final class ResponseMapper {
         .map(
             process ->
                 new DeploymentProcess()
-                    .bpmnProcessId(process.getBpmnProcessId())
+                    .processDefinitionId(process.getBpmnProcessId())
                     .processDefinitionVersion(process.getVersion())
                     .processDefinitionKey(process.getProcessDefinitionKey())
                     .tenantId(process.getTenantId())
@@ -259,7 +259,7 @@ public final class ResponseMapper {
     final var response =
         new CreateProcessInstanceResponse()
             .processDefinitionKey(processDefinitionKey)
-            .bpmnProcessId(bpmnProcessId)
+            .processDefinitionId(bpmnProcessId)
             .processDefinitionVersion(version)
             .processInstanceKey(processInstanceKey)
             .tenantId(tenantId);

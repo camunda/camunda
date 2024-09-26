@@ -145,7 +145,7 @@ public final class CreateProcessInstanceCommandImpl
   @Override
   public CreateProcessInstanceCommandStep2 bpmnProcessId(final String id) {
     grpcRequestObjectBuilder.setBpmnProcessId(id);
-    httpRequestObject.setBpmnProcessId(id);
+    httpRequestObject.setProcessDefinitionId(id);
     return this;
   }
 

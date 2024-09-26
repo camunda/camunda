@@ -495,7 +495,7 @@ public class RequestMapper {
             new ProcessInstanceCreateRequest(
                 getLongOrDefault(
                     request, CreateProcessInstanceRequest::getProcessDefinitionKey, -1L),
-                getStringOrEmpty(request, CreateProcessInstanceRequest::getBpmnProcessId),
+                getStringOrEmpty(request, CreateProcessInstanceRequest::getProcessDefinitionId),
                 getIntOrDefault(
                     request, CreateProcessInstanceRequest::getProcessDefinitionVersion, -1),
                 getMapOrEmpty(request, CreateProcessInstanceRequest::getVariables),

@@ -38,7 +38,7 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
       final JsonMapper jsonMapper, final CreateProcessInstanceResponse response) {
     this.jsonMapper = jsonMapper;
     processDefinitionKey = response.getProcessDefinitionKey();
-    bpmnProcessId = response.getBpmnProcessId();
+    bpmnProcessId = response.getProcessDefinitionId();
     version = response.getProcessDefinitionVersion();
     processInstanceKey = response.getProcessInstanceKey();
     tenantId = response.getTenantId();

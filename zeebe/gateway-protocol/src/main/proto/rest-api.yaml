@@ -1895,7 +1895,7 @@ components:
           format: int64
         tenantIds:
           type: string
-        bpmnDefinitionId:
+        processDefinitionId:
           type: string
         variables:
           type: array
@@ -1931,7 +1931,7 @@ components:
           type: array
           items:
             type: string
-        bpmnProcessId:
+        processDefinitionId:
           type: string
         processDefinitionKey:
           type: integer
@@ -2251,7 +2251,7 @@ components:
           type: integer
           format: int64
           description: The process definition key associated to this incident.
-        bpmnProcessId:
+        processDefinitionId:
           type: string
           description: The bpmn process id associated to this incident.
         processInstanceKey:
@@ -2326,7 +2326,7 @@ components:
           type: integer
           format: int64
           description: The process definition key associated to this incident.
-        bpmnProcessId:
+        processDefinitionId:
           type: string
           description: The bpmn process id associated to this incident.
         processInstanceKey:
@@ -2825,7 +2825,7 @@ components:
           description: the job's process instance key
           type: integer
           format: int64
-        bpmnProcessId:
+        processDefinitionId:
           description: the bpmn process ID of the job's process definition
           type: string
         processDefinitionVersion:
@@ -3550,7 +3550,7 @@ components:
     DeploymentProcess:
       type: object
       properties:
-        bpmnProcessId:
+        processDefinitionId:
           type: string
           description: |
             The bpmn process ID, as parsed during deployment, together with the version forms a
@@ -3655,17 +3655,17 @@ components:
         processDefinitionKey:
           description: |
             The unique key identifying the process definition, e.g. returned for a process in the
-            deploy resources endpoint. Cannot be used together with bpmnProcessId.
+            deploy resources endpoint. Cannot be used together with processDefinitionId.
           type: integer
           format: int64
-        bpmnProcessId:
+        processDefinitionId:
           description: |
             The BPMN process ID of the process definition to start an instance of.
             Cannot be used together with processDefinitionKey.
           type: string
         processDefinitionVersion:
           description: |
-            The version of the process. Only considered when a bpmnProcessId is provided.
+            The version of the process. Only considered when a processDefinitionId is provided.
             By default, the latest version of the process is used.
           type: integer
           format: int32
@@ -3732,7 +3732,7 @@ components:
             The key of the process definition which was used to create the process instance.
           type: integer
           format: int64
-        bpmnProcessId:
+        processDefinitionId:
           description: |
             The BPMN process ID of the process definition which was used to create the process.
             instance

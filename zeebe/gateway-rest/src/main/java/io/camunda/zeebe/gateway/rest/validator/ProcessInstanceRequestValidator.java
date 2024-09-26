@@ -32,15 +32,17 @@ public class ProcessInstanceRequestValidator {
       final CreateProcessInstanceRequest request) {
     return validate(
         violations -> {
-          if (request.getBpmnProcessId() == null && request.getProcessDefinitionKey() == null) {
+          if (request.getProcessDefinitionId() == null
+              && request.getProcessDefinitionKey() == null) {
             violations.add(
                 ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
-                    List.of("bpmnProcessId", "processDefinitionKey")));
+                    List.of("processDefinitionId", "processDefinitionKey")));
           }
-          if (request.getBpmnProcessId() != null && request.getProcessDefinitionKey() != null) {
+          if (request.getProcessDefinitionId() != null
+              && request.getProcessDefinitionKey() != null) {
             violations.add(
                 ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
-                    List.of("bpmnProcessId", "processDefinitionKey")));
+                    List.of("processDefinitionId", "processDefinitionKey")));
           }
           validateOperationReference(request.getOperationReference(), violations);
         });
