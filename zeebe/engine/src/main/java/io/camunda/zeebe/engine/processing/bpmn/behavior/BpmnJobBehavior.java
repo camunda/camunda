@@ -225,6 +225,7 @@ public final class BpmnJobBehavior {
     jobActivationBehavior.publishWork(jobKey, jobRecord);
   }
 
+  // TODO: clarify with Meggle and Aleks what other properties we should expose
   private DirectBuffer encodeHeaders(
       final Map<String, String> taskHeaders, final JobProperties props) {
     final var headers = new HashMap<>(taskHeaders);

@@ -194,6 +194,12 @@ public final class ActivatedJobImpl implements ActivatedJob {
   }
 
   @Override
+  public String getJobListenerEventType() {
+    // TODO: get Job Listener Event Type, hardcoded for the POC
+    return "complete";
+  }
+
+  @Override
   public String getTenantId() {
     return tenantId;
   }

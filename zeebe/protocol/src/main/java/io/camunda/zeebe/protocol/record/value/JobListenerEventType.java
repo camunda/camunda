@@ -33,5 +33,8 @@ public enum JobListenerEventType {
    * the listener should be triggered at the end of an execution, such as the completion of a
    * process instance, sub-process or element (task, event, gateway).
    */
-  END
+  END,
+
+  // TODO: use this for the POC
+  COMPLETE
 }

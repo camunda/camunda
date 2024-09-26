@@ -109,6 +109,11 @@ public interface ActivatedJob {
    */
   String toJson();
 
+  // TODO expose job listener event type (START, END or COMPLETE etc) and make it accesseble
+  // TODO: potentially we could name it JobListenerEventType
+  // TODO: please see JobRecord for reference
+  String getJobListenerEventType();
+
   /**
    * @return the identifier of the tenant that owns the job
    */
