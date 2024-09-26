@@ -51,5 +51,4 @@ public abstract class AbstractTemplateDescriptor extends AbstractIndexDescriptor
   public String getAllVersionsIndexNameRegexPattern() {
     return String.format("%s-%s-\\d.*", indexPrefix, getIndexName());
   }
-
 }

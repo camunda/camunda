@@ -15,9 +15,7 @@ import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
-import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
-import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.schema.util.ObservableConnector;
 import io.camunda.operate.schema.util.ObservableConnector.OperateTestHttpRequest;
 import io.camunda.operate.schema.util.SchemaTestHelper;
@@ -29,6 +27,8 @@ import io.camunda.operate.schema.util.opensearch.OpenSearchSchemaTestHelper;
 import io.camunda.operate.schema.util.opensearch.TestOpenSearchConnector;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.opensearch.OpensearchTaskStore;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -291,7 +291,7 @@ public class SchemaManagerIT extends AbstractSchemaIT {
   }
 
   protected static boolean isIndexTemplatePutRequest(
-      final OperateTestHttpRequest request, final TemplateDescriptor descriptor) {
+      final OperateTestHttpRequest request, final IndexTemplateDescriptor descriptor) {
 
     final String expectedUri = "/" + descriptor.getAlias() + "/_mapping";
     final URI actualUri;

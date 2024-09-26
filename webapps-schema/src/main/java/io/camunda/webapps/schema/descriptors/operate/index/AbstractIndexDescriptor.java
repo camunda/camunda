@@ -18,8 +18,8 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
   private static final String SCHEMA_CREATE_INDEX_JSON_ELASTICSEARCH =
       SCHEMA_FOLDER_ELASTICSEARCH + "/index/operate-%s.json";
 
-  protected final String indexPrefix;
-  protected final boolean isElasticsearch;
+  protected String indexPrefix;
+  protected boolean isElasticsearch;
 
   public AbstractIndexDescriptor(final String indexPrefix, final boolean isElasticsearch) {
     this.indexPrefix = indexPrefix;
@@ -47,10 +47,11 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getAllVersionsIndexNameRegexPattern() {
-    return String.format("%s-%s-\\d.*", indexPrefix);
+    return String.format("%s-%s-\\d.*", indexPrefix, getIndexName());
   }
 
-  protected String getVersion() {
+  @Override
+  public String getVersion() {
     return "1.0.0";
   }
 }

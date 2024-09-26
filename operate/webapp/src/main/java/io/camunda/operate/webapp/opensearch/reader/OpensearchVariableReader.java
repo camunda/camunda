@@ -7,24 +7,24 @@
  */
 package io.camunda.operate.webapp.opensearch.reader;
 
-import static io.camunda.operate.schema.templates.VariableTemplate.FULL_VALUE;
-import static io.camunda.operate.schema.templates.VariableTemplate.NAME;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.CollectionUtil.toSafeListOfStrings;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.FULL_VALUE;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.NAME;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.ProcessInstanceDependant;
-import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import java.util.Collections;
 import java.util.List;
@@ -52,7 +52,8 @@ public class OpensearchVariableReader implements VariableReader {
   private ObjectMapper objectMapper;
 
   @Override
-  public List<VariableDto> getVariables(String processInstanceId, VariableRequestDto request) {
+  public List<VariableDto> getVariables(
+      final String processInstanceId, final VariableRequestDto request) {
     final List<VariableDto> response = queryVariables(processInstanceId, request);
 
     // query one additional instance
@@ -69,7 +70,7 @@ public class OpensearchVariableReader implements VariableReader {
   }
 
   @Override
-  public VariableDto getVariable(String id) {
+  public VariableDto getVariable(final String id) {
     final var searchRequest =
         searchRequestBuilder(variableTemplate).query(withTenantCheck(ids(id)));
     final var hits = richOpenSearchClient.doc().search(searchRequest, VariableEntity.class).hits();
@@ -81,7 +82,7 @@ public class OpensearchVariableReader implements VariableReader {
 
   @Override
   public VariableDto getVariableByName(
-      String processInstanceId, String scopeId, String variableName) {
+      final String processInstanceId, final String scopeId, final String variableName) {
     final var searchRequest =
         searchRequestBuilder(variableTemplate)
             .query(
@@ -157,12 +158,12 @@ public class OpensearchVariableReader implements VariableReader {
   }
 
   private List<VariableDto> queryVariables(
-      final String processInstanceId, VariableRequestDto variableRequest) {
+      final String processInstanceId, final VariableRequestDto variableRequest) {
     return queryVariables(processInstanceId, variableRequest, null);
   }
 
   private List<VariableDto> queryVariables(
-      final String processInstanceId, VariableRequestDto request, String varName) {
+      final String processInstanceId, final VariableRequestDto request, final String varName) {
     Long scopeKey = null;
     if (request.getScopeId() != null) {
       scopeKey = Long.valueOf(request.getScopeId());
@@ -241,7 +242,7 @@ public class OpensearchVariableReader implements VariableReader {
     }
   }
 
-  private VariableDto toVariableDto(VariableEntity variableEntity) {
+  private VariableDto toVariableDto(final VariableEntity variableEntity) {
     return VariableDto.createFrom(
         variableEntity,
         null,

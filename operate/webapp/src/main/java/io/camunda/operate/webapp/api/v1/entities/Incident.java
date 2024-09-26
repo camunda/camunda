@@ -9,7 +9,7 @@ package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.camunda.operate.schema.templates.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.entities.operate.ErrorType;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.swagger.v3.oas.annotations.media.Schema;

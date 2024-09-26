@@ -39,7 +39,7 @@ public class ProcessInstanceForListViewEntity
 
   private boolean incident;
 
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_ID;
 
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(PROCESS_INSTANCE_JOIN_RELATION);

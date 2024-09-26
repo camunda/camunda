@@ -7,9 +7,13 @@
  */
 package io.camunda.operate.schema.util;
 
-import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.index.AbstractIndexDescriptor;
 
 public class TestIndex extends AbstractIndexDescriptor {
+
+  public TestIndex(final String indexPrefix, final boolean isElasticsearch) {
+    super(indexPrefix, isElasticsearch);
+  }
 
   @Override
   public String getIndexName() {

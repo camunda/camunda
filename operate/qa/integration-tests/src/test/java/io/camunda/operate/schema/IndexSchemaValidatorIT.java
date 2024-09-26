@@ -18,7 +18,6 @@ import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
-import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
 import io.camunda.operate.schema.util.SchemaTestHelper;
 import io.camunda.operate.schema.util.TestDynamicIndex;
@@ -28,6 +27,7 @@ import io.camunda.operate.schema.util.elasticsearch.ElasticsearchSchemaTestHelpe
 import io.camunda.operate.schema.util.opensearch.OpenSearchSchemaTestHelper;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.opensearch.OpensearchTaskStore;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
