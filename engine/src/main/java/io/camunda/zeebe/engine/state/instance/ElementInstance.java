@@ -41,6 +41,15 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
       new IntegerProperty("activeSequenceFlows", 0);
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1L);
 
+  /**
+   * This value is added in 8.7, any child process instances created before 8.7 will have a depth of
+   * 0.
+   *
+   * @since 8.7
+   */
+  private final IntegerProperty calledProcessDepthProp =
+      new IntegerProperty("calledProcessDepth", -1);
+
   public ElementInstance() {
     super(12);
     declareProperty(parentKeyProp)
