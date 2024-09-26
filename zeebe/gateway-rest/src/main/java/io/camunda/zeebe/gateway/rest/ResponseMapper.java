@@ -102,7 +102,7 @@ public final class ResponseMapper {
       final MessageCorrelationRecord brokerResponse) {
     final var response =
         new MessageCorrelationResponse()
-            .key(brokerResponse.getMessageKey())
+            .messageKey(brokerResponse.getMessageKey())
             .tenantId(brokerResponse.getTenantId())
             .processInstanceKey(brokerResponse.getProcessInstanceKey());
     return new ResponseEntity<>(response, HttpStatus.OK);
@@ -156,7 +156,7 @@ public final class ResponseMapper {
 
     final var response =
         new MessagePublicationResponse()
-            .key(brokerResponse.getKey())
+            .messageKey(brokerResponse.getKey())
             .tenantId(brokerResponse.getResponse().getTenantId());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }

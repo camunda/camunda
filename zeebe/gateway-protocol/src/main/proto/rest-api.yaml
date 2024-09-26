@@ -3414,7 +3414,7 @@ components:
         correlated with.
       type: object
       properties:
-        key:
+        messageKey:
           description: The key of the correlated message
           type: integer
           format: int64
@@ -3462,7 +3462,7 @@ components:
       description: The message key of the published message.
       type: object
       properties:
-        key:
+        messageKey:
           description: The key of the message
           type: integer
           format: int64
