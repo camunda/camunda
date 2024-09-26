@@ -662,7 +662,7 @@ paths:
                 value:
                   processDefinitionKey: 12345
                   variables: {}
-              "By BPMN process ID":
+              "By process definition ID":
                 summary: "Create a process instance by processDefinitionId and version."
                 value:
                   processDefinitionId: "1234-5678"
@@ -1091,15 +1091,15 @@ paths:
             schema:
               $ref: "#/components/schemas/EvaluateDecisionRequest"
             examples:
-              "By decision key":
-                summary: "Evaluate the decision by decisionKey."
+              "By decision definition key":
+                summary: "Evaluate the decision by decisionDefinitionKey."
                 value:
-                  decisionKey: 12345
+                  decisionDefinitionKey: 12345
                   variables: {}
-              "By decision ID":
-                summary: "Evaluate the decision by decisionId."
+              "By decision definition ID":
+                summary: "Evaluate the decision by decisionDefinitionId."
                 value:
-                  decisionId: "1234-5678"
+                  decisionDefinitionId: "1234-5678"
                   variables: {}
       responses:
         "200":
@@ -3127,7 +3127,7 @@ components:
         decisionDefinitionKey:
           description: |
             The unique key identifying the decision to be evaluated.
-            Cannot be used together with decisionId.
+            Cannot be used together with decisionDefinitionId.
           type: integer
           format: int64
         decisionDefinitionId:
