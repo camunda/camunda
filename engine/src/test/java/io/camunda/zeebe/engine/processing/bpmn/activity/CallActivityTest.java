@@ -35,7 +35,15 @@ import org.junit.Test;
 
 public final class CallActivityTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  public static final boolean ENABLE_STRAIGHT_THROUGH_PROCESSING_LOOP_DETECTOR = false;
+
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withFeatureFlags(
+              featureFlags ->
+                  featureFlags.setEnableStraightThroughProcessingLoopDetector(
+                      ENABLE_STRAIGHT_THROUGH_PROCESSING_LOOP_DETECTOR));
 
   private static final String PROCESS_ID_PARENT = "wf-parent";
   private static final String PROCESS_ID_CHILD = "wf-child";
@@ -752,6 +760,301 @@ public final class CallActivityTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
+<<<<<<< HEAD:engine/src/test/java/io/camunda/zeebe/engine/processing/bpmn/activity/CallActivityTest.java
+=======
+  @Test
+  public void shouldPropagateTreePathPropertiesWithIncident() {
+    // given
+    final String rootProcessId = "root";
+    final String callActivity1Id = "callParent";
+    final String callActivity2Id = "callChild";
+    // every deployment resource will have indexes starting from zero
+    final var ca1Index = 0;
+    final var ca2Index = 0;
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-root.bpmn",
+            Bpmn.createExecutableProcess(rootProcessId)
+                .startEvent()
+                .callActivity(callActivity1Id, c -> c.zeebeProcessId(PROCESS_ID_PARENT))
+                .done())
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(c -> c.id(callActivity2Id).zeebeProcessId(PROCESS_ID_CHILD)))
+        .withXmlResource(
+            "wf-child.bpmn",
+            childProcess(jobType, c -> c.zeebeOutputExpression("assert(x, x != null)", "y")))
+        .deploy();
+
+    final var rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId(rootProcessId).create();
+
+    final var rootInstance = getProcessInstanceRecordValue(rootInstanceKey);
+    final var parentInstance = getChildInstanceOf(rootInstanceKey);
+    final var parentInstanceKey = parentInstance.getProcessInstanceKey();
+    final var childInstance = getChildInstanceOf(parentInstanceKey);
+    final long childInstanceKey = childInstance.getProcessInstanceKey();
+    final var callActivity1Key = getCallActivityInstanceKey(rootInstanceKey);
+    final var callActivity2Key = getCallActivityInstanceKey(parentInstanceKey);
+
+    completeJobWith(Map.of());
+
+    // then
+    final IncidentRecordValue incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(childInstanceKey)
+            .getFirst()
+            .getValue();
+
+    Assertions.assertThat(incident)
+        .hasOnlyElementInstancePath(
+            List.of(rootInstanceKey, callActivity1Key),
+            List.of(parentInstanceKey, callActivity2Key),
+            List.of(childInstanceKey, incident.getElementInstanceKey()))
+        .hasOnlyProcessDefinitionPath(
+            rootInstance.getProcessDefinitionKey(),
+            parentInstance.getProcessDefinitionKey(),
+            childInstance.getProcessDefinitionKey())
+        .hasOnlyCallingElementPath(ca1Index, ca2Index);
+  }
+
+  @Test
+  public void shouldPropagateCorrectIndexesInCallingElementPathWhenMultipleProcessesInSameFile() {
+    // given
+    final String rootProcessId = "root-process";
+    // call activities { "call-parent", "call-child" } when sorted wll be {"call-child",
+    // "call-parent"}
+    final var ca1Index = 1;
+    final var ca2Index = 0;
+
+    ENGINE.deployment().withXmlClasspathResource("/processes/callActivity.bpmn").deploy();
+    final var rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId(rootProcessId).create();
+
+    final var rootInstance = getProcessInstanceRecordValue(rootInstanceKey);
+    final var parentInstance = getChildInstanceOf(rootInstanceKey);
+    final var parentInstanceKey = parentInstance.getProcessInstanceKey();
+    final var childInstance = getChildInstanceOf(parentInstanceKey);
+    final long childInstanceKey = childInstance.getProcessInstanceKey();
+    final var callActivity1Key = getCallActivityInstanceKey(rootInstanceKey);
+    final var callActivity2Key = getCallActivityInstanceKey(parentInstanceKey);
+
+    completeJobWith(Map.of());
+
+    // then
+    final IncidentRecordValue incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(childInstanceKey)
+            .getFirst()
+            .getValue();
+
+    Assertions.assertThat(incident)
+        .hasOnlyElementInstancePath(
+            List.of(rootInstanceKey, callActivity1Key),
+            List.of(parentInstanceKey, callActivity2Key),
+            List.of(childInstanceKey, incident.getElementInstanceKey()))
+        .hasOnlyProcessDefinitionPath(
+            rootInstance.getProcessDefinitionKey(),
+            parentInstance.getProcessDefinitionKey(),
+            childInstance.getProcessDefinitionKey())
+        .hasOnlyCallingElementPath(ca1Index, ca2Index);
+  }
+
+  @Test
+  public void shouldPropagateTreePathPropertiesOnProcessInstanceRecord() {
+    // given
+    final String rootProcessId = "root";
+    final String callActivity1Id = "callParent";
+    final String callActivity2Id = "callChild";
+    // every deployment resource will have indexes starting from zero
+    final var ca1Index = 0;
+    final var ca2Index = 0;
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-root.bpmn",
+            Bpmn.createExecutableProcess(rootProcessId)
+                .startEvent()
+                .callActivity(callActivity1Id, c -> c.zeebeProcessId(PROCESS_ID_PARENT))
+                .done())
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(c -> c.id(callActivity2Id).zeebeProcessId(PROCESS_ID_CHILD)))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
+        .deploy();
+
+    // when
+    final var rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId(rootProcessId).create();
+
+    // then
+    final var rootInstance = getProcessInstanceRecordValue(rootInstanceKey);
+    final var parentInstance = getChildInstanceOf(rootInstanceKey);
+    final var parentInstanceKey = parentInstance.getProcessInstanceKey();
+    final var childInstance = getChildInstanceOf(parentInstanceKey);
+    final long childInstanceKey = childInstance.getProcessInstanceKey();
+    final var callActivity1Key = getCallActivityInstanceKey(rootInstanceKey);
+    final var callActivity2Key = getCallActivityInstanceKey(parentInstanceKey);
+
+    final Record<ProcessInstanceRecordValue> record =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(childInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst();
+
+    final ProcessInstanceRecordValue value = record.getValue();
+    Assertions.assertThat(value)
+        .hasOnlyElementInstancePath(
+            List.of(rootInstanceKey, callActivity1Key),
+            List.of(parentInstanceKey, callActivity2Key),
+            List.of(childInstanceKey, record.getKey()))
+        .hasOnlyProcessDefinitionPath(
+            rootInstance.getProcessDefinitionKey(),
+            parentInstance.getProcessDefinitionKey(),
+            childInstance.getProcessDefinitionKey())
+        .hasOnlyCallingElementPath(ca1Index, ca2Index);
+  }
+
+  @Test
+  public void shouldNotPropagateTreePathPropertiesOnProcessInstanceRecordOnActivatedIntent() {
+    // given
+    final String rootProcessId = "root";
+    final String callActivity1Id = "callParent";
+    final String callActivity2Id = "callChild";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-root.bpmn",
+            Bpmn.createExecutableProcess(rootProcessId)
+                .startEvent()
+                .callActivity(callActivity1Id, c -> c.zeebeProcessId(PROCESS_ID_PARENT))
+                .done())
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(c -> c.id(callActivity2Id).zeebeProcessId(PROCESS_ID_CHILD)))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
+        .deploy();
+
+    // when
+    final var rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId(rootProcessId).create();
+
+    // then
+    final var parentInstance = getChildInstanceOf(rootInstanceKey);
+    final var parentInstanceKey = parentInstance.getProcessInstanceKey();
+    final var childInstance = getChildInstanceOf(parentInstanceKey);
+    final long childInstanceKey = childInstance.getProcessInstanceKey();
+
+    final Record<ProcessInstanceRecordValue> record =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(childInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst();
+
+    final ProcessInstanceRecordValue value = record.getValue();
+    Assertions.assertThat(value)
+        .hasOnlyElementInstancePath(List.of())
+        .hasOnlyProcessDefinitionPath(List.of())
+        .hasOnlyCallingElementPath(List.of());
+  }
+
+  @Test
+  public void
+      shouldPropagateCorrectIndexesInCallingElementPathWhenMultipleProcessesInSameFileOnProcessInstanceRecord() {
+    // given
+    final String rootProcessId = "root-process";
+    // call activities { "call-parent", "call-child" } when sorted wll be {"call-child",
+    // "call-parent"}
+    final var ca1Index = 1;
+    final var ca2Index = 0;
+
+    ENGINE.deployment().withXmlClasspathResource("/processes/callActivity.bpmn").deploy();
+    final var rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId(rootProcessId).create();
+
+    final var rootInstance = getProcessInstanceRecordValue(rootInstanceKey);
+    final var parentInstance = getChildInstanceOf(rootInstanceKey);
+    final var parentInstanceKey = parentInstance.getProcessInstanceKey();
+    final var childInstance = getChildInstanceOf(parentInstanceKey);
+    final long childInstanceKey = childInstance.getProcessInstanceKey();
+    final var callActivity1Key = getCallActivityInstanceKey(rootInstanceKey);
+    final var callActivity2Key = getCallActivityInstanceKey(parentInstanceKey);
+
+    // then
+    final Record<ProcessInstanceRecordValue> record =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(childInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst();
+
+    final ProcessInstanceRecordValue value = record.getValue();
+    Assertions.assertThat(value)
+        .hasOnlyElementInstancePath(
+            List.of(rootInstanceKey, callActivity1Key),
+            List.of(parentInstanceKey, callActivity2Key),
+            List.of(childInstanceKey, record.getKey()))
+        .hasOnlyProcessDefinitionPath(
+            rootInstance.getProcessDefinitionKey(),
+            parentInstance.getProcessDefinitionKey(),
+            childInstance.getProcessDefinitionKey())
+        .hasOnlyCallingElementPath(ca1Index, ca2Index);
+  }
+
+  @Test
+  public void shouldLimitDescendantDepth() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("Loop")
+                .startEvent()
+                .exclusiveGateway("failsafe")
+                .defaultFlow()
+                .callActivity(
+                    "go_deeper",
+                    b ->
+                        b.zeebeProcessId("Loop")
+                            .zeebeInputExpression("depth + 1", "depth")
+                            .zeebePropagateAllParentVariables(false))
+                .endEvent("done")
+                .moveToLastExclusiveGateway()
+                .conditionExpression("depth > 1000")
+                .userTask("inspect_failure")
+                .endEvent("failed")
+                .done())
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("Loop").withVariable("depth", 1).create();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that incident is raised due to the depth limit")
+        .hasErrorMessage("Oh noo, Durin dug too deep!");
+  }
+
+  private void deployDefaultParentAndChildProcess() {
+    final var parentProcess = parentProcess(CallActivityBuilder::done);
+
+    final var childProcess = childProcess(jobType, ServiceTaskBuilder::done);
+
+    ENGINE
+        .deployment()
+        .withXmlResource("wf-parent.bpmn", parentProcess)
+        .withXmlResource("wf-child.bpmn", childProcess)
+        .deploy();
+  }
+
+  private static ProcessInstanceRecordValue getProcessInstanceRecordValue(
+      final long processInstanceKey) {
+    return RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst()
+        .getValue();
+  }
+
+>>>>>>> ed17ba8a (feat: check for depth):zeebe/engine/src/test/java/io/camunda/zeebe/engine/processing/bpmn/activity/CallActivityTest.java
   private void completeJobWith(final Map<String, Object> variables) {
 
     RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).getFirst().getValue();
