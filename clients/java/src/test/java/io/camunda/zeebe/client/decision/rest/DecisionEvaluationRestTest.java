@@ -67,7 +67,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
           .decisionDefinitionName("My Decision")
           .decisionDefinitionVersion(1)
           .decisionDefinitionType("TABLE")
-          .decisionDefinitionOutput("testOutput")
+          .output("testOutput")
           .tenantId(TENANT_ID)
           .addEvaluatedInputsItem(EVALUATED_INPUT)
           .addMatchedRulesItem(MATCHED_RULE);
@@ -78,7 +78,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
               .decisionDefinitionId("my-decision")
               .decisionDefinitionName("My Decision")
               .decisionDefinitionVersion(1)
-              .decisionDefinitionOutput("testOutput")
+              .output("testOutput")
               .decisionRequirementsId("decision-requirements-id")
               .decisionRequirementsKey(124L)
               .failedDecisionDefinitionId("my-decision")
@@ -274,8 +274,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionDefinitionVersion());
     assertThat(response.getDecisionName())
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionDefinitionName());
-    assertThat(response.getDecisionOutput())
-        .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionDefinitionOutput());
+    assertThat(response.getDecisionOutput()).isEqualTo(EVALUATE_DECISION_RESPONSE.getOutput());
     assertThat(response.getDecisionRequirementsId())
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionRequirementsId());
     assertThat(response.getDecisionRequirementsKey())
@@ -302,7 +301,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
     assertThat(evaluatedDecisionResponse.getDecisionType())
         .isEqualTo(EVALUATED_DECISION.getDecisionDefinitionType());
     assertThat(evaluatedDecisionResponse.getDecisionOutput())
-        .isEqualTo(EVALUATED_DECISION.getDecisionDefinitionOutput());
+        .isEqualTo(EVALUATED_DECISION.getOutput());
     assertThat(evaluatedDecisionResponse.getTenantId()).isEqualTo(EVALUATED_DECISION.getTenantId());
 
     // assert EvaluatedDecisionInput

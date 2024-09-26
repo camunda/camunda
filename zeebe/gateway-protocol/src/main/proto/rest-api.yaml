@@ -3636,7 +3636,7 @@ components:
           description: The unique key identifying the decision requirements graph that the decision which was evaluated is part of.
           type: integer
           format: int64
-        decisionDefinitionOutput:
+        output:
           description: |
             JSON document that will instantiate the result of the decision which was evaluated.
           type: string
@@ -3678,7 +3678,7 @@ components:
         decisionDefinitionType:
           description: The type of the decision which was evaluated.
           type: string
-        decisionDefinitionOutput:
+        output:
           description: |
             JSON document that will instantiate the result of the decision which was evaluated.
           type: string
