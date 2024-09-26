@@ -84,7 +84,9 @@ public final class DecisionDefinitionServices
 
   public DecisionDefinitionEntity getByKey(final long decisionKey) {
     final var result =
-        search(decisionDefinitionSearchQuery(q -> q.filter(f -> f.decisionKeys(decisionKey))));
+        search(
+            decisionDefinitionSearchQuery(
+                q -> q.filter(f -> f.decisionDefinitionKeys(decisionKey))));
     if (result.total() < 1) {
       throw new NotFoundException(
           "Decision Definition with decisionKey=%d not found".formatted(decisionKey));

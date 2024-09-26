@@ -282,11 +282,11 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.decisionDefinition();
 
     if (filter != null) {
-      ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionKeys);
-      ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::dmnDecisionIds);
-      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::dmnDecisionNames);
-      ofNullable(filter.getVersion()).ifPresent(builder::versions);
-      ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::dmnDecisionRequirementsIds);
+      ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionDefinitionKeys);
+      ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
+      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::decisionDefinitionNames);
+      ofNullable(filter.getVersion()).ifPresent(builder::decisionDefinitionVersions);
+      ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
       ofNullable(filter.getDecisionRequirementsKey()).ifPresent(builder::decisionRequirementsKeys);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
@@ -439,11 +439,11 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "decisionKey" -> builder.decisionKey();
-        case "dmnDecisionId" -> builder.dmnDecisionId();
-        case "dmnDecisionName" -> builder.dmnDecisionName();
-        case "version" -> builder.version();
-        case "dmnDecisionRequirementsId" -> builder.dmnDecisionRequirementsId();
+        case "decisionDefinitionKey" -> builder.decisionDefinitionKey();
+        case "decisionDefinitionId" -> builder.decisionDefinitionId();
+        case "decisionDefinitionName" -> builder.decisionDefinitionName();
+        case "decisionDefinitionVersion" -> builder.decisionDefinitionVersion();
+        case "decisionRequirementsId" -> builder.decisionRequirementsId();
         case "decisionRequirementsKey" -> builder.decisionRequirementsKey();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));

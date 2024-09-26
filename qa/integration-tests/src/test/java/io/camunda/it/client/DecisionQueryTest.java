@@ -94,7 +94,11 @@ class DecisionQueryTest {
   void shouldRetrieveAllDecisionDefinitions() {
     // when
     final var result =
-        zeebeClient.newDecisionDefinitionQuery().sort(b -> b.decisionKey().asc()).send().join();
+        zeebeClient
+            .newDecisionDefinitionQuery()
+            .sort(b -> b.decisionDefinitionKey().asc())
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -113,7 +117,7 @@ class DecisionQueryTest {
     final var result =
         zeebeClient
             .newDecisionDefinitionQuery()
-            .filter(f -> f.decisionKey(decisionKey))
+            .filter(f -> f.decisionDefinitionKey(decisionKey))
             .send()
             .join();
 
@@ -138,12 +142,12 @@ class DecisionQueryTest {
             .newDecisionDefinitionQuery()
             .filter(
                 f ->
-                    f.decisionKey(decisionKey)
-                        .dmnDecisionId(dmnDecisionId)
+                    f.decisionDefinitionKey(decisionKey)
+                        .decisionDefinitionId(dmnDecisionId)
                         .decisionRequirementsKey(decisionRequirementsKey)
-                        .dmnDecisionName(dmnDecisionName)
-                        .dmnDecisionRequirementsId(dmnDecisionRequirementsId)
-                        .version(version)
+                        .decisionDefinitionName(dmnDecisionName)
+                        .decisionRequirementsId(dmnDecisionRequirementsId)
+                        .decisionDefinitionVersion(version)
                         .tenantId(tenantId))
             .send()
             .join();
@@ -162,8 +166,8 @@ class DecisionQueryTest {
     final var result =
         zeebeClient
             .newDecisionDefinitionQuery()
-            .filter(f -> f.dmnDecisionId(dmnDecisionId))
-            .sort(s -> s.version().desc())
+            .filter(f -> f.decisionDefinitionId(dmnDecisionId))
+            .sort(s -> s.decisionDefinitionVersion().desc())
             .send()
             .join();
 
