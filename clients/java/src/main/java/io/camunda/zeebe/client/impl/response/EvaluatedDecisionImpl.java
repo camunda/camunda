@@ -47,7 +47,7 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
     decisionVersion = evaluatedDecisionItem.getDecisionDefinitionVersion();
     decisionName = evaluatedDecisionItem.getDecisionDefinitionName();
     decisionType = evaluatedDecisionItem.getDecisionDefinitionType();
-    decisionOutput = evaluatedDecisionItem.getDecisionDefinitionOutput();
+    decisionOutput = evaluatedDecisionItem.getOutput();
     tenantId = evaluatedDecisionItem.getTenantId();
     buildMatchedRules(evaluatedDecisionItem);
     buildEvaluatedDecisionInput(evaluatedDecisionItem);

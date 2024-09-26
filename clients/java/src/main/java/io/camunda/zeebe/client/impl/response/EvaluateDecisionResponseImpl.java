@@ -50,7 +50,7 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
     decisionName = response.getDecisionDefinitionName();
     decisionRequirementsId = response.getDecisionRequirementsId();
     decisionRequirementsKey = response.getDecisionRequirementsKey();
-    decisionOutput = response.getDecisionDefinitionOutput();
+    decisionOutput = response.getOutput();
     failedDecisionId = response.getFailedDecisionDefinitionId();
     failureMessage = response.getFailureMessage();
     tenantId = response.getTenantId();
