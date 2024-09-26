@@ -45,10 +45,10 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
   public FormEntity getByKey(final Long key) {
     final SearchQueryResult<FormEntity> result =
         executor.search(
-            SearchQueryBuilders.formSearchQuery().filter(f -> f.keys(key)).build(),
+            SearchQueryBuilders.formSearchQuery().filter(f -> f.formKeys(key)).build(),
             FormEntity.class);
     if (result.total() < 1) {
-      throw new NotFoundException(String.format("Form with key %d not found", key));
+      throw new NotFoundException(String.format("Form with formKey=%d not found", key));
     } else if (result.total() > 1) {
       throw new CamundaServiceException(
           String.format("Found form with key %d more than once", key));

@@ -31,7 +31,8 @@ public final class FormFilterTest {
   @Test
   public void shouldReturnForm() {
     // given
-    final var searchQuery = SearchQueryBuilders.formSearchQuery().filter(f -> f.keys(1L)).build();
+    final var searchQuery =
+        SearchQueryBuilders.formSearchQuery().filter(f -> f.formKeys(1L)).build();
 
     // when
     final var searchQueryResult = services.search(searchQuery);
