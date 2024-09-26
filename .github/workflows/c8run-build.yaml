@@ -92,6 +92,7 @@ jobs:
   test_c8run_windows:
     name: C8Run Test Windows
     runs-on: windows-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
