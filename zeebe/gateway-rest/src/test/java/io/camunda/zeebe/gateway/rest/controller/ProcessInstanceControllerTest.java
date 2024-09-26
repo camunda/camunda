@@ -42,7 +42,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
       {
          "processDefinitionKey":123,
          "bpmnProcessId":"bpmnProcessId",
-         "version":-1,
+         "processDefinitionVersion":-1,
          "processInstanceKey":123,
          "tenantId":"tenantId"
       }""";
@@ -119,7 +119,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
         {
             "bpmnProcessId": "bpmnProcessId",
-            "version": 1
+            "processDefinitionVersion": 1
         }""";
 
     // when / then
@@ -243,7 +243,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
         {
             "bpmnProcessId": "bpmnProcessId",
-            "version": 1,
+            "processDefinitionVersion": 1,
             "awaitCompletion": true
         }""";
 

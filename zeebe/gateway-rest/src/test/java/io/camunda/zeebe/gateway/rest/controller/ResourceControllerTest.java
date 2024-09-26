@@ -95,12 +95,12 @@ public class ResourceControllerTest extends RestControllerTest {
         .json(
             """
           {
-             "key":123,
+             "deploymentKey":123,
              "deployments":[
                 {
                    "process":{
                       "bpmnProcessId":"processId",
-                      "version":1,
+                      "processDefinitionVersion":1,
                       "processDefinitionKey":123456,
                       "resourceName":"process.bpmn",
                       "tenantId":"<default>"
@@ -318,12 +318,12 @@ public class ResourceControllerTest extends RestControllerTest {
         .json(
             """
           {
-             "key":123,
+             "deploymentKey":123,
              "deployments":[
                 {
                    "process":{
                       "bpmnProcessId":"processId",
-                      "version":1,
+                      "processDefinitionVersion":1,
                       "processDefinitionKey":123456,
                       "resourceName":"process.bpmn",
                       "tenantId":"<default>"
@@ -332,7 +332,7 @@ public class ResourceControllerTest extends RestControllerTest {
                 {
                    "process":{
                       "bpmnProcessId":"secondProcessId",
-                      "version":1,
+                      "processDefinitionVersion":1,
                       "processDefinitionKey":7890123,
                       "resourceName":"second.bpmn",
                       "tenantId":"<default>"

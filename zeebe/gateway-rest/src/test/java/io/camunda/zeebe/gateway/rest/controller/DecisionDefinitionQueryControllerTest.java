@@ -41,7 +41,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
           "items": [
               {
                   "tenantId": "t",
-                  "decisionKey": 0,
+                  "decisionDefinitionKey": 0,
                   "dmnDecisionId": "dId",
                   "dmnDecisionName": "name",
                   "version": 1,
@@ -131,7 +131,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         {
           "filter":{
             "tenantId": "t",
-            "decisionKey": 0,
+            "decisionDefinitionKey": 0,
             "dmnDecisionName": "name",
             "version": 1,
             "dmnDecisionRequirementsId": "drId",
