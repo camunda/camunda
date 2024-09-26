@@ -1224,7 +1224,7 @@ paths:
     get:
       tags:
         - Decision requirements
-      summary: Get decision requirements XML (alpha)
+      summary: Get decision requirements XML (alpha).
       description: |
         Returns decision requirements as XML.
 
