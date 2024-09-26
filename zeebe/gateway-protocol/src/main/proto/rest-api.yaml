@@ -657,7 +657,7 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateProcessInstanceRequest"
             examples:
-              "By process decision key":
+              "By process definition key":
                 summary: "Create a process instance by processDefinitionKey."
                 value:
                   processDefinitionKey: 12345
