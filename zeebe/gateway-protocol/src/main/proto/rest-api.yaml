@@ -1714,7 +1714,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ResourceResponse"
+                $ref: "#/components/schemas/DeploymentResponse"
         "400":
           description: >
             The document upload failed. More details are provided in the response body.
@@ -3523,10 +3523,10 @@ components:
           format: date-time
           description: The date and time when the link expires.
 
-    ResourceResponse:
+    DeploymentResponse:
       type: object
       properties:
-        key:
+        deploymentKey:
           type: integer
           format: int64
           description: The unique key identifying the deployment.
