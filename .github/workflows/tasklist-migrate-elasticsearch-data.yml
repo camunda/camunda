@@ -71,6 +71,17 @@ jobs:
         run: |
           mvn -B -f tasklist/qa/migration-tests -DskipTests=false -DskipChecks verify
 
+      # Upload test logs for troubleshooting
+      - name: Upload failed test results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: migration-test-results
+          path: |
+            **/failsafe-reports/
+            **/surefire-reports/
+          retention-days: 1
+
       # Notify: send Slack notification on tests failure
       - name: Send Slack notification on failure
         if: failure()
