@@ -348,7 +348,7 @@ public final class SearchQueryRequestMapper {
     Optional.ofNullable(filter)
         .ifPresent(
             f -> {
-              Optional.ofNullable(f.getUserTaskKey()).ifPresent(builder::keys);
+              Optional.ofNullable(f.getUserTaskKey()).ifPresent(builder::userTaskKeys);
               Optional.ofNullable(f.getState()).ifPresent(builder::states);
               Optional.ofNullable(f.getBpmnDefinitionId()).ifPresent(builder::bpmnProcessIds);
               Optional.ofNullable(f.getElementId()).ifPresent(builder::elementIds);

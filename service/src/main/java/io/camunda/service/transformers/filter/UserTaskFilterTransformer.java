@@ -34,7 +34,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   @Override
   public SearchQuery toSearchQuery(final UserTaskFilter filter) {
-    final var userTaskKeysQuery = getUserTaskKeysQuery(filter.keys());
+    final var userTaskKeysQuery = getUserTaskKeysQuery(filter.userTaskKeys());
 
     final var processInstanceKeysQuery = getProcessInstanceKeysQuery(filter.processInstanceKeys());
     final var processDefinitionKeyQuery =
