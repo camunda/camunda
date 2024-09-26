@@ -49,6 +49,15 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final IntegerProperty executionListenerIndexProp =
       new IntegerProperty("executionListenerIndex", 0);
 
+  /**
+   * This value is added in 8.7, any child process instances created before 8.7 will have a depth of
+   * 0.
+   *
+   * @since 8.7
+   */
+  private final IntegerProperty calledProcessDepthProp =
+      new IntegerProperty("calledProcessDepth", -1);
+
   public ElementInstance() {
     super(14);
     declareProperty(parentKeyProp)
@@ -280,5 +289,9 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
    */
   public List<DirectBuffer> getActiveSequenceFlowIds() {
     return activeSequenceFlowIdsProp.stream().map(StringValue::getValue).toList();
+  }
+
+  public int getCalledProcessDepth() {
+    return calledProcessDepthProp.getValue();
   }
 }
