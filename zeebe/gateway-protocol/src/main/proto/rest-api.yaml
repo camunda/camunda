@@ -1077,7 +1077,7 @@ paths:
   /decisions/evaluation:
     post:
       tags:
-        - Decision
+        - Decision definition
       summary: Evaluate decision
       description: |
         Evaluates a decision.
@@ -2212,17 +2212,17 @@ components:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this decision definition.
-        dmnDecisionId:
+        decisionDefinitionId:
           type: string
           description: The DMN id of the decision definition.
-        dmnDecisionName:
+        decisionDefinitionName:
           type: string
           description: The DMN name of the decision definition.
         version:
           type: integer
           format: int32
           description: The assigned version of the decision definition.
-        dmnDecisionRequirementsId:
+        decisionRequirementsId:
           type: string
           description: the DMN id of the decision requirements graph that the decision definition is part of.
         decisionRequirementsKey:
@@ -2440,17 +2440,17 @@ components:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this decision definition.
-        dmnDecisionId:
+        decisionDefinitionId:
           type: string
           description: The DMN id of the decision definition.
-        dmnDecisionName:
+        decisionDefinitionName:
           type: string
           description: The DMN name of the decision definition.
         version:
           type: integer
           format: int32
           description: The assigned version of the decision definition.
-        dmnDecisionRequirementsId:
+        decisionRequirementsId:
           type: string
           description: the DMN id of the decision requirements graph that the decision definition is part of.
         decisionRequirementsKey:
@@ -3076,14 +3076,14 @@ components:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this decision requirements.
-        dmnDecisionRequirementsName:
+        decisionRequirementsName:
           type: string
           description: The DMN name of the decision requirements.
         version:
           type: integer
           format: int32
           description: The assigned version of the decision requirements.
-        dmnDecisionRequirementsId:
+        decisionRequirementsId:
           type: string
           description: the DMN id of the decision requirements.
         tenantId:
@@ -3105,14 +3105,14 @@ components:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this decision requirements.
-        dmnDecisionRequirementsName:
+        decisionRequirementsName:
           type: string
           description: The DMN name of the decision requirements.
         version:
           type: integer
           format: int32
           description: The assigned version of the decision requirements.
-        dmnDecisionRequirementsId:
+        decisionRequirementsId:
           type: string
           description: the DMN id of the decision requirements.
         resourceName:
@@ -3130,7 +3130,7 @@ components:
             Cannot be used together with decisionId.
           type: integer
           format: int64
-        decisionId:
+        decisionDefinitionId:
           description: |
             The ID of the decision to be evaluated.
             Cannot be used together with decisionDefinitionKey. When using the decision ID, the latest
@@ -3150,13 +3150,13 @@ components:
           description: The unique key identifying the decision which was evaluated.
           type: integer
           format: int64
-        decisionId:
+        decisionDefinitionId:
           description: The ID of the decision which was evaluated.
           type: string
-        decisionName:
+        decisionDefinitionName:
           description: The name of the decision which was evaluated.
           type: string
-        decisionVersion:
+        decisionDefinitionVersion:
           description: The version of the decision which was evaluated.
           type: integer
           format: int32
@@ -3167,11 +3167,11 @@ components:
           description: The unique key identifying the decision requirements graph that the decision which was evaluated is part of.
           type: integer
           format: int64
-        decisionOutput:
+        decisionDefinitionOutput:
           description: |
             JSON document that will instantiate the result of the decision which was evaluated.
           type: string
-        failedDecisionId:
+        failedDecisionDefinitionId:
           description: The ID of the decision which failed during evaluation.
           type: string
         failureMessage:
@@ -3196,20 +3196,20 @@ components:
           description: The unique key identifying the decision which was evaluate.
           type: integer
           format: int64
-        decisionId:
+        decisionDefinitionId:
           description: The ID of the decision which was evaluated.
           type: string
-        decisionName:
+        decisionDefinitionName:
           description: The name of the decision which was evaluated.
           type: string
-        decisionVersion:
+        decisionDefinitionVersion:
           description: The version of the decision which was evaluated.
           type: integer
           format: int32
-        decisionType:
+        decisionDefinitionType:
           description: The type of the decision which was evaluated.
           type: string
-        decisionOutput:
+        decisionDefinitionOutput:
           description: |
             JSON document that will instantiate the result of the decision which was evaluated.
           type: string
@@ -3298,17 +3298,17 @@ components:
           type: integer
           format: int64
           description: The key of the decision.
-        dmnDecisionId:
+        decisionDefinitionId:
           type: string
           description: The ID of the DMN decision.
-        dmnDecisionName:
+        decisionDefinitionName:
           type: string
           description: The name of the DMN decision.
-        decisionVersion:
+        decisionDefinitionVersion:
           type: integer
           format: int32
           description: The version of the decision.
-        decisionType:
+        decisionDefinitionType:
           $ref: '#/components/schemas/DecisionInstanceTypeEnum'
           description: The type of the decision.
         tenantId:
@@ -3353,17 +3353,17 @@ components:
           type: integer
           format: int64
           description: The key of the decision.
-        dmnDecisionId:
+        decisionDefinitionId:
           type: string
           description: The ID of the DMN decision.
-        dmnDecisionName:
+        decisionDefinitionName:
           type: string
           description: The name of the DMN decision.
-        decisionVersion:
+        decisionDefinitionVersion:
           type: integer
           format: int32
           description: The version of the decision.
-        decisionType:
+        decisionDefinitionType:
           $ref: '#/components/schemas/DecisionInstanceTypeEnum'
           description: The type of the decision.
         result:
@@ -3541,7 +3541,7 @@ components:
       properties:
         process:
           $ref: "#/components/schemas/DeploymentProcess"
-        decision:
+        decisionDefinition:
           $ref: "#/components/schemas/DeploymentDecision"
         decisionRequirements:
           $ref: "#/components/schemas/DeploymentDecisionRequirements"
@@ -3572,7 +3572,7 @@ components:
     DeploymentDecision:
       type: object
       properties:
-        dmnDecisionId:
+        decisionDefinitionId:
           type: string
           description: |
             The dmn decision ID, as parsed during deployment, together with the version forms a
@@ -3586,17 +3586,17 @@ components:
           format: int64
           description: |
             The assigned decision key, which acts as a unique identifier for this decision.
-        dmnDecisionName:
+        name:
           type: string
           description: The DMN name of the decision, as parsed during deployment.
         tenantId:
           type: string
           description: The tenant ID of the deployed decision.
-        dmnDecisionRequirementsId:
+        decisionRequirementsId:
           type: string
           description: |
             The dmn ID of the decision requirements graph that this decision is part of, as parsed during deployment.
-        dmnDecisionRequirementsKey:
+        decisionRequirementsKey:
           type: integer
           format: int64
           description: |
@@ -3604,7 +3604,7 @@ components:
     DeploymentDecisionRequirements:
       type: object
       properties:
-        dmnDecisionRequirementsId:
+        decisionRequirementsId:
           type: string
           description: |
             The dmn decision requirements ID, as parsed during deployment; together with the versions forms a unique identifier for a specific decision.
@@ -3612,13 +3612,13 @@ components:
           type: integer
           format: int32
           description: The assigned decision requirements version.
-        dmnDecisionRequirementsName:
+        decisionRequirementsName:
           type: string
           description: The DMN name of the decision requirements, as parsed during deployment.
         tenantId:
           type: string
           description: The tenant ID of the deployed decision requirements.
-        dmnDecisionRequirementsKey:
+        decisionRequirementsKey:
           type: integer
           format: int64
           description: |

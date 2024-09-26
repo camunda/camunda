@@ -183,11 +183,11 @@ public final class ResponseMapper {
         .map(
             decisionRequirement ->
                 new DeploymentDecisionRequirements()
-                    .dmnDecisionRequirementsId(decisionRequirement.getDecisionRequirementsId())
+                    .decisionRequirementsId(decisionRequirement.getDecisionRequirementsId())
                     .version(decisionRequirement.getDecisionRequirementsVersion())
-                    .dmnDecisionRequirementsName(decisionRequirement.getDecisionRequirementsName())
+                    .decisionRequirementsName(decisionRequirement.getDecisionRequirementsName())
                     .tenantId(decisionRequirement.getTenantId())
-                    .dmnDecisionRequirementsKey(decisionRequirement.getDecisionRequirementsKey())
+                    .decisionRequirementsKey(decisionRequirement.getDecisionRequirementsKey())
                     .resourceName(decisionRequirement.getResourceName()))
         .map(
             deploymentDecisionRequirement ->
@@ -201,14 +201,14 @@ public final class ResponseMapper {
         .map(
             decision ->
                 new DeploymentDecision()
-                    .dmnDecisionId(decision.getDecisionId())
+                    .decisionDefinitionId(decision.getDecisionId())
                     .version(decision.getVersion())
                     .decisionDefinitionKey(decision.getDecisionKey())
-                    .dmnDecisionName(decision.getDecisionName())
+                    .name(decision.getDecisionName())
                     .tenantId(decision.getTenantId())
-                    .dmnDecisionRequirementsId(decision.getDecisionRequirementsId())
-                    .dmnDecisionRequirementsKey(decision.getDecisionRequirementsKey()))
-        .map(deploymentDecision -> new DeploymentMetadata().decision(deploymentDecision))
+                    .decisionRequirementsId(decision.getDecisionRequirementsId())
+                    .decisionRequirementsKey(decision.getDecisionRequirementsKey()))
+        .map(deploymentDecision -> new DeploymentMetadata().decisionDefinition(deploymentDecision))
         .forEach(response::addDeploymentsItem);
   }
 
@@ -289,14 +289,14 @@ public final class ResponseMapper {
     final var decisionEvaluationRecord = brokerResponse.getResponse();
     final var response =
         new EvaluateDecisionResponse()
-            .decisionId(decisionEvaluationRecord.getDecisionId())
+            .decisionDefinitionId(decisionEvaluationRecord.getDecisionId())
             .decisionDefinitionKey(decisionEvaluationRecord.getDecisionKey())
-            .decisionName(decisionEvaluationRecord.getDecisionName())
-            .decisionVersion(decisionEvaluationRecord.getDecisionVersion())
+            .decisionDefinitionName(decisionEvaluationRecord.getDecisionName())
+            .decisionDefinitionVersion(decisionEvaluationRecord.getDecisionVersion())
             .decisionRequirementsId(decisionEvaluationRecord.getDecisionRequirementsId())
             .decisionRequirementsKey(decisionEvaluationRecord.getDecisionRequirementsKey())
-            .decisionOutput(decisionEvaluationRecord.getDecisionOutput())
-            .failedDecisionId(decisionEvaluationRecord.getFailedDecisionId())
+            .decisionDefinitionOutput(decisionEvaluationRecord.getDecisionOutput())
+            .failedDecisionDefinitionId(decisionEvaluationRecord.getFailedDecisionId())
             .failureMessage(decisionEvaluationRecord.getEvaluationFailureMessage())
             .tenantId(decisionEvaluationRecord.getTenantId())
             .decisionInstanceKey(brokerResponse.getKey());
@@ -313,10 +313,10 @@ public final class ResponseMapper {
             evaluatedDecision ->
                 new EvaluatedDecisionItem()
                     .decisionDefinitionKey(evaluatedDecision.getDecisionKey())
-                    .decisionId(evaluatedDecision.getDecisionId())
-                    .decisionName(evaluatedDecision.getDecisionName())
-                    .decisionVersion(evaluatedDecision.getDecisionVersion())
-                    .decisionOutput(evaluatedDecision.getDecisionOutput())
+                    .decisionDefinitionId(evaluatedDecision.getDecisionId())
+                    .decisionDefinitionName(evaluatedDecision.getDecisionName())
+                    .decisionDefinitionVersion(evaluatedDecision.getDecisionVersion())
+                    .decisionDefinitionOutput(evaluatedDecision.getDecisionOutput())
                     .tenantId(evaluatedDecision.getTenantId())
                     .evaluatedInputs(buildEvaluatedInputs(evaluatedDecision.getEvaluatedInputs()))
                     .matchedRules(buildMatchedRules(evaluatedDecision.getMatchedRules())))

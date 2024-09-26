@@ -37,13 +37,13 @@ public class DecisionDefinitionFilterImpl
 
   @Override
   public DecisionDefinitionFilter dmnDecisionId(final String value) {
-    filter.setDmnDecisionId(value);
+    filter.setDecisionDefinitionId(value);
     return this;
   }
 
   @Override
   public DecisionDefinitionFilter dmnDecisionName(final String value) {
-    filter.setDmnDecisionName(value);
+    filter.setDecisionDefinitionName(value);
     return this;
   }
 
@@ -55,7 +55,7 @@ public class DecisionDefinitionFilterImpl
 
   @Override
   public DecisionDefinitionFilter dmnDecisionRequirementsId(final String value) {
-    filter.setDmnDecisionRequirementsId(value);
+    filter.setDecisionRequirementsId(value);
     return this;
   }
 

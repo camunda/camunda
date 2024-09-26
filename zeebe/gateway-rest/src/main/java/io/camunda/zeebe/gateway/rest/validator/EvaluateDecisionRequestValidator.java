@@ -22,13 +22,17 @@ public class EvaluateDecisionRequestValidator {
       final EvaluateDecisionRequest request) {
     return validate(
         violations -> {
-          if (request.getDecisionId() == null && request.getDecisionDefinitionKey() == null) {
+          if (request.getDecisionDefinitionId() == null
+              && request.getDecisionDefinitionKey() == null) {
             violations.add(
-                ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(List.of("decisionId", "decisionKey")));
+                ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
+                    List.of("decisionDefinitionId", "decisionDefinitionKey")));
           }
-          if (request.getDecisionId() != null && request.getDecisionDefinitionKey() != null) {
+          if (request.getDecisionDefinitionId() != null
+              && request.getDecisionDefinitionKey() != null) {
             violations.add(
-                ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(List.of("decisionId", "decisionKey")));
+                ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
+                    List.of("decisionDefinitionId", "decisionDefinitionKey")));
           }
         });
   }

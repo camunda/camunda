@@ -120,7 +120,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   @Override
   public EvaluateDecisionCommandStep2 decisionId(final String decisionId) {
     grpcRequestObjectBuilder.setDecisionId(decisionId);
-    httpRequestObject.setDecisionId(decisionId);
+    httpRequestObject.setDecisionDefinitionId(decisionId);
     return this;
   }
 
