@@ -147,10 +147,10 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionKeys);
-      ofNullable(filter.getDmnDecisionId()).ifPresent(builder::dmnDecisionIds);
-      ofNullable(filter.getDmnDecisionName()).ifPresent(builder::dmnDecisionNames);
-      ofNullable(filter.getDecisionVersion()).ifPresent(builder::decisionVersions);
-      ofNullable(filter.getDecisionType())
+      ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::dmnDecisionIds);
+      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::dmnDecisionNames);
+      ofNullable(filter.getDecisionDefinitionVersion()).ifPresent(builder::decisionVersions);
+      ofNullable(filter.getDecisionDefinitionType())
           .map(t -> convertEnum(t, DecisionInstanceType.class))
           .ifPresent(builder::decisionTypes);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
@@ -283,11 +283,10 @@ public final class SearchQueryRequestMapper {
 
     if (filter != null) {
       ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionKeys);
-      ofNullable(filter.getDmnDecisionId()).ifPresent(builder::dmnDecisionIds);
-      ofNullable(filter.getDmnDecisionName()).ifPresent(builder::dmnDecisionNames);
+      ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::dmnDecisionIds);
+      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::dmnDecisionNames);
       ofNullable(filter.getVersion()).ifPresent(builder::versions);
-      ofNullable(filter.getDmnDecisionRequirementsId())
-          .ifPresent(builder::dmnDecisionRequirementsIds);
+      ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::dmnDecisionRequirementsIds);
       ofNullable(filter.getDecisionRequirementsKey()).ifPresent(builder::decisionRequirementsKeys);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
@@ -304,10 +303,10 @@ public final class SearchQueryRequestMapper {
             f -> {
               Optional.ofNullable(f.getDecisionRequirementsKey())
                   .ifPresent(builder::decisionRequirementsKeys);
-              Optional.ofNullable(f.getDmnDecisionRequirementsName())
+              Optional.ofNullable(f.getDecisionRequirementsName())
                   .ifPresent(builder::dmnDecisionRequirementsNames);
               Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
-              Optional.ofNullable(f.getDmnDecisionRequirementsId())
+              Optional.ofNullable(f.getDecisionRequirementsId())
                   .ifPresent(builder::dmnDecisionRequirementsIds);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
             });

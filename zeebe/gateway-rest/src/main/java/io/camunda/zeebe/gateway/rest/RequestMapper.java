@@ -585,7 +585,7 @@ public class RequestMapper {
     return validationResponse.map(
         tenantId ->
             new DecisionEvaluationRequest(
-                getStringOrEmpty(request, EvaluateDecisionRequest::getDecisionId),
+                getStringOrEmpty(request, EvaluateDecisionRequest::getDecisionDefinitionId),
                 getLongOrDefault(request, EvaluateDecisionRequest::getDecisionDefinitionKey, -1L),
                 getMapOrEmpty(request, EvaluateDecisionRequest::getVariables),
                 tenantId));

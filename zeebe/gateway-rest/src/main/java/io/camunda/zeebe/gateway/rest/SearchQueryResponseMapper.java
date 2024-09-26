@@ -220,11 +220,11 @@ public final class SearchQueryResponseMapper {
     return new DecisionDefinitionItem()
         .tenantId(d.tenantId())
         .decisionDefinitionKey(d.key())
-        .dmnDecisionName(d.name())
+        .decisionDefinitionName(d.name())
         .version(d.version())
-        .dmnDecisionId(d.decisionId())
+        .decisionDefinitionId(d.decisionId())
         .decisionRequirementsKey(d.decisionRequirementsKey())
-        .dmnDecisionRequirementsId(d.decisionRequirementsId());
+        .decisionRequirementsId(d.decisionRequirementsId());
   }
 
   public static DecisionRequirementsItem toDecisionRequirements(
@@ -232,10 +232,10 @@ public final class SearchQueryResponseMapper {
     return new DecisionRequirementsItem()
         .tenantId(d.tenantId())
         .decisionRequirementsKey(d.key())
-        .dmnDecisionRequirementsName(d.name())
+        .decisionRequirementsName(d.name())
         .version(d.version())
         .resourceName(d.resourceName())
-        .dmnDecisionRequirementsId(d.decisionRequirementsId());
+        .decisionRequirementsId(d.decisionRequirementsId());
   }
 
   private static List<UserTaskItem> toUserTasks(final List<UserTaskEntity> tasks) {
@@ -327,10 +327,10 @@ public final class SearchQueryResponseMapper {
         .processDefinitionKey(entity.processDefinitionKey())
         .processInstanceKey(entity.processInstanceKey())
         .decisionDefinitionKey(Long.valueOf(entity.decisionDefinitionId()))
-        .dmnDecisionId(entity.decisionId())
-        .dmnDecisionName(entity.decisionName())
-        .decisionVersion(entity.decisionVersion())
-        .decisionType(
+        .decisionDefinitionId(entity.decisionId())
+        .decisionDefinitionName(entity.decisionName())
+        .decisionDefinitionVersion(entity.decisionVersion())
+        .decisionDefinitionType(
             (entity.decisionType() == null)
                 ? null
                 : DecisionInstanceTypeEnum.fromValue(entity.decisionType().name()))

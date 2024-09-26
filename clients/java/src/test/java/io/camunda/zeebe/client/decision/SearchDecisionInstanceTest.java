@@ -63,14 +63,14 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     assertThat(request.getFilter().getDecisionInstanceKey()).isEqualTo(1L);
     assertThat(request.getFilter().getState()).isEqualTo(DecisionInstanceStateEnum.FAILED);
     assertThat(request.getFilter().getEvaluationFailure()).isEqualTo("ef");
-    assertThat(request.getFilter().getDecisionType())
+    assertThat(request.getFilter().getDecisionDefinitionType())
         .isEqualTo(DecisionInstanceTypeEnum.DECISION_TABLE);
     assertThat(request.getFilter().getProcessDefinitionKey()).isEqualTo(2L);
     assertThat(request.getFilter().getProcessInstanceKey()).isEqualTo(3L);
     assertThat(request.getFilter().getDecisionDefinitionKey()).isEqualTo(4L);
-    assertThat(request.getFilter().getDmnDecisionId()).isEqualTo("ddi");
-    assertThat(request.getFilter().getDmnDecisionName()).isEqualTo("ddm");
-    assertThat(request.getFilter().getDecisionVersion()).isEqualTo(5);
+    assertThat(request.getFilter().getDecisionDefinitionId()).isEqualTo("ddi");
+    assertThat(request.getFilter().getDecisionDefinitionName()).isEqualTo("ddm");
+    assertThat(request.getFilter().getDecisionDefinitionVersion()).isEqualTo(5);
     assertThat(request.getFilter().getTenantId()).isEqualTo("t");
   }
 
