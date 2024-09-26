@@ -38,7 +38,7 @@ public class DecisionControllerTest extends RestControllerTest {
   private static final String EXPECTED_EVALUATION_RESPONSE =
       """
       {
-         "decisionKey":123456,
+         "decisionDefinitionKey":123456,
          "decisionId":"decisionId",
          "decisionName":"decisionName",
          "decisionVersion":1,
@@ -71,7 +71,7 @@ public class DecisionControllerTest extends RestControllerTest {
     final var request =
         """
         {
-          "decisionKey": 123456,
+          "decisionDefinitionKey": 123456,
           "variables": {
             "key": "value"
           },
@@ -108,7 +108,7 @@ public class DecisionControllerTest extends RestControllerTest {
     final var request =
         """
         {
-          "decisionKey": 123456,
+          "decisionDefinitionKey": 123456,
           "variables": {
             "key": "value"
           },
@@ -174,7 +174,7 @@ public class DecisionControllerTest extends RestControllerTest {
         """
         {
           "decisionId": "decisionId",
-          "decisionKey": 123456,
+          "decisionDefinitionKey": 123456,
           "variables": {
             "key": "value"
           }

@@ -43,7 +43,7 @@ public class MessageControllerTest extends RestControllerTest {
   private static final String EXPECTED_PUBLICATION_RESPONSE =
       """
             {
-              "key": 123,
+              "messageKey": 123,
               "tenantId": "<default>"
             }""";
   @MockBean MessageServices messageServices;
@@ -103,7 +103,7 @@ public class MessageControllerTest extends RestControllerTest {
         .json(
             """
         {
-          "key": 123,
+          "messageKey": 123,
           "tenantId": "<default>",
           "processInstanceKey": 321
         }""");
@@ -159,7 +159,7 @@ public class MessageControllerTest extends RestControllerTest {
         .json(
             """
         {
-          "key": 123,
+          "messageKey": 123,
           "tenantId": "tenantId",
           "processInstanceKey": 321
         }""");
