@@ -9,6 +9,10 @@ inputs:
     required: false
     type: number
     default: 21
+  maven-cache-key-modifier:
+    description: A modifier key used for the maven cache, can be used to create isolated caches for certain jobs.
+    default: "tasklist"
+    required: false
   nexusUsername:
     required: true
     type: string
@@ -25,12 +29,12 @@ runs:
       with:
         distribution: "adopt"
         java-version: ${{ inputs.javaVersion }}
-        cache: "maven"
 
     - name: Setup Maven
-      uses: stCarolas/setup-maven@v4.5
+      uses: ./.github/actions/setup-maven-dist
       with:
         maven-version: 3.8.6
+        set-mvnw: true
 
     # Setup: Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
     - name: Create Maven settings.xml
@@ -44,3 +48,8 @@ runs:
             "password": "${{ inputs.nexusPassword }}"
           }]
         mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "zeebe,zeebe-snapshots", "name": "camunda Nexus"}]'
+
+    - name: Configure Maven
+      uses: ./.github/actions/setup-maven-cache
+      with:
+        maven-cache-key-modifier: ${{ inputs.maven-cache-key-modifier }}
