@@ -31,7 +31,7 @@ public class DecisionDefinitionFilterImpl
 
   @Override
   public DecisionDefinitionFilter decisionKey(final Long value) {
-    filter.setDecisionKey(value);
+    filter.setDecisionDefinitionKey(value);
     return this;
   }
 

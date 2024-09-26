@@ -22,11 +22,11 @@ public class EvaluateDecisionRequestValidator {
       final EvaluateDecisionRequest request) {
     return validate(
         violations -> {
-          if (request.getDecisionId() == null && request.getDecisionKey() == null) {
+          if (request.getDecisionId() == null && request.getDecisionDefinitionKey() == null) {
             violations.add(
                 ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(List.of("decisionId", "decisionKey")));
           }
-          if (request.getDecisionId() != null && request.getDecisionKey() != null) {
+          if (request.getDecisionId() != null && request.getDecisionDefinitionKey() != null) {
             violations.add(
                 ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(List.of("decisionId", "decisionKey")));
           }

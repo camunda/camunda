@@ -54,7 +54,7 @@ public final class SearchDecisionDefinitionTest extends ClientRestTest {
     // then
     final DecisionDefinitionSearchQueryRequest request =
         gatewayService.getLastRequest(DecisionDefinitionSearchQueryRequest.class);
-    assertThat(request.getFilter().getDecisionKey()).isEqualTo(1L);
+    assertThat(request.getFilter().getDecisionDefinitionKey()).isEqualTo(1L);
     assertThat(request.getFilter().getDmnDecisionId()).isEqualTo("ddi");
     assertThat(request.getFilter().getDmnDecisionName()).isEqualTo("ddm");
     assertThat(request.getFilter().getDecisionRequirementsKey()).isEqualTo(2L);

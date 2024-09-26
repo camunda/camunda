@@ -63,7 +63,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
   private static final EvaluatedDecisionItem EVALUATED_DECISION =
       new EvaluatedDecisionItem()
           .decisionId("my-decision")
-          .decisionKey(DECISION_KEY)
+          .decisionDefinitionKey(DECISION_KEY)
           .decisionName("My Decision")
           .decisionVersion(1)
           .decisionType("TABLE")
@@ -74,7 +74,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
   private static final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse
       EVALUATE_DECISION_RESPONSE =
           new io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse()
-              .decisionKey(DECISION_KEY)
+              .decisionDefinitionKey(DECISION_KEY)
               .decisionId("my-decision")
               .decisionName("My Decision")
               .decisionVersion(1)
@@ -266,7 +266,8 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
 
   private void assertResponse(final EvaluateDecisionResponse response) {
     // assert EvaluateDecisionResponse properties
-    assertThat(response.getDecisionKey()).isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionKey());
+    assertThat(response.getDecisionKey())
+        .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionDefinitionKey());
     assertThat(response.getDecisionId()).isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionId());
     assertThat(response.getDecisionVersion())
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionVersion());
@@ -291,7 +292,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
     assertThat(evaluatedDecisionResponse.getDecisionId())
         .isEqualTo(EVALUATED_DECISION.getDecisionId());
     assertThat(evaluatedDecisionResponse.getDecisionKey())
-        .isEqualTo(EVALUATED_DECISION.getDecisionKey());
+        .isEqualTo(EVALUATED_DECISION.getDecisionDefinitionKey());
     assertThat(evaluatedDecisionResponse.getDecisionName())
         .isEqualTo(EVALUATED_DECISION.getDecisionName());
     assertThat(evaluatedDecisionResponse.getDecisionVersion())
