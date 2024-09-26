@@ -407,11 +407,11 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         """
             {
               "tenantId": "t",
-              "decisionKey": 0,
-              "dmnDecisionId": "dId",
-              "dmnDecisionName": "name",
+              "decisionDefinitionKey": 0,
+              "decisionDefinitionId": "dId",
+              "decisionDefinitionName": "name",
               "version": 1,
-              "dmnDecisionRequirementsId": "drId",
+              "decisionRequirementsId": "drId",
               "decisionRequirementsKey": 2
             }""";
     // when/then

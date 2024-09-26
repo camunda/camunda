@@ -44,7 +44,7 @@ public class DecisionControllerTest extends RestControllerTest {
          "decisionDefinitionVersion":1,
          "decisionRequirementsId":"decisionRequirementsId",
          "decisionRequirementsKey":123456,
-         "decisionDefinitionOutput":"null",
+         "output":"null",
          "failedDecisionDefinitionId":"",
          "failureMessage":"",
          "tenantId":"tenantId",
