@@ -39,7 +39,7 @@ public class IncidentImpl implements Incident {
   public IncidentImpl(final IncidentItem item) {
     key = item.getKey();
     processDefinitionKey = item.getProcessDefinitionKey();
-    bpmnProcessId = item.getBpmnProcessId();
+    bpmnProcessId = item.getProcessDefinitionId();
     processInstanceKey = item.getProcessInstanceKey();
     errorType = item.getErrorType();
     errorMessage = item.getErrorMessage();

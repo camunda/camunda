@@ -238,7 +238,7 @@ public final class SearchQueryRequestMapper {
 
     if (filter != null) {
       ofNullable(filter.getKey()).ifPresent(builder::keys);
-      ofNullable(filter.getBpmnProcessId()).ifPresent(builder::bpmnProcessIds);
+      ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
       ofNullable(filter.getProcessDefinitionName()).ifPresent(builder::processNames);
       ofNullable(filter.getProcessDefinitionVersion()).ifPresent(builder::processVersions);
       ofNullable(filter.getProcessDefinitionVersionTag()).ifPresent(builder::processVersionTags);
@@ -326,7 +326,7 @@ public final class SearchQueryRequestMapper {
                   .ifPresent(builder::processInstanceKeys);
               Optional.ofNullable(f.getProcessDefinitionKey())
                   .ifPresent(builder::processDefinitionKeys);
-              Optional.ofNullable(f.getBpmnProcessId()).ifPresent(builder::bpmnProcessIds);
+              Optional.ofNullable(f.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
               Optional.ofNullable(f.getState())
                   .ifPresent(s -> builder.states(FlowNodeState.valueOf(s.getValue())));
               Optional.ofNullable(f.getType())
@@ -349,7 +349,7 @@ public final class SearchQueryRequestMapper {
             f -> {
               Optional.ofNullable(f.getKey()).ifPresent(builder::keys);
               Optional.ofNullable(f.getState()).ifPresent(builder::states);
-              Optional.ofNullable(f.getBpmnDefinitionId()).ifPresent(builder::bpmnProcessIds);
+              Optional.ofNullable(f.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
               Optional.ofNullable(f.getElementId()).ifPresent(builder::elementIds);
               Optional.ofNullable(f.getAssignee()).ifPresent(builder::assignees);
               Optional.ofNullable(f.getCandidateGroup()).ifPresent(builder::candidateGroups);
@@ -386,7 +386,7 @@ public final class SearchQueryRequestMapper {
     if (filter != null) {
       ofNullable(filter.getKey()).ifPresent(builder::keys);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getBpmnProcessId()).ifPresent(builder::bpmnProcessIds);
+      ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
       ofNullable(filter.getProcessInstanceKey()).ifPresent(builder::processInstanceKeys);
       ofNullable(filter.getErrorType())
           .ifPresent(t -> builder.errorTypes(IncidentEntity.ErrorType.valueOf(t.getValue())));

@@ -49,7 +49,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
             .key(12L)
             .type("foo")
             .processInstanceKey(123L)
-            .bpmnProcessId("test1")
+            .processDefinitionId("test1")
             .processDefinitionVersion(2)
             .processDefinitionKey(23L)
             .elementId("foo")
@@ -66,7 +66,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
             .key(42L)
             .type("foo")
             .processInstanceKey(333L)
-            .bpmnProcessId("test3")
+            .processDefinitionId("test3")
             .processDefinitionVersion(23)
             .processDefinitionKey(11L)
             .elementId("bar")
@@ -99,7 +99,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     io.camunda.zeebe.client.api.response.ActivatedJob job = response.getJobs().get(0);
     assertThat(job.getKey()).isEqualTo(activatedJob1.getKey());
     assertThat(job.getType()).isEqualTo(activatedJob1.getType());
-    assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob1.getBpmnProcessId());
+    assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob1.getProcessDefinitionId());
     assertThat(job.getElementId()).isEqualTo(activatedJob1.getElementId());
     assertThat(job.getElementInstanceKey()).isEqualTo(activatedJob1.getElementInstanceKey());
     assertThat(job.getProcessDefinitionVersion())
@@ -116,7 +116,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     job = response.getJobs().get(1);
     assertThat(job.getKey()).isEqualTo(activatedJob2.getKey());
     assertThat(job.getType()).isEqualTo(activatedJob2.getType());
-    assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob2.getBpmnProcessId());
+    assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob2.getProcessDefinitionId());
     assertThat(job.getElementId()).isEqualTo(activatedJob2.getElementId());
     assertThat(job.getElementInstanceKey()).isEqualTo(activatedJob2.getElementInstanceKey());
     assertThat(job.getProcessDefinitionVersion())

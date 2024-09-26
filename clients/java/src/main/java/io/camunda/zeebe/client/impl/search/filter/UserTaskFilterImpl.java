@@ -90,7 +90,7 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
 
   @Override
   public UserTaskFilter bpmnProcessId(final String bpmnProcessId) {
-    filter.setBpmnDefinitionId(bpmnProcessId);
+    filter.processDefinitionId(bpmnProcessId);
     return this;
   }
 

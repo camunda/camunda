@@ -38,7 +38,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter bpmnProcessId(final String bpmnProcessId) {
-    filter.setBpmnProcessId(bpmnProcessId);
+    filter.processDefinitionId(bpmnProcessId);
     return this;
   }
 

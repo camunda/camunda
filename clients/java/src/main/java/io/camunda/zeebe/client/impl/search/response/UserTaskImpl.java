@@ -51,7 +51,7 @@ public class UserTaskImpl implements UserTask {
     elementInstanceKey = item.getElementInstanceKey();
     candidateGroup = item.getCandidateGroup();
     candidateUser = item.getCandidateUser();
-    bpmnProcessId = item.getBpmnProcessId();
+    bpmnProcessId = item.getProcessDefinitionId();
     processDefinitionKey = item.getProcessDefinitionKey();
     processInstanceKey = item.getProcessInstanceKey();
     formKey = item.getFormKey();
