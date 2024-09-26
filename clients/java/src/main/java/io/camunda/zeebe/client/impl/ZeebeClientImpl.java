@@ -53,6 +53,7 @@ import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
@@ -92,6 +93,7 @@ import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
 import io.camunda.zeebe.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateUserTaskCommandImpl;
+import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.ProcessInstanceGetRequestImpl;
@@ -586,6 +588,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public DecisionDefinitionQuery newDecisionDefinitionQuery() {
     return new DecisionDefinitionQueryImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public DecisionDefinitionGetRequest newDecisionDefinitionGetRequest(
+      final long decisionDefinitionKey) {
+    return new DecisionDefinitionGetRequestImpl(httpClient, decisionDefinitionKey);
   }
 
   @Override
