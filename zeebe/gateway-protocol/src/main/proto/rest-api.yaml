@@ -3925,7 +3925,7 @@ components:
     SignalBroadcastResponse:
       type: object
       properties:
-        key:
+        signalKey:
           description: The unique ID of the signal that was broadcast.
           type: integer
           format: int64

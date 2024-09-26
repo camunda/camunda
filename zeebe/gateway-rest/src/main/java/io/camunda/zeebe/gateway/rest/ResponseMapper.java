@@ -274,7 +274,7 @@ public final class ResponseMapper {
       final BrokerResponse<SignalRecord> brokerResponse) {
     final var response =
         new SignalBroadcastResponse()
-            .key(brokerResponse.getKey())
+            .signalKey(brokerResponse.getKey())
             .tenantId(brokerResponse.getResponse().getTenantId());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
