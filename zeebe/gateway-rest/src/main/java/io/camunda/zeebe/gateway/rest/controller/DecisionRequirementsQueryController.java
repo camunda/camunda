@@ -18,6 +18,7 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import jakarta.validation.ValidationException;
+import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -81,6 +82,23 @@ public class DecisionRequirementsQueryController {
                   decisionRequirementsServices.getByKey(decisionRequirementsKey)));
     } catch (final Exception exc) {
       REST_LOGGER.warn("An exception occurred in get Form by key.", exc);
+      final var problemDetail =
+          RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    }
+  }
+
+  @GetMapping(
+      path = "/{decisionRequirementsKey}/xml",
+      produces = {MediaType.TEXT_XML_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public ResponseEntity<String> getDecisionRequirementsXml(
+      @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey) {
+    try {
+      return ResponseEntity.ok()
+          .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
+          .body(decisionRequirementsServices.getDecisionRequirementsXml(decisionRequirementsKey));
+    } catch (final Exception exc) {
+      REST_LOGGER.warn("An exception occurred in getDecisionRequirementsXml.", exc);
       final var problemDetail =
           RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
       return RestErrorMapper.mapProblemToResponse(problemDetail);

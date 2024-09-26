@@ -7,6 +7,8 @@
  */
 package io.camunda.service;
 
+import static io.camunda.service.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
+
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.entities.DecisionRequirementsEntity;
 import io.camunda.service.exception.NotFoundException;
@@ -71,5 +73,24 @@ public final class DecisionRequirementsServices
       final Function<DecisionRequirementsQuery.Builder, ObjectBuilder<DecisionRequirementsQuery>>
           fn) {
     return search(SearchQueryBuilders.decisionRequirementsSearchQuery(fn));
+  }
+
+  public String getDecisionRequirementsXml(final Long decisionRequirementsKey) {
+    final var decisionRequirementsQuery =
+        decisionRequirementsSearchQuery(
+            q ->
+                q.filter(f -> f.decisionRequirementsKeys(decisionRequirementsKey))
+                    .resultConfig(r -> r.xml().include()));
+    return executor
+        .search(decisionRequirementsQuery, DecisionRequirementsEntity.class)
+        .items()
+        .stream()
+        .findFirst()
+        .map(DecisionRequirementsEntity::xml)
+        .orElseThrow(
+            () ->
+                new NotFoundException(
+                    "Decision Requirements with decisionRequirementsKey=%d cannot be found"
+                        .formatted(decisionRequirementsKey)));
   }
 }
