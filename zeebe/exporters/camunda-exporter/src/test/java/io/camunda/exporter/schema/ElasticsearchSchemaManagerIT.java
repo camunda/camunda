@@ -12,20 +12,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.ElasticsearchTransport;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
 import io.camunda.exporter.config.ElasticsearchProperties;
 import io.camunda.exporter.utils.TestSupport;
+import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,22 +35,14 @@ public class ElasticsearchSchemaManagerIT {
   private static final ElasticsearchContainer CONTAINER = TestSupport.createDefaultContainer();
 
   private static ElasticsearchClient elsClient;
-
   private static SearchEngineClient searchEngineClient;
 
   @BeforeAll
   public static void init() {
     // Create the low-level client
-
-    final RestClient restClient =
-        RestClient.builder(HttpHost.create(CONTAINER.getHttpHostAddress())).build();
-
-    // Create the transport with a Jackson mapper
-    final ElasticsearchTransport transport =
-        new RestClientTransport(restClient, new JacksonJsonpMapper(new ObjectMapper()));
-
-    // And create the API client
-    elsClient = new ElasticsearchClient(transport);
+    final var config = new ElasticsearchExporterConfiguration();
+    config.elasticsearch.setUrl(CONTAINER.getHttpHostAddress());
+    elsClient = new ElasticsearchConnector(config.elasticsearch).createClient();
 
     searchEngineClient = new ElasticsearchEngineClient(elsClient);
   }
