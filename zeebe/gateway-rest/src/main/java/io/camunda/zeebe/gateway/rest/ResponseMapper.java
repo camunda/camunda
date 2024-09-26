@@ -20,6 +20,7 @@ import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirements;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentForm;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentProcess;
+import io.camunda.zeebe.gateway.protocol.rest.DeploymentResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference.DocumentTypeEnum;
@@ -31,7 +32,6 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResponse;
-import io.camunda.zeebe.gateway.protocol.rest.ResourceResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserCreateResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
@@ -141,8 +141,8 @@ public final class ResponseMapper {
   public static ResponseEntity<Object> toDeployResourceResponse(
       final DeploymentRecord brokerResponse) {
     final var response =
-        new ResourceResponse()
-            .key(brokerResponse.getDeploymentKey())
+        new DeploymentResponse()
+            .deploymentKey(brokerResponse.getDeploymentKey())
             .tenantId(brokerResponse.getTenantId());
     addDeployedProcess(response, brokerResponse.getProcessesMetadata());
     addDeployedDecision(response, brokerResponse.decisionsMetadata());
@@ -162,7 +162,7 @@ public final class ResponseMapper {
   }
 
   private static void addDeployedForm(
-      final ResourceResponse response, final ValueArray<FormMetadataRecord> formMetadataRecords) {
+      final DeploymentResponse response, final ValueArray<FormMetadataRecord> formMetadataRecords) {
     formMetadataRecords.stream()
         .map(
             form ->
@@ -177,7 +177,7 @@ public final class ResponseMapper {
   }
 
   private static void addDeployedDecisionRequirements(
-      final ResourceResponse response,
+      final DeploymentResponse response,
       final ValueArray<DecisionRequirementsMetadataRecord> decisionRequirementsMetadataRecords) {
     decisionRequirementsMetadataRecords.stream()
         .map(
@@ -196,7 +196,7 @@ public final class ResponseMapper {
   }
 
   private static void addDeployedDecision(
-      final ResourceResponse response, final ValueArray<DecisionRecord> decisionRecords) {
+      final DeploymentResponse response, final ValueArray<DecisionRecord> decisionRecords) {
     decisionRecords.stream()
         .map(
             decision ->
@@ -213,7 +213,7 @@ public final class ResponseMapper {
   }
 
   private static void addDeployedProcess(
-      final ResourceResponse response, final List<ProcessMetadataValue> processesMetadata) {
+      final DeploymentResponse response, final List<ProcessMetadataValue> processesMetadata) {
     processesMetadata.stream()
         .map(
             process ->
