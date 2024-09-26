@@ -48,10 +48,10 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                        "processDefinitionKey": 2251799813688736,
                        "processInstanceKey": 6755399441058457,
                        "decisionDefinitionKey": 123456,
-                       "dmnDecisionId": "di",
-                       "dmnDecisionName": "ddn",
-                       "decisionVersion": 0,
-                       "decisionType": "DECISION_TABLE",
+                       "decisionDefinitionId": "di",
+                       "decisionDefinitionName": "ddn",
+                       "decisionDefinitionVersion": 0,
+                       "decisionDefinitionType": "DECISION_TABLE",
                        "result": "result"
                    }
                ],
@@ -111,7 +111,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
             """
       {
           "filter": {
-              "decisionType": "DECISION_TABLE"
+              "decisionDefinitionType": "DECISION_TABLE"
           }
       }""",
             q ->
