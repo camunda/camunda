@@ -85,7 +85,7 @@ public class DecisionDefinitionServicesTest {
     final var exception =
         assertThrows(NotFoundException.class, () -> services.getDecisionDefinitionXml(decisionKey));
     assertThat(exception.getMessage())
-        .isEqualTo("DecisionDefinition with decisionKey=1 cannot be found");
+        .isEqualTo("Decision Definition with decisionKey=1 not found");
     verify(client).search(any(SearchQueryRequest.class), eq(DecisionDefinitionEntity.class));
     verify(client, never())
         .search(any(SearchQueryRequest.class), eq(DecisionRequirementsEntity.class));
@@ -102,5 +102,39 @@ public class DecisionDefinitionServicesTest {
         assertThrows(NotFoundException.class, () -> services.getDecisionDefinitionXml(decisionKey));
     assertThat(exception.getMessage())
         .isEqualTo("DecisionRequirements with decisionRequirementsKey=124 cannot be found");
+  }
+
+  @Test
+  public void shouldGetDecisionDefinitionByKey() {
+    // given
+    final Long decisionKey = 123L;
+
+    // when
+    final DecisionDefinitionEntity decisionDefinition = services.getByKey(decisionKey);
+
+    // then
+    assertThat(decisionDefinition.key()).isEqualTo(decisionKey);
+    verify(client)
+        .search(
+            SearchQueryRequest.of(
+                b ->
+                    b.index("operate-decision-8.3.0_alias")
+                        .query(q -> q.term(t -> t.field("key").value(decisionKey)))
+                        .sort(s -> s.field(f -> f.field("key").asc()))),
+            DecisionDefinitionEntity.class);
+  }
+
+  @Test
+  public void shouldThrowNotFoundExceptionOnUnmatchedDecisionKey() {
+    // given
+    final Long decisionKey = 1L;
+    decisionDefinitionSearchQueryStub.setReturnEmptyResults(true);
+
+    // then
+    final var exception =
+        assertThrows(NotFoundException.class, () -> services.getByKey(decisionKey));
+    assertThat(exception.getMessage())
+        .isEqualTo("Decision Definition with decisionKey=1 not found");
+    verify(client).search(any(SearchQueryRequest.class), eq(DecisionDefinitionEntity.class));
   }
 }

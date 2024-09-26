@@ -216,7 +216,7 @@ public final class SearchQueryResponseMapper {
         .tenantId(instance.tenantId());
   }
 
-  private static DecisionDefinitionItem toDecisionDefinition(final DecisionDefinitionEntity d) {
+  public static DecisionDefinitionItem toDecisionDefinition(final DecisionDefinitionEntity d) {
     return new DecisionDefinitionItem()
         .tenantId(d.tenantId())
         .decisionKey(d.key())
