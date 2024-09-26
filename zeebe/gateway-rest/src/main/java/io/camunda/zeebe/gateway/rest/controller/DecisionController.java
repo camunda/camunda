@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequestMapping("/v2/decisions")
+@RequestMapping("/v2/decision-definitions")
 public class DecisionController {
 
   private final DecisionDefinitionServices decisionServices;
