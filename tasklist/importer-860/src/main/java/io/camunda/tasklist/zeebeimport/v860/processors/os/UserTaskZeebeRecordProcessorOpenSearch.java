@@ -24,7 +24,6 @@ import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToTa
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToVariableEntityMapper;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,40 +91,22 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
         .build();
   }
 
-  private BulkOperation getVariableQuery(final TaskVariableEntity variable)
-      throws PersistenceException {
-    try {
-      LOGGER.debug("Variable instance for list view: id {}", variable.getId());
-      final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(
-          TaskVariableTemplate.VALUE,
-          "null".equals(variable.getValue())
-              ? "null"
-              : objectMapper.writeValueAsString(variable.getValue()));
-      updateFields.put(
-          TaskVariableTemplate.FULL_VALUE,
-          "null".equals(variable.getFullValue())
-              ? "null"
-              : objectMapper.writeValueAsString(variable.getFullValue()));
-      updateFields.put(TaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
+  private BulkOperation getVariableQuery(final TaskVariableEntity variable) {
+    LOGGER.debug("Variable instance for list view: id {}", variable.getId());
+    final Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(TaskVariableTemplate.VALUE, variable.getValue());
+    updateFields.put(TaskVariableTemplate.FULL_VALUE, variable.getFullValue());
 
-      return new BulkOperation.Builder()
-          .update(
-              UpdateOperation.of(
-                  u ->
-                      u.index(variableIndex.getFullQualifiedName())
-                          .id(variable.getId())
-                          .document(CommonUtils.getJsonObjectFromEntity(updateFields))
-                          .upsert(CommonUtils.getJsonObjectFromEntity(variable))
-                          .retryOnConflict(UPDATE_RETRY_COUNT)))
-          .build();
-    } catch (final IOException e) {
-      throw new PersistenceException(
-          String.format(
-              "Error preparing the query to upsert variable instance [%s]  for list view",
-              variable.getId()),
-          e);
-    }
+    return new BulkOperation.Builder()
+        .update(
+            UpdateOperation.of(
+                u ->
+                    u.index(variableIndex.getFullQualifiedName())
+                        .id(variable.getId())
+                        .document(CommonUtils.getJsonObjectFromEntity(updateFields))
+                        .upsert(CommonUtils.getJsonObjectFromEntity(variable))
+                        .retryOnConflict(UPDATE_RETRY_COUNT)))
+        .build();
   }
 
   private BulkOperation persistUserTaskToListView(
