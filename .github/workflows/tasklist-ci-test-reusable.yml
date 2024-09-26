@@ -78,16 +78,17 @@ jobs:
       - uses: ./.github/actions/build-tasklist-setup
         name: Build setup
         with:
+          maven-cache-key-modifier: tasklist-tests
           nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
           nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       - name: Build backend
-        run: mvn -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
+        run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
 
       # Run integration tests in parallel
       - name: Run Integration Tests
         run: |
-          mvn -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }}
+          ./mvnw -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }}
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize
