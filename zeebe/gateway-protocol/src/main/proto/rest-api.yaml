@@ -715,9 +715,9 @@ paths:
                   processDefinitionKey: 12345
                   variables: {}
               "By BPMN process ID":
-                summary: "Create a process instance by bpmnProcessID and version."
+                summary: "Create a process instance by processDefinitionId and version."
                 value:
-                  bpmnProcessId: "1234-5678"
+                  processDefinitionId: "1234-5678"
                   version: 1
                   variables: {}
       responses:
