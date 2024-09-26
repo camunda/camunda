@@ -92,7 +92,7 @@ public final class UserTaskServices
   public UserTaskEntity getByKey(final Long key) {
     final SearchQueryResult<UserTaskEntity> result =
         executor.search(
-            SearchQueryBuilders.userTaskSearchQuery().filter(f -> f.keys(key)).build(),
+            SearchQueryBuilders.userTaskSearchQuery().filter(f -> f.userTaskKeys(key)).build(),
             UserTaskEntity.class);
     if (result.total() < 1) {
       throw new NotFoundException(String.format("User Task with key %d not found", key));

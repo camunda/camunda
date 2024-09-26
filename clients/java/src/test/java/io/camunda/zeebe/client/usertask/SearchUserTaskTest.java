@@ -61,12 +61,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByKey() {
     // when
-    client.newUserTaskQuery().filter(f -> f.key(12345L)).send().join();
+    client.newUserTaskQuery().filter(f -> f.userTaskKey(12345L)).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getKey()).isEqualTo(12345L);
+    assertThat(request.getFilter().getUserTaskKey()).isEqualTo(12345L);
   }
 
   @Test

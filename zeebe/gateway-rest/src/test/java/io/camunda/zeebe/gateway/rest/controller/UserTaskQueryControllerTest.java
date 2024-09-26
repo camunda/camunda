@@ -44,7 +44,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
           "items": [
               {
                   "tenantIds": "t",
-                  "key": 0,
+                  "userTaskKey": 0,
                   "processInstanceKey": 1,
                   "processDefinitionKey": 2,
                   "elementInstanceKey": 3,
@@ -78,7 +78,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
       """
       {
                   "tenantIds": "t",
-                  "key": 0,
+                  "userTaskKey": 0,
                   "processInstanceKey": 1,
                   "processDefinitionKey": 2,
                   "elementInstanceKey": 3,

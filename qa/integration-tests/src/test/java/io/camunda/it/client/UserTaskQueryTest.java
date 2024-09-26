@@ -137,7 +137,7 @@ class UserTaskQueryTest {
         camundaClient.newUserTaskQuery().filter(f -> f.assignee("demo")).send().join();
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getAssignee()).isEqualTo("demo");
-    assertThat(result.items().getFirst().getKey()).isEqualTo(userTaskKeyTaskAssigned);
+    assertThat(result.items().getFirst().getUserTaskKey()).isEqualTo(userTaskKeyTaskAssigned);
   }
 
   @Test
@@ -193,7 +193,7 @@ class UserTaskQueryTest {
   public void shouldValidatePagination() {
     final var result = camundaClient.newUserTaskQuery().page(p -> p.limit(1)).send().join();
     assertThat(result.items().size()).isEqualTo(1);
-    final var key = result.items().getFirst().getKey();
+    final var key = result.items().getFirst().getUserTaskKey();
     // apply searchAfter
     final var resultAfter =
         camundaClient
@@ -203,7 +203,7 @@ class UserTaskQueryTest {
             .join();
 
     assertThat(resultAfter.items().size()).isEqualTo(5);
-    final var keyAfter = resultAfter.items().getFirst().getKey();
+    final var keyAfter = resultAfter.items().getFirst().getUserTaskKey();
     // apply searchBefore
     final var resultBefore =
         camundaClient
@@ -212,7 +212,7 @@ class UserTaskQueryTest {
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(resultBefore.items().getFirst().getKey()).isEqualTo(key);
+    assertThat(resultBefore.items().getFirst().getUserTaskKey()).isEqualTo(key);
   }
 
   @Test
@@ -357,7 +357,7 @@ class UserTaskQueryTest {
             () -> {
               final var result = camundaClient.newUserTaskQuery().send().join();
               assertThat(result.items().size()).isEqualTo(6);
-              userTaskKeyTaskAssigned = result.items().getFirst().getKey();
+              userTaskKeyTaskAssigned = result.items().getFirst().getUserTaskKey();
             });
 
     camundaClient

@@ -266,7 +266,7 @@ public final class SearchQueryResponseMapper {
   public static UserTaskItem toUserTask(final UserTaskEntity t) {
     return new UserTaskItem()
         .tenantIds(t.tenantId())
-        .key(t.key())
+        .userTaskKey(t.key())
         .processInstanceKey(t.processInstanceId())
         .processDefinitionKey(t.processDefinitionId())
         .elementInstanceKey(t.flowNodeInstanceId())
