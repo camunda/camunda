@@ -991,13 +991,13 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
       long decisionRequirementsKey);
 
   /**
-   * Gets a decision requirements by key.
+   * Gets a userTask by key.
    *
    * <pre>
-   *   long decisionRequirementsKey = ...;
+   *   long userTaskKey = ...;
    *
    *   zeebeClient
-   *   .newDecisionRequirementsGetRequest(decisionRequirementsKey)
+   *   .newUserTaskGetRequest(userTaskKey)
    *   .send();
    *   </pre>
    *
@@ -1007,11 +1007,11 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * warning is removed, anything described below may not yet have taken effect, and the interface
    * and its description are subject to change.</strong>
    *
-   * @param decisionRequirementsKey the key of the decision requirements
-   * @return a builder for the request to get a decision requirements
+   * @param userTaskKey the key of the user task
+   * @return a builder for the request to get a user task
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
-  DecisionRequirementsGetRequest newDecisionRequirementsGetRequest(long decisionRequirementsKey);
+  UserTaskGetRequest newUserTaskGetRequest(long userTaskKey);
 
   /**
    * Gets a User Task by key.
