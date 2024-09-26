@@ -223,7 +223,7 @@ public final class ResponseMapper {
                     .processDefinitionKey(process.getProcessDefinitionKey())
                     .tenantId(process.getTenantId())
                     .resourceName(process.getResourceName()))
-        .map(deploymentProcess -> new DeploymentMetadata().process(deploymentProcess))
+        .map(deploymentProcess -> new DeploymentMetadata().processDefinition(deploymentProcess))
         .forEach(response::addDeploymentsItem);
   }
 

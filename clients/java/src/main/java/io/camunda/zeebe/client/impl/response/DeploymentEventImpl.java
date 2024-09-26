@@ -89,7 +89,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
 
     for (final DeploymentMetadata deployment : response.getDeployments()) {
       addDeployedForm(deployment.getForm());
-      addDeployedProcess(deployment.getProcess());
+      addDeployedProcess(deployment.getProcessDefinition());
       addDeployedDecision(deployment.getDecisionDefinition());
       addDeployedDecisionRequirements(deployment.getDecisionRequirements());
     }

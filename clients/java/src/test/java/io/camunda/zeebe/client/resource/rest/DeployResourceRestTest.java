@@ -210,7 +210,7 @@ public class DeployResourceRestTest extends ClientRestTest {
             .tenantId(tenantId)
             .addDeploymentsItem(
                 new DeploymentMetadata()
-                    .process(
+                    .processDefinition(
                         new DeploymentProcess()
                             .processDefinitionId(BPMN_1_PROCESS_ID)
                             .processDefinitionVersion(12)
@@ -247,7 +247,7 @@ public class DeployResourceRestTest extends ClientRestTest {
             .tenantId(tenantId)
             .addDeploymentsItem(
                 new DeploymentMetadata()
-                    .process(
+                    .processDefinition(
                         new DeploymentProcess()
                             .processDefinitionId(BPMN_1_PROCESS_ID)
                             .processDefinitionVersion(1)
@@ -256,7 +256,7 @@ public class DeployResourceRestTest extends ClientRestTest {
                             .resourceName(filename1)))
             .addDeploymentsItem(
                 new DeploymentMetadata()
-                    .process(
+                    .processDefinition(
                         new DeploymentProcess()
                             .processDefinitionId(BPMN_2_PROCESS_ID)
                             .processDefinitionVersion(1)
