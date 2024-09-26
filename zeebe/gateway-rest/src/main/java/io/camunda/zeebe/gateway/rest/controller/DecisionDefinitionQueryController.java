@@ -46,16 +46,16 @@ public class DecisionDefinitionQueryController {
   }
 
   @GetMapping(
-      path = "/{decisionKey}",
+      path = "/{decisionDefinitionKey}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public ResponseEntity<DecisionDefinitionItem> getDecisionDefinitionByKey(
-      @PathVariable("decisionKey") final long decisionKey) {
+      @PathVariable("decisionDefinitionKey") final long decisionDefinitionKey) {
     try {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionDefinition(
               decisionDefinitionServices
                   .withAuthentication(RequestMapper.getAuthentication())
-                  .getByKey(decisionKey)));
+                  .getByKey(decisionDefinitionKey)));
     } catch (final Exception e) {
       REST_LOGGER.debug("An exception occurred in getDecisionDefinition.", e);
       return mapErrorToResponse(e);

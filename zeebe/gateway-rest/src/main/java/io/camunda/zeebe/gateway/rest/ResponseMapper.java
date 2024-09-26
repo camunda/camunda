@@ -20,6 +20,7 @@ import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirements;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentForm;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentProcess;
+import io.camunda.zeebe.gateway.protocol.rest.DeploymentResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference.DocumentTypeEnum;
@@ -31,7 +32,6 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResponse;
-import io.camunda.zeebe.gateway.protocol.rest.ResourceResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserCreateResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
@@ -84,7 +84,7 @@ public final class ResponseMapper {
     return new ActivatedJob()
         .key(jobKey)
         .type(job.getType())
-        .bpmnProcessId(job.getBpmnProcessId())
+        .processDefinitionId(job.getBpmnProcessId())
         .elementId(job.getElementId())
         .processInstanceKey(job.getProcessInstanceKey())
         .processDefinitionVersion(job.getProcessDefinitionVersion())
@@ -102,7 +102,7 @@ public final class ResponseMapper {
       final MessageCorrelationRecord brokerResponse) {
     final var response =
         new MessageCorrelationResponse()
-            .key(brokerResponse.getMessageKey())
+            .messageKey(brokerResponse.getMessageKey())
             .tenantId(brokerResponse.getTenantId())
             .processInstanceKey(brokerResponse.getProcessInstanceKey());
     return new ResponseEntity<>(response, HttpStatus.OK);
@@ -141,8 +141,8 @@ public final class ResponseMapper {
   public static ResponseEntity<Object> toDeployResourceResponse(
       final DeploymentRecord brokerResponse) {
     final var response =
-        new ResourceResponse()
-            .key(brokerResponse.getDeploymentKey())
+        new DeploymentResponse()
+            .deploymentKey(brokerResponse.getDeploymentKey())
             .tenantId(brokerResponse.getTenantId());
     addDeployedProcess(response, brokerResponse.getProcessesMetadata());
     addDeployedDecision(response, brokerResponse.decisionsMetadata());
@@ -156,13 +156,13 @@ public final class ResponseMapper {
 
     final var response =
         new MessagePublicationResponse()
-            .key(brokerResponse.getKey())
+            .messageKey(brokerResponse.getKey())
             .tenantId(brokerResponse.getResponse().getTenantId());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   private static void addDeployedForm(
-      final ResourceResponse response, final ValueArray<FormMetadataRecord> formMetadataRecords) {
+      final DeploymentResponse response, final ValueArray<FormMetadataRecord> formMetadataRecords) {
     formMetadataRecords.stream()
         .map(
             form ->
@@ -177,17 +177,17 @@ public final class ResponseMapper {
   }
 
   private static void addDeployedDecisionRequirements(
-      final ResourceResponse response,
+      final DeploymentResponse response,
       final ValueArray<DecisionRequirementsMetadataRecord> decisionRequirementsMetadataRecords) {
     decisionRequirementsMetadataRecords.stream()
         .map(
             decisionRequirement ->
                 new DeploymentDecisionRequirements()
-                    .dmnDecisionRequirementsId(decisionRequirement.getDecisionRequirementsId())
+                    .decisionRequirementsId(decisionRequirement.getDecisionRequirementsId())
                     .version(decisionRequirement.getDecisionRequirementsVersion())
-                    .dmnDecisionRequirementsName(decisionRequirement.getDecisionRequirementsName())
+                    .decisionRequirementsName(decisionRequirement.getDecisionRequirementsName())
                     .tenantId(decisionRequirement.getTenantId())
-                    .dmnDecisionRequirementsKey(decisionRequirement.getDecisionRequirementsKey())
+                    .decisionRequirementsKey(decisionRequirement.getDecisionRequirementsKey())
                     .resourceName(decisionRequirement.getResourceName()))
         .map(
             deploymentDecisionRequirement ->
@@ -196,34 +196,34 @@ public final class ResponseMapper {
   }
 
   private static void addDeployedDecision(
-      final ResourceResponse response, final ValueArray<DecisionRecord> decisionRecords) {
+      final DeploymentResponse response, final ValueArray<DecisionRecord> decisionRecords) {
     decisionRecords.stream()
         .map(
             decision ->
                 new DeploymentDecision()
-                    .dmnDecisionId(decision.getDecisionId())
+                    .decisionDefinitionId(decision.getDecisionId())
                     .version(decision.getVersion())
-                    .decisionKey(decision.getDecisionKey())
-                    .dmnDecisionName(decision.getDecisionName())
+                    .decisionDefinitionKey(decision.getDecisionKey())
+                    .name(decision.getDecisionName())
                     .tenantId(decision.getTenantId())
-                    .dmnDecisionRequirementsId(decision.getDecisionRequirementsId())
-                    .dmnDecisionRequirementsKey(decision.getDecisionRequirementsKey()))
-        .map(deploymentDecision -> new DeploymentMetadata().decision(deploymentDecision))
+                    .decisionRequirementsId(decision.getDecisionRequirementsId())
+                    .decisionRequirementsKey(decision.getDecisionRequirementsKey()))
+        .map(deploymentDecision -> new DeploymentMetadata().decisionDefinition(deploymentDecision))
         .forEach(response::addDeploymentsItem);
   }
 
   private static void addDeployedProcess(
-      final ResourceResponse response, final List<ProcessMetadataValue> processesMetadata) {
+      final DeploymentResponse response, final List<ProcessMetadataValue> processesMetadata) {
     processesMetadata.stream()
         .map(
             process ->
                 new DeploymentProcess()
-                    .bpmnProcessId(process.getBpmnProcessId())
-                    .version(process.getVersion())
+                    .processDefinitionId(process.getBpmnProcessId())
+                    .processDefinitionVersion(process.getVersion())
                     .processDefinitionKey(process.getProcessDefinitionKey())
                     .tenantId(process.getTenantId())
                     .resourceName(process.getResourceName()))
-        .map(deploymentProcess -> new DeploymentMetadata().process(deploymentProcess))
+        .map(deploymentProcess -> new DeploymentMetadata().processDefinition(deploymentProcess))
         .forEach(response::addDeploymentsItem);
   }
 
@@ -259,8 +259,8 @@ public final class ResponseMapper {
     final var response =
         new CreateProcessInstanceResponse()
             .processDefinitionKey(processDefinitionKey)
-            .bpmnProcessId(bpmnProcessId)
-            .version(version)
+            .processDefinitionId(bpmnProcessId)
+            .processDefinitionVersion(version)
             .processInstanceKey(processInstanceKey)
             .tenantId(tenantId);
     if (variables != null) {
@@ -274,7 +274,7 @@ public final class ResponseMapper {
       final BrokerResponse<SignalRecord> brokerResponse) {
     final var response =
         new SignalBroadcastResponse()
-            .key(brokerResponse.getKey())
+            .signalKey(brokerResponse.getKey())
             .tenantId(brokerResponse.getResponse().getTenantId());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
@@ -289,14 +289,14 @@ public final class ResponseMapper {
     final var decisionEvaluationRecord = brokerResponse.getResponse();
     final var response =
         new EvaluateDecisionResponse()
-            .decisionId(decisionEvaluationRecord.getDecisionId())
-            .decisionKey(decisionEvaluationRecord.getDecisionKey())
-            .decisionName(decisionEvaluationRecord.getDecisionName())
-            .decisionVersion(decisionEvaluationRecord.getDecisionVersion())
+            .decisionDefinitionId(decisionEvaluationRecord.getDecisionId())
+            .decisionDefinitionKey(decisionEvaluationRecord.getDecisionKey())
+            .decisionDefinitionName(decisionEvaluationRecord.getDecisionName())
+            .decisionDefinitionVersion(decisionEvaluationRecord.getDecisionVersion())
             .decisionRequirementsId(decisionEvaluationRecord.getDecisionRequirementsId())
             .decisionRequirementsKey(decisionEvaluationRecord.getDecisionRequirementsKey())
-            .decisionOutput(decisionEvaluationRecord.getDecisionOutput())
-            .failedDecisionId(decisionEvaluationRecord.getFailedDecisionId())
+            .output(decisionEvaluationRecord.getDecisionOutput())
+            .failedDecisionDefinitionId(decisionEvaluationRecord.getFailedDecisionId())
             .failureMessage(decisionEvaluationRecord.getEvaluationFailureMessage())
             .tenantId(decisionEvaluationRecord.getTenantId())
             .decisionInstanceKey(brokerResponse.getKey());
@@ -312,11 +312,11 @@ public final class ResponseMapper {
         .map(
             evaluatedDecision ->
                 new EvaluatedDecisionItem()
-                    .decisionKey(evaluatedDecision.getDecisionKey())
-                    .decisionId(evaluatedDecision.getDecisionId())
-                    .decisionName(evaluatedDecision.getDecisionName())
-                    .decisionVersion(evaluatedDecision.getDecisionVersion())
-                    .decisionOutput(evaluatedDecision.getDecisionOutput())
+                    .decisionDefinitionKey(evaluatedDecision.getDecisionKey())
+                    .decisionDefinitionId(evaluatedDecision.getDecisionId())
+                    .decisionDefinitionName(evaluatedDecision.getDecisionName())
+                    .decisionDefinitionVersion(evaluatedDecision.getDecisionVersion())
+                    .output(evaluatedDecision.getDecisionOutput())
                     .tenantId(evaluatedDecision.getTenantId())
                     .evaluatedInputs(buildEvaluatedInputs(evaluatedDecision.getEvaluatedInputs()))
                     .matchedRules(buildMatchedRules(evaluatedDecision.getMatchedRules())))

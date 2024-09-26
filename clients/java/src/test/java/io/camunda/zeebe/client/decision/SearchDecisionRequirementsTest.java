@@ -68,7 +68,7 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
     // then
     final DecisionRequirementsSearchQueryRequest request =
         gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-    assertThat(request.getFilter().getDmnDecisionRequirementsName()).isEqualTo("resourceName");
+    assertThat(request.getFilter().getDecisionRequirementsName()).isEqualTo("resourceName");
   }
 
   @Test
@@ -83,7 +83,7 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
     // then
     final DecisionRequirementsSearchQueryRequest request =
         gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-    assertThat(request.getFilter().getDmnDecisionRequirementsName()).isEqualTo("resourceName");
+    assertThat(request.getFilter().getDecisionRequirementsName()).isEqualTo("resourceName");
     assertThat(request.getFilter().getVersion()).isEqualTo(1);
   }
 

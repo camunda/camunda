@@ -146,11 +146,11 @@ public final class SearchQueryRequestMapper {
           .ifPresent(builder::states);
       ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getDecisionKey()).ifPresent(builder::decisionKeys);
-      ofNullable(filter.getDmnDecisionId()).ifPresent(builder::dmnDecisionIds);
-      ofNullable(filter.getDmnDecisionName()).ifPresent(builder::dmnDecisionNames);
-      ofNullable(filter.getDecisionVersion()).ifPresent(builder::decisionVersions);
-      ofNullable(filter.getDecisionType())
+      ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionKeys);
+      ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::dmnDecisionIds);
+      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::dmnDecisionNames);
+      ofNullable(filter.getDecisionDefinitionVersion()).ifPresent(builder::decisionVersions);
+      ofNullable(filter.getDecisionDefinitionType())
           .map(t -> convertEnum(t, DecisionInstanceType.class))
           .ifPresent(builder::decisionTypes);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
@@ -238,10 +238,10 @@ public final class SearchQueryRequestMapper {
 
     if (filter != null) {
       ofNullable(filter.getKey()).ifPresent(builder::keys);
-      ofNullable(filter.getBpmnProcessId()).ifPresent(builder::bpmnProcessIds);
-      ofNullable(filter.getProcessName()).ifPresent(builder::processNames);
-      ofNullable(filter.getProcessVersion()).ifPresent(builder::processVersions);
-      ofNullable(filter.getProcessVersionTag()).ifPresent(builder::processVersionTags);
+      ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
+      ofNullable(filter.getProcessDefinitionName()).ifPresent(builder::processNames);
+      ofNullable(filter.getProcessDefinitionVersion()).ifPresent(builder::processVersions);
+      ofNullable(filter.getProcessDefinitionVersionTag()).ifPresent(builder::processVersionTags);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.getRootProcessInstanceKey()).ifPresent(builder::rootProcessInstanceKeys);
       ofNullable(filter.getParentProcessInstanceKey())
@@ -282,12 +282,11 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.decisionDefinition();
 
     if (filter != null) {
-      ofNullable(filter.getDecisionKey()).ifPresent(builder::decisionKeys);
-      ofNullable(filter.getDmnDecisionId()).ifPresent(builder::dmnDecisionIds);
-      ofNullable(filter.getDmnDecisionName()).ifPresent(builder::dmnDecisionNames);
+      ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionKeys);
+      ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::dmnDecisionIds);
+      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::dmnDecisionNames);
       ofNullable(filter.getVersion()).ifPresent(builder::versions);
-      ofNullable(filter.getDmnDecisionRequirementsId())
-          .ifPresent(builder::dmnDecisionRequirementsIds);
+      ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::dmnDecisionRequirementsIds);
       ofNullable(filter.getDecisionRequirementsKey()).ifPresent(builder::decisionRequirementsKeys);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
@@ -304,10 +303,10 @@ public final class SearchQueryRequestMapper {
             f -> {
               Optional.ofNullable(f.getDecisionRequirementsKey())
                   .ifPresent(builder::decisionRequirementsKeys);
-              Optional.ofNullable(f.getDmnDecisionRequirementsName())
+              Optional.ofNullable(f.getDecisionRequirementsName())
                   .ifPresent(builder::dmnDecisionRequirementsNames);
               Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
-              Optional.ofNullable(f.getDmnDecisionRequirementsId())
+              Optional.ofNullable(f.getDecisionRequirementsId())
                   .ifPresent(builder::dmnDecisionRequirementsIds);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
             });
@@ -327,7 +326,7 @@ public final class SearchQueryRequestMapper {
                   .ifPresent(builder::processInstanceKeys);
               Optional.ofNullable(f.getProcessDefinitionKey())
                   .ifPresent(builder::processDefinitionKeys);
-              Optional.ofNullable(f.getBpmnProcessId()).ifPresent(builder::bpmnProcessIds);
+              Optional.ofNullable(f.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
               Optional.ofNullable(f.getState())
                   .ifPresent(s -> builder.states(FlowNodeState.valueOf(s.getValue())));
               Optional.ofNullable(f.getType())
@@ -350,7 +349,7 @@ public final class SearchQueryRequestMapper {
             f -> {
               Optional.ofNullable(f.getUserTaskKey()).ifPresent(builder::userTaskKeys);
               Optional.ofNullable(f.getState()).ifPresent(builder::states);
-              Optional.ofNullable(f.getBpmnDefinitionId()).ifPresent(builder::bpmnProcessIds);
+              Optional.ofNullable(f.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
               Optional.ofNullable(f.getElementId()).ifPresent(builder::elementIds);
               Optional.ofNullable(f.getAssignee()).ifPresent(builder::assignees);
               Optional.ofNullable(f.getCandidateGroup()).ifPresent(builder::candidateGroups);
@@ -387,7 +386,7 @@ public final class SearchQueryRequestMapper {
     if (filter != null) {
       ofNullable(filter.getKey()).ifPresent(builder::keys);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getBpmnProcessId()).ifPresent(builder::bpmnProcessIds);
+      ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
       ofNullable(filter.getProcessInstanceKey()).ifPresent(builder::processInstanceKeys);
       ofNullable(filter.getErrorType())
           .ifPresent(t -> builder.errorTypes(IncidentEntity.ErrorType.valueOf(t.getValue())));

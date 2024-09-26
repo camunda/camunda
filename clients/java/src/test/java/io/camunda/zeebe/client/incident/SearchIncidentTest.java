@@ -69,7 +69,7 @@ public class SearchIncidentTest extends ClientRestTest {
     final IncidentFilterRequest filter = request.getFilter();
     assertThat(filter.getKey()).isEqualTo(1L);
     assertThat(filter.getProcessDefinitionKey()).isEqualTo(2L);
-    assertThat(filter.getBpmnProcessId()).isEqualTo("complexProcess");
+    assertThat(filter.getProcessDefinitionId()).isEqualTo("complexProcess");
     assertThat(filter.getProcessInstanceKey()).isEqualTo(3L);
     assertThat(filter.getErrorType()).isEqualTo(ErrorTypeEnum.CALLED_DECISION_ERROR);
     assertThat(filter.getErrorMessage()).isEqualTo("Can't decide");

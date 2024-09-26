@@ -30,22 +30,22 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
-@WebMvcTest(DecisionController.class)
-public class DecisionControllerTest extends RestControllerTest {
+@WebMvcTest(DecisionDefinitionController.class)
+public class DecisionDefinitionControllerTest extends RestControllerTest {
 
-  private static final String DECISION_BASE_URL = "/v2/decisions";
+  private static final String DECISION_BASE_URL = "/v2/decision-definitions";
   private static final String EVALUATION_URL = DECISION_BASE_URL + "/evaluation";
   private static final String EXPECTED_EVALUATION_RESPONSE =
       """
       {
-         "decisionKey":123456,
-         "decisionId":"decisionId",
-         "decisionName":"decisionName",
-         "decisionVersion":1,
+         "decisionDefinitionKey":123456,
+         "decisionDefinitionId":"decisionId",
+         "decisionDefinitionName":"decisionName",
+         "decisionDefinitionVersion":1,
          "decisionRequirementsId":"decisionRequirementsId",
          "decisionRequirementsKey":123456,
-         "decisionOutput":"null",
-         "failedDecisionId":"",
+         "output":"null",
+         "failedDecisionDefinitionId":"",
          "failureMessage":"",
          "tenantId":"tenantId",
          "decisionInstanceKey":123,
@@ -71,7 +71,7 @@ public class DecisionControllerTest extends RestControllerTest {
     final var request =
         """
         {
-          "decisionKey": 123456,
+          "decisionDefinitionKey": 123456,
           "variables": {
             "key": "value"
           },
@@ -108,7 +108,7 @@ public class DecisionControllerTest extends RestControllerTest {
     final var request =
         """
         {
-          "decisionKey": 123456,
+          "decisionDefinitionKey": 123456,
           "variables": {
             "key": "value"
           },
@@ -140,7 +140,7 @@ public class DecisionControllerTest extends RestControllerTest {
     final var request =
         """
         {
-          "decisionId": "decisionId",
+          "decisionDefinitionId": "decisionId",
           "variables": {
             "key": "value"
           },
@@ -173,8 +173,8 @@ public class DecisionControllerTest extends RestControllerTest {
     final var request =
         """
         {
-          "decisionId": "decisionId",
-          "decisionKey": 123456,
+          "decisionDefinitionId": "decisionId",
+          "decisionDefinitionKey": 123456,
           "variables": {
             "key": "value"
           }
@@ -186,8 +186,8 @@ public class DecisionControllerTest extends RestControllerTest {
             "type":"about:blank",
             "title":"INVALID_ARGUMENT",
             "status":400,
-            "detail":"Only one of [decisionId, decisionKey] is allowed.",
-            "instance":"/v2/decisions/evaluation"
+            "detail":"Only one of [decisionDefinitionId, decisionDefinitionKey] is allowed.",
+            "instance":"/v2/decision-definitions/evaluation"
          }""";
 
     // when then
@@ -221,8 +221,8 @@ public class DecisionControllerTest extends RestControllerTest {
             "type":"about:blank",
             "title":"INVALID_ARGUMENT",
             "status":400,
-            "detail":"At least one of [decisionId, decisionKey] is required.",
-            "instance":"/v2/decisions/evaluation"
+            "detail":"At least one of [decisionDefinitionId, decisionDefinitionKey] is required.",
+            "instance":"/v2/decision-definitions/evaluation"
          }""";
 
     // when then

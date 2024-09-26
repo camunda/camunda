@@ -66,7 +66,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
     assertThat(filter.getType()).isEqualTo(SERVICE_TASK);
     assertThat(filter.getState()).isEqualTo(ACTIVE);
     assertThat(filter.getProcessDefinitionKey()).isEqualTo(2L);
-    assertThat(filter.getBpmnProcessId()).isEqualTo("complexProcess");
+    assertThat(filter.getProcessDefinitionId()).isEqualTo("complexProcess");
     assertThat(filter.getProcessInstanceKey()).isEqualTo(3L);
     assertThat(filter.getFlowNodeId()).isEqualTo("flowNodeId");
     assertThat(filter.getIncident()).isTrue();

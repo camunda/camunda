@@ -44,11 +44,11 @@ public class DecisionInstanceImpl implements DecisionInstance {
         item.getEvaluationFailure(),
         item.getProcessDefinitionKey(),
         item.getProcessInstanceKey(),
-        item.getDecisionKey(),
-        item.getDmnDecisionId(),
-        item.getDmnDecisionName(),
-        item.getDecisionVersion(),
-        item.getDecisionType(),
+        item.getDecisionDefinitionKey(),
+        item.getDecisionDefinitionId(),
+        item.getDecisionDefinitionName(),
+        item.getDecisionDefinitionVersion(),
+        item.getDecisionDefinitionType(),
         item.getTenantId());
   }
 
