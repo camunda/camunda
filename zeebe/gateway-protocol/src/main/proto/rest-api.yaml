@@ -2238,7 +2238,7 @@ components:
       description: User task filter request.
       type: object
       properties:
-        key:
+        userTaskKey:
           type: integer
           format: int64
         state:
@@ -2275,7 +2275,7 @@ components:
     UserTaskItem:
       type: object
       properties:
-        key:
+        userTaskKey:
           type: integer
           format: int64
         state:
