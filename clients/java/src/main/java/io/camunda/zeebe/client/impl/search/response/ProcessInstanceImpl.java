@@ -38,21 +38,21 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final String tenantId;
 
   public ProcessInstanceImpl(final ProcessInstanceItem item) {
-    this.key = item.getKey();
-    this.bpmnProcessId = item.getBpmnProcessId();
-    this.processName = item.getProcessName();
-    this.processVersion = item.getProcessVersion();
-    this.processVersionTag = item.getProcessVersionTag();
-    this.processDefinitionKey = item.getProcessDefinitionKey();
-    this.rootProcessInstanceKey = item.getRootProcessInstanceKey();
-    this.parentProcessInstanceKey = item.getParentProcessInstanceKey();
-    this.parentFlowNodeInstanceKey = item.getParentFlowNodeInstanceKey();
-    this.treePath = item.getTreePath();
-    this.startDate = item.getStartDate();
-    this.endDate = item.getEndDate();
-    this.state = Optional.ofNullable(item.getState()).map(Enum::toString).orElse(null);
-    this.incident = item.getIncident();
-    this.tenantId = item.getTenantId();
+    key = item.getKey();
+    bpmnProcessId = item.getProcessDefinitionId();
+    processName = item.getProcessDefinitionName();
+    processVersion = item.getProcessDefinitionVersion();
+    processVersionTag = item.getProcessDefinitionVersionTag();
+    processDefinitionKey = item.getProcessDefinitionKey();
+    rootProcessInstanceKey = item.getRootProcessInstanceKey();
+    parentProcessInstanceKey = item.getParentProcessInstanceKey();
+    parentFlowNodeInstanceKey = item.getParentFlowNodeInstanceKey();
+    treePath = item.getTreePath();
+    startDate = item.getStartDate();
+    endDate = item.getEndDate();
+    state = Optional.ofNullable(item.getState()).map(Enum::toString).orElse(null);
+    incident = item.getIncident();
+    tenantId = item.getTenantId();
   }
 
   @Override

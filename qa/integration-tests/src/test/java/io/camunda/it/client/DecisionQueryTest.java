@@ -640,4 +640,36 @@ class DecisionQueryTest {
         decision.getDecisionRequirementsKey(),
         decision.getTenantId());
   }
+
+  @Test
+  void shouldGetDecisionRequirements() {
+    // when
+    final long decisionRequirementsKey = DEPLOYED_DECISIONS.get(0).getDecisionRequirementsKey();
+    final var result =
+        zeebeClient.newDecisionRequirementsGetRequest(decisionRequirementsKey).send().join();
+
+    // then
+    assertThat(result.getDecisionRequirementsKey())
+        .isEqualTo(DEPLOYED_DECISIONS.get(0).getDecisionRequirementsKey());
+  }
+
+  @Test
+  void shouldReturn404ForNotFoundDecisionRequirements() {
+    // when
+    final long decisionRequirementsKey = new Random().nextLong();
+    final var problemException =
+        assertThrows(
+            ProblemException.class,
+            () ->
+                zeebeClient
+                    .newDecisionRequirementsGetRequest(decisionRequirementsKey)
+                    .send()
+                    .join());
+    // then
+    assertThat(problemException.code()).isEqualTo(404);
+    assertThat(problemException.details().getDetail())
+        .isEqualTo(
+            "Decision requirements with decisionRequirementsKey=%d not found"
+                .formatted(decisionRequirementsKey));
+  }
 }

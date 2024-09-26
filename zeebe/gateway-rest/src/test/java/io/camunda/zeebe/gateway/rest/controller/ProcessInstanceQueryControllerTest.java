@@ -59,10 +59,10 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
       """
                   {
                   "key": 123,
-                  "bpmnProcessId": "demoProcess",
-                  "processName": "Demo Process",
-                  "processVersion": 5,
-                  "processVersionTag": "v5",
+                  "processDefinitionId": "demoProcess",
+                  "processDefinitionName": "Demo Process",
+                  "processDefinitionVersion": 5,
+                  "processDefinitionVersionTag": "v5",
                   "processDefinitionKey": 789,
                   "rootProcessInstanceKey": 345,
                   "parentProcessInstanceKey": 333,
@@ -81,10 +81,10 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               "items": [
                 {
                   "key": 123,
-                  "bpmnProcessId": "demoProcess",
-                  "processName": "Demo Process",
-                  "processVersion": 5,
-                  "processVersionTag": "v5",
+                  "processDefinitionId": "demoProcess",
+                  "processDefinitionName": "Demo Process",
+                  "processDefinitionVersion": 5,
+                  "processDefinitionVersionTag": "v5",
                   "processDefinitionKey": 789,
                   "rootProcessInstanceKey": 345,
                   "parentProcessInstanceKey": 333,

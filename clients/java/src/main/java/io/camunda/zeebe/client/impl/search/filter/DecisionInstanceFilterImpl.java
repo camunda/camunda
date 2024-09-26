@@ -63,31 +63,31 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter decisionKey(final long decisionKey) {
-    filter.setDecisionKey(decisionKey);
+    filter.setDecisionDefinitionKey(decisionKey);
     return this;
   }
 
   @Override
   public DecisionInstanceFilter dmnDecisionId(final String dmnDecisionId) {
-    filter.setDmnDecisionId(dmnDecisionId);
+    filter.setDecisionDefinitionId(dmnDecisionId);
     return this;
   }
 
   @Override
   public DecisionInstanceFilter dmnDecisionName(final String dmnDecisionName) {
-    filter.setDmnDecisionName(dmnDecisionName);
+    filter.setDecisionDefinitionName(dmnDecisionName);
     return this;
   }
 
   @Override
   public DecisionInstanceFilter decisionVersion(final int decisionVersion) {
-    filter.setDecisionVersion(decisionVersion);
+    filter.setDecisionDefinitionVersion(decisionVersion);
     return this;
   }
 
   @Override
   public DecisionInstanceFilter decisionType(final DecisionInstanceTypeEnum decisionType) {
-    filter.setDecisionType(decisionType);
+    filter.setDecisionDefinitionType(decisionType);
     return this;
   }
 

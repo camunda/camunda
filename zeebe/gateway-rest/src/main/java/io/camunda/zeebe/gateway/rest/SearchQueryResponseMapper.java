@@ -136,10 +136,10 @@ public final class SearchQueryResponseMapper {
   public static ProcessInstanceItem toProcessInstance(final ProcessInstanceEntity p) {
     return new ProcessInstanceItem()
         .key(p.key())
-        .bpmnProcessId(p.bpmnProcessId())
-        .processName(p.processName())
-        .processVersion(p.processVersion())
-        .processVersionTag(p.processVersionTag())
+        .processDefinitionId(p.bpmnProcessId())
+        .processDefinitionName(p.processName())
+        .processDefinitionVersion(p.processVersion())
+        .processDefinitionVersionTag(p.processVersionTag())
         .processDefinitionKey(p.processDefinitionKey())
         .rootProcessInstanceKey(p.rootProcessInstanceKey())
         .parentProcessInstanceKey(p.parentProcessInstanceKey())
@@ -204,7 +204,7 @@ public final class SearchQueryResponseMapper {
         .flowNodeInstanceKey(instance.key())
         .flowNodeId(instance.flowNodeId())
         .processDefinitionKey(instance.processDefinitionKey())
-        .bpmnProcessId(instance.bpmnProcessId())
+        .processDefinitionId(instance.bpmnProcessId())
         .processInstanceKey(instance.processInstanceKey())
         .incidentKey(instance.incidentKey())
         .incident(instance.incident())
@@ -219,12 +219,12 @@ public final class SearchQueryResponseMapper {
   public static DecisionDefinitionItem toDecisionDefinition(final DecisionDefinitionEntity d) {
     return new DecisionDefinitionItem()
         .tenantId(d.tenantId())
-        .decisionKey(d.key())
-        .dmnDecisionName(d.name())
+        .decisionDefinitionKey(d.key())
+        .decisionDefinitionName(d.name())
         .version(d.version())
-        .dmnDecisionId(d.decisionId())
+        .decisionDefinitionId(d.decisionId())
         .decisionRequirementsKey(d.decisionRequirementsKey())
-        .dmnDecisionRequirementsId(d.decisionRequirementsId());
+        .decisionRequirementsId(d.decisionRequirementsId());
   }
 
   public static DecisionRequirementsItem toDecisionRequirements(
@@ -232,10 +232,10 @@ public final class SearchQueryResponseMapper {
     return new DecisionRequirementsItem()
         .tenantId(d.tenantId())
         .decisionRequirementsKey(d.key())
-        .dmnDecisionRequirementsName(d.name())
+        .decisionRequirementsName(d.name())
         .version(d.version())
         .resourceName(d.resourceName())
-        .dmnDecisionRequirementsId(d.decisionRequirementsId());
+        .decisionRequirementsId(d.decisionRequirementsId());
   }
 
   private static List<UserTaskItem> toUserTasks(final List<UserTaskEntity> tasks) {
@@ -250,7 +250,7 @@ public final class SearchQueryResponseMapper {
     return new IncidentItem()
         .key(t.key())
         .processDefinitionKey(t.processDefinitionKey())
-        .bpmnProcessId(t.bpmnProcessId())
+        .processDefinitionId(t.bpmnProcessId())
         .processInstanceKey(t.processInstanceKey())
         .errorType(IncidentItem.ErrorTypeEnum.fromValue(t.errorType().name()))
         .errorMessage(t.errorMessage())
@@ -270,7 +270,7 @@ public final class SearchQueryResponseMapper {
         .processInstanceKey(t.processInstanceId())
         .processDefinitionKey(t.processDefinitionId())
         .elementInstanceKey(t.flowNodeInstanceId())
-        .bpmnProcessId(t.bpmnProcessId())
+        .processDefinitionId(t.bpmnProcessId())
         .state(t.state())
         .assignee(t.assignee())
         .candidateUser(t.candidateUsers())
@@ -326,11 +326,11 @@ public final class SearchQueryResponseMapper {
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(entity.processDefinitionKey())
         .processInstanceKey(entity.processInstanceKey())
-        .decisionKey(Long.valueOf(entity.decisionDefinitionId()))
-        .dmnDecisionId(entity.decisionId())
-        .dmnDecisionName(entity.decisionName())
-        .decisionVersion(entity.decisionVersion())
-        .decisionType(
+        .decisionDefinitionKey(Long.valueOf(entity.decisionDefinitionId()))
+        .decisionDefinitionId(entity.decisionId())
+        .decisionDefinitionName(entity.decisionName())
+        .decisionDefinitionVersion(entity.decisionVersion())
+        .decisionDefinitionType(
             (entity.decisionType() == null)
                 ? null
                 : DecisionInstanceTypeEnum.fromValue(entity.decisionType().name()))

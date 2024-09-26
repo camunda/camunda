@@ -41,11 +41,11 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
           "items": [
               {
                   "tenantId": "t",
-                  "decisionKey": 0,
-                  "dmnDecisionId": "dId",
-                  "dmnDecisionName": "name",
+                  "decisionDefinitionKey": 0,
+                  "decisionDefinitionId": "dId",
+                  "decisionDefinitionName": "name",
                   "version": 1,
-                  "dmnDecisionRequirementsId": "drId",
+                  "decisionRequirementsId": "drId",
                   "decisionRequirementsKey": 2
               }
           ],
@@ -131,12 +131,12 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         {
           "filter":{
             "tenantId": "t",
-            "decisionKey": 0,
-            "dmnDecisionName": "name",
+            "decisionDefinitionKey": 0,
+            "decisionDefinitionName": "name",
             "version": 1,
-            "dmnDecisionRequirementsId": "drId",
+            "decisionRequirementsId": "drId",
             "decisionRequirementsKey": 2,
-            "dmnDecisionId": "dId",
+            "decisionDefinitionId": "dId",
             "decisionRequirementsName": "drName",
             "decisionRequirementsVersion": 3
           }
@@ -407,11 +407,11 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         """
             {
               "tenantId": "t",
-              "decisionKey": 0,
-              "dmnDecisionId": "dId",
-              "dmnDecisionName": "name",
+              "decisionDefinitionKey": 0,
+              "decisionDefinitionId": "dId",
+              "decisionDefinitionName": "name",
               "version": 1,
-              "dmnDecisionRequirementsId": "drId",
+              "decisionRequirementsId": "drId",
               "decisionRequirementsKey": 2
             }""";
     // when/then

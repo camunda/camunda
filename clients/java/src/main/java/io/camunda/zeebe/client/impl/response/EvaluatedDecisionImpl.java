@@ -42,12 +42,12 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
   public EvaluatedDecisionImpl(
       final EvaluatedDecisionItem evaluatedDecisionItem, final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
-    decisionId = evaluatedDecisionItem.getDecisionId();
-    decisionKey = evaluatedDecisionItem.getDecisionKey();
-    decisionVersion = evaluatedDecisionItem.getDecisionVersion();
-    decisionName = evaluatedDecisionItem.getDecisionName();
-    decisionType = evaluatedDecisionItem.getDecisionType();
-    decisionOutput = evaluatedDecisionItem.getDecisionOutput();
+    decisionId = evaluatedDecisionItem.getDecisionDefinitionId();
+    decisionKey = evaluatedDecisionItem.getDecisionDefinitionKey();
+    decisionVersion = evaluatedDecisionItem.getDecisionDefinitionVersion();
+    decisionName = evaluatedDecisionItem.getDecisionDefinitionName();
+    decisionType = evaluatedDecisionItem.getDecisionDefinitionType();
+    decisionOutput = evaluatedDecisionItem.getOutput();
     tenantId = evaluatedDecisionItem.getTenantId();
     buildMatchedRules(evaluatedDecisionItem);
     buildEvaluatedDecisionInput(evaluatedDecisionItem);

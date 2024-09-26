@@ -31,11 +31,11 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
 
   public DecisionDefinitionImpl(final DecisionDefinitionItem item) {
     this(
-        item.getDmnDecisionId(),
-        item.getDmnDecisionName(),
+        item.getDecisionDefinitionId(),
+        item.getDecisionDefinitionName(),
         item.getVersion(),
-        item.getDecisionKey(),
-        item.getDmnDecisionRequirementsId(),
+        item.getDecisionDefinitionKey(),
+        item.getDecisionRequirementsId(),
         item.getDecisionRequirementsKey(),
         item.getTenantId());
   }
