@@ -1098,7 +1098,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-  /decision-definitions/{decisionKey}:
+  /decision-definitions/{decisionDefinitionKey}:
     get:
       tags:
         - Decision definition
@@ -1112,7 +1112,7 @@ paths:
         for further details.
         :::
       parameters:
-        - name: decisionKey
+        - name: decisionDefinitionKey
           in: path
           required: true
           description: The assigned key of the decision definition, which acts as a unique identifier for this decision.
