@@ -48,7 +48,7 @@ public final class DecisionRequirementsServices
             DecisionRequirementsEntity.class);
     if (result.total() < 1) {
       throw new NotFoundException(
-          String.format("Decision requirements with key %d not found", key));
+          String.format("Decision requirements with decisionRequirementsKey=%d not found", key));
     } else if (result.total() > 1) {
       throw new CamundaServiceException(
           String.format("Found decision requirements with key %d more than once", key));
