@@ -39,7 +39,15 @@ import org.junit.Test;
 
 public final class CallActivityTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  public static final boolean ENABLE_STRAIGHT_THROUGH_PROCESSING_LOOP_DETECTOR = false;
+
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withFeatureFlags(
+              featureFlags ->
+                  featureFlags.setEnableStraightThroughProcessingLoopDetector(
+                      ENABLE_STRAIGHT_THROUGH_PROCESSING_LOOP_DETECTOR));
 
   private static final String PROCESS_ID_PARENT = "wf-parent";
   private static final String PROCESS_ID_CHILD = "wf-child";
@@ -1191,6 +1199,44 @@ public final class CallActivityTest {
             parentInstance.getProcessDefinitionKey(),
             childInstance.getProcessDefinitionKey())
         .hasOnlyCallingElementPath(ca1Index, ca2Index);
+  }
+
+  @Test
+  public void shouldLimitDescendantDepth() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("Loop")
+                .startEvent()
+                .exclusiveGateway("failsafe")
+                .defaultFlow()
+                .callActivity(
+                    "go_deeper",
+                    b ->
+                        b.zeebeProcessId("Loop")
+                            .zeebeInputExpression("depth + 1", "depth")
+                            .zeebePropagateAllParentVariables(false))
+                .endEvent("done")
+                .moveToLastExclusiveGateway()
+                .conditionExpression("depth > 1000")
+                .userTask("inspect_failure")
+                .endEvent("failed")
+                .done())
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("Loop").withVariable("depth", 1).create();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that incident is raised due to the depth limit")
+        .hasErrorMessage("Oh noo, Durin dug too deep!");
   }
 
   private void deployDefaultParentAndChildProcess() {
