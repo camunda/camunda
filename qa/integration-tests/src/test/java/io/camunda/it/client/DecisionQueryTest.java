@@ -205,6 +205,30 @@ class DecisionQueryTest {
   }
 
   @Test
+  void shouldGetDecisionDefinition() {
+    // when
+    final long decisionKey = DEPLOYED_DECISIONS.get(0).getDecisionKey();
+    final var result = zeebeClient.newDecisionDefinitionGetRequest(decisionKey).send().join();
+
+    // then
+    assertThat(result).isEqualTo(toDecisionDefinition(DEPLOYED_DECISIONS.get(0)));
+  }
+
+  @Test
+  void shouldReturn404ForNotFoundDecisionDefinition() {
+    // when
+    final long decisionKey = new Random().nextLong();
+    final var problemException =
+        assertThrows(
+            ProblemException.class,
+            () -> zeebeClient.newDecisionDefinitionGetRequest(decisionKey).send().join());
+    // then
+    assertThat(problemException.code()).isEqualTo(404);
+    assertThat(problemException.details().getDetail())
+        .isEqualTo("Decision Definition with decisionKey=%d not found".formatted(decisionKey));
+  }
+
+  @Test
   void shouldRetrieveDecisionRequirements() {
     // when
     final var result = zeebeClient.newDecisionRequirementsQuery().send().join();
