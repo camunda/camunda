@@ -42,10 +42,10 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
               {
                   "tenantId": "t",
                   "decisionDefinitionKey": 0,
-                  "dmnDecisionId": "dId",
-                  "dmnDecisionName": "name",
+                  "decisionDefinitionId": "dId",
+                  "decisionDefinitionName": "name",
                   "version": 1,
-                  "dmnDecisionRequirementsId": "drId",
+                  "decisionRequirementsId": "drId",
                   "decisionRequirementsKey": 2
               }
           ],
@@ -132,11 +132,11 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
           "filter":{
             "tenantId": "t",
             "decisionDefinitionKey": 0,
-            "dmnDecisionName": "name",
+            "decisionDefinitionName": "name",
             "version": 1,
-            "dmnDecisionRequirementsId": "drId",
+            "decisionRequirementsId": "drId",
             "decisionRequirementsKey": 2,
-            "dmnDecisionId": "dId",
+            "decisionDefinitionId": "dId",
             "decisionRequirementsName": "drName",
             "decisionRequirementsVersion": 3
           }

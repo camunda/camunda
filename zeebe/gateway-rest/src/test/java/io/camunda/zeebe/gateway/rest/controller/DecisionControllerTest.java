@@ -39,13 +39,13 @@ public class DecisionControllerTest extends RestControllerTest {
       """
       {
          "decisionDefinitionKey":123456,
-         "decisionId":"decisionId",
-         "decisionName":"decisionName",
-         "decisionVersion":1,
+         "decisionDefinitionId":"decisionId",
+         "decisionDefinitionName":"decisionName",
+         "decisionDefinitionVersion":1,
          "decisionRequirementsId":"decisionRequirementsId",
          "decisionRequirementsKey":123456,
-         "decisionOutput":"null",
-         "failedDecisionId":"",
+         "decisionDefinitionOutput":"null",
+         "failedDecisionDefinitionId":"",
          "failureMessage":"",
          "tenantId":"tenantId",
          "decisionInstanceKey":123,
@@ -140,7 +140,7 @@ public class DecisionControllerTest extends RestControllerTest {
     final var request =
         """
         {
-          "decisionId": "decisionId",
+          "decisionDefinitionId": "decisionId",
           "variables": {
             "key": "value"
           },
@@ -173,7 +173,7 @@ public class DecisionControllerTest extends RestControllerTest {
     final var request =
         """
         {
-          "decisionId": "decisionId",
+          "decisionDefinitionId": "decisionId",
           "decisionDefinitionKey": 123456,
           "variables": {
             "key": "value"
@@ -186,7 +186,7 @@ public class DecisionControllerTest extends RestControllerTest {
             "type":"about:blank",
             "title":"INVALID_ARGUMENT",
             "status":400,
-            "detail":"Only one of [decisionId, decisionKey] is allowed.",
+            "detail":"Only one of [decisionDefinitionId, decisionDefinitionKey] is allowed.",
             "instance":"/v2/decisions/evaluation"
          }""";
 
@@ -221,7 +221,7 @@ public class DecisionControllerTest extends RestControllerTest {
             "type":"about:blank",
             "title":"INVALID_ARGUMENT",
             "status":400,
-            "detail":"At least one of [decisionId, decisionKey] is required.",
+            "detail":"At least one of [decisionDefinitionId, decisionDefinitionKey] is required.",
             "instance":"/v2/decisions/evaluation"
          }""";
 
