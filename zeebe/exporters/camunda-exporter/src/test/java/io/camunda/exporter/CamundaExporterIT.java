@@ -345,4 +345,73 @@ final class CamundaExporterIT {
                 AuthorizationRecordValue.PermissionValue::getPermissionType,
                 AuthorizationRecordValue.PermissionValue::getResourceIds));
   }
+
+  @Test
+  void shouldHaveCorrectSchemaUpdatesWithMultipleExporters() throws IOException {
+    // given
+    config.elasticsearch.setCreateSchema(true);
+
+    final var exporter1 = startExporter();
+    final var exporter2 = startExporter();
+
+    when(index.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
+
+    // when
+    exporter1.open(controller);
+    exporter2.open(controller);
+
+    // then
+    final var indices = testClient.indices().get(req -> req.index("*"));
+    final var indexTemplates = testClient.indices().getIndexTemplate(req -> req.name("*"));
+
+    validateMappings(
+        indices.result().get(index.getFullQualifiedName()).mappings(),
+        "mappings-added-property.json");
+    validateMappings(
+        indexTemplates.indexTemplates().stream()
+            .filter(template -> template.name().equals(indexTemplate.getTemplateName()))
+            .findFirst()
+            .orElseThrow()
+            .indexTemplate()
+            .template()
+            .mappings(),
+        "mappings-added-property.json");
+  }
+
+  @Test
+  void shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted() throws IOException {
+    // given
+    config.elasticsearch.setCreateSchema(true);
+    final var updatedExporter = startExporter();
+    final var oldExporter = startExporter();
+
+    // when
+    when(index.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
+
+    updatedExporter.open(controller);
+
+    when(index.getMappingsClasspathFilename()).thenReturn("mappings.json");
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("mappings.json");
+
+    oldExporter.open(controller);
+
+    // then
+    final var indices = testClient.indices().get(req -> req.index("*"));
+    final var indexTemplates = testClient.indices().getIndexTemplate(req -> req.name("*"));
+
+    validateMappings(
+        indices.result().get(index.getFullQualifiedName()).mappings(),
+        "mappings-added-property.json");
+    validateMappings(
+        indexTemplates.indexTemplates().stream()
+            .filter(template -> template.name().equals(indexTemplate.getTemplateName()))
+            .findFirst()
+            .orElseThrow()
+            .indexTemplate()
+            .template()
+            .mappings(),
+        "mappings-added-property.json");
+  }
 }
