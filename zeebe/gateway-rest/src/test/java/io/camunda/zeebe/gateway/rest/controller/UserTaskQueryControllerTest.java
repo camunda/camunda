@@ -42,7 +42,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                   "processInstanceKey": 1,
                   "processDefinitionKey": 2,
                   "elementInstanceKey": 3,
-                  "bpmnProcessId": "b",
+                  "processDefinitionId": "b",
                   "state": "s",
                   "assignee": "a",
                   "candidateUser": [],

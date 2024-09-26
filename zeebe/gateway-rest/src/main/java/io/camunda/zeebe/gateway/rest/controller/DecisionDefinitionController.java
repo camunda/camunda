@@ -23,14 +23,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequestMapping("/v2/decisions")
-public class DecisionController {
+@RequestMapping("/v2/decision-definitions")
+public class DecisionDefinitionController {
 
   private final DecisionDefinitionServices decisionServices;
   private final MultiTenancyCfg multiTenancyCfg;
 
   @Autowired
-  public DecisionController(
+  public DecisionDefinitionController(
       final DecisionDefinitionServices decisionServices, final MultiTenancyCfg multiTenancyCfg) {
     this.decisionServices = decisionServices;
     this.multiTenancyCfg = multiTenancyCfg;

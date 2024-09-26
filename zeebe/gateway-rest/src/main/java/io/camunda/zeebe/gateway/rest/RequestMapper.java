@@ -495,8 +495,9 @@ public class RequestMapper {
             new ProcessInstanceCreateRequest(
                 getLongOrDefault(
                     request, CreateProcessInstanceRequest::getProcessDefinitionKey, -1L),
-                getStringOrEmpty(request, CreateProcessInstanceRequest::getBpmnProcessId),
-                getIntOrDefault(request, CreateProcessInstanceRequest::getVersion, -1),
+                getStringOrEmpty(request, CreateProcessInstanceRequest::getProcessDefinitionId),
+                getIntOrDefault(
+                    request, CreateProcessInstanceRequest::getProcessDefinitionVersion, -1),
                 getMapOrEmpty(request, CreateProcessInstanceRequest::getVariables),
                 request.getTenantId(),
                 request.getAwaitCompletion(),
@@ -574,8 +575,8 @@ public class RequestMapper {
     return validationResponse.map(
         tenantId ->
             new DecisionEvaluationRequest(
-                getStringOrEmpty(request, EvaluateDecisionRequest::getDecisionId),
-                getLongOrDefault(request, EvaluateDecisionRequest::getDecisionKey, -1L),
+                getStringOrEmpty(request, EvaluateDecisionRequest::getDecisionDefinitionId),
+                getLongOrDefault(request, EvaluateDecisionRequest::getDecisionDefinitionKey, -1L),
                 getMapOrEmpty(request, EvaluateDecisionRequest::getVariables),
                 tenantId));
   }

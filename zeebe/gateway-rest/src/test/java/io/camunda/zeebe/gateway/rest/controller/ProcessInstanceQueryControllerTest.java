@@ -38,8 +38,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           "items": [
             {
               "key": 123,
-              "processName": "Demo Process",
-              "processVersion": 5,
+              "processDefinitionName": "Demo Process",
+              "processDefinitionVersion": 5,
               "bpmnProcessId": "demoProcess",
               "parentKey": 555,
               "parentFlowNodeInstanceKey": 789,

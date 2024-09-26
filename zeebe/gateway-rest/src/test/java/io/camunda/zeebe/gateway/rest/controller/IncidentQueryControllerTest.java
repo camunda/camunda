@@ -44,7 +44,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
               {
                   "key": 5,
                   "processDefinitionKey": 23,
-                  "bpmnProcessId": "complexProcess",
+                  "processDefinitionId": "complexProcess",
                   "processInstanceKey": 42,
                   "errorType": "JOB_NO_RETRIES",
                   "errorMessage": "No retries left.",
@@ -93,7 +93,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
     {
                   "key": 5,
                   "processDefinitionKey": 23,
-                  "bpmnProcessId": "complexProcess",
+                  "processDefinitionId": "complexProcess",
                   "processInstanceKey": 42,
                   "errorType": "JOB_NO_RETRIES",
                   "errorMessage": "No retries left.",
@@ -185,7 +185,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
           "filter":{
             "key": 5,
             "processDefinitionKey": 23,
-            "bpmnProcessId": "complexProcess",
+            "processDefinitionId": "complexProcess",
             "processInstanceKey": 42,
             "errorType": "JOB_NO_RETRIES",
             "errorMessage": "No retries left.",

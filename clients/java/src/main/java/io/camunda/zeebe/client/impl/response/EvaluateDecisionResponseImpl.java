@@ -44,14 +44,14 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
       final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse response,
       final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
-    decisionId = response.getDecisionId();
-    decisionKey = response.getDecisionKey();
-    decisionVersion = response.getDecisionVersion();
-    decisionName = response.getDecisionName();
+    decisionId = response.getDecisionDefinitionId();
+    decisionKey = response.getDecisionDefinitionKey();
+    decisionVersion = response.getDecisionDefinitionVersion();
+    decisionName = response.getDecisionDefinitionName();
     decisionRequirementsId = response.getDecisionRequirementsId();
     decisionRequirementsKey = response.getDecisionRequirementsKey();
-    decisionOutput = response.getDecisionOutput();
-    failedDecisionId = response.getFailedDecisionId();
+    decisionOutput = response.getOutput();
+    failedDecisionId = response.getFailedDecisionDefinitionId();
     failureMessage = response.getFailureMessage();
     tenantId = response.getTenantId();
     decisionInstanceKey = response.getDecisionInstanceKey();

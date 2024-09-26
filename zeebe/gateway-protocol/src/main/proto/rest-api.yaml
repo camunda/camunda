@@ -588,7 +588,7 @@ paths:
         Set a precise, static time for the Zeebe engine’s internal clock.
         When the clock is pinned, it remains at the specified time and does not advance.
         To change the time, the clock must be pinned again with a new timestamp.
-        
+
         :::note
         This endpoint is an [alpha feature](/reference/alpha-features.md) and may be subject to change
         in future releases.
@@ -624,7 +624,7 @@ paths:
         Resets the Zeebe engine’s internal clock to the current system time, enabling it to tick in real-time.
         This operation is useful for returning the clock to
         normal behavior after it has been pinned to a specific time.
-        
+
         :::note
         This endpoint is an [alpha feature](/reference/alpha-features.md) and may be subject to change
         in future releases.
@@ -662,10 +662,10 @@ paths:
                 value:
                   processDefinitionKey: 12345
                   variables: {}
-              "By BPMN process ID":
-                summary: "Create a process instance by bpmnProcessID and version."
+              "By process definition ID":
+                summary: "Create a process instance by processDefinitionId and version."
                 value:
-                  bpmnProcessId: "1234-5678"
+                  processDefinitionId: "1234-5678"
                   version: 1
                   variables: {}
       responses:
@@ -946,7 +946,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-  /decision-definitions/{decisionKey}/xml:
+  /decision-definitions/{decisionDefinitionKey}/xml:
     get:
       tags:
         - Decision definition
@@ -960,7 +960,7 @@ paths:
         for further details.
         :::
       parameters:
-        - name: decisionKey
+        - name: decisionDefinitionKey
           in: path
           required: true
           description: The assigned key of the decision definition, which acts as a unique identifier for this decision.
@@ -1074,10 +1074,10 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
 
 
-  /decisions/evaluation:
+  /decision-definitions/evaluation:
     post:
       tags:
-        - Decision
+        - Decision definition
       summary: Evaluate decision
       description: |
         Evaluates a decision.
@@ -1091,15 +1091,15 @@ paths:
             schema:
               $ref: "#/components/schemas/EvaluateDecisionRequest"
             examples:
-              "By decision key":
-                summary: "Evaluate the decision by decisionKey."
+              "By decision definition key":
+                summary: "Evaluate the decision by decisionDefinitionKey."
                 value:
-                  decisionKey: 12345
+                  decisionDefinitionKey: 12345
                   variables: {}
-              "By decision ID":
-                summary: "Evaluate the decision by decisionId."
+              "By decision definition ID":
+                summary: "Evaluate the decision by decisionDefinitionId."
                 value:
-                  decisionId: "1234-5678"
+                  decisionDefinitionId: "1234-5678"
                   variables: {}
       responses:
         "200":
@@ -1714,7 +1714,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ResourceResponse"
+                $ref: "#/components/schemas/DeploymentResponse"
         "400":
           description: >
             The document upload failed. More details are provided in the response body.
@@ -1895,7 +1895,7 @@ components:
           format: int64
         tenantIds:
           type: string
-        bpmnDefinitionId:
+        processDefinitionId:
           type: string
         variables:
           type: array
@@ -1931,7 +1931,7 @@ components:
           type: array
           items:
             type: string
-        bpmnProcessId:
+        processDefinitionId:
           type: string
         processDefinitionKey:
           type: integer
@@ -2008,6 +2008,7 @@ components:
           format: date-time
         bpmnProcessId:
           type: string
+          description: The bpmn process ID.
         processDefinitionVersion:
           type: integer
           format: int32
@@ -2045,9 +2046,10 @@ components:
         key:
           type: integer
           format: int64
-        processName:
+        processDefinitionName:
           type: string
-        processVersion:
+          description: The process name.
+        processDefinitionVersion:
           type: integer
           format: int32
         bpmnProcessId:
@@ -2206,21 +2208,21 @@ components:
     DecisionDefinitionFilterRequest:
       type: object
       properties:
-        decisionKey:
+        decisionDefinitionKey:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this decision definition.
-        dmnDecisionId:
+        decisionDefinitionId:
           type: string
           description: The DMN id of the decision definition.
-        dmnDecisionName:
+        decisionDefinitionName:
           type: string
           description: The DMN name of the decision definition.
         version:
           type: integer
           format: int32
           description: The assigned version of the decision definition.
-        dmnDecisionRequirementsId:
+        decisionRequirementsId:
           type: string
           description: the DMN id of the decision requirements graph that the decision definition is part of.
         decisionRequirementsKey:
@@ -2249,7 +2251,7 @@ components:
           type: integer
           format: int64
           description: The process definition key associated to this incident.
-        bpmnProcessId:
+        processDefinitionId:
           type: string
           description: The bpmn process id associated to this incident.
         processInstanceKey:
@@ -2324,7 +2326,7 @@ components:
           type: integer
           format: int64
           description: The process definition key associated to this incident.
-        bpmnProcessId:
+        processDefinitionId:
           type: string
           description: The bpmn process id associated to this incident.
         processInstanceKey:
@@ -2434,21 +2436,21 @@ components:
     DecisionDefinitionItem:
       type: object
       properties:
-        decisionKey:
+        decisionDefinitionKey:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this decision definition.
-        dmnDecisionId:
+        decisionDefinitionId:
           type: string
           description: The DMN id of the decision definition.
-        dmnDecisionName:
+        decisionDefinitionName:
           type: string
           description: The DMN name of the decision definition.
         version:
           type: integer
           format: int32
           description: The assigned version of the decision definition.
-        dmnDecisionRequirementsId:
+        decisionRequirementsId:
           type: string
           description: the DMN id of the decision requirements graph that the decision definition is part of.
         decisionRequirementsKey:
@@ -2823,7 +2825,7 @@ components:
           description: the job's process instance key
           type: integer
           format: int64
-        bpmnProcessId:
+        processDefinitionId:
           description: the bpmn process ID of the job's process definition
           type: string
         processDefinitionVersion:
@@ -3074,14 +3076,14 @@ components:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this decision requirements.
-        dmnDecisionRequirementsName:
+        decisionRequirementsName:
           type: string
           description: The DMN name of the decision requirements.
         version:
           type: integer
           format: int32
           description: The assigned version of the decision requirements.
-        dmnDecisionRequirementsId:
+        decisionRequirementsId:
           type: string
           description: the DMN id of the decision requirements.
         tenantId:
@@ -3103,14 +3105,14 @@ components:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this decision requirements.
-        dmnDecisionRequirementsName:
+        decisionRequirementsName:
           type: string
           description: The DMN name of the decision requirements.
         version:
           type: integer
           format: int32
           description: The assigned version of the decision requirements.
-        dmnDecisionRequirementsId:
+        decisionRequirementsId:
           type: string
           description: the DMN id of the decision requirements.
         resourceName:
@@ -3122,16 +3124,16 @@ components:
     EvaluateDecisionRequest:
       type: object
       properties:
-        decisionKey:
+        decisionDefinitionKey:
           description: |
             The unique key identifying the decision to be evaluated.
-            Cannot be used together with decisionId.
+            Cannot be used together with decisionDefinitionId.
           type: integer
           format: int64
-        decisionId:
+        decisionDefinitionId:
           description: |
             The ID of the decision to be evaluated.
-            Cannot be used together with decisionKey. When using the decision ID, the latest
+            Cannot be used together with decisionDefinitionKey. When using the decision ID, the latest
             deployed version of the decision is used.
           type: string
         variables:
@@ -3144,17 +3146,17 @@ components:
     EvaluateDecisionResponse:
       type: object
       properties:
-        decisionKey:
+        decisionDefinitionKey:
           description: The unique key identifying the decision which was evaluated.
           type: integer
           format: int64
-        decisionId:
+        decisionDefinitionId:
           description: The ID of the decision which was evaluated.
           type: string
-        decisionName:
+        decisionDefinitionName:
           description: The name of the decision which was evaluated.
           type: string
-        decisionVersion:
+        decisionDefinitionVersion:
           description: The version of the decision which was evaluated.
           type: integer
           format: int32
@@ -3165,11 +3167,11 @@ components:
           description: The unique key identifying the decision requirements graph that the decision which was evaluated is part of.
           type: integer
           format: int64
-        decisionOutput:
+        output:
           description: |
             JSON document that will instantiate the result of the decision which was evaluated.
           type: string
-        failedDecisionId:
+        failedDecisionDefinitionId:
           description: The ID of the decision which failed during evaluation.
           type: string
         failureMessage:
@@ -3190,24 +3192,24 @@ components:
       type: object
       description: List of decisions that were evaluated within the requested decision evaluation.
       properties:
-        decisionKey:
+        decisionDefinitionKey:
           description: The unique key identifying the decision which was evaluate.
           type: integer
           format: int64
-        decisionId:
+        decisionDefinitionId:
           description: The ID of the decision which was evaluated.
           type: string
-        decisionName:
+        decisionDefinitionName:
           description: The name of the decision which was evaluated.
           type: string
-        decisionVersion:
+        decisionDefinitionVersion:
           description: The version of the decision which was evaluated.
           type: integer
           format: int32
-        decisionType:
+        decisionDefinitionType:
           description: The type of the decision which was evaluated.
           type: string
-        decisionOutput:
+        output:
           description: |
             JSON document that will instantiate the result of the decision which was evaluated.
           type: string
@@ -3292,21 +3294,21 @@ components:
           type: integer
           format: int64
           description: The key of the process instance.
-        decisionKey:
+        decisionDefinitionKey:
           type: integer
           format: int64
           description: The key of the decision.
-        dmnDecisionId:
+        decisionDefinitionId:
           type: string
           description: The ID of the DMN decision.
-        dmnDecisionName:
+        decisionDefinitionName:
           type: string
           description: The name of the DMN decision.
-        decisionVersion:
+        decisionDefinitionVersion:
           type: integer
           format: int32
           description: The version of the decision.
-        decisionType:
+        decisionDefinitionType:
           $ref: '#/components/schemas/DecisionInstanceTypeEnum'
           description: The type of the decision.
         tenantId:
@@ -3347,21 +3349,21 @@ components:
           type: integer
           format: int64
           description: The key of the process instance.
-        decisionKey:
+        decisionDefinitionKey:
           type: integer
           format: int64
           description: The key of the decision.
-        dmnDecisionId:
+        decisionDefinitionId:
           type: string
           description: The ID of the DMN decision.
-        dmnDecisionName:
+        decisionDefinitionName:
           type: string
           description: The name of the DMN decision.
-        decisionVersion:
+        decisionDefinitionVersion:
           type: integer
           format: int32
           description: The version of the decision.
-        decisionType:
+        decisionDefinitionType:
           $ref: '#/components/schemas/DecisionInstanceTypeEnum'
           description: The type of the decision.
         result:
@@ -3412,7 +3414,7 @@ components:
         correlated with.
       type: object
       properties:
-        key:
+        messageKey:
           description: The key of the correlated message
           type: integer
           format: int64
@@ -3460,7 +3462,7 @@ components:
       description: The message key of the published message.
       type: object
       properties:
-        key:
+        messageKey:
           description: The key of the message
           type: integer
           format: int64
@@ -3521,10 +3523,10 @@ components:
           format: date-time
           description: The date and time when the link expires.
 
-    ResourceResponse:
+    DeploymentResponse:
       type: object
       properties:
-        key:
+        deploymentKey:
           type: integer
           format: int64
           description: The unique key identifying the deployment.
@@ -3537,9 +3539,9 @@ components:
     DeploymentMetadata:
       type: object
       properties:
-        process:
+        processDefinition:
           $ref: "#/components/schemas/DeploymentProcess"
-        decision:
+        decisionDefinition:
           $ref: "#/components/schemas/DeploymentDecision"
         decisionRequirements:
           $ref: "#/components/schemas/DeploymentDecisionRequirements"
@@ -3548,12 +3550,12 @@ components:
     DeploymentProcess:
       type: object
       properties:
-        bpmnProcessId:
+        processDefinitionId:
           type: string
           description: |
             The bpmn process ID, as parsed during deployment, together with the version forms a
             unique identifier for a specific process definition.
-        version:
+        processDefinitionVersion:
           type: integer
           format: int32
           description: The assigned process version.
@@ -3570,7 +3572,7 @@ components:
     DeploymentDecision:
       type: object
       properties:
-        dmnDecisionId:
+        decisionDefinitionId:
           type: string
           description: |
             The dmn decision ID, as parsed during deployment, together with the version forms a
@@ -3579,22 +3581,22 @@ components:
           type: integer
           format: int32
           description: The assigned decision version.
-        decisionKey:
+        decisionDefinitionKey:
           type: integer
           format: int64
           description: |
             The assigned decision key, which acts as a unique identifier for this decision.
-        dmnDecisionName:
+        name:
           type: string
           description: The DMN name of the decision, as parsed during deployment.
         tenantId:
           type: string
           description: The tenant ID of the deployed decision.
-        dmnDecisionRequirementsId:
+        decisionRequirementsId:
           type: string
           description: |
             The dmn ID of the decision requirements graph that this decision is part of, as parsed during deployment.
-        dmnDecisionRequirementsKey:
+        decisionRequirementsKey:
           type: integer
           format: int64
           description: |
@@ -3602,7 +3604,7 @@ components:
     DeploymentDecisionRequirements:
       type: object
       properties:
-        dmnDecisionRequirementsId:
+        decisionRequirementsId:
           type: string
           description: |
             The dmn decision requirements ID, as parsed during deployment; together with the versions forms a unique identifier for a specific decision.
@@ -3610,13 +3612,13 @@ components:
           type: integer
           format: int32
           description: The assigned decision requirements version.
-        dmnDecisionRequirementsName:
+        decisionRequirementsName:
           type: string
           description: The DMN name of the decision requirements, as parsed during deployment.
         tenantId:
           type: string
           description: The tenant ID of the deployed decision requirements.
-        dmnDecisionRequirementsKey:
+        decisionRequirementsKey:
           type: integer
           format: int64
           description: |
@@ -3653,17 +3655,17 @@ components:
         processDefinitionKey:
           description: |
             The unique key identifying the process definition, e.g. returned for a process in the
-            deploy resources endpoint. Cannot be used together with bpmnProcessId.
+            deploy resources endpoint. Cannot be used together with processDefinitionId.
           type: integer
           format: int64
-        bpmnProcessId:
+        processDefinitionId:
           description: |
             The BPMN process ID of the process definition to start an instance of.
             Cannot be used together with processDefinitionKey.
           type: string
-        version:
+        processDefinitionVersion:
           description: |
-            The version of the process. Only considered when a bpmnProcessId is provided.
+            The version of the process. Only considered when a processDefinitionId is provided.
             By default, the latest version of the process is used.
           type: integer
           format: int32
@@ -3730,12 +3732,12 @@ components:
             The key of the process definition which was used to create the process instance.
           type: integer
           format: int64
-        bpmnProcessId:
+        processDefinitionId:
           description: |
             The BPMN process ID of the process definition which was used to create the process.
             instance
           type: string
-        version:
+        processDefinitionVersion:
           description: |
             The version of the process definition which was used to create the process instance.
           type: integer
@@ -3923,7 +3925,7 @@ components:
     SignalBroadcastResponse:
       type: object
       properties:
-        key:
+        signalKey:
           description: The unique ID of the signal that was broadcast.
           type: integer
           format: int64
