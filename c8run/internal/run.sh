@@ -124,6 +124,7 @@ if [ "$1" = "start" ] ; then
   echo Java version is $("$JAVA" -version 2>&1 | head -1 | cut -d'"' -f2)
   if [[ "$JAVA_VERSION" -lt "$EXPECTED_JAVA_VERSION" ]]; then
     echo "You must use at least JDK $EXPECTED_JAVA_VERSION to start Camunda Platform Run."
+    childExitHandler $$ 1
     exit 1
   fi
 
