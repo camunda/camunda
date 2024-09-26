@@ -7,13 +7,30 @@
  */
 package io.camunda.operate.schema.indices;
 
+import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.backup.Prio4Backup;
+import io.camunda.webapps.schema.descriptors.operate.index.AbstractIndexDescriptor;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MigrationRepositoryIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
   public static final String INDEX_NAME = "migration-steps-repository";
+
+  @Autowired private OperateProperties properties;
+
+  public MigrationRepositoryIndex() {
+    super(null, false);
+  }
+
+  @PostConstruct
+  public void init() {
+    indexPrefix = properties.getIndexPrefix(DatabaseInfo.getCurrent());
+    isElasticsearch = DatabaseInfo.isElasticsearch();
+  }
 
   @Override
   public String getIndexName() {

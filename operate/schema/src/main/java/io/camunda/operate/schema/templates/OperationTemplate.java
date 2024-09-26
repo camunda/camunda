@@ -7,7 +7,13 @@
  */
 package io.camunda.operate.schema.templates;
 
+import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.operate.template.AbstractTemplateDescriptor;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -38,6 +44,18 @@ public class OperationTemplate extends AbstractTemplateDescriptor
   public static final String METADATA_AGGREGATION = "metadataAggregation";
   public static final String BATCH_OPERATION_ID_AGGREGATION = "batchOperationIdAggregation";
   public static final String COMPLETED_DATE = "completedDate";
+
+  @Autowired private OperateProperties properties;
+
+  public OperationTemplate() {
+    super(null, false);
+  }
+
+  @PostConstruct
+  public void init() {
+    indexPrefix = properties.getIndexPrefix(DatabaseInfo.getCurrent());
+    isElasticsearch = DatabaseInfo.isElasticsearch();
+  }
 
   @Override
   public String getIndexName() {

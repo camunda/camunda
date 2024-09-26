@@ -17,6 +17,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTe
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.MessageTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
@@ -129,6 +130,14 @@ public class IndexTemplateDescriptorsConfigurator {
   public UserTaskTemplate getUserTaskTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new UserTaskTemplate(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean
+  public JobTemplate getJobTemplate(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new JobTemplate(
         operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
         databaseInfo.isElasticsearchDb());
   }

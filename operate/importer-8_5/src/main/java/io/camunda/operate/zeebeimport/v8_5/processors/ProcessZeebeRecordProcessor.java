@@ -10,12 +10,12 @@ package io.camunda.operate.zeebeimport.v8_5.processors;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;

@@ -15,11 +15,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
-import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.OpensearchOperateAbstractIT;
 import io.camunda.operate.util.TestUtil;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.util.List;
 import java.util.Map;
@@ -170,7 +170,7 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
     return richOpenSearchClient.batch().newBatchRequest();
   }
 
-  private List<ProcessEntity> searchForProcessEntity(Query query) {
+  private List<ProcessEntity> searchForProcessEntity(final Query query) {
     return richOpenSearchClient
         .doc()
         .search(

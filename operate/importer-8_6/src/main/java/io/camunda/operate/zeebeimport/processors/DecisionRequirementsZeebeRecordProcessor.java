@@ -10,9 +10,9 @@ package io.camunda.operate.zeebeimport.processors;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
