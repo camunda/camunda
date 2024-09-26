@@ -33,10 +33,10 @@ public class DecisionRequirementsGetRequestImpl implements DecisionRequirementsG
   private final long decisionRequirementsKey;
 
   public DecisionRequirementsGetRequestImpl(
-      final HttpClient httpClient, final long decisionDefinitionKey) {
+      final HttpClient httpClient, final long decisionRequirementsKey) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    decisionRequirementsKey = decisionDefinitionKey;
+    this.decisionRequirementsKey = decisionRequirementsKey;
   }
 
   @Override
