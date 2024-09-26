@@ -63,7 +63,7 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter decisionKey(final long decisionKey) {
-    filter.setDecisionKey(decisionKey);
+    filter.setDecisionDefinitionKey(decisionKey);
     return this;
   }
 

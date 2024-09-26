@@ -45,7 +45,7 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
       final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
     decisionId = response.getDecisionId();
-    decisionKey = response.getDecisionKey();
+    decisionKey = response.getDecisionDefinitionKey();
     decisionVersion = response.getDecisionVersion();
     decisionName = response.getDecisionName();
     decisionRequirementsId = response.getDecisionRequirementsId();

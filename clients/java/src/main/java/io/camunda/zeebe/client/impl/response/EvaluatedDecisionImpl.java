@@ -43,7 +43,7 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
       final EvaluatedDecisionItem evaluatedDecisionItem, final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
     decisionId = evaluatedDecisionItem.getDecisionId();
-    decisionKey = evaluatedDecisionItem.getDecisionKey();
+    decisionKey = evaluatedDecisionItem.getDecisionDefinitionKey();
     decisionVersion = evaluatedDecisionItem.getDecisionVersion();
     decisionName = evaluatedDecisionItem.getDecisionName();
     decisionType = evaluatedDecisionItem.getDecisionType();

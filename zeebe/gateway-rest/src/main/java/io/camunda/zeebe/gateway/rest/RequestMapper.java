@@ -586,7 +586,7 @@ public class RequestMapper {
         tenantId ->
             new DecisionEvaluationRequest(
                 getStringOrEmpty(request, EvaluateDecisionRequest::getDecisionId),
-                getLongOrDefault(request, EvaluateDecisionRequest::getDecisionKey, -1L),
+                getLongOrDefault(request, EvaluateDecisionRequest::getDecisionDefinitionKey, -1L),
                 getMapOrEmpty(request, EvaluateDecisionRequest::getVariables),
                 tenantId));
   }

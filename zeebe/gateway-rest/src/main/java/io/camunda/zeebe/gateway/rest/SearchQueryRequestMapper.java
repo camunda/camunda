@@ -146,7 +146,7 @@ public final class SearchQueryRequestMapper {
           .ifPresent(builder::states);
       ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getDecisionKey()).ifPresent(builder::decisionKeys);
+      ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionKeys);
       ofNullable(filter.getDmnDecisionId()).ifPresent(builder::dmnDecisionIds);
       ofNullable(filter.getDmnDecisionName()).ifPresent(builder::dmnDecisionNames);
       ofNullable(filter.getDecisionVersion()).ifPresent(builder::decisionVersions);
@@ -282,7 +282,7 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.decisionDefinition();
 
     if (filter != null) {
-      ofNullable(filter.getDecisionKey()).ifPresent(builder::decisionKeys);
+      ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionKeys);
       ofNullable(filter.getDmnDecisionId()).ifPresent(builder::dmnDecisionIds);
       ofNullable(filter.getDmnDecisionName()).ifPresent(builder::dmnDecisionNames);
       ofNullable(filter.getVersion()).ifPresent(builder::versions);

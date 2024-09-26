@@ -1150,7 +1150,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-  /decision-definitions/{decisionKey}/xml:
+  /decision-definitions/{decisionDefinitionKey}/xml:
     get:
       tags:
         - Decision definition
@@ -1164,7 +1164,7 @@ paths:
         for further details.
         :::
       parameters:
-        - name: decisionKey
+        - name: decisionDefinitionKey
           in: path
           required: true
           description: The assigned key of the decision definition, which acts as a unique identifier for this decision.
@@ -2677,7 +2677,7 @@ components:
     DecisionDefinitionFilterRequest:
       type: object
       properties:
-        decisionKey:
+        decisionDefinitionKey:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this decision definition.
@@ -2905,7 +2905,7 @@ components:
     DecisionDefinitionItem:
       type: object
       properties:
-        decisionKey:
+        decisionDefinitionKey:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this decision definition.
@@ -3593,7 +3593,7 @@ components:
     EvaluateDecisionRequest:
       type: object
       properties:
-        decisionKey:
+        decisionDefinitionKey:
           description: |
             The unique key identifying the decision to be evaluated.
             Cannot be used together with decisionId.
@@ -3602,7 +3602,7 @@ components:
         decisionId:
           description: |
             The ID of the decision to be evaluated.
-            Cannot be used together with decisionKey. When using the decision ID, the latest
+            Cannot be used together with decisionDefinitionKey. When using the decision ID, the latest
             deployed version of the decision is used.
           type: string
         variables:
@@ -3615,7 +3615,7 @@ components:
     EvaluateDecisionResponse:
       type: object
       properties:
-        decisionKey:
+        decisionDefinitionKey:
           description: The unique key identifying the decision which was evaluated.
           type: integer
           format: int64
@@ -3661,7 +3661,7 @@ components:
       type: object
       description: List of decisions that were evaluated within the requested decision evaluation.
       properties:
-        decisionKey:
+        decisionDefinitionKey:
           description: The unique key identifying the decision which was evaluate.
           type: integer
           format: int64
@@ -3763,7 +3763,7 @@ components:
           type: integer
           format: int64
           description: The key of the process instance.
-        decisionKey:
+        decisionDefinitionKey:
           type: integer
           format: int64
           description: The key of the decision.
@@ -3818,7 +3818,7 @@ components:
           type: integer
           format: int64
           description: The key of the process instance.
-        decisionKey:
+        decisionDefinitionKey:
           type: integer
           format: int64
           description: The key of the decision.
@@ -4048,7 +4048,7 @@ components:
           type: integer
           format: int32
           description: The assigned decision version.
-        decisionKey:
+        decisionDefinitionKey:
           type: integer
           format: int64
           description: |

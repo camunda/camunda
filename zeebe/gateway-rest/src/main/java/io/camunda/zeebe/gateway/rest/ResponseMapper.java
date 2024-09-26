@@ -203,7 +203,7 @@ public final class ResponseMapper {
                 new DeploymentDecision()
                     .dmnDecisionId(decision.getDecisionId())
                     .version(decision.getVersion())
-                    .decisionKey(decision.getDecisionKey())
+                    .decisionDefinitionKey(decision.getDecisionKey())
                     .dmnDecisionName(decision.getDecisionName())
                     .tenantId(decision.getTenantId())
                     .dmnDecisionRequirementsId(decision.getDecisionRequirementsId())
@@ -290,7 +290,7 @@ public final class ResponseMapper {
     final var response =
         new EvaluateDecisionResponse()
             .decisionId(decisionEvaluationRecord.getDecisionId())
-            .decisionKey(decisionEvaluationRecord.getDecisionKey())
+            .decisionDefinitionKey(decisionEvaluationRecord.getDecisionKey())
             .decisionName(decisionEvaluationRecord.getDecisionName())
             .decisionVersion(decisionEvaluationRecord.getDecisionVersion())
             .decisionRequirementsId(decisionEvaluationRecord.getDecisionRequirementsId())
@@ -312,7 +312,7 @@ public final class ResponseMapper {
         .map(
             evaluatedDecision ->
                 new EvaluatedDecisionItem()
-                    .decisionKey(evaluatedDecision.getDecisionKey())
+                    .decisionDefinitionKey(evaluatedDecision.getDecisionKey())
                     .decisionId(evaluatedDecision.getDecisionId())
                     .decisionName(evaluatedDecision.getDecisionName())
                     .decisionVersion(evaluatedDecision.getDecisionVersion())
