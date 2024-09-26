@@ -41,7 +41,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
       """
       {
          "processDefinitionKey":123,
-         "bpmnProcessId":"bpmnProcessId",
+         "processDefinitionId":"bpmnProcessId",
          "processDefinitionVersion":-1,
          "processInstanceKey":123,
          "tenantId":"tenantId"
@@ -118,7 +118,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
         {
-            "bpmnProcessId": "bpmnProcessId",
+            "processDefinitionId": "bpmnProcessId",
             "processDefinitionVersion": 1
         }""";
 
@@ -159,7 +159,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
         {
-            "bpmnProcessId": "bpmnProcessId"
+            "processDefinitionId": "bpmnProcessId"
         }""";
 
     // when / then
@@ -242,7 +242,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
         {
-            "bpmnProcessId": "bpmnProcessId",
+            "processDefinitionId": "bpmnProcessId",
             "processDefinitionVersion": 1,
             "awaitCompletion": true
         }""";
@@ -285,7 +285,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
         {
-            "bpmnProcessId": "bpmnProcessId",
+            "processDefinitionId": "bpmnProcessId",
             "awaitCompletion": true
         }""";
 
@@ -326,7 +326,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             "type":"about:blank",
             "title":"INVALID_ARGUMENT",
             "status":400,
-            "detail":"At least one of [bpmnProcessId, processDefinitionKey] is required.",
+            "detail":"At least one of [processDefinitionId, processDefinitionKey] is required.",
             "instance":"/v2/process-instances"
          }""";
 
@@ -352,7 +352,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
         {
-            "bpmnProcessId": "bpmnProcessId",
+            "processDefinitionId": "bpmnProcessId",
             "processDefinitionKey": 123,
             "version": 1
         }""";
@@ -363,7 +363,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             "type":"about:blank",
             "title":"INVALID_ARGUMENT",
             "status":400,
-            "detail":"Only one of [bpmnProcessId, processDefinitionKey] is allowed.",
+            "detail":"Only one of [processDefinitionId, processDefinitionKey] is allowed.",
             "instance":"/v2/process-instances"
          }""";
 
@@ -389,7 +389,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
         {
-            "bpmnProcessId": "bpmnProcessId",
+            "processDefinitionId": "bpmnProcessId",
             "operationReference": -1
         }""";
 
