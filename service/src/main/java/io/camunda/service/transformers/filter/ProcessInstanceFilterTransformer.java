@@ -30,11 +30,11 @@ public final class ProcessInstanceFilterTransformer
 
     return and(
         getIsProcessInstanceQuery(),
-        longTerms("key", filter.keys()),
-        stringTerms("bpmnProcessId", filter.bpmnProcessIds()),
-        stringTerms("processName", filter.processNames()),
-        intTerms("processVersion", filter.processVersions()),
-        stringTerms("processVersionTag", filter.processVersionTags()),
+        longTerms("key", filter.processInstanceKeys()),
+        stringTerms("bpmnProcessId", filter.processDefinitionIds()),
+        stringTerms("processName", filter.processDefinitionNames()),
+        intTerms("processVersion", filter.processDefinitionVersions()),
+        stringTerms("processVersionTag", filter.processDefinitionVersionTags()),
         longTerms("processDefinitionKey", filter.processDefinitionKeys()),
         longTerms("rootProcessInstanceKey", filter.rootProcessInstanceKeys()),
         longTerms("parentProcessInstanceKey", filter.parentProcessInstanceKeys()),

@@ -21,11 +21,11 @@ import java.util.Optional;
 
 public class ProcessInstanceImpl implements ProcessInstance {
 
-  private final Long key;
-  private final String bpmnProcessId;
-  private final String processName;
-  private final Integer processVersion;
-  private final String processVersionTag;
+  private final Long processInstanceKey;
+  private final String processDefinitionId;
+  private final String processDefinitionName;
+  private final Integer processDefinitionVersion;
+  private final String processDefinitionVersionTag;
   private final Long processDefinitionKey;
   private final Long rootProcessInstanceKey;
   private final Long parentProcessInstanceKey;
@@ -38,11 +38,11 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final String tenantId;
 
   public ProcessInstanceImpl(final ProcessInstanceItem item) {
-    key = item.getKey();
-    bpmnProcessId = item.getProcessDefinitionId();
-    processName = item.getProcessDefinitionName();
-    processVersion = item.getProcessDefinitionVersion();
-    processVersionTag = item.getProcessDefinitionVersionTag();
+    processInstanceKey = item.getProcessInstanceKey();
+    processDefinitionId = item.getProcessDefinitionId();
+    processDefinitionName = item.getProcessDefinitionName();
+    processDefinitionVersion = item.getProcessDefinitionVersion();
+    processDefinitionVersionTag = item.getProcessDefinitionVersionTag();
     processDefinitionKey = item.getProcessDefinitionKey();
     rootProcessInstanceKey = item.getRootProcessInstanceKey();
     parentProcessInstanceKey = item.getParentProcessInstanceKey();
@@ -56,28 +56,28 @@ public class ProcessInstanceImpl implements ProcessInstance {
   }
 
   @Override
-  public Long getKey() {
-    return key;
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
   @Override
-  public String getBpmnProcessId() {
-    return bpmnProcessId;
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
   }
 
   @Override
-  public String getProcessName() {
-    return processName;
+  public String getProcessDefinitionName() {
+    return processDefinitionName;
   }
 
   @Override
-  public Integer getProcessVersion() {
-    return processVersion;
+  public Integer getProcessDefinitionVersion() {
+    return processDefinitionVersion;
   }
 
   @Override
-  public String getProcessVersionTag() {
-    return processVersionTag;
+  public String getProcessDefinitionVersionTag() {
+    return processDefinitionVersionTag;
   }
 
   @Override

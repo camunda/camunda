@@ -135,7 +135,7 @@ public final class SearchQueryResponseMapper {
 
   public static ProcessInstanceItem toProcessInstance(final ProcessInstanceEntity p) {
     return new ProcessInstanceItem()
-        .key(p.key())
+        .processInstanceKey(p.key())
         .processDefinitionId(p.bpmnProcessId())
         .processDefinitionName(p.processName())
         .processDefinitionVersion(p.processVersion())

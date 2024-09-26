@@ -22,27 +22,27 @@ public class ProcessInstanceSortImpl extends SearchQuerySortBase<ProcessInstance
     implements ProcessInstanceSort {
 
   @Override
-  public ProcessInstanceSort key() {
+  public ProcessInstanceSort processInstanceKey() {
     return field("key");
   }
 
   @Override
-  public ProcessInstanceSort bpmnProcessId() {
+  public ProcessInstanceSort processDefinitionId() {
     return field("bpmnProcessId");
   }
 
   @Override
-  public ProcessInstanceSort processName() {
+  public ProcessInstanceSort processDefinitionName() {
     return field("processName");
   }
 
   @Override
-  public ProcessInstanceSort processVersion() {
+  public ProcessInstanceSort processDefinitionVersion() {
     return field("processVersion");
   }
 
   @Override
-  public ProcessInstanceSort processVersionTag() {
+  public ProcessInstanceSort processDefinitionVersionTag() {
     return field("processVersionTag");
   }
 

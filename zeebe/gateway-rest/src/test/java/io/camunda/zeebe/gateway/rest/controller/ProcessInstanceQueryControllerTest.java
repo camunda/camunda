@@ -58,7 +58,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   private static final String PROCESS_INSTANCE_ENTITY_JSON =
       """
                   {
-                  "key": 123,
+                  "processInstanceKey": 123,
                   "processDefinitionId": "demoProcess",
                   "processDefinitionName": "Demo Process",
                   "processDefinitionVersion": 5,
@@ -80,7 +80,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           {
               "items": [
                 {
-                  "key": 123,
+                  "processInstanceKey": 123,
                   "processDefinitionId": "demoProcess",
                   "processDefinitionName": "Demo Process",
                   "processDefinitionVersion": 5,
@@ -204,7 +204,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             new ProcessInstanceQuery.Builder()
                 .sort(
                     new ProcessInstanceSort.Builder()
-                        .bpmnProcessId()
+                        .processDefinitionId()
                         .desc()
                         .processDefinitionKey()
                         .asc()
