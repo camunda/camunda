@@ -30,8 +30,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
-@WebMvcTest(DecisionController.class)
-public class DecisionControllerTest extends RestControllerTest {
+@WebMvcTest(DecisionDefinitionController.class)
+public class DecisionDefinitionControllerTest extends RestControllerTest {
 
   private static final String DECISION_BASE_URL = "/v2/decision-definitions";
   private static final String EVALUATION_URL = DECISION_BASE_URL + "/evaluation";
