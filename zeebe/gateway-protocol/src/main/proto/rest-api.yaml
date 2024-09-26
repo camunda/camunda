@@ -1074,7 +1074,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
 
 
-  /decisions/evaluation:
+  /decision-definitions/evaluation:
     post:
       tags:
         - Decision definition

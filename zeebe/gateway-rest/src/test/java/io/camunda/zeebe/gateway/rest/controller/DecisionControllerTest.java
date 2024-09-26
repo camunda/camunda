@@ -33,7 +33,7 @@ import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 @WebMvcTest(DecisionController.class)
 public class DecisionControllerTest extends RestControllerTest {
 
-  private static final String DECISION_BASE_URL = "/v2/decisions";
+  private static final String DECISION_BASE_URL = "/v2/decision-definitions";
   private static final String EVALUATION_URL = DECISION_BASE_URL + "/evaluation";
   private static final String EXPECTED_EVALUATION_RESPONSE =
       """
@@ -187,7 +187,7 @@ public class DecisionControllerTest extends RestControllerTest {
             "title":"INVALID_ARGUMENT",
             "status":400,
             "detail":"Only one of [decisionDefinitionId, decisionDefinitionKey] is allowed.",
-            "instance":"/v2/decisions/evaluation"
+            "instance":"/v2/decision-definitions/evaluation"
          }""";
 
     // when then
@@ -222,7 +222,7 @@ public class DecisionControllerTest extends RestControllerTest {
             "title":"INVALID_ARGUMENT",
             "status":400,
             "detail":"At least one of [decisionDefinitionId, decisionDefinitionKey] is required.",
-            "instance":"/v2/decisions/evaluation"
+            "instance":"/v2/decision-definitions/evaluation"
          }""";
 
     // when then

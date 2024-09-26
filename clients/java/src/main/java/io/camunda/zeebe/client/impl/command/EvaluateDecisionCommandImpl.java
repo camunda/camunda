@@ -150,7 +150,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   private ZeebeFuture<EvaluateDecisionResponse> sendRestRequest() {
     final HttpZeebeFuture<EvaluateDecisionResponse> result = new HttpZeebeFuture<>();
     httpClient.post(
-        "/decisions/evaluation",
+        "/decision-definitions/evaluation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse.class,
