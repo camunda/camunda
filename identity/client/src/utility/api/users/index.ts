@@ -4,7 +4,7 @@ import { SearchResponse } from "src/utility/api";
 export const USERS_ENDPOINT = "/users";
 
 export type User = {
-  id: string;
+  key: string;
   name: string;
   username: string;
   password: string;
@@ -22,7 +22,7 @@ type GetUserParams = {
 export const getUserDetails: ApiDefinition<User, GetUserParams> = ({ id }) =>
   apiGet(`${USERS_ENDPOINT}/${id}`);
 
-type CreateUserParams = Omit<User, "id" | "enabled">;
+type CreateUserParams = Omit<User, "key" | "enabled">;
 
 export const createUser: ApiDefinition<undefined, CreateUserParams> = (user) =>
   apiPost(USERS_ENDPOINT, { ...user, enabled: true });
@@ -30,7 +30,7 @@ export const createUser: ApiDefinition<undefined, CreateUserParams> = (user) =>
 type UpdateUserParams = Omit<User, "enabled">;
 
 export const updateUser: ApiDefinition<undefined, UpdateUserParams> = (user) =>
-  apiPut(`${USERS_ENDPOINT}/${user.id}`, { ...user, enabled: true });
+  apiPut(`${USERS_ENDPOINT}/${user.key}`, { ...user, enabled: true });
 
 type DeleteUserParams = GetUserParams;
 

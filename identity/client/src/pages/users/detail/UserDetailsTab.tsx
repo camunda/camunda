@@ -16,7 +16,7 @@ type UserDetailsProps = {
 };
 
 const UserDetails: FC<UserDetailsProps> = ({
-  user: { username, email, id },
+  user: { username, email, key },
   loading,
 }) => {
   const { t } = useTranslate();
@@ -26,14 +26,14 @@ const UserDetails: FC<UserDetailsProps> = ({
       label={t("User details")}
       data={[
         {
+          label: t("Key"),
+          value: key,
+        },
+        {
           label: t("Username"),
           value: username,
         },
         { label: t("Email"), value: email || "-" },
-        {
-          label: t("ID"),
-          value: id,
-        },
       ]}
       loading={loading}
     />
