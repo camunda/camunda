@@ -70,6 +70,31 @@ test.beforeAll(async ({request}) => {
       {timeout: SETUP_WAITING_TIME},
     )
     .toHaveProperty('total', 10);
+
+  // Wait until all script tasks are in incident state
+  await expect
+    .poll(
+      async () => {
+        const response = await request.post(
+          `${config.endpoint}/v1/flownode-instances/search`,
+          {
+            data: {
+              filter: {
+                flowNodeId: 'ScriptTask',
+                state: 'ACTIVE',
+                incident: true,
+                processDefinitionKey:
+                  initialData.processV1.processDefinitionKey,
+              },
+            },
+          },
+        );
+
+        return await response.json();
+      },
+      {timeout: SETUP_WAITING_TIME},
+    )
+    .toHaveProperty('total', 10);
 });
 
 test.describe.serial('Process Instance Migration', () => {
@@ -115,7 +140,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(19);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(20);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
@@ -174,6 +199,9 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       page.getByLabel(/target flow node for business rule task/i),
     ).toHaveValue('BusinessRuleTask');
+    await expect(
+      page.getByLabel(/target flow node for script task/i),
+    ).toHaveValue('ScriptTask');
 
     // Expect pre-selected process and version
     await expect(migrationView.targetProcessComboBox).toHaveValue(
@@ -415,6 +443,10 @@ test.describe.serial('Process Instance Migration', () => {
     await migrationView.mapFlowNode({
       sourceFlowNodeName: 'Business rule task',
       targetFlowNodeName: 'Business rule task 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Script task',
+      targetFlowNodeName: 'Script task 2',
     });
 
     await migrationView.nextButton.click();
