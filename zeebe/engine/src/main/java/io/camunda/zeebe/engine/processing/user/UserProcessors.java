@@ -32,7 +32,7 @@ public class UserProcessors {
         .onCommand(
             ValueType.USER,
             UserIntent.UPDATE,
-            new UserUpdateProcessor(keyGenerator, processingState, writers, distributionBehavior))
-        .withListener(new DefaultUserCreator(processingState, config));
+            new UserUpdateProcessor(keyGenerator, processingState, writers, distributionBehavior));
+    //        .withListener(new DefaultUserCreator(processingState, config));
   }
 }
