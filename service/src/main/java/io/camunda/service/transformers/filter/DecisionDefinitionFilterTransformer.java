@@ -22,11 +22,13 @@ public final class DecisionDefinitionFilterTransformer
   @Override
   public SearchQuery toSearchQuery(final DecisionDefinitionFilter filter) {
     final var decisionKeysQuery = getDecisionKeysQuery(filter.decisionDefinitionKeys());
-    final var decisionIdsQuery = getDmnDecisionIdsQuery(filter.decisionDefinitionIds());
-    final var dmnDecisionNamesQuery = getDmnDecisionNamesQuery(filter.decisionDefinitionNames());
-    final var versionsQuery = getVersionsQuery(filter.decisionDefinitionVersions());
+    final var decisionIdsQuery = getDecisionDefinitionIdsQuery(filter.decisionDefinitionIds());
+    final var dmnDecisionNamesQuery =
+        getDecisionDefinitionNamesQuery(filter.decisionDefinitionNames());
+    final var versionsQuery =
+        getDecisionDefinitionVersionsQuery(filter.decisionDefinitionVersions());
     final var decisionRequirementsIdsQuery =
-        getDmnDecisionRequirementsIdsQuery(filter.decisionRequirementsIds());
+        getDecisionRequirementsIdsQuery(filter.decisionRequirementsIds());
     final var decisionRequirementsKeysQuery =
         getDecisionRequirementsKeysQuery(filter.decisionRequirementsKeys());
     final var tenantIdsQuery = getTenantIdsQuery(filter.tenantIds());
@@ -50,21 +52,21 @@ public final class DecisionDefinitionFilterTransformer
     return longTerms("key", keys);
   }
 
-  private SearchQuery getDmnDecisionIdsQuery(final List<String> dmnDecisionIds) {
-    return stringTerms("decisionId", dmnDecisionIds);
+  private SearchQuery getDecisionDefinitionIdsQuery(final List<String> decisionDefinitionIds) {
+    return stringTerms("decisionId", decisionDefinitionIds);
   }
 
-  private SearchQuery getDmnDecisionNamesQuery(final List<String> dmnDecisionNames) {
+  private SearchQuery getDecisionDefinitionNamesQuery(final List<String> dmnDecisionNames) {
     return stringTerms("name", dmnDecisionNames);
   }
 
-  private SearchQuery getVersionsQuery(final List<Integer> versions) {
-    return intTerms("version", versions);
+  private SearchQuery getDecisionDefinitionVersionsQuery(
+      final List<Integer> decisionDefinitionVersions) {
+    return intTerms("version", decisionDefinitionVersions);
   }
 
-  private SearchQuery getDmnDecisionRequirementsIdsQuery(
-      final List<String> dmnDecisionRequirementsIds) {
-    return stringTerms("decisionRequirementsId", dmnDecisionRequirementsIds);
+  private SearchQuery getDecisionRequirementsIdsQuery(final List<String> decisionRequirementsIds) {
+    return stringTerms("decisionRequirementsId", decisionRequirementsIds);
   }
 
   private SearchQuery getDecisionRequirementsKeysQuery(final List<Long> decisionRequirementsKeys) {

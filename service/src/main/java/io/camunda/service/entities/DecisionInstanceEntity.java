@@ -19,7 +19,7 @@ public record DecisionInstanceEntity(
     String decisionDefinitionId,
     String decisionName,
     int decisionVersion,
-    DecisionInstanceType decisionType,
+    DecisionDefinitionType decisionType,
     String result) {
 
   public record DecisionInstanceInputEntity(String id, String name, String value) {}
@@ -27,15 +27,14 @@ public record DecisionInstanceEntity(
   public record DecisionInstanceOutputEntity(
       String id, String name, String value, String ruleId, int ruleIndex) {}
 
-  public enum DecisionInstanceType {
-    DECISION,
+  public enum DecisionDefinitionType {
     DECISION_TABLE,
     LITERAL_EXPRESSION,
     UNSPECIFIED,
     UNKNOWN;
 
-    public static DecisionInstanceType fromValue(final String value) {
-      for (final DecisionInstanceType b : DecisionInstanceType.values()) {
+    public static DecisionDefinitionType fromValue(final String value) {
+      for (final DecisionDefinitionType b : DecisionDefinitionType.values()) {
         if (b.name().equals(value)) {
           return b;
         }

@@ -12,8 +12,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.entities.DecisionInstanceEntity;
+import io.camunda.service.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceType;
 import io.camunda.service.search.query.DecisionInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
@@ -81,7 +81,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                       "123456",
                       "ddn",
                       0,
-                      DecisionInstanceType.DECISION_TABLE,
+                      DecisionDefinitionType.DECISION_TABLE,
                       "result")))
           .sortValues(new Object[] {"v"})
           .build();
@@ -105,7 +105,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
           }
       }""",
             q ->
-                q.filter(f -> f.decisionKeys(123456L))
+                q.filter(f -> f.decisionDefinitionKeys(123456L))
                     .resultConfig(r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())),
         new TestArguments(
             """
@@ -115,7 +115,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
           }
       }""",
             q ->
-                q.filter(f -> f.decisionTypes(DecisionInstanceType.DECISION_TABLE))
+                q.filter(f -> f.decisionTypes(DecisionDefinitionType.DECISION_TABLE))
                     .resultConfig(r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())),
         new TestArguments(
             """
@@ -128,7 +128,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
           ]
       }""",
             q ->
-                q.sort(s -> s.dmnDecisionName().desc())
+                q.sort(s -> s.decisionDefinitionName().desc())
                     .resultConfig(
                         r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())));
   }
@@ -171,6 +171,40 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .isOk()
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
+  }
+
+  @Test
+  void shouldReturnErrorOnUnsupportedDecisionDefinitionTypeValue() {
+    // given
+    final String apiQuery =
+        """
+        {
+            "filter": {
+                "decisionDefinitionType": "UNSUPPORTED"
+            }
+        }""";
+    // when
+    webClient
+        .post()
+        .uri("/v2/decision-instances/search")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(apiQuery)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+                {
+                    "type": "about:blank",
+                    "title": "Bad Request",
+                    "status": 400,
+                    "detail": "Failed to read request",
+                    "instance": "/v2/decision-instances/search"
+                }
+                """);
   }
 
   private record TestArguments(

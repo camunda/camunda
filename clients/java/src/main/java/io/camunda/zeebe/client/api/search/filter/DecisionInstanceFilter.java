@@ -16,8 +16,8 @@
 package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceTypeEnum;
+import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
+import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 
 public interface DecisionInstanceFilter extends SearchRequestFilter {
 
@@ -25,7 +25,7 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
   DecisionInstanceFilter decisionInstanceKey(long decisionInstanceKey);
 
   /** Filter by state */
-  DecisionInstanceFilter state(DecisionInstanceStateEnum state);
+  DecisionInstanceFilter state(DecisionInstanceState state);
 
   /** Filter by evaluationFailure */
   DecisionInstanceFilter evaluationFailure(String evaluationFailure);
@@ -36,20 +36,20 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
   /** Filter by processInstanceKey */
   DecisionInstanceFilter processInstanceKey(long processInstanceKey);
 
-  /** Filter by decisionKey */
-  DecisionInstanceFilter decisionKey(long decisionKey);
+  /** Filter by decisionDefinitionKey */
+  DecisionInstanceFilter decisionDefinitionKey(long decisionDefinitionKey);
 
-  /** Filter by dmnDecisionId */
-  DecisionInstanceFilter dmnDecisionId(String dmnDecisionId);
+  /** Filter by decisionDefinitionId */
+  DecisionInstanceFilter decisionDefinitionId(String decisionDefinitionId);
 
-  /** Filter by dmnDecisionName */
-  DecisionInstanceFilter dmnDecisionName(String dmnDecisionName);
+  /** Filter by decisionDefinitionName */
+  DecisionInstanceFilter decisionDefinitionName(String decisionDefinitionName);
 
-  /** Filter by decisionVersion */
-  DecisionInstanceFilter decisionVersion(int decisionVersion);
+  /** Filter by decisionDefinitionVersion */
+  DecisionInstanceFilter decisionDefinitionVersion(int decisionDefinitionVersion);
 
-  /** Filter by decisionType */
-  DecisionInstanceFilter decisionType(DecisionInstanceTypeEnum decisionType);
+  /** Filter by decisionDefinitionType */
+  DecisionInstanceFilter decisionDefinitionType(DecisionDefinitionType decisionDefinitionType);
 
   /** Filter by tenantId */
   DecisionInstanceFilter tenantId(String tenantId);

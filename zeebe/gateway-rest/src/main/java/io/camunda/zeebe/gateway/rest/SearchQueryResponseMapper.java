@@ -10,6 +10,8 @@ package io.camunda.zeebe.gateway.rest;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.service.entities.*;
+import io.camunda.service.entities.DecisionInstanceEntity.DecisionDefinitionType;
+import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.util.Either;
@@ -318,10 +320,7 @@ public final class SearchQueryResponseMapper {
   private static DecisionInstanceItem toDecisionInstance(final DecisionInstanceEntity entity) {
     return new DecisionInstanceItem()
         .decisionInstanceKey(entity.key())
-        .state(
-            (entity.state() == null)
-                ? null
-                : DecisionInstanceStateEnum.fromValue(entity.state().name()))
+        .state(toDecisionInstanceStateEnum(entity.state()))
         .evaluationDate(entity.evaluationDate())
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(entity.processDefinitionKey())
@@ -330,10 +329,43 @@ public final class SearchQueryResponseMapper {
         .decisionDefinitionId(entity.decisionId())
         .decisionDefinitionName(entity.decisionName())
         .decisionDefinitionVersion(entity.decisionVersion())
-        .decisionDefinitionType(
-            (entity.decisionType() == null)
-                ? null
-                : DecisionInstanceTypeEnum.fromValue(entity.decisionType().name()))
+        .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionType()))
         .result(entity.result());
+  }
+
+  private static DecisionInstanceStateEnum toDecisionInstanceStateEnum(
+      final DecisionInstanceState state) {
+    if (state == null) {
+      return null;
+    }
+    switch (state) {
+      case EVALUATED:
+        return DecisionInstanceStateEnum.EVALUATED;
+      case FAILED:
+        return DecisionInstanceStateEnum.FAILED;
+      case UNSPECIFIED:
+        return DecisionInstanceStateEnum.UNSPECIFIED;
+      case UNKNOWN:
+      default:
+        return DecisionInstanceStateEnum.UNKNOWN;
+    }
+  }
+
+  private static DecisionDefinitionTypeEnum toDecisionDefinitionTypeEnum(
+      final DecisionDefinitionType decisionDefinitionType) {
+    if (decisionDefinitionType == null) {
+      return null;
+    }
+    switch (decisionDefinitionType) {
+      case DECISION_TABLE:
+        return DecisionDefinitionTypeEnum.DECISION_TABLE;
+      case LITERAL_EXPRESSION:
+        return DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
+      case UNSPECIFIED:
+        return DecisionDefinitionTypeEnum.UNSPECIFIED;
+      case UNKNOWN:
+      default:
+        return DecisionDefinitionTypeEnum.UNKNOWN;
+    }
   }
 }

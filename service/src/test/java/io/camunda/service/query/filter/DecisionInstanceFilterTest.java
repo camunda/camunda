@@ -66,7 +66,8 @@ class DecisionInstanceFilterTest {
   @Test
   void shouldQueryByDecisionVersion() {
     // given
-    final var decisionInstanceFilter = FilterBuilders.decisionInstance(f -> f.decisionVersions(1));
+    final var decisionInstanceFilter =
+        FilterBuilders.decisionInstance(f -> f.decisionDefinitionVersions(1));
     final var searchQuery =
         SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.filter(decisionInstanceFilter));
 
@@ -113,7 +114,7 @@ class DecisionInstanceFilterTest {
   void shouldQueryByDmnDecisionId() {
     // given
     final var decisionInstanceFilter =
-        FilterBuilders.decisionInstance(f -> f.dmnDecisionIds("dId"));
+        FilterBuilders.decisionInstance(f -> f.decisionDefinitionIds("dId"));
     final var searchQuery =
         SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.filter(decisionInstanceFilter));
 
@@ -136,7 +137,8 @@ class DecisionInstanceFilterTest {
   @Test
   void shouldQueryByDecisionKey() {
     // given
-    final var decisionInstanceFilter = FilterBuilders.decisionInstance(f -> f.decisionKeys(12345L));
+    final var decisionInstanceFilter =
+        FilterBuilders.decisionInstance(f -> f.decisionDefinitionKeys(12345L));
     final var searchQuery =
         SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.filter(decisionInstanceFilter));
 
@@ -160,7 +162,7 @@ class DecisionInstanceFilterTest {
   void shouldQueryByDmnDecisionName() {
     // given
     final var decisionInstanceFilter =
-        FilterBuilders.decisionInstance(f -> f.dmnDecisionNames("n"));
+        FilterBuilders.decisionInstance(f -> f.decisionDefinitionNames("n"));
     final var searchQuery =
         SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.filter(decisionInstanceFilter));
 
@@ -184,7 +186,8 @@ class DecisionInstanceFilterTest {
   void shouldQueryByDmnDecisionNameAndDecisionVersion() {
     // given
     final var decisionInstanceFilter =
-        FilterBuilders.decisionInstance(f -> f.dmnDecisionNames("n").decisionVersions(1));
+        FilterBuilders.decisionInstance(
+            f -> f.decisionDefinitionNames("n").decisionDefinitionVersions(1));
     final var searchQuery =
         SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.filter(decisionInstanceFilter));
 

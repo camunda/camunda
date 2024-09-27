@@ -3778,7 +3778,7 @@ components:
           format: int32
           description: The version of the decision.
         decisionDefinitionType:
-          $ref: '#/components/schemas/DecisionInstanceTypeEnum'
+          $ref: '#/components/schemas/DecisionDefinitionTypeEnum'
           description: The type of the decision.
         tenantId:
           type: string
@@ -3833,7 +3833,7 @@ components:
           format: int32
           description: The version of the decision.
         decisionDefinitionType:
-          $ref: '#/components/schemas/DecisionInstanceTypeEnum'
+          $ref: '#/components/schemas/DecisionDefinitionTypeEnum'
           description: The type of the decision.
         result:
           type: string
@@ -3842,7 +3842,7 @@ components:
           type: string
           description: The tenant ID of the decision instance.
 
-    DecisionInstanceTypeEnum:
+    DecisionDefinitionTypeEnum:
       enum:
         - DECISION_TABLE
         - LITERAL_EXPRESSION

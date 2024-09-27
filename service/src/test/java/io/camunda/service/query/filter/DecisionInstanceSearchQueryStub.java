@@ -13,8 +13,8 @@ import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.service.entities.DecisionInstanceEntity;
+import io.camunda.service.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceType;
 import io.camunda.service.util.StubbedCamundaSearchClient;
 import io.camunda.service.util.StubbedCamundaSearchClient.RequestStub;
 import java.util.List;
@@ -44,7 +44,7 @@ public class DecisionInstanceSearchQueryStub implements RequestStub<DecisionInst
             "123456",
             "dn",
             6,
-            DecisionInstanceType.DECISION_TABLE,
+            DecisionDefinitionType.DECISION_TABLE,
             "result");
 
     final var hit =

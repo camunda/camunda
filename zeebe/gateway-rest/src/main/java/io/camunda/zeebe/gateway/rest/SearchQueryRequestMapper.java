@@ -13,8 +13,8 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOW
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_ORDER;
 import static java.util.Optional.ofNullable;
 
+import io.camunda.service.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceType;
 import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.service.entities.IncidentEntity;
@@ -146,12 +146,13 @@ public final class SearchQueryRequestMapper {
           .ifPresent(builder::states);
       ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionKeys);
-      ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::dmnDecisionIds);
-      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::dmnDecisionNames);
-      ofNullable(filter.getDecisionDefinitionVersion()).ifPresent(builder::decisionVersions);
+      ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionDefinitionKeys);
+      ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
+      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::decisionDefinitionNames);
+      ofNullable(filter.getDecisionDefinitionVersion())
+          .ifPresent(builder::decisionDefinitionVersions);
       ofNullable(filter.getDecisionDefinitionType())
-          .map(t -> convertEnum(t, DecisionInstanceType.class))
+          .map(t -> convertEnum(t, DecisionDefinitionType.class))
           .ifPresent(builder::decisionTypes);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
@@ -169,10 +170,10 @@ public final class SearchQueryRequestMapper {
         case "state" -> builder.state();
         case "evaluationDate" -> builder.evaluationDate();
         case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "decisionKey" -> builder.decisionKey();
-        case "dmnDecisionId" -> builder.dmnDecisionId();
-        case "dmnDecisionName" -> builder.dmnDecisionName();
-        case "decisionVersion" -> builder.decisionVersion();
+        case "decisionKey" -> builder.decisionDefinitionKey();
+        case "dmnDecisionId" -> builder.decisionDefinitionId();
+        case "dmnDecisionName" -> builder.decisionDefinitionName();
+        case "decisionVersion" -> builder.decisionDefinitionVersion();
         case "decisionType" -> builder.decisionType();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
