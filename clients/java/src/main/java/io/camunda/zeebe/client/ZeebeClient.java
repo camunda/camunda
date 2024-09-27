@@ -1022,7 +1022,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    *   zeebeClient
    *   .newUserTaskGetRequest(userTaskKey)
-
    *   .send();
    *   </pre>
    *
