@@ -45,7 +45,9 @@ public class DecisionInstanceSearchQueryStub implements RequestStub<DecisionInst
             "dn",
             6,
             DecisionInstanceType.DECISION_TABLE,
-            "result");
+            "result",
+            null,
+            null);
 
     final var hit =
         new SearchQueryHit.Builder<DecisionInstanceEntity>()

@@ -40,7 +40,7 @@ public class DecisionRequirementsResultConfigTest {
 
     final var source = searchRequest.source();
     assertThat(source.sourceFilter().includes()).containsExactly("xml");
-    assertThat(source.sourceFilter().excludes()).isEmpty();
+    assertThat(source.sourceFilter().excludes()).isNull();
   }
 
   @Test
@@ -55,6 +55,6 @@ public class DecisionRequirementsResultConfigTest {
 
     final var source = searchRequest.source();
     assertThat(source.sourceFilter().excludes()).containsExactly("xml");
-    assertThat(source.sourceFilter().includes()).isEmpty();
+    assertThat(source.sourceFilter().includes()).isNull();
   }
 }

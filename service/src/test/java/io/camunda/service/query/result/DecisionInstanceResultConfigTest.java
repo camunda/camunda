@@ -40,7 +40,7 @@ class DecisionInstanceResultConfigTest {
 
     final var source = searchRequest.source();
     assertThat(source.sourceFilter().includes()).containsExactly("evaluatedInputs");
-    assertThat(source.sourceFilter().excludes()).isEmpty();
+    assertThat(source.sourceFilter().excludes()).isNull();
   }
 
   @Test
@@ -55,7 +55,7 @@ class DecisionInstanceResultConfigTest {
 
     final var source = searchRequest.source();
     assertThat(source.sourceFilter().excludes()).containsExactly("evaluatedOutputs");
-    assertThat(source.sourceFilter().includes()).isEmpty();
+    assertThat(source.sourceFilter().includes()).isNull();
   }
 
   @Test
@@ -71,6 +71,6 @@ class DecisionInstanceResultConfigTest {
     final var source = searchRequest.source();
     assertThat(source.sourceFilter().excludes())
         .containsExactly("evaluatedInputs", "evaluatedOutputs");
-    assertThat(source.sourceFilter().includes()).isEmpty();
+    assertThat(source.sourceFilter().includes()).isNull();
   }
 }

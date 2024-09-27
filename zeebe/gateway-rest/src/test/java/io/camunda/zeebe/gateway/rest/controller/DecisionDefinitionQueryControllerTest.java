@@ -380,7 +380,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
           "type": "about:blank",
           "title": "Bad Request",
           "status": 400,
-          "detail": "Failed to convert 'decisionKey' with value: 'invalidKey'",
+          "detail": "Failed to convert 'decisionDefinitionKey' with value: 'invalidKey'",
           "instance": "/v2/decision-definitions/invalidKey/xml"
         }""";
     webClient

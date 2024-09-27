@@ -7,7 +7,6 @@
  */
 package io.camunda.service;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -68,8 +67,7 @@ public class DecisionDefinitionServicesTest {
             SearchQueryRequest.of(
                 b ->
                     b.index("operate-decision-requirements-8.3.0_alias")
-                        .source(
-                            s -> s.filter(f -> f.includes(List.of("xml")).excludes(emptyList())))
+                        .source(s -> s.filter(f -> f.includes(List.of("xml"))))
                         .query(q -> q.term(t -> t.field("key").value(decisionRequirementsKey)))
                         .sort(s -> s.field(f -> f.field("key").asc()))),
             DecisionRequirementsEntity.class);

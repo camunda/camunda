@@ -8,12 +8,15 @@
 package io.camunda.service;
 
 import static io.camunda.service.search.query.SearchQueryBuilders.decisionInstanceSearchQuery;
+import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.entities.DecisionInstanceEntity;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.search.query.DecisionInstanceQuery;
 import io.camunda.service.search.query.SearchQueryResult;
+import io.camunda.service.search.result.DecisionInstanceQueryResultConfig;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
@@ -42,13 +45,53 @@ public final class DecisionInstanceServices
     return new DecisionInstanceServices(brokerClient, searchClient, transformers, authentication);
   }
 
+  /**
+   * Search for Decision Instances.
+   *
+   * <p>By default, evaluateInputs and evaluateOutputs are excluded from the returned Decision
+   * Instances.
+   */
   @Override
   public SearchQueryResult<DecisionInstanceEntity> search(final DecisionInstanceQuery query) {
-    return executor.search(query, DecisionInstanceEntity.class);
+    return baseSearch(
+        q ->
+            q.filter(query.filter())
+                .sort(query.sort())
+                .page(query.page())
+                .resultConfig(
+                    ofNullable(query.resultConfig()).orElseGet(() -> defaultSearchResultConfig())));
   }
 
-  public SearchQueryResult<DecisionInstanceEntity> search(
+  /**
+   * Get a Decision Instance by its key.
+   *
+   * @param decisionInstanceKey the key of the Decision Instance
+   * @return the Decision Instance
+   * @throws NotFoundException if the Decision Instance with the given key does not exist
+   * @throws CamundaServiceException if the Decision Instance with the given key exists more than
+   *     once
+   */
+  public DecisionInstanceEntity getByKey(final long decisionInstanceKey) {
+    final var result = baseSearch(q -> q.filter(f -> f.decisionInstanceKeys(decisionInstanceKey)));
+    if (result.total() < 1) {
+      throw new NotFoundException(
+          "Decision Instance with decisionInstanceKey=%d not found".formatted(decisionInstanceKey));
+    } else if (result.total() > 1) {
+      throw new CamundaServiceException(
+          String.format(
+              "Found Decision Definition with key %d more than once", decisionInstanceKey));
+    } else {
+      return result.items().stream().findFirst().orElseThrow();
+    }
+  }
+
+  private SearchQueryResult<DecisionInstanceEntity> baseSearch(
       final Function<DecisionInstanceQuery.Builder, ObjectBuilder<DecisionInstanceQuery>> fn) {
-    return search(decisionInstanceSearchQuery(fn));
+    return executor.search(decisionInstanceSearchQuery(fn), DecisionInstanceEntity.class);
+  }
+
+  private DecisionInstanceQueryResultConfig defaultSearchResultConfig() {
+    return DecisionInstanceQueryResultConfig.of(
+        r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude());
   }
 }
