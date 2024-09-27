@@ -11,10 +11,10 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import java.util.concurrent.CompletableFuture;
+import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,8 +40,9 @@ public class AuthorizationController {
       @PathVariable final long ownerKey,
       @RequestBody final AuthorizationPatchRequest authorizationPatchRequest) {
 
-    return RequestMapper.toAuthorizationPatchRequest(ownerKey, authorizationPatchRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::patchAuthorization);
+    //    return RequestMapper.toAuthorizationPatchRequest(ownerKey, authorizationPatchRequest)
+    //        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::patchAuthorization);
+    throw new NotImplementedException("Authorization patching is not yet implemented");
   }
 
   private CompletableFuture<ResponseEntity<Object>> patchAuthorization(
