@@ -29,7 +29,6 @@ public class FormImpl implements Form {
     formId = item.getBpmnId();
     version = item.getVersion();
     formKey = item.getKey();
-    ;
     schema = item.getSchema();
     tenantId = item.getTenantId();
   }
