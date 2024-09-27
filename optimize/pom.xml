@@ -78,7 +78,9 @@
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
 
-    <skipTests>false</skipTests>
+    <quickly>false</quickly>
+    <skipTests>${quickly}</skipTests>
+    <skip.docker>${skipTests}</skip.docker>
     <skip.unit.tests>${skipTests}</skip.unit.tests>
     <skip.docker>false</skip.docker>
     <docker.compose.file>docker-compose.yml</docker.compose.file>
@@ -602,10 +604,14 @@
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
         <configuration>
-          <header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</header>
-          <includes>
-            <include>**/*.java</include>
-          </includes>
+          <licenseSets>
+            <licenseSet>
+              <header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</header>
+              <includes>
+                <include>**/*.java</include>
+              </includes>
+            </licenseSet>
+          </licenseSets>
           <mapping>
             <java>SLASHSTAR_STYLE</java>
           </mapping>
