@@ -162,7 +162,8 @@ const EntityList = <D extends EntityData>({
       const entityTableData: (D & { id: string })[] = [];
 
       data?.forEach((dataset) => {
-        const id = dataset.id || dataset.key || (Date.now() + Math.random()).toString();
+        const id =
+          dataset.id || dataset.key || (Date.now() + Math.random()).toString();
         entityIndex[id] = dataset;
         entityTableData.push({ ...dataset, id });
       });
