@@ -102,6 +102,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.multipart.MultipartFile;
 
 public class RequestMapper {
@@ -419,10 +420,16 @@ public class RequestMapper {
 
     final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
 
-    if (requestAuthentication != null
-        && requestAuthentication.getPrincipal()
-            instanceof final CamundaUser authenticatedPrincipal) {
-      token.withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedPrincipal.getUserKey());
+    if (requestAuthentication != null) {
+
+      if (requestAuthentication.getPrincipal()
+          instanceof final CamundaUser authenticatedPrincipal) {
+        token.withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedPrincipal.getUserKey());
+      }
+
+      if (requestAuthentication instanceof final JwtAuthenticationToken jwtAuthenticationToken) {
+        jwtAuthenticationToken.getTokenAttributes().forEach(token::withClaim);
+      }
     }
 
     return new Builder().token(token.build()).tenants(authorizedTenants).build();

@@ -4,14 +4,14 @@ spring:
       client:
         registration:
           oidcclient:
-            client-id:
-            client-secret:
+            client-id: oidcclient2
+            client-secret: "secret2"
             authorization-grant-type: authorization_code
-            redirect-uri:
+            redirect-uri: http://localhost:8080/login/oauth2/code/oidcclient2
             provider: oidcclient
             scope:
               - "openid"
               - "profile"
         provider:
           oidcclient:
-            issuer-uri:
+            issuer-uri: http://auth.identity:9000
