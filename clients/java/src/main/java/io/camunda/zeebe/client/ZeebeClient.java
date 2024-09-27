@@ -1040,7 +1040,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   /**
    * Gets a user task form by key.
    *
-   *
    * <pre>
    *   long userTaskKey = ...;
    *
