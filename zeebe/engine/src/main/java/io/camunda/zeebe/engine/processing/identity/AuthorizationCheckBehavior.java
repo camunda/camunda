@@ -80,6 +80,10 @@ public final class AuthorizationCheckBehavior {
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
       final Map<String, String> requiredResourceIdentifiers) {
+    if (!engineConfig.isEnableAuthorization()) {
+      return true;
+    }
+
     final var userKey = (Long) command.getAuthorizations().get(Authorization.AUTHORIZED_USER_KEY);
     if (userKey == null) {
       return false;
@@ -92,12 +96,6 @@ public final class AuthorizationCheckBehavior {
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
       final Map<String, String> requiredResourceIdentifiers) {
-
-    // If authorization is disabled, everyone is authorized
-    if (!engineConfig.isEnableAuthorization()) {
-      return true;
-    }
-
     final var userOptional = userState.getUser(userKey);
     if (userOptional.isEmpty()) {
       return false;
