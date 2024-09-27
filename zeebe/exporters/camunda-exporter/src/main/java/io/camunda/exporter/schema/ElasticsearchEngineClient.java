@@ -250,7 +250,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   private InputStream getResourceAsStream(final String classpathFileName) {
-    return Thread.currentThread().getContextClassLoader().getResourceAsStream(classpathFileName);
+    return getClass().getResourceAsStream(classpathFileName);
   }
 
   private PutIndexTemplateRequest putIndexTemplateRequest(
