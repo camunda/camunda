@@ -47,7 +47,7 @@ public class SegmentedJournalBuilder {
 
   private JournalMetaStore journalMetaStore;
 
-  protected SegmentedJournalBuilder() {}
+  SegmentedJournalBuilder() {}
 
   /**
    * Sets the storage name.
