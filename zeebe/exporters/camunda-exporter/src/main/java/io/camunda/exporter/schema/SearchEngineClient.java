@@ -11,6 +11,7 @@ import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
 import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,7 +34,7 @@ public interface SearchEngineClient {
       final String namePattern, final MappingSource mappingSource);
 
   void putSettings(
-      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings);
+      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings);
 
   void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge);
 }

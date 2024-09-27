@@ -183,7 +183,7 @@ public class ElasticsearchEngineClientIT {
     elsEngineClient.createIndex(index);
 
     final Map<String, String> newSettings = Map.of("index.lifecycle.name", "test");
-    elsEngineClient.putSettings(index, newSettings);
+    elsEngineClient.putSettings(List.of(index), newSettings);
 
     final var indices = elsClient.indices().get(req -> req.index("index_name"));
 

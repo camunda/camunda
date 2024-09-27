@@ -28,6 +28,7 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -124,14 +125,15 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putSettings(
-      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings) {
-    final var request = putIndexSettingsRequest(indexDescriptor, toAppendSettings);
+      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
+    final var request = putIndexSettingsRequest(indexDescriptors, toAppendSettings);
 
     try {
       client.indices().putSettings(request);
     } catch (final IOException e) {
       final var errMsg =
-          String.format("Index [%s] settings PUT failed", indexDescriptor.getFullQualifiedName());
+          String.format(
+              "settings PUT failed for the following indices [%s]", listIndices(indexDescriptors));
       LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
     }
@@ -151,22 +153,28 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   private PutIndicesSettingsRequest putIndexSettingsRequest(
-      final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings) {
+      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
     try (final var settingsStream =
         IOUtils.toInputStream(
             MAPPER.writeValueAsString(toAppendSettings), StandardCharsets.UTF_8)) {
 
       return new PutIndicesSettingsRequest.Builder()
-          .index(indexDescriptor.getFullQualifiedName())
+          .index(listIndices(indexDescriptors))
           .withJson(settingsStream)
           .build();
     } catch (final IOException e) {
       throw new ElasticsearchExporterException(
           String.format(
-              "Failed to serialise settings in PutSettingsRequest for index %s",
-              indexDescriptor.getFullQualifiedName()),
+              "Failed to serialise settings in PutSettingsRequest for indices %s",
+              listIndices(indexDescriptors)),
           e);
     }
+  }
+
+  private String listIndices(final List<IndexDescriptor> indexDescriptors) {
+    return indexDescriptors.stream()
+        .map(IndexDescriptor::getFullQualifiedName)
+        .collect(Collectors.joining(", "));
   }
 
   public PutLifecycleRequest putLifecycleRequest(
