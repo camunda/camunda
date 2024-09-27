@@ -71,6 +71,10 @@ public final class Protocol {
   /** Prefix for key of reserved task headers */
   public static final String RESERVED_HEADER_NAME_PREFIX = "io.camunda.zeebe:";
 
+  /** Task header key used for user tasks to contain user task key */
+  public static final String USER_TASK_KEY_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "userTaskKey";
+
   /** Task header key used for user tasks to contain form key from BPMN XML */
   public static final String USER_TASK_FORM_KEY_HEADER_NAME =
       RESERVED_HEADER_NAME_PREFIX + "formKey";

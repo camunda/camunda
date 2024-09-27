@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.usertask;
+package io.camunda.zeebe.client.api.worker.usertask;
 
 import io.camunda.zeebe.client.ZeebeClient;
 
 /** Implementations MUST be thread-safe. */
 @FunctionalInterface
-public interface UserTaskListenerHandler {
+public interface UserTaskListenerJobHandler {
   /**
    * Handles a task listener job. Implements the work to be done whenever a job of a certain type is
    * received.

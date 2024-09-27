@@ -61,7 +61,6 @@ import io.camunda.zeebe.client.api.search.query.FlownodeInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.IncidentQuery;
 import io.camunda.zeebe.client.api.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.UserTaskQuery;
-import io.camunda.zeebe.client.api.usertask.UserTaskListenerWorkerBuilderStep1;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.AddPermissionsCommandImpl;
@@ -103,7 +102,6 @@ import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import io.camunda.zeebe.client.impl.worker.JobClientImpl;
 import io.camunda.zeebe.client.impl.worker.JobWorkerBuilderImpl;
-import io.camunda.zeebe.client.impl.worker.UserTaskListenerWorkerBuilderImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.grpc.CallCredentials;
@@ -479,12 +477,6 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public JobWorkerBuilderStep1 newWorker() {
     return new JobWorkerBuilderImpl(config, jobClient, executorResource.executor(), closeables);
-  }
-
-  @Override
-  public UserTaskListenerWorkerBuilderStep1 newUserTaskListenerWorker() {
-    return new UserTaskListenerWorkerBuilderImpl(
-        config, jobClient, executorResource.executor(), closeables);
   }
 
   @Override

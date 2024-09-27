@@ -32,7 +32,9 @@ import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobs
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.api.worker.JobClient;
+import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
+import io.camunda.zeebe.client.api.worker.usertask.UserTaskListenerJobHandler;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import java.io.Closeable;
 import java.io.IOException;
@@ -84,7 +86,7 @@ class JobWorkerBuilderImplTest {
             () ->
                 jobWorkerBuilder
                     .jobType("some-type")
-                    .handler(mock())
+                    .handler(mock(JobHandler.class))
                     .timeout(Duration.ofSeconds(5).negated())
                     .open())
         // then
@@ -98,7 +100,11 @@ class JobWorkerBuilderImplTest {
     // when
     assertThatThrownBy(
             () ->
-                jobWorkerBuilder.jobType("some-type").handler(mock()).timeout(Duration.ZERO).open())
+                jobWorkerBuilder
+                    .jobType("some-type")
+                    .handler(mock(JobHandler.class))
+                    .timeout(Duration.ZERO)
+                    .open())
         // then
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("timeout must be not zero");
@@ -206,7 +212,7 @@ class JobWorkerBuilderImplTest {
     // when
     jobWorkerBuilder
         .jobType("some-type")
-        .handler(mock())
+        .handler(mock(JobHandler.class))
         .timeout(Duration.ofSeconds(5))
         .name("worker")
         .maxJobsActive(30)
@@ -237,7 +243,7 @@ class JobWorkerBuilderImplTest {
     // when
     jobWorkerBuilder
         .jobType("some-type")
-        .handler(mock())
+        .handler(mock(JobHandler.class))
         .timeout(Duration.ofSeconds(5))
         .name("worker")
         .maxJobsActive(30)
@@ -306,6 +312,23 @@ class JobWorkerBuilderImplTest {
     // then
     await(
         () -> assertThat(tenantIdCaptor.getValue()).containsExactlyInAnyOrder("1", "2", "3", "4"));
+  }
+
+  @Test
+  void shouldThrowErrorIfTimeoutIsZeroOnTaskListenerJob() {
+    // given
+    // when
+    assertThatThrownBy(
+            () ->
+                jobWorkerBuilder
+                    .jobType("some-type")
+                    .handler(mock(UserTaskListenerJobHandler.class))
+                    .eventType("complete")
+                    .timeout(Duration.ofSeconds(5).negated())
+                    .open())
+        // then
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("timeout must be not negative");
   }
 
   private void await(final ThrowingRunnable throwingRunnable) {

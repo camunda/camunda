@@ -28,7 +28,10 @@ import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
+import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.UserTaskListenerJobWorkerBuilderStep3;
 import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
+import io.camunda.zeebe.client.api.worker.usertask.UserTaskListenerJob;
+import io.camunda.zeebe.client.api.worker.usertask.UserTaskListenerJobHandler;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -36,18 +39,25 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class JobWorkerBuilderImpl
-    implements JobWorkerBuilderStep1, JobWorkerBuilderStep2, JobWorkerBuilderStep3 {
+    implements JobWorkerBuilderStep1,
+        JobWorkerBuilderStep2,
+        JobWorkerBuilderStep3,
+        UserTaskListenerJobWorkerBuilderStep3 {
 
   public static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
       BackoffSupplier.newBackoffBuilder().build();
   public static final Duration DEFAULT_STREAMING_TIMEOUT = Duration.ofHours(8);
+  private static final Logger LOGGER = LoggerFactory.getLogger(JobWorkerBuilderImpl.class);
   private final JobClient jobClient;
   private final ScheduledExecutorService executorService;
   private final List<Closeable> closeables;
   private String jobType;
   private JobHandler handler;
+  private UserTaskListenerJobHandler userTaskListenerJobHandler;
   private Duration timeout;
   private String workerName;
   private int maxJobsActive;
@@ -60,6 +70,9 @@ public final class JobWorkerBuilderImpl
   private boolean enableStreaming;
   private Duration streamingTimeout;
   private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
+
+  // TODO: we might want to use the enum in the future
+  private String eventType;
 
   public JobWorkerBuilderImpl(
       final ZeebeClientConfiguration configuration,
@@ -91,6 +104,20 @@ public final class JobWorkerBuilderImpl
   @Override
   public JobWorkerBuilderStep3 handler(final JobHandler handler) {
     this.handler = handler;
+    userTaskListenerJobHandler = null;
+    return this;
+  }
+
+  @Override
+  public UserTaskListenerJobWorkerBuilderStep3 handler(final UserTaskListenerJobHandler handler) {
+    this.handler = null;
+    userTaskListenerJobHandler = handler;
+    return this;
+  }
+
+  @Override
+  public JobWorkerBuilderStep3 eventType(final String eventType) {
+    this.eventType = eventType;
     return this;
   }
 
@@ -167,10 +194,81 @@ public final class JobWorkerBuilderImpl
   @Override
   public JobWorker open() {
     ensureNotNullNorEmpty("jobType", jobType);
-    ensureNotNull("jobHandler", handler);
     ensurePositive("timeout", timeout);
     ensureNotNullNorEmpty("workerName", workerName);
     ensureGreaterThan("maxJobsActive", maxJobsActive, 0);
+
+    if (userTaskListenerJobHandler != null) {
+      handler =
+          (client, job) -> {
+            // TODO : we should filter by eventType, such as: complete, start, end. Please check
+            // JobRecord class.
+            // TODO: improve info message
+            if (!job.getJobListenerEventType().equals(eventType)) {
+              LOGGER.info(
+                  "Expected event type: {}, actual event type: {}.",
+                  eventType,
+                  job.getJobListenerEventType());
+              return;
+            }
+
+            // TODO: verify if protocol can be accessed from here in order to retrieve properties
+            // TODO: keys, ex. by adding dependency on protocol module.
+            final long userTaskKey =
+                Long.parseLong(job.getCustomHeaders().get("io.camunda.zeebe:userTaskKey"));
+
+            final String assignee = job.getCustomHeaders().get("io.camunda.zeebe:assignee");
+            final String candidateGroups =
+                job.getCustomHeaders().get("io.camunda.zeebe:candidateGroups");
+            final String candidateUsers =
+                job.getCustomHeaders().get("io.camunda.zeebe:candidateUsers");
+            final String dueDate = job.getCustomHeaders().get("io.camunda.zeebe:dueDate");
+            final String followUpDate = job.getCustomHeaders().get("io.camunda.zeebe:followUpDate");
+            final String formKey = job.getCustomHeaders().get("io.camunda.zeebe:formKey");
+
+            final UserTaskListenerJob listenerJob =
+                new UserTaskListenerJob() {
+                  @Override
+                  public long getUserTaskKey() {
+                    return userTaskKey;
+                  }
+
+                  @Override
+                  public String getAssignee() {
+                    return assignee;
+                  }
+
+                  @Override
+                  public String getCandidateGroups() {
+                    return candidateGroups;
+                  }
+
+                  @Override
+                  public String getCandidateUsers() {
+                    return candidateUsers;
+                  }
+
+                  @Override
+                  public String getDueDate() {
+                    return dueDate;
+                  }
+
+                  @Override
+                  public String getFollowUpDate() {
+                    return followUpDate;
+                  }
+
+                  @Override
+                  public String getFormKey() {
+                    return formKey;
+                  }
+                };
+
+            userTaskListenerJobHandler.handle(listenerJob);
+          };
+    }
+
+    ensureNotNull("jobHandler", handler);
 
     final JobStreamer jobStreamer;
     final JobRunnableFactory jobRunnableFactory = new JobRunnableFactoryImpl(jobClient, handler);

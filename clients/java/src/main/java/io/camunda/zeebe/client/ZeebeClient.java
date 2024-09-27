@@ -49,7 +49,6 @@ import io.camunda.zeebe.client.api.search.query.FlownodeInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.IncidentQuery;
 import io.camunda.zeebe.client.api.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.UserTaskQuery;
-import io.camunda.zeebe.client.api.usertask.UserTaskListenerWorkerBuilderStep1;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
@@ -477,14 +476,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the worker registration
    */
   JobWorkerBuilderStep1 newWorker();
-
-  /**
-   * Registers a new Task Listener job worker for jobs of a given type.
-   *
-   * @return a builder for the task listener
-   */
-  // TODO: add example of usage to the java docs
-  UserTaskListenerWorkerBuilderStep1 newUserTaskListenerWorker();
 
   /**
    * Command to delete a resource.
