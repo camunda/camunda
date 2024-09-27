@@ -15,7 +15,6 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,6 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,8 +53,7 @@ public class ElasticsearchBackupRepositoryTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private OperateProperties operateProperties;
 
-  @InjectMocks
-  private ElasticsearchBackupRepository backupRepository = spy(new ElasticsearchBackupRepository());
+  @InjectMocks @Spy private ElasticsearchBackupRepository backupRepository;
 
   @Test
   public void testWaitingForSnapshotWithTimeout() {
