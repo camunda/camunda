@@ -20,6 +20,7 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -37,6 +38,7 @@ class CreateUserTest {
   }
 
   @Test
+  @Disabled("Feature is disabled for 8.6 as the feature releases in 8.7")
   void shouldCreateUser() {
     // when
     final var response =
@@ -61,6 +63,7 @@ class CreateUserTest {
   }
 
   @Test
+  @Disabled("Feature is disabled for 8.6 as the feature releases in 8.7")
   void shouldRejectIfUsernameAlreadyExists() {
     // given
     client
@@ -89,6 +92,7 @@ class CreateUserTest {
   }
 
   @Test
+  @Disabled("Feature is disabled for 8.6 as the feature releases in 8.7")
   void shouldRejectIfMissingUsername() {
     // when / then
     assertThatThrownBy(

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.apache.logging.log4j.util.Base64Util;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -82,6 +83,7 @@ public class BasicAuthIT {
   }
 
   @Test
+  @Disabled("Feature is disabled for 8.6 as the feature releases in 8.7")
   void basicAuthWithValidCredentials() throws Exception {
     final MockHttpServletRequestBuilder request =
         MockMvcRequestBuilders.post("/v2/users")
@@ -96,6 +98,7 @@ public class BasicAuthIT {
   }
 
   @Test
+  @Disabled("Feature is disabled for 8.6 as the feature releases in 8.7")
   void basicAuthWithNoCredentials() throws Exception {
     final MockHttpServletRequestBuilder request =
         MockMvcRequestBuilders.post("/v2/users")
@@ -106,6 +109,7 @@ public class BasicAuthIT {
   }
 
   @Test
+  @Disabled("Feature is disabled for 8.6 as the feature releases in 8.7")
   void basicAuthWithBadCredentials() throws Exception {
     final MockHttpServletRequestBuilder request =
         MockMvcRequestBuilders.post("/v2/users")
