@@ -37,7 +37,7 @@ jobs:
     name: Execute Release
     runs-on: gcp-core-4-release
     permissions:
-      contents: 'read'
+      contents: 'write'
       id-token: 'write'
     env:
       DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
