@@ -89,6 +89,9 @@ final class CamundaExporterIT {
     testClient.indices().delete(req -> req.index("*"));
     testClient.indices().deleteIndexTemplate(req -> req.name("*"));
 
+    config.elasticsearch.setCreateSchema(false);
+    config.elasticsearch.getRetention().setEnabled(false);
+
     indexTemplate =
         SchemaTestUtil.mockIndexTemplate(
             "template_name",
@@ -286,8 +289,8 @@ final class CamundaExporterIT {
   @Test
   void shouldCreateLifeCyclePoliciesOnStartupIfEnabled() throws IOException {
     config.elasticsearch.setCreateSchema(true);
-    config.elasticsearch.setRetention(true);
-    config.elasticsearch.setIlmPolicyName("policy_name");
+    config.elasticsearch.getRetention().setEnabled(true);
+    config.elasticsearch.getRetention().setPolicyName("policy_name");
 
     startExporter();
 
@@ -299,8 +302,8 @@ final class CamundaExporterIT {
   @Test
   void shouldNotCreateLifeCyclePoliciesIfDisabled() throws IOException {
     config.elasticsearch.setCreateSchema(true);
-    config.elasticsearch.setRetention(false);
-    config.elasticsearch.setIlmPolicyName("not_created_policy");
+    config.elasticsearch.getRetention().setEnabled(false);
+    config.elasticsearch.getRetention().setPolicyName("not_created_policy");
 
     startExporter();
     final var policies = testClient.ilm().getLifecycle();
@@ -311,8 +314,8 @@ final class CamundaExporterIT {
   @Test
   void shouldSetLifecyclePolicyOnCreatedIndices() throws IOException {
     config.elasticsearch.setCreateSchema(true);
-    config.elasticsearch.setRetention(true);
-    config.elasticsearch.setIlmPolicyName("policy_name");
+    config.elasticsearch.getRetention().setEnabled(true);
+    config.elasticsearch.getRetention().setPolicyName("policy_name");
 
     startExporter();
 

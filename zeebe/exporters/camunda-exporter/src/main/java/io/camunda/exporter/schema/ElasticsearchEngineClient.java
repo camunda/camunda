@@ -174,7 +174,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   private String listIndices(final List<IndexDescriptor> indexDescriptors) {
     return indexDescriptors.stream()
         .map(IndexDescriptor::getFullQualifiedName)
-        .collect(Collectors.joining(", "));
+        .collect(Collectors.joining(","));
   }
 
   public PutLifecycleRequest putLifecycleRequest(

@@ -22,32 +22,14 @@ public class ElasticsearchProperties {
   private IndexSettings defaultSettings = new IndexSettings();
   private Map<String, Integer> replicasByIndexName = new HashMap<>();
   private Map<String, Integer> shardsByIndexName = new HashMap<>();
-  private boolean retention;
-  private String ilmMinDeletionAge = "30d";
-  private String ilmPolicyName;
+  private RetentionConfiguration retention = new RetentionConfiguration();
 
-  public String getIlmPolicyName() {
-    return ilmPolicyName;
-  }
-
-  public void setIlmPolicyName(final String ilmPolicyName) {
-    this.ilmPolicyName = ilmPolicyName;
-  }
-
-  public boolean isRetention() {
+  public RetentionConfiguration getRetention() {
     return retention;
   }
 
-  public void setRetention(final boolean retention) {
+  public void setRetention(final RetentionConfiguration retention) {
     this.retention = retention;
-  }
-
-  public String getIlmMinDeletionAge() {
-    return ilmMinDeletionAge;
-  }
-
-  public void setIlmMinDeletionAge(final String ilmMinDeletionAge) {
-    this.ilmMinDeletionAge = ilmMinDeletionAge;
   }
 
   public String getIndexPrefix() {
@@ -152,6 +134,36 @@ public class ElasticsearchProperties {
 
     public void setNumberOfReplicas(final Integer numberOfReplicas) {
       this.numberOfReplicas = numberOfReplicas;
+    }
+  }
+
+  public static final class RetentionConfiguration {
+    private boolean enabled = false;
+    private String mininumAge = "30d";
+    private String policyName;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getMininumAge() {
+      return mininumAge;
+    }
+
+    public void setMininumAge(final String mininumAge) {
+      this.mininumAge = mininumAge;
+    }
+
+    public String getPolicyName() {
+      return policyName;
+    }
+
+    public void setPolicyName(final String policyName) {
+      this.policyName = policyName;
     }
   }
 }
