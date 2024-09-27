@@ -52,7 +52,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 
 @WebMvcTest(AuthorizationController.class)
-@Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
 public class AuthorizationControllerTest extends RestControllerTest {
   @MockBean private AuthorizationServices<AuthorizationRecord> authorizationServices;
 
@@ -63,6 +62,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   }
 
   @Test
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
   void patchAuthorizationShouldReturnNoContent() {
     final var ownerKey = 1L;
     final var action = ActionEnum.ADD;
@@ -113,6 +113,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   }
 
   @Test
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
   void patchAuthorizationThrowsExceptionWhenServiceThrowsException() {
     final var ownerKey = 1L;
     final var action = ActionEnum.ADD;
@@ -155,6 +156,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("provideInvalidRequests")
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
   public void patchAuthorizationShouldReturnBadRequest(
       final AuthorizationPatchRequest request, final String errorMessage) {
     final var ownerKey = 1L;
@@ -162,6 +164,39 @@ public class AuthorizationControllerTest extends RestControllerTest {
     expectedBody.setTitle(INVALID_ARGUMENT.name());
     expectedBody.setInstance(URI.create("/v2/authorizations/%d".formatted(ownerKey)));
     expectedBody.setDetail(errorMessage);
+
+    webClient
+        .post()
+        .uri("/v2/authorizations/%d".formatted(ownerKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  void patchAuthorizationTShouldNotBeImplemented() {
+    final var ownerKey = 1L;
+    final var action = ActionEnum.ADD;
+    final var resourceIds = List.of("permission1", "permission2");
+    final var permissions =
+        new AuthorizationPatchRequestPermissionsInner()
+            .permissionType(PermissionTypeEnum.CREATE)
+            .resourceIds(resourceIds);
+    final var request =
+        new AuthorizationPatchRequest()
+            .action(action)
+            .resourceType(ResourceTypeEnum.DEPLOYMENT)
+            .permissions(List.of(permissions));
+
+    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    expectedBody.setTitle("Bad Request");
+    expectedBody.setInstance(URI.create("/v2/authorizations/%d".formatted(ownerKey)));
+    expectedBody.setDetail("Authorization patching is not yet implemented");
 
     webClient
         .post()
