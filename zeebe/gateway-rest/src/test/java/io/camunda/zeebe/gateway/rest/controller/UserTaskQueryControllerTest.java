@@ -108,7 +108,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   private static final String FORM_ITEM_JSON =
       """
       {
-        "key": 0,
+        "formKey": 0,
         "tenantId": "tenant-1",
         "bpmnId": "bpmn-1",
         "schema": "schema",
