@@ -15,17 +15,13 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
-import io.camunda.process.test.impl.containers.OperateContainer;
-import io.camunda.process.test.impl.containers.TasklistContainer;
-import io.camunda.process.test.impl.containers.ZeebeContainer;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -34,30 +30,23 @@ public class CamundaContainerRuntime implements AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaContainerRuntime.class);
 
-  private static final String NETWORK_ALIAS_ZEEBE = "zeebe";
+  private static final String NETWORK_ALIAS_CAMUNDA = "camunda";
   private static final String NETWORK_ALIAS_ELASTICSEARCH = "elasticsearch";
-  private static final String NETWORK_ALIAS_OPERATE = "operate";
-  private static final String NETWORK_ALIAS_TASKLIST = "tasklist";
   private static final String NETWORK_ALIAS_CONNECTORS = "connectors";
 
   private static final String ELASTICSEARCH_URL =
       "http://" + NETWORK_ALIAS_ELASTICSEARCH + ":" + ContainerRuntimePorts.ELASTICSEARCH_REST_API;
 
-  private static final String ZEEBE_GRPC_API =
-      NETWORK_ALIAS_ZEEBE + ":" + ContainerRuntimePorts.ZEEBE_GATEWAY_API;
-  private static final String ZEEBE_REST_API =
-      NETWORK_ALIAS_ZEEBE + ":" + ContainerRuntimePorts.ZEEBE_REST_API;
-
-  private static final String OPERATE_REST_API =
-      "http://" + NETWORK_ALIAS_OPERATE + ":" + ContainerRuntimePorts.OPERATE_REST_API;
+  private static final String CAMUNDA_GRPC_API =
+      NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
+  private static final String CAMUNDA_REST_API =
+      "http://" + NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_REST_API;
 
   private final ContainerFactory containerFactory;
 
   private final Network network;
-  private final ZeebeContainer zeebeContainer;
+  private final CamundaContainer camundaContainer;
   private final ElasticsearchContainer elasticsearchContainer;
-  private final OperateContainer operateContainer;
-  private final TasklistContainer tasklistContainer;
   private final ConnectorsContainer connectorsContainer;
 
   private final boolean connectorsEnabled;
@@ -69,9 +58,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
     network = Network.newNetwork();
 
     elasticsearchContainer = createElasticsearchContainer(network, builder);
-    zeebeContainer = createZeebeContainer(network, builder);
-    operateContainer = createOperateContainer(network, builder);
-    tasklistContainer = createTasklistContainer(network, builder);
+    camundaContainer = createCamundaContainer(network, builder);
     connectorsContainer = createConnectorsContainer(network, builder);
   }
 
@@ -93,57 +80,19 @@ public class CamundaContainerRuntime implements AutoCloseable {
     return container;
   }
 
-  private ZeebeContainer createZeebeContainer(
+  private CamundaContainer createCamundaContainer(
       final Network network, final CamundaContainerRuntimeBuilder builder) {
-    final ZeebeContainer container =
+    final CamundaContainer container =
         containerFactory
-            .createZeebeContainer(
-                builder.getZeebeDockerImageName(), builder.getZeebeDockerImageVersion())
-            .withLogConsumer(createContainerLogger(builder.getZeebeLoggerName()))
+            .createCamundaContainer(
+                builder.getCamundaDockerImageName(), builder.getCamundaDockerImageVersion())
+            .withLogConsumer(createContainerLogger(builder.getCamundaLoggerName()))
             .withNetwork(network)
-            .withNetworkAliases(NETWORK_ALIAS_ZEEBE)
-            .withElasticsearchExporter(ELASTICSEARCH_URL)
-            .withEnv(builder.getZeebeEnvVars());
-
-    builder.getZeebeExposedPorts().forEach(container::addExposedPort);
-
-    return container;
-  }
-
-  private OperateContainer createOperateContainer(
-      final Network network, final CamundaContainerRuntimeBuilder builder) {
-    final OperateContainer container =
-        containerFactory
-            .createOperateContainer(
-                ContainerRuntimeDefaults.OPERATE_DOCKER_IMAGE_NAME,
-                builder.getOperateDockerImageVersion())
-            .withLogConsumer(createContainerLogger(builder.getOperateLoggerName()))
-            .withNetwork(network)
-            .withNetworkAliases(NETWORK_ALIAS_OPERATE)
-            .withZeebeGrpcApi(ZEEBE_GRPC_API)
+            .withNetworkAliases(NETWORK_ALIAS_CAMUNDA)
             .withElasticsearchUrl(ELASTICSEARCH_URL)
-            .withEnv(builder.getOperateEnvVars());
+            .withEnv(builder.getCamundaEnvVars());
 
-    builder.getOperateExposedPorts().forEach(container::addExposedPort);
-
-    return container;
-  }
-
-  private TasklistContainer createTasklistContainer(
-      final Network network, final CamundaContainerRuntimeBuilder builder) {
-    final TasklistContainer container =
-        containerFactory
-            .createTasklistContainer(
-                ContainerRuntimeDefaults.TASKLIST_DOCKER_IMAGE_NAME,
-                builder.getTasklistDockerImageVersion())
-            .withLogConsumer(createContainerLogger(builder.getTasklistLoggerName()))
-            .withNetwork(network)
-            .withNetworkAliases(NETWORK_ALIAS_TASKLIST)
-            .withZeebeApi(ZEEBE_GRPC_API, ZEEBE_REST_API)
-            .withElasticsearchUrl(ELASTICSEARCH_URL)
-            .withEnv(builder.getTasklistEnvVars());
-
-    builder.getTasklistExposedPorts().forEach(container::addExposedPort);
+    builder.getCamundaExposedPorts().forEach(container::addExposedPort);
 
     return container;
   }
@@ -157,8 +106,8 @@ public class CamundaContainerRuntime implements AutoCloseable {
             .withLogConsumer(createContainerLogger(builder.getConnectorsLoggerName()))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_CONNECTORS)
-            .withZeebeGrpcApi(ZEEBE_GRPC_API)
-            .withOperateApi(OPERATE_REST_API)
+            .withZeebeGrpcApi(CAMUNDA_GRPC_API)
+            .withOperateApi(CAMUNDA_REST_API)
             .withEnv(builder.getConnectorsSecrets())
             .withEnv(builder.getConnectorsEnvVars());
 
@@ -172,9 +121,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
     final Instant startTime = Instant.now();
 
     elasticsearchContainer.start();
-    Stream.of(zeebeContainer, operateContainer, tasklistContainer)
-        .parallel()
-        .forEach(GenericContainer::start);
+    camundaContainer.start();
 
     if (connectorsEnabled) {
       connectorsContainer.start();
@@ -185,20 +132,12 @@ public class CamundaContainerRuntime implements AutoCloseable {
     LOGGER.info("Camunda container runtime started in {}", startupTime);
   }
 
-  public ZeebeContainer getZeebeContainer() {
-    return zeebeContainer;
+  public CamundaContainer getCamundaContainer() {
+    return camundaContainer;
   }
 
   public ElasticsearchContainer getElasticsearchContainer() {
     return elasticsearchContainer;
-  }
-
-  public OperateContainer getOperateContainer() {
-    return operateContainer;
-  }
-
-  public TasklistContainer getTasklistContainer() {
-    return tasklistContainer;
   }
 
   public ConnectorsContainer getConnectorsContainer() {
@@ -214,10 +153,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
       connectorsContainer.stop();
     }
 
-    Stream.of(zeebeContainer, operateContainer, tasklistContainer)
-        .parallel()
-        .forEach(GenericContainer::stop);
-
+    camundaContainer.stop();
     elasticsearchContainer.stop();
     network.close();
 

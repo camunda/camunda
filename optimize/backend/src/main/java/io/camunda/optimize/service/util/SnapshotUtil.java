@@ -12,15 +12,12 @@ import static io.camunda.optimize.service.metadata.Version.VERSION;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@UtilityClass
 public class SnapshotUtil {
-  public static final String REPOSITORY_MISSING_EXCEPTION_TYPE =
-      "type=repository_missing_exception";
-  public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "type=snapshot_missing_exception";
+  public static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
+  public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "snapshot_missing_exception";
   private static final String COMPONENT_PREFIX = "camunda_optimize_";
   private static final String SNAPSHOT_PREFIX =
       "{componentPrefix}{backupId}_"; // trailing underscore required to avoid
@@ -49,14 +46,14 @@ public class SnapshotUtil {
   }
 
   public static Long getBackupIdFromSnapshotName(final String snapshotName) {
-    Pattern pattern = Pattern.compile("^" + COMPONENT_PREFIX + "(\\d+)_.*$");
-    Matcher matcher = pattern.matcher(snapshotName);
+    final Pattern pattern = Pattern.compile("^" + COMPONENT_PREFIX + "(\\d+)_.*$");
+    final Matcher matcher = pattern.matcher(snapshotName);
 
     if (matcher.find()) {
-      String numberStr = matcher.group(1);
+      final String numberStr = matcher.group(1);
       try {
         return Long.parseLong(numberStr);
-      } catch (NumberFormatException e) {
+      } catch (final NumberFormatException e) {
         final String msg =
             String.format(
                 "Cannot retrieve backupID from snapshot [%s] because the found backupID is not a valid integer.",

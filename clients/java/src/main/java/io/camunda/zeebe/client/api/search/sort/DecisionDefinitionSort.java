@@ -20,19 +20,19 @@ import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRe
 public interface DecisionDefinitionSort extends SearchRequestSort<DecisionDefinitionSort> {
 
   /** Sort by decision key. */
-  DecisionDefinitionSort decisionKey();
+  DecisionDefinitionSort decisionDefinitionKey();
 
   /** Sort by dmn decision id. */
-  DecisionDefinitionSort dmnDecisionId();
+  DecisionDefinitionSort decisionDefinitionId();
 
   /** Sort by dmn decision name. */
-  DecisionDefinitionSort dmnDecisionName();
+  DecisionDefinitionSort decisionDefinitionName();
 
   /** Sort by version. */
-  DecisionDefinitionSort version();
+  DecisionDefinitionSort decisionDefinitionVersion();
 
   /** Sort by dmn decision requirements id. */
-  DecisionDefinitionSort dmnDecisionRequirementsId();
+  DecisionDefinitionSort decisionRequirementsId();
 
   /** Sort by decision requirements key. */
   DecisionDefinitionSort decisionRequirementsKey();

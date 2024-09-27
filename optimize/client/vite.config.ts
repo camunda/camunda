@@ -6,16 +6,46 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {defineConfig, transformWithEsbuild} from 'vite';
+import {type PluginOption, defineConfig, transformWithEsbuild} from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
-import {readdirSync} from 'fs';
+import {readdirSync} from 'node:fs';
+import license from 'rollup-plugin-license';
+import path from 'node:path';
 
-export default defineConfig({
+export default defineConfig(({mode}) => ({
   base: '',
   build: {
     // The backend only allow public resources inside the static folder
     assetsDir: 'static',
+    rollupOptions: {
+      plugins: license({
+        thirdParty: {
+          output:
+            mode === 'sbom'
+              ? {
+                  file: path.join(__dirname, 'dist', 'dependencies.json'),
+                  encoding: 'utf-8',
+                  template(dependencies) {
+                    return JSON.stringify(
+                      dependencies.map(({name, version, license}) => ({
+                        name,
+                        version,
+                        license,
+                      })),
+                      null,
+                      2
+                    );
+                  },
+                }
+              : path.resolve(__dirname, './dist/static/vendor.LICENSE.txt'),
+        },
+      }) as PluginOption,
+    },
+  },
+  esbuild: {
+    banner: '/*! licenses: /static/vendor.LICENSE.txt */',
+    legalComments: 'none',
   },
   plugins: [
     {
@@ -77,7 +107,7 @@ export default defineConfig({
       },
     },
   },
-});
+}));
 
 // Function to generate aliases dynamically
 function generateAliases() {

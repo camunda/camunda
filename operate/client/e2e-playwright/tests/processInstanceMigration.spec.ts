@@ -11,6 +11,7 @@ import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
 import {SETUP_WAITING_TIME} from './constants';
 import {config} from '../config';
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
 
 let initialData: Awaited<ReturnType<typeof setup>>;
 
@@ -25,6 +26,38 @@ test.beforeAll(async ({request}) => {
           {
             data: {
               filter: {
+                processDefinitionKey:
+                  initialData.processV1.processDefinitionKey,
+              },
+            },
+          },
+        );
+
+        return await response.json();
+      },
+      {timeout: SETUP_WAITING_TIME},
+    )
+    .toHaveProperty('total', 10);
+
+  await Promise.all(
+    [...new Array(10)].map((_, index) =>
+      zeebeGrpcApi.zeebe.publishMessage({
+        name: 'Message_4',
+        correlationKey: `myCorrelationKey${index}`,
+      }),
+    ),
+  );
+
+  // Wait until all processes received their messages and all tokens moved to Task E
+  await expect
+    .poll(
+      async () => {
+        const response = await request.post(
+          `${config.endpoint}/v1/flownode-instances/search`,
+          {
+            data: {
+              filter: {
+                flowNodeId: 'TaskE',
                 processDefinitionKey:
                   initialData.processV1.processDefinitionKey,
               },
@@ -80,7 +113,8 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(3);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(18);
+
     await expect(
       page.getByLabel(/target flow node for check payment/i),
     ).toHaveValue('checkPayment');
@@ -90,6 +124,51 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       page.getByLabel(/target flow node for request for payment/i),
     ).toHaveValue('requestForPayment');
+    await expect(page.getByLabel(/target flow node for task a/i)).toHaveValue(
+      'TaskA',
+    );
+    await expect(page.getByLabel(/target flow node for task b/i)).toHaveValue(
+      'TaskB',
+    );
+    await expect(page.getByLabel(/target flow node for task c/i)).toHaveValue(
+      'TaskC',
+    );
+    await expect(page.getByLabel(/target flow node for task d/i)).toHaveValue(
+      'TaskD',
+    );
+    await expect(
+      page.getByLabel(/target flow node for message interrupting/i),
+    ).toHaveValue('MessageInterrupting');
+    await expect(
+      page.getByLabel(/target flow node for timer interrupting/i),
+    ).toHaveValue('TimerInterrupting');
+    await expect(
+      page.getByLabel(/target flow node for message non-interrupting/i),
+    ).toHaveValue('MessageNonInterrupting');
+    await expect(
+      page.getByLabel(/target flow node for timer non-interrupting/i),
+    ).toHaveValue('TimerNonInterrupting');
+    await expect(
+      page.getByLabel(/target flow node for message intermediate catch/i),
+    ).toHaveValue('MessageIntermediateCatch');
+    await expect(
+      page.getByLabel(/target flow node for timer intermediate catch/i),
+    ).toHaveValue('TimerIntermediateCatch');
+    await expect(
+      page.getByLabel(/target flow node for message event sub process/i),
+    ).toHaveValue('MessageEventSubProcess');
+    await expect(
+      page.getByLabel(/target flow node for timer event sub process/i),
+    ).toHaveValue('TimerEventSubProcess');
+    await expect(page.getByLabel(/target flow node for task e/i)).toHaveValue(
+      'TaskE',
+    );
+    await expect(page.getByLabel(/target flow node for task f/i)).toHaveValue(
+      'TaskF',
+    );
+    await expect(
+      page.getByLabel(/target flow node for message receive task/i),
+    ).toHaveValue('MessageReceiveTask');
 
     // Expect pre-selected process and version
     await expect(migrationView.targetProcessComboBox).toHaveValue(
@@ -163,6 +242,42 @@ test.describe.serial('Process Instance Migration', () => {
     await commonPage.collapseOperationsPanel();
   });
 
+  test('Migrated event sub processes', async ({
+    commonPage,
+    processesPage,
+    processesPage: {filtersPanel},
+  }) => {
+    const {processV2} = initialData;
+    await processesPage.navigateToProcesses({
+      searchParams: {
+        active: 'true',
+      },
+    });
+    await commonPage.expandOperationsPanel();
+
+    const migrateOperationEntry = commonPage.operationsList
+      .getByRole('listitem')
+      .first();
+
+    const operationId = await migrateOperationEntry
+      .getByRole('link')
+      .innerText();
+
+    await processesPage.navigateToProcesses({
+      searchParams: {
+        active: 'true',
+        process: processV2.bpmnProcessId,
+        version: processV2.version.toString(),
+        operationId,
+        flowNodeId: 'TaskE',
+      },
+    });
+
+    await expect(
+      processesPage.processInstancesTable.getByRole('heading'),
+    ).toContainText(/6 results/i);
+  });
+
   /**
    * Migrate from ProcessV2 to ProcessV3
    * ProcessV3 has a different bpmn process id and different flow node names,
@@ -204,6 +319,89 @@ test.describe.serial('Process Instance Migration', () => {
     await migrationView.mapFlowNode({
       sourceFlowNodeName: 'Check payment',
       targetFlowNodeName: 'Ship Articles 2',
+    });
+
+    /**
+     * Map Tasks A-D. Note that there is a cross mapping:
+     * A -> C2
+     * C -> A2
+     */
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Task A',
+      targetFlowNodeName: 'Task C2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Task B',
+      targetFlowNodeName: 'Task B2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Task C',
+      targetFlowNodeName: 'Task A2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Task D',
+      targetFlowNodeName: 'Task D2',
+    });
+
+    /**
+     * Map boundary events. Note that there is a cross mapping:
+     * interrupting <-> non-interrupting
+     */
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Message interrupting',
+      targetFlowNodeName: 'Message non-interrupting 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Timer interrupting',
+      targetFlowNodeName: 'Timer interrupting 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Message non-interrupting',
+      targetFlowNodeName: 'Message interrupting 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Timer non-interrupting',
+      targetFlowNodeName: 'Timer non-interrupting 2',
+    });
+
+    /**
+     * Map intermediate catch events
+     */
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Message intermediate catch',
+      targetFlowNodeName: 'Message intermediate catch 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Timer intermediate catch',
+      targetFlowNodeName: 'Timer intermediate catch 2',
+    });
+
+    /**
+     * Map event sub processes with containing tasks
+     */
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Message event sub process',
+      targetFlowNodeName: 'Message event sub process 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Timer event sub process',
+      targetFlowNodeName: 'Timer event sub process 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Task E',
+      targetFlowNodeName: 'Task E2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Task F',
+      targetFlowNodeName: 'Task F2',
+    });
+
+    /**
+     * Map message receive task
+     */
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Message receive task',
+      targetFlowNodeName: 'Message receive task 2',
     });
 
     await migrationView.nextButton.click();
@@ -270,6 +468,112 @@ test.describe.serial('Process Instance Migration', () => {
     await commonPage.collapseOperationsPanel();
   });
 
+  test('Migrated message events', async ({
+    processesPage,
+    processInstancePage,
+    page,
+  }) => {
+    const {processV3} = initialData;
+
+    await processesPage.navigateToProcesses({
+      searchParams: {
+        active: 'true',
+        process: processV3.bpmnProcessId,
+        version: processV3.version.toString(),
+      },
+    });
+
+    await processesPage.getNthProcessInstanceLink(0).click();
+
+    /**
+     * Expect that the correlation key and message have been migrated from Task C to Task A2
+     */
+    await processInstancePage.diagram.clickFlowNode('Task A2');
+    await processInstancePage.diagram.showMetaData();
+    await page.waitForSelector('.monaco-aria-container'); // wait until monaco is fully loaded
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"correlationKey": "mySecondCorrelationKey"',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"messageName": "Message_2",',
+      ),
+    ).toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+
+    await processInstancePage.diagram.clickFlowNode('Task A2'); // deselect Task A2
+
+    /**
+     * Expect that the correlation key and message have been migrated from Task A to Task C2
+     */
+    await processInstancePage.diagram.clickFlowNode('Task C2');
+    await processInstancePage.diagram.showMetaData();
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"correlationKey": "myFirstCorrelationKey"',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"messageName": "Message_1",',
+      ),
+    ).toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+
+    await processInstancePage.diagram.clickFlowNode('Task C2'); // deselect Task C2
+
+    /**
+     * Expect that the correlation key and message have been migrated from Message receive task to Message receive task 2
+     */
+    await processInstancePage.diagram.clickFlowNode('Message receive task 2');
+    await processInstancePage.diagram.showMetaData();
+    await page.waitForTimeout(500); // wait until metadata modal is fully rendered
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"correlationKey": "myFirstCorrelationKey"',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"messageName": "Message_5",',
+      ),
+    ).toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+
+    await processInstancePage.diagram.clickFlowNode('Message receive task 2'); // deselect task
+
+    /**
+     * Expect that the correlation key has been updated if source and target message event have the same message id
+     */
+    await processInstancePage.diagram.clickEvent('Message intermediate catch');
+    await processInstancePage.diagram.showMetaData();
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"correlationKey": "myFirstCorrelationKey"',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"messageName": "Message_3",',
+      ),
+    ).toBeVisible();
+    await page.waitForTimeout(500); // wait until metadata modal is fully rendered
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+  });
+
   test('Migrated date tag', async ({processesPage, processInstancePage}) => {
     const targetBpmnProcessId = initialData.processV3.bpmnProcessId;
     const targetVersion = initialData.processV3.version.toString();
@@ -283,12 +587,7 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     // Navigate to the first process instance in the list, that has been migrated
-    await processesPage.processInstancesTable
-      .getByRole('link', {
-        name: /^view instance/i,
-      })
-      .first()
-      .click();
+    await processesPage.getNthProcessInstanceLink(0).click();
 
     // Expect the migrated tag to be visible
     await expect(

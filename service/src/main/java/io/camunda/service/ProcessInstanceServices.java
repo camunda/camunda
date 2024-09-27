@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.entities.ProcessInstanceEntity;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
@@ -68,6 +69,24 @@ public final class ProcessInstanceServices
     return search(SearchQueryBuilders.processInstanceSearchQuery(fn));
   }
 
+  public ProcessInstanceEntity getByKey(final Long processInstanceKey) {
+    final SearchQueryResult<ProcessInstanceEntity> result =
+        executor.search(
+            SearchQueryBuilders.processInstanceSearchQuery()
+                .filter(f -> f.processInstanceKeys(processInstanceKey))
+                .build(),
+            ProcessInstanceEntity.class);
+    if (result.total() < 1) {
+      throw new NotFoundException(
+          String.format("Process Instance with key %d not found", processInstanceKey));
+    } else if (result.total() > 1) {
+      throw new CamundaServiceException(
+          String.format("Found Process Instance with key %d more than once", processInstanceKey));
+    } else {
+      return result.items().stream().findFirst().orElseThrow();
+    }
+  }
+
   public CompletableFuture<ProcessInstanceCreationRecord> createProcessInstance(
       final ProcessInstanceCreateRequest request) {
     final var brokerRequest =
@@ -94,7 +113,8 @@ public final class ProcessInstanceServices
             .setVersion(request.version())
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()))
-            .setInstructions(request.startInstructions());
+            .setInstructions(request.startInstructions())
+            .setFetchVariables(request.fetchVariables());
 
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
@@ -151,7 +171,8 @@ public final class ProcessInstanceServices
       Boolean awaitCompletion,
       Long requestTimeout,
       Long operationReference,
-      List<ProcessInstanceCreationStartInstruction> startInstructions) {}
+      List<ProcessInstanceCreationStartInstruction> startInstructions,
+      List<String> fetchVariables) {}
 
   public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}
 

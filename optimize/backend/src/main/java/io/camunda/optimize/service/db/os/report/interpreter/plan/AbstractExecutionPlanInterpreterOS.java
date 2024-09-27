@@ -27,7 +27,6 @@ import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
@@ -41,7 +40,9 @@ public abstract class AbstractExecutionPlanInterpreterOS<
         DATA extends SingleReportDataDto, PLAN extends ExecutionPlan>
     implements ExecutionPlanInterpreter<DATA, PLAN> {
 
-  public CommandEvaluationResult<Object> interpret(ExecutionContext<DATA, PLAN> executionContext) {
+  @Override
+  public CommandEvaluationResult<Object> interpret(
+      final ExecutionContext<DATA, PLAN> executionContext) {
     SearchResponse response;
     try {
       response = executeRequests(executionContext, createBaseQuerySearchRequest(executionContext));
@@ -54,9 +55,8 @@ public abstract class AbstractExecutionPlanInterpreterOS<
               "Could not evaluate report because at least one required instance index {} does not exist. Retrying with index "
                   + "multi alias",
               Arrays.asList(getIndexNames(executionContext)));
-          List<String> indices = Arrays.asList(getMultiIndexAlias());
-          Builder searchRequestBuilder =
-              createBaseQuerySearchRequest(executionContext).index(indices);
+          executionContext.setMultiIndexAlias(true);
+          final Builder searchRequestBuilder = createBaseQuerySearchRequest(executionContext);
           try {
             response = executeRequests(executionContext, searchRequestBuilder);
           } catch (RuntimeException ex) {
@@ -102,7 +102,7 @@ public abstract class AbstractExecutionPlanInterpreterOS<
 
   private SearchRequest.Builder createBaseQuerySearchRequest(
       final ExecutionContext<DATA, PLAN> executionContext) {
-    Query query =
+    final Query query =
         getGroupByInterpreter()
             .adjustQuery(baseQueryBuilder(executionContext), executionContext)
             .build()

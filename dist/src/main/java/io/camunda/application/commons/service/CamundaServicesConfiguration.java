@@ -12,10 +12,12 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.CamundaServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.DecisionDefinitionServices;
+import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.FlowNodeInstanceServices;
+import io.camunda.service.FormServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.MessageServices;
@@ -81,6 +83,11 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
+  public DecisionInstanceServices decisionInstanceServices(final CamundaServices camundaServices) {
+    return camundaServices.decisionInstanceServices();
+  }
+
+  @Bean
   public IncidentServices incidentServices(final CamundaServices camundaServices) {
     return camundaServices.incidentServices();
   }
@@ -128,5 +135,10 @@ public class CamundaServicesConfiguration {
   @Bean
   public SignalServices signalServices(final CamundaServices camundaServices) {
     return camundaServices.signalServices();
+  }
+
+  @Bean
+  public FormServices formServices(final CamundaServices camundaServices) {
+    return camundaServices.formServices();
   }
 }

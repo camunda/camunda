@@ -29,6 +29,7 @@ export class ProcessInstance {
   readonly executionCountToggleOn: Locator;
   readonly executionCountToggleOff: Locator;
   readonly listenersTabButton: Locator;
+  readonly metadataModal: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -55,6 +56,7 @@ export class ProcessInstance {
       /^hide execution count$/i,
     );
     this.listenersTabButton = page.getByTestId('listeners-tab-button');
+    this.metadataModal = this.page.getByRole('dialog', {name: /metadata/i});
   }
 
   getEditVariableFieldSelector(variableName: string) {

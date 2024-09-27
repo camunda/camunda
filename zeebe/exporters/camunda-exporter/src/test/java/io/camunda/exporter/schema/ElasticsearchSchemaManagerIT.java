@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.schema;
 
+import static io.camunda.exporter.schema.SchemaTestUtil.validateMappings;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -21,7 +22,6 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.http.HttpHost;
@@ -72,7 +72,7 @@ public class ElasticsearchSchemaManagerIT {
     properties.getDefaultSettings().setNumberOfShards(10);
 
     final var indexTemplate =
-        TestUtil.mockIndexTemplate(
+        SchemaTestUtil.mockIndexTemplate(
             "indexName",
             "full_name*",
             "alias",
@@ -80,11 +80,11 @@ public class ElasticsearchSchemaManagerIT {
             "template_name",
             "mappings.json");
 
-    final var index = TestUtil.mockIndex("full_name", "alias", "index_name", "mappings.json");
+    final var index = SchemaTestUtil.mockIndex("full_name", "alias", "index_name", "mappings.json");
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(index), List.of(indexTemplate), properties);
+            searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);
 
     schemaManager.initialiseResources();
 
@@ -104,7 +104,7 @@ public class ElasticsearchSchemaManagerIT {
     properties.setShardsByIndexName(Map.of("index_name", 5));
 
     final var indexTemplate =
-        TestUtil.mockIndexTemplate(
+        SchemaTestUtil.mockIndexTemplate(
             "index_name",
             "full_name*",
             "alias",
@@ -112,11 +112,11 @@ public class ElasticsearchSchemaManagerIT {
             "template_name",
             "mappings.json");
 
-    final var index = TestUtil.mockIndex("full_name", "alias", "index_name", "mappings.json");
+    final var index = SchemaTestUtil.mockIndex("full_name", "alias", "index_name", "mappings.json");
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(index), List.of(indexTemplate), properties);
+            searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);
 
     schemaManager.initialiseResources();
 
@@ -131,7 +131,7 @@ public class ElasticsearchSchemaManagerIT {
   void shouldOverwriteIndexTemplateIfMappingsFileChanged() throws IOException {
     // given
     final var indexTemplate =
-        TestUtil.mockIndexTemplate(
+        SchemaTestUtil.mockIndexTemplate(
             "index_name",
             "full_name*",
             "alias",
@@ -140,7 +140,7 @@ public class ElasticsearchSchemaManagerIT {
             "mappings.json");
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(), List.of(indexTemplate), new ElasticsearchProperties());
+            searchEngineClient, Set.of(), Set.of(indexTemplate), new ElasticsearchProperties());
 
     schemaManager.initialiseResources();
 
@@ -159,18 +159,19 @@ public class ElasticsearchSchemaManagerIT {
             .indexTemplates()
             .getFirst();
 
-    assertThat(template.indexTemplate().template().mappings().properties().get("foo").isText())
-        .isTrue();
+    validateMappings(
+        template.indexTemplate().template().mappings(), "mappings-added-property.json");
   }
 
   @Test
   void shouldAppendToIndexMappingsWithNewProperties() throws IOException {
     // given
-    final var index = TestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");
+    final var index =
+        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(index), List.of(), new ElasticsearchProperties());
+            searchEngineClient, Set.of(index), Set.of(), new ElasticsearchProperties());
 
     schemaManager.initialiseResources();
 
@@ -195,11 +196,12 @@ public class ElasticsearchSchemaManagerIT {
   @Test
   void shouldReadIndexMappingsFileCorrectly() {
     // given
-    final var index = TestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");
+    final var index =
+        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, List.of(), List.of(), new ElasticsearchProperties());
+            searchEngineClient, Set.of(), Set.of(), new ElasticsearchProperties());
 
     // when
     final var indexMapping = schemaManager.readIndex(index);

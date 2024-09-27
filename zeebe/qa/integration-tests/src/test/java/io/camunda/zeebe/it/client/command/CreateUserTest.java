@@ -83,7 +83,7 @@ class CreateUserTest {
                     .password("password")
                     .send()
                     .join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining("a user with this username already exists");
   }

@@ -41,11 +41,11 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
           "items": [
               {
                   "tenantId": "t",
-                  "decisionKey": 0,
-                  "dmnDecisionId": "dId",
-                  "dmnDecisionName": "name",
+                  "decisionDefinitionKey": 0,
+                  "decisionDefinitionId": "dId",
+                  "decisionDefinitionName": "name",
                   "version": 1,
-                  "dmnDecisionRequirementsId": "drId",
+                  "decisionRequirementsId": "drId",
                   "decisionRequirementsKey": 2
               }
           ],
@@ -131,12 +131,12 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         {
           "filter":{
             "tenantId": "t",
-            "decisionKey": 0,
-            "dmnDecisionName": "name",
+            "decisionDefinitionKey": 0,
+            "decisionDefinitionName": "name",
             "version": 1,
-            "dmnDecisionRequirementsId": "drId",
+            "decisionRequirementsId": "drId",
             "decisionRequirementsKey": 2,
-            "dmnDecisionId": "dId",
+            "decisionDefinitionId": "dId",
             "decisionRequirementsName": "drName",
             "decisionRequirementsVersion": 3
           }
@@ -163,12 +163,12 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                 .filter(
                     new DecisionDefinitionFilter.Builder()
                         .tenantIds("t")
-                        .decisionKeys(0L)
-                        .dmnDecisionNames("name")
-                        .versions(1)
-                        .dmnDecisionRequirementsIds("drId")
+                        .decisionDefinitionKeys(0L)
+                        .decisionDefinitionNames("name")
+                        .decisionDefinitionVersions(1)
+                        .decisionRequirementsIds("drId")
                         .decisionRequirementsKeys(2L)
-                        .dmnDecisionIds("dId")
+                        .decisionDefinitionIds("dId")
                         .build())
                 .build());
   }
@@ -183,25 +183,25 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         {
             "sort": [
                 {
-                    "field": "decisionKey",
+                    "field": "decisionDefinitionKey",
                     "order": "asc"
                 },
                 {
-                    "field": "dmnDecisionName",
+                    "field": "decisionDefinitionName",
                     "order": "desc"
                 },
                 {
-                    "field": "version",
+                    "field": "decisionDefinitionVersion",
                     "order": "asc"
                 },
                 {
-                     "field": "dmnDecisionId"
+                     "field": "decisionDefinitionId"
                 },
                 {
                      "field": "decisionRequirementsKey"
                 },
                 {
-                     "field": "dmnDecisionRequirementsId"
+                     "field": "decisionRequirementsId"
                 },
                 {
                      "field": "tenantId"
@@ -228,17 +228,17 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
             new DecisionDefinitionQuery.Builder()
                 .sort(
                     new DecisionDefinitionSort.Builder()
-                        .decisionKey()
+                        .decisionDefinitionKey()
                         .asc()
-                        .dmnDecisionName()
+                        .decisionDefinitionName()
                         .desc()
-                        .version()
+                        .decisionDefinitionVersion()
                         .asc()
-                        .dmnDecisionId()
+                        .decisionDefinitionId()
                         .asc()
                         .decisionRequirementsKey()
                         .asc()
-                        .dmnDecisionRequirementsId()
+                        .decisionRequirementsId()
                         .asc()
                         .tenantId()
                         .asc()
@@ -350,9 +350,9 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         """
         {
           "type": "about:blank",
-          "title": "Failed to execute Get Decision Definition XML Query.",
+          "title": "java.lang.RuntimeException",
           "status": 500,
-          "detail": "Failed to get decision definition xml.",
+          "detail": "Unexpected error occurred during the request processing: Failed to get decision definition xml.",
           "instance": "%s"
         }"""
             .formatted(DECISION_DEFINITIONS_GET_XML_URL.formatted(decisionDefinitionKey));
@@ -389,6 +389,96 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+  }
+
+  @Test
+  public void shouldGetDecisionDefinitionByKey() {
+    // given
+    final Long decisionDefinitionKey = 1L;
+    final DecisionDefinitionEntity decisionDefinitionEntity =
+        new DecisionDefinitionEntity("t", 0L, "dId", "name", 1, "drId", 2L);
+    when(decisionDefinitionServices.getByKey(decisionDefinitionKey))
+        .thenReturn(decisionDefinitionEntity);
+    final var expectedResponse =
+        """
+            {
+              "tenantId": "t",
+              "decisionDefinitionKey": 0,
+              "decisionDefinitionId": "dId",
+              "decisionDefinitionName": "name",
+              "version": 1,
+              "decisionRequirementsId": "drId",
+              "decisionRequirementsKey": 2
+            }""";
+    // when/then
+    webClient
+        .get()
+        .uri("/v2/decision-definitions/%d".formatted(decisionDefinitionKey))
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse);
+  }
+
+  @Test
+  public void shouldReturn404ForNotFoundDecisionDefinitionByKey() {
+    // given
+    final Long decisionDefinitionKey = 1L;
+    when(decisionDefinitionServices.getByKey(decisionDefinitionKey))
+        .thenThrow(new NotFoundException("Decision with key 1 was not found."));
+
+    // when/then
+    final var expectedResponse =
+        """
+        {
+          "type": "about:blank",
+          "title": "NOT_FOUND",
+          "status": 404,
+          "detail": "Decision with key 1 was not found.",
+          "instance": "/v2/decision-definitions/1"
+        }""";
+    webClient
+        .get()
+        .uri("/v2/decision-definitions/%d".formatted(decisionDefinitionKey))
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+  }
+
+  @Test
+  public void shouldReturn500ForInternalErrorGetDecisionDefinitionByKey() {
+    // given
+    final Long decisionDefinitionKey = 1L;
+    when(decisionDefinitionServices.getByKey(decisionDefinitionKey))
+        .thenThrow(new RuntimeException("Failed to get decision definition."));
+
+    // when/then
+    final var expectedResponse =
+        """
+        {
+          "type": "about:blank",
+          "title": "java.lang.RuntimeException",
+          "status": 500,
+          "detail": "Unexpected error occurred during the request processing: Failed to get decision definition.",
+          "instance": "/v2/decision-definitions/1"
+        }""";
+    webClient
+        .get()
+        .uri("/v2/decision-definitions/%d".formatted(decisionDefinitionKey))
+        .exchange()
+        .expectStatus()
+        .is5xxServerError()
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()

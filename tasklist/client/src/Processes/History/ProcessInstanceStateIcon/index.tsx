@@ -7,7 +7,7 @@
  */
 
 import {
-  Icon,
+  type CarbonIconProps,
   Error,
   CheckmarkOutline,
   RadioButtonChecked,
@@ -18,7 +18,7 @@ import {ProcessInstance} from 'modules/types';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 
-type Props = React.ComponentProps<Icon> & {
+type Props = CarbonIconProps & {
   state: ProcessInstance['state'];
 };
 

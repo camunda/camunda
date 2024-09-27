@@ -14,7 +14,7 @@
       </input>
       <input id="InputClause_16ezqsg" label="dispute amount">
         <inputExpression id="LiteralExpression_1ihjohf" typeRef="number">
-          <text>disputePosition.amount</text>
+          <text>disputeDetails.disputeAmount.amount</text>
         </inputExpression>
       </input>
       <output id="Output_1" label="fraud rating score" name="fraud_rating_score" typeRef="number" />
@@ -118,7 +118,7 @@
           <text></text>
         </inputEntry>
         <inputEntry id="UnaryTests_0mrwftr">
-          <text>&lt;10</text>
+          <text>&lt;1000</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_128ie24">
           <text>-5</text>
@@ -136,7 +136,7 @@
           <text></text>
         </inputEntry>
         <inputEntry id="UnaryTests_1b2ur4a">
-          <text>[10..100]</text>
+          <text>[1000..10000]</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_0km0sb7">
           <text>5</text>
@@ -154,7 +154,7 @@
           <text></text>
         </inputEntry>
         <inputEntry id="UnaryTests_00ncl7p">
-          <text>&gt;100</text>
+          <text>&gt;10000</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_1ojlycx">
           <text>8</text>

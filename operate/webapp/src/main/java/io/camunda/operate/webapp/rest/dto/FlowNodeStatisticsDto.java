@@ -18,7 +18,7 @@ public class FlowNodeStatisticsDto {
 
   public FlowNodeStatisticsDto() {}
 
-  public FlowNodeStatisticsDto(String activityId) {
+  public FlowNodeStatisticsDto(final String activityId) {
     this.activityId = activityId;
   }
 
@@ -26,7 +26,7 @@ public class FlowNodeStatisticsDto {
     return activityId;
   }
 
-  public FlowNodeStatisticsDto setActivityId(String activityId) {
+  public FlowNodeStatisticsDto setActivityId(final String activityId) {
     this.activityId = activityId;
     return this;
   }
@@ -35,12 +35,12 @@ public class FlowNodeStatisticsDto {
     return active;
   }
 
-  public FlowNodeStatisticsDto setActive(Long active) {
+  public FlowNodeStatisticsDto setActive(final Long active) {
     this.active = active;
     return this;
   }
 
-  public void addActive(Long active) {
+  public void addActive(final Long active) {
     this.active += active;
   }
 
@@ -48,12 +48,12 @@ public class FlowNodeStatisticsDto {
     return canceled;
   }
 
-  public FlowNodeStatisticsDto setCanceled(Long canceled) {
+  public FlowNodeStatisticsDto setCanceled(final Long canceled) {
     this.canceled = canceled;
     return this;
   }
 
-  public void addCanceled(Long canceled) {
+  public void addCanceled(final Long canceled) {
     this.canceled += canceled;
   }
 
@@ -61,12 +61,12 @@ public class FlowNodeStatisticsDto {
     return incidents;
   }
 
-  public FlowNodeStatisticsDto setIncidents(Long incidents) {
+  public FlowNodeStatisticsDto setIncidents(final Long incidents) {
     this.incidents = incidents;
     return this;
   }
 
-  public void addIncidents(Long incidents) {
+  public void addIncidents(final Long incidents) {
     this.incidents += incidents;
   }
 
@@ -74,12 +74,12 @@ public class FlowNodeStatisticsDto {
     return completed;
   }
 
-  public FlowNodeStatisticsDto setCompleted(Long completed) {
+  public FlowNodeStatisticsDto setCompleted(final Long completed) {
     this.completed = completed;
     return this;
   }
 
-  public void addCompleted(Long completed) {
+  public void addCompleted(final Long completed) {
     this.completed += completed;
   }
 
@@ -94,7 +94,7 @@ public class FlowNodeStatisticsDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

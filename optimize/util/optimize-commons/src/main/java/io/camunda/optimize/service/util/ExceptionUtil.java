@@ -50,6 +50,14 @@ public class ExceptionUtil {
       }
     } else if (e instanceof OpenSearchException) {
       return messageFilter.apply(e.getMessage());
+    } else if (e instanceof OptimizeRuntimeException) {
+      if (e.getCause() != null) {
+        if (e.getCause()
+            instanceof org.opensearch.client.transport.httpclient5.ResponseException re) {
+          return messageFilter.apply(re.getMessage());
+        }
+      }
+      return messageFilter.apply(e.getMessage());
     } else {
       return false;
     }

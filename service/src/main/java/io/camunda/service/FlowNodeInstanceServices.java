@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.entities.FlowNodeInstanceEntity;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.search.query.FlowNodeInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
@@ -49,5 +50,22 @@ public final class FlowNodeInstanceServices
   public SearchQueryResult<FlowNodeInstanceEntity> search(
       final Function<FlowNodeInstanceQuery.Builder, ObjectBuilder<FlowNodeInstanceQuery>> fn) {
     return search(SearchQueryBuilders.flownodeInstanceSearchQuery(fn));
+  }
+
+  public FlowNodeInstanceEntity getByKey(final Long key) {
+    final SearchQueryResult<FlowNodeInstanceEntity> result =
+        executor.search(
+            SearchQueryBuilders.flownodeInstanceSearchQuery()
+                .filter(f -> f.flowNodeInstanceKeys(key))
+                .build(),
+            FlowNodeInstanceEntity.class);
+    if (result.total() < 1) {
+      throw new NotFoundException(String.format("Flow node instance with key %d not found", key));
+    } else if (result.total() > 1) {
+      throw new CamundaServiceException(
+          String.format("Found Flow node instance with key %d more than once", key));
+    } else {
+      return result.items().stream().findFirst().orElseThrow();
+    }
   }
 }

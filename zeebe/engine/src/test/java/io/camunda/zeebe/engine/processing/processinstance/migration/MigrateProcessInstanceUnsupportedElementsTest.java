@@ -14,7 +14,6 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -92,68 +91,6 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
                 Expected to migrate process instance '%s' but active element with id '%s' \
                 has an unsupported type. The migration of a %s is not supported""",
                 processInstanceKey, "A", "INCLUSIVE_GATEWAY"));
-  }
-
-  @Test
-  public void shouldRejectMigrationForActiveMultiInstance() {
-    // given
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(SOURCE_PROCESS)
-                    .startEvent()
-                    .userTask(
-                        "A",
-                        u ->
-                            u.multiInstance()
-                                .zeebeInputCollectionExpression("[1,2]")
-                                .zeebeInputElement("input"))
-                    .endEvent()
-                    .done())
-            .withXmlResource(
-                Bpmn.createExecutableProcess(TARGET_PROCESS)
-                    .startEvent()
-                    .userTask(
-                        "A",
-                        u ->
-                            u.multiInstance()
-                                .zeebeInputCollectionExpression("[1,2]")
-                                .zeebeInputElement("input"))
-                    .userTask("B")
-                    .endEvent()
-                    .done())
-            .deploy();
-    final long targetProcessDefinitionKey = extractTargetProcessDefinitionKey(deployment);
-
-    final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(SOURCE_PROCESS).create();
-
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId("A")
-        .await();
-
-    // when
-    final var rejection =
-        ENGINE
-            .processInstance()
-            .withInstanceKey(processInstanceKey)
-            .migration()
-            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-            .addMappingInstruction("A", "A")
-            .expectRejection()
-            .migrate();
-
-    // then
-    assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
-    Assertions.assertThat(rejection.getRejectionReason())
-        .contains(
-            String.format(
-                """
-                Expected to migrate process instance '%s' but active element with id '%s' \
-                has an unsupported type. The migration of a %s is not supported""",
-                processInstanceKey, "A", "MULTI_INSTANCE_BODY"));
   }
 
   private static long extractTargetProcessDefinitionKey(

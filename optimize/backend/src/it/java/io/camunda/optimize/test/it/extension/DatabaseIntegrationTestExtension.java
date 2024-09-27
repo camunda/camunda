@@ -16,7 +16,6 @@ import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_
 import static io.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
-import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
@@ -26,9 +25,8 @@ import io.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import io.camunda.optimize.dto.optimize.query.MetadataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
-import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
+import io.camunda.optimize.service.db.schema.DatabaseSchemaManager;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
@@ -59,6 +57,10 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
 
   private final DatabaseTestService databaseTestService;
 
+  public DatabaseIntegrationTestExtension(final DatabaseType databaseType) {
+    this(null, true, databaseType);
+  }
+
   public DatabaseIntegrationTestExtension() {
     this(true);
   }
@@ -67,13 +69,31 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     this(null, haveToClean);
   }
 
+  public void cleanSnapshots(final String snapshotRepositoryName) {
+    databaseTestService.cleanSnapshots(snapshotRepositoryName);
+  }
+
+  public void createRepoSnapshot(final String snapshotRepositoryName) {
+    databaseTestService.createRepoSnapshot(snapshotRepositoryName);
+  }
+
+  public void createSnapshot(
+      final String snapshotRepositoryName, final String snapshotName, final String[] indexNames) {
+    databaseTestService.createSnapshot(snapshotRepositoryName, snapshotName, indexNames);
+  }
+
   public DatabaseIntegrationTestExtension(final String customIndexPrefix) {
     this(customIndexPrefix, true);
   }
 
   private DatabaseIntegrationTestExtension(
       final String customIndexPrefix, final boolean haveToClean) {
-    if (IntegrationTestConfigurationUtil.getDatabaseType().equals(DatabaseType.ELASTICSEARCH)) {
+    this(customIndexPrefix, haveToClean, IntegrationTestConfigurationUtil.getDatabaseType());
+  }
+
+  private DatabaseIntegrationTestExtension(
+      final String customIndexPrefix, final boolean haveToClean, final DatabaseType databaseType) {
+    if (databaseType == null || databaseType.equals(DatabaseType.ELASTICSEARCH)) {
       databaseTestService = new ElasticsearchDatabaseTestService(customIndexPrefix, haveToClean);
     } else {
       databaseTestService = new OpenSearchDatabaseTestService(customIndexPrefix, haveToClean);
@@ -382,10 +402,8 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     databaseTestService.performLowLevelBulkRequest(methodName, endpoint, bulkPayload);
   }
 
-  public void initSchema(
-      List<IndexMappingCreator<IndexSettings.Builder>> mappingCreators,
-      DatabaseMetadataService metadataService) {
-    databaseTestService.initSchema(mappingCreators, metadataService);
+  public void initSchema(final DatabaseSchemaManager schemaManager) {
+    databaseTestService.initSchema(schemaManager);
   }
 
   public Map<String, ?> getMappingFields(final String indexName) throws IOException {

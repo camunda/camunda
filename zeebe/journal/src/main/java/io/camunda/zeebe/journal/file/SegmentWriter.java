@@ -108,7 +108,7 @@ final class SegmentWriter {
     }
   }
 
-  public long getLastAsqn() {
+  long getLastAsqn() {
     return lastAsqn;
   }
 
@@ -380,7 +380,7 @@ final class SegmentWriter {
     buffer.mark();
   }
 
-  public void truncate(final long index) {
+  void truncate(final long index) {
     // If the index is greater than or equal to the last index, skip the truncate.
     if (index >= getLastIndex()) {
       return;

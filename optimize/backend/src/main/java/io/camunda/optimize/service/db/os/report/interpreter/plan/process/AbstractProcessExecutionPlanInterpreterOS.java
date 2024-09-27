@@ -54,7 +54,7 @@ public abstract class AbstractProcessExecutionPlanInterpreterOS
 
   @Override
   public BoolQuery.Builder baseQueryBuilder(
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final Map<String, List<ProcessFilterDto<?>>> dateFiltersByDefinition =
         context.getReportData().groupFiltersByDefinitionIdentifier();
     final List<ProcessFilterDto<?>> allDefinitionsFilters =
@@ -70,9 +70,9 @@ public abstract class AbstractProcessExecutionPlanInterpreterOS
 
   @Override
   protected String[] getIndexNames(
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    if (context.getReportData().isManagementReport()) {
-      getMultiIndexAlias();
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    if (context.isMultiIndexAlias() || context.getReportData().isManagementReport()) {
+      return getMultiIndexAlias();
     }
     return InstanceIndexUtil.getProcessInstanceIndexAliasNames(context.getReportData());
   }
@@ -84,7 +84,7 @@ public abstract class AbstractProcessExecutionPlanInterpreterOS
 
   @Override
   protected BoolQuery.Builder unfilteredBaseQueryBuilder(
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     // Instance level date filters are also applied to the baseline so are included here
     final Map<String, List<ProcessFilterDto<?>>> instanceLevelDateFiltersByDefinitionKey =
         getInstanceLevelDateFiltersByDefinitionKey(context);

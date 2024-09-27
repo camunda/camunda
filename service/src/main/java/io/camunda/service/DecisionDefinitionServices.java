@@ -60,17 +60,8 @@ public final class DecisionDefinitionServices
     return search(decisionDefinitionSearchQuery(fn));
   }
 
-  public String getDecisionDefinitionXml(final Long decisionKey) {
-    final var decisionDefinitionQuery =
-        decisionDefinitionSearchQuery(q -> q.filter(f -> f.decisionKeys(decisionKey)));
-    final var decisionDefinition =
-        search(decisionDefinitionQuery).items().stream()
-            .findFirst()
-            .orElseThrow(
-                () ->
-                    new NotFoundException(
-                        "DecisionDefinition with decisionKey=%d cannot be found"
-                            .formatted(decisionKey)));
+  public String getDecisionDefinitionXml(final long decisionKey) {
+    final var decisionDefinition = getByKey(decisionKey);
 
     final Long decisionRequirementsKey = decisionDefinition.decisionRequirementsKey();
     final var decisionRequirementsQuery =
@@ -89,6 +80,22 @@ public final class DecisionDefinitionServices
                 new NotFoundException(
                     "DecisionRequirements with decisionRequirementsKey=%d cannot be found"
                         .formatted(decisionRequirementsKey)));
+  }
+
+  public DecisionDefinitionEntity getByKey(final long decisionKey) {
+    final var result =
+        search(
+            decisionDefinitionSearchQuery(
+                q -> q.filter(f -> f.decisionDefinitionKeys(decisionKey))));
+    if (result.total() < 1) {
+      throw new NotFoundException(
+          "Decision Definition with decisionKey=%d not found".formatted(decisionKey));
+    } else if (result.total() > 1) {
+      throw new CamundaServiceException(
+          String.format("Found Decision Definition with key %d more than once", decisionKey));
+    } else {
+      return result.items().stream().findFirst().orElseThrow();
+    }
   }
 
   public CompletableFuture<BrokerResponse<DecisionEvaluationRecord>> evaluateDecision(

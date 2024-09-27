@@ -16,16 +16,16 @@ import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
-import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
-import io.camunda.operate.entities.dmn.DecisionInstanceInputEntity;
-import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
-import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
-import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.operate.qa.migration.util.AbstractMigrationTest;
 import io.camunda.operate.qa.migration.v800.DMNDataGenerator;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceInputEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceOutputEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -36,7 +36,7 @@ import org.junit.Test;
 
 public class DMNTest extends AbstractMigrationTest {
 
-  private String bpmnProcessId = DMNDataGenerator.PROCESS_BPMN_PROCESS_ID;
+  private final String bpmnProcessId = DMNDataGenerator.PROCESS_BPMN_PROCESS_ID;
   private Set<String> processInstanceIds;
 
   @Before
@@ -53,7 +53,7 @@ public class DMNTest extends AbstractMigrationTest {
                   termQuery(ListViewTemplate.BPMN_PROCESS_ID, bpmnProcessId)));
       try {
         processInstanceIds = ElasticsearchUtil.scrollIdsToSet(searchRequest, esClient);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
       assertThat(processInstanceIds).hasSize(PROCESS_INSTANCE_COUNT);

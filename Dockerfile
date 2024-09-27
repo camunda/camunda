@@ -91,10 +91,8 @@ WORKDIR /zeebe
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} zeebe.tar.gz
 
-# Remove zbctl from the distribution to reduce CVE related maintenance effort w.r.t to containers
 RUN mkdir camunda-zeebe && \
-    tar xfvz zeebe.tar.gz --strip 1 -C camunda-zeebe && \
-    find . -type f -name 'zbctl*' -delete
+    tar xfvz zeebe.tar.gz --strip 1 -C camunda-zeebe
 
 ### Image containing the zeebe distribution ###
 # hadolint ignore=DL3006

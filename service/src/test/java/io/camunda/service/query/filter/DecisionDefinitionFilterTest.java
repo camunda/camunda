@@ -54,7 +54,7 @@ public final class DecisionDefinitionFilterTest {
   public void shouldQueryByDecisionDefinitionKey() {
     // given
     final var decisionDefinitionFilter =
-        FilterBuilders.decisionDefinition(f -> f.decisionKeys(123L));
+        FilterBuilders.decisionDefinition(f -> f.decisionDefinitionKeys(123L));
     final var searchQuery =
         SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.filter(decisionDefinitionFilter));
 
@@ -78,7 +78,7 @@ public final class DecisionDefinitionFilterTest {
   public void shouldQueryByDecisionDefinitionName() {
     // given
     final var decisionDefinitionFilter =
-        FilterBuilders.decisionDefinition(f -> f.dmnDecisionNames("foo"));
+        FilterBuilders.decisionDefinition(f -> f.decisionDefinitionNames("foo"));
     final var searchQuery =
         SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.filter(decisionDefinitionFilter));
 
@@ -101,7 +101,8 @@ public final class DecisionDefinitionFilterTest {
   @Test
   public void shouldQueryByDecisionDefinitionVersion() {
     // given
-    final var decisionDefinitionFilter = FilterBuilders.decisionDefinition(f -> f.versions(2));
+    final var decisionDefinitionFilter =
+        FilterBuilders.decisionDefinition(f -> f.decisionDefinitionVersions(2));
     final var searchQuery =
         SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.filter(decisionDefinitionFilter));
 
@@ -125,7 +126,7 @@ public final class DecisionDefinitionFilterTest {
   public void shouldQueryByDecisionId() {
     // given
     final var decisionDefinitionFilter =
-        FilterBuilders.decisionDefinition(f -> f.dmnDecisionIds("foo"));
+        FilterBuilders.decisionDefinition(f -> f.decisionDefinitionIds("foo"));
     final var searchQuery =
         SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.filter(decisionDefinitionFilter));
 
@@ -149,7 +150,7 @@ public final class DecisionDefinitionFilterTest {
   public void shouldQueryByDecisionRequirementsId() {
     // given
     final var decisionDefinitionFilter =
-        FilterBuilders.decisionDefinition(f -> f.dmnDecisionRequirementsIds("567"));
+        FilterBuilders.decisionDefinition(f -> f.decisionRequirementsIds("567"));
     final var searchQuery =
         SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.filter(decisionDefinitionFilter));
 
@@ -219,7 +220,8 @@ public final class DecisionDefinitionFilterTest {
   public void shouldQueryByTenantIdAndDecisionDefinitionName() {
     // given
     final var decisionDefinitionFilter =
-        FilterBuilders.decisionDefinition(f -> f.tenantIds("tenant").dmnDecisionNames("foo"));
+        FilterBuilders.decisionDefinition(
+            f -> f.tenantIds("tenant").decisionDefinitionNames("foo"));
     final var searchQuery =
         SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.filter(decisionDefinitionFilter));
 

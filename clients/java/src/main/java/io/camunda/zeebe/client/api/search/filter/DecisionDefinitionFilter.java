@@ -20,22 +20,22 @@ import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRe
 public interface DecisionDefinitionFilter extends SearchRequestFilter {
 
   /** Filter by decision key. */
-  DecisionDefinitionFilter decisionKey(final Long value);
+  DecisionDefinitionFilter decisionDefinitionKey(final long value);
 
   /** Filter by dmn decision id. */
-  DecisionDefinitionFilter dmnDecisionId(final String value);
+  DecisionDefinitionFilter decisionDefinitionId(final String value);
 
   /** Filter by dmn decision name. */
-  DecisionDefinitionFilter dmnDecisionName(final String value);
+  DecisionDefinitionFilter decisionDefinitionName(final String value);
 
   /** Filter by version. */
-  DecisionDefinitionFilter version(final Integer value);
+  DecisionDefinitionFilter decisionDefinitionVersion(final int value);
 
   /** Filter by dmn decision requirements id. */
-  DecisionDefinitionFilter dmnDecisionRequirementsId(final String value);
+  DecisionDefinitionFilter decisionRequirementsId(final String value);
 
   /** Filter by decision requirements key. */
-  DecisionDefinitionFilter decisionRequirementsKey(final Long value);
+  DecisionDefinitionFilter decisionRequirementsKey(final long value);
 
   /** Filter by tenant id. */
   DecisionDefinitionFilter tenantId(final String value);

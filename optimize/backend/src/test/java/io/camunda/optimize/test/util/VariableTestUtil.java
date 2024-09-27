@@ -38,7 +38,10 @@ public class VariableTestUtil {
     final Map<String, Object> variables = new HashMap<>();
     for (final VariableType type : ALL_PRIMITIVE_PROCESS_VARIABLE_TYPES) {
       final String varName = String.format("%sVar", type.getId().toLowerCase(Locale.ENGLISH));
-      variables.put(varName, new VariableDto().setType(type.getId()).setValue(null));
+      final VariableDto variableDto = new VariableDto();
+      variableDto.setType(type.getId());
+      variableDto.setValue(null);
+      variables.put(varName, variableDto);
     }
     return variables;
   }

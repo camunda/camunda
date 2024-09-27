@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.matches;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -20,7 +21,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.ReindexRequest;
 import co.elastic.clients.elasticsearch.tasks.ListRequest;
 import co.elastic.clients.elasticsearch.tasks.ListResponse;
@@ -32,6 +32,7 @@ import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.github.netmikey.logunit.api.LogCapturer;
 import java.io.ByteArrayInputStream;
@@ -65,7 +66,7 @@ public class SchemaUpgradeClientESReindexTest {
   @Mock private OptimizeIndexNameService indexNameService;
   @Mock private ElasticSearchMetadataService metadataService;
   @Mock private TaskInfo taskInfo;
-  private SchemaUpgradeClientES underTest;
+  private SchemaUpgradeClient<?, ?> underTest;
 
   @BeforeEach
   public void init() {
@@ -82,7 +83,8 @@ public class SchemaUpgradeClientESReindexTest {
     final String index2 = "index2";
     final String taskId = "12345:67890";
 
-    mockCountResponseFromIndex(false);
+    mockCountResponseFromIndex(index1, 1L);
+    mockCountResponseFromIndex(index2, 0L);
     when(elasticsearchClient.esWithTransportOptions()).thenReturn(mock(ElasticsearchClient.class));
     when(elasticsearchClient.getTaskList(any())).thenReturn(ListResponse.of(l -> l));
     when(elasticsearchClient.submitReindexTask(any(ReindexRequest.class)).task())
@@ -108,7 +110,8 @@ public class SchemaUpgradeClientESReindexTest {
     final int numericTaskId = 12345;
     final String taskId = String.valueOf(numericTaskId);
 
-    mockCountResponseFromIndex(false);
+    mockCountResponseFromIndex(index1, 1L);
+    mockCountResponseFromIndex(index2, 0L);
     final TaskInfo taskInfo = mock(TaskInfo.class);
     when(elasticsearchClient.getTaskList(any(ListRequest.class)).tasks())
         .thenReturn(TaskInfos.of(t -> t.flat(List.of(taskInfo))));
@@ -136,7 +139,8 @@ public class SchemaUpgradeClientESReindexTest {
     final String index1 = "index1";
     final String index2 = "index2";
 
-    mockCountResponseFromIndex(true);
+    mockCountResponseFromIndex(index1, 1L);
+    mockCountResponseFromIndex(index2, 1L);
 
     // when
     assertThatCode(() -> underTest.reindex(index1, index2))
@@ -160,7 +164,8 @@ public class SchemaUpgradeClientESReindexTest {
     final String index1 = "index1";
     final String index2 = "index2";
 
-    mockCountResponseFromIndex(false);
+    mockCountResponseFromIndex(index1, 1L);
+    mockCountResponseFromIndex(index2, 0L);
     when(elasticsearchClient.getTaskList(any())).thenReturn(ListResponse.of(r -> r));
     given(elasticsearchClient.submitReindexTask(any(ReindexRequest.class)).task())
         .willAnswer(
@@ -185,7 +190,8 @@ public class SchemaUpgradeClientESReindexTest {
     final String node = "12345";
     final String taskId = "67890";
 
-    mockCountResponseFromIndex(false);
+    mockCountResponseFromIndex(index1, 1L);
+    mockCountResponseFromIndex(index2, 0L);
     mockListTaskInfoResponseContainingSourceAndTarget(taskId, node, index1, index2);
 
     // the task status response contains an error when checking for status
@@ -276,16 +282,8 @@ public class SchemaUpgradeClientESReindexTest {
   }
 
   @SneakyThrows
-  private void mockCountResponseFromIndex(boolean isDocCountEquals) {
-    when(elasticsearchClient.countWithoutPrefix(any(CountRequest.class)))
-        .thenAnswer(
-            a -> {
-              if (isDocCountEquals) {
-                return 1L;
-              } else {
-                return ((CountRequest) a.getArguments()[0]).index().get(0).contains("1") ? 1L : 0L;
-              }
-            });
+  private void mockCountResponseFromIndex(final String indexName, final long count) {
+    when(elasticsearchClient.countWithoutPrefix(matches(indexName))).thenAnswer(a -> count);
   }
 
   private Response createEsResponse(final TaskResponse taskResponse) throws IOException {

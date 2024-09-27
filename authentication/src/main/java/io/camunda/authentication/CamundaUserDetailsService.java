@@ -7,10 +7,11 @@
  */
 package io.camunda.authentication;
 
+import static io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder.aCamundaUser;
+
 import io.camunda.service.UserServices;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import java.util.Objects;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -32,9 +33,11 @@ public class CamundaUserDetailsService implements UserDetailsService {
         .findFirst()
         .map(
             candidate ->
-                User.builder()
-                    .username(candidate.username())
-                    .password(candidate.password())
+                aCamundaUser()
+                    .withUserKey(candidate.key())
+                    .withName(candidate.name())
+                    .withUsername(candidate.username())
+                    .withPassword(candidate.password())
                     .build())
         .orElseThrow(() -> new UsernameNotFoundException(username));
   }

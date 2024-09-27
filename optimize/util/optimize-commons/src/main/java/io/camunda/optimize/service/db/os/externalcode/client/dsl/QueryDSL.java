@@ -54,8 +54,12 @@ public interface QueryDSL {
   }
 
   private static Map<String, JsonData> jsonParams(final Map<String, Object> params) {
-    return params.entrySet().stream()
-        .collect(Collectors.toMap(Map.Entry::getKey, e -> json(e.getValue())));
+    if (params != null) {
+      return params.entrySet().stream()
+          .collect(Collectors.toMap(Map.Entry::getKey, e -> json(e.getValue())));
+    } else {
+      return Map.of();
+    }
   }
 
   static Query and(final Query... queries) {
@@ -233,6 +237,10 @@ public interface QueryDSL {
   static SortOrder transformSortOrder(
       final io.camunda.optimize.dto.optimize.query.sorting.SortOrder sortOrder) {
     return sortOrder == sortOrder.ASC ? SortOrder.Asc : SortOrder.Desc;
+  }
+
+  static Script script(final String script) {
+    return scriptFromJsonData(script, Map.of());
   }
 
   static Script script(final String script, final Map<String, Object> params) {

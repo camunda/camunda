@@ -25,6 +25,8 @@ import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1.Evaluate
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.EvaluateDecisionResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -34,28 +36,39 @@ import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import org.apache.hc.client5.http.config.RequestConfig;
 
 public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDecisionCommandImpl>
     implements EvaluateDecisionCommandStep1, EvaluateDecisionCommandStep2 {
 
   private final GatewayStub asyncStub;
-  private final Builder builder;
+  private final Builder grpcRequestObjectBuilder;
   private final Predicate<StatusCode> retryPredicate;
   private final JsonMapper jsonMapper;
   private Duration requestTimeout;
+  private final HttpClient httpClient;
+  private final RequestConfig.Builder httpRequestConfig;
+  private final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionRequest httpRequestObject;
+  private boolean useRest;
 
   public EvaluateDecisionCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
       final ZeebeClientConfiguration config,
-      final Predicate<StatusCode> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate,
+      final HttpClient httpClient) {
     super(jsonMapper);
     this.asyncStub = asyncStub;
     requestTimeout = config.getDefaultRequestTimeout();
     this.retryPredicate = retryPredicate;
     this.jsonMapper = jsonMapper;
-    builder = EvaluateDecisionRequest.newBuilder();
+    grpcRequestObjectBuilder = EvaluateDecisionRequest.newBuilder();
+    this.httpClient = httpClient;
+    httpRequestConfig = httpClient.newRequestConfig();
+    httpRequestObject = new io.camunda.zeebe.client.protocol.rest.EvaluateDecisionRequest();
+    useRest = config.preferRestOverGrpc();
     tenantId(config.getDefaultTenantId());
+    requestTimeout(requestTimeout);
   }
 
   /**
@@ -73,43 +86,81 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
       final Duration requestTimeout,
-      final Predicate<StatusCode> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate,
+      final HttpClient httpClient) {
     super(jsonMapper);
     this.asyncStub = asyncStub;
     this.retryPredicate = retryPredicate;
     this.jsonMapper = jsonMapper;
     this.requestTimeout = requestTimeout;
-    builder = EvaluateDecisionRequest.newBuilder();
+    grpcRequestObjectBuilder = EvaluateDecisionRequest.newBuilder();
+    this.httpClient = httpClient;
+    httpRequestConfig = httpClient.newRequestConfig();
+    httpRequestObject = new io.camunda.zeebe.client.protocol.rest.EvaluateDecisionRequest();
     tenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+    requestTimeout(requestTimeout);
   }
 
   @Override
   protected EvaluateDecisionCommandImpl setVariablesInternal(final String variables) {
-    builder.setVariables(variables);
+    grpcRequestObjectBuilder.setVariables(variables);
+    // This check is mandatory. Without it, gRPC requests can fail unnecessarily.
+    // gRPC and REST handle setting variables differently:
+    // - For gRPC commands, we only check if the JSON is valid and forward it to the engine.
+    //    The engine checks if the provided String can be transformed into a Map, if not it
+    //    throws an error.
+    // - For REST commands, users have to provide a valid JSON Object String.
+    //    Otherwise, the client throws an exception already.
+    if (useRest) {
+      httpRequestObject.setVariables(jsonMapper.fromJsonAsMap(variables));
+    }
     return this;
   }
 
   @Override
   public EvaluateDecisionCommandStep2 decisionId(final String decisionId) {
-    builder.setDecisionId(decisionId);
+    grpcRequestObjectBuilder.setDecisionId(decisionId);
+    httpRequestObject.setDecisionDefinitionId(decisionId);
     return this;
   }
 
   @Override
   public EvaluateDecisionCommandStep2 decisionKey(final long decisionKey) {
-    builder.setDecisionKey(decisionKey);
+    grpcRequestObjectBuilder.setDecisionKey(decisionKey);
+    httpRequestObject.setDecisionDefinitionKey(decisionKey);
     return this;
   }
 
   @Override
   public FinalCommandStep<EvaluateDecisionResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
   public ZeebeFuture<EvaluateDecisionResponse> send() {
-    final EvaluateDecisionRequest request = builder.build();
+    if (useRest) {
+      return sendRestRequest();
+    } else {
+      return sendGrpcRequest();
+    }
+  }
+
+  private ZeebeFuture<EvaluateDecisionResponse> sendRestRequest() {
+    final HttpZeebeFuture<EvaluateDecisionResponse> result = new HttpZeebeFuture<>();
+    httpClient.post(
+        "/decision-definitions/evaluation",
+        jsonMapper.toJson(httpRequestObject),
+        httpRequestConfig.build(),
+        io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse.class,
+        response -> new EvaluateDecisionResponseImpl(response, jsonMapper),
+        result);
+    return result;
+  }
+
+  private ZeebeFuture<EvaluateDecisionResponse> sendGrpcRequest() {
+    final EvaluateDecisionRequest request = grpcRequestObjectBuilder.build();
 
     final RetriableClientFutureImpl<
             EvaluateDecisionResponse, GatewayOuterClass.EvaluateDecisionResponse>
@@ -117,24 +168,37 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
             new RetriableClientFutureImpl<>(
                 gatewayResponse -> new EvaluateDecisionResponseImpl(jsonMapper, gatewayResponse),
                 retryPredicate,
-                streamObserver -> send(request, streamObserver));
+                streamObserver -> sendGrpcRequest(request, streamObserver));
 
-    send(request, future);
+    sendGrpcRequest(request, future);
 
     return future;
   }
 
   @Override
   public EvaluateDecisionCommandStep2 tenantId(final String tenantId) {
-    builder.setTenantId(tenantId);
+    grpcRequestObjectBuilder.setTenantId(tenantId);
+    httpRequestObject.setTenantId(tenantId);
     return this;
   }
 
-  private void send(
+  private void sendGrpcRequest(
       final EvaluateDecisionRequest request,
       final StreamObserver<GatewayOuterClass.EvaluateDecisionResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .evaluateDecision(request, streamObserver);
+  }
+
+  @Override
+  public EvaluateDecisionCommandStep1 useRest() {
+    useRest = true;
+    return this;
+  }
+
+  @Override
+  public EvaluateDecisionCommandStep1 useGrpc() {
+    useRest = false;
+    return this;
   }
 }

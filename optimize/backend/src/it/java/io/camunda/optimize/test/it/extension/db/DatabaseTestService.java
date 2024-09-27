@@ -18,7 +18,6 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.U
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_USER_TASK;
 
-import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,9 +31,8 @@ import io.camunda.optimize.dto.optimize.query.MetadataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.repository.IndexRepository;
-import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
+import io.camunda.optimize.service.db.schema.DatabaseSchemaManager;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
@@ -188,6 +186,13 @@ public abstract class DatabaseTestService {
 
   public abstract DatabaseType getDatabaseVendor();
 
+  public abstract void createSnapshot(
+      final String snapshotRepositoryName, final String snapshotName, final String[] indexNames);
+
+  public abstract void createRepoSnapshot(final String snapshotRepositoryName);
+
+  public abstract void cleanSnapshots(final String snapshotRepositoryName);
+
   protected abstract <T extends OptimizeDto> List<T> getInstancesById(
       final String indexName,
       final List<String> instanceIds,
@@ -306,9 +311,7 @@ public abstract class DatabaseTestService {
   public abstract void performLowLevelBulkRequest(
       String methodName, String endpoint, String bulkPayload) throws IOException;
 
-  public abstract void initSchema(
-      List<IndexMappingCreator<IndexSettings.Builder>> mappingCreators,
-      DatabaseMetadataService metadataService);
+  public abstract void initSchema(final DatabaseSchemaManager schemaManager);
 
   public abstract Map<String, ? extends Object> getMappingFields(final String indexName)
       throws IOException;

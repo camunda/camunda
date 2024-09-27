@@ -19,7 +19,6 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.F
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static io.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
@@ -63,6 +62,10 @@ import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.RefreshRequest;
 import co.elastic.clients.elasticsearch.indices.get.Feature;
 import co.elastic.clients.elasticsearch.indices.get_alias.IndexAliases;
+import co.elastic.clients.elasticsearch.snapshot.CreateRepositoryRequest;
+import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotRequest;
+import co.elastic.clients.elasticsearch.snapshot.DeleteRepositoryRequest;
+import co.elastic.clients.elasticsearch.snapshot.DeleteSnapshotRequest;
 import co.elastic.clients.json.JsonData;
 import com.google.common.collect.Iterables;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
@@ -84,13 +87,13 @@ import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
-import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
-import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
+import io.camunda.optimize.service.db.repository.es.TaskRepositoryES;
+import io.camunda.optimize.service.db.schema.DatabaseSchemaManager;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
@@ -119,6 +122,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -140,12 +146,14 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   private String elasticsearchDatabaseVersion;
 
   private OptimizeElasticsearchClient optimizeElasticsearchClient;
+  private final TaskRepositoryES taskRepositoryES;
 
   public ElasticsearchDatabaseTestService(
       final String customIndexPrefix, final boolean haveToClean) {
     super(customIndexPrefix, haveToClean);
     initEsClient();
     setTestIndexRepository(new TestIndexRepositoryES(optimizeElasticsearchClient));
+    taskRepositoryES = new TaskRepositoryES(optimizeElasticsearchClient);
   }
 
   private static ClientAndServer initMockServer() {
@@ -537,6 +545,39 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public boolean indexExistsCheckWithApplyingOptimizePrefix(final String indexOrAliasName) {
     return indexExists(indexOrAliasName, false);
+  }
+
+  @Override
+  public void createRepoSnapshot(final String snapshotRepositoryName) {
+    try {
+      getOptimizeElasticClient()
+          .getEsClient()
+          .snapshot()
+          .createRepository(
+              CreateRepositoryRequest.of(
+                  b ->
+                      b.name(snapshotRepositoryName)
+                          .repository(r -> r.fs(s -> s.settings(t -> t.location("/var/tmp"))))));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public void cleanSnapshots(String snapshotRepositoryName) {
+    try {
+      getOptimizeElasticClient()
+          .getEsClient()
+          .snapshot()
+          .delete(
+              DeleteSnapshotRequest.of(b -> b.repository(snapshotRepositoryName).snapshot("*")));
+      getOptimizeElasticClient()
+          .getEsClient()
+          .snapshot()
+          .deleteRepository(DeleteRepositoryRequest.of(b -> b.name(snapshotRepositoryName)));
+    } catch (Exception e) {
+      log.warn("Delete failed, no snapshots to delete from repository {}", snapshotRepositoryName);
+    }
   }
 
   @Override
@@ -939,15 +980,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void initSchema(
-      final List<IndexMappingCreator<IndexSettings.Builder>> mappingCreators,
-      final DatabaseMetadataService metadataService) {
-    final ElasticSearchSchemaManager schemaManager =
-        new ElasticSearchSchemaManager(
-            (ElasticSearchMetadataService) metadataService,
-            createDefaultConfiguration(),
-            getIndexNameService(),
-            mappingCreators);
+  public void initSchema(final DatabaseSchemaManager schemaManager) {
     schemaManager.initializeSchema(getOptimizeElasticClient());
   }
 
@@ -1032,6 +1065,26 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
       return esClient.elasticsearchClient().count(countRequest).count();
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(e);
+    }
+  }
+
+  @Override
+  public void createSnapshot(
+      final String snapshotRepositoryName, final String snapshotName, final String[] indexNames) {
+    CreateSnapshotRequest createSnapshotRequest =
+        CreateSnapshotRequest.of(
+            b ->
+                b.repository(snapshotRepositoryName)
+                    .snapshot(snapshotName)
+                    .indices(Arrays.stream(indexNames).toList())
+                    .includeGlobalState(false)
+                    .waitForCompletion(true));
+    try {
+      getOptimizeElasticClient()
+          .triggerSnapshotAsync(createSnapshotRequest)
+          .get(10, TimeUnit.SECONDS);
+    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+      throw new OptimizeRuntimeException("Exception during creation snapshot:", e);
     }
   }
 

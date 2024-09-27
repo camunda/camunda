@@ -17,6 +17,7 @@ import io.camunda.service.search.filter.DecisionInstanceFilter;
 import io.camunda.service.search.filter.DecisionRequirementsFilter;
 import io.camunda.service.search.filter.FilterBase;
 import io.camunda.service.search.filter.FlowNodeInstanceFilter;
+import io.camunda.service.search.filter.FormFilter;
 import io.camunda.service.search.filter.IncidentFilter;
 import io.camunda.service.search.filter.ProcessInstanceFilter;
 import io.camunda.service.search.filter.UserFilter;
@@ -28,6 +29,7 @@ import io.camunda.service.search.query.DecisionDefinitionQuery;
 import io.camunda.service.search.query.DecisionInstanceQuery;
 import io.camunda.service.search.query.DecisionRequirementsQuery;
 import io.camunda.service.search.query.FlowNodeInstanceQuery;
+import io.camunda.service.search.query.FormQuery;
 import io.camunda.service.search.query.IncidentQuery;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryResult;
@@ -48,6 +50,7 @@ import io.camunda.service.transformers.filter.DecisionInstanceFilterTransformer;
 import io.camunda.service.transformers.filter.DecisionRequirementsFilterTransformer;
 import io.camunda.service.transformers.filter.FilterTransformer;
 import io.camunda.service.transformers.filter.FlownodeInstanceFilterTransformer;
+import io.camunda.service.transformers.filter.FormFilterTransformer;
 import io.camunda.service.transformers.filter.IncidentFilterTransformer;
 import io.camunda.service.transformers.filter.ProcessInstanceFilterTransformer;
 import io.camunda.service.transformers.filter.UserFilterTransformer;
@@ -102,6 +105,7 @@ public final class ServiceTransformers {
     mappers.put(DecisionRequirementsQuery.class, new TypedSearchQueryTransformer<>(mappers));
     mappers.put(DecisionInstanceQuery.class, new TypedSearchQueryTransformer<>(mappers));
     mappers.put(UserQuery.class, new TypedSearchQueryTransformer<>(mappers));
+    mappers.put(FormQuery.class, new TypedSearchQueryTransformer<>(mappers));
     mappers.put(AuthorizationQuery.class, new TypedSearchQueryTransformer<>(mappers));
     mappers.put(IncidentQuery.class, new TypedSearchQueryTransformer<>(mappers));
     mappers.put(
@@ -131,6 +135,7 @@ public final class ServiceTransformers {
     mappers.put(ComparableValueFilter.class, new ComparableValueFilterTransformer());
     mappers.put(FlowNodeInstanceFilter.class, new FlownodeInstanceFilterTransformer());
     mappers.put(IncidentFilter.class, new IncidentFilterTransformer(mappers));
+    mappers.put(FormFilter.class, new FormFilterTransformer(mappers));
 
     // result config -> source config
     mappers.put(QueryResultConfig.class, new ResultConfigTransformer());

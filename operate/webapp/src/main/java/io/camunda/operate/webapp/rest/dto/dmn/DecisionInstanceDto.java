@@ -7,10 +7,10 @@
  */
 package io.camunda.operate.webapp.rest.dto.dmn;
 
-import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
-import io.camunda.operate.entities.dmn.DecisionType;
 import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionType;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Comparator;

@@ -37,7 +37,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
         with:
-          go: false
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -45,7 +44,6 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          go: false
           maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
@@ -85,19 +83,17 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   property-tests:
     name: Property Tests
-    runs-on: [ self-hosted, linux, amd64, "16" ]
+    runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
         with:
-          go: false
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
-          go: false
           maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
@@ -133,7 +129,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   performance-tests:
     name: Performance Tests
-    runs-on: [ self-hosted, linux, amd64, "16" ]
+    runs-on: gcp-perf-core-16-default
     timeout-minutes: 30
     env:
       ZEEBE_PERFORMANCE_TEST_RESULTS_DIR: "/tmp/jmh"
@@ -141,13 +137,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
         with:
-          go: false
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
-          go: false
           maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
@@ -183,96 +177,6 @@ jobs:
         if: ${{ failure() || cancelled() }}
         with:
           name: Performance Tests
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-  go-client:
-    name: Go client tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-platform-docker
-        id: build-zeebe-docker
-        with:
-          repository: camunda/zeebe
-          version: current-test
-          distball: ${{ steps.build-zeebe.outputs.distball }}
-      - name: Run Go tests
-        working-directory: clients/go
-        run: go test -mod=vendor -v ./...
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-  go-lint:
-    name: Go linting
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          java: false
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          # fixed to avoid triggering false positive; see https://github.com/golangci/golangci-lint-action/issues/535
-          version: v1.55.2
-          working-directory: clients/go
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-  go-apidiff:
-    name: Go Backward Compatibility
-    runs-on: ubuntu-latest
-    env:
-      # bors-ng fails to set ${GITHUB_BASE_REF} to the target PR branch which breaks go-apidiff
-      # so we use this fixed value as a workaround
-      GO_CLIENT_BASE_REF: stable/8.5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          java: false
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      # Fetching a shallow copy of the ${GITHUB_BASE_REF} branch to check the compatibility against
-      - name: Fetching Base Branch
-        run: |
-          git fetch --depth=1 origin ${{ env.GO_CLIENT_BASE_REF }}
-      - uses: joelanford/go-apidiff@main
-        with:
-          base-ref:  origin/${{ env.GO_CLIENT_BASE_REF }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -355,9 +259,6 @@ jobs:
       - smoke-tests
       - property-tests
       - performance-tests
-      - go-client
-      - go-lint
-      - go-apidiff
       - docker-checks
     steps:
       - uses: actions/checkout@v4

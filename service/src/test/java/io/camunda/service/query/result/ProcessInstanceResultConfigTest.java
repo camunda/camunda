@@ -33,7 +33,7 @@ public class ProcessInstanceResultConfigTest {
     // when
     services.search(
         SearchQueryBuilders.processInstanceSearchQuery(
-            q -> q.resultConfig(r -> r.processInstanceKey().include())));
+            q -> q.resultConfig(r -> r.key().include())));
 
     // then
     final SearchQueryRequest searchRequest = client.getSingleSearchRequest();
@@ -48,7 +48,7 @@ public class ProcessInstanceResultConfigTest {
     // when
     services.search(
         SearchQueryBuilders.processInstanceSearchQuery(
-            q -> q.resultConfig(r -> r.processInstanceKey().exclude())));
+            q -> q.resultConfig(r -> r.key().exclude())));
 
     // then
     final SearchQueryRequest searchRequest = client.getSingleSearchRequest();

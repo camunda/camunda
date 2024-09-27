@@ -35,7 +35,7 @@ export const view = [
   {
     key: 'incident',
     label: () => t('report.view.in'),
-    visible: () => true,
+    visible: (_, optimizeDatabase) => optimizeDatabase !== 'opensearch',
     enabled: () => true,
     matcher: ({view}) => view?.entity === 'incident',
     payload: ({view}) => {
@@ -48,7 +48,7 @@ export const view = [
   {
     key: 'flowNode',
     label: () => t('report.view.fn'),
-    visible: () => true,
+    visible: (_, optimizeDatabase) => optimizeDatabase !== 'opensearch',
     enabled: () => true,
     matcher: ({view}) => view?.entity === 'flowNode',
     payload: ({view}) => {
@@ -61,7 +61,7 @@ export const view = [
   {
     key: 'userTask',
     label: () => t('report.view.userTask'),
-    visible: () => true,
+    visible: (_, optimizeDatabase) => optimizeDatabase !== 'opensearch',
     enabled: () => true,
     matcher: ({view}) => view?.entity === 'userTask',
     payload: ({view}) => {
@@ -74,7 +74,7 @@ export const view = [
   {
     key: 'variable',
     label: () => t('report.view.variable'),
-    visible: () => true,
+    visible: (_, optimizeDatabase) => optimizeDatabase !== 'opensearch',
     enabled: () => true,
     matcher: ({view}) => view?.entity === 'variable',
     payload: () => {

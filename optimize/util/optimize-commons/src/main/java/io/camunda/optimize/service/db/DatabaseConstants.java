@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DatabaseConstants {
+  public static final String AGGREGATION_CONTAINS_NULL = "isNull";
 
   // Note: we cap listings to 1000 as a generous practical limit, no paging
   public static final int LIST_FETCH_LIMIT = 1000;
@@ -85,7 +86,7 @@ public class DatabaseConstants {
   public static final String INDEX_ALREADY_EXISTS_EXCEPTION_TYPE =
       "resource_already_exists_exception";
 
-  public static final String ELASTICSEARCH_TASK_DESCRIPTION_DOC_SUFFIX = "[_doc]";
+  public static final String DATABASE_TASK_DESCRIPTION_DOC_SUFFIX = "[_doc]";
 
   // used to reference Optimize as the source "engine" of imported data
   public static final String EXTERNAL_DATA_SOURCE_ALIAS = "optimize";

@@ -18,7 +18,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.operate.data.util.DecisionDataUtil;
-import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
@@ -26,6 +25,7 @@ import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
 import java.util.List;
 import java.util.Map;
 import org.junit.Before;

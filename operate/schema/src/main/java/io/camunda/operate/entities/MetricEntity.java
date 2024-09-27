@@ -7,10 +7,11 @@
  */
 package io.camunda.operate.entities;
 
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class MetricEntity extends OperateEntity {
+public class MetricEntity extends AbstractExporterEntity {
   private String event;
   private String value;
   private OffsetDateTime eventTime;
@@ -21,7 +22,7 @@ public class MetricEntity extends OperateEntity {
     super();
   }
 
-  public MetricEntity(String event, String value, OffsetDateTime eventTime) {
+  public MetricEntity(final String event, final String value, final OffsetDateTime eventTime) {
     this.event = event;
     this.value = value;
     this.eventTime = eventTime;
@@ -31,7 +32,7 @@ public class MetricEntity extends OperateEntity {
     return event;
   }
 
-  public MetricEntity setEvent(String event) {
+  public MetricEntity setEvent(final String event) {
     this.event = event;
     return this;
   }
@@ -40,7 +41,7 @@ public class MetricEntity extends OperateEntity {
     return value;
   }
 
-  public MetricEntity setValue(String value) {
+  public MetricEntity setValue(final String value) {
     this.value = value;
     return this;
   }
@@ -49,7 +50,7 @@ public class MetricEntity extends OperateEntity {
     return eventTime;
   }
 
-  public MetricEntity setEventTime(OffsetDateTime eventTime) {
+  public MetricEntity setEventTime(final OffsetDateTime eventTime) {
     this.eventTime = eventTime;
     return this;
   }
@@ -58,13 +59,18 @@ public class MetricEntity extends OperateEntity {
     return tenantId;
   }
 
-  public MetricEntity setTenantId(String tenantId) {
+  public MetricEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), event, value, eventTime, tenantId);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -79,10 +85,5 @@ public class MetricEntity extends OperateEntity {
         && Objects.equals(value, that.value)
         && Objects.equals(eventTime, that.eventTime)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), event, value, eventTime, tenantId);
   }
 }

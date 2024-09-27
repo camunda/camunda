@@ -9,10 +9,8 @@ package io.camunda.optimize.dto.optimize.query.variable;
 
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import lombok.Data;
-import lombok.experimental.Accessors;
 
 @Data
-@Accessors(chain = true)
 public class ExternalProcessVariableDto implements OptimizeDto {
 
   private String variableId;

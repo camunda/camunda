@@ -16,15 +16,17 @@ import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import co.elastic.clients.util.Pair;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.service.db.es.report.aggregations.AggregationStrategyES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.AbstractProcessViewMultiAggregationInterpreterES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.interpreter.view.process.duration.ProcessViewDurationInterpreterHelper;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
-import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewMeasure;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.commons.math3.util.Precision;
 
 public abstract class AbstractProcessViewDurationInterpreterES
     extends AbstractProcessViewMultiAggregationInterpreterES {
@@ -45,37 +47,25 @@ public abstract class AbstractProcessViewDurationInterpreterES
       final ResponseBody<?> response,
       final Map<String, Aggregate> aggs,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final ViewResult.ViewResultBuilder viewResultBuilder = ViewResult.builder();
-    getAggregationStrategies(context.getReportData())
-        .forEach(
-            aggregationStrategy -> {
-              Double measureResult = aggregationStrategy.getValue(aggs);
-              if (measureResult != null) {
-                // rounding to closest integer since the lowest precision
-                // for duration in the data is milliseconds anyway for data types.
-                measureResult = Precision.round(measureResult, 0);
-              }
-              viewResultBuilder.viewMeasure(
-                  ViewMeasure.builder()
-                      .aggregationType(aggregationStrategy.getAggregationType())
-                      .value(measureResult)
-                      .build());
-            });
-    return viewResultBuilder.build();
+    final List<AggregationStrategyES<?>> aggregationStrategies =
+        getAggregationStrategies(context.getReportData());
+    final Function<AggregationStrategyES<?>, Double> measureExtractor =
+        aggregationStrategy -> aggregationStrategy.getValue(aggs);
+    return ProcessViewDurationInterpreterHelper.retrieveResult(
+        aggregationStrategies, measureExtractor);
   }
 
-  protected abstract String getReferenceDateFieldName(final ProcessReportDataDto reportData);
+  protected abstract String getReferenceDateFieldName();
 
-  protected abstract String getDurationFieldName(final ProcessReportDataDto reportData);
+  protected abstract String getDurationFieldName();
 
   private Script getScriptedAggregationField(final ProcessReportDataDto reportData) {
     return reportData.isUserTaskReport()
         ? getUserTaskDurationScript(
-            LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-            getDurationFieldName(reportData))
+            LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(), getDurationFieldName())
         : getDurationScript(
             LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-            getDurationFieldName(reportData),
-            getReferenceDateFieldName(reportData));
+            getDurationFieldName(),
+            getReferenceDateFieldName());
   }
 }

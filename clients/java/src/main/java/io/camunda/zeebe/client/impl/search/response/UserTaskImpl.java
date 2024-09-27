@@ -22,7 +22,7 @@ import java.util.Map;
 
 public class UserTaskImpl implements UserTask {
 
-  private final Long key;
+  private final Long userTaskKey;
   private final String state;
   private final String assignee;
   private final String elementId;
@@ -44,14 +44,14 @@ public class UserTaskImpl implements UserTask {
   private final Integer priority;
 
   public UserTaskImpl(final UserTaskItem item) {
-    key = item.getKey();
+    userTaskKey = item.getUserTaskKey();
     state = item.getState();
     assignee = item.getAssignee();
     elementId = item.getElementId();
     elementInstanceKey = item.getElementInstanceKey();
     candidateGroup = item.getCandidateGroup();
     candidateUser = item.getCandidateUser();
-    bpmnProcessId = item.getBpmnProcessId();
+    bpmnProcessId = item.getProcessDefinitionId();
     processDefinitionKey = item.getProcessDefinitionKey();
     processInstanceKey = item.getProcessInstanceKey();
     formKey = item.getFormKey();
@@ -67,8 +67,8 @@ public class UserTaskImpl implements UserTask {
   }
 
   @Override
-  public Long getKey() {
-    return key;
+  public Long getUserTaskKey() {
+    return userTaskKey;
   }
 
   @Override

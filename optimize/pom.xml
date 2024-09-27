@@ -10,7 +10,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.13.0</project.previousVersion>
+    <project.previousVersion>3.13.4</project.previousVersion>
     <camunda.maven.artifacts.version>7.21.0</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
@@ -22,28 +22,36 @@
     <!-- maven plugins -->
     <surefire-plugin.version>3.5.0</surefire-plugin.version>
 
-    <!-- database config -->
+    <!-- DATABASE -->
+    <!-- Elasticsearch-->
     <elasticsearch.client.version>8.13.0</elasticsearch.client.version>
     <elasticsearch.client.test.version>7.17.24</elasticsearch.client.test.version>
-    <opensearch.client.version>2.10.4</opensearch.client.version>
-    <awssdk.version>2.28.2</awssdk.version>
 
-    <!-- The default opensearch version we are going to be testing with-->
-    <opensearch.test.version>2.9.0</opensearch.test.version>
+    <!--The least supported opensearch version we should test against-->
+    <opensearch.test.version>2.10.0</opensearch.test.version>
+    <!--the opensearch version of the previous Optimize version -->
+    <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
     <!--The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>8.13.0</elasticsearch.test.version>
     <!--the ElasticSearch version of the previous Optimize version -->
-    <previous.optimize.elasticsearch.version>8.12.0</previous.optimize.elasticsearch.version>
+    <previous.optimize.elasticsearch.version>8.13.0</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.24.0</elasticsearch.log4j.version>
+    <!-- OpenSearch-->
+    <opensearch.client.version>2.10.4</opensearch.client.version>
+    <!--The least supported opensearch version we should test against-->
+    <opensearch.test.version>2.10.0</opensearch.test.version>
+    <!-- the opensearch version of the previous Optimize version -->
+    <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
+    <awssdk.version>2.28.10</awssdk.version>
 
     <jetty.version>12.0.13</jetty.version>
-    <jackson.version>2.17.2</jackson.version>
+    <jackson.version>2.18.0</jackson.version>
     <jsonpath.version>2.9.0</jsonpath.version>
-    <apache.http5-client.version>5.3.1</apache.http5-client.version>
+    <apache.http5-client.version>5.4</apache.http5-client.version>
     <apache.http5-core.version>5.3</apache.http5-core.version>
-    <guava.version>33.3.0-jre</guava.version>
-    <spring.boot.version>3.3.3</spring.boot.version>
+    <guava.version>33.3.1-jre</guava.version>
+    <spring.boot.version>3.3.4</spring.boot.version>
     <spring.version>6.1.13</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
@@ -52,7 +60,7 @@
     <lombok.version>1.18.34</lombok.version>
     <logback.version>1.5.8</logback.version>
     <slf4j.version>2.0.16</slf4j.version>
-    <commons.io.version>2.16.1</commons.io.version>
+    <commons.io.version>2.17.0</commons.io.version>
 
     <version.node>v20.9.0</version.node>
     <version.yarn>v1.22.19</version.yarn>
@@ -62,8 +70,8 @@
     <!-- testing config -->
     <mockito.version>5.13.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
-    <junit.jupiter.version>5.11.0</junit.jupiter.version>
-    <junit.platform.version>1.11.0</junit.platform.version>
+    <junit.jupiter.version>5.11.1</junit.jupiter.version>
+    <junit.platform.version>1.11.1</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
     <assertj.version>3.26.3</assertj.version>
     <google-java-format.plugin.version>1.23.0</google-java-format.plugin.version>
@@ -77,7 +85,7 @@
 
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
-    <spring-boot.version>3.3.3</spring-boot.version>
+    <spring-boot.version>3.3.4</spring-boot.version>
   </properties>
 
   <modules>
@@ -530,12 +538,12 @@
         <plugin>
           <groupId>com.github.eirslett</groupId>
           <artifactId>frontend-maven-plugin</artifactId>
-          <version>1.15.0</version>
+          <version>1.15.1</version>
         </plugin>
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>4.5</version>
+          <version>4.6</version>
         </plugin>
         <!-- Google code format plugin -->
         <plugin>

@@ -32,6 +32,15 @@ public final class SearchQueryBuilders {
     return fn.apply(userTaskSearchQuery()).build();
   }
 
+  public static FormQuery.Builder formSearchQuery() {
+    return new FormQuery.Builder();
+  }
+
+  public static FormQuery formSearchQuery(
+      final Function<FormQuery.Builder, ObjectBuilder<FormQuery>> fn) {
+    return fn.apply(formSearchQuery()).build();
+  }
+
   public static VariableQuery.Builder variableSearchQuery() {
     return new VariableQuery.Builder();
   }

@@ -14,13 +14,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@Accessors(chain = true)
 public class AssigneeOperationDto implements OptimizeDto, Serializable {
 
   @EqualsAndHashCode.Include private String id;

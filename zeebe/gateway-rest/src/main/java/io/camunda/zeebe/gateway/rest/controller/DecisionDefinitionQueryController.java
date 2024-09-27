@@ -8,20 +8,19 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.service.DecisionDefinitionServices;
-import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,27 +46,37 @@ public class DecisionDefinitionQueryController {
   }
 
   @GetMapping(
+      path = "/{decisionDefinitionKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public ResponseEntity<DecisionDefinitionItem> getDecisionDefinitionByKey(
+      @PathVariable("decisionDefinitionKey") final long decisionDefinitionKey) {
+    try {
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toDecisionDefinition(
+              decisionDefinitionServices
+                  .withAuthentication(RequestMapper.getAuthentication())
+                  .getByKey(decisionDefinitionKey)));
+    } catch (final Exception e) {
+      REST_LOGGER.debug("An exception occurred in getDecisionDefinition.", e);
+      return mapErrorToResponse(e);
+    }
+  }
+
+  @GetMapping(
       path = "/{decisionKey}/xml",
       produces = {MediaType.TEXT_XML_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public ResponseEntity<String> getDecisionDefinitionXml(
-      @PathVariable("decisionKey") final Long decisionKey) {
+      @PathVariable("decisionKey") final long decisionKey) {
     try {
       return ResponseEntity.ok()
           .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
-          .body(decisionDefinitionServices.getDecisionDefinitionXml(decisionKey));
-    } catch (final NotFoundException nfe) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.NOT_FOUND, nfe.getMessage(), RejectionType.NOT_FOUND.name());
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+          .body(
+              decisionDefinitionServices
+                  .withAuthentication(RequestMapper.getAuthentication())
+                  .getDecisionDefinitionXml(decisionKey));
     } catch (final Exception e) {
-      REST_LOGGER.warn("An exception occurred in getDecisionDefinitionXml.", e);
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR,
-              e.getMessage(),
-              "Failed to execute Get Decision Definition XML Query.");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+      REST_LOGGER.debug("An exception occurred in getDecisionDefinitionXml.", e);
+      return mapErrorToResponse(e);
     }
   }
 
@@ -81,13 +90,8 @@ public class DecisionDefinitionQueryController {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(result));
     } catch (final Exception e) {
-      REST_LOGGER.warn("An exception occurred in searchDecisionDefinitions.", e);
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR,
-              e.getMessage(),
-              "Failed to execute Decision Definition Search Query.");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+      REST_LOGGER.debug("An exception occurred in searchDecisionDefinitions.", e);
+      return mapErrorToResponse(e);
     }
   }
 }

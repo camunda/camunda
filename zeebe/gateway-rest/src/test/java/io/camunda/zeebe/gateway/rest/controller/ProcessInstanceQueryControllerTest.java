@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.entities.ProcessInstanceEntity;
+import io.camunda.service.exception.NotFoundException;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.SearchQueryResult.Builder;
@@ -32,58 +33,86 @@ import org.springframework.http.MediaType;
     properties = "camunda.rest.query.enabled=true")
 public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
-  static final String EXPECTED_SEARCH_RESPONSE =
-      """
-      {
-          "items": [
-            {
-              "key": 123,
-              "processName": "Demo Process",
-              "processVersion": 5,
-              "bpmnProcessId": "demoProcess",
-              "parentKey": 555,
-              "parentFlowNodeInstanceKey": 789,
-              "startDate": "2024-01-01T00:00:00Z",
-              "state": "ACTIVE",
-              "incident": false,
-              "hasActiveOperation": false,
-              "processDefinitionKey": 777,
-              "tenantId": "default"
-            }
-          ],
-          "page": {
-              "totalItems": 1,
-              "firstSortValues": [],
-              "lastSortValues": [
-                  "v"
-              ]
-          }
-      }""";
   private static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
+  private static final String PROCESS_INSTANCES_BY_KEY_URL =
+      "/v2/process-instances/{processInstanceKey}";
+
+  private static final ProcessInstanceEntity PROCESS_INSTANCE_ENTITY =
+      new ProcessInstanceEntity(
+          123L,
+          "demoProcess",
+          "Demo Process",
+          5,
+          "v5",
+          789L,
+          345L,
+          333L,
+          777L,
+          "PI_1/PI_2",
+          "2024-01-01T00:00:00Z",
+          null,
+          ProcessInstanceEntity.ProcessInstanceState.ACTIVE,
+          false,
+          "tenant");
+
+  private static final String PROCESS_INSTANCE_ENTITY_JSON =
+      """
+                  {
+                  "processInstanceKey": 123,
+                  "processDefinitionId": "demoProcess",
+                  "processDefinitionName": "Demo Process",
+                  "processDefinitionVersion": 5,
+                  "processDefinitionVersionTag": "v5",
+                  "processDefinitionKey": 789,
+                  "rootProcessInstanceKey": 345,
+                  "parentProcessInstanceKey": 333,
+                  "parentFlowNodeInstanceKey": 777,
+                  "treePath": "PI_1/PI_2",
+                  "startDate": "2024-01-01T00:00:00Z",
+                  "state": "ACTIVE",
+                  "incident": false,
+                  "tenantId": "tenant"
+                }
+                """;
+
+  private static final String EXPECTED_SEARCH_RESPONSE =
+      """
+          {
+              "items": [
+                {
+                  "processInstanceKey": 123,
+                  "processDefinitionId": "demoProcess",
+                  "processDefinitionName": "Demo Process",
+                  "processDefinitionVersion": 5,
+                  "processDefinitionVersionTag": "v5",
+                  "processDefinitionKey": 789,
+                  "rootProcessInstanceKey": 345,
+                  "parentProcessInstanceKey": 333,
+                  "parentFlowNodeInstanceKey": 777,
+                  "treePath": "PI_1/PI_2",
+                  "startDate": "2024-01-01T00:00:00Z",
+                  "state": "ACTIVE",
+                  "incident": false,
+                  "tenantId": "tenant"
+                }
+              ],
+              "page": {
+                  "totalItems": 1,
+                  "firstSortValues": [],
+                  "lastSortValues": [
+                      "v"
+                  ]
+              }
+          }
+          """;
+
   private static final SearchQueryResult<ProcessInstanceEntity> SEARCH_QUERY_RESULT =
       new Builder<ProcessInstanceEntity>()
           .total(1L)
-          .items(
-              List.of(
-                  new ProcessInstanceEntity(
-                      123L,
-                      "Demo Process",
-                      5,
-                      "demoProcess",
-                      555L,
-                      789L,
-                      "2024-01-01T00:00:00Z",
-                      null,
-                      "ACTIVE",
-                      false,
-                      false,
-                      777L,
-                      "default",
-                      null,
-                      null,
-                      null)))
+          .items(List.of(PROCESS_INSTANCE_ENTITY))
           .sortValues(new Object[] {"v"})
           .build();
+
   @MockBean ProcessInstanceServices processInstanceServices;
 
   @BeforeEach
@@ -143,18 +172,18 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
-        {
-            "sort": [
-                {
-                    "field": "bpmnProcessId",
-                    "order": "desc"
-                },
-                {
-                    "field": "processDefinitionKey",
-                    "order": "asc"
-                }
-            ]
-        }""";
+            {
+                "sort": [
+                    {
+                        "field": "bpmnProcessId",
+                        "order": "desc"
+                    },
+                    {
+                        "field": "processDefinitionKey",
+                        "order": "asc"
+                    }
+                ]
+            }""";
     // when / then
     webClient
         .post()
@@ -175,7 +204,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             new ProcessInstanceQuery.Builder()
                 .sort(
                     new ProcessInstanceSort.Builder()
-                        .bpmnProcessId()
+                        .processDefinitionId()
                         .desc()
                         .processDefinitionKey()
                         .asc()
@@ -188,24 +217,24 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-            "sort": [
-                {
-                    "field": "bpmnProcessId",
-                    "order": "dsc"
-                }
-            ]
-        }""";
+            {
+                "sort": [
+                    {
+                        "field": "bpmnProcessId",
+                        "order": "dsc"
+                    }
+                ]
+            }""";
     final var expectedResponse =
         String.format(
             """
-        {
-          "type": "about:blank",
-          "title": "INVALID_ARGUMENT",
-          "status": 400,
-          "detail": "Unknown sortOrder: dsc.",
-          "instance": "%s"
-        }""",
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Unknown sortOrder: dsc.",
+                  "instance": "%s"
+                }""",
             PROCESS_INSTANCES_SEARCH_URL);
     // when / then
     webClient
@@ -230,24 +259,24 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-            "sort": [
-                {
-                    "field": "unknownField",
-                    "order": "asc"
-                }
-            ]
-        }""";
+            {
+                "sort": [
+                    {
+                        "field": "unknownField",
+                        "order": "asc"
+                    }
+                ]
+            }""";
     final var expectedResponse =
         String.format(
             """
-        {
-          "type": "about:blank",
-          "title": "INVALID_ARGUMENT",
-          "status": 400,
-          "detail": "Unknown sortBy: unknownField.",
-          "instance": "%s"
-        }""",
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Unknown sortBy: unknownField.",
+                  "instance": "%s"
+                }""",
             PROCESS_INSTANCES_SEARCH_URL);
     // when / then
     webClient
@@ -272,23 +301,23 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-            "sort": [
-                {
-                    "order": "asc"
-                }
-            ]
-        }""";
+            {
+                "sort": [
+                    {
+                        "order": "asc"
+                    }
+                ]
+            }""";
     final var expectedResponse =
         String.format(
             """
-        {
-          "type": "about:blank",
-          "title": "INVALID_ARGUMENT",
-          "status": 400,
-          "detail": "Sort field must not be null.",
-          "instance": "%s"
-        }""",
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Sort field must not be null.",
+                  "instance": "%s"
+                }""",
             PROCESS_INSTANCES_SEARCH_URL);
     // when / then
     webClient
@@ -313,22 +342,22 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-            "page": {
-                "searchAfter": ["a"],
-                "searchBefore": ["b"]
-            }
-        }""";
+            {
+                "page": {
+                    "searchAfter": ["a"],
+                    "searchBefore": ["b"]
+                }
+            }""";
     final var expectedResponse =
         String.format(
             """
-        {
-          "type": "about:blank",
-          "title": "INVALID_ARGUMENT",
-          "status": 400,
-          "detail": "Both searchAfter and searchBefore cannot be set at the same time.",
-          "instance": "%s"
-        }""",
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Both searchAfter and searchBefore cannot be set at the same time.",
+                  "instance": "%s"
+                }""",
             PROCESS_INSTANCES_SEARCH_URL);
     // when / then
     webClient
@@ -346,5 +375,58 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+  }
+
+  @Test
+  public void shouldReturnProcessInstanceForValidKey() {
+    // given
+    final var validProcesInstanceKey = 123L;
+    when(processInstanceServices.getByKey(validProcesInstanceKey))
+        .thenReturn(PROCESS_INSTANCE_ENTITY);
+
+    // when / then
+    webClient
+        .get()
+        .uri(PROCESS_INSTANCES_BY_KEY_URL, validProcesInstanceKey)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(PROCESS_INSTANCE_ENTITY_JSON);
+
+    // Verify that the service was called with the valid key
+    verify(processInstanceServices).getByKey(validProcesInstanceKey);
+  }
+
+  @Test
+  public void shouldReturn404ForInvalidProcessInstaceKey() {
+    // given
+    final var invalidProcesInstanceKey = 100L;
+    when(processInstanceServices.getByKey(invalidProcesInstanceKey))
+        .thenThrow(
+            new NotFoundException(
+                String.format("Process Instance with key %d not found", invalidProcesInstanceKey)));
+    // when / then
+    webClient
+        .get()
+        .uri(PROCESS_INSTANCES_BY_KEY_URL, invalidProcesInstanceKey)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .json(
+            """
+                    {
+                      "type": "about:blank",
+                      "status": 404,
+                      "title": "NOT_FOUND",
+                      "detail": "Process Instance with key 100 not found"
+                    }
+                """);
+
+    // Verify that the service was called with the invalid key
+    verify(processInstanceServices).getByKey(invalidProcesInstanceKey);
   }
 }

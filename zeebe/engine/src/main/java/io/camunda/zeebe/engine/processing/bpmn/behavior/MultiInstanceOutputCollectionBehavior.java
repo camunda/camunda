@@ -88,6 +88,14 @@ public final class MultiInstanceOutputCollectionBehavior {
               // collection, but that is slower.
               final var currentCollection =
                   stateBehavior.getLocalVariable(flowScopeContext, variableName);
+              if (currentCollection == null) {
+                return Either.left(
+                    new Failure(
+                        "Expected the output collection variable '%s' to be of type list, but it was NIL"
+                            .formatted(bufferAsString(variableName)),
+                        ErrorType.EXTRACT_VALUE_ERROR,
+                        flowScopeContext.getElementInstanceKey()));
+              }
               return replaceAt(
                       currentCollection,
                       loopCounter,

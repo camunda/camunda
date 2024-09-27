@@ -10,6 +10,8 @@ import React from 'react';
 
 import {addDiagramTooltip} from './service';
 
+import './Tooltip.scss';
+
 export default class Tooltip extends React.Component {
   state = {
     openOverlayId: null,

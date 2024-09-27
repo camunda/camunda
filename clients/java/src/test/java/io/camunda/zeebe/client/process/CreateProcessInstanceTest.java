@@ -170,7 +170,7 @@ public final class CreateProcessInstanceTest extends ClientTest {
   }
 
   @Test
-  public void shouldRaise() {
+  public void shouldRaiseAnErrorIfRequestFails() {
     // given
     gatewayService.errorOnRequest(
         CreateProcessInstanceRequest.class, () -> new ClientException("Invalid request"));

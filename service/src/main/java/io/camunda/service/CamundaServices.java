@@ -53,6 +53,10 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
         brokerClient, searchClient, transformers, authentication);
   }
 
+  public DecisionInstanceServices decisionInstanceServices() {
+    return new DecisionInstanceServices(brokerClient, searchClient, transformers, authentication);
+  }
+
   public IncidentServices incidentServices() {
     return new IncidentServices(brokerClient, searchClient, transformers, authentication);
   }
@@ -63,6 +67,10 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
 
   public UserServices userServices() {
     return new UserServices(brokerClient, searchClient, transformers, authentication);
+  }
+
+  public FormServices formServices() {
+    return new FormServices(brokerClient, searchClient, transformers, authentication);
   }
 
   public MessageServices messageServices() {

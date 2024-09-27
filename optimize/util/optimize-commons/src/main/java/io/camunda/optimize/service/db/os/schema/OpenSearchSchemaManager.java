@@ -10,9 +10,14 @@ package io.camunda.optimize.service.db.os.schema;
 import static io.camunda.optimize.service.db.DatabaseConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
 import static io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager.INDEX_EXIST_BATCH_SIZE;
 import static io.camunda.optimize.service.db.os.schema.OpenSearchIndexSettingsBuilder.buildDynamicSettings;
+import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.util.stream.Collectors.toSet;
 
+import co.elastic.clients.util.Pair;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import io.camunda.optimize.service.db.os.MappingMetadataUtilOS;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
@@ -48,6 +53,7 @@ import jakarta.json.spi.JsonProvider;
 import jakarta.json.stream.JsonParser;
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -63,20 +69,24 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.ObjectDeserializer;
+import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.indices.Alias;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.GetIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.GetIndicesSettingsResponse;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.IndexSettings.Builder;
-import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsResponse;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.opensearch.client.opensearch.indices.PutMappingResponse;
+import org.opensearch.client.opensearch.indices.PutTemplateRequest;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
@@ -484,28 +494,72 @@ public class OpenSearchSchemaManager
 
     final IndexTemplateMapping template;
     try {
-      template =
-          createTemplateFromJson(
-              mappingCreator.getSource().toString(),
-              aliases,
-              OpenSearchIndexSettingsBuilder.buildAllSettings(
-                  configurationService, mappingCreator));
-      final PutIndexTemplateRequest request =
-          new PutIndexTemplateRequest.Builder()
-              .name(templateName)
-              .template(new IndexTemplateMapping.Builder().settings(indexSettings).build())
-              .indexPatterns(
-                  Collections.singletonList(
-                      indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(
-                          mappingCreator)))
-              .template(template)
-              .version((long) mappingCreator.getVersion())
-              .build();
+      final PutTemplateRequest request =
+          PutTemplateRequest.of(
+              b -> {
+                b.name(templateName)
+                    .version((long) mappingCreator.getVersion())
+                    .mappings(getMappings(mappingCreator.getSource().toString()))
+                    .settings(convertToMap(indexSettings))
+                    .indexPatterns(
+                        Collections.singletonList(
+                            indexNameService.getOptimizeIndexNameWithVersionWithWildcardSuffix(
+                                mappingCreator)));
+                additionalAliases.stream()
+                    .filter(aliasName -> !aliasName.equals(defaultAliasName))
+                    .map(aliasName -> Pair.of(aliasName, Alias.of(a -> a.isWriteIndex(false))))
+                    .forEach((p) -> b.aliases(p.key(), p.value()));
+                return b;
+              });
       putIndexTemplate(osClient, request);
-    } catch (final OptimizeRuntimeException | IOException e) {
+    } catch (final OptimizeRuntimeException e) {
       throw new OptimizeRuntimeException(
           "Could not create or update template " + templateName + ". Error: " + e.getMessage());
     }
+  }
+
+  private Map<String, JsonData> convertToMap(final IndexSettings indexSettings) {
+    try {
+      final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(OPTIMIZE_MAPPER);
+      final StringWriter writer = new StringWriter();
+      final JacksonJsonpGenerator generator =
+          new JacksonJsonpGenerator(new JsonFactory().createGenerator(writer));
+      indexSettings.serialize(generator, jsonpMapper);
+      generator.flush();
+
+      try (final JsonParser jsonParser =
+          JsonProvider.provider().createParser(new StringReader(writer.toString()))) {
+
+        return ((Map<String, Object>) JsonData.from(jsonParser, jsonpMapper).to(Map.class))
+            .entrySet().stream()
+                .collect(
+                    Collectors.toMap(Map.Entry::getKey, entry -> JsonData.of(entry.getValue())));
+      }
+    } catch (IOException e) {
+      log.error("Could not create settings!", e);
+      throw new OptimizeRuntimeException("Could not create index settings");
+    }
+  }
+
+  private TypeMapping getMappings(final String json) {
+    final ObjectMapper objectMapper = new ObjectMapper();
+    JsonNode indexAsJSONNode = null;
+    final String jsonNew =
+        "{\"mappings\": "
+            + json.replace("TypeMapping: ", "")
+                .replace("\"match_mapping_type\":[\"string\"]", "\"match_mapping_type\":\"string\"")
+                .replace("\"path_match\":[\"*\"]", "\"path_match\":\"*\"")
+            + "}";
+    try {
+      indexAsJSONNode = objectMapper.readTree(new StringReader(jsonNew));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    final JsonParser jsonParser =
+        JsonProvider.provider()
+            .createParser(new StringReader(indexAsJSONNode.get("mappings").toPrettyString()));
+    return TypeMapping._DESERIALIZER.deserialize(jsonParser, new JsonbJsonpMapper());
   }
 
   // Needed for loading from JSON, opensearch doesn't provide something like .withJSON(...) for
@@ -535,7 +589,7 @@ public class OpenSearchSchemaManager
   }
 
   private void putIndexTemplate(
-      final OptimizeOpenSearchClient osClient, final PutIndexTemplateRequest request) {
+      final OptimizeOpenSearchClient osClient, final PutTemplateRequest request) {
     final boolean created =
         osClient.getRichOpenSearchClient().template().createTemplateWithRetries(request);
     if (created) {

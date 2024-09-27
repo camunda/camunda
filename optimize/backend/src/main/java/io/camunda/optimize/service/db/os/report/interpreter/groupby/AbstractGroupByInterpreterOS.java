@@ -18,12 +18,19 @@ import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import java.util.Map;
 import java.util.Optional;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 public abstract class AbstractGroupByInterpreterOS<
     DATA extends SingleReportDataDto, PLAN extends ExecutionPlan> {
+
+  public BoolQuery.Builder adjustQuery(
+      final BoolQuery.Builder queryBuilder, final ExecutionContext<DATA, PLAN> context) {
+    return getDistributedByInterpreter().adjustQuery(queryBuilder, context);
+  }
+
   public void adjustSearchRequest(
       final SearchRequest.Builder searchRequestBuilder,
       final Query baseQuery,

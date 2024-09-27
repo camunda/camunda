@@ -11,7 +11,7 @@ import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
 
-public final record ProcessInstanceSort(List<FieldSorting> orderings) implements SortOption {
+public record ProcessInstanceSort(List<FieldSorting> orderings) implements SortOption {
 
   @Override
   public List<FieldSorting> getFieldSortings() {
@@ -26,33 +26,53 @@ public final record ProcessInstanceSort(List<FieldSorting> orderings) implements
   public static final class Builder extends SortOption.AbstractBuilder<Builder>
       implements ObjectBuilder<ProcessInstanceSort> {
 
-    public Builder key() {
+    public Builder processInstanceKey() {
       currentOrdering = new FieldSorting("key", null);
       return this;
     }
 
-    public Builder processName() {
-      currentOrdering = new FieldSorting("processName", null);
-      return this;
-    }
-
-    public Builder processVersion() {
-      currentOrdering = new FieldSorting("processVersion", null);
-      return this;
-    }
-
-    public Builder bpmnProcessId() {
+    public Builder processDefinitionId() {
       currentOrdering = new FieldSorting("bpmnProcessId", null);
       return this;
     }
 
-    public Builder parentKey() {
+    public Builder processDefinitionName() {
+      currentOrdering = new FieldSorting("processName", null);
+      return this;
+    }
+
+    public Builder processDefinitionVersion() {
+      currentOrdering = new FieldSorting("processVersion", null);
+      return this;
+    }
+
+    public Builder processDefinitionVersionTag() {
+      currentOrdering = new FieldSorting("processVersionTag", null);
+      return this;
+    }
+
+    public Builder processDefinitionKey() {
+      currentOrdering = new FieldSorting("processDefinitionKey", null);
+      return this;
+    }
+
+    public Builder rootProcessInstanceKey() {
+      currentOrdering = new FieldSorting("rootProcessInstanceKey", null);
+      return this;
+    }
+
+    public Builder parentProcessInstanceKey() {
       currentOrdering = new FieldSorting("parentProcessInstanceKey", null);
       return this;
     }
 
     public Builder parentFlowNodeInstanceKey() {
       currentOrdering = new FieldSorting("parentFlowNodeInstanceKey", null);
+      return this;
+    }
+
+    public Builder treePath() {
+      currentOrdering = new FieldSorting("treePath", null);
       return this;
     }
 
@@ -76,23 +96,8 @@ public final record ProcessInstanceSort(List<FieldSorting> orderings) implements
       return this;
     }
 
-    public Builder hasActiveOperation() {
-      currentOrdering = new FieldSorting("hasActiveOperation", null);
-      return this;
-    }
-
-    public Builder processDefinitionKey() {
-      currentOrdering = new FieldSorting("processDefinitionKey", null);
-      return this;
-    }
-
     public Builder tenantId() {
       currentOrdering = new FieldSorting("tenantId", null);
-      return this;
-    }
-
-    public Builder rootInstanceId() {
-      currentOrdering = new FieldSorting("rootInstanceId", null);
       return this;
     }
 

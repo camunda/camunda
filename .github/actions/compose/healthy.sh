@@ -47,7 +47,7 @@ while [ $(date +%s) -lt $endTime ]; do
     sleep 1
 done
 
-echo "/rServices are not healthy after $TIMEOUT seconds"
+echo "\rServices are not healthy after $TIMEOUT seconds"
 
 eval $DOCKER_COMMAND ps
 eval $DOCKER_COMMAND logs

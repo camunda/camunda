@@ -38,30 +38,35 @@ public class ProcessInstanceSortTest {
 
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
-        new ProcessInstanceSortTest.TestArguments("key", SortOrder.ASC, s -> s.key().asc()),
         new ProcessInstanceSortTest.TestArguments(
-            "processName", SortOrder.DESC, s -> s.processName().desc()),
+            "key", SortOrder.ASC, s -> s.processInstanceKey().asc()),
         new ProcessInstanceSortTest.TestArguments(
-            "processVersion", SortOrder.DESC, s -> s.processVersion().desc()),
+            "bpmnProcessId", SortOrder.ASC, s -> s.processDefinitionId().asc()),
         new ProcessInstanceSortTest.TestArguments(
-            "bpmnProcessId", SortOrder.ASC, s -> s.bpmnProcessId().asc()),
+            "processName", SortOrder.DESC, s -> s.processDefinitionName().desc()),
         new ProcessInstanceSortTest.TestArguments(
-            "parentProcessInstanceKey", SortOrder.ASC, s -> s.parentKey().asc()),
+            "processVersion", SortOrder.DESC, s -> s.processDefinitionVersion().desc()),
+        new ProcessInstanceSortTest.TestArguments(
+            "processVersionTag", SortOrder.ASC, s -> s.processDefinitionVersionTag().asc()),
+        new ProcessInstanceSortTest.TestArguments(
+            "processDefinitionKey", SortOrder.ASC, s -> s.processDefinitionKey().asc()),
+        new ProcessInstanceSortTest.TestArguments(
+            "rootProcessInstanceKey", SortOrder.ASC, s -> s.rootProcessInstanceKey().asc()),
+        new ProcessInstanceSortTest.TestArguments(
+            "parentProcessInstanceKey", SortOrder.ASC, s -> s.parentProcessInstanceKey().asc()),
         new ProcessInstanceSortTest.TestArguments(
             "parentFlowNodeInstanceKey", SortOrder.DESC, s -> s.parentFlowNodeInstanceKey().desc()),
+        new ProcessInstanceSortTest.TestArguments(
+            "treePath", SortOrder.DESC, s -> s.treePath().desc()),
         new ProcessInstanceSortTest.TestArguments(
             "startDate", SortOrder.ASC, s -> s.startDate().asc()),
         new ProcessInstanceSortTest.TestArguments(
             "endDate", SortOrder.DESC, s -> s.endDate().desc()),
         new ProcessInstanceSortTest.TestArguments("state", SortOrder.DESC, s -> s.state().desc()),
         new ProcessInstanceSortTest.TestArguments(
-            "hasActiveOperation", SortOrder.DESC, s -> s.hasActiveOperation().desc()),
+            "incident", SortOrder.DESC, s -> s.incident().desc()),
         new ProcessInstanceSortTest.TestArguments(
-            "processDefinitionKey", SortOrder.DESC, s -> s.processDefinitionKey().desc()),
-        new ProcessInstanceSortTest.TestArguments(
-            "tenantId", SortOrder.ASC, s -> s.tenantId().asc()),
-        new ProcessInstanceSortTest.TestArguments(
-            "rootInstanceId", SortOrder.ASC, s -> s.rootInstanceId().asc()));
+            "tenantId", SortOrder.ASC, s -> s.tenantId().asc()));
   }
 
   @ParameterizedTest

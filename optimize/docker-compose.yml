@@ -11,6 +11,7 @@ services:
       - xpack.security.enabled=false
       - action.destructive_requires_name=false
       - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - path.repo=/var/tmp
     ulimits:
       memlock:
         soft: -1
@@ -26,6 +27,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    volumes:
+      - /var/tmp:/var/tmp
   opensearch:
     image: opensearchproject/opensearch:${OS_VERSION:-2.11.1@sha256:68039e76c8c60c0488b8906945b2efd5179bb29a9ae8d71ec64981ab5772b796}
     profiles: ["opensearch", "setup-integration-test"]

@@ -13,16 +13,19 @@ import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.MetadataDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import io.camunda.optimize.service.db.os.builders.OptimizeUpdateRequestOS;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
 import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.MetadataIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import java.io.IOException;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch.core.UpdateRequest;
@@ -48,10 +51,18 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
       return Optional.empty();
     }
     try {
-      return osClient
-          .getRichOpenSearchClient()
-          .doc()
-          .getWithRetries(METADATA_INDEX_NAME, MetadataIndex.ID, MetadataDto.class);
+      Optional<MetadataDto> metadata =
+          osClient
+              .getRichOpenSearchClient()
+              .doc()
+              .getRequest(METADATA_INDEX_NAME, MetadataIndex.ID, MetadataDto.class);
+      // We need to do this in two steps instead of returning directly because the log message is
+      // necessary
+      if (metadata.isEmpty()) {
+        log.warn(
+            "Optimize Metadata index exists but no metadata doc was found, thus no metadata available.");
+      }
+      return metadata;
     } catch (final OptimizeRuntimeException e) {
       log.error(ERROR_MESSAGE_READING_METADATA_DOC, e);
       throw new OptimizeRuntimeException(ERROR_MESSAGE_READING_METADATA_DOC, e);
@@ -63,49 +74,41 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
       final OptimizeOpenSearchClient osClient,
       final String schemaVersion,
       final String newInstallationId,
-      final ScriptData updateScript) {
-    readMetadata(osClient)
-        .ifPresentOrElse(
-            metadataDto -> {
-              if (StringUtils.isBlank(metadataDto.getInstallationId())) {
-                final UpdateRequest.Builder<Void, Void> updateRequestBuilder =
-                    RequestDSL.<Void, Void>updateRequestBuilder(METADATA_INDEX_NAME)
-                        .id(MetadataIndex.ID)
-                        .script(QueryDSL.script(updateScript.scriptString(), updateScript.params()))
-                        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      final ScriptData scriptData) {
+    final MetadataDto newMetadataIfAbsent = new MetadataDto(schemaVersion, newInstallationId);
+    try {
+      final UpdateRequest<MetadataDto, ?> request =
+          OptimizeUpdateRequestOS.of(
+              b ->
+                  b.optimizeIndex(osClient, METADATA_INDEX_NAME)
+                      .id(MetadataIndex.ID)
+                      .script(
+                          sb ->
+                              sb.inline(
+                                  ib ->
+                                      ib.lang(QueryDSL.DEFAULT_SCRIPT_LANG)
+                                          .source(scriptData.scriptString())
+                                          .params(
+                                              scriptData.params().entrySet().stream()
+                                                  .collect(
+                                                      Collectors.toMap(
+                                                          Entry::getKey,
+                                                          e -> JsonData.of(e.getValue()))))))
+                      .upsert(newMetadataIfAbsent)
+                      .refresh(Refresh.True)
+                      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
 
-                final String errorMessage = "Error updating metadata information";
-
-                final UpdateResponse<Void> response =
-                    osClient.update(updateRequestBuilder, errorMessage);
-                if (!response.result().equals(Result.Updated)) {
-                  final String errorMsg = "Error doing metadata update. " + ERROR_MESSAGE_REQUEST;
-                  log.error(errorMsg);
-                  throw new OptimizeRuntimeException(errorMsg);
-                }
-              }
-            },
-            () -> {
-              final MetadataDto newMetadataIfAbsent =
-                  new MetadataDto(schemaVersion, newInstallationId);
-
-              final UpdateRequest.Builder<Void, MetadataDto> requestBuilder =
-                  new UpdateRequest.Builder<>();
-              requestBuilder
-                  .index(METADATA_INDEX_NAME)
-                  .id(MetadataIndex.ID)
-                  .docAsUpsert(true)
-                  .doc(newMetadataIfAbsent)
-                  .refresh(Refresh.True)
-                  .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-              final String errorMessage = "Error performing the metadata creation";
-              final UpdateResponse<Void> response = osClient.update(requestBuilder, errorMessage);
-
-              if (!response.result().equals(Result.Created)) {
-                final String errorMsg = "Error doing metadata creation. " + ERROR_MESSAGE_REQUEST;
-                log.error(errorMsg);
-                throw new OptimizeRuntimeException(errorMsg);
-              }
-            });
+      final UpdateResponse<?> response =
+          osClient.getOpenSearchClient().update(request, MetadataDto.class);
+      if (!response.result().equals(Result.Created) && !response.result().equals(Result.Updated)) {
+        String errorMsg =
+            "Metadata information was neither created nor updated. " + ERROR_MESSAGE_REQUEST;
+        log.error(errorMsg);
+        throw new OptimizeRuntimeException(errorMsg);
+      }
+    } catch (IOException e) {
+      log.error(ERROR_MESSAGE_REQUEST, e);
+      throw new OptimizeRuntimeException(ERROR_MESSAGE_REQUEST, e);
+    }
   }
 }

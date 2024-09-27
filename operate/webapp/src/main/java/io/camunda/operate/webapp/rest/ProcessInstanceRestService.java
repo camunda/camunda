@@ -12,7 +12,6 @@ import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_
 import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.InternalAPIErrorController;
@@ -42,6 +41,7 @@ import io.camunda.operate.webapp.rest.validation.ProcessInstanceRequestValidator
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
+import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.ConstraintViolationException;

@@ -1262,7 +1262,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
           .extractingListContent(objectMapper, VariableSearchResponse.class)
           .extracting("name", "value")
           .containsExactlyInAnyOrder(
-              tuple("varA", "value Var A"), tuple("varB", "123"), tuple("varC", "123"));
+              tuple("varA", "\"value Var A\""), tuple("varB", "123"), tuple("varC", "123"));
     }
   }
 }

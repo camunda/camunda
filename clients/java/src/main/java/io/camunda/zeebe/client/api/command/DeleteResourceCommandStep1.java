@@ -19,4 +19,5 @@ import io.camunda.zeebe.client.api.response.DeleteResourceResponse;
 
 public interface DeleteResourceCommandStep1
     extends CommandWithOperationReferenceStep<DeleteResourceCommandStep1>,
+        CommandWithCommunicationApiStep<DeleteResourceCommandStep1>,
         FinalCommandStep<DeleteResourceResponse> {}

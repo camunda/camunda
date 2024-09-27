@@ -15,13 +15,38 @@ public class ElasticsearchProperties {
   private String username;
   private String password;
   private final String clusterName = "elasticsearch";
-
+  private String indexPrefix = "zeebe";
+  private boolean createSchema;
   private Integer socketTimeout;
   private Integer connectTimeout;
-
   private IndexSettings defaultSettings = new IndexSettings();
   private Map<String, Integer> replicasByIndexName = new HashMap<>();
   private Map<String, Integer> shardsByIndexName = new HashMap<>();
+  private RetentionConfiguration retention = new RetentionConfiguration();
+
+  public RetentionConfiguration getRetention() {
+    return retention;
+  }
+
+  public void setRetention(final RetentionConfiguration retention) {
+    this.retention = retention;
+  }
+
+  public String getIndexPrefix() {
+    return indexPrefix;
+  }
+
+  public void setIndexPrefix(final String indexPrefix) {
+    this.indexPrefix = indexPrefix;
+  }
+
+  public boolean isCreateSchema() {
+    return createSchema;
+  }
+
+  public void setCreateSchema(final boolean createSchema) {
+    this.createSchema = createSchema;
+  }
 
   public IndexSettings getDefaultSettings() {
     return defaultSettings;
@@ -109,6 +134,36 @@ public class ElasticsearchProperties {
 
     public void setNumberOfReplicas(final Integer numberOfReplicas) {
       this.numberOfReplicas = numberOfReplicas;
+    }
+  }
+
+  public static final class RetentionConfiguration {
+    private boolean enabled = false;
+    private String mininumAge = "30d";
+    private String policyName;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getMininumAge() {
+      return mininumAge;
+    }
+
+    public void setMininumAge(final String mininumAge) {
+      this.mininumAge = mininumAge;
+    }
+
+    public String getPolicyName() {
+      return policyName;
+    }
+
+    public void setPolicyName(final String policyName) {
+      this.policyName = policyName;
     }
   }
 }
