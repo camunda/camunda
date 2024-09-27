@@ -35,6 +35,5 @@ public interface SearchEngineClient {
   void putSettings(
       final IndexDescriptor indexDescriptor, final Map<String, String> toAppendSettings);
 
-  void putIndexLifeCyclePolicy(
-      final String policyName, final String policyFile, final String deletionMinAge);
+  void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge);
 }

@@ -24,6 +24,15 @@ public class ElasticsearchProperties {
   private Map<String, Integer> shardsByIndexName = new HashMap<>();
   private boolean ilmEnabled;
   private String ilmMinDeletionAge = "30d";
+  private String ilmPolicyName;
+
+  public String getIlmPolicyName() {
+    return ilmPolicyName;
+  }
+
+  public void setIlmPolicyName(final String ilmPolicyName) {
+    this.ilmPolicyName = ilmPolicyName;
+  }
 
   public boolean isIlmEnabled() {
     return ilmEnabled;

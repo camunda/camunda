@@ -1,6 +1,0 @@
-[
-  {
-      "name": "policy_name",
-      "file": "elasticsearch/policies/policy-template.json"
-  }
-]

@@ -9,7 +9,6 @@ package io.camunda.exporter;
 
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import java.util.Map;
 import java.util.Set;
 
 public interface ExporterResourceProvider {
@@ -27,6 +26,4 @@ public interface ExporterResourceProvider {
    * @return A {@link Set} of {@link IndexTemplateDescriptor}
    */
   Set<IndexTemplateDescriptor> getIndexTemplateDescriptors();
-
-  Map<String, String> getIndexLifeCyclePolicies();
 }

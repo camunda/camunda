@@ -89,23 +89,6 @@ final class CamundaExporterIT {
     testClient.indices().delete(req -> req.index("*"));
     testClient.indices().deleteIndexTemplate(req -> req.name("*"));
 
-    // clean up policies after each test
-    final var policyNames =
-        new DefaultExporterResourceProvider().getIndexLifeCyclePolicies().keySet();
-
-    final var currentPolicies = testClient.ilm().getLifecycle();
-
-    policyNames.forEach(
-        policy -> {
-          if (currentPolicies.result().containsKey(policy)) {
-            try {
-              testClient.ilm().deleteLifecycle(req -> req.name(policy));
-            } catch (final IOException e) {
-              throw new RuntimeException(e);
-            }
-          }
-        });
-
     indexTemplate =
         SchemaTestUtil.mockIndexTemplate(
             "template_name",
@@ -304,29 +287,25 @@ final class CamundaExporterIT {
   void shouldCreateLifeCyclePoliciesOnStartupIfEnabled() throws IOException {
     config.elasticsearch.setCreateSchema(true);
     config.elasticsearch.setIlmEnabled(true);
+    config.elasticsearch.setIlmPolicyName("policy_name");
 
     startExporter();
 
     final var policies = testClient.ilm().getLifecycle();
 
-    new DefaultExporterResourceProvider()
-        .getIndexLifeCyclePolicies()
-        .keySet()
-        .forEach(policyName -> assertThat(policies.result().get(policyName)).isNotNull());
+    assertThat(policies.get("policy_name")).isNotNull();
   }
 
   @Test
   void shouldNotCreateLifeCyclePoliciesIfDisabled() throws IOException {
     config.elasticsearch.setCreateSchema(true);
     config.elasticsearch.setIlmEnabled(false);
+    config.elasticsearch.setIlmPolicyName("not_created_policy");
 
     startExporter();
     final var policies = testClient.ilm().getLifecycle();
 
-    new DefaultExporterResourceProvider()
-        .getIndexLifeCyclePolicies()
-        .keySet()
-        .forEach(policyName -> assertThat(policies.result().get(policyName)).isNull());
+    assertThat(policies.get("not_created_policy")).isNull();
   }
 
   private Exporter startExporter() {

@@ -17,6 +17,7 @@ import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
+import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.JsonpDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
@@ -26,7 +27,6 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -132,23 +132,20 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       client.indices().putSettings(request);
     } catch (final IOException e) {
       final var errMsg =
-          String.format("Index [%s] settings PUT failed", indexDescriptor.getIndexName());
+          String.format("Index [%s] settings PUT failed", indexDescriptor.getFullQualifiedName());
       LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
     }
   }
 
   @Override
-  public void putIndexLifeCyclePolicy(
-      final String policyName, final String policyFile, final String deletionMinAge) {
-    final PutLifecycleRequest request = putLifecycleRequest(policyName, policyFile, deletionMinAge);
+  public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {
+    final PutLifecycleRequest request = putLifecycleRequest(policyName, deletionMinAge);
 
     try {
       client.ilm().putLifecycle(request);
     } catch (final IOException e) {
-      final var errMsg =
-          String.format(
-              "Index lifecycle policy [%s] with file [%s] failed to PUT", policyName, policyFile);
+      final var errMsg = String.format("Index lifecycle policy [%s] failed to PUT", policyName);
       LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
     }
@@ -173,18 +170,19 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private PutLifecycleRequest putLifecycleRequest(
-      final String policyName, final String policyFile, final String deletionMinAge) {
-    try (final var policy = getResourceAsStream(policyFile)) {
-      final var policyStr = new String(policy.readAllBytes(), StandardCharsets.UTF_8);
-      return new PutLifecycleRequest.Builder()
-          .name(policyName)
-          .withJson(new StringReader(policyStr.replace(DELETION_MIN_AGE_HANDLE, deletionMinAge)))
-          .build();
-    } catch (final IOException e) {
-      throw new ElasticsearchExporterException(
-          "Failed to load file " + policyFile + " from classpath.", e);
-    }
+  public PutLifecycleRequest putLifecycleRequest(
+      final String policyName, final String deletionMinAge) {
+    return new PutLifecycleRequest.Builder()
+        .name(policyName)
+        .policy(
+            policy ->
+                policy.phases(
+                    phase ->
+                        phase.delete(
+                            del ->
+                                del.minAge(m -> m.time(deletionMinAge))
+                                    .actions(JsonData.of(Map.of("delete", Map.of()))))))
+        .build();
   }
 
   private Map<String, TypeMapping> getCurrentMappings(
