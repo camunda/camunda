@@ -46,7 +46,6 @@ import java.util.stream.Collectors;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesRequest;
-import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesResponse;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotResponse;
 import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotRequest;
@@ -94,8 +93,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     final GetRepositoriesRequest getRepositoriesRequest =
         new GetRepositoriesRequest().repositories(new String[] {repositoryName});
     try {
-      final GetRepositoriesResponse repository =
-          esClient.snapshot().getRepository(getRepositoriesRequest, RequestOptions.DEFAULT);
+      esClient.snapshot().getRepository(getRepositoriesRequest, RequestOptions.DEFAULT);
     } catch (final IOException | TransportException ex) {
       final String reason =
           String.format(
@@ -402,12 +400,12 @@ public class ElasticsearchBackupRepository implements BackupRepository {
   private GetBackupStateResponseDto getBackupResponse(
       final Long backupId, final List<SnapshotInfo> snapshots, final boolean isBackupInProgress) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
+    final var firstSnapshot = snapshots.getFirst();
     final Metadata metadata =
         Metadata.extractFromMetadataOrName(
-            objectMapper,
-            snapshots.getFirst().userMetadata(),
-            snapshots.getFirst().snapshotId().getName());
+            objectMapper, firstSnapshot.userMetadata(), firstSnapshot.snapshotId().getName());
     final Integer expectedSnapshotsCount = metadata.getPartCount();
+
     if (snapshots.size() == expectedSnapshotsCount
         && snapshots.stream().map(SnapshotInfo::state).allMatch(SUCCESS::equals)) {
       response.setState(BackupStateDto.COMPLETED);
@@ -421,7 +419,13 @@ public class ElasticsearchBackupRepository implements BackupRepository {
         || snapshots.stream().map(SnapshotInfo::state).anyMatch(IN_PROGRESS::equals)) {
       response.setState(BackupStateDto.IN_PROGRESS);
     } else if (snapshots.size() < expectedSnapshotsCount) {
-      response.setState(BackupStateDto.INCOMPLETE);
+      if (isIncompleteCheckTimedOut(
+          operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds(),
+          snapshots.getLast().endTime())) {
+        response.setState(BackupStateDto.INCOMPLETE);
+      } else {
+        response.setState(BackupStateDto.IN_PROGRESS);
+      }
     } else {
       response.setState(BackupStateDto.FAILED);
     }
