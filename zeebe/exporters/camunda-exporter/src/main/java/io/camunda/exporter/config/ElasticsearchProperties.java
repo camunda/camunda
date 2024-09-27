@@ -22,6 +22,15 @@ public class ElasticsearchProperties {
   private IndexSettings defaultSettings = new IndexSettings();
   private Map<String, Integer> replicasByIndexName = new HashMap<>();
   private Map<String, Integer> shardsByIndexName = new HashMap<>();
+  private RetentionConfiguration retention = new RetentionConfiguration();
+
+  public RetentionConfiguration getRetention() {
+    return retention;
+  }
+
+  public void setRetention(final RetentionConfiguration retention) {
+    this.retention = retention;
+  }
 
   public String getIndexPrefix() {
     return indexPrefix;
@@ -125,6 +134,36 @@ public class ElasticsearchProperties {
 
     public void setNumberOfReplicas(final Integer numberOfReplicas) {
       this.numberOfReplicas = numberOfReplicas;
+    }
+  }
+
+  public static final class RetentionConfiguration {
+    private boolean enabled = false;
+    private String mininumAge = "30d";
+    private String policyName;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getMininumAge() {
+      return mininumAge;
+    }
+
+    public void setMininumAge(final String mininumAge) {
+      this.mininumAge = mininumAge;
+    }
+
+    public String getPolicyName() {
+      return policyName;
+    }
+
+    public void setPolicyName(final String policyName) {
+      this.policyName = policyName;
     }
   }
 }
