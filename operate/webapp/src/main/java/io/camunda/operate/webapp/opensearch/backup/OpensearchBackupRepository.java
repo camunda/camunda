@@ -15,6 +15,7 @@ import static java.util.stream.Collectors.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.response.OpenSearchGetSnapshotResponse;
 import io.camunda.operate.store.opensearch.response.OpenSearchSnapshotInfo;
@@ -52,11 +53,15 @@ public class OpensearchBackupRepository implements BackupRepository {
   private final RichOpenSearchClient richOpenSearchClient;
 
   private final ObjectMapper objectMapper;
+  private final OperateProperties operateProperties;
 
   public OpensearchBackupRepository(
-      final RichOpenSearchClient richOpenSearchClient, final ObjectMapper objectMapper) {
+      final RichOpenSearchClient richOpenSearchClient,
+      final ObjectMapper objectMapper,
+      final OperateProperties operateProperties) {
     this.richOpenSearchClient = richOpenSearchClient;
     this.objectMapper = objectMapper;
+    this.operateProperties = operateProperties;
   }
 
   @Override
@@ -355,7 +360,13 @@ public class OpensearchBackupRepository implements BackupRepository {
     } else if (snapshots.stream().map(OpenSearchSnapshotInfo::getState).anyMatch(STARTED::equals)) {
       return BackupStateDto.IN_PROGRESS;
     } else if (snapshots.size() < expectedSnapshotsCount) {
-      return BackupStateDto.INCOMPLETE;
+      if (isIncompleteCheckTimedOut(
+          operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds(),
+          snapshots.getLast().getEndTimeInMillis())) {
+        return BackupStateDto.INCOMPLETE;
+      } else {
+        return BackupStateDto.IN_PROGRESS;
+      }
     } else {
       return BackupStateDto.FAILED;
     }
@@ -365,7 +376,7 @@ public class OpensearchBackupRepository implements BackupRepository {
       final Long backupId, final List<OpenSearchSnapshotInfo> snapshots) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
     final Metadata metadata =
-        objectMapper.convertValue(snapshots.get(0).getMetadata(), Metadata.class);
+        objectMapper.convertValue(snapshots.getFirst().getMetadata(), Metadata.class);
     final Integer expectedSnapshotsCount = metadata.getPartCount();
 
     response.setState(getState(snapshots, expectedSnapshotsCount));

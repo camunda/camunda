@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncSnapshotOperations;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchSnapshotOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -53,11 +54,14 @@ class OpensearchBackupRepositoryTest {
 
   @Mock private ObjectMapper objectMapper;
 
+  @Mock private OperateProperties operateProperties;
+
   private OpensearchBackupRepository repository;
 
   @BeforeEach
   public void setUp() {
-    repository = new OpensearchBackupRepository(richOpenSearchClient, objectMapper);
+    repository =
+        new OpensearchBackupRepository(richOpenSearchClient, objectMapper, operateProperties);
   }
 
   private void mockAsynchronSnapshotOperations() {
