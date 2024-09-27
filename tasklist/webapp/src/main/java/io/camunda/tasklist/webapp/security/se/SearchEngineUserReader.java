@@ -10,6 +10,7 @@ package io.camunda.tasklist.webapp.security.se;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 
+import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.security.UserReader;
@@ -32,13 +33,15 @@ public class SearchEngineUserReader implements UserReader {
   @Override
   public Optional<UserDTO> getCurrentUserBy(final Authentication authentication) {
     final Object principal = authentication.getPrincipal();
-    if (principal instanceof User) {
-      final User user = (User) principal;
+    if (principal instanceof CamundaUser) {
+      final CamundaUser user = (CamundaUser) principal;
       return Optional.of(
           new UserDTO()
               .setUserId(user.getUserId())
               .setDisplayName(user.getDisplayName())
-              .setPermissions(rolePermissionService.getPermissions(user.getRoles()))
+              .setPermissions(
+                  rolePermissionService.getPermissions(
+                      user.getRoles().stream().map(Role::fromString).toList()))
               .setApiUser(false));
     }
     return Optional.empty();
@@ -50,7 +53,7 @@ public class SearchEngineUserReader implements UserReader {
   }
 
   @Override
-  public List<UserDTO> getUsersByUsernames(List<String> userIds) {
+  public List<UserDTO> getUsersByUsernames(final List<String> userIds) {
     return CollectionUtil.map(
         userStore.getUsersByUserIds(userIds),
         userEntity ->

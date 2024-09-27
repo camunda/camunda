@@ -8,17 +8,51 @@
 package io.camunda.authentication.entity;
 
 import java.util.Collections;
+import java.util.List;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 
 public class CamundaUser extends User {
+
   private final Long userKey;
-  private final String name;
+  private final String displayName;
+
+  private boolean canLogout = true;
 
   public CamundaUser(
-      final Long userKey, final String name, final String username, final String password) {
+      final Long userKey, final String displayName, final String username, final String password) {
     super(username, password, Collections.emptyList());
     this.userKey = userKey;
-    this.name = name;
+    this.displayName = displayName;
+  }
+
+  public CamundaUser(final String displayName, final String username, final String password) {
+    super(username, password, Collections.emptyList());
+    userKey = null;
+    this.displayName = displayName;
+  }
+
+  public CamundaUser(
+      final String displayName,
+      final String username,
+      final String password,
+      final List<String> roles) {
+    super(username, password, roles.stream().map(SimpleGrantedAuthority::new).toList());
+    userKey = null;
+    this.displayName = displayName;
+  }
+
+  public CamundaUser(
+      final String displayName,
+      final String username,
+      final String password,
+      final List<String> roles,
+      final boolean canLogout) {
+    super(username, password, roles.stream().map(SimpleGrantedAuthority::new).toList());
+    userKey = null;
+    this.displayName = displayName;
+    this.canLogout = canLogout;
   }
 
   public Long getUserKey() {
@@ -26,7 +60,23 @@ public class CamundaUser extends User {
   }
 
   public String getName() {
-    return name;
+    return displayName;
+  }
+
+  public String getUserId() {
+    return getUsername();
+  }
+
+  public String getDisplayName() {
+    return displayName;
+  }
+
+  public List<String> getRoles() {
+    return getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
+  }
+
+  public boolean isCanLogout() {
+    return canLogout;
   }
 
   public static final class CamundaUserBuilder {
