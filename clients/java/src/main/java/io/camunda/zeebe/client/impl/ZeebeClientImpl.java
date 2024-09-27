@@ -58,6 +58,7 @@ import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
+import io.camunda.zeebe.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionInstanceQuery;
@@ -99,6 +100,7 @@ import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.ProcessInstanceGetRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.UserTaskGetFormRequestImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpClientFactory;
 import io.camunda.zeebe.client.impl.search.query.DecisionDefinitionQueryImpl;
@@ -563,7 +565,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public ProcessInstanceGetRequest newProcessInstanceGetRequest(long processInstanceKey) {
+  public ProcessInstanceGetRequest newProcessInstanceGetRequest(final long processInstanceKey) {
     return new ProcessInstanceGetRequestImpl(httpClient, processInstanceKey);
   }
 
@@ -634,6 +636,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public DecisionRequirementsGetRequest newDecisionRequirementsGetRequest(
       final long decisionRequirementsKey) {
     return new DecisionRequirementsGetRequestImpl(httpClient, decisionRequirementsKey);
+  }
+
+  @Override
+  public UserTaskGetFormRequest newUserTaskGetFormRequest(final long userTaskKey) {
+    return new UserTaskGetFormRequestImpl(httpClient, userTaskKey);
   }
 
   private JobClient newJobClient() {

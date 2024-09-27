@@ -30,6 +30,9 @@ import org.junit.jupiter.api.Test;
 class UserTaskQueryTest {
   private static Long userTaskKeyTaskAssigned;
 
+  private static Long formKey;
+  private static Long userTaskKeyWithForm;
+
   @TestZeebe(initMethod = "initTestStandaloneCamunda")
   private static TestStandaloneCamunda testStandaloneCamunda;
 
@@ -47,13 +50,17 @@ class UserTaskQueryTest {
     deployProcess("process", "simple.bpmn", "test", "", "");
     deployProcess("process-2", "simple-2.bpmn", "test-2", "group", "user");
     deployProcess("process-3", "simple-3.bpmn", "test-3", "", "", "30");
-    deployResource("/processes/bpm_variable_test.bpmn", "bpm_variable_test.bpmn");
+    delpoyProcessFromResourcePath("/process/bpm_variable_test.bpmn", "bpm_variable_test.bpmn");
+
+    deployForm("form.bpmn");
+    delpoyProcessFromResourcePath("/process/process_with_form.bpmn", "process_with_form.bpmn");
 
     startProcessInstance("process");
     startProcessInstance("process-2");
     startProcessInstance("process");
     startProcessInstance("process-3");
     startProcessInstance("bpmProcessVariable");
+    startProcessInstance("processWithForm");
 
     waitForTasksBeingExported();
   }
@@ -335,7 +342,8 @@ class UserTaskQueryTest {
         .join();
   }
 
-  private static void deployResource(final String resource, final String resourceName) {
+  private static void delpoyProcessFromResourcePath(
+      final String resource, final String resourceName) {
     final InputStream process = UserTaskQueryTest.class.getResourceAsStream(resource);
 
     camundaClient
@@ -343,6 +351,12 @@ class UserTaskQueryTest {
         .addProcessModel(Bpmn.readModelFromStream(process), resourceName)
         .send()
         .join();
+  }
+
+  private static void deployForm(final String resource) {
+    final var formDeployed =
+        camundaClient.newDeployResourceCommand().addResourceFromClasspath(resource).send().join();
+    formKey = formDeployed.getForm().getLast().getFormKey();
   }
 
   private static void startProcessInstance(final String processId) {
