@@ -1616,57 +1616,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
-  /users:
-    post:
-      tags:
-        - User
-      summary: "Create a user"
-      operationId: "createUser"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UserRequest"
-        required: true
-      responses:
-        "202":
-          description: |
-            The user was created successfully.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserCreateResponse"
-        "400":
-          description: |
-            The user could not be created.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: |
-            The request to create a user was unauthorized.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: |
-            The request to create a user was denied.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-
   /messages/publication:
     post:
       tags:
