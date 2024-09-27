@@ -140,7 +140,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(20);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(21);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
@@ -202,6 +202,9 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       page.getByLabel(/target flow node for script task/i),
     ).toHaveValue('ScriptTask');
+    await expect(
+      page.getByLabel(/target flow node for send task/i),
+    ).toHaveValue('SendTask');
 
     // Expect pre-selected process and version
     await expect(migrationView.targetProcessComboBox).toHaveValue(
@@ -448,6 +451,10 @@ test.describe.serial('Process Instance Migration', () => {
       sourceFlowNodeName: 'Script task',
       targetFlowNodeName: 'Script task 2',
     });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Send Task',
+      targetFlowNodeName: 'Send Task 2',
+    });
 
     await migrationView.nextButton.click();
 
@@ -513,11 +520,7 @@ test.describe.serial('Process Instance Migration', () => {
     await commonPage.collapseOperationsPanel();
   });
 
-  test('Migrated business rule task', async ({
-    processesPage,
-    processInstancePage,
-    page,
-  }) => {
+  test('Migrated tasks', async ({processesPage, processInstancePage, page}) => {
     const {processV3} = initialData;
 
     await processesPage.navigateToProcesses({
@@ -534,6 +537,9 @@ test.describe.serial('Process Instance Migration', () => {
 
     await processInstancePage.diagram.resetDiagramZoomButton.click();
 
+    /**
+     * Business rule task
+     */
     await processInstancePage.diagram.clickFlowNode('Business rule task 2');
     await processInstancePage.diagram.showMetaData();
     await page.waitForSelector('.monaco-aria-container'); // wait until monaco is fully loaded
@@ -548,6 +554,48 @@ test.describe.serial('Process Instance Migration', () => {
         "Expected to evaluate decision 'invalid', but no decision found for id 'invalid'",
       ),
     ).toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+
+    /**
+     * Script task
+     */
+    await processInstancePage.diagram.clickFlowNode('Script task 2');
+    await processInstancePage.diagram.showMetaData();
+
+    /**
+     * Expect that the script task incident has been migrated.
+     * The target task "Script task 2" has a FEEL expression which would be
+     * evaluated immediately which is expected to be overwritten with the incident.
+     */
+    await expect(
+      processInstancePage.metadataModal.getByText('expected worker failure'),
+    ).toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+
+    /**
+     * Send task
+     */
+    await processInstancePage.diagram.clickFlowNode('Send task 2');
+    await processInstancePage.diagram.showMetaData();
+
+    /**
+     * Expect that the active send task with task worker "foo" has been migrated.
+     * The target task "Send task 2" has the task type "failingTaskWorker", which would
+     * end up in an incident state. This is expected to be overwritten with the "foo" worker type.
+     */
+    await expect(
+      processInstancePage.metadataModal.getByText('expected worker failure'),
+    ).not.toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
   });
 
   test('Migrated message events', async ({

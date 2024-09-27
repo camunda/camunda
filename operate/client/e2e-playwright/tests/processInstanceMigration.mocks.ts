@@ -33,7 +33,7 @@ const setup = async () => {
     throw new Error('Error deploying process');
   }
 
-  completeTask('scriptTaskWorker', true, {}, (job) => {
+  completeTask('failingTaskWorker', true, {}, (job) => {
     return job.fail('expected worker failure');
   });
 
