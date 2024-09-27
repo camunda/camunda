@@ -37,7 +37,7 @@ public class ZeebeClientPropertiesSaasTest {
   void shouldPopulateBaseUrlsForSaas() {
     assertThat(properties.getZeebe().getGrpcAddress().toString())
         .isEqualTo("https://my-cluster-id.bru-2.zeebe.camunda.io");
-    assertThat(properties.getZeebe().getBaseUrl().toString())
+    assertThat(properties.getZeebe().getRestAddress().toString())
         .isEqualTo("https://bru-2.zeebe.camunda.io/my-cluster-id");
     assertThat(properties.getZeebe().isPreferRestOverGrpc()).isEqualTo(false);
   }
