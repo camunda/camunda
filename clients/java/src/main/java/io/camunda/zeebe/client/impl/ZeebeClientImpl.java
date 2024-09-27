@@ -58,6 +58,7 @@ import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
+import io.camunda.zeebe.client.api.fetch.UserTaskGetRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionInstanceQuery;
@@ -99,6 +100,7 @@ import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.ProcessInstanceGetRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpClientFactory;
 import io.camunda.zeebe.client.impl.search.query.DecisionDefinitionQueryImpl;
@@ -680,5 +682,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public StreamJobsCommandStep1 newStreamJobsCommand() {
     return new StreamJobsCommandImpl(
         asyncStub, jsonMapper, credentialsProvider::shouldRetryRequest, config);
+  }
+
+  @Override
+  public UserTaskGetRequest newUserTaskGetRequest(final long userTaskKey) {
+    return new UserTaskGetRequestImpl(httpClient, userTaskKey);
   }
 }

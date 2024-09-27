@@ -8,9 +8,11 @@
 package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -22,6 +24,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -269,6 +272,29 @@ class UserTaskQueryTest {
         camundaClient.newUserTaskQuery().filter(f -> f.bpmnProcessId("process-3")).send().join();
     assertThat(resultDefinedPriority.items().size()).isEqualTo(1);
     assertThat(resultDefinedPriority.items().getFirst().getPriority()).isEqualTo(30);
+  }
+
+  @Test
+  void shouldGetUserTaskByKey() {
+    // when
+    final var result = camundaClient.newUserTaskGetRequest(userTaskKeyTaskAssigned).send().join();
+
+    // then
+    assertThat(result.getUserTaskKey()).isEqualTo(userTaskKeyTaskAssigned);
+  }
+
+  @Test
+  void shouldReturn404ForNotFoundUserTaskKey() {
+    // when
+    final long userTaskKey = new Random().nextLong();
+    final var problemException =
+        assertThrows(
+            ProblemException.class,
+            () -> camundaClient.newUserTaskGetRequest(userTaskKey).send().join());
+    // then
+    assertThat(problemException.code()).isEqualTo(404);
+    assertThat(problemException.details().getDetail())
+        .isEqualTo("User Task with key %d not found".formatted(userTaskKey));
   }
 
   private static void deployProcess(
