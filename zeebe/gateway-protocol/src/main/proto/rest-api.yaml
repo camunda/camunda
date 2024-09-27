@@ -728,7 +728,7 @@ paths:
   /process-instances/{processInstanceKey}/cancellation:
     post:
       tags:
-        - Process Instance
+        - Process instance
       summary: Cancel process instance
       description: Cancels a running process instance.
       parameters:
