@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 public class ElasticsearchEngineClient implements SearchEngineClient {
   private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchEngineClient.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
-  private static final String DELETION_MIN_AGE_HANDLE = "%DELETION_MIN_AGE";
   private final ElasticsearchClient client;
 
   public ElasticsearchEngineClient(final ElasticsearchClient client) {
