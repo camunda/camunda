@@ -1,9 +1,18 @@
+# Workflow: Generate SBOM
+# This workflow generates a Software Bill of Materials (SBOM) using the CycloneDX Maven plugin.
+# The SBOM provides a list of dependencies and helps track potential security risks.
+# It runs on both pushes to the `main` branch and pull requests targeting any branch.
+# The generated SBOM is uploaded as an artifact for further analysis or distribution.
+
 name: Generate SBOM
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - "**"
 
 jobs:
   frontend_sbom:
@@ -38,7 +47,9 @@ jobs:
       - name: Install node dependencies
         run: yarn
       - name: Extract SBOM
-        run: yarn run extract-sbom
+        run: |
+          export SCHEMA_VERSION=1.5
+          yarn run extract-sbom
       - name: Upload SBOM as artifact
         uses: actions/upload-artifact@v4
         with:
