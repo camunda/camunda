@@ -94,9 +94,10 @@ public final class ProcessInstanceFilterTest {
   }
 
   @Test
-  public void shouldQueryByKey() {
+  public void shouldQueryByProcessInstanceKey() {
     // given
-    final var processInstanceFilter = FilterBuilders.processInstance(f -> f.keys(List.of(123L)));
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.processInstanceKeys(List.of(123L)));
     final var searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
@@ -119,10 +120,10 @@ public final class ProcessInstanceFilterTest {
   }
 
   @Test
-  public void shouldQueryByBpmnProcessId() {
+  public void shouldQueryByProcessDefinitionId() {
     // given
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.bpmnProcessIds(List.of("bpmn")));
+        FilterBuilders.processInstance(f -> f.processDefinitionIds(List.of("bpmn")));
     final var searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
@@ -145,10 +146,10 @@ public final class ProcessInstanceFilterTest {
   }
 
   @Test
-  public void shouldQueryByProcessName() {
+  public void shouldQueryByProcessDefinitionName() {
     // given
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.processNames(List.of("Demo Process")));
+        FilterBuilders.processInstance(f -> f.processDefinitionNames(List.of("Demo Process")));
     final var searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
@@ -173,10 +174,10 @@ public final class ProcessInstanceFilterTest {
   }
 
   @Test
-  public void shouldQueryByProcessVersion() {
+  public void shouldQueryByProcessDefinitionVersion() {
     // given
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.processVersions(List.of(33)));
+        FilterBuilders.processInstance(f -> f.processDefinitionVersions(List.of(33)));
     final var searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
@@ -199,10 +200,10 @@ public final class ProcessInstanceFilterTest {
   }
 
   @Test
-  public void shouldQueryByProcessVersionTag() {
+  public void shouldQueryByProcessDefinitionVersionTag() {
     // given
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.processVersionTags(List.of("v1")));
+        FilterBuilders.processInstance(f -> f.processDefinitionVersionTags(List.of("v1")));
     final var searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
@@ -511,11 +512,11 @@ public final class ProcessInstanceFilterTest {
     final var processInstanceFilter = (new ProcessInstanceFilter.Builder()).build();
 
     // then
-    assertThat(processInstanceFilter.keys()).isEmpty();
-    assertThat(processInstanceFilter.bpmnProcessIds()).isEmpty();
-    assertThat(processInstanceFilter.processNames()).isEmpty();
-    assertThat(processInstanceFilter.processVersions()).isEmpty();
-    assertThat(processInstanceFilter.processVersionTags()).isEmpty();
+    assertThat(processInstanceFilter.processInstanceKeys()).isEmpty();
+    assertThat(processInstanceFilter.processDefinitionIds()).isEmpty();
+    assertThat(processInstanceFilter.processDefinitionNames()).isEmpty();
+    assertThat(processInstanceFilter.processDefinitionVersions()).isEmpty();
+    assertThat(processInstanceFilter.processDefinitionVersionTags()).isEmpty();
     assertThat(processInstanceFilter.processDefinitionKeys()).isEmpty();
     assertThat(processInstanceFilter.rootProcessInstanceKeys()).isEmpty();
     assertThat(processInstanceFilter.parentProcessInstanceKeys()).isEmpty();

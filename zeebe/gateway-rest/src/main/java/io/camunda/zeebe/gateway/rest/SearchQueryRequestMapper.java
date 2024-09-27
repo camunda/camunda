@@ -237,11 +237,13 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.processInstance();
 
     if (filter != null) {
-      ofNullable(filter.getKey()).ifPresent(builder::keys);
-      ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
-      ofNullable(filter.getProcessDefinitionName()).ifPresent(builder::processNames);
-      ofNullable(filter.getProcessDefinitionVersion()).ifPresent(builder::processVersions);
-      ofNullable(filter.getProcessDefinitionVersionTag()).ifPresent(builder::processVersionTags);
+      ofNullable(filter.getProcessInstanceKey()).ifPresent(builder::processInstanceKeys);
+      ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::processDefinitionIds);
+      ofNullable(filter.getProcessDefinitionName()).ifPresent(builder::processDefinitionNames);
+      ofNullable(filter.getProcessDefinitionVersion())
+          .ifPresent(builder::processDefinitionVersions);
+      ofNullable(filter.getProcessDefinitionVersionTag())
+          .ifPresent(builder::processDefinitionVersionTags);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.getRootProcessInstanceKey()).ifPresent(builder::rootProcessInstanceKeys);
       ofNullable(filter.getParentProcessInstanceKey())
@@ -411,11 +413,11 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "key" -> builder.key();
-        case "bpmnProcessId" -> builder.bpmnProcessId();
-        case "processName" -> builder.processName();
-        case "processVersion" -> builder.processVersion();
-        case "processVersionTag" -> builder.processVersionTag();
+        case "key" -> builder.processInstanceKey();
+        case "bpmnProcessId" -> builder.processDefinitionId();
+        case "processName" -> builder.processDefinitionName();
+        case "processVersion" -> builder.processDefinitionVersion();
+        case "processVersionTag" -> builder.processDefinitionVersionTag();
         case "processDefinitionKey" -> builder.processDefinitionKey();
         case "rootProcessInstanceKey" -> builder.rootProcessInstanceKey();
         case "parentProcessInstanceKey" -> builder.parentProcessInstanceKey();

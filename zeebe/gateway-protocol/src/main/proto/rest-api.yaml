@@ -2348,23 +2348,23 @@ components:
       description: Process instance search filter.
       type: object
       properties:
-        key:
+        processInstanceKey:
           type: integer
           description: The key of this process instance.
           format: int64
         processDefinitionId:
           type: string
-          description: The bpmn process id.
+          description: The process definition id.
         processDefinitionName:
           type: string
-          description: The process name.
+          description: The process definition name.
         processDefinitionVersion:
           type: integer
-          description: The process version.
+          description: The process definition version.
           format: int32
         processDefinitionVersionTag:
           type: string
-          description: The process version tag.
+          description: The process definition version tag.
         processDefinitionKey:
           type: integer
           description: The process definition key.
@@ -2427,23 +2427,23 @@ components:
       description: Process instance search response item.
       type: object
       properties:
-        key:
+        processInstanceKey:
           type: integer
           description: The key of this process instance.
           format: int64
         processDefinitionId:
           type: string
-          description: The bpmn process id.
+          description: The process definition id.
         processDefinitionName:
           type: string
-          description: The process name.
+          description: The process definition name.
         processDefinitionVersion:
           type: integer
-          description: The process version.
+          description: The process definition version.
           format: int32
         processDefinitionVersionTag:
           type: string
-          description: The process version tag.
+          description: The process definition version tag.
         processDefinitionKey:
           type: integer
           description: The process definition key.

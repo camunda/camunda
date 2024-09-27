@@ -26,27 +26,27 @@ public record ProcessInstanceSort(List<FieldSorting> orderings) implements SortO
   public static final class Builder extends SortOption.AbstractBuilder<Builder>
       implements ObjectBuilder<ProcessInstanceSort> {
 
-    public Builder key() {
+    public Builder processInstanceKey() {
       currentOrdering = new FieldSorting("key", null);
       return this;
     }
 
-    public Builder bpmnProcessId() {
+    public Builder processDefinitionId() {
       currentOrdering = new FieldSorting("bpmnProcessId", null);
       return this;
     }
 
-    public Builder processName() {
+    public Builder processDefinitionName() {
       currentOrdering = new FieldSorting("processName", null);
       return this;
     }
 
-    public Builder processVersion() {
+    public Builder processDefinitionVersion() {
       currentOrdering = new FieldSorting("processVersion", null);
       return this;
     }
 
-    public Builder processVersionTag() {
+    public Builder processDefinitionVersionTag() {
       currentOrdering = new FieldSorting("processVersionTag", null);
       return this;
     }
