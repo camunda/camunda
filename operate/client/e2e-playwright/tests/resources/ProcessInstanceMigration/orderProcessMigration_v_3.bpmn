@@ -140,6 +140,7 @@
       <bpmn:outgoing>Flow_0kfelct</bpmn:outgoing>
       <bpmn:outgoing>Flow_00bezny</bpmn:outgoing>
       <bpmn:outgoing>Flow_1235n4i</bpmn:outgoing>
+      <bpmn:outgoing>Flow_192dswa</bpmn:outgoing>
     </bpmn:parallelGateway>
     <bpmn:parallelGateway id="Gateway_2">
       <bpmn:incoming>Flow_0hxjz3q</bpmn:incoming>
@@ -150,6 +151,7 @@
       <bpmn:incoming>Flow_0aheimq</bpmn:incoming>
       <bpmn:incoming>Flow_16drwmj</bpmn:incoming>
       <bpmn:incoming>Flow_1xg3tdz</bpmn:incoming>
+      <bpmn:incoming>Flow_1epls0w</bpmn:incoming>
       <bpmn:outgoing>Flow_1ibxab9</bpmn:outgoing>
     </bpmn:parallelGateway>
     <bpmn:sequenceFlow id="Flow_0lyxcbw" sourceRef="TaskB2" targetRef="TimerIntermediateCatch2" />
@@ -224,6 +226,15 @@
     </bpmn:businessRuleTask>
     <bpmn:sequenceFlow id="Flow_1235n4i" sourceRef="Gateway_1" targetRef="BusinessRuleTask2" />
     <bpmn:sequenceFlow id="Flow_1xg3tdz" sourceRef="BusinessRuleTask2" targetRef="Gateway_2" />
+    <bpmn:sequenceFlow id="Flow_192dswa" sourceRef="Gateway_1" targetRef="ScriptTask2" />
+    <bpmn:sequenceFlow id="Flow_1epls0w" sourceRef="ScriptTask2" targetRef="Gateway_2" />
+    <bpmn:scriptTask id="ScriptTask2" name="Script task 2">
+      <bpmn:extensionElements>
+        <zeebe:script expression="=1" resultVariable="scriptResult" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_192dswa</bpmn:incoming>
+      <bpmn:outgoing>Flow_1epls0w</bpmn:outgoing>
+    </bpmn:scriptTask>
   </bpmn:process>
   <bpmn:message id="Message_0so1os3" name="Message_1">
     <bpmn:extensionElements>
@@ -351,9 +362,8 @@
           <dc:Bounds x="745" y="725" width="90" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0jycym6_di" bpmnElement="BusinessRuleTask2">
-        <dc:Bounds x="360" y="1260" width="100" height="80" />
-        <bpmndi:BPMNLabel />
+      <bpmndi:BPMNShape id="Activity_1iphj8c_di" bpmnElement="ScriptTask2">
+        <dc:Bounds x="360" y="1370" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0cz53c2_di" bpmnElement="TimerEventSubProcess2" isExpanded="true">
         <dc:Bounds x="1230" y="460" width="350" height="200" />
@@ -407,6 +417,10 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Activity_0jap8wu_di" bpmnElement="MessageReceiveTask2">
         <dc:Bounds x="360" y="1150" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0jycym6_di" bpmnElement="BusinessRuleTask2">
+        <dc:Bounds x="360" y="1260" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_09ic20e_di" bpmnElement="TimerNonInterrupting2">
@@ -584,6 +598,16 @@
       <bpmndi:BPMNEdge id="Flow_1xg3tdz_di" bpmnElement="Flow_1xg3tdz">
         <di:waypoint x="460" y="1300" />
         <di:waypoint x="1130" y="1300" />
+        <di:waypoint x="1130" y="163" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_192dswa_di" bpmnElement="Flow_192dswa">
+        <di:waypoint x="290" y="163" />
+        <di:waypoint x="290" y="1410" />
+        <di:waypoint x="360" y="1410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1epls0w_di" bpmnElement="Flow_1epls0w">
+        <di:waypoint x="460" y="1410" />
+        <di:waypoint x="1130" y="1410" />
         <di:waypoint x="1130" y="163" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
