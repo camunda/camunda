@@ -24,8 +24,8 @@ jobs:
 
       - name: Configure GitHub user
         run: |
-          git config --global user.name "optimize-release"
-          git config --global user.email "ci@optimize.camunda.cloud"
+          git config --global user.email "github-actions[release]"
+          git config --global user.name "github-actions[release]@users.noreply.github.com"
 
       - name: Create release branch
         run: |
