@@ -9,7 +9,7 @@
 import {ZBWorkerTaskHandler} from '@camunda8/sdk/dist/zeebe/types';
 import {zeebeGrpcApi} from '../api/zeebe-grpc';
 
-const {deployProcesses, createSingleInstance, completeTask} = zeebeGrpcApi;
+const {deployProcesses, createSingleInstance, createWorker} = zeebeGrpcApi;
 
 export async function setup() {
   await deployProcesses([
@@ -35,12 +35,12 @@ export async function setup() {
   const incrementTaskHandler: ZBWorkerTaskHandler = (job) => {
     return job.complete({...job.variables, i: job.variables.i ?? 0 + 1});
   };
-  completeTask('increment', false, {}, incrementTaskHandler, 50);
+  createWorker('increment', false, {}, incrementTaskHandler, 50);
 
   const taskBHandler: ZBWorkerTaskHandler = (job) => {
     return job.complete();
   };
-  completeTask('bigProcessTaskB', false, {}, taskBHandler);
+  createWorker('bigProcessTaskB', false, {}, taskBHandler);
 
   return {
     manyFlowNodeInstancesProcessInstance,
