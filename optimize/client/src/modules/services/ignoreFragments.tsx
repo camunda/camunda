@@ -8,7 +8,7 @@
 
 import {Children, Fragment, ReactElement, ReactNode} from 'react';
 
-export default function ignoreFragments(children?: ReactNode): ReactElement[] {
+export default function ignoreFragments<P = any>(children?: ReactNode): ReactElement<P>[] {
   if (isFragment(children)) {
     return ignoreFragments(children.props.children);
   }

@@ -6,74 +6,117 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState, useEffect, ComponentPropsWithoutRef, ReactNode} from 'react';
+import {
+  useState,
+  ComponentPropsWithoutRef,
+  ReactNode,
+  createContext,
+  useContext,
+  cloneElement,
+  ReactElement,
+} from 'react';
 import {Tabs as CarbonTabs, TabList, Tab, TabPanels, TabPanel, TabsSkeleton} from '@carbon/react';
 
 import {ignoreFragments} from 'services';
 
 import './Tabs.scss';
 
-interface TabsProps<T extends string | number>
-  extends Omit<ComponentPropsWithoutRef<'div'>, 'onChange'> {
+type TabValue = number | string;
+
+const TabsContext = createContext<{
+  alreadyOpened: TabValue[];
+}>({
+  alreadyOpened: [],
+});
+
+const useTabsContext = () => {
+  const context = useContext(TabsContext);
+  if (!context) {
+    throw new Error('useTabsContext must be used within a Tabs component');
+  }
+  return context;
+};
+
+interface TabsProps<T extends TabValue> extends Omit<ComponentPropsWithoutRef<'div'>, 'onChange'> {
   value?: T;
   onChange?: (value: T) => void;
   showButtons?: boolean;
   isLoading?: boolean;
 }
 
-interface TabProps<T extends string | number>
-  extends Omit<ComponentPropsWithoutRef<'div'>, 'title'> {
+interface TabProps<T extends TabValue> extends Omit<ComponentPropsWithoutRef<'div'>, 'title'> {
   value?: T;
   title?: ReactNode;
   disabled?: boolean;
 }
 
-export default function Tabs<T extends string | number>({
-  value = 0 as T,
+export default function Tabs<T extends TabValue>({
+  value,
   onChange,
   children,
   showButtons = true,
   isLoading,
 }: TabsProps<T>) {
-  const tabs = ignoreFragments(children);
-  const values = tabs.map<T>(({props: {value}}, idx) => (value || idx) as T);
-  const [selected, setSelected] = useState<T>(value);
+  const tabs = ignoreFragments<TabProps<T>>(children);
+  const values = tabs.map<T>(({props: {value}}, idx) => value ?? (idx as T));
+  const initialValue = value ?? values[0] ?? 0;
+  const [selectedIndex, setSelectedIndex] = useState<number>(getIndex(values, initialValue));
+  const [alreadyOpened, setAlreadyOpened] = useState<TabValue[]>([initialValue]);
 
-  useEffect(() => {
-    setSelected(value);
-  }, [value]);
+  function handleTabChange({selectedIndex}: {selectedIndex: number}) {
+    const newValue = values[selectedIndex];
+
+    if (newValue === undefined) {
+      return;
+    }
+
+    onChange?.(newValue);
+    setSelectedIndex(selectedIndex);
+
+    if (!alreadyOpened.includes(newValue)) {
+      setAlreadyOpened((prev) => [...prev, newValue]);
+    }
+  }
 
   return (
-    <CarbonTabs
-      selectedIndex={getIndex(values, selected)}
-      onChange={({selectedIndex}) => {
-        const value = values[selectedIndex]!;
-        onChange?.(value);
-        setSelected(value);
-      }}
-    >
-      {showButtons && !isLoading && (
-        <TabList aria-label="tabs">
-          {tabs
-            .filter((tab) => !tab.props.hidden)
-            .map(({props: {value, title, disabled, ...rest}}, idx) => (
-              <Tab {...rest} key={getIndex(values, value || idx)} disabled={disabled}>
-                {title}
-              </Tab>
-            ))}
-        </TabList>
-      )}
-      {isLoading && <TabsSkeleton />}
-      <TabPanels>{tabs}</TabPanels>
-    </CarbonTabs>
+    <TabsContext.Provider value={{alreadyOpened}}>
+      <CarbonTabs selectedIndex={selectedIndex} onChange={handleTabChange}>
+        {showButtons && !isLoading && <TabList aria-label="tabs">{renderTabs(tabs)}</TabList>}
+        {isLoading && <TabsSkeleton />}
+        <TabPanels>{renderTabPanels(tabs)}</TabPanels>
+      </CarbonTabs>
+    </TabsContext.Provider>
   );
 }
 
-Tabs.Tab = ({children}: TabProps<number | string>): JSX.Element => {
-  return <TabPanel>{children}</TabPanel>;
+Tabs.Tab = function Tab({children, value}: TabProps<TabValue>): JSX.Element {
+  const {alreadyOpened} = useTabsContext();
+  const shouldRender = value !== undefined && alreadyOpened.includes(value);
+  return <TabPanel>{shouldRender && children}</TabPanel>;
 };
 
-function getIndex<T extends string | number>(array: T[], value: T): number {
+function getIndex<T extends TabValue>(array: T[], value: T): number {
   const idx = array.indexOf(value);
   return idx !== -1 ? idx : 0;
+}
+
+function renderTabs<T extends TabValue>(tabs: ReactElement<TabProps<T>>[]) {
+  return tabs
+    .filter((tab) => !tab.props.hidden)
+    .map(({props: {value, title, disabled, ...rest}}, idx) => (
+      <Tab {...rest} key={idx} disabled={disabled}>
+        {title}
+      </Tab>
+    ));
+}
+
+function renderTabPanels<T extends TabValue>(tabs: ReactElement<TabProps<T>>[]) {
+  return tabs.map((tab, idx) => {
+    const value = tab.props.value ?? (idx as T);
+    const key = 'tab-' + value;
+    return cloneElement(tab, {
+      key,
+      value,
+    });
+  });
 }
