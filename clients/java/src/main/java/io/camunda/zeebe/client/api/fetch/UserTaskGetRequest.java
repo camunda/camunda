@@ -13,37 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.search.response;
+package io.camunda.zeebe.client.api.fetch;
 
-public interface ProcessInstance {
+import io.camunda.zeebe.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.client.api.search.response.UserTask;
 
-  Long getProcessInstanceKey();
-
-  String getProcessDefinitionId();
-
-  String getProcessDefinitionName();
-
-  Integer getProcessDefinitionVersion();
-
-  String getProcessDefinitionVersionTag();
-
-  Long getProcessDefinitionKey();
-
-  Long getRootProcessInstanceKey();
-
-  Long getParentProcessInstanceKey();
-
-  Long getParentFlowNodeInstanceKey();
-
-  String getTreePath();
-
-  String getStartDate();
-
-  String getEndDate();
-
-  String getState();
-
-  Boolean getIncident();
-
-  String getTenantId();
-}
+public interface UserTaskGetRequest extends FinalCommandStep<UserTask> {}

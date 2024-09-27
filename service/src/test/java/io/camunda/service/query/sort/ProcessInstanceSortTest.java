@@ -38,15 +38,16 @@ public class ProcessInstanceSortTest {
 
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
-        new ProcessInstanceSortTest.TestArguments("key", SortOrder.ASC, s -> s.key().asc()),
         new ProcessInstanceSortTest.TestArguments(
-            "bpmnProcessId", SortOrder.ASC, s -> s.bpmnProcessId().asc()),
+            "key", SortOrder.ASC, s -> s.processInstanceKey().asc()),
         new ProcessInstanceSortTest.TestArguments(
-            "processName", SortOrder.DESC, s -> s.processName().desc()),
+            "bpmnProcessId", SortOrder.ASC, s -> s.processDefinitionId().asc()),
         new ProcessInstanceSortTest.TestArguments(
-            "processVersion", SortOrder.DESC, s -> s.processVersion().desc()),
+            "processName", SortOrder.DESC, s -> s.processDefinitionName().desc()),
         new ProcessInstanceSortTest.TestArguments(
-            "processVersionTag", SortOrder.ASC, s -> s.processVersionTag().asc()),
+            "processVersion", SortOrder.DESC, s -> s.processDefinitionVersion().desc()),
+        new ProcessInstanceSortTest.TestArguments(
+            "processVersionTag", SortOrder.ASC, s -> s.processDefinitionVersionTag().asc()),
         new ProcessInstanceSortTest.TestArguments(
             "processDefinitionKey", SortOrder.ASC, s -> s.processDefinitionKey().asc()),
         new ProcessInstanceSortTest.TestArguments(

@@ -174,4 +174,33 @@ public class ElasticsearchEngineClientIT {
                 .typeDefinition(Map.of("type", "keyword"))
                 .build());
   }
+
+  @Test
+  void shouldUpdateSettingsWithPutSettingsRequest() throws IOException {
+    final var index =
+        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");
+
+    elsEngineClient.createIndex(index);
+
+    final Map<String, String> newSettings = Map.of("index.lifecycle.name", "test");
+    elsEngineClient.putSettings(List.of(index), newSettings);
+
+    final var indices = elsClient.indices().get(req -> req.index("index_name"));
+
+    assertThat(indices.result().size()).isEqualTo(1);
+    assertThat(indices.result().get("index_name").settings().index().lifecycle().name())
+        .isEqualTo("test");
+  }
+
+  @Test
+  void shouldCreateIndexLifeCyclePolicy() throws IOException {
+    elsEngineClient.putIndexLifeCyclePolicy("policy_name", "20d");
+
+    final var policy = elsClient.ilm().getLifecycle(req -> req.name("policy_name"));
+
+    assertThat(policy.result().size()).isEqualTo(1);
+    assertThat(policy.result().get("policy_name").policy().phases().delete().minAge().time())
+        .isEqualTo("20d");
+    assertThat(policy.result().get("policy_name").policy().phases().delete().actions()).isNotNull();
+  }
 }

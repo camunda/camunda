@@ -137,6 +137,19 @@ public class CamundaExporter implements Exporter {
     //  used to update existing indices/templates
     schemaManager.updateSchema(newIndexProperties);
     schemaManager.updateSchema(newIndexTemplateProperties);
+
+    if (configuration.elasticsearch.getRetention().isEnabled()) {
+      searchEngineClient.putIndexLifeCyclePolicy(
+          configuration.elasticsearch.getRetention().getPolicyName(),
+          configuration.elasticsearch.getRetention().getMininumAge());
+
+      final var lifecycleUpdate =
+          Map.of(
+              "index.lifecycle.name", configuration.elasticsearch.getRetention().getPolicyName());
+
+      searchEngineClient.putSettings(
+          provider.getIndexDescriptors().stream().toList(), lifecycleUpdate);
+    }
   }
 
   private Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndices(

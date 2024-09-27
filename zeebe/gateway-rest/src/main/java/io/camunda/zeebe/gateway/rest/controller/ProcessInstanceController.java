@@ -12,6 +12,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
+import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceRequest;
@@ -33,10 +34,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class ProcessInstanceController {
 
   private final ProcessInstanceServices processInstanceServices;
+  private final MultiTenancyCfg multiTenancyCfg;
 
   @Autowired
-  public ProcessInstanceController(final ProcessInstanceServices processInstanceServices) {
+  public ProcessInstanceController(
+      final ProcessInstanceServices processInstanceServices,
+      final MultiTenancyCfg multiTenancyCfg) {
     this.processInstanceServices = processInstanceServices;
+    this.multiTenancyCfg = multiTenancyCfg;
   }
 
   @PostMapping(
@@ -44,7 +49,7 @@ public class ProcessInstanceController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> createProcessInstance(
       @RequestBody final CreateProcessInstanceRequest request) {
-    return RequestMapper.toCreateProcessInstance(request)
+    return RequestMapper.toCreateProcessInstance(request, multiTenancyCfg.isEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createProcessInstance);
   }
 

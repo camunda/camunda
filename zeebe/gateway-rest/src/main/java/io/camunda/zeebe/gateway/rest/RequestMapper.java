@@ -498,10 +498,21 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
-      final CreateProcessInstanceRequest request) {
-    return getResult(
-        validateCreateProcessInstanceRequest(request),
-        () ->
+      final CreateProcessInstanceRequest request, final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance")
+            .flatMap(
+                tenant ->
+                    validateAuthorization(tenant, multiTenancyEnabled, "Create Process Instance")
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenant)))
+            .flatMap(
+                tenant ->
+                    validateCreateProcessInstanceRequest(request)
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenant)));
+    return validationResponse.map(
+        tenantId ->
             new ProcessInstanceCreateRequest(
                 getLongOrDefault(
                     request, CreateProcessInstanceRequest::getProcessDefinitionKey, -1L),
@@ -509,7 +520,7 @@ public class RequestMapper {
                 getIntOrDefault(
                     request, CreateProcessInstanceRequest::getProcessDefinitionVersion, -1),
                 getMapOrEmpty(request, CreateProcessInstanceRequest::getVariables),
-                request.getTenantId(),
+                tenantId,
                 request.getAwaitCompletion(),
                 request.getRequestTimeout(),
                 request.getOperationReference(),

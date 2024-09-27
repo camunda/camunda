@@ -103,10 +103,10 @@ public class ProcessQueryTest {
 
     // then
     assertThat(result).isNotNull();
-    assertThat(result.getKey()).isEqualTo(processInstanceKey);
-    assertThat(result.getBpmnProcessId()).isEqualTo(bpmnProcessId);
-    assertThat(result.getProcessName()).isEqualTo("Service tasks v1");
-    assertThat(result.getProcessVersion()).isEqualTo(1);
+    assertThat(result.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(result.getProcessDefinitionId()).isEqualTo(bpmnProcessId);
+    assertThat(result.getProcessDefinitionName()).isEqualTo("Service tasks v1");
+    assertThat(result.getProcessDefinitionVersion()).isEqualTo(1);
     assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(result.getTreePath()).isEqualTo("PI_" + processInstanceKey);
     assertThat(result.getStartDate()).isNotNull();
@@ -148,7 +148,7 @@ public class ProcessQueryTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(expectedBpmnProcessIds.size());
-    assertThat(result.items().stream().map(ProcessInstance::getBpmnProcessId).toList())
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrderElementsOf(expectedBpmnProcessIds);
   }
 
@@ -160,15 +160,19 @@ public class ProcessQueryTest {
 
     // when
     final var result =
-        zeebeClient.newProcessInstanceQuery().filter(f -> f.key(processInstanceKey)).send().join();
+        zeebeClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.processInstanceKey(processInstanceKey))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getKey()).isEqualTo(processInstanceKey);
+    assertThat(result.items().get(0).getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 
   @Test
-  void shouldRetrieveProcessInstancesByBpmnProcessId() {
+  void shouldRetrieveProcessInstancesByProcessDefinitionId() {
     // given
     final String bpmnProcessId = "service_tasks_v1";
     final long processInstanceKey =
@@ -182,13 +186,13 @@ public class ProcessQueryTest {
     final var result =
         zeebeClient
             .newProcessInstanceQuery()
-            .filter(f -> f.bpmnProcessId(bpmnProcessId))
+            .filter(f -> f.processDefinitionId(bpmnProcessId))
             .send()
             .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getKey()).isEqualTo(processInstanceKey);
+    assertThat(result.items().get(0).getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 
   @Test
@@ -213,7 +217,7 @@ public class ProcessQueryTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getKey()).isEqualTo(processInstanceKey);
+    assertThat(result.items().get(0).getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 
   @Test
@@ -224,7 +228,7 @@ public class ProcessQueryTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
-    assertThat(result.items().stream().map(ProcessInstance::getBpmnProcessId).toList())
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v2", "incident_process_v1");
   }
 
@@ -236,7 +240,7 @@ public class ProcessQueryTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
-    assertThat(result.items().stream().map(ProcessInstance::getBpmnProcessId).toList())
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrder("parent_process_v1", "child_process_v1", "manual_process");
   }
 
@@ -248,7 +252,7 @@ public class ProcessQueryTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().stream().map(ProcessInstance::getBpmnProcessId).toList())
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrder("incident_process_v1");
   }
 
@@ -272,7 +276,7 @@ public class ProcessQueryTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().stream().map(ProcessInstance::getBpmnProcessId).toList())
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrder("child_process_v1");
   }
 
@@ -287,11 +291,15 @@ public class ProcessQueryTest {
 
     // when
     final var result =
-        zeebeClient.newProcessInstanceQuery().sort(s -> s.bpmnProcessId().desc()).send().join();
+        zeebeClient
+            .newProcessInstanceQuery()
+            .sort(s -> s.processDefinitionId().desc())
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(6);
-    assertThat(result.items().stream().map(ProcessInstance::getBpmnProcessId).toList())
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyElementsOf(expectedBpmnProcessIds);
   }
 
@@ -299,43 +307,55 @@ public class ProcessQueryTest {
   void shouldSortProcessInstancesByProcessInstanceKey() {
     // when
     final var resultAsc =
-        zeebeClient.newProcessInstanceQuery().sort(s -> s.key().asc()).send().join();
+        zeebeClient.newProcessInstanceQuery().sort(s -> s.processInstanceKey().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newProcessInstanceQuery().sort(s -> s.key().desc()).send().join();
+        zeebeClient
+            .newProcessInstanceQuery()
+            .sort(s -> s.processInstanceKey().desc())
+            .send()
+            .join();
 
     final List<Long> allProcessInstanceKeys =
-        resultAsc.items().stream().map(ProcessInstance::getKey).toList();
+        resultAsc.items().stream().map(ProcessInstance::getProcessInstanceKey).toList();
     final List<Long> sortedAsc =
         allProcessInstanceKeys.stream().sorted(Comparator.naturalOrder()).toList();
     final List<Long> sortedDesc =
         allProcessInstanceKeys.stream().sorted(Comparator.reverseOrder()).toList();
 
     // then
-    assertThat(resultAsc.items().stream().map(ProcessInstance::getKey).toList())
+    assertThat(resultAsc.items().stream().map(ProcessInstance::getProcessInstanceKey).toList())
         .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(ProcessInstance::getKey).toList())
+    assertThat(resultDesc.items().stream().map(ProcessInstance::getProcessInstanceKey).toList())
         .containsExactlyElementsOf(sortedDesc);
   }
 
   @Test
-  void shouldSortProcessInstancesByProcessName() {
+  void shouldSortProcessInstancesByProcessDefinitionName() {
     // when
     final var resultAsc =
-        zeebeClient.newProcessInstanceQuery().sort(s -> s.processName().asc()).send().join();
+        zeebeClient
+            .newProcessInstanceQuery()
+            .sort(s -> s.processDefinitionName().asc())
+            .send()
+            .join();
     final var resultDesc =
-        zeebeClient.newProcessInstanceQuery().sort(s -> s.processName().desc()).send().join();
+        zeebeClient
+            .newProcessInstanceQuery()
+            .sort(s -> s.processDefinitionName().desc())
+            .send()
+            .join();
 
     final List<String> allProcessNames =
-        resultAsc.items().stream().map(ProcessInstance::getProcessName).toList();
+        resultAsc.items().stream().map(ProcessInstance::getProcessDefinitionName).toList();
     final List<String> sortedAsc =
         allProcessNames.stream().sorted(Comparator.naturalOrder()).toList();
     final List<String> sortedDesc =
         allProcessNames.stream().sorted(Comparator.reverseOrder()).toList();
 
     // then
-    assertThat(resultAsc.items().stream().map(ProcessInstance::getProcessName).toList())
+    assertThat(resultAsc.items().stream().map(ProcessInstance::getProcessDefinitionName).toList())
         .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(ProcessInstance::getProcessName).toList())
+    assertThat(resultDesc.items().stream().map(ProcessInstance::getProcessDefinitionName).toList())
         .containsExactlyElementsOf(sortedDesc);
   }
 
@@ -451,7 +471,7 @@ public class ProcessQueryTest {
   public void shouldValidatePagination() {
     final var result = zeebeClient.newProcessInstanceQuery().page(p -> p.limit(2)).send().join();
     assertThat(result.items().size()).isEqualTo(2);
-    final var key = result.items().getFirst().getKey();
+    final var key = result.items().getFirst().getProcessInstanceKey();
     // apply searchAfter
     final var resultAfter =
         zeebeClient
@@ -461,7 +481,7 @@ public class ProcessQueryTest {
             .join();
 
     assertThat(resultAfter.items().size()).isEqualTo(5);
-    final var keyAfter = resultAfter.items().getFirst().getKey();
+    final var keyAfter = resultAfter.items().getFirst().getProcessInstanceKey();
     // apply searchBefore
     final var resultBefore =
         zeebeClient
@@ -470,7 +490,7 @@ public class ProcessQueryTest {
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);
-    assertThat(resultBefore.items().getFirst().getKey()).isEqualTo(key);
+    assertThat(resultBefore.items().getFirst().getProcessInstanceKey()).isEqualTo(key);
   }
 
   private static void waitForProcessesToBeDeployed() throws InterruptedException {

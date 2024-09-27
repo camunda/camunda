@@ -30,37 +30,37 @@ public class DecisionDefinitionFilterImpl
   }
 
   @Override
-  public DecisionDefinitionFilter decisionKey(final Long value) {
+  public DecisionDefinitionFilter decisionDefinitionKey(final long value) {
     filter.setDecisionDefinitionKey(value);
     return this;
   }
 
   @Override
-  public DecisionDefinitionFilter dmnDecisionId(final String value) {
+  public DecisionDefinitionFilter decisionDefinitionId(final String value) {
     filter.setDecisionDefinitionId(value);
     return this;
   }
 
   @Override
-  public DecisionDefinitionFilter dmnDecisionName(final String value) {
+  public DecisionDefinitionFilter decisionDefinitionName(final String value) {
     filter.setDecisionDefinitionName(value);
     return this;
   }
 
   @Override
-  public DecisionDefinitionFilter version(final Integer value) {
+  public DecisionDefinitionFilter decisionDefinitionVersion(final int value) {
     filter.setVersion(value);
     return this;
   }
 
   @Override
-  public DecisionDefinitionFilter dmnDecisionRequirementsId(final String value) {
+  public DecisionDefinitionFilter decisionRequirementsId(final String value) {
     filter.setDecisionRequirementsId(value);
     return this;
   }
 
   @Override
-  public DecisionDefinitionFilter decisionRequirementsKey(final Long value) {
+  public DecisionDefinitionFilter decisionRequirementsKey(final long value) {
     filter.setDecisionRequirementsKey(value);
     return this;
   }
