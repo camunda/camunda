@@ -11,8 +11,9 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ElasticsearchProperties extends ConnectConfiguration {
+public class ElasticsearchProperties {
   private boolean createSchema;
+  private ConnectConfiguration connect = new ConnectConfiguration();
   private IndexSettings defaultSettings = new IndexSettings();
   private Map<String, Integer> replicasByIndexName = new HashMap<>();
   private Map<String, Integer> shardsByIndexName = new HashMap<>();
@@ -23,6 +24,14 @@ public class ElasticsearchProperties extends ConnectConfiguration {
 
   public void setCreateSchema(final boolean createSchema) {
     this.createSchema = createSchema;
+  }
+
+  public ConnectConfiguration getConnect() {
+    return connect;
+  }
+
+  public void setConnect(final ConnectConfiguration connect) {
+    this.connect = connect;
   }
 
   public IndexSettings getDefaultSettings() {
@@ -47,6 +56,14 @@ public class ElasticsearchProperties extends ConnectConfiguration {
 
   public void setShardsByIndexName(final Map<String, Integer> shardsByIndexName) {
     this.shardsByIndexName = shardsByIndexName;
+  }
+
+  public String getIndexPrefix() {
+    return connect.getIndexPrefix();
+  }
+
+  public void setIndexPrefix(final String indexPrefix) {
+    connect.setIndexPrefix(indexPrefix);
   }
 
   public static final class IndexSettings {

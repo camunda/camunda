@@ -70,11 +70,11 @@ final class CamundaExporterIT {
 
   @BeforeAll
   public void beforeAll() {
-    config.elasticsearch.setUrl(CONTAINER.getHttpHostAddress());
+    config.elasticsearch.getConnect().setUrl(CONTAINER.getHttpHostAddress());
     config.elasticsearch.setIndexPrefix("");
     config.bulk.setSize(1); // force flushing on the first record
 
-    testClient = new ElasticsearchConnector(config.elasticsearch).createClient();
+    testClient = new ElasticsearchConnector(config.elasticsearch.getConnect()).createClient();
   }
 
   @AfterAll

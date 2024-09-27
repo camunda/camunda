@@ -170,7 +170,7 @@ public class CamundaExporter implements Exporter {
   }
 
   private ElasticsearchClient createClient() {
-    final var connector = new ElasticsearchConnector(configuration.elasticsearch);
+    final var connector = new ElasticsearchConnector(configuration.elasticsearch.getConnect());
     return connector.createClient();
   }
 

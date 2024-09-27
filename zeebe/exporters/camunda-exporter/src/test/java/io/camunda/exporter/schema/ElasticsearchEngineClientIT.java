@@ -43,8 +43,8 @@ public class ElasticsearchEngineClientIT {
   public static void init() {
     // Create the low-level client
     final var config = new ElasticsearchExporterConfiguration();
-    config.elasticsearch.setUrl(CONTAINER.getHttpHostAddress());
-    elsClient = new ElasticsearchConnector(config.elasticsearch).createClient();
+    config.elasticsearch.getConnect().setUrl(CONTAINER.getHttpHostAddress());
+    elsClient = new ElasticsearchConnector(config.elasticsearch.getConnect()).createClient();
 
     elsEngineClient = new ElasticsearchEngineClient(elsClient);
   }
