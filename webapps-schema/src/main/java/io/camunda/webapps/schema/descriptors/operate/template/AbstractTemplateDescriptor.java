@@ -35,7 +35,10 @@ public abstract class AbstractTemplateDescriptor extends AbstractIndexDescriptor
 
   @Override
   public List<String> getComposedOf() {
-    return List.of(String.format("%s_template", indexPrefix));
+    // looking at how we use amount of shards and amount of replicas configuration,
+    // it looks like we don't need to have general operate_template any more
+    return List.of();
+    //    return List.of(String.format("%s_template", indexPrefix));
   }
 
   @Override
