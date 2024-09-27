@@ -4405,7 +4405,7 @@ components:
     FormItem:
       type: object
       properties:
-        key:
+        formKey:
           description: The key of the form.
           type: integer
           format: int64
