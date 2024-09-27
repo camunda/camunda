@@ -286,7 +286,7 @@ final class CamundaExporterIT {
   @Test
   void shouldCreateLifeCyclePoliciesOnStartupIfEnabled() throws IOException {
     config.elasticsearch.setCreateSchema(true);
-    config.elasticsearch.setIlmEnabled(true);
+    config.elasticsearch.setRetention(true);
     config.elasticsearch.setIlmPolicyName("policy_name");
 
     startExporter();
@@ -299,7 +299,7 @@ final class CamundaExporterIT {
   @Test
   void shouldNotCreateLifeCyclePoliciesIfDisabled() throws IOException {
     config.elasticsearch.setCreateSchema(true);
-    config.elasticsearch.setIlmEnabled(false);
+    config.elasticsearch.setRetention(false);
     config.elasticsearch.setIlmPolicyName("not_created_policy");
 
     startExporter();

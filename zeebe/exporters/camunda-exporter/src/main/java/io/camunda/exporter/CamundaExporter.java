@@ -128,7 +128,7 @@ public class CamundaExporter implements Exporter {
       return;
     }
 
-    if (configuration.elasticsearch.isIlmEnabled()) {
+    if (configuration.elasticsearch.isRetention()) {
       searchEngineClient.putIndexLifeCyclePolicy(
           configuration.elasticsearch.getIlmPolicyName(),
           configuration.elasticsearch.getIlmMinDeletionAge());

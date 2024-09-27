@@ -22,7 +22,7 @@ public class ElasticsearchProperties {
   private IndexSettings defaultSettings = new IndexSettings();
   private Map<String, Integer> replicasByIndexName = new HashMap<>();
   private Map<String, Integer> shardsByIndexName = new HashMap<>();
-  private boolean ilmEnabled;
+  private boolean retention;
   private String ilmMinDeletionAge = "30d";
   private String ilmPolicyName;
 
@@ -34,12 +34,12 @@ public class ElasticsearchProperties {
     this.ilmPolicyName = ilmPolicyName;
   }
 
-  public boolean isIlmEnabled() {
-    return ilmEnabled;
+  public boolean isRetention() {
+    return retention;
   }
 
-  public void setIlmEnabled(final boolean ilmEnabled) {
-    this.ilmEnabled = ilmEnabled;
+  public void setRetention(final boolean retention) {
+    this.retention = retention;
   }
 
   public String getIlmMinDeletionAge() {
