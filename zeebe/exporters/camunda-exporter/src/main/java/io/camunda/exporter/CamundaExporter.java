@@ -128,12 +128,6 @@ public class CamundaExporter implements Exporter {
       return;
     }
 
-    if (configuration.elasticsearch.isRetention()) {
-      searchEngineClient.putIndexLifeCyclePolicy(
-          configuration.elasticsearch.getIlmPolicyName(),
-          configuration.elasticsearch.getIlmMinDeletionAge());
-    }
-
     final var newIndexProperties = validateIndices(schemaValidator, searchEngineClient);
     final var newIndexTemplateProperties =
         validateIndexTemplates(schemaValidator, searchEngineClient);
@@ -143,6 +137,18 @@ public class CamundaExporter implements Exporter {
     //  used to update existing indices/templates
     schemaManager.updateSchema(newIndexProperties);
     schemaManager.updateSchema(newIndexTemplateProperties);
+
+    if (configuration.elasticsearch.isRetention()) {
+      searchEngineClient.putIndexLifeCyclePolicy(
+          configuration.elasticsearch.getIlmPolicyName(),
+          configuration.elasticsearch.getIlmMinDeletionAge());
+
+      final var lifecycleUpdate =
+          Map.of("index.lifecycle.name", configuration.elasticsearch.getIlmPolicyName());
+
+      searchEngineClient.putSettings(
+          provider.getIndexDescriptors().stream().toList(), lifecycleUpdate);
+    }
   }
 
   private Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndices(

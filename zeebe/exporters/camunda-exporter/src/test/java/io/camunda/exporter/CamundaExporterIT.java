@@ -308,6 +308,21 @@ final class CamundaExporterIT {
     assertThat(policies.get("not_created_policy")).isNull();
   }
 
+  @Test
+  void shouldSetLifecyclePolicyOnCreatedIndices() throws IOException {
+    config.elasticsearch.setCreateSchema(true);
+    config.elasticsearch.setRetention(true);
+    config.elasticsearch.setIlmPolicyName("policy_name");
+
+    startExporter();
+
+    final var createdIndex =
+        testClient.indices().get(req -> req.index(index.getFullQualifiedName())).result();
+
+    assertThat(createdIndex.get(index.getFullQualifiedName()).settings().index().lifecycle().name())
+        .isEqualTo("policy_name");
+  }
+
   private Exporter startExporter() {
     final var exporter =
         new CamundaExporter(mockResourceProvider(Set.of(index), Set.of(indexTemplate)));
