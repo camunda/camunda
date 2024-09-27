@@ -10,9 +10,9 @@ package io.camunda.zeebe.gateway.rest.validator;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ALL_REQUIRED_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateOperationReference;
 
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
@@ -136,15 +136,6 @@ public class ProcessInstanceRequestValidator {
     final boolean areInstructionsValid = instructions.stream().allMatch(match);
     if (!areInstructionsValid) {
       violations.add(message);
-    }
-  }
-
-  private static void validateOperationReference(
-      final Long operationReference, final List<String> violations) {
-    if (operationReference != null && operationReference < 1) {
-      violations.add(
-          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-              "operationReference", operationReference, "> 0"));
     }
   }
 }
