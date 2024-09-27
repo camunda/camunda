@@ -17,6 +17,7 @@ import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
+import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplateMapping;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.JsonpDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -258,8 +259,11 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final IndexSettings settings,
       final Boolean create) {
 
-    try (final var templateMappings =
+    try (final var templateFile =
         getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
+
+      final var templateFields = deserializeJson(IndexTemplateMapping._DESERIALIZER, templateFile);
+      final var templateSettings = templateFields.settings();
 
       return new PutIndexTemplateRequest.Builder()
           .name(indexTemplateDescriptor.getTemplateName())
@@ -267,16 +271,15 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           .template(
               t ->
                   t.aliases(indexTemplateDescriptor.getAlias(), Alias.of(a -> a))
-                      .mappings(
-                          deserializeJson(IndexTemplateSummary._DESERIALIZER, templateMappings)
-                              .mappings())
+                      .mappings(templateFields.mappings())
                       .settings(
                           s ->
-                              s.index(
-                                  i ->
-                                      i.numberOfShards(String.valueOf(settings.getNumberOfShards()))
-                                          .numberOfReplicas(
-                                              String.valueOf(settings.getNumberOfReplicas())))))
+                              s.analysis(
+                                      templateSettings == null ? null : templateSettings.analysis())
+                                  .index(templateSettings == null ? null : templateSettings.index())
+                                  .numberOfShards(String.valueOf(settings.getNumberOfShards()))
+                                  .numberOfReplicas(
+                                      String.valueOf(settings.getNumberOfReplicas()))))
           .composedOf(indexTemplateDescriptor.getComposedOf())
           .create(create)
           .build();
