@@ -16,11 +16,11 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record ProcessInstanceFilter(
-    List<Long> keys,
-    List<String> bpmnProcessIds,
-    List<String> processNames,
-    List<Integer> processVersions,
-    List<String> processVersionTags,
+    List<Long> processInstanceKeys,
+    List<String> processDefinitionIds,
+    List<String> processDefinitionNames,
+    List<Integer> processDefinitionVersions,
+    List<String> processDefinitionVersionTags,
     List<Long> processDefinitionKeys,
     List<Long> rootProcessInstanceKeys,
     List<Long> parentProcessInstanceKeys,
@@ -35,11 +35,11 @@ public record ProcessInstanceFilter(
 
   public static final class Builder implements ObjectBuilder<ProcessInstanceFilter> {
 
-    private List<Long> keys;
-    private List<String> bpmnProcessIds;
-    private List<String> processNames;
-    private List<Integer> processVersions;
-    private List<String> processVersionTags;
+    private List<Long> processInstanceKeys;
+    private List<String> processDefinitionIds;
+    private List<String> processDefinitionNames;
+    private List<Integer> processDefinitionVersions;
+    private List<String> processDefinitionVersionTags;
     private List<Long> processDefinitionKeys;
     private List<Long> rootProcessInstanceKeys;
     private List<Long> parentProcessInstanceKeys;
@@ -51,49 +51,49 @@ public record ProcessInstanceFilter(
     private Boolean incident;
     private List<String> tenantIds;
 
-    public Builder keys(final List<Long> values) {
-      keys = addValuesToList(keys, values);
+    public Builder processInstanceKeys(final List<Long> values) {
+      processInstanceKeys = addValuesToList(processInstanceKeys, values);
       return this;
     }
 
-    public Builder keys(final Long... values) {
-      return keys(collectValuesAsList(values));
+    public Builder processInstanceKeys(final Long... values) {
+      return processInstanceKeys(collectValuesAsList(values));
     }
 
-    public Builder bpmnProcessIds(final List<String> values) {
-      bpmnProcessIds = addValuesToList(bpmnProcessIds, values);
+    public Builder processDefinitionIds(final List<String> values) {
+      processDefinitionIds = addValuesToList(processDefinitionIds, values);
       return this;
     }
 
-    public Builder bpmnProcessIds(final String... values) {
-      return bpmnProcessIds(collectValuesAsList(values));
+    public Builder processDefinitionIds(final String... values) {
+      return processDefinitionIds(collectValuesAsList(values));
     }
 
-    public Builder processNames(final List<String> values) {
-      processNames = addValuesToList(processNames, values);
+    public Builder processDefinitionNames(final List<String> values) {
+      processDefinitionNames = addValuesToList(processDefinitionNames, values);
       return this;
     }
 
-    public Builder processNames(final String... values) {
-      return processNames(collectValuesAsList(values));
+    public Builder processDefinitionNames(final String... values) {
+      return processDefinitionNames(collectValuesAsList(values));
     }
 
-    public Builder processVersions(final List<Integer> values) {
-      processVersions = addValuesToList(processVersions, values);
+    public Builder processDefinitionVersions(final List<Integer> values) {
+      processDefinitionVersions = addValuesToList(processDefinitionVersions, values);
       return this;
     }
 
-    public Builder processVersions(final Integer... values) {
-      return processVersions(collectValuesAsList(values));
+    public Builder processDefinitionVersions(final Integer... values) {
+      return processDefinitionVersions(collectValuesAsList(values));
     }
 
-    public Builder processVersionTags(final List<String> values) {
-      processVersionTags = addValuesToList(processVersionTags, values);
+    public Builder processDefinitionVersionTags(final List<String> values) {
+      processDefinitionVersionTags = addValuesToList(processDefinitionVersionTags, values);
       return this;
     }
 
-    public Builder processVersionTags(final String... values) {
-      return processVersionTags(collectValuesAsList(values));
+    public Builder processDefinitionVersionTags(final String... values) {
+      return processDefinitionVersionTags(collectValuesAsList(values));
     }
 
     public Builder processDefinitionKeys(final List<Long> values) {
@@ -187,11 +187,11 @@ public record ProcessInstanceFilter(
     @Override
     public ProcessInstanceFilter build() {
       return new ProcessInstanceFilter(
-          Objects.requireNonNullElse(keys, Collections.emptyList()),
-          Objects.requireNonNullElse(bpmnProcessIds, Collections.emptyList()),
-          Objects.requireNonNullElse(processNames, Collections.emptyList()),
-          Objects.requireNonNullElse(processVersions, Collections.emptyList()),
-          Objects.requireNonNullElse(processVersionTags, Collections.emptyList()),
+          Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionIds, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionNames, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionVersions, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionVersionTags, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(rootProcessInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(parentProcessInstanceKeys, Collections.emptyList()),

@@ -905,10 +905,10 @@ public final class ProcessInstanceMigrationPreconditions {
       throw new ProcessInstanceMigrationPreconditionFailedException(
           """
           Expected to migrate process instance '%s' but active element with id '%s' \
-          attempts to subscribe to a message it is already subscribed to with name '%s'. \
-          Migrating active elements that subscribe to a message they are already \
-          subscribed to is not possible yet. Please provide a mapping instruction to \
-          message catch event with id '%s' to migrate the respective message subscription.\
+          is already subscribed to the same message name '%s'. Currently, migrating message \
+          subscriptions to the same message name isn't supported without a mapping. \
+          Please provide a mapping instruction between message catch event with id '%s' \
+          and the target message catch event. \
           """
               .formatted(processInstanceKey, elementId, messageNameString, targetCatchEventId),
           RejectionType.INVALID_STATE);

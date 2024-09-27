@@ -38,23 +38,23 @@ public class DecisionDefinitionSortTest {
 
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
-        new TestArguments("key", SortOrder.ASC, s -> s.decisionKey().asc()),
-        new TestArguments("decisionId", SortOrder.ASC, s -> s.dmnDecisionId().asc()),
-        new TestArguments("name", SortOrder.DESC, s -> s.dmnDecisionName().desc()),
+        new TestArguments("key", SortOrder.ASC, s -> s.decisionDefinitionKey().asc()),
+        new TestArguments("decisionId", SortOrder.ASC, s -> s.decisionDefinitionId().asc()),
+        new TestArguments("name", SortOrder.DESC, s -> s.decisionDefinitionName().desc()),
         new TestArguments(
-            "decisionRequirementsId", SortOrder.DESC, s -> s.dmnDecisionRequirementsId().desc()),
+            "decisionRequirementsId", SortOrder.DESC, s -> s.decisionRequirementsId().desc()),
         new TestArguments(
             "decisionRequirementsKey", SortOrder.DESC, s -> s.decisionRequirementsKey().desc()),
         new TestArguments("tenantId", SortOrder.ASC, s -> s.tenantId().asc()),
-        new TestArguments("version", SortOrder.ASC, s -> s.version().asc()));
+        new TestArguments("version", SortOrder.ASC, s -> s.decisionDefinitionVersion().asc()));
   }
 
   @ParameterizedTest
   @MethodSource("provideSortParameters")
   public void shouldSortByField(
-      String field,
-      SortOrder sortOrder,
-      Function<DecisionDefinitionSort.Builder, ObjectBuilder<DecisionDefinitionSort>> fn) {
+      final String field,
+      final SortOrder sortOrder,
+      final Function<DecisionDefinitionSort.Builder, ObjectBuilder<DecisionDefinitionSort>> fn) {
     // when
     services.search(SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.sort(fn)));
 

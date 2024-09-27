@@ -69,16 +69,19 @@ public final class ProcessInstanceServices
     return search(SearchQueryBuilders.processInstanceSearchQuery(fn));
   }
 
-  public ProcessInstanceEntity getByKey(final Long key) {
+  public ProcessInstanceEntity getByKey(final Long processInstanceKey) {
     final SearchQueryResult<ProcessInstanceEntity> result =
         executor.search(
-            SearchQueryBuilders.processInstanceSearchQuery().filter(f -> f.keys(key)).build(),
+            SearchQueryBuilders.processInstanceSearchQuery()
+                .filter(f -> f.processInstanceKeys(processInstanceKey))
+                .build(),
             ProcessInstanceEntity.class);
     if (result.total() < 1) {
-      throw new NotFoundException(String.format("Process Instance with key %d not found", key));
+      throw new NotFoundException(
+          String.format("Process Instance with key %d not found", processInstanceKey));
     } else if (result.total() > 1) {
       throw new CamundaServiceException(
-          String.format("Found Process Instance with key %d more than once", key));
+          String.format("Found Process Instance with key %d more than once", processInstanceKey));
     } else {
       return result.items().stream().findFirst().orElseThrow();
     }

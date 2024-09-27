@@ -21,12 +21,12 @@ public final class DecisionDefinitionFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final DecisionDefinitionFilter filter) {
-    final var decisionKeysQuery = getDecisionKeysQuery(filter.decisionKeys());
-    final var decisionIdsQuery = getDmnDecisionIdsQuery(filter.dmnDecisionIds());
-    final var dmnDecisionNamesQuery = getDmnDecisionNamesQuery(filter.dmnDecisionNames());
-    final var versionsQuery = getVersionsQuery(filter.versions());
+    final var decisionKeysQuery = getDecisionKeysQuery(filter.decisionDefinitionKeys());
+    final var decisionIdsQuery = getDmnDecisionIdsQuery(filter.decisionDefinitionIds());
+    final var dmnDecisionNamesQuery = getDmnDecisionNamesQuery(filter.decisionDefinitionNames());
+    final var versionsQuery = getVersionsQuery(filter.decisionDefinitionVersions());
     final var decisionRequirementsIdsQuery =
-        getDmnDecisionRequirementsIdsQuery(filter.dmnDecisionRequirementsIds());
+        getDmnDecisionRequirementsIdsQuery(filter.decisionRequirementsIds());
     final var decisionRequirementsKeysQuery =
         getDecisionRequirementsKeysQuery(filter.decisionRequirementsKeys());
     final var tenantIdsQuery = getTenantIdsQuery(filter.tenantIds());
@@ -39,6 +39,11 @@ public final class DecisionDefinitionFilterTransformer
         decisionRequirementsIdsQuery,
         decisionRequirementsKeysQuery,
         tenantIdsQuery);
+  }
+
+  @Override
+  public List<String> toIndices(final DecisionDefinitionFilter filter) {
+    return List.of("operate-decision-8.3.0_alias");
   }
 
   private SearchQuery getDecisionKeysQuery(final List<Long> keys) {
@@ -68,10 +73,5 @@ public final class DecisionDefinitionFilterTransformer
 
   private SearchQuery getTenantIdsQuery(final List<String> tenantIds) {
     return stringTerms("tenantId", tenantIds);
-  }
-
-  @Override
-  public List<String> toIndices(DecisionDefinitionFilter filter) {
-    return List.of("operate-decision-8.3.0_alias");
   }
 }
