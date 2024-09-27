@@ -28,6 +28,7 @@ import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -45,6 +46,7 @@ final class DefaultUserCreatorIT {
   }
 
   @Test
+  @Disabled("Default user creation is disabled for 8.6 and the feature releases in 8.7")
   void shouldCreateDefaultUser() throws InterruptedException {
     // given a broker with authorization enabled
     createBroker(true, 1);
@@ -69,6 +71,7 @@ final class DefaultUserCreatorIT {
   }
 
   @Test
+  @Disabled("Default user creation is disabled for 8.6 and the feature releases in 8.7")
   void shouldNotCreateDefaultUserWhenAuthorizationsDisabled() {
     // given a broker with authorization disabled
     createBroker(false, 1);
@@ -87,6 +90,7 @@ final class DefaultUserCreatorIT {
   }
 
   @Test
+  @Disabled("Default user creation is disabled for 8.6 and the feature releases in 8.7")
   void shouldOnlyCreateDefaultUserOnDeploymentPartition() {
     // given a broker with authorization disabled
     createBroker(true, 2);
@@ -125,6 +129,7 @@ final class DefaultUserCreatorIT {
   }
 
   @Test
+  @Disabled("Default user creation is disabled for 8.6 and the feature releases in 8.7")
   void shouldNotCreateDefaultUserOnRestart(@TempDir final Path tempDir) {
     // given a broker with authorization enabled
     createBroker(true, 1, tempDir);

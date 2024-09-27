@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -51,6 +52,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 
 @WebMvcTest(AuthorizationController.class)
+@Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
 public class AuthorizationControllerTest extends RestControllerTest {
   @MockBean private AuthorizationServices<AuthorizationRecord> authorizationServices;
 
