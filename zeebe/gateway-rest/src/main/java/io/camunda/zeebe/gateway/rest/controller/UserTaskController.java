@@ -17,7 +17,6 @@ import io.camunda.zeebe.gateway.rest.RequestMapper.CompleteUserTaskRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateUserTaskRequest;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -33,7 +32,6 @@ public class UserTaskController {
 
   private final UserTaskServices userTaskServices;
 
-  @Autowired
   public UserTaskController(final UserTaskServices userTaskServices) {
     this.userTaskServices = userTaskServices;
   }

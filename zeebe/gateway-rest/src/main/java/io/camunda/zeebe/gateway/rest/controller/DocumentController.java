@@ -17,7 +17,6 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -39,7 +38,6 @@ public class DocumentController {
 
   private final DocumentServices documentServices;
 
-  @Autowired
   public DocumentController(final DocumentServices documentServices) {
     this.documentServices = documentServices;
   }
@@ -143,6 +141,7 @@ public class DocumentController {
   }
 
   public static class DocumentContentFetchException extends RuntimeException {
+
     public DocumentContentFetchException(final String message, final Throwable cause) {
       super(message, cause);
     }

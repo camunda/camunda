@@ -7,15 +7,14 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.search.query.UserTaskQuery;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import jakarta.validation.ValidationException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +28,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/user-tasks")
 public class UserTaskQueryController {
 
-  @Autowired private UserTaskServices userTaskServices;
+  private final UserTaskServices userTaskServices;
+
+  public UserTaskQueryController(final UserTaskServices userTaskServices) {
+    this.userTaskServices = userTaskServices;
+  }
 
   @PostMapping(
       path = "/search",
