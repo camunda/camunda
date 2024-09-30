@@ -5,11 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors;
+package io.camunda.operate.util;
 
-public interface ProcessInstanceDependant {
+import org.springframework.stereotype.Component;
 
-  String PROCESS_INSTANCE_KEY = "processInstanceKey";
+@Component
+public class IndexPrefixHolder {
 
-  String getFullQualifiedName();
+  private String indexPrefix;
+
+  public String createNewIndexPrefix() {
+    indexPrefix = TestUtil.createRandomString(10) + "-operate";
+    return indexPrefix;
+  }
+
+  public String getIndexPrefix() {
+    return indexPrefix;
+  }
 }

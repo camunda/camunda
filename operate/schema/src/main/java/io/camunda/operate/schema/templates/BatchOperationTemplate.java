@@ -45,6 +45,11 @@ public class BatchOperationTemplate extends AbstractTemplateDescriptor implement
   }
 
   @Override
+  public String getIndexPrefix() {
+    return properties.getIndexPrefix();
+  }
+
+  @Override
   public String getIndexName() {
     return INDEX_NAME;
   }

@@ -93,6 +93,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired private DecisionIndex decisionIndex;
   @Autowired private SchemaManager schemaManager;
   @Autowired private TestImportListener testImportListener;
+  @Autowired private IndexPrefixHolder indexPrefixHolder;
   private String indexPrefix;
 
   @Override
@@ -103,7 +104,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Override
   public void starting(final Description description) {
     if (indexPrefix == null) {
-      indexPrefix = TestUtil.createRandomString(10) + "-operate";
+      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
     }
     operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
     if (operateProperties.getOpensearch().isCreateSchema()) {

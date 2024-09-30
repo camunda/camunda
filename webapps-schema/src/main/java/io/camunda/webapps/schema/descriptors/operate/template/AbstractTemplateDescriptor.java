@@ -52,6 +52,6 @@ public abstract class AbstractTemplateDescriptor extends AbstractIndexDescriptor
 
   @Override
   public String getAllVersionsIndexNameRegexPattern() {
-    return String.format("%s-%s-\\d.*", indexPrefix, getIndexName());
+    return String.format("%s-%s-\\d.*", getIndexPrefix(), getIndexName());
   }
 }

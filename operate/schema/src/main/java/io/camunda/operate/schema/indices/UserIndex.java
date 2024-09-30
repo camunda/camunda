@@ -46,4 +46,9 @@ public class UserIndex extends AbstractIndexDescriptor implements Prio4Backup {
   public String getVersion() {
     return "1.2.0";
   }
+
+  @Override
+  public String getIndexPrefix() {
+    return properties.getIndexPrefix();
+  }
 }

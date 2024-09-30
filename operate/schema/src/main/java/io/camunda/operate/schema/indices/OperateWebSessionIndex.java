@@ -47,4 +47,9 @@ public class OperateWebSessionIndex extends AbstractIndexDescriptor implements P
   public String getVersion() {
     return "1.1.0";
   }
+
+  @Override
+  public String getIndexPrefix() {
+    return properties.getIndexPrefix();
+  }
 }

@@ -53,7 +53,6 @@ public class OperationTemplate extends AbstractTemplateDescriptor
 
   @PostConstruct
   public void init() {
-    indexPrefix = properties.getIndexPrefix(DatabaseInfo.getCurrent());
     isElasticsearch = DatabaseInfo.isElasticsearch();
   }
 
@@ -65,5 +64,11 @@ public class OperationTemplate extends AbstractTemplateDescriptor
   @Override
   public String getVersion() {
     return "8.4.1";
+  }
+
+  @Override
+  public String getIndexPrefix() {
+    indexPrefix = properties.getIndexPrefix(DatabaseInfo.getCurrent());
+    return properties.getIndexPrefix();
   }
 }

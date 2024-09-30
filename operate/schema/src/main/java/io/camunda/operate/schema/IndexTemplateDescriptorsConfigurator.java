@@ -26,8 +26,10 @@ import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 @Configuration
+@Profile("!test")
 public class IndexTemplateDescriptorsConfigurator {
 
   @Bean

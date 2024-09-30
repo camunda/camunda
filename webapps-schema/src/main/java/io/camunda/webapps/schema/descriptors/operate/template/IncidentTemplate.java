@@ -7,8 +7,8 @@
  */
 package io.camunda.webapps.schema.descriptors.operate.template;
 
-import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 
 public class IncidentTemplate extends AbstractTemplateDescriptor
     implements ProcessInstanceDependant, Prio3Backup {

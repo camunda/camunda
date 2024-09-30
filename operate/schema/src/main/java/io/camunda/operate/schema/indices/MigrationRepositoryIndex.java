@@ -41,4 +41,9 @@ public class MigrationRepositoryIndex extends AbstractIndexDescriptor implements
   public String getVersion() {
     return "1.1.0";
   }
+
+  @Override
+  public String getIndexPrefix() {
+    return properties.getIndexPrefix();
+  }
 }

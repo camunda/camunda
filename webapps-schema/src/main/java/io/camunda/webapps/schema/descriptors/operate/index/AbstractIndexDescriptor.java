@@ -28,7 +28,7 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getFullQualifiedName() {
-    return String.format("%s-%s-%s_", indexPrefix, getIndexName(), getVersion());
+    return String.format("%s-%s-%s_", getIndexPrefix(), getIndexName(), getVersion());
   }
 
   @Override
@@ -47,11 +47,15 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getAllVersionsIndexNameRegexPattern() {
-    return String.format("%s-%s-\\d.*", indexPrefix, getIndexName());
+    return String.format("%s-%s-\\d.*", getIndexPrefix(), getIndexName());
   }
 
   @Override
   public String getVersion() {
     return "1.0.0";
+  }
+
+  public String getIndexPrefix() {
+    return indexPrefix;
   }
 }

@@ -108,6 +108,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
   @Autowired private DecisionIndex decisionIndex;
   @Autowired private SchemaManager schemaManager;
+  @Autowired private IndexPrefixHolder indexPrefixHolder;
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -122,7 +123,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Override
   public void starting(final Description description) {
     if (indexPrefix == null) {
-      indexPrefix = TestUtil.createRandomString(10) + "-operate";
+      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
     }
     operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     if (operateProperties.getElasticsearch().isCreateSchema()) {
