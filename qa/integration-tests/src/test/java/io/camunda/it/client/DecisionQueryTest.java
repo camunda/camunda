@@ -145,9 +145,9 @@ class DecisionQueryTest {
                     f.decisionDefinitionKey(decisionKey)
                         .decisionDefinitionId(dmnDecisionId)
                         .decisionRequirementsKey(decisionRequirementsKey)
-                        .decisionDefinitionName(dmnDecisionName)
+                        .name(dmnDecisionName)
                         .decisionRequirementsId(dmnDecisionRequirementsId)
-                        .decisionDefinitionVersion(version)
+                        .version(version)
                         .tenantId(tenantId))
             .send()
             .join();
@@ -167,7 +167,7 @@ class DecisionQueryTest {
         zeebeClient
             .newDecisionDefinitionQuery()
             .filter(f -> f.decisionDefinitionId(dmnDecisionId))
-            .sort(s -> s.decisionDefinitionVersion().desc())
+            .sort(s -> s.version().desc())
             .send()
             .join();
 

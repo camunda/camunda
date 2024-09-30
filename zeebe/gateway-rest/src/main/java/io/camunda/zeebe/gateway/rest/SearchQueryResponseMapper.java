@@ -255,7 +255,7 @@ public final class SearchQueryResponseMapper {
     return new DecisionDefinitionItem()
         .tenantId(d.tenantId())
         .decisionDefinitionKey(d.key())
-        .decisionDefinitionName(d.name())
+        .name(d.name())
         .version(d.version())
         .decisionDefinitionId(d.decisionId())
         .decisionRequirementsKey(d.decisionRequirementsKey())

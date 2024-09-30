@@ -26,13 +26,13 @@ public class DecisionDefinitionSortTest extends AbstractSortTransformerTest {
     return Stream.of(
         new TestArguments("key", SortOrder.ASC, s -> s.decisionDefinitionKey().asc()),
         new TestArguments("decisionId", SortOrder.ASC, s -> s.decisionDefinitionId().asc()),
-        new TestArguments("name", SortOrder.DESC, s -> s.decisionDefinitionName().desc()),
+        new TestArguments("name", SortOrder.DESC, s -> s.name().desc()),
         new TestArguments(
             "decisionRequirementsId", SortOrder.DESC, s -> s.decisionRequirementsId().desc()),
         new TestArguments(
             "decisionRequirementsKey", SortOrder.DESC, s -> s.decisionRequirementsKey().desc()),
         new TestArguments("tenantId", SortOrder.ASC, s -> s.tenantId().asc()),
-        new TestArguments("version", SortOrder.ASC, s -> s.decisionDefinitionVersion().asc()));
+        new TestArguments("version", SortOrder.ASC, s -> s.version().asc()));
   }
 
   @ParameterizedTest
