@@ -13,7 +13,6 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
-import io.camunda.exporter.CamundaExporter;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
@@ -212,7 +211,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withExporter(
         "CamundaExporter",
         cfg -> {
-          cfg.setClassName(CamundaExporter.class.getName());
+          cfg.setClassName("io.camunda.exporter.CamundaExporter");
           cfg.setArgs(
               Map.of(
                   "elasticsearch",
