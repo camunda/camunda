@@ -103,15 +103,11 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <configuration>
-              <ignoredUnusedDeclaredDependencies>
-                <ignoredUnusedDeclaredDependency>com.nimbusds:oauth2-oidc-sdk</ignoredUnusedDeclaredDependency>
-              </ignoredUnusedDeclaredDependencies>
-            </configuration>
-          </execution>
-        </executions>
+        <configuration>
+          <ignoredUnusedDeclaredDependencies>
+            <dep>com.nimbusds:oauth2-oidc-sdk</dep>
+          </ignoredUnusedDeclaredDependencies>
+        </configuration>
       </plugin>
     </plugins>
   </build>

@@ -19,6 +19,7 @@ public interface JwtAuthorizationBuilder<T extends JwtAuthorizationBuilder<T, A,
   public static String DEFAULT_ISSUER = "zeebe-gateway";
   public static String DEFAULT_AUDIENCE = "zeebe-broker";
   public static String DEFAULT_SUBJECT = "zeebe-client";
+  public static final String EXTERNAL_TOKEN_CLAIM_PREFIX = "extra_token_";
 
   /**
    * Sets the token subject.
