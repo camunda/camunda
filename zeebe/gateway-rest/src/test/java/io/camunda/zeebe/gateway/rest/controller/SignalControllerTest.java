@@ -12,8 +12,8 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.SignalServices;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -36,10 +36,10 @@ public class SignalControllerTest extends RestControllerTest {
   private static final String BROADCAST_SIGNAL_ENDPOINT = SIGNALS_BASE_URL + "/broadcast";
   private static final String EXPECTED_PUBLICATION_RESPONSE =
       """
-       {
-         "signalKey": 123,
-         "tenantId": "tenantId"
-       }""";
+          {
+            "signalKey": 123,
+            "tenantId": "tenantId"
+          }""";
 
   @MockBean MultiTenancyCfg multiTenancyCfg;
   @MockBean SignalServices signalServices;
@@ -58,13 +58,13 @@ public class SignalControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "signalName": "signalName",
-          "variables": {
-            "key": "value"
-          },
-          "tenantId": "tenantId"
-        }""";
+            {
+              "signalName": "signalName",
+              "variables": {
+                "key": "value"
+              },
+              "tenantId": "tenantId"
+            }""";
 
     // when then
     final ResponseSpec response =
@@ -95,13 +95,13 @@ public class SignalControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "signalName": "signalName",
-          "variables": {
-            "key": "value"
-          },
-          "tenantId": "<default>"
-        }""";
+            {
+              "signalName": "signalName",
+              "variables": {
+                "key": "value"
+              },
+              "tenantId": "<default>"
+            }""";
 
     // when then
     webClient
@@ -128,13 +128,13 @@ public class SignalControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "signalName": "",
-          "variables": {
-            "key": "value"
-          },
-          "tenantId": "tenantId"
-        }""";
+            {
+              "signalName": "",
+              "variables": {
+                "key": "value"
+              },
+              "tenantId": "tenantId"
+            }""";
 
     // when then
     final ResponseSpec response =
@@ -160,21 +160,21 @@ public class SignalControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "variables": {
-            "key": "value"
-          },
-          "tenantId": "<default>"
-        }""";
+            {
+              "variables": {
+                "key": "value"
+              },
+              "tenantId": "<default>"
+            }""";
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"No signalName provided.",
-            "instance":"/v2/signals/broadcast"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No signalName provided.",
+                "instance":"/v2/signals/broadcast"
+             }""";
 
     // when then
     webClient

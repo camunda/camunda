@@ -7,7 +7,10 @@
  */
 package io.camunda.tasklist.zeebeimport.v850.processors.common;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.TaskVariableEntity;
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.zeebeimport.v850.record.Intent;
 import io.camunda.zeebe.protocol.record.Record;
@@ -28,15 +31,22 @@ public class UserTaskRecordToVariableEntityMapper {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  public List<TaskVariableEntity> mapVariables(Record<UserTaskRecordValue> record) {
+  @Autowired private ObjectMapper objectMapper;
+
+  public List<TaskVariableEntity> mapVariables(final Record<UserTaskRecordValue> record) {
     final List<TaskVariableEntity> variables = new ArrayList<>();
 
     if (record.getIntent().equals(Intent.COMPLETED)) {
       final UserTaskRecordValue recordValue = record.getValue();
 
       final Map<String, Object> variablesMap = recordValue.getVariables();
-      for (Map.Entry<String, Object> varMap : variablesMap.entrySet()) {
-        final String varValue = String.valueOf(varMap.getValue());
+      for (final Map.Entry<String, Object> varMap : variablesMap.entrySet()) {
+        final String varValue;
+        try {
+          varValue = objectMapper.writeValueAsString(varMap.getValue());
+        } catch (final JsonProcessingException e) {
+          throw new TasklistRuntimeException("Failed to parse variable %s".formatted(varMap), e);
+        }
 
         final TaskVariableEntity variableEntity = new TaskVariableEntity();
         variableEntity.setId(
@@ -44,7 +54,6 @@ public class UserTaskRecordToVariableEntityMapper {
                 String.valueOf(recordValue.getUserTaskKey()), varMap.getKey()));
         variableEntity.setName(varMap.getKey());
         variableEntity.setTaskId(String.valueOf(recordValue.getUserTaskKey()));
-        variableEntity.setValue(String.valueOf(varMap.getValue()));
         variableEntity.setPartitionId(record.getPartitionId());
         variableEntity.setTenantId(recordValue.getTenantId());
         variableEntity.setFullValue(varValue);

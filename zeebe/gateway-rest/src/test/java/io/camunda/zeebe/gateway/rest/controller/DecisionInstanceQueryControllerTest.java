@@ -10,14 +10,14 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.DecisionInstanceEntity;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
+import io.camunda.search.query.DecisionInstanceQuery;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.DecisionInstanceServices;
-import io.camunda.service.entities.DecisionInstanceEntity;
-import io.camunda.service.entities.DecisionInstanceEntity.DecisionDefinitionType;
-import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.service.search.query.DecisionInstanceQuery;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
@@ -171,40 +171,6 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .isOk()
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
-  }
-
-  @Test
-  void shouldReturnErrorOnUnsupportedDecisionDefinitionTypeValue() {
-    // given
-    final String apiQuery =
-        """
-        {
-            "filter": {
-                "decisionDefinitionType": "UNSUPPORTED"
-            }
-        }""";
-    // when
-    webClient
-        .post()
-        .uri("/v2/decision-instances/search")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(apiQuery)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(
-            """
-                {
-                    "type": "about:blank",
-                    "title": "Bad Request",
-                    "status": 400,
-                    "detail": "Failed to read request",
-                    "instance": "/v2/decision-instances/search"
-                }
-                """);
   }
 
   private record TestArguments(

@@ -277,6 +277,13 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.countRecordsByQuery(queryContainer, index);
   }
 
+  public List<String> getAllIndicesWithReadOnlyAlias(
+      final String externalProcessVariableIndexName) {
+    final String aliasNameWithPrefix =
+        getIndexNameService().getOptimizeIndexAliasForIndex(externalProcessVariableIndexName);
+    return databaseTestService.getAllIndicesWithReadOnlyAlias(aliasNameWithPrefix);
+  }
+
   public <T> List<T> getZeebeExportedRecordsByQuery(
       final String exportIndex, final TermsQueryContainer query, final Class<T> zeebeRecordClass) {
     return databaseTestService.getZeebeExportedRecordsByQuery(exportIndex, query, zeebeRecordClass);

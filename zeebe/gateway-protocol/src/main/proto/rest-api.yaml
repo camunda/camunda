@@ -709,7 +709,7 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateProcessInstanceRequest"
             examples:
-              "By process decision key":
+              "By process definition key":
                 summary: "Create a process instance by processDefinitionKey."
                 value:
                   processDefinitionKey: 12345
@@ -830,7 +830,7 @@ paths:
   /process-instances/{processInstanceKey}/cancellation:
     post:
       tags:
-        - Process Instance
+        - Process instance
       summary: Cancel process instance
       description: Cancels a running process instance.
       parameters:
@@ -1010,7 +1010,8 @@ paths:
     get:
       tags:
         - Flow node instance
-      summary: |
+      summary: Get flow node instance by key (alpha)
+      description: |
         Returns flow node instance as JSON.
         :::note
         This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
@@ -1237,7 +1238,8 @@ paths:
     get:
       tags:
         - Decision requirements
-      summary: |
+      summary: Get decision requirements by key (alpha)
+      description: |
         Returns Decision Requirements as JSON.
 
         :::note
@@ -1942,7 +1944,8 @@ paths:
     get:
       tags:
         - Incident
-      summary: |
+      summary: Get incident by key (alpha)
+      description: |
         Returns incident as JSON.
         :::note
         This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.

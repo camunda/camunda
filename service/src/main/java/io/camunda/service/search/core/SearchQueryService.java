@@ -7,30 +7,18 @@
  */
 package io.camunda.service.search.core;
 
-import io.camunda.search.clients.CamundaSearchClient;
+import io.camunda.search.query.SearchQueryBase;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.ApiServices;
-import io.camunda.service.search.query.SearchQueryBase;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 
 public abstract class SearchQueryService<T extends ApiServices<T>, Q extends SearchQueryBase, D>
     extends ApiServices<T> {
 
-  protected final SearchClientBasedQueryExecutor executor;
-
   protected SearchQueryService(
-      final BrokerClient brokerClient,
-      final CamundaSearchClient searchClient,
-      final ServiceTransformers transformers,
-      final Authentication authentication) {
-    super(brokerClient, searchClient, transformers, authentication);
-    executor = initiateExecutor();
-  }
-
-  private SearchClientBasedQueryExecutor initiateExecutor() {
-    return new SearchClientBasedQueryExecutor(searchClient, transformers, authentication);
+      final BrokerClient brokerClient, final Authentication authentication) {
+    super(brokerClient, authentication);
   }
 
   public abstract SearchQueryResult<D> search(final Q query);
