@@ -1,4 +1,3 @@
-
 # C8 Run
 
 C8 Run is a packaged distribution of Camunda 8, which allows you to spin up Camunda 8 within seconds. It packages Camunda Core, ElasticSearch, and Connectors. The only prerequisite to run it, is to have a JDK 21+ installed locally.
@@ -14,7 +13,6 @@ To install C8 Run, go to the [Camunda Releases page](https://github.com/camunda/
 ![2024-09-24-144839_grim](https://github.com/user-attachments/assets/02f76946-fd43-4f92-8bad-6a3fa8f2e2f4)
 
 Once extracted, go to the extracted folder and run one of the following commands:
-
 
 ## Linux / Mac Options
 
@@ -56,3 +54,4 @@ Refer to https://docs.camunda.io/docs/guides/getting-started-java-spring/ for he
 
 -------------------------------------------
 ```
+
