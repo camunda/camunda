@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.search.query.UserTaskQuery;
 import io.camunda.service.FormServices;
 import io.camunda.service.UserTaskServices;
-import io.camunda.search.query.UserTaskQuery;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -31,8 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class UserTaskQueryController {
 
   private final UserTaskServices userTaskServices;
-  @Autowired
-  private FormServices formServices;
+  @Autowired private FormServices formServices;
 
   public UserTaskQueryController(final UserTaskServices userTaskServices) {
     this.userTaskServices = userTaskServices;

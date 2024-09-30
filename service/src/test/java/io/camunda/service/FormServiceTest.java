@@ -39,7 +39,6 @@ public final class FormServiceTest {
     final var result = mock(SearchQueryResult.class);
     when(client.searchForms(any(), any())).thenReturn(result);
 
-
     // when
     final var searchQueryResult = services.search(searchQuery);
 

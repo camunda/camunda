@@ -326,21 +326,13 @@ class UserTaskQueryTest {
     final var userTaskKeyWithNoForm =
         userTaskList.items().stream().filter(item -> item.getFormKey() == null).findFirst().get();
 
-    final var problemException =
-        assertThrows(
-            ProblemException.class,
-            () ->
-                camundaClient
-                    .newUserTaskGetFormRequest(userTaskKeyWithNoForm.getUserTaskKey())
-                    .send()
-                    .join());
+    final var result =
+        camundaClient
+            .newUserTaskGetFormRequest(userTaskKeyWithNoForm.getUserTaskKey())
+            .send()
+            .join();
     // then
-    assertThat(problemException.code()).isEqualTo(404);
-    assertThat(problemException.details().getDetail())
-        .isEqualTo(
-            String.format(
-                "User task with userTaskKey=%d does not have a form",
-                userTaskKeyWithNoForm.getUserTaskKey()));
+    assertThat(result).isNull();
   }
 
   private static void deployProcess(

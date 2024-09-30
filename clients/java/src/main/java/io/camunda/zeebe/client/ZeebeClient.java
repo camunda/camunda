@@ -1015,29 +1015,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   DecisionRequirementsGetRequest newDecisionRequirementsGetRequest(long decisionRequirementsKey);
 
   /**
-   * Gets a User Task by key.
-   *
-   * <pre>
-   *   long userTaskKey = ...;
-   *
-   *   zeebeClient
-   *   .newUserTaskGetRequest(userTaskKey)
-   *   .send();
-   *   </pre>
-   *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
-   * @param userTaskKey the key of the user task
-   * @return a builder for the request to get a user task
-   */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
-  UserTaskGetFormRequest newUserTaskGetFormRequest(long userTaskKey);
-
-  /**
    * Gets a user task form by key.
    *
    * <pre>
@@ -1056,6 +1033,29 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * @param userTaskKey the key of the user task
    * @return a builder for the request to get a user task form
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  UserTaskGetFormRequest newUserTaskGetFormRequest(long userTaskKey);
+
+  /**
+   * Gets a User Task by key.
+   *
+   * <pre>
+   *   long userTaskKey = ...;
+   *
+   *   zeebeClient
+   *   .newUserTaskGetRequest(userTaskKey)
+   *   .send();
+   *   </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @param userTaskKey the key of the user task
+   * @return a builder for the request to get a user task
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   UserTaskGetRequest newUserTaskGetRequest(long userTaskKey);
