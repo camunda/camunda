@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.webapp.backup;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import java.util.Map;
@@ -33,6 +34,7 @@ public class Metadata {
 
   public Metadata() {}
 
+  @JsonIgnore
   public boolean isInitialized() {
     return partCount != null && partNo != null && version != null;
   }
