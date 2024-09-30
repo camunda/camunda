@@ -109,9 +109,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
               "decisionDefinitionKey": 123456
           }
       }""",
-            q ->
-                q.filter(f -> f.decisionDefinitionKeys(123456L))
-                    .resultConfig(r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())),
+            q -> q.filter(f -> f.decisionDefinitionKeys(123456L))),
         new TestArguments(
             """
       {
@@ -119,23 +117,18 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
               "decisionDefinitionType": "DECISION_TABLE"
           }
       }""",
-            q ->
-                q.filter(f -> f.decisionTypes(DecisionDefinitionType.DECISION_TABLE))
-                    .resultConfig(r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())),
+            q -> q.filter(f -> f.decisionTypes(DecisionDefinitionType.DECISION_TABLE))),
         new TestArguments(
             """
       {
           "sort": [
                 {
-                    "field": "dmnDecisionName",
+                    "field": "decisionDefinitionName",
                     "order": "desc"
                 }
           ]
       }""",
-            q ->
-                q.sort(s -> s.decisionDefinitionName().desc())
-                    .resultConfig(
-                        r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())));
+            q -> q.sort(s -> s.decisionDefinitionName().desc())));
   }
 
   @ParameterizedTest

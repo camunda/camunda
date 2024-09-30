@@ -76,7 +76,7 @@ public record DecisionInstanceSort(List<FieldSorting> orderings) implements Sort
       return this;
     }
 
-    public Builder decisionType() {
+    public Builder decisionDefinitionType() {
       currentOrdering = new FieldSorting("decisionType", null);
       return this;
     }
