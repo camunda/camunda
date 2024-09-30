@@ -57,29 +57,25 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
   }
 
   @Test
-  void shouldSearchDecisionRequirementsByResourceName() {
+  void shouldSearchDecisionRequirementsByName() {
     // when
-    client.newDecisionRequirementsQuery().filter(f -> f.name("resourceName")).send().join();
+    client.newDecisionRequirementsQuery().filter(f -> f.name("name")).send().join();
 
     // then
     final DecisionRequirementsSearchQueryRequest request =
         gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-    assertThat(request.getFilter().getName()).isEqualTo("resourceName");
+    assertThat(request.getFilter().getName()).isEqualTo("name");
   }
 
   @Test
-  void shouldSearchDecisionRequirementsByResourceNameAndVersion() {
+  void shouldSearchDecisionRequirementsBynameAndVersion() {
     // when
-    client
-        .newDecisionRequirementsQuery()
-        .filter(f -> f.name("resourceName").version(1))
-        .send()
-        .join();
+    client.newDecisionRequirementsQuery().filter(f -> f.name("name").version(1)).send().join();
 
     // then
     final DecisionRequirementsSearchQueryRequest request =
         gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-    assertThat(request.getFilter().getName()).isEqualTo("resourceName");
+    assertThat(request.getFilter().getName()).isEqualTo("name");
     assertThat(request.getFilter().getVersion()).isEqualTo(1);
   }
 
