@@ -546,12 +546,12 @@ paths:
     get:
       tags:
         - User Task
-      summary: Return form by a user task key.
+      summary: Return user task form
       description: |
-        Get the form by the user task key.
+        Get the form of a user task.
 
         :::note
-        This endpoint will return only linked forms, Embedded forms are not retrieved for this endpoint.
+        This endpoint will only return linked forms. This endpoint does not support embedded forms.
         :::
 
         :::note
@@ -575,6 +575,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FormItem"
+        '204':
+          description: >
+            The user task was found, but no form is associated with it.
         "400":
           description: "Bad request"
           content:
