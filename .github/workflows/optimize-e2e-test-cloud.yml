@@ -47,6 +47,7 @@ jobs:
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
+          maven-cache-key-modifier: optimize-tests
           secrets: ${{ toJSON(secrets) }}
           java-version: 21
           distribution: zulu
@@ -75,7 +76,7 @@ jobs:
       working-directory: ./optimize/client
       run: yarn install
     - name: 'build backend & frontend'
-      run: mvn clean install -DskipTests -Dskip.docker -pl optimize/backend -am
+      run: ./mvnw clean install -DskipTests -Dskip.docker -pl optimize/backend -am
     - name: 'start backend'
       working-directory: ./optimize/client
       run: |
