@@ -8,10 +8,10 @@
 package io.camunda.search.os.transformers;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.sort.SearchSortOptions;
 import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.clients.types.TypedValue;
+import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.transformers.SearchTransfomer;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOptions;

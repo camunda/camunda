@@ -9,8 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.service.FormServices;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.exception.NotFoundException;
-import io.camunda.service.search.query.UserTaskQuery;
+import io.camunda.search.query.UserTaskQuery;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -31,9 +30,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/user-tasks")
 public class UserTaskQueryController {
 
-  @Autowired private UserTaskServices userTaskServices;
+  private final UserTaskServices userTaskServices;
+  @Autowired
+  private FormServices formServices;
 
-  @Autowired private FormServices formServices;
+  public UserTaskQueryController(final UserTaskServices userTaskServices) {
+    this.userTaskServices = userTaskServices;
+  }
 
   @PostMapping(
       path = "/search",
@@ -92,8 +95,7 @@ public class UserTaskQueryController {
       final Long formKey = userTaskServices.getByKey(userTaskKey).formKey();
 
       if (formKey == null) {
-        throw new NotFoundException(
-            String.format("User task with userTaskKey=%d does not have a form", userTaskKey));
+        return ResponseEntity.noContent().build();
       }
 
       return ResponseEntity.ok()

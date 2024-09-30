@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import io.camunda.service.security.auth.Authentication;
+import io.camunda.search.security.auth.Authentication;
 import java.util.List;
 import java.util.function.Function;
 import org.mockito.MockedStatic;

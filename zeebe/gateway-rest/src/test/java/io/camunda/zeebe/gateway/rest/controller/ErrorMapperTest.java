@@ -13,9 +13,10 @@ import static org.mockito.ArgumentMatchers.anyString;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException.ConnectionClosed;
-import io.camunda.service.CamundaServiceException;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.security.auth.Authentication;
+import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
@@ -62,7 +63,7 @@ public class ErrorMapperTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaServiceException(
+                new CamundaBrokerException(
                     new BrokerError(ErrorCode.PROCESS_NOT_FOUND, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
@@ -91,7 +92,7 @@ public class ErrorMapperTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaServiceException(
+                new CamundaBrokerException(
                     new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
@@ -120,7 +121,7 @@ public class ErrorMapperTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaServiceException(
+                new CamundaBrokerException(
                     new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
@@ -161,7 +162,7 @@ public class ErrorMapperTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaServiceException(new BrokerError(errorCode, "Just an error"))));
+                new CamundaBrokerException(new BrokerError(errorCode, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -193,7 +194,7 @@ public class ErrorMapperTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaServiceException(new NullPointerException("Just an error"))));
+                new CamundaSearchException(new NullPointerException("Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =

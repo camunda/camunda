@@ -322,4 +322,6 @@ public abstract class DatabaseTestService {
       throws IOException;
 
   public abstract boolean isAliasReadOnly(String readOnlyAliasForIndex) throws IOException;
+
+  public abstract List<String> getAllIndicesWithReadOnlyAlias(String aliasNameWithPrefix);
 }

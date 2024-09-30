@@ -13,7 +13,6 @@ import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,7 +26,6 @@ public class ElementInstanceController {
 
   private final ElementInstanceServices elementInstanceServices;
 
-  @Autowired
   public ElementInstanceController(final ElementInstanceServices elementInstanceServices) {
     this.elementInstanceServices = elementInstanceServices;
   }

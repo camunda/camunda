@@ -12,14 +12,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.SearchQueryResult.Builder;
+import io.camunda.search.security.auth.Authentication;
+import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.service.ProcessInstanceServices;
-import io.camunda.service.entities.ProcessInstanceEntity;
-import io.camunda.service.exception.NotFoundException;
-import io.camunda.service.search.query.ProcessInstanceQuery;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.search.query.SearchQueryResult.Builder;
-import io.camunda.service.search.sort.ProcessInstanceSort;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,23 +57,23 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
   private static final String PROCESS_INSTANCE_ENTITY_JSON =
       """
-                  {
-                  "processInstanceKey": 123,
-                  "processDefinitionId": "demoProcess",
-                  "processDefinitionName": "Demo Process",
-                  "processDefinitionVersion": 5,
-                  "processDefinitionVersionTag": "v5",
-                  "processDefinitionKey": 789,
-                  "rootProcessInstanceKey": 345,
-                  "parentProcessInstanceKey": 333,
-                  "parentFlowNodeInstanceKey": 777,
-                  "treePath": "PI_1/PI_2",
-                  "startDate": "2024-01-01T00:00:00Z",
-                  "state": "ACTIVE",
-                  "incident": false,
-                  "tenantId": "tenant"
-                }
-                """;
+            {
+            "processInstanceKey": 123,
+            "processDefinitionId": "demoProcess",
+            "processDefinitionName": "Demo Process",
+            "processDefinitionVersion": 5,
+            "processDefinitionVersionTag": "v5",
+            "processDefinitionKey": 789,
+            "rootProcessInstanceKey": 345,
+            "parentProcessInstanceKey": 333,
+            "parentFlowNodeInstanceKey": 777,
+            "treePath": "PI_1/PI_2",
+            "startDate": "2024-01-01T00:00:00Z",
+            "state": "ACTIVE",
+            "incident": false,
+            "tenantId": "tenant"
+          }
+          """;
 
   private static final String EXPECTED_SEARCH_RESPONSE =
       """
