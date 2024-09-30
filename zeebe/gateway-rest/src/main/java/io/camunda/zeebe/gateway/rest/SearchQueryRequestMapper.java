@@ -13,34 +13,46 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOW
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_ORDER;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceType;
-import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeState;
-import io.camunda.service.entities.FlowNodeInstanceEntity.FlowNodeType;
-import io.camunda.service.entities.IncidentEntity;
-import io.camunda.service.entities.IncidentEntity.IncidentState;
-import io.camunda.service.search.filter.*;
-import io.camunda.service.search.page.SearchQueryPage;
-import io.camunda.service.search.query.DecisionDefinitionQuery;
-import io.camunda.service.search.query.DecisionInstanceQuery;
-import io.camunda.service.search.query.DecisionRequirementsQuery;
-import io.camunda.service.search.query.FlowNodeInstanceQuery;
-import io.camunda.service.search.query.IncidentQuery;
-import io.camunda.service.search.query.ProcessInstanceQuery;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.TypedSearchQueryBuilder;
-import io.camunda.service.search.query.UserQuery;
-import io.camunda.service.search.query.UserTaskQuery;
-import io.camunda.service.search.sort.DecisionDefinitionSort;
-import io.camunda.service.search.sort.DecisionInstanceSort;
-import io.camunda.service.search.sort.DecisionRequirementsSort;
-import io.camunda.service.search.sort.FlowNodeInstanceSort;
-import io.camunda.service.search.sort.IncidentSort;
-import io.camunda.service.search.sort.ProcessInstanceSort;
-import io.camunda.service.search.sort.SortOption;
-import io.camunda.service.search.sort.SortOptionBuilders;
-import io.camunda.service.search.sort.UserSort;
-import io.camunda.service.search.sort.UserTaskSort;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.filter.DateValueFilter;
+import io.camunda.search.filter.DecisionDefinitionFilter;
+import io.camunda.search.filter.DecisionInstanceFilter;
+import io.camunda.search.filter.DecisionRequirementsFilter;
+import io.camunda.search.filter.FilterBase;
+import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.FlowNodeInstanceFilter;
+import io.camunda.search.filter.IncidentFilter;
+import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.ProcessInstanceVariableFilter;
+import io.camunda.search.filter.UserFilter;
+import io.camunda.search.filter.UserTaskFilter;
+import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.DecisionDefinitionQuery;
+import io.camunda.search.query.DecisionInstanceQuery;
+import io.camunda.search.query.DecisionRequirementsQuery;
+import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.TypedSearchQueryBuilder;
+import io.camunda.search.query.UserQuery;
+import io.camunda.search.query.UserTaskQuery;
+import io.camunda.search.sort.DecisionDefinitionSort;
+import io.camunda.search.sort.DecisionInstanceSort;
+import io.camunda.search.sort.DecisionRequirementsSort;
+import io.camunda.search.sort.FlowNodeInstanceSort;
+import io.camunda.search.sort.IncidentSort;
+import io.camunda.search.sort.ProcessInstanceSort;
+import io.camunda.search.sort.SortOption;
+import io.camunda.search.sort.SortOptionBuilders;
+import io.camunda.search.sort.UserSort;
+import io.camunda.search.sort.UserTaskSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
@@ -146,12 +158,13 @@ public final class SearchQueryRequestMapper {
           .ifPresent(builder::states);
       ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionKeys);
-      ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::dmnDecisionIds);
-      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::dmnDecisionNames);
-      ofNullable(filter.getDecisionDefinitionVersion()).ifPresent(builder::decisionVersions);
+      ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionDefinitionKeys);
+      ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
+      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::decisionDefinitionNames);
+      ofNullable(filter.getDecisionDefinitionVersion())
+          .ifPresent(builder::decisionDefinitionVersions);
       ofNullable(filter.getDecisionDefinitionType())
-          .map(t -> convertEnum(t, DecisionInstanceType.class))
+          .map(t -> convertEnum(t, DecisionDefinitionType.class))
           .ifPresent(builder::decisionTypes);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
@@ -169,10 +182,10 @@ public final class SearchQueryRequestMapper {
         case "state" -> builder.state();
         case "evaluationDate" -> builder.evaluationDate();
         case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "decisionKey" -> builder.decisionKey();
-        case "dmnDecisionId" -> builder.dmnDecisionId();
-        case "dmnDecisionName" -> builder.dmnDecisionName();
-        case "decisionVersion" -> builder.decisionVersion();
+        case "decisionKey" -> builder.decisionDefinitionKey();
+        case "dmnDecisionId" -> builder.decisionDefinitionId();
+        case "dmnDecisionName" -> builder.decisionDefinitionName();
+        case "decisionVersion" -> builder.decisionDefinitionVersion();
         case "decisionType" -> builder.decisionType();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
@@ -286,8 +299,8 @@ public final class SearchQueryRequestMapper {
     if (filter != null) {
       ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
-      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::decisionDefinitionNames);
-      ofNullable(filter.getVersion()).ifPresent(builder::decisionDefinitionVersions);
+      ofNullable(filter.getName()).ifPresent(builder::names);
+      ofNullable(filter.getVersion()).ifPresent(builder::versions);
       ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
       ofNullable(filter.getDecisionRequirementsKey()).ifPresent(builder::decisionRequirementsKeys);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
@@ -443,8 +456,8 @@ public final class SearchQueryRequestMapper {
       switch (field) {
         case "decisionDefinitionKey" -> builder.decisionDefinitionKey();
         case "decisionDefinitionId" -> builder.decisionDefinitionId();
-        case "decisionDefinitionName" -> builder.decisionDefinitionName();
-        case "decisionDefinitionVersion" -> builder.decisionDefinitionVersion();
+        case "name" -> builder.name();
+        case "version" -> builder.version();
         case "decisionRequirementsId" -> builder.decisionRequirementsId();
         case "decisionRequirementsKey" -> builder.decisionRequirementsKey();
         case "tenantId" -> builder.tenantId();

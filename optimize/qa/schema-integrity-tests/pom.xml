@@ -117,6 +117,7 @@
               <goal>unpack</goal>
             </goals>
             <configuration>
+              <skip>${skipTests}</skip>
               <artifactItems>
                 <artifactItem>
                   <!-- This will be updated in https://github.com/camunda/camunda-optimize/issues/14145-->
@@ -193,9 +194,6 @@
     </profile>
     <profile>
       <id>es-schema-integrity-tests</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
       <build>
         <plugins>
           <plugin>

@@ -12,15 +12,15 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.DecisionDefinitionEntity;
+import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.DecisionDefinitionFilter;
+import io.camunda.search.query.DecisionDefinitionQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.SearchQueryResult.Builder;
+import io.camunda.search.security.auth.Authentication;
+import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.service.DecisionDefinitionServices;
-import io.camunda.service.entities.DecisionDefinitionEntity;
-import io.camunda.service.exception.NotFoundException;
-import io.camunda.service.search.filter.DecisionDefinitionFilter;
-import io.camunda.service.search.query.DecisionDefinitionQuery;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.search.query.SearchQueryResult.Builder;
-import io.camunda.service.search.sort.DecisionDefinitionSort;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -37,26 +37,26 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
       """
-      {
-          "items": [
-              {
-                  "tenantId": "t",
-                  "decisionDefinitionKey": 0,
-                  "decisionDefinitionId": "dId",
-                  "decisionDefinitionName": "name",
-                  "version": 1,
-                  "decisionRequirementsId": "drId",
-                  "decisionRequirementsKey": 2
+          {
+              "items": [
+                  {
+                      "tenantId": "t",
+                      "decisionDefinitionKey": 0,
+                      "decisionDefinitionId": "dId",
+                      "name": "name",
+                      "version": 1,
+                      "decisionRequirementsId": "drId",
+                      "decisionRequirementsKey": 2
+                  }
+              ],
+              "page": {
+                  "totalItems": 1,
+                  "firstSortValues": [],
+                  "lastSortValues": [
+                      "v"
+                  ]
               }
-          ],
-          "page": {
-              "totalItems": 1,
-              "firstSortValues": [],
-              "lastSortValues": [
-                  "v"
-              ]
-          }
-      }""";
+          }""";
 
   static final SearchQueryResult<DecisionDefinitionEntity> SEARCH_QUERY_RESULT =
       new Builder<DecisionDefinitionEntity>()
@@ -128,19 +128,19 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
-        {
-          "filter":{
-            "tenantId": "t",
-            "decisionDefinitionKey": 0,
-            "decisionDefinitionName": "name",
-            "version": 1,
-            "decisionRequirementsId": "drId",
-            "decisionRequirementsKey": 2,
-            "decisionDefinitionId": "dId",
-            "decisionRequirementsName": "drName",
-            "decisionRequirementsVersion": 3
-          }
-        }""";
+            {
+              "filter":{
+                "tenantId": "t",
+                "decisionDefinitionKey": 0,
+                "name": "name",
+                "version": 1,
+                "decisionRequirementsId": "drId",
+                "decisionRequirementsKey": 2,
+                "decisionDefinitionId": "dId",
+                "decisionRequirementsName": "drName",
+                "decisionRequirementsVersion": 3
+              }
+            }""";
 
     // when / then
     webClient
@@ -164,8 +164,8 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                     new DecisionDefinitionFilter.Builder()
                         .tenantIds("t")
                         .decisionDefinitionKeys(0L)
-                        .decisionDefinitionNames("name")
-                        .decisionDefinitionVersions(1)
+                        .names("name")
+                        .versions(1)
                         .decisionRequirementsIds("drId")
                         .decisionRequirementsKeys(2L)
                         .decisionDefinitionIds("dId")
@@ -180,34 +180,34 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
-        {
-            "sort": [
-                {
-                    "field": "decisionDefinitionKey",
-                    "order": "asc"
-                },
-                {
-                    "field": "decisionDefinitionName",
-                    "order": "desc"
-                },
-                {
-                    "field": "decisionDefinitionVersion",
-                    "order": "asc"
-                },
-                {
-                     "field": "decisionDefinitionId"
-                },
-                {
-                     "field": "decisionRequirementsKey"
-                },
-                {
-                     "field": "decisionRequirementsId"
-                },
-                {
-                     "field": "tenantId"
-                }
-            ]
-        }""";
+            {
+                "sort": [
+                    {
+                        "field": "decisionDefinitionKey",
+                        "order": "asc"
+                    },
+                    {
+                        "field": "name",
+                        "order": "desc"
+                    },
+                    {
+                        "field": "version",
+                        "order": "asc"
+                    },
+                    {
+                         "field": "decisionDefinitionId"
+                    },
+                    {
+                         "field": "decisionRequirementsKey"
+                    },
+                    {
+                         "field": "decisionRequirementsId"
+                    },
+                    {
+                         "field": "tenantId"
+                    }
+                ]
+            }""";
     // when / then
     webClient
         .post()
@@ -230,9 +230,9 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                     new DecisionDefinitionSort.Builder()
                         .decisionDefinitionKey()
                         .asc()
-                        .decisionDefinitionName()
+                        .name()
                         .desc()
-                        .decisionDefinitionVersion()
+                        .version()
                         .asc()
                         .decisionDefinitionId()
                         .asc()
@@ -251,23 +251,23 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-            "sort": [
-                {
-                    "field": "unknownField",
-                    "order": "asc"
-                }
-            ]
-        }""";
+            {
+                "sort": [
+                    {
+                        "field": "unknownField",
+                        "order": "asc"
+                    }
+                ]
+            }""";
     final var expectedResponse =
         """
-        {
-          "type": "about:blank",
-          "title": "INVALID_ARGUMENT",
-          "status": 400,
-          "detail": "Unknown sortBy: unknownField.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "title": "INVALID_ARGUMENT",
+              "status": 400,
+              "detail": "Unknown sortBy: unknownField.",
+              "instance": "%s"
+            }"""
             .formatted(DECISION_DEFINITIONS_SEARCH_URL);
     // when / then
     webClient
@@ -318,13 +318,13 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     // when/then
     final var expectedResponse =
         """
-        {
-          "type": "about:blank",
-          "title": "NOT_FOUND",
-          "status": 404,
-          "detail": "Decision with key 1 was not found.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "title": "NOT_FOUND",
+              "status": 404,
+              "detail": "Decision with key 1 was not found.",
+              "instance": "%s"
+            }"""
             .formatted(DECISION_DEFINITIONS_GET_XML_URL.formatted(decisionDefinitionKey));
     webClient
         .get()
@@ -348,13 +348,13 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     // when/then
     final var expectedResponse =
         """
-        {
-          "type": "about:blank",
-          "title": "java.lang.RuntimeException",
-          "status": 500,
-          "detail": "Unexpected error occurred during the request processing: Failed to get decision definition xml.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "title": "java.lang.RuntimeException",
+              "status": 500,
+              "detail": "Unexpected error occurred during the request processing: Failed to get decision definition xml.",
+              "instance": "%s"
+            }"""
             .formatted(DECISION_DEFINITIONS_GET_XML_URL.formatted(decisionDefinitionKey));
     webClient
         .get()
@@ -376,13 +376,14 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     // when/then
     final var expectedResponse =
         """
-        {
-          "type": "about:blank",
-          "title": "Bad Request",
-          "status": 400,
-          "detail": "Failed to convert 'decisionDefinitionKey' with value: 'invalidKey'",
-          "instance": "/v2/decision-definitions/invalidKey/xml"
-        }""";
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "Failed to convert 'decisionDefinitionKey' with value: 'invalidKey'",
+              "instance": "/v2/decision-definitions/invalidKey/xml"
+            }""";
+
     webClient
         .get()
         .uri("/v2/decision-definitions/%s/xml".formatted(decisionDefinitionKey))
@@ -409,7 +410,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
               "tenantId": "t",
               "decisionDefinitionKey": 0,
               "decisionDefinitionId": "dId",
-              "decisionDefinitionName": "name",
+              "name": "name",
               "version": 1,
               "decisionRequirementsId": "drId",
               "decisionRequirementsKey": 2
@@ -437,13 +438,13 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     // when/then
     final var expectedResponse =
         """
-        {
-          "type": "about:blank",
-          "title": "NOT_FOUND",
-          "status": 404,
-          "detail": "Decision with key 1 was not found.",
-          "instance": "/v2/decision-definitions/1"
-        }""";
+            {
+              "type": "about:blank",
+              "title": "NOT_FOUND",
+              "status": 404,
+              "detail": "Decision with key 1 was not found.",
+              "instance": "/v2/decision-definitions/1"
+            }""";
     webClient
         .get()
         .uri("/v2/decision-definitions/%d".formatted(decisionDefinitionKey))
@@ -466,13 +467,13 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     // when/then
     final var expectedResponse =
         """
-        {
-          "type": "about:blank",
-          "title": "java.lang.RuntimeException",
-          "status": 500,
-          "detail": "Unexpected error occurred during the request processing: Failed to get decision definition.",
-          "instance": "/v2/decision-definitions/1"
-        }""";
+            {
+              "type": "about:blank",
+              "title": "java.lang.RuntimeException",
+              "status": 500,
+              "detail": "Unexpected error occurred during the request processing: Failed to get decision definition.",
+              "instance": "/v2/decision-definitions/1"
+            }""";
     webClient
         .get()
         .uri("/v2/decision-definitions/%d".formatted(decisionDefinitionKey))

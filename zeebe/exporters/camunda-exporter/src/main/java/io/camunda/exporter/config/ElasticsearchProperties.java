@@ -7,28 +7,24 @@
  */
 package io.camunda.exporter.config;
 
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import java.util.HashMap;
 import java.util.Map;
 
 public class ElasticsearchProperties {
-  private String url;
-  private String username;
-  private String password;
-  private final String clusterName = "elasticsearch";
-  private String indexPrefix = "zeebe";
   private boolean createSchema;
-  private Integer socketTimeout;
-  private Integer connectTimeout;
+  private ConnectConfiguration connect = new ConnectConfiguration();
   private IndexSettings defaultSettings = new IndexSettings();
   private Map<String, Integer> replicasByIndexName = new HashMap<>();
   private Map<String, Integer> shardsByIndexName = new HashMap<>();
+  private RetentionConfiguration retention = new RetentionConfiguration();
 
-  public String getIndexPrefix() {
-    return indexPrefix;
+  public RetentionConfiguration getRetention() {
+    return retention;
   }
 
-  public void setIndexPrefix(final String indexPrefix) {
-    this.indexPrefix = indexPrefix;
+  public void setRetention(final RetentionConfiguration retention) {
+    this.retention = retention;
   }
 
   public boolean isCreateSchema() {
@@ -37,6 +33,14 @@ public class ElasticsearchProperties {
 
   public void setCreateSchema(final boolean createSchema) {
     this.createSchema = createSchema;
+  }
+
+  public ConnectConfiguration getConnect() {
+    return connect;
+  }
+
+  public void setConnect(final ConnectConfiguration connect) {
+    this.connect = connect;
   }
 
   public IndexSettings getDefaultSettings() {
@@ -63,48 +67,12 @@ public class ElasticsearchProperties {
     this.shardsByIndexName = shardsByIndexName;
   }
 
-  public String getUrl() {
-    return url;
+  public String getIndexPrefix() {
+    return connect.getIndexPrefix();
   }
 
-  public void setUrl(final String url) {
-    this.url = url;
-  }
-
-  public String getUsername() {
-    return username;
-  }
-
-  public void setUsername(final String username) {
-    this.username = username;
-  }
-
-  public String getPassword() {
-    return password;
-  }
-
-  public void setPassword(final String password) {
-    this.password = password;
-  }
-
-  public String getClusterName() {
-    return clusterName;
-  }
-
-  public Integer getSocketTimeout() {
-    return socketTimeout;
-  }
-
-  public void setSocketTimeout(final Integer socketTimeout) {
-    this.socketTimeout = socketTimeout;
-  }
-
-  public Integer getConnectTimeout() {
-    return connectTimeout;
-  }
-
-  public void setConnectTimeout(final Integer connectTimeout) {
-    this.connectTimeout = connectTimeout;
+  public void setIndexPrefix(final String indexPrefix) {
+    connect.setIndexPrefix(indexPrefix);
   }
 
   public static final class IndexSettings {
@@ -125,6 +93,36 @@ public class ElasticsearchProperties {
 
     public void setNumberOfReplicas(final Integer numberOfReplicas) {
       this.numberOfReplicas = numberOfReplicas;
+    }
+  }
+
+  public static final class RetentionConfiguration {
+    private boolean enabled = false;
+    private String mininumAge = "30d";
+    private String policyName;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getMininumAge() {
+      return mininumAge;
+    }
+
+    public void setMininumAge(final String mininumAge) {
+      this.mininumAge = mininumAge;
+    }
+
+    public String getPolicyName() {
+      return policyName;
+    }
+
+    public void setPolicyName(final String policyName) {
+      this.policyName = policyName;
     }
   }
 }

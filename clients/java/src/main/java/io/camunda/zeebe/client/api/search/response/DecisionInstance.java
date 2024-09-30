@@ -15,9 +15,6 @@
  */
 package io.camunda.zeebe.client.api.search.response;
 
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceTypeEnum;
-
 public interface DecisionInstance {
 
   /**
@@ -28,7 +25,7 @@ public interface DecisionInstance {
   /**
    * @return the state of the decision instance
    */
-  DecisionInstanceStateEnum getState();
+  DecisionInstanceState getState();
 
   /**
    * @return the evaluation date of the decision instance
@@ -51,29 +48,29 @@ public interface DecisionInstance {
   Long getProcessInstanceKey();
 
   /**
-   * @return the decision key of the decision instance
+   * @return the decision definition key of the decision instance
    */
-  long getDecisionKey();
+  long getDecisionDefinitionKey();
 
   /**
-   * @return the dmn decision id of the decision instance
+   * @return the decision definition id of the decision instance
    */
-  String getDmnDecisionId();
+  String getDecisionDefinitionId();
 
   /**
-   * @return the dmn decision name of the decision instance
+   * @return the decision definition name of the decision instance
    */
-  String getDmnDecisionName();
+  String getDecisionDefinitionName();
 
   /**
-   * @return the decision version of the decision instance
+   * @return the decision definition version of the decision instance
    */
-  int getDecisionVersion();
+  int getDecisionDefinitionVersion();
 
   /**
    * @return the decision type of the decision instance
    */
-  DecisionInstanceTypeEnum getDecisionType();
+  DecisionDefinitionType getDecisionDefinitionType();
 
   /**
    * @return the tenant id of the decision instance

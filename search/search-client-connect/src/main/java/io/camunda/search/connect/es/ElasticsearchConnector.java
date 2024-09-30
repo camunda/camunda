@@ -16,8 +16,6 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.SecurityConfiguration;
 import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.util.SecurityUtil;
-import java.net.URI;
-import java.net.URISyntaxException;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -96,7 +94,7 @@ public final class ElasticsearchConnector {
       if (!configuration.isVerifyHostname()) {
         httpAsyncClientBuilder.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Error in setting up SSLContext", e);
     }
   }
@@ -113,9 +111,8 @@ public final class ElasticsearchConnector {
 
   private HttpHost getHttpHost(final ConnectConfiguration elsConfig) {
     try {
-      final var uri = new URI(elsConfig.getUrl());
-      return new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
-    } catch (URISyntaxException e) {
+      return HttpHost.create(elsConfig.getUrl());
+    } catch (final Exception e) {
       throw new SearchClientConnectException("Error in url: " + elsConfig.getUrl(), e);
     }
   }

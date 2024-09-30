@@ -32,13 +32,13 @@ public class DecisionDefinitionSortImpl extends SearchQuerySortBase<DecisionDefi
   }
 
   @Override
-  public DecisionDefinitionSort decisionDefinitionName() {
-    return field("decisionDefinitionName");
+  public DecisionDefinitionSort name() {
+    return field("name");
   }
 
   @Override
-  public DecisionDefinitionSort decisionDefinitionVersion() {
-    return field("decisionDefinitionVersion");
+  public DecisionDefinitionSort version() {
+    return field("version");
   }
 
   @Override

@@ -235,6 +235,21 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
+  @SneakyThrows
+  public List<String> getAllIndicesWithReadOnlyAlias(final String aliasNameWithPrefix) {
+    final GetAliasResponse aliasResponse =
+        getOptimizeOpenSearchClient().getAlias(aliasNameWithPrefix);
+    final Map<String, IndexAliases> indexNameToAliasMap = aliasResponse.result();
+    return indexNameToAliasMap.entrySet().stream()
+        .filter(
+            entry ->
+                entry.getValue().aliases().values().stream()
+                    .anyMatch(alias -> alias.isWriteIndex() != null && !alias.isWriteIndex()))
+        .map(Map.Entry::getKey)
+        .toList();
+  }
+
+  @Override
   public <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> type) {
     return getAllDocumentsOfIndexAs(indexName, type, QueryDSL.matchAll());
   }
