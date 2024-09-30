@@ -11,10 +11,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.FormEntity;
+import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.FormServices;
-import io.camunda.service.entities.FormEntity;
-import io.camunda.service.exception.NotFoundException;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,14 +29,14 @@ public class FormControllerTest extends RestControllerTest {
   private static final Long INVALID_FORM_KEY = 999L;
   private static final String FORM_ITEM_JSON =
       """
-      {
-        "key": 1,
-        "tenantId": "tenant-1",
-        "bpmnId": "bpmn-1",
-        "schema": "schema",
-        "version": 1
-      }
-      """;
+          {
+            "key": 1,
+            "tenantId": "tenant-1",
+            "bpmnId": "bpmn-1",
+            "schema": "schema",
+            "version": 1
+          }
+          """;
 
   @MockBean private FormServices formServices;
 
@@ -80,13 +80,13 @@ public class FormControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-            {
-              "type": "about:blank",
-              "title": "NOT_FOUND",
-              "status": 404,
-              "detail": "Form not found"
-            }
-            """);
+                {
+                  "type": "about:blank",
+                  "title": "NOT_FOUND",
+                  "status": 404,
+                  "detail": "Form not found"
+                }
+                """);
 
     verify(formServices, times(1)).getByKey(INVALID_FORM_KEY);
   }
@@ -105,14 +105,14 @@ public class FormControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-            {
-              "type": "about:blank",
-              "title": "java.lang.RuntimeException",
-              "status": 500,
-              "detail": "Unexpected error occurred during the request processing: Unexpected error",
-              "instance": "/v2/forms/1"
-            }
-            """);
+                {
+                  "type": "about:blank",
+                  "title": "java.lang.RuntimeException",
+                  "status": 500,
+                  "detail": "Unexpected error occurred during the request processing: Unexpected error",
+                  "instance": "/v2/forms/1"
+                }
+                """);
 
     verify(formServices, times(1)).getByKey(VALID_FORM_KEY);
   }
