@@ -10,6 +10,7 @@ package io.camunda.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +44,7 @@ public class CamundaDockerIT {
       System.getProperty(
           "camunda.docker.test.elasticsearch.image",
           "docker.elastic.co/elasticsearch/elasticsearch:8.14.1");
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final List<GenericContainer> createdContainers = new ArrayList<>();
 
@@ -69,7 +71,9 @@ public class CamundaDockerIT {
                         camundaContainer.getMappedPort(MANAGEMENT_PORT),
                         "/actuator/health")))) {
 
-      // then
+      // then - convert the response and expected response to intermediate JSON representation
+      // this will allow us to compare without worrying about the ordering of the values, and just
+      // checking that they are logically equivalent
       assertThat(healthCheckResponse.getCode()).isEqualTo(200);
       final String expectedHealthCheckResponse =
           """
@@ -87,15 +91,18 @@ public class CamundaDockerIT {
               "groups": ["liveness", "readiness", "startup", "status"]
             }
             """;
-      assertThat(EntityUtils.toString(healthCheckResponse.getEntity()))
-          .isEqualTo(expectedHealthCheckResponse.replace("\n", "").replace(" ", ""));
+      final var expectedJson = OBJECT_MAPPER.readTree(expectedHealthCheckResponse);
+      final var actualJson =
+          OBJECT_MAPPER.readTree(EntityUtils.toString(healthCheckResponse.getEntity()));
+
+      assertThat(actualJson).isEqualTo(expectedJson);
     }
   }
 
-  private void startContainer(GenericContainer container) {
+  private void startContainer(final GenericContainer container) {
     try {
       container.start();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       fail(
           String.format(
               "Failed to start container.\n" + "Exception message: %s.\n" + "Container Logs:\n%s",
@@ -103,7 +110,7 @@ public class CamundaDockerIT {
     }
   }
 
-  private <T extends GenericContainer> T createContainer(Supplier<T> containerSupplier) {
+  private <T extends GenericContainer> T createContainer(final Supplier<T> containerSupplier) {
     final T container = containerSupplier.get();
     createdContainers.add(container);
     return container;
