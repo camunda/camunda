@@ -48,13 +48,12 @@ jobs:
         run: yarn
       - name: Extract SBOM
         run: |
-          export SCHEMA_VERSION=1.5
           yarn run extract-sbom
       - name: Upload SBOM as artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.component }}-fe-sbom
-          path: ${{ matrix.component }}/client/${{ matrix.folder }}/dependencies.json
+          path: ${{ matrix.component }}/client/${{ matrix.folder }}/cyclonedx/bom.json
 
   backend_sbom:
     runs-on: ubuntu-latest
