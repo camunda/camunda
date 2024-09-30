@@ -179,7 +179,7 @@ jobs:
 
       - name: Prepare release
         run: |
-          mvn -f optimize \
+          ./mvnw -f optimize \
             -DpushChanges=false \
             -DskipTests=true \
             -DignoreSnapshots=true \
@@ -201,7 +201,7 @@ jobs:
 
       - name: Perform release
         run: |
-          mvn -f optimize \
+          ./mvnw -f optimize \
             -DlocalCheckout=true \
             -DskipTests=true \
             -B \
