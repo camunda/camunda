@@ -16,7 +16,6 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import jakarta.validation.ValidationException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,10 +30,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class UserTaskQueryController {
 
   private final UserTaskServices userTaskServices;
-  @Autowired private FormServices formServices;
+  private final FormServices formServices;
 
-  public UserTaskQueryController(final UserTaskServices userTaskServices) {
+  public UserTaskQueryController(
+      final UserTaskServices userTaskServices, final FormServices formServices) {
     this.userTaskServices = userTaskServices;
+    this.formServices = formServices;
   }
 
   @PostMapping(
