@@ -1388,7 +1388,7 @@ paths:
         - Decision instance
       summary: Get decision instance by key (alpha)
       description: |
-        Returns a decision instance .
+        Returns a decision instance.
 
         :::note
         This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
@@ -1410,10 +1410,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DecisionInstanceItem"
+                $ref: "#/components/schemas/DecisionInstanceGetQueryResponse"
         "400":
           description: >
-            The decision instance Get failed.
+            The decision instance request failed.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -3894,23 +3894,27 @@ components:
         result:
           type: string
           description: The result of the decision instance.
-        evaluatedInputs:
-          type: array
-          items:
-            $ref: "#/components/schemas/EvaluatedDecisionInputItem"
-          description: |
-            The evaluated inputs of the decision instance.
-            This is returned only by the get decision instance by key endpoint.
-        matchedRules:
-          type: array
-          items:
-            $ref: "#/components/schemas/MatchedDecisionRuleItem"
-          description: |
-            The matched rules of the decision instance.
-            This is returned only by the get decision instance by key endpoint.
         tenantId:
           type: string
           description: The tenant ID of the decision instance.
+
+    DecisionInstanceGetQueryResponse:
+      allOf:
+        - $ref: '#/components/schemas/DecisionInstanceItem'
+        - type: object
+          properties:
+            evaluatedInputs:
+              type: array
+              items:
+                $ref: "#/components/schemas/EvaluatedDecisionInputItem"
+              description: |
+                The evaluated inputs of the decision instance.
+            matchedRules:
+              type: array
+              items:
+                $ref: "#/components/schemas/MatchedDecisionRuleItem"
+              description: |
+                The matched rules of the decision instance.
 
     DecisionDefinitionTypeEnum:
       enum:

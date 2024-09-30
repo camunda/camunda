@@ -11,7 +11,7 @@ import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.service.DecisionInstanceServices;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceItem;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceGetQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -45,11 +45,11 @@ public class DecisionInstanceQueryController {
   @GetMapping(
       path = "/{decisionInstanceKey}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public ResponseEntity<DecisionInstanceItem> getDecisionInstanceByKey(
+  public ResponseEntity<DecisionInstanceGetQueryResponse> getDecisionInstanceByKey(
       @PathVariable("decisionInstanceKey") final long decisionInstanceKey) {
     try {
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toDecisionInstance(
+          SearchQueryResponseMapper.toDecisionInstanceGetQueryResponse(
               decisionInstanceServices.getByKey(decisionInstanceKey)));
     } catch (final Exception e) {
       REST_LOGGER.debug("An exception occurred in getDecisionInstance.", e);

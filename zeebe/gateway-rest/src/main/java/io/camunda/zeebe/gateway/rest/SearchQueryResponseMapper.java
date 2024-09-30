@@ -28,6 +28,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceGetQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceStateEnum;
@@ -358,6 +359,23 @@ public final class SearchQueryResponseMapper {
 
   public static DecisionInstanceItem toDecisionInstance(final DecisionInstanceEntity entity) {
     return new DecisionInstanceItem()
+        .decisionInstanceKey(entity.key())
+        .state(toDecisionInstanceStateEnum(entity.state()))
+        .evaluationDate(entity.evaluationDate())
+        .evaluationFailure(entity.evaluationFailure())
+        .processDefinitionKey(entity.processDefinitionKey())
+        .processInstanceKey(entity.processInstanceKey())
+        .decisionDefinitionKey(Long.valueOf(entity.decisionDefinitionId()))
+        .decisionDefinitionId(entity.decisionId())
+        .decisionDefinitionName(entity.decisionName())
+        .decisionDefinitionVersion(entity.decisionVersion())
+        .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionType()))
+        .result(entity.result());
+  }
+
+  public static DecisionInstanceGetQueryResponse toDecisionInstanceGetQueryResponse(
+      final DecisionInstanceEntity entity) {
+    return new DecisionInstanceGetQueryResponse()
         .decisionInstanceKey(entity.key())
         .state(toDecisionInstanceStateEnum(entity.state()))
         .evaluationDate(entity.evaluationDate())
