@@ -25,11 +25,13 @@ class DecisionInstanceSortTest extends AbstractSortTransformerTest {
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
         new TestArguments("key", SortOrder.ASC, s -> s.decisionInstanceKey().asc()),
-        new TestArguments("decisionId", SortOrder.ASC, s -> s.decisionKey().asc()),
-        new TestArguments("decisionDefinitionId", SortOrder.DESC, s -> s.dmnDecisionId().desc()),
-        new TestArguments("decisionName", SortOrder.DESC, s -> s.dmnDecisionName().desc()),
+        new TestArguments("decisionId", SortOrder.ASC, s -> s.decisionDefinitionKey().asc()),
+        new TestArguments(
+            "decisionDefinitionId", SortOrder.DESC, s -> s.decisionDefinitionId().desc()),
+        new TestArguments("decisionName", SortOrder.DESC, s -> s.decisionDefinitionName().desc()),
         new TestArguments("decisionType", SortOrder.DESC, s -> s.decisionType().desc()),
-        new TestArguments("decisionVersion", SortOrder.DESC, s -> s.decisionVersion().desc()),
+        new TestArguments(
+            "decisionVersion", SortOrder.DESC, s -> s.decisionDefinitionVersion().desc()),
         new TestArguments("evaluationDate", SortOrder.DESC, s -> s.evaluationDate().desc()),
         new TestArguments("tenantId", SortOrder.ASC, s -> s.tenantId().asc()),
         new TestArguments(

@@ -11,6 +11,8 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
@@ -23,10 +25,10 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceItem;
@@ -351,10 +353,7 @@ public final class SearchQueryResponseMapper {
   private static DecisionInstanceItem toDecisionInstance(final DecisionInstanceEntity entity) {
     return new DecisionInstanceItem()
         .decisionInstanceKey(entity.key())
-        .state(
-            (entity.state() == null)
-                ? null
-                : DecisionInstanceStateEnum.fromValue(entity.state().name()))
+        .state(toDecisionInstanceStateEnum(entity.state()))
         .evaluationDate(entity.evaluationDate())
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(entity.processDefinitionKey())
@@ -363,10 +362,43 @@ public final class SearchQueryResponseMapper {
         .decisionDefinitionId(entity.decisionId())
         .decisionDefinitionName(entity.decisionName())
         .decisionDefinitionVersion(entity.decisionVersion())
-        .decisionDefinitionType(
-            (entity.decisionType() == null)
-                ? null
-                : DecisionInstanceTypeEnum.fromValue(entity.decisionType().name()))
+        .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionType()))
         .result(entity.result());
+  }
+
+  private static DecisionInstanceStateEnum toDecisionInstanceStateEnum(
+      final DecisionInstanceState state) {
+    if (state == null) {
+      return null;
+    }
+    switch (state) {
+      case EVALUATED:
+        return DecisionInstanceStateEnum.EVALUATED;
+      case FAILED:
+        return DecisionInstanceStateEnum.FAILED;
+      case UNSPECIFIED:
+        return DecisionInstanceStateEnum.UNSPECIFIED;
+      case UNKNOWN:
+      default:
+        return DecisionInstanceStateEnum.UNKNOWN;
+    }
+  }
+
+  private static DecisionDefinitionTypeEnum toDecisionDefinitionTypeEnum(
+      final DecisionDefinitionType decisionDefinitionType) {
+    if (decisionDefinitionType == null) {
+      return null;
+    }
+    switch (decisionDefinitionType) {
+      case DECISION_TABLE:
+        return DecisionDefinitionTypeEnum.DECISION_TABLE;
+      case LITERAL_EXPRESSION:
+        return DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
+      case UNSPECIFIED:
+        return DecisionDefinitionTypeEnum.UNSPECIFIED;
+      case UNKNOWN:
+      default:
+        return DecisionDefinitionTypeEnum.UNKNOWN;
+    }
   }
 }

@@ -10,8 +10,8 @@ package io.camunda.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceType;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
@@ -24,11 +24,11 @@ public record DecisionInstanceFilter(
     List<String> evaluationFailures,
     List<Long> processDefinitionKeys,
     List<Long> processInstanceKeys,
-    List<Long> decisionKeys,
-    List<String> dmnDecisionIds,
-    List<String> dmnDecisionNames,
-    List<Integer> decisionVersions,
-    List<DecisionInstanceType> decisionTypes,
+    List<Long> decisionDefinitionKeys,
+    List<String> decisionDefinitionIds,
+    List<String> decisionDefinitionNames,
+    List<Integer> decisionDefinitionVersions,
+    List<DecisionDefinitionType> decisionTypes,
     List<String> tenantIds)
     implements FilterBase {
 
@@ -40,11 +40,11 @@ public record DecisionInstanceFilter(
     private List<String> evaluationFailures;
     private List<Long> processDefinitionKeys;
     private List<Long> processInstanceKeys;
-    private List<Long> decisionKeys;
-    private List<String> dmnDecisionIds;
-    private List<String> dmnDecisionNames;
-    private List<Integer> decisionVersions;
-    private List<DecisionInstanceType> decisionTypes;
+    private List<Long> decisionDefinitionKeys;
+    private List<String> decisionDefinitionIds;
+    private List<String> decisionDefinitionNames;
+    private List<Integer> decisionDefinitionVersions;
+    private List<DecisionDefinitionType> decisionTypes;
     private List<String> tenantIds;
 
     public Builder decisionInstanceKeys(final List<Long> values) {
@@ -97,48 +97,48 @@ public record DecisionInstanceFilter(
       return processInstanceKeys(collectValuesAsList(values));
     }
 
-    public Builder decisionKeys(final List<Long> values) {
-      decisionKeys = addValuesToList(decisionKeys, values);
+    public Builder decisionDefinitionKeys(final List<Long> values) {
+      decisionDefinitionKeys = addValuesToList(decisionDefinitionKeys, values);
       return this;
     }
 
-    public Builder decisionKeys(final Long... values) {
-      return decisionKeys(collectValuesAsList(values));
+    public Builder decisionDefinitionKeys(final Long... values) {
+      return decisionDefinitionKeys(collectValuesAsList(values));
     }
 
-    public Builder dmnDecisionIds(final List<String> values) {
-      dmnDecisionIds = addValuesToList(dmnDecisionIds, values);
+    public Builder decisionDefinitionIds(final List<String> values) {
+      decisionDefinitionIds = addValuesToList(decisionDefinitionIds, values);
       return this;
     }
 
-    public Builder dmnDecisionIds(final String... values) {
-      return dmnDecisionIds(collectValuesAsList(values));
+    public Builder decisionDefinitionIds(final String... values) {
+      return decisionDefinitionIds(collectValuesAsList(values));
     }
 
-    public Builder dmnDecisionNames(final List<String> values) {
-      dmnDecisionNames = addValuesToList(dmnDecisionNames, values);
+    public Builder decisionDefinitionNames(final List<String> values) {
+      decisionDefinitionNames = addValuesToList(decisionDefinitionNames, values);
       return this;
     }
 
-    public Builder dmnDecisionNames(final String... values) {
-      return dmnDecisionNames(collectValuesAsList(values));
+    public Builder decisionDefinitionNames(final String... values) {
+      return decisionDefinitionNames(collectValuesAsList(values));
     }
 
-    public Builder decisionVersions(final List<Integer> values) {
-      decisionVersions = addValuesToList(decisionVersions, values);
+    public Builder decisionDefinitionVersions(final List<Integer> values) {
+      decisionDefinitionVersions = addValuesToList(decisionDefinitionVersions, values);
       return this;
     }
 
-    public Builder decisionVersions(final Integer... values) {
-      return decisionVersions(collectValuesAsList(values));
+    public Builder decisionDefinitionVersions(final Integer... values) {
+      return decisionDefinitionVersions(collectValuesAsList(values));
     }
 
-    public Builder decisionTypes(final List<DecisionInstanceType> values) {
+    public Builder decisionTypes(final List<DecisionDefinitionType> values) {
       decisionTypes = addValuesToList(decisionTypes, values);
       return this;
     }
 
-    public Builder decisionTypes(final DecisionInstanceType... values) {
+    public Builder decisionTypes(final DecisionDefinitionType... values) {
       return decisionTypes(collectValuesAsList(values));
     }
 
@@ -160,10 +160,10 @@ public record DecisionInstanceFilter(
           Objects.requireNonNullElse(evaluationFailures, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(decisionKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(dmnDecisionIds, Collections.emptyList()),
-          Objects.requireNonNullElse(dmnDecisionNames, Collections.emptyList()),
-          Objects.requireNonNullElse(decisionVersions, Collections.emptyList()),
+          Objects.requireNonNullElse(decisionDefinitionKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(decisionDefinitionIds, Collections.emptyList()),
+          Objects.requireNonNullElse(decisionDefinitionNames, Collections.emptyList()),
+          Objects.requireNonNullElse(decisionDefinitionVersions, Collections.emptyList()),
           Objects.requireNonNullElse(decisionTypes, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
     }
