@@ -705,6 +705,9 @@
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
             <dependency>org.bouncycastle:bcpkix-jdk18on</dependency>
           </usedDependencies>
+          <ignoredUnusedDeclaredDependencies>
+            <dep>com.nimbusds:oauth2-oidc-sdk</dep>
+          </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
 
