@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 
 public class AuthorizationEntity implements ExporterEntity<AuthorizationEntity> {
+
+  public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
   private String id;
   private Long ownerKey;
   private AuthorizationOwnerType ownerType;

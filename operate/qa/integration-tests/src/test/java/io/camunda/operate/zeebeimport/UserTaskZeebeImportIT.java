@@ -9,10 +9,15 @@ package io.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.entities.*;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.reader.UserTaskReader;
+import io.camunda.webapps.schema.entities.operate.EventEntity;
+import io.camunda.webapps.schema.entities.operate.EventType;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.operate.UserTaskEntity;
 import java.util.Objects;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;

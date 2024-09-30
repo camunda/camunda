@@ -93,7 +93,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
     variablesAsMap = job.getVariables() == null ? new HashMap<>() : job.getVariables();
     variables = jsonMapper.toJson(variablesAsMap);
     processInstanceKey = getOrEmpty(job.getProcessInstanceKey());
-    bpmnProcessId = getOrEmpty(job.getBpmnProcessId());
+    bpmnProcessId = getOrEmpty(job.getProcessDefinitionId());
     processDefinitionVersion = getOrEmpty(job.getProcessDefinitionVersion());
     processDefinitionKey = getOrEmpty(job.getProcessDefinitionKey());
     elementId = getOrEmpty(job.getElementId());

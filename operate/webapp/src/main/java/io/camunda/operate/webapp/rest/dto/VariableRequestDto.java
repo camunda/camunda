@@ -63,7 +63,7 @@ public class VariableRequestDto extends PaginatedQuery<VariableRequestDto> {
         .setPageSize(getPageSize())
         .setSearchAfterOrEqual(getSearchAfterOrEqual())
         .setSearchBeforeOrEqual(getSearchBeforeOrEqual())
-        .setScopeId(this.scopeId);
+        .setScopeId(scopeId);
   }
 
   @Override

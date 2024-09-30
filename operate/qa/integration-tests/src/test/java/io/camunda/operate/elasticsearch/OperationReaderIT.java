@@ -19,11 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestUtil;
@@ -35,6 +31,10 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.operate.IncidentState;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
@@ -63,6 +63,7 @@ public class OperationReaderIT extends OperateAbstractIT {
   private static String processInstanceId3;
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -145,11 +146,11 @@ public class OperationReaderIT extends OperateAbstractIT {
     return QUERY_LIST_VIEW_URL;
   }
 
-  private String queryIncidentsByProcessInstanceId(String processInstanceId) {
+  private String queryIncidentsByProcessInstanceId(final String processInstanceId) {
     return String.format("%s/%s/incidents", PROCESS_INSTANCE_URL, processInstanceId);
   }
 
-  private MvcResult getVariables(String processInstanceId) throws Exception {
+  private MvcResult getVariables(final String processInstanceId) throws Exception {
     final VariableRequestDto request =
         new VariableRequestDto().setScopeId(String.valueOf(processInstanceId));
     return mockMvc
@@ -162,18 +163,18 @@ public class OperationReaderIT extends OperateAbstractIT {
         .andReturn();
   }
 
-  private String getVariablesURL(String processInstanceId) {
+  private String getVariablesURL(final String processInstanceId) {
     return String.format(PROCESS_INSTANCE_URL + "/%s/variables", processInstanceId);
   }
 
-  private String queryProcessInstanceById(String processInstanceId) {
+  private String queryProcessInstanceById(final String processInstanceId) {
     return String.format("%s/%s", PROCESS_INSTANCE_URL, processInstanceId);
   }
 
   /** */
-  protected void createData(Long processDefinitionKey) {
+  protected void createData(final Long processDefinitionKey) {
 
-    final List<OperateEntity> entities = new ArrayList<>();
+    final List<ExporterEntity> entities = new ArrayList<>();
 
     ProcessInstanceForListViewEntity inst =
         createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey, true);
@@ -226,6 +227,6 @@ public class OperationReaderIT extends OperateAbstractIT {
             inst.getProcessInstanceKey(), null, null, OperationState.COMPLETED, USER_4, false));
     entities.add(inst);
 
-    searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new ExporterEntity[entities.size()]));
   }
 }

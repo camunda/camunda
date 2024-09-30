@@ -10,12 +10,12 @@ package io.camunda.operate.it;
 import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessInstanceHandler;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;

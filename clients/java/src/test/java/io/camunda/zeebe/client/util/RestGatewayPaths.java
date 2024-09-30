@@ -35,8 +35,10 @@ public class RestGatewayPaths {
   private static final String URL_CANCEL_PROCESS =
       REST_API_PATH + "/process-instances/%s/cancellation";
   private static final String URL_BROADCAST_SIGNAL = REST_API_PATH + "/signals/broadcast";
-  private static final String URL_EVALUATE_DECISION = REST_API_PATH + "/decisions/evaluation";
+  private static final String URL_EVALUATE_DECISION =
+      REST_API_PATH + "/decision-definitions/evaluation";
   private static final String URL_CREATE_PROCESS_INSTANCE = REST_API_PATH + "/process-instances";
+  private static final String URL_DEPLOYMENTS_URL = REST_API_PATH + "/deployments";
 
   /**
    * @return the topology request URL
@@ -130,5 +132,9 @@ public class RestGatewayPaths {
    */
   public static String getCreateProcessInstanceUrl() {
     return URL_CREATE_PROCESS_INSTANCE;
+  }
+
+  public static String getDeploymentsUrl() {
+    return URL_DEPLOYMENTS_URL;
   }
 }

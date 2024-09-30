@@ -17,7 +17,7 @@ public class ProcessRequestDto {
     return tenantId;
   }
 
-  public ProcessRequestDto setTenantId(String tenantId) {
+  public ProcessRequestDto setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -28,7 +28,7 @@ public class ProcessRequestDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

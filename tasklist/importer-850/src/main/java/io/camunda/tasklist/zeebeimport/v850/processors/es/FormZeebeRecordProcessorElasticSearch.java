@@ -81,7 +81,6 @@ public class FormZeebeRecordProcessorElasticSearch {
       throws PersistenceException {
     final FormEntity formEntity =
         new FormEntity(null, formId, schema, version, tenantId, formKey, false, false);
-
     try {
       if (isDelete) {
         // Delete operation

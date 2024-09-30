@@ -49,7 +49,7 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
   @Operation(summary = "Query decision instances by different parameters")
   @PostMapping
   public DecisionInstanceListResponseDto queryDecisionInstances(
-      @RequestBody DecisionInstanceListRequestDto decisionInstanceRequest) {
+      @RequestBody final DecisionInstanceListRequestDto decisionInstanceRequest) {
     if (decisionInstanceRequest.getQuery() == null) {
       throw new InvalidRequestException("Query must be provided.");
     }
@@ -58,7 +58,8 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
 
   @Operation(summary = "Get decision instance by id")
   @GetMapping("/{decisionInstanceId}")
-  public DecisionInstanceDto queryDecisionInstanceById(@PathVariable String decisionInstanceId) {
+  public DecisionInstanceDto queryDecisionInstanceById(
+      @PathVariable final String decisionInstanceId) {
     final DecisionInstanceDto decisionInstanceDto =
         decisionInstanceReader.getDecisionInstance(decisionInstanceId);
     checkIdentityReadPermission(decisionInstanceDto);
@@ -68,7 +69,7 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
   @Operation(summary = "Get DRD data for decision instance")
   @GetMapping("/{decisionInstanceId}/drd-data")
   public Map<String, List<DRDDataEntryDto>> queryDecisionInstanceDRDData(
-      @PathVariable String decisionInstanceId) {
+      @PathVariable final String decisionInstanceId) {
     checkIdentityReadPermission(decisionInstanceId);
     final Map<String, List<DRDDataEntryDto>> result =
         decisionInstanceReader.getDecisionInstanceDRDData(decisionInstanceId);
@@ -78,13 +79,13 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
     return result;
   }
 
-  private void checkIdentityReadPermission(String decisionInstanceId) {
+  private void checkIdentityReadPermission(final String decisionInstanceId) {
     if (permissionsService != null) {
       checkIdentityReadPermission(decisionInstanceReader.getDecisionInstance(decisionInstanceId));
     }
   }
 
-  private void checkIdentityReadPermission(DecisionInstanceDto decisionInstance) {
+  private void checkIdentityReadPermission(final DecisionInstanceDto decisionInstance) {
     if (permissionsService != null
         && !permissionsService.hasPermissionForDecision(
             decisionInstance.getDecisionId(), IdentityPermission.READ)) {

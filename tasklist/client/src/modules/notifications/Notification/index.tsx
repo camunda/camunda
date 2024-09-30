@@ -57,7 +57,6 @@ const Notification: React.FC<Props> = observer(
               kind={kind}
               lowContrast={false}
               title={title}
-              caption={relativeDate}
               subtitle={subtitle}
               hideCloseButton={!isDismissable}
               onClose={() => {

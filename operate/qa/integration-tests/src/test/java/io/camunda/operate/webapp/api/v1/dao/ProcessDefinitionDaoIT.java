@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
@@ -21,6 +20,7 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -113,7 +113,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
           .getSAXParserFactory()
           .newSAXParser()
           .parse(xmlInputStream, new DefaultHandler());
-    } catch (SAXException | IOException | ParserConfigurationException e) {
+    } catch (final SAXException | IOException | ParserConfigurationException e) {
       fail(String.format("String '%s' should be of type xml", processDefinitionAsXml), e);
     }
   }

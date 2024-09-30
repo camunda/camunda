@@ -8,10 +8,11 @@
 package io.camunda.operate.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
+public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationEntity> {
 
   private String name;
   private OperationType type;
@@ -29,7 +30,7 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     return name;
   }
 
-  public BatchOperationEntity setName(String name) {
+  public BatchOperationEntity setName(final String name) {
     this.name = name;
     return this;
   }
@@ -38,7 +39,7 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     return type;
   }
 
-  public BatchOperationEntity setType(OperationType type) {
+  public BatchOperationEntity setType(final OperationType type) {
     this.type = type;
     return this;
   }
@@ -47,7 +48,7 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     return startDate;
   }
 
-  public BatchOperationEntity setStartDate(OffsetDateTime startDate) {
+  public BatchOperationEntity setStartDate(final OffsetDateTime startDate) {
     this.startDate = startDate;
     return this;
   }
@@ -56,7 +57,7 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     return endDate;
   }
 
-  public BatchOperationEntity setEndDate(OffsetDateTime endDate) {
+  public BatchOperationEntity setEndDate(final OffsetDateTime endDate) {
     this.endDate = endDate;
     return this;
   }
@@ -65,7 +66,7 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     return username;
   }
 
-  public BatchOperationEntity setUsername(String username) {
+  public BatchOperationEntity setUsername(final String username) {
     this.username = username;
     return this;
   }
@@ -74,7 +75,7 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     return instancesCount;
   }
 
-  public BatchOperationEntity setInstancesCount(Integer instancesCount) {
+  public BatchOperationEntity setInstancesCount(final Integer instancesCount) {
     this.instancesCount = instancesCount;
     return this;
   }
@@ -83,7 +84,7 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     return operationsTotalCount;
   }
 
-  public BatchOperationEntity setOperationsTotalCount(Integer operationsTotalCount) {
+  public BatchOperationEntity setOperationsTotalCount(final Integer operationsTotalCount) {
     this.operationsTotalCount = operationsTotalCount;
     return this;
   }
@@ -92,7 +93,7 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     return operationsFinishedCount;
   }
 
-  public BatchOperationEntity setOperationsFinishedCount(Integer operationsFinishedCount) {
+  public BatchOperationEntity setOperationsFinishedCount(final Integer operationsFinishedCount) {
     this.operationsFinishedCount = operationsFinishedCount;
     return this;
   }
@@ -101,7 +102,7 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     return sortValues;
   }
 
-  public BatchOperationEntity setSortValues(Object[] sortValues) {
+  public BatchOperationEntity setSortValues(final Object[] sortValues) {
     this.sortValues = sortValues;
     return this;
   }
@@ -126,7 +127,7 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

@@ -41,7 +41,7 @@ class SegmentedJournalReader implements JournalReader {
     currentReader = currentSegment.createReader();
   }
 
-  public long getNextIndex() {
+  long getNextIndex() {
     return currentReader.getNextIndex();
   }
 

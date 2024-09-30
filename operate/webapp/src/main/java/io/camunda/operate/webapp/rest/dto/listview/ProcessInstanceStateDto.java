@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.rest.dto.listview;
 
-import io.camunda.operate.entities.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 
 public enum ProcessInstanceStateDto {
   ACTIVE,

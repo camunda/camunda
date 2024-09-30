@@ -53,9 +53,15 @@ import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
+import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetRequest;
+import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetXmlRequest;
+import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
+import io.camunda.zeebe.client.api.fetch.UserTaskGetRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
+import io.camunda.zeebe.client.api.search.query.DecisionInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionRequirementsQuery;
 import io.camunda.zeebe.client.api.search.query.FlownodeInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.IncidentQuery;
@@ -89,10 +95,16 @@ import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
 import io.camunda.zeebe.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateUserTaskCommandImpl;
+import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.ProcessInstanceGetRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpClientFactory;
 import io.camunda.zeebe.client.impl.search.query.DecisionDefinitionQueryImpl;
+import io.camunda.zeebe.client.impl.search.query.DecisionInstanceQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.DecisionRequirementsQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.FlowNodeInstanceQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.IncidentQueryImpl;
@@ -357,7 +369,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public DeployResourceCommandStep1 newDeployResourceCommand() {
     return new DeployResourceCommandImpl(
-        asyncStub, config, credentialsProvider::shouldRetryRequest);
+        asyncStub,
+        config,
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config.preferRestOverGrpc(),
+        jsonMapper);
   }
 
   @Override
@@ -548,6 +565,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
+  public ProcessInstanceGetRequest newProcessInstanceGetRequest(long processInstanceKey) {
+    return new ProcessInstanceGetRequestImpl(httpClient, processInstanceKey);
+  }
+
+  @Override
   public ProcessInstanceQuery newProcessInstanceQuery() {
     return new ProcessInstanceQueryImpl(httpClient, jsonMapper);
   }
@@ -573,9 +595,20 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
+  public DecisionDefinitionGetRequest newDecisionDefinitionGetRequest(
+      final long decisionDefinitionKey) {
+    return new DecisionDefinitionGetRequestImpl(httpClient, decisionDefinitionKey);
+  }
+
+  @Override
   public DecisionDefinitionGetXmlRequest newDecisionDefinitionGetXmlRequest(
       final long decisionKey) {
     return new DecisionDefinitionGetXmlRequestImpl(httpClient, decisionKey);
+  }
+
+  @Override
+  public DecisionInstanceQuery newDecisionInstanceQuery() {
+    return new DecisionInstanceQueryImpl(httpClient, jsonMapper);
   }
 
   @Override
@@ -591,6 +624,18 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public AddPermissionsCommandStep1 newAddPermissionsCommand(final long ownerKey) {
     return new AddPermissionsCommandImpl(ownerKey, httpClient, jsonMapper);
+  }
+
+  @Override
+  public DecisionRequirementsGetXmlRequest newDecisionRequirementsGetXmlRequest(
+      final long decisionRequirementsKey) {
+    return new DecisionRequirementsGetXmlRequestImpl(httpClient, decisionRequirementsKey);
+  }
+
+  @Override
+  public DecisionRequirementsGetRequest newDecisionRequirementsGetRequest(
+      final long decisionRequirementsKey) {
+    return new DecisionRequirementsGetRequestImpl(httpClient, decisionRequirementsKey);
   }
 
   private JobClient newJobClient() {
@@ -637,5 +682,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public StreamJobsCommandStep1 newStreamJobsCommand() {
     return new StreamJobsCommandImpl(
         asyncStub, jsonMapper, credentialsProvider::shouldRetryRequest, config);
+  }
+
+  @Override
+  public UserTaskGetRequest newUserTaskGetRequest(final long userTaskKey) {
+    return new UserTaskGetRequestImpl(httpClient, userTaskKey);
   }
 }

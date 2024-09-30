@@ -7,18 +7,19 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.search.query.UserTaskQuery;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import jakarta.validation.ValidationException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,7 +28,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/user-tasks")
 public class UserTaskQueryController {
 
-  @Autowired private UserTaskServices userTaskServices;
+  private final UserTaskServices userTaskServices;
+
+  public UserTaskQueryController(final UserTaskServices userTaskServices) {
+    this.userTaskServices = userTaskServices;
+  }
 
   @PostMapping(
       path = "/search",
@@ -57,6 +62,22 @@ public class UserTaskQueryController {
               HttpStatus.INTERNAL_SERVER_ERROR,
               e.getMessage(),
               "Failed to execute UserTask Search Query");
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    }
+  }
+
+  @GetMapping(
+      path = "/{userTaskKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public ResponseEntity<Object> getByKey(@PathVariable("userTaskKey") final Long userTaskKey) {
+    try {
+      // Success case: Return the left side with the UserTaskItem wrapped in ResponseEntity
+      return ResponseEntity.ok()
+          .body(SearchQueryResponseMapper.toUserTask(userTaskServices.getByKey(userTaskKey)));
+    } catch (final Exception exc) {
+      // Error case: Return the right side with ProblemDetail
+      final var problemDetail =
+          RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
       return RestErrorMapper.mapProblemToResponse(problemDetail);
     }
   }

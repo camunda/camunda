@@ -32,7 +32,7 @@ public class OperationRestService extends InternalAPIErrorController {
 
   @Operation(summary = "Get single operation")
   @GetMapping
-  public List<OperationDto> getOperation(@RequestParam String batchOperationId) {
+  public List<OperationDto> getOperation(@RequestParam final String batchOperationId) {
     return operationReader.getOperationsByBatchOperationId(batchOperationId);
   }
 }

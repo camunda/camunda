@@ -7,10 +7,10 @@
  */
 package io.camunda.operate.store.elasticsearch.dao.response;
 
-import io.camunda.operate.entities.OperateEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.util.List;
 
-public class SearchResponse<T extends OperateEntity> implements DAOResponse {
+public class SearchResponse<T extends ExporterEntity> implements DAOResponse {
 
   private boolean error;
   private List<T> hits;
@@ -18,11 +18,11 @@ public class SearchResponse<T extends OperateEntity> implements DAOResponse {
 
   private SearchResponse() {}
 
-  public SearchResponse(boolean error) {
+  public SearchResponse(final boolean error) {
     this(error, null);
   }
 
-  public SearchResponse(boolean error, List<T> hits) {
+  public SearchResponse(final boolean error, final List<T> hits) {
     this.error = error;
     this.hits = hits;
     if (hits == null) {

@@ -9,9 +9,9 @@ package io.camunda.search.os.transformers.sort;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.clients.sort.SearchSortOptions;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import io.camunda.search.os.util.OSQuerySerializer;
+import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.transformers.SearchTransfomer;
 import java.io.IOException;
 import java.util.stream.Stream;

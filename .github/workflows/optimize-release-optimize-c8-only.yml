@@ -36,6 +36,9 @@ jobs:
   build:
     name: Execute Release
     runs-on: gcp-core-4-release
+    permissions:
+      contents: 'write'
+      id-token: 'write'
     env:
       DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
@@ -153,8 +156,8 @@ jobs:
 
       - name: Configure GitHub user
         run: |
-          git config --global user.name "optimize-release"
-          git config --global user.email "ci@optimize.camunda.cloud"
+          git config --global user.email "github-actions[release]"
+          git config --global user.name "github-actions[release]@users.noreply.github.com"
 
       - name: Prepare release
         run: |
@@ -193,8 +196,10 @@ jobs:
       - name: Remove tag for RC release
         if: env.IS_RC == 'true' || failure()
         run: |
-          git tag -d ${TAG}
-          git push origin :refs/tags/${TAG}
+          if [ $(git tag -l "$TAG") ]; then
+            git tag -d ${TAG}
+            git push origin :refs/tags/${TAG}
+          fi
 
       - name: Create a GitHub release
         if: ${{ env.IS_RC == 'false' && env.DRY_RUN == 'false' }}

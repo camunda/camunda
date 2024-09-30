@@ -10,7 +10,6 @@ package io.camunda.operate.webapp.rest;
 import static io.camunda.operate.webapp.rest.ProcessRestService.PROCESS_URL;
 
 import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
@@ -23,6 +22,7 @@ import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -46,7 +46,7 @@ public class ProcessRestService extends InternalAPIErrorController {
 
   @Operation(summary = "Get process BPMN XML")
   @GetMapping(path = "/{id}/xml")
-  public String getProcessDiagram(@PathVariable("id") String processId) {
+  public String getProcessDiagram(@PathVariable("id") final String processId) {
     final Long processDefinitionKey = Long.valueOf(processId);
     final ProcessEntity processEntity = processReader.getProcess(processDefinitionKey);
     checkIdentityReadPermission(processEntity.getBpmnProcessId());
@@ -55,7 +55,7 @@ public class ProcessRestService extends InternalAPIErrorController {
 
   @Operation(summary = "Get process by id")
   @GetMapping(path = "/{id}")
-  public ProcessDto getProcess(@PathVariable("id") String processId) {
+  public ProcessDto getProcess(@PathVariable("id") final String processId) {
     final ProcessEntity processEntity = processReader.getProcess(Long.valueOf(processId));
     checkIdentityReadPermission(processEntity.getBpmnProcessId());
     return DtoCreator.create(processEntity, ProcessDto.class);
@@ -71,7 +71,7 @@ public class ProcessRestService extends InternalAPIErrorController {
 
   @Operation(summary = "List processes grouped by bpmnProcessId")
   @PostMapping(path = "/grouped")
-  public List<ProcessGroupDto> getProcessesGrouped(@RequestBody ProcessRequestDto request) {
+  public List<ProcessGroupDto> getProcessesGrouped(@RequestBody final ProcessRequestDto request) {
     final var processesGrouped = processReader.getProcessesGrouped(request);
     return ProcessGroupDto.createFrom(processesGrouped, permissionsService);
   }
@@ -80,13 +80,13 @@ public class ProcessRestService extends InternalAPIErrorController {
   @DeleteMapping(path = "/{id}")
   @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity deleteProcessDefinition(
-      @ValidLongId @PathVariable("id") String processId) {
+      @ValidLongId @PathVariable("id") final String processId) {
     final ProcessEntity processEntity = processReader.getProcess(Long.valueOf(processId));
     checkIdentityDeletePermission(processEntity.getBpmnProcessId());
     return batchOperationWriter.scheduleDeleteProcessDefinition(processEntity);
   }
 
-  private void checkIdentityReadPermission(String bpmnProcessId) {
+  private void checkIdentityReadPermission(final String bpmnProcessId) {
     if (permissionsService != null
         && !permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)) {
       throw new NotAuthorizedException(
@@ -94,7 +94,7 @@ public class ProcessRestService extends InternalAPIErrorController {
     }
   }
 
-  private void checkIdentityDeletePermission(String bpmnProcessId) {
+  private void checkIdentityDeletePermission(final String bpmnProcessId) {
     if (permissionsService != null
         && !permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.DELETE)) {
       throw new NotAuthorizedException(

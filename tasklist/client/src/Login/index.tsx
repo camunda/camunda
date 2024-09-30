@@ -158,10 +158,13 @@ const Login: React.FC = () => {
                   >
                     {({input, meta}) => (
                       <PasswordInput
-                        {...input}
                         name={input.name}
                         id={input.name}
                         onChange={input.onChange}
+                        onBlur={input.onBlur}
+                        onFocus={input.onFocus}
+                        value={input.value}
+                        type="password"
                         hidePasswordLabel={t('loginHidePasswordButtonLabel')}
                         showPasswordLabel={t('loginShowPasswordButtonLabel')}
                         labelText={t('loginPasswordFieldLabel')}

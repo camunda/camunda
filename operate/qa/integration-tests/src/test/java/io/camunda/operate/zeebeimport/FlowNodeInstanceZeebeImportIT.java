@@ -11,7 +11,6 @@ import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NO
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
@@ -24,6 +23,7 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;

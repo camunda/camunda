@@ -12,8 +12,10 @@ import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.document.api.DocumentError.DocumentNotFound;
 import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.OperationNotSupported;
-import io.camunda.service.CamundaServiceException;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.NotFoundException;
 import io.camunda.service.DocumentServices.DocumentException;
+import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
@@ -21,7 +23,9 @@ import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.msgpack.spec.MsgpackException;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.netty.channel.ConnectTimeoutException;
+import jakarta.validation.constraints.NotNull;
 import java.net.ConnectException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -79,7 +83,12 @@ public class RestErrorMapper {
       return null;
     }
     return switch (error) {
-      case final CamundaServiceException cse:
+      case final NotFoundException nfe:
+        yield createProblemDetail(
+            HttpStatus.NOT_FOUND, nfe.getMessage(), RejectionType.NOT_FOUND.name());
+      case final CamundaSearchException cse:
+        yield cse.getCause() != null ? mapErrorToProblem(cse.getCause(), rejectionMapper) : null;
+      case final CamundaBrokerException cse:
         yield cse.getCause() != null ? mapErrorToProblem(cse.getCause(), rejectionMapper) : null;
       case final BrokerErrorException bee:
         yield mapBrokerErrorToProblem(bee.getError(), error);
@@ -148,11 +157,15 @@ public class RestErrorMapper {
     };
   }
 
+  public static <T> ResponseEntity<T> mapErrorToResponse(@NotNull final Throwable error) {
+    return mapProblemToResponse(mapErrorToProblem(error, DEFAULT_REJECTION_MAPPER));
+  }
+
   private static Optional<ProblemDetail> mapBrokerErrorToProblem(final Throwable exception) {
-    if (!(exception instanceof CamundaServiceException)) {
+    if (!(exception instanceof CamundaBrokerException)) {
       return Optional.empty();
     }
-    return ((CamundaServiceException) exception)
+    return ((CamundaBrokerException) exception)
         .getBrokerError()
         .map(error -> mapBrokerErrorToProblem(error, null));
   }
@@ -197,10 +210,10 @@ public class RestErrorMapper {
 
   private static Optional<ProblemDetail> mapRejectionToProblem(
       final Throwable exception, final Function<BrokerRejection, ProblemDetail> rejectionMapper) {
-    if (!(exception instanceof CamundaServiceException)) {
+    if (!(exception instanceof CamundaBrokerException)) {
       return Optional.empty();
     }
-    return ((CamundaServiceException) exception).getBrokerRejection().map(rejectionMapper);
+    return ((CamundaBrokerException) exception).getBrokerRejection().map(rejectionMapper);
   }
 
   public static ProblemDetail createProblemDetail(

@@ -10,7 +10,6 @@ import {GlobalTheme, usePrefix} from '@carbon/react';
 import {observer} from 'mobx-react-lite';
 import {themeStore} from 'modules/stores/theme';
 import {useLayoutEffect} from 'react';
-import styles from './styles.module.scss';
 
 const THEME_TOKENS = {
   light: 'g10',
@@ -29,7 +28,7 @@ const ThemeProvider: React.FC<Props> = observer(({children}) => {
     document.documentElement.dataset.carbonTheme = THEME_TOKENS[actualTheme];
   }, [actualTheme, prefix]);
 
-  return <GlobalTheme className={styles.carbonTheme}>{children}</GlobalTheme>;
+  return <GlobalTheme>{children}</GlobalTheme>;
 });
 
 export {ThemeProvider};

@@ -18,6 +18,7 @@ package io.camunda.zeebe.client.impl.http;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.api.command.ClientException;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -25,8 +26,10 @@ import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleRequestBuilder;
 import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
 import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.net.URIBuilder;
@@ -122,6 +125,18 @@ public final class HttpClient implements AutoCloseable {
     sendRequest(Method.POST, path, body, requestConfig, responseType, transformer, result);
   }
 
+  public <HttpT, RespT> void postMultipart(
+      final String path,
+      final MultipartEntityBuilder multipartBuilder,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpZeebeFuture<RespT> result) {
+
+    final HttpEntity entity = multipartBuilder.build();
+    sendRequest(Method.POST, path, entity, requestConfig, responseType, transformer, result);
+  }
+
   public <RespT> void put(
       final String path,
       final String body,
@@ -146,26 +161,47 @@ public final class HttpClient implements AutoCloseable {
   private <HttpT, RespT> void sendRequest(
       final Method httpMethod,
       final String path,
-      final String body,
+      final Object body, // Can be a String (for JSON) or HttpEntity (for Multipart)
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpZeebeFuture<RespT> result) {
+
     final URI target = buildRequestURI(path);
+
     final Runnable retryAction =
         () -> {
           if (result.isCancelled()) {
-            // skip if the request was already cancelled
             return;
           }
-
           sendRequest(httpMethod, path, body, requestConfig, responseType, transformer, result);
         };
 
     final SimpleRequestBuilder requestBuilder =
         SimpleRequestBuilder.create(httpMethod).setUri(target);
+
     if (body != null) {
-      requestBuilder.setBody(body, ContentType.APPLICATION_JSON);
+      if (body instanceof String) {
+        requestBuilder.setBody((String) body, ContentType.APPLICATION_JSON);
+      } else if (body instanceof HttpEntity) {
+        final HttpEntity entity = (HttpEntity) body;
+        final byte[] entityBytes;
+        try (final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+          entity.writeTo(byteArrayOutputStream);
+          entityBytes = byteArrayOutputStream.toByteArray();
+        } catch (final IOException e) {
+          result.completeExceptionally(
+              new ClientException("Failed to convert multipart entity to bytes", e));
+          return;
+        }
+
+        final ContentType contentType = ContentType.parse(entity.getContentType());
+        requestBuilder.setBody(entityBytes, contentType);
+      } else {
+        result.completeExceptionally(
+            new ClientException("Unsupported body type: " + body.getClass().getName()));
+        return;
+      }
     }
 
     try {

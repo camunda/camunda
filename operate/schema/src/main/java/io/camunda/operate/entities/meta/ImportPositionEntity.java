@@ -7,10 +7,10 @@
  */
 package io.camunda.operate.entities.meta;
 
-import io.camunda.operate.entities.OperateEntity;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.util.Objects;
 
-public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
+public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionEntity> {
 
   private String aliasName;
 
@@ -26,9 +26,9 @@ public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
 
   public static ImportPositionEntity createFrom(
       final long sequence,
-      ImportPositionEntity importPositionEntity,
-      long newPosition,
-      String indexName) {
+      final ImportPositionEntity importPositionEntity,
+      final long newPosition,
+      final String indexName) {
     return new ImportPositionEntity()
         .setSequence(sequence)
         .setAliasName(importPositionEntity.getAliasName())
@@ -41,7 +41,7 @@ public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
     return aliasName;
   }
 
-  public ImportPositionEntity setAliasName(String aliasName) {
+  public ImportPositionEntity setAliasName(final String aliasName) {
     this.aliasName = aliasName;
     return this;
   }
@@ -50,7 +50,7 @@ public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
     return partitionId;
   }
 
-  public ImportPositionEntity setPartitionId(int partitionId) {
+  public ImportPositionEntity setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
     return this;
   }
@@ -59,7 +59,7 @@ public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
     return position;
   }
 
-  public ImportPositionEntity setPosition(long position) {
+  public ImportPositionEntity setPosition(final long position) {
     this.position = position;
     return this;
   }
@@ -77,7 +77,7 @@ public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
     return postImporterPosition;
   }
 
-  public ImportPositionEntity setPostImporterPosition(Long postImporterPosition) {
+  public ImportPositionEntity setPostImporterPosition(final Long postImporterPosition) {
     this.postImporterPosition = postImporterPosition;
     return this;
   }
@@ -86,17 +86,30 @@ public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
     return indexName;
   }
 
-  public ImportPositionEntity setIndexName(String indexName) {
+  public ImportPositionEntity setIndexName(final String indexName) {
     this.indexName = indexName;
     return this;
   }
 
+  @Override
   public String getId() {
     return String.format("%s-%s", partitionId, aliasName);
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        aliasName,
+        partitionId,
+        position,
+        sequence,
+        postImporterPosition,
+        indexName);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -113,18 +126,6 @@ public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
         && Objects.equals(aliasName, that.aliasName)
         && Objects.equals(postImporterPosition, that.postImporterPosition)
         && Objects.equals(indexName, that.indexName);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        aliasName,
-        partitionId,
-        position,
-        sequence,
-        postImporterPosition,
-        indexName);
   }
 
   @Override

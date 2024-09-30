@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.webapp.reader;
 
-import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
+import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
 import java.util.List;
 import java.util.Map;
 

@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
@@ -33,7 +32,7 @@ public class CamundaLicenseTest {
   @Test
   public void shouldReturnTrueFromIsValidWhenLicenseIsValid() throws InvalidLicenseException {
     // given
-    final CamundaLicense testLicense = spy(CamundaLicense.class);
+    final CamundaLicense testLicense = Mockito.spy(CamundaLicense.class);
     final LicenseKey mockKey = mock(LicenseKey.class);
 
     final Map<String, String> testProperties = new HashMap<>();
@@ -51,7 +50,7 @@ public class CamundaLicenseTest {
 
   @Test
   public void shouldReturnFalseFromIsValidWhenLicenseIsInvalid() throws InvalidLicenseException {
-    final CamundaLicense testLicense = spy(CamundaLicense.class);
+    final CamundaLicense testLicense = Mockito.spy(CamundaLicense.class);
     // given
     Mockito.doThrow(new InvalidLicenseException(TEST_EXCEPTION_MESSAGE))
         .when(testLicense)
@@ -67,7 +66,7 @@ public class CamundaLicenseTest {
   @Test
   public void shouldReturnProperLicenseTypeFromLicenseProperty() throws InvalidLicenseException {
     // given
-    final CamundaLicense testLicense = spy(CamundaLicense.class);
+    final CamundaLicense testLicense = Mockito.spy(CamundaLicense.class);
     final LicenseKey mockKey = mock(LicenseKey.class);
 
     final Map<String, String> testProperties = new HashMap<>();
@@ -86,7 +85,7 @@ public class CamundaLicenseTest {
   @Test
   public void shouldReturnUnknownWhenLicensePropertyDoesNotExist() throws InvalidLicenseException {
     // given
-    final CamundaLicense testLicense = spy(CamundaLicense.class);
+    final CamundaLicense testLicense = Mockito.spy(CamundaLicense.class);
     final LicenseKey mockKey = mock(LicenseKey.class);
 
     final Map<String, String> testProperties = new HashMap<>();
@@ -104,7 +103,7 @@ public class CamundaLicenseTest {
   @Test
   public void shouldReturnProperValidValuesWhenLicenseIsSaas() throws InvalidLicenseException {
     // given
-    final CamundaLicense testLicense = spy(CamundaLicense.class);
+    final CamundaLicense testLicense = Mockito.spy(CamundaLicense.class);
     final LicenseKey mockKey = mock(LicenseKey.class);
 
     final Map<String, String> testProperties = new HashMap<>();

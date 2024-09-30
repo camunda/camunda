@@ -7,14 +7,14 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.operate.entities.OperationType.RESOLVE_INCIDENT;
+import static io.camunda.webapps.schema.entities.operate.ErrorType.JOB_NO_RETRIES;
 
-import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

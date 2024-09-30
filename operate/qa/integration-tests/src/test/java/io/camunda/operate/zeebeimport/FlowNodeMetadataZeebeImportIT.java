@@ -7,21 +7,15 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import static io.camunda.operate.entities.FlowNodeType.CALL_ACTIVITY;
-import static io.camunda.operate.entities.FlowNodeType.MULTI_INSTANCE_BODY;
-import static io.camunda.operate.entities.FlowNodeType.SERVICE_TASK;
-import static io.camunda.operate.entities.FlowNodeType.SUB_PROCESS;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
+import static io.camunda.webapps.schema.entities.operate.FlowNodeType.CALL_ACTIVITY;
+import static io.camunda.webapps.schema.entities.operate.FlowNodeType.MULTI_INSTANCE_BODY;
+import static io.camunda.webapps.schema.entities.operate.FlowNodeType.SERVICE_TASK;
+import static io.camunda.webapps.schema.entities.operate.FlowNodeType.SUB_PROCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
-import io.camunda.operate.entities.ErrorType;
-import io.camunda.operate.entities.EventSourceType;
-import io.camunda.operate.entities.EventType;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
@@ -36,6 +30,12 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
+import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.operate.EventSourceType;
+import io.camunda.webapps.schema.entities.operate.EventType;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Instant;
