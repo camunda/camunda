@@ -58,6 +58,7 @@ import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
+import io.camunda.zeebe.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.zeebe.client.api.fetch.UserTaskGetRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
@@ -100,6 +101,7 @@ import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.ProcessInstanceGetRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.UserTaskGetFormRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpClientFactory;
@@ -565,7 +567,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public ProcessInstanceGetRequest newProcessInstanceGetRequest(long processInstanceKey) {
+  public ProcessInstanceGetRequest newProcessInstanceGetRequest(final long processInstanceKey) {
     return new ProcessInstanceGetRequestImpl(httpClient, processInstanceKey);
   }
 
@@ -638,6 +640,16 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new DecisionRequirementsGetRequestImpl(httpClient, decisionRequirementsKey);
   }
 
+  @Override
+  public UserTaskGetFormRequest newUserTaskGetFormRequest(final long userTaskKey) {
+    return new UserTaskGetFormRequestImpl(httpClient, userTaskKey);
+  }
+
+  @Override
+  public UserTaskGetRequest newUserTaskGetRequest(final long userTaskKey) {
+    return new UserTaskGetRequestImpl(httpClient, userTaskKey);
+  }
+
   private JobClient newJobClient() {
     return new JobClientImpl(
         asyncStub, httpClient, config, jsonMapper, credentialsProvider::shouldRetryRequest);
@@ -682,10 +694,5 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public StreamJobsCommandStep1 newStreamJobsCommand() {
     return new StreamJobsCommandImpl(
         asyncStub, jsonMapper, credentialsProvider::shouldRetryRequest, config);
-  }
-
-  @Override
-  public UserTaskGetRequest newUserTaskGetRequest(final long userTaskKey) {
-    return new UserTaskGetRequestImpl(httpClient, userTaskKey);
   }
 }

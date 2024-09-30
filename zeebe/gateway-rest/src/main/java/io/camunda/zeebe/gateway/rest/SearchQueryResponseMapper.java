@@ -324,7 +324,7 @@ public final class SearchQueryResponseMapper {
 
   public static FormItem toFormItem(final FormEntity f) {
     return new FormItem()
-        .key(Long.valueOf(f.id()))
+        .formKey(Long.valueOf(f.id()))
         .bpmnId(f.bpmnId())
         .version(f.version())
         .schema(f.schema())
