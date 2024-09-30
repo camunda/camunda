@@ -44,10 +44,13 @@ public final class ControlledActorClock implements ActorClock {
 
   public void setCurrentTime(final long currentTime) {
     this.currentTime = currentTime;
+    if (usesPointInTime()) {
+      update();
+    }
   }
 
   public void setCurrentTime(final Instant currentTime) {
-    this.currentTime = currentTime.toEpochMilli();
+    setCurrentTime(currentTime.toEpochMilli());
   }
 
   private boolean usesPointInTime() {
