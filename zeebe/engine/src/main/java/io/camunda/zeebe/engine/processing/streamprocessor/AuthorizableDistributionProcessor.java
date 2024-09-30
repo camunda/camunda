@@ -56,11 +56,7 @@ public final class AuthorizableDistributionProcessor<T extends UnifiedRecordValu
 
     if (authorizationCheckBehavior.isAuthorized(
         command, authorizationRequest.resourceType(), authorizationRequest.permissionType())) {
-      try {
-        delegate.processNewCommand(command);
-      } catch (final Exception e) {
-        delegate.tryHandleError(command, e);
-      }
+      delegate.processNewCommand(command);
     } else {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE.formatted(
@@ -77,6 +73,11 @@ public final class AuthorizableDistributionProcessor<T extends UnifiedRecordValu
     } catch (final Exception e) {
       delegate.tryHandleError(command, e);
     }
+  }
+
+  @Override
+  public ProcessingError tryHandleError(final TypedRecord<T> command, final Throwable error) {
+    return delegate.tryHandleError(command, error);
   }
 
   public record AuthorizationRequest(
