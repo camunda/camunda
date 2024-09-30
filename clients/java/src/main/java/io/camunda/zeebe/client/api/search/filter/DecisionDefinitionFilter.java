@@ -26,10 +26,10 @@ public interface DecisionDefinitionFilter extends SearchRequestFilter {
   DecisionDefinitionFilter decisionDefinitionId(final String value);
 
   /** Filter by dmn decision name. */
-  DecisionDefinitionFilter decisionDefinitionName(final String value);
+  DecisionDefinitionFilter name(final String value);
 
   /** Filter by version. */
-  DecisionDefinitionFilter decisionDefinitionVersion(final int value);
+  DecisionDefinitionFilter version(final int value);
 
   /** Filter by dmn decision requirements id. */
   DecisionDefinitionFilter decisionRequirementsId(final String value);

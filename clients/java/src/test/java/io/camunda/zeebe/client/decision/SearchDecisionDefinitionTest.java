@@ -43,10 +43,10 @@ public final class SearchDecisionDefinitionTest extends ClientRestTest {
             f ->
                 f.decisionDefinitionKey(1L)
                     .decisionDefinitionId("ddi")
-                    .decisionDefinitionName("ddm")
+                    .name("ddm")
                     .decisionRequirementsKey(2L)
                     .decisionRequirementsId("ddri")
-                    .decisionDefinitionVersion(3)
+                    .version(3)
                     .tenantId("t"))
         .send()
         .join();
@@ -56,7 +56,7 @@ public final class SearchDecisionDefinitionTest extends ClientRestTest {
         gatewayService.getLastRequest(DecisionDefinitionSearchQueryRequest.class);
     assertThat(request.getFilter().getDecisionDefinitionKey()).isEqualTo(1L);
     assertThat(request.getFilter().getDecisionDefinitionId()).isEqualTo("ddi");
-    assertThat(request.getFilter().getDecisionDefinitionName()).isEqualTo("ddm");
+    assertThat(request.getFilter().getName()).isEqualTo("ddm");
     assertThat(request.getFilter().getDecisionRequirementsKey()).isEqualTo(2L);
     assertThat(request.getFilter().getDecisionRequirementsId()).isEqualTo("ddri");
     assertThat(request.getFilter().getVersion()).isEqualTo(3);
@@ -74,13 +74,13 @@ public final class SearchDecisionDefinitionTest extends ClientRestTest {
                     .asc()
                     .decisionDefinitionId()
                     .asc()
-                    .decisionDefinitionName()
+                    .name()
                     .desc()
                     .decisionRequirementsKey()
                     .asc()
                     .decisionRequirementsId()
                     .asc()
-                    .decisionDefinitionVersion()
+                    .version()
                     .asc()
                     .tenantId()
                     .asc())
@@ -95,13 +95,13 @@ public final class SearchDecisionDefinitionTest extends ClientRestTest {
     assertThat(request.getSort().get(0).getOrder()).isEqualTo("asc");
     assertThat(request.getSort().get(1).getField()).isEqualTo("decisionDefinitionId");
     assertThat(request.getSort().get(1).getOrder()).isEqualTo("asc");
-    assertThat(request.getSort().get(2).getField()).isEqualTo("decisionDefinitionName");
+    assertThat(request.getSort().get(2).getField()).isEqualTo("name");
     assertThat(request.getSort().get(2).getOrder()).isEqualTo("desc");
     assertThat(request.getSort().get(3).getField()).isEqualTo("decisionRequirementsKey");
     assertThat(request.getSort().get(3).getOrder()).isEqualTo("asc");
     assertThat(request.getSort().get(4).getField()).isEqualTo("decisionRequirementsId");
     assertThat(request.getSort().get(4).getOrder()).isEqualTo("asc");
-    assertThat(request.getSort().get(5).getField()).isEqualTo("decisionDefinitionVersion");
+    assertThat(request.getSort().get(5).getField()).isEqualTo("version");
     assertThat(request.getSort().get(5).getOrder()).isEqualTo("asc");
     assertThat(request.getSort().get(6).getField()).isEqualTo("tenantId");
     assertThat(request.getSort().get(6).getOrder()).isEqualTo("asc");

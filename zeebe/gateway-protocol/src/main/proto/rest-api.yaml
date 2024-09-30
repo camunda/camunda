@@ -2687,7 +2687,7 @@ components:
         decisionDefinitionId:
           type: string
           description: The DMN id of the decision definition.
-        decisionDefinitionName:
+        name:
           type: string
           description: The DMN name of the decision definition.
         version:
@@ -2915,7 +2915,7 @@ components:
         decisionDefinitionId:
           type: string
           description: The DMN id of the decision definition.
-        decisionDefinitionName:
+        name:
           type: string
           description: The DMN name of the decision definition.
         version:

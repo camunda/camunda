@@ -18,8 +18,8 @@ import java.util.Objects;
 public record DecisionDefinitionFilter(
     List<Long> decisionDefinitionKeys,
     List<String> decisionDefinitionIds,
-    List<String> decisionDefinitionNames,
-    List<Integer> decisionDefinitionVersions,
+    List<String> names,
+    List<Integer> versions,
     List<String> decisionRequirementsIds,
     List<Long> decisionRequirementsKeys,
     List<String> tenantIds)
@@ -29,8 +29,8 @@ public record DecisionDefinitionFilter(
 
     private List<Long> decisionDefinitionKeys;
     private List<String> decisionDefinitionIds;
-    private List<String> decisionDefinitionNames;
-    private List<Integer> decisionDefinitionVersions;
+    private List<String> names;
+    private List<Integer> versions;
     private List<String> decisionRequirementsIds;
     private List<Long> decisionRequirementsKeys;
     private List<String> tenantIds;
@@ -53,22 +53,22 @@ public record DecisionDefinitionFilter(
       return decisionDefinitionIds(collectValuesAsList(values));
     }
 
-    public Builder decisionDefinitionNames(final List<String> values) {
-      decisionDefinitionNames = addValuesToList(decisionDefinitionNames, values);
+    public Builder names(final List<String> values) {
+      names = addValuesToList(names, values);
       return this;
     }
 
-    public Builder decisionDefinitionNames(final String... values) {
-      return decisionDefinitionNames(collectValuesAsList(values));
+    public Builder names(final String... values) {
+      return names(collectValuesAsList(values));
     }
 
-    public Builder decisionDefinitionVersions(final List<Integer> values) {
-      decisionDefinitionVersions = addValuesToList(decisionDefinitionVersions, values);
+    public Builder versions(final List<Integer> values) {
+      versions = addValuesToList(versions, values);
       return this;
     }
 
-    public Builder decisionDefinitionVersions(final Integer... values) {
-      return decisionDefinitionVersions(collectValuesAsList(values));
+    public Builder versions(final Integer... values) {
+      return versions(collectValuesAsList(values));
     }
 
     public Builder decisionRequirementsIds(final List<String> values) {
@@ -103,8 +103,8 @@ public record DecisionDefinitionFilter(
       return new DecisionDefinitionFilter(
           Objects.requireNonNullElse(decisionDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionIds, Collections.emptyList()),
-          Objects.requireNonNullElse(decisionDefinitionNames, Collections.emptyList()),
-          Objects.requireNonNullElse(decisionDefinitionVersions, Collections.emptyList()),
+          Objects.requireNonNullElse(names, Collections.emptyList()),
+          Objects.requireNonNullElse(versions, Collections.emptyList()),
           Objects.requireNonNullElse(decisionRequirementsIds, Collections.emptyList()),
           Objects.requireNonNullElse(decisionRequirementsKeys, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
