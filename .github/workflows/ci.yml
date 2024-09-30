@@ -471,6 +471,7 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
+          maven-cache-key-modifier: optimize-tests
           secrets: ${{ toJSON(secrets) }}
       - name: Test
         uses: ./.github/actions/run-maven
