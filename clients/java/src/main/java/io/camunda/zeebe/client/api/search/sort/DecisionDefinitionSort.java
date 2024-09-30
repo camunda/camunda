@@ -26,10 +26,10 @@ public interface DecisionDefinitionSort extends SearchRequestSort<DecisionDefini
   DecisionDefinitionSort decisionDefinitionId();
 
   /** Sort by dmn decision name. */
-  DecisionDefinitionSort decisionDefinitionName();
+  DecisionDefinitionSort name();
 
   /** Sort by version. */
-  DecisionDefinitionSort decisionDefinitionVersion();
+  DecisionDefinitionSort version();
 
   /** Sort by dmn decision requirements id. */
   DecisionDefinitionSort decisionRequirementsId();

@@ -318,8 +318,8 @@ public final class SearchQueryRequestMapper {
     if (filter != null) {
       ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
-      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::decisionDefinitionNames);
-      ofNullable(filter.getVersion()).ifPresent(builder::decisionDefinitionVersions);
+      ofNullable(filter.getName()).ifPresent(builder::names);
+      ofNullable(filter.getVersion()).ifPresent(builder::versions);
       ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
       ofNullable(filter.getDecisionRequirementsKey()).ifPresent(builder::decisionRequirementsKeys);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
@@ -475,8 +475,8 @@ public final class SearchQueryRequestMapper {
       switch (field) {
         case "decisionDefinitionKey" -> builder.decisionDefinitionKey();
         case "decisionDefinitionId" -> builder.decisionDefinitionId();
-        case "decisionDefinitionName" -> builder.decisionDefinitionName();
-        case "decisionDefinitionVersion" -> builder.decisionDefinitionVersion();
+        case "name" -> builder.name();
+        case "version" -> builder.version();
         case "decisionRequirementsId" -> builder.decisionRequirementsId();
         case "decisionRequirementsKey" -> builder.decisionRequirementsKey();
         case "tenantId" -> builder.tenantId();

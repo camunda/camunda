@@ -43,7 +43,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                       "tenantId": "t",
                       "decisionDefinitionKey": 0,
                       "decisionDefinitionId": "dId",
-                      "decisionDefinitionName": "name",
+                      "name": "name",
                       "version": 1,
                       "decisionRequirementsId": "drId",
                       "decisionRequirementsKey": 2
@@ -132,7 +132,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
               "filter":{
                 "tenantId": "t",
                 "decisionDefinitionKey": 0,
-                "decisionDefinitionName": "name",
+                "name": "name",
                 "version": 1,
                 "decisionRequirementsId": "drId",
                 "decisionRequirementsKey": 2,
@@ -164,8 +164,8 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                     new DecisionDefinitionFilter.Builder()
                         .tenantIds("t")
                         .decisionDefinitionKeys(0L)
-                        .decisionDefinitionNames("name")
-                        .decisionDefinitionVersions(1)
+                        .names("name")
+                        .versions(1)
                         .decisionRequirementsIds("drId")
                         .decisionRequirementsKeys(2L)
                         .decisionDefinitionIds("dId")
@@ -187,11 +187,11 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                         "order": "asc"
                     },
                     {
-                        "field": "decisionDefinitionName",
+                        "field": "name",
                         "order": "desc"
                     },
                     {
-                        "field": "decisionDefinitionVersion",
+                        "field": "version",
                         "order": "asc"
                     },
                     {
@@ -230,9 +230,9 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                     new DecisionDefinitionSort.Builder()
                         .decisionDefinitionKey()
                         .asc()
-                        .decisionDefinitionName()
+                        .name()
                         .desc()
-                        .decisionDefinitionVersion()
+                        .version()
                         .asc()
                         .decisionDefinitionId()
                         .asc()
@@ -409,7 +409,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
               "tenantId": "t",
               "decisionDefinitionKey": 0,
               "decisionDefinitionId": "dId",
-              "decisionDefinitionName": "name",
+              "name": "name",
               "version": 1,
               "decisionRequirementsId": "drId",
               "decisionRequirementsKey": 2

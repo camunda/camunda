@@ -23,8 +23,8 @@ public final class DecisionDefinitionFilterTransformer
   public SearchQuery toSearchQuery(final DecisionDefinitionFilter filter) {
     final var decisionKeysQuery = getDecisionKeysQuery(filter.decisionDefinitionKeys());
     final var decisionIdsQuery = getDmnDecisionIdsQuery(filter.decisionDefinitionIds());
-    final var dmnDecisionNamesQuery = getDmnDecisionNamesQuery(filter.decisionDefinitionNames());
-    final var versionsQuery = getVersionsQuery(filter.decisionDefinitionVersions());
+    final var dmnDecisionNamesQuery = getDmnDecisionNamesQuery(filter.names());
+    final var versionsQuery = getVersionsQuery(filter.versions());
     final var decisionRequirementsIdsQuery =
         getDmnDecisionRequirementsIdsQuery(filter.decisionRequirementsIds());
     final var decisionRequirementsKeysQuery =

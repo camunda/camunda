@@ -38,8 +38,7 @@ public final class DecisionDefinitionQueryTransformerTest extends AbstractTransf
   @Test
   public void shouldQueryByDecisionDefinitionName() {
     // given
-    final var decisionDefinitionFilter =
-        FilterBuilders.decisionDefinition(f -> f.decisionDefinitionNames("foo"));
+    final var decisionDefinitionFilter = FilterBuilders.decisionDefinition(f -> f.names("foo"));
 
     // when
     final var searchRequest = transformQuery(decisionDefinitionFilter);
@@ -58,8 +57,7 @@ public final class DecisionDefinitionQueryTransformerTest extends AbstractTransf
   @Test
   public void shouldQueryByDecisionDefinitionVersion() {
     // given
-    final var decisionDefinitionFilter =
-        FilterBuilders.decisionDefinition(f -> f.decisionDefinitionVersions(2));
+    final var decisionDefinitionFilter = FilterBuilders.decisionDefinition(f -> f.versions(2));
 
     // when
     final var searchRequest = transformQuery(decisionDefinitionFilter);
@@ -158,8 +156,7 @@ public final class DecisionDefinitionQueryTransformerTest extends AbstractTransf
   public void shouldQueryByTenantIdAndDecisionDefinitionName() {
     // given
     final var decisionDefinitionFilter =
-        FilterBuilders.decisionDefinition(
-            f -> f.tenantIds("tenant").decisionDefinitionNames("foo"));
+        FilterBuilders.decisionDefinition(f -> f.tenantIds("tenant").names("foo"));
 
     // when
     final var searchRequest = transformQuery(decisionDefinitionFilter);

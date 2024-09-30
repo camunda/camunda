@@ -42,13 +42,13 @@ public class DecisionDefinitionFilterImpl
   }
 
   @Override
-  public DecisionDefinitionFilter decisionDefinitionName(final String value) {
-    filter.setDecisionDefinitionName(value);
+  public DecisionDefinitionFilter name(final String value) {
+    filter.setName(value);
     return this;
   }
 
   @Override
-  public DecisionDefinitionFilter decisionDefinitionVersion(final int value) {
+  public DecisionDefinitionFilter version(final int value) {
     filter.setVersion(value);
     return this;
   }
