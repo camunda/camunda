@@ -11,7 +11,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <project.previousVersion>3.13.4</project.previousVersion>
-    <camunda.maven.artifacts.version>7.21.0</camunda.maven.artifacts.version>
+    <camunda.maven.artifacts.version>7.22.0</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
     <zeebe.version>8.6.0-alpha5</zeebe.version>
