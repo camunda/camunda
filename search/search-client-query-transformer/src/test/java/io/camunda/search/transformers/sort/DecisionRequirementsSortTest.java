@@ -25,12 +25,12 @@ public class DecisionRequirementsSortTest extends AbstractSortTransformerTest {
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
         new TestArguments(
-            "decisionRequirementsId", SortOrder.ASC, s -> s.dmnDecisionRequirementsId().asc()),
-        new TestArguments("name", SortOrder.DESC, s -> s.dmnDecisionRequirementsName().desc()),
+            "decisionRequirementsId", SortOrder.ASC, s -> s.decisionRequirementsId().asc()),
+        new TestArguments("name", SortOrder.DESC, s -> s.name().desc()),
         new TestArguments("key", SortOrder.DESC, s -> s.decisionRequirementsKey().desc()),
         new TestArguments("tenantId", SortOrder.ASC, s -> s.tenantId().asc()),
         new TestArguments("version", SortOrder.ASC, s -> s.version().asc()),
-        new TestArguments("name", SortOrder.ASC, s -> s.dmnDecisionRequirementsName().asc()));
+        new TestArguments("name", SortOrder.ASC, s -> s.name().asc()));
   }
 
   @ParameterizedTest

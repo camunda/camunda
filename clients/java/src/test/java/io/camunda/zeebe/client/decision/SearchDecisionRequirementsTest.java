@@ -59,16 +59,12 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
   @Test
   void shouldSearchDecisionRequirementsByResourceName() {
     // when
-    client
-        .newDecisionRequirementsQuery()
-        .filter(f -> f.dmnDecisionRequirementsName("resourceName"))
-        .send()
-        .join();
+    client.newDecisionRequirementsQuery().filter(f -> f.name("resourceName")).send().join();
 
     // then
     final DecisionRequirementsSearchQueryRequest request =
         gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-    assertThat(request.getFilter().getDecisionRequirementsName()).isEqualTo("resourceName");
+    assertThat(request.getFilter().getName()).isEqualTo("resourceName");
   }
 
   @Test
@@ -76,14 +72,14 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
     // when
     client
         .newDecisionRequirementsQuery()
-        .filter(f -> f.dmnDecisionRequirementsName("resourceName").version(1))
+        .filter(f -> f.name("resourceName").version(1))
         .send()
         .join();
 
     // then
     final DecisionRequirementsSearchQueryRequest request =
         gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-    assertThat(request.getFilter().getDecisionRequirementsName()).isEqualTo("resourceName");
+    assertThat(request.getFilter().getName()).isEqualTo("resourceName");
     assertThat(request.getFilter().getVersion()).isEqualTo(1);
   }
 
@@ -99,9 +95,9 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
                     .desc()
                     .version()
                     .asc()
-                    .dmnDecisionRequirementsName()
+                    .name()
                     .asc()
-                    .dmnDecisionRequirementsId()
+                    .decisionRequirementsId()
                     .asc()
                     .tenantId()
                     .desc())
@@ -119,10 +115,10 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
     assertThat(request.getSort().get(1).getField()).isEqualTo("version");
     assertThat(request.getSort().get(1).getOrder()).isEqualTo("asc");
 
-    assertThat(request.getSort().get(2).getField()).isEqualTo("dmnDecisionRequirementsName");
+    assertThat(request.getSort().get(2).getField()).isEqualTo("name");
     assertThat(request.getSort().get(2).getOrder()).isEqualTo("asc");
 
-    assertThat(request.getSort().get(3).getField()).isEqualTo("dmnDecisionRequirementsId");
+    assertThat(request.getSort().get(3).getField()).isEqualTo("decisionRequirementsId");
     assertThat(request.getSort().get(3).getOrder()).isEqualTo("asc");
 
     assertThat(request.getSort().get(4).getField()).isEqualTo("tenantId");
