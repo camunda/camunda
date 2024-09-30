@@ -480,12 +480,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-authentication</artifactId>
       <scope>test</scope>

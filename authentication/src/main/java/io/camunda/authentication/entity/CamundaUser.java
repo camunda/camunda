@@ -27,32 +27,14 @@ public class CamundaUser extends User {
     this.displayName = displayName;
   }
 
-  public CamundaUser(final String displayName, final String username, final String password) {
-    super(username, password, Collections.emptyList());
-    userKey = null;
-    this.displayName = displayName;
-  }
-
   public CamundaUser(
       final String displayName,
       final String username,
       final String password,
       final List<String> roles) {
-    super(username, password, roles.stream().map(SimpleGrantedAuthority::new).toList());
+    super(username, password, prepareAuthorities(roles));
     userKey = null;
     this.displayName = displayName;
-  }
-
-  public CamundaUser(
-      final String displayName,
-      final String username,
-      final String password,
-      final List<String> roles,
-      final boolean canLogout) {
-    super(username, password, roles.stream().map(SimpleGrantedAuthority::new).toList());
-    userKey = null;
-    this.displayName = displayName;
-    this.canLogout = canLogout;
   }
 
   public Long getUserKey() {
@@ -77,6 +59,10 @@ public class CamundaUser extends User {
 
   public boolean isCanLogout() {
     return canLogout;
+  }
+
+  private static List<SimpleGrantedAuthority> prepareAuthorities(final List<String> roles) {
+    return roles.stream().map(SimpleGrantedAuthority::new).toList();
   }
 
   public static final class CamundaUserBuilder {
