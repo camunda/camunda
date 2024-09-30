@@ -10,7 +10,6 @@ package io.camunda.zeebe.it.authorization;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.amazonaws.util.Base64;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.Profile;
@@ -30,6 +29,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
+import java.util.Base64;
 import org.awaitility.Awaitility;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeAll;
@@ -203,8 +203,8 @@ final class DeploymentCreateAuthorizationIT {
                     "Authorization",
                     "Basic %s"
                         .formatted(
-                            Base64.encodeAsString(
-                                "%s:%s".formatted(username, password).getBytes())));
+                            Base64.getEncoder()
+                                .encodeToString("%s:%s".formatted(username, password).getBytes())));
               }
 
               @Override
