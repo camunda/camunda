@@ -54,7 +54,6 @@ public class VariableListViewEntity {
     setPartitionId(entity.getPartitionId());
     setTenantId(entity.getTenantId());
 
-
     // Set the join relation
     final ListViewJoinRelation joinRelation = new ListViewJoinRelation();
     setJoin(joinRelation);
@@ -69,6 +68,7 @@ public class VariableListViewEntity {
     this.key = key;
     return this;
   }
+
   public String getId() {
     return id;
   }
