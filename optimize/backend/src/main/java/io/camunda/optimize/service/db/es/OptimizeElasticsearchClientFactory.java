@@ -66,11 +66,19 @@ public class OptimizeElasticsearchClientFactory {
       final TransportOptions requestOptions)
       throws IOException {
     boolean isConnected = false;
+    int connectionAttempts = 0;
     while (!isConnected) {
+      connectionAttempts++;
       try {
         isConnected = getNumberOfClusterNodes(esClient, requestOptions) > 0;
       } catch (final Exception e) {
-        log.error("Can't connect to any Elasticsearch node. Please check the connection!", e);
+        final String errorMessage =
+            "Can't connect to any Elasticsearch node. Please check the connection!";
+        if (connectionAttempts < 10) {
+          log.warn(errorMessage);
+        } else {
+          log.error(errorMessage, e);
+        }
       } finally {
         if (!isConnected) {
           final long sleepTime = backoffCalculator.calculateSleepTime();
