@@ -189,7 +189,7 @@ public final class SearchQueryResponseMapper {
         .resourceName(entity.resourceName())
         .version(entity.version())
         .versionTag(entity.versionTag())
-        .id(entity.bpmnProcessId())
+        .processDefinitionId(entity.bpmnProcessId())
         .tenantId(entity.tenantId());
   }
 

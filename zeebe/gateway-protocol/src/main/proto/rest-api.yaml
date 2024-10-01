@@ -2409,8 +2409,8 @@ components:
         versionTag:
           description: Version tag of this process definition.
           type: string
-        id:
-          description: BPMN process id of this process definition.
+        processDefinitionId:
+          description:  Process defintion id of this process definition.
           type: string
         tenantId:
           description: Tenant id of this process definition.
@@ -2444,8 +2444,8 @@ components:
         versionTag:
           description: Version tag of this process definition.
           type: string
-        id:
-          description: Id of this process definition.
+        processDefinitionId:
+          description: Process definition id of this process definition.
           type: string
         tenantId:
           description: Tenant id of this process definition.

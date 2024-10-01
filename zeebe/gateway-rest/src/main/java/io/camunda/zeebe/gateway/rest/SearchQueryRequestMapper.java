@@ -275,7 +275,8 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getResourceName()).ifPresent(builder::resourceNames);
               Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
               Optional.ofNullable(f.getVersionTag()).ifPresent(builder::versionTags);
-              Optional.ofNullable(f.getId()).ifPresent(builder::ids);
+              Optional.ofNullable(f.getProcessDefinitionId())
+                  .ifPresent(builder::processDefinitionIds);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
             });
     return builder.build();
@@ -494,7 +495,7 @@ public final class SearchQueryRequestMapper {
         case "resourceName" -> builder.resourceName();
         case "version" -> builder.version();
         case "versionTag" -> builder.versionTag();
-        case "id" -> builder.id();
+        case "processDefinitionId" -> builder.processDefinitionId();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

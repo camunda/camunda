@@ -18,7 +18,7 @@ import java.util.Objects;
 public record ProcessDefinitionFilter(
     List<Long> processDefinitionKeys,
     List<String> names,
-    List<String> ids,
+    List<String> processDefinitionIds,
     List<String> resourceNames,
     List<Integer> versions,
     List<String> versionTags,
@@ -30,7 +30,7 @@ public record ProcessDefinitionFilter(
     List<String> tenantIds;
     private List<Long> processDefinitionKeys;
     private List<String> names;
-    private List<String> ids;
+    private List<String> processDefinitionIds;
     private List<String> resourceNames;
     private List<Integer> versions;
     private List<String> versionTags;
@@ -53,13 +53,13 @@ public record ProcessDefinitionFilter(
       return names(collectValues(value, values));
     }
 
-    public Builder ids(final List<String> values) {
-      ids = addValuesToList(ids, values);
+    public Builder processDefinitionIds(final List<String> values) {
+      processDefinitionIds = addValuesToList(processDefinitionIds, values);
       return this;
     }
 
-    public Builder ids(final String value, final String... values) {
-      return ids(collectValues(value, values));
+    public Builder processDefinitionIds(final String value, final String... values) {
+      return processDefinitionIds(collectValues(value, values));
     }
 
     public Builder resourceNames(final List<String> values) {
@@ -103,7 +103,7 @@ public record ProcessDefinitionFilter(
       return new ProcessDefinitionFilter(
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(names, Collections.emptyList()),
-          Objects.requireNonNullElse(ids, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionIds, Collections.emptyList()),
           Objects.requireNonNullElse(resourceNames, Collections.emptyList()),
           Objects.requireNonNullElse(versions, Collections.emptyList()),
           Objects.requireNonNullElse(versionTags, Collections.emptyList()),

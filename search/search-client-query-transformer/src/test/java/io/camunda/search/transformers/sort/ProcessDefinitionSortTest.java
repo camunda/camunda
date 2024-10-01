@@ -28,7 +28,7 @@ public class ProcessDefinitionSortTest extends AbstractSortTransformerTest {
         new TestArguments("name", SortOrder.ASC, s -> s.name().asc()),
         new TestArguments("version", SortOrder.ASC, s -> s.version().asc()),
         new TestArguments("versionTag", SortOrder.ASC, s -> s.versionTag().asc()),
-        new TestArguments("bpmnProcessId", SortOrder.ASC, s -> s.id().asc()),
+        new TestArguments("bpmnProcessId", SortOrder.ASC, s -> s.processDefinitionId().asc()),
         new TestArguments("resourceName", SortOrder.ASC, s -> s.resourceName().asc()),
         new TestArguments("tenantId", SortOrder.ASC, s -> s.tenantId().asc()));
   }

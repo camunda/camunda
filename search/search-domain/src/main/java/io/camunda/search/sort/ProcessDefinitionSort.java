@@ -46,7 +46,7 @@ public record ProcessDefinitionSort(List<FieldSorting> orderings) implements Sor
       return this;
     }
 
-    public Builder id() {
+    public Builder processDefinitionId() {
       currentOrdering = new FieldSorting("bpmnProcessId", null);
       return this;
     }
