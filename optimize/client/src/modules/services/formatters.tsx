@@ -7,39 +7,63 @@
  */
 
 import {Chart, Scale, Tick} from 'chart.js';
+import {parseISO, isValid} from 'date-fns';
 
 import {t} from 'translation';
-import {FilterData} from 'types';
+import {FilterData, SingleProcessReportData, SingleProcessReportResultData} from 'types';
+import {format} from 'dates';
 
 import {UNAUTHORIZED_TENANT_ID} from './tenantService';
 
-export function getHighlightedText(
-  text: string,
-  highlight?: string,
-  matchFromStart?: boolean
-): string | JSX.Element[] {
-  if (!highlight) {
-    return text;
+const scaleUnits = [
+  {exponent: 18, label: 'quintillion'},
+  {exponent: 15, label: 'quadrillion'},
+  {exponent: 12, label: 'trillion'},
+  {exponent: 9, label: 'billion'},
+  {exponent: 6, label: 'million'},
+  {exponent: 3, label: 'thousand'},
+];
+
+function getNumberOfDigits(x: number) {
+  // https://stackoverflow.com/a/28203456
+  return Math.max(Math.floor(Math.log10(Math.abs(x))), 0) + 1;
+}
+
+export function frequency(number?: number | string | null, precision?: number) {
+  if ((!number && number !== 0) || Number.isNaN(number)) {
+    return '--';
   }
 
-  // we need to escape special characters in the highlight text
-  // https://stackoverflow.com/a/3561711
-  let regex = highlight.replace(/[-\\^$*+?.()|[\]{}]/g, '\\$&');
-  if (matchFromStart) {
-    regex = '^' + regex;
+  const intl = new Intl.NumberFormat();
+
+  if (precision) {
+    const digitsFactor = 10 ** getNumberOfDigits(Number(number));
+    const precisionFactor = 10 ** precision;
+    const roundedToPrecision =
+      (Math.round((Number(number) / digitsFactor) * precisionFactor) / precisionFactor) *
+      digitsFactor;
+
+    for (const {exponent, label} of scaleUnits) {
+      if (Math.abs(roundedToPrecision) >= 10 ** exponent) {
+        const shortened = roundedToPrecision / 10 ** exponent;
+        return (
+          intl.format(shortened) +
+          ' ' +
+          t(`common.unit.${label}.label${shortened !== 1 ? '-plural' : ''}`)
+        );
+      }
+    }
+    return intl.format(roundedToPrecision);
+  }
+  return intl.format(Number(number));
+}
+
+export function percentage(number?: number | string | null) {
+  if ((!number && number !== 0) || Number.isNaN(number)) {
+    return '--';
   }
 
-  // Split on highlight term and include term into parts, ignore case
-  const parts = text.split(new RegExp(`(${regex})`, 'gi'));
-
-  return parts.map((part, i) => (
-    <span
-      key={i}
-      className={part.toLowerCase() === highlight.toLowerCase() ? 'textBold' : undefined}
-    >
-      {part}
-    </span>
-  ));
+  return Number(Number(number).toFixed(2)) + '%';
 }
 
 export function duration(
@@ -106,6 +130,218 @@ export function duration(
   return timeSegments.join('\u00A0');
 }
 
+export function getHighlightedText(
+  text: string,
+  highlight?: string,
+  matchFromStart?: boolean
+): string | JSX.Element[] {
+  if (!highlight) {
+    return text;
+  }
+
+  // we need to escape special characters in the highlight text
+  // https://stackoverflow.com/a/3561711
+  let regex = highlight.replace(/[-\\^$*+?.()|[\]{}]/g, '\\$&');
+  if (matchFromStart) {
+    regex = '^' + regex;
+  }
+
+  // Split on highlight term and include term into parts, ignore case
+  const parts = text.split(new RegExp(`(${regex})`, 'gi'));
+
+  return parts.map((part, i) => (
+    <span
+      key={i}
+      className={part.toLowerCase() === highlight.toLowerCase() ? 'textBold' : undefined}
+    >
+      {part}
+    </span>
+  ));
+}
+
+export function getRelativeValue(data: number | null, total: number) {
+  if (!data && data !== 0) {
+    return '--';
+  }
+  if (data === 0) {
+    return '0%';
+  }
+  return Math.round((data / total) * 1000) / 10 + '%';
+}
+
+export function camelCaseToLabel(type: string) {
+  return type.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+}
+
+export function objectifyResult<T extends readonly {key: string; value: unknown}[]>(
+  result: T
+): {[K in T[number]['key']]: Extract<T[number], {key: K}>['value']} {
+  return result.reduce<any>((acc, {key, value}) => {
+    acc[key] = value;
+    return acc;
+  }, {});
+}
+
+function getDateFormat(unit: string) {
+  let dateFormat;
+  switch (unit) {
+    case 'hour':
+      dateFormat = 'yyyy-MM-dd HH:00:00';
+      break;
+    case 'day':
+    case 'week':
+      dateFormat = 'yyyy-MM-dd';
+      break;
+    case 'month':
+      dateFormat = 'MMM yyyy';
+      break;
+    case 'year':
+      dateFormat = 'yyyy';
+      break;
+    case 'second':
+    default:
+      dateFormat = 'yyyy-MM-dd HH:mm:ss';
+  }
+  return dateFormat;
+}
+
+export function formatVersions(versions: string[]) {
+  if (versions.length === 1 && versions[0] === 'all') {
+    return t('common.all');
+  } else if (versions.length === 1 && versions[0] === 'latest') {
+    return t('common.definitionSelection.latest');
+  } else if (versions.length) {
+    return versions.join(', ');
+  }
+
+  return t('common.none');
+}
+
+export function formatLabel(
+  label: object | string | number | null,
+  formatNumbersOnly: boolean = false
+): object | string | number | null {
+  const MAX_LENGTH = 50;
+
+  if (!label || typeof label === 'object' || label?.toString().length <= MAX_LENGTH) {
+    return label;
+  }
+
+  // too long string
+  if (isNaN(Number(label))) {
+    return formatNumbersOnly ? label : label.toString().slice(0, MAX_LENGTH) + '...';
+  }
+
+  // too long number
+  return Number.parseFloat(label.toString()).toExponential();
+}
+
+export function formatReportResult<
+  D extends SingleProcessReportData,
+  T extends SingleProcessReportResultData,
+  R extends T[],
+>(data: D, result: R): T[] {
+  const groupBy = data.groupBy;
+
+  let unit;
+  if (groupBy && groupBy.value && groupBy.type.includes('Date') && groupBy.value.unit) {
+    unit = determineUnit(groupBy.value.unit, result);
+  } else if (
+    groupBy &&
+    groupBy.value &&
+    groupBy.type.toLowerCase().includes('variable') &&
+    groupBy.value.type === 'Date' &&
+    data.configuration.groupByDateVariableUnit
+  ) {
+    unit = determineUnit(data.configuration.groupByDateVariableUnit, result);
+  }
+
+  if (!unit || !result) {
+    // the result data is no time series
+    return [...result];
+  }
+
+  let dateFormat = getDateFormat(unit);
+  // The added space is to make sure all dates are string,
+  // since integer keys in objects does not preserve order
+  if (unit === 'year') {
+    dateFormat += ' ';
+  }
+
+  const formattedResult = result.map((entry) => {
+    const date = parseISO(entry.label);
+    if (!isValid(date)) {
+      return entry;
+    }
+    return {
+      ...entry,
+      label: format(date, dateFormat),
+    };
+  });
+
+  return formattedResult;
+}
+
+function determineUnit<T extends {key: string}>(unit: string, resultData: T[]): string {
+  if (unit === 'automatic') {
+    return determineUnitForAutomaticIntervalSelection(resultData);
+  } else {
+    // in this case the unit was already defined by the user
+    // and can just directly be used.
+    return unit;
+  }
+}
+
+function determineUnitForAutomaticIntervalSelection<T extends {key: string}>(
+  resultData: T[]
+): string {
+  if (resultData.length > 1 && resultData[0] && resultData[1]) {
+    const firstEntry = parseISO(resultData[0].key);
+    const secondEntry = parseISO(resultData[1].key);
+    const intervalInMs = Math.abs(firstEntry.getTime() - secondEntry.getTime());
+
+    const intervals = [
+      {value: 1000 * 60 * 60 * 24 * 30 * 12, unit: 'year'},
+      {value: 1000 * 60 * 60 * 24 * 30, unit: 'month'},
+      {value: 1000 * 60 * 60 * 24, unit: 'day'},
+      {value: 1000 * 60 * 60, unit: 'hour'},
+      {value: 0, unit: 'second'},
+      {value: -Infinity, unit: 'day'},
+    ];
+    return intervals.find(({value}) => intervalInMs >= value)?.unit || 'day';
+  } else {
+    return 'day';
+  }
+}
+
+export function formatTenants(
+  tenantIds: (string | null)[],
+  tenantInfo: {id: string | null; name: string | null}[],
+  showOnlyTenant: boolean = false
+) {
+  if (showOnlyTenant && tenantInfo[0] !== undefined) {
+    return formatTenantName(tenantInfo[0]);
+  }
+
+  if (tenantIds.length === 0) {
+    return t('common.none');
+  }
+
+  if (tenantInfo && tenantInfo.length > 1) {
+    if (tenantInfo.length === tenantIds.length) {
+      return t('common.all');
+    } else {
+      return tenantIds
+        .map((tenantId) =>
+          formatTenantName(tenantInfo.find(({id}) => id === tenantId) ?? {id: tenantId})
+        )
+        .join(', ');
+    }
+  }
+
+  return '';
+}
+
 export const convertDurationToObject = (value: number): FilterData => {
   // sort the time units in descending order, then find the first one
   // that fits the provided value without any decimal places
@@ -170,8 +406,10 @@ const timeUnits: Record<string, {value: number; abbreviation: string; label: str
 };
 
 interface DurationFormattingOptions {
-  callback: (this: Scale, value: string | number, index: number, ticks: Tick[]) => string;
+  callback: (this: Scale, value?: string | number, index?: number, ticks?: Tick[]) => string;
   stepSize: number;
+  type?: string;
+  getLabels?: () => string[];
 }
 
 export function createDurationFormattingOptions(
@@ -210,7 +448,7 @@ export function createDurationFormattingOptions(
   }
 
   return {
-    callback: function (this: Scale, value: string | number, index: number, ticks: Tick[]) {
+    callback: function (this: Scale, value?: string | number, index?: number, ticks?: Tick[]) {
       let durationMs = Number(value);
 
       if (this.type === 'category') {
@@ -221,9 +459,9 @@ export function createDurationFormattingOptions(
       if (logScale) {
         const logValue = Chart.defaults.scales.logarithmic.ticks.callback.call(
           this,
-          value,
-          index,
-          ticks
+          value ?? 0,
+          index ?? 0,
+          ticks ?? []
         );
 
         if (!logValue) {
@@ -241,7 +479,7 @@ export function formatFileName(name: string) {
   return name.replace(/[^a-zA-Z0-9-_.]/gi, '_').toLowerCase();
 }
 
-export function formatTenantName({id, name}: {id?: string | null; name?: string}) {
+export function formatTenantName({id, name}: {id?: string | null; name?: string | null}) {
   if (!id) {
     return t('common.definitionSelection.tenant.notDefined');
   }
