@@ -26,9 +26,11 @@ import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -254,6 +256,28 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     return Thread.currentThread().getContextClassLoader().getResourceAsStream(classpathFileName);
   }
 
+  private InputStream appendToFileSchemaSettings(
+      final InputStream file, final IndexSettings settingsToAppend) throws IOException {
+    final Map<String, Object> map = MAPPER.readValue(file, Map.class);
+
+    if (!map.containsKey("settings")) {
+      map.put("settings", new HashMap<String, Object>());
+    }
+
+    final Map<String, Object> settingsBlock = (Map<String, Object>) map.get("settings");
+
+    if (!settingsBlock.containsKey("index")) {
+      settingsBlock.put("index", new HashMap<String, Object>());
+    }
+
+    final Map<String, Object> indexBlock = (Map<String, Object>) settingsBlock.get("index");
+
+    indexBlock.put("number_of_shards", settingsToAppend.getNumberOfShards());
+    indexBlock.put("number_of_replicas", settingsToAppend.getNumberOfReplicas());
+
+    return new ByteArrayInputStream(MAPPER.writeValueAsBytes(map));
+  }
+
   private PutIndexTemplateRequest putIndexTemplateRequest(
       final IndexTemplateDescriptor indexTemplateDescriptor,
       final IndexSettings settings,
@@ -262,8 +286,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try (final var templateFile =
         getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
 
-      final var templateFields = deserializeJson(IndexTemplateMapping._DESERIALIZER, templateFile);
-      final var templateSettings = templateFields.settings();
+      final var templateFields =
+          deserializeJson(
+              IndexTemplateMapping._DESERIALIZER,
+              appendToFileSchemaSettings(templateFile, settings));
 
       return new PutIndexTemplateRequest.Builder()
           .name(indexTemplateDescriptor.getTemplateName())
@@ -272,14 +298,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
               t ->
                   t.aliases(indexTemplateDescriptor.getAlias(), Alias.of(a -> a))
                       .mappings(templateFields.mappings())
-                      .settings(
-                          s ->
-                              s.analysis(
-                                      templateSettings == null ? null : templateSettings.analysis())
-                                  .index(templateSettings == null ? null : templateSettings.index())
-                                  .numberOfShards(String.valueOf(settings.getNumberOfShards()))
-                                  .numberOfReplicas(
-                                      String.valueOf(settings.getNumberOfReplicas()))))
+                      .settings(templateFields.settings()))
           .composedOf(indexTemplateDescriptor.getComposedOf())
           .create(create)
           .build();
