@@ -7,8 +7,7 @@
  */
 package io.camunda.search.transformers;
 
-import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.core.SearchQueryRequest;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.ComparableValueFilter;
 import io.camunda.search.filter.DateValueFilter;
@@ -32,6 +31,7 @@ import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.query.UserQuery;

@@ -7,8 +7,8 @@
  */
 package io.camunda.search.os.transformers.query;
 
-import io.camunda.search.clients.query.SearchConstantScoreQuery;
 import io.camunda.search.os.transformers.OpensearchTransformers;
+import io.camunda.search.query.SearchConstantScoreQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ConstantScoreQuery;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 

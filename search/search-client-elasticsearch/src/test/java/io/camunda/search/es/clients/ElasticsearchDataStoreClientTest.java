@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
-import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.core.SearchQueryRequest;
 import io.camunda.search.es.util.StubbedElasticsearchClient;
 import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;

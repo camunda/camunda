@@ -11,11 +11,11 @@ package io.camunda.search.transformers.filter;
 import static io.camunda.search.filter.FilterBuilders.dateValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.clients.query.SearchBoolQuery;
-import io.camunda.search.clients.query.SearchRangeQuery;
-import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.query.SearchBoolQuery;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchRangeQuery;
+import io.camunda.search.query.SearchTermQuery;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;

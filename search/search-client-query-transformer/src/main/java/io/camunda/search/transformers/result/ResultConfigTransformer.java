@@ -7,10 +7,10 @@
  */
 package io.camunda.search.transformers.result;
 
-import io.camunda.search.clients.source.SearchSourceConfig;
-import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.result.QueryResultConfig;
 import io.camunda.search.result.QueryResultConfig.FieldFilter;
+import io.camunda.search.source.SearchSourceConfig;
+import io.camunda.search.source.SearchSourceFilter;
 import io.camunda.search.transformers.ServiceTransformer;
 import java.util.List;
 import java.util.stream.Collectors;

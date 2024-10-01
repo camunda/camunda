@@ -7,16 +7,16 @@
  */
 package io.camunda.search.transformers.filter;
 
-import static io.camunda.search.clients.query.SearchQueryBuilders.bool;
-import static io.camunda.search.clients.query.SearchQueryBuilders.not;
-import static io.camunda.search.clients.query.SearchQueryBuilders.range;
+import static io.camunda.search.query.SearchQueryBuilders.bool;
+import static io.camunda.search.query.SearchQueryBuilders.not;
+import static io.camunda.search.query.SearchQueryBuilders.range;
 
-import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.query.SearchQueryBuilders;
-import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.ComparableValueFilter;
 import io.camunda.search.filter.FilterBase;
+import io.camunda.search.query.SearchQuery;
+import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.transformers.filter.ComparableValueFilterTransformer.ComparableFieldFilter;
+import io.camunda.search.types.TypedValue;
 import java.util.Collections;
 
 public class ComparableValueFilterTransformer implements FilterTransformer<ComparableFieldFilter> {

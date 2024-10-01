@@ -7,18 +7,18 @@
  */
 package io.camunda.search.transformers.filter;
 
-import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
-import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
-import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
-import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.not;
-import static io.camunda.search.clients.query.SearchQueryBuilders.or;
-import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.query.SearchQueryBuilders.and;
+import static io.camunda.search.query.SearchQueryBuilders.exists;
+import static io.camunda.search.query.SearchQueryBuilders.hasChildQuery;
+import static io.camunda.search.query.SearchQueryBuilders.hasParentQuery;
+import static io.camunda.search.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.query.SearchQueryBuilders.not;
+import static io.camunda.search.query.SearchQueryBuilders.or;
+import static io.camunda.search.query.SearchQueryBuilders.stringTerms;
 
-import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.search.query.SearchQuery;
 import io.camunda.search.transformers.ServiceTransformers;
 import java.util.Arrays;
 import java.util.List;

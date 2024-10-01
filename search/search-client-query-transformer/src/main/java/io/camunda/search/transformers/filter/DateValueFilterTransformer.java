@@ -7,11 +7,11 @@
  */
 package io.camunda.search.transformers.filter;
 
-import static io.camunda.search.clients.query.SearchQueryBuilders.range;
+import static io.camunda.search.query.SearchQueryBuilders.range;
 
-import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.FilterBase;
+import io.camunda.search.query.SearchQuery;
 import io.camunda.search.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;

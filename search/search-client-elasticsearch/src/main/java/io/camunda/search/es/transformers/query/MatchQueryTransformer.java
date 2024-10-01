@@ -11,8 +11,8 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.MatchQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
-import io.camunda.search.clients.query.SearchMatchQuery;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
+import io.camunda.search.query.SearchMatchQuery;
 
 public final class MatchQueryTransformer
     extends QueryOptionTransformer<SearchMatchQuery, MatchQuery> {

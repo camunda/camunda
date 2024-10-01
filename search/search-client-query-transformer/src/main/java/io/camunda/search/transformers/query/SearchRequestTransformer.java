@@ -7,9 +7,9 @@
  */
 package io.camunda.search.transformers.query;
 
-import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.core.SearchQueryRequest;
 import io.camunda.search.filter.FilterBase;
+import io.camunda.search.query.SearchQuery;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.transformers.ServiceTransformer;

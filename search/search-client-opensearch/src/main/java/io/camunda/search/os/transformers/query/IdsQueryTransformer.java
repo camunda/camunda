@@ -7,8 +7,8 @@
  */
 package io.camunda.search.os.transformers.query;
 
-import io.camunda.search.clients.query.SearchIdsQuery;
 import io.camunda.search.os.transformers.OpensearchTransformers;
+import io.camunda.search.query.SearchIdsQuery;
 import org.opensearch.client.opensearch._types.query_dsl.IdsQuery;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 

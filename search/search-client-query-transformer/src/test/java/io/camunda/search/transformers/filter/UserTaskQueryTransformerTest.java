@@ -9,17 +9,17 @@ package io.camunda.search.transformers.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.clients.query.SearchBoolQuery;
-import io.camunda.search.clients.query.SearchExistsQuery;
-import io.camunda.search.clients.query.SearchHasChildQuery;
-import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.query.SearchQueryOption;
-import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.UserTaskFilter.Builder;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.search.query.SearchBoolQuery;
+import io.camunda.search.query.SearchExistsQuery;
+import io.camunda.search.query.SearchHasChildQuery;
+import io.camunda.search.query.SearchQuery;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryOption;
+import io.camunda.search.query.SearchTermQuery;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

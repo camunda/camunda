@@ -9,7 +9,7 @@ package io.camunda.search.os.clients;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.core.SearchQueryRequest;
 import io.camunda.search.os.util.StubbedOpensearchClient;
 import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
