@@ -7,6 +7,7 @@
  */
 package io.camunda.search.query;
 
+import io.camunda.search.auth.AuthorizationCheck;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.result.QueryResultConfig;
 import io.camunda.search.sort.SortOption;
@@ -21,4 +22,6 @@ public interface TypedSearchQuery<F extends FilterBase, S extends SortOption>
   default QueryResultConfig resultConfig() {
     return null;
   }
+
+  AuthorizationCheck authorizationCheck();
 }

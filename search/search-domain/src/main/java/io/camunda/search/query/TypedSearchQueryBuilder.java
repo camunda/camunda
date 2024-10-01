@@ -7,6 +7,7 @@
  */
 package io.camunda.search.query;
 
+import io.camunda.search.auth.AuthorizationCheck;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.SortOption;
@@ -21,4 +22,6 @@ public interface TypedSearchQueryBuilder<
   B sort(S value);
 
   B page(SearchQueryPage value);
+
+  B authorizationCheck(AuthorizationCheck value);
 }

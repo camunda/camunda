@@ -26,6 +26,7 @@ import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
+import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
@@ -157,9 +158,29 @@ public class ElasticsearchSearchClient
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       final ProcessInstanceQuery filter, final Authentication authentication) {
+
+    final var authCheck = filter.authorizationCheck();
+    final var permissionCheck = authCheck.permissionCheck();
+    final var resourceType = permissionCheck.resource();
+    final var permission = permissionCheck.permission();
+
+    final var authQuery =
+        AuthorizationQuery.of(
+            (b) ->
+                b.filter(
+                    (f) ->
+                        f.resourceType(resourceType)
+                            .ownerType("user")
+                            .ownerKey(authCheck.userId())));
+    final AuthorizationEntity authEntity = searchAuthorizations(authQuery, null).items().get(0);
+    final var resourceKey = authEntity.value().resourceKey();
+
+    final var authByBpmnProcessIdQuery =
+        SearchQuery.of(b -> b.term((t -> t.field("bpmnProcessId").value(resourceKey))));
+
     final var executor =
         new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
-    return executor.search(filter, ProcessInstanceEntity.class);
+    return executor.search(filter, ProcessInstanceEntity.class, authByBpmnProcessIdQuery);
   }
 
   @Override

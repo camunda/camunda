@@ -45,6 +45,17 @@ public final class SearchClientBasedQueryExecutor {
     return responseTransformer.apply(searchClient.search(searchRequest, documentClass));
   }
 
+  public <T extends FilterBase, S extends SortOption, R> SearchQueryResult<R> search(
+      final TypedSearchQuery<T, S> query,
+      final Class<R> documentClass,
+      final SearchQuery actualAuthCheckQuery) {
+    final var transformer = getSearchQueryRequestTransformer(query);
+    final var searchRequest = transformer.applyWithAuthentication(query, actualAuthCheckQuery);
+
+    final SearchQueryResultTransformer<R> responseTransformer = getSearchResultTransformer();
+    return responseTransformer.apply(searchClient.search(searchRequest, documentClass));
+  }
+
   private SearchQuery getAuthenticationCheckIfPresent() {
     if (authentication != null) {
       final var transformer = getAuthenticationTransformer();

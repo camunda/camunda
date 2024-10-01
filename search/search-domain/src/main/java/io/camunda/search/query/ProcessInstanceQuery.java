@@ -7,6 +7,7 @@
  */
 package io.camunda.search.query;
 
+import io.camunda.search.auth.AuthorizationCheck;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -23,7 +24,8 @@ public record ProcessInstanceQuery(
     ProcessInstanceFilter filter,
     ProcessInstanceSort sort,
     SearchQueryPage page,
-    QueryResultConfig resultConfig)
+    QueryResultConfig resultConfig,
+    AuthorizationCheck authorizationCheck)
     implements TypedSearchQuery<ProcessInstanceFilter, ProcessInstanceSort> {
 
   public static ProcessInstanceQuery of(
@@ -43,20 +45,29 @@ public record ProcessInstanceQuery(
     private ProcessInstanceFilter filter;
     private ProcessInstanceSort sort;
     private ProcessInstanceQueryResultConfig resultConfig;
+    private AuthorizationCheck authorizationCheck;
 
+    @Override
     public Builder filter(final ProcessInstanceFilter value) {
       filter = value;
+      return this;
+    }
+
+    @Override
+    public Builder sort(final ProcessInstanceSort value) {
+      sort = value;
+      return this;
+    }
+
+    @Override
+    public Builder authorizationCheck(final AuthorizationCheck value) {
+      authorizationCheck = value;
       return this;
     }
 
     public Builder filter(
         final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
       return filter(FilterBuilders.processInstance(fn));
-    }
-
-    public Builder sort(final ProcessInstanceSort value) {
-      sort = value;
-      return this;
     }
 
     public Builder sort(
@@ -86,7 +97,7 @@ public record ProcessInstanceQuery(
     public ProcessInstanceQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, EMPTY_SORT);
-      return new ProcessInstanceQuery(filter, sort, page(), resultConfig);
+      return new ProcessInstanceQuery(filter, sort, page(), resultConfig, authorizationCheck);
     }
   }
 }

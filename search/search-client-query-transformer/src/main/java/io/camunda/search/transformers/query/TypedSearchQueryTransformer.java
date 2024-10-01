@@ -66,6 +66,8 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
       builder.source(searchQuerySourceConfig);
     }
 
+    final var auth = query.authorizationCheck();
+
     return builder.build();
   }
 
