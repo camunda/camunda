@@ -79,7 +79,7 @@ public final class DecisionRequirementsQueryTransformerTest extends AbstractTran
   public void shouldQueryByDecisionRequirementsDecisionRequirementsId() {
     // given
     final var decisionRequirementFilter =
-        FilterBuilders.decisionRequirements(f -> f.dmnDecisionRequirementsIds("dId"));
+        FilterBuilders.decisionRequirements(f -> f.decisionRequirementsIds("dId"));
 
     // when
     final var searchRequest = transformQuery(decisionRequirementFilter);
@@ -98,8 +98,7 @@ public final class DecisionRequirementsQueryTransformerTest extends AbstractTran
   @Test
   public void shouldQueryByDecisionRequirementsName() {
     // given
-    final var decisionRequirementFilter =
-        FilterBuilders.decisionRequirements(f -> f.dmnDecisionRequirementsNames("n"));
+    final var decisionRequirementFilter = FilterBuilders.decisionRequirements(f -> f.names("n"));
 
     // when
     final var searchRequest = transformQuery(decisionRequirementFilter);
@@ -119,7 +118,7 @@ public final class DecisionRequirementsQueryTransformerTest extends AbstractTran
   public void shouldQueryByDecisionRequirementsNameAndVersion() {
     // given
     final var decisionRequirementFilter =
-        FilterBuilders.decisionRequirements(f -> f.dmnDecisionRequirementsNames("n").versions(1));
+        FilterBuilders.decisionRequirements(f -> f.names("n").versions(1));
 
     // when
     final var searchRequest = transformQuery(decisionRequirementFilter);

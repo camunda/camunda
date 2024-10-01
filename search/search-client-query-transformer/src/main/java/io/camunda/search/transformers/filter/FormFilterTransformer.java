@@ -26,7 +26,7 @@ public class FormFilterTransformer implements FilterTransformer<FormFilter> {
 
   @Override
   public SearchQuery toSearchQuery(final FormFilter filter) {
-    final var formKeyQuery = getFormByKeysQuery(filter.keys());
+    final var formKeyQuery = getFormByKeysQuery(filter.formKey());
 
     return and(formKeyQuery);
   }

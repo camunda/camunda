@@ -18,10 +18,10 @@ import io.camunda.zeebe.client.api.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
+import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstance;
+import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 import io.camunda.zeebe.client.impl.search.response.DecisionDefinitionImpl;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceTypeEnum;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
@@ -145,9 +145,9 @@ class DecisionQueryTest {
                     f.decisionDefinitionKey(decisionKey)
                         .decisionDefinitionId(dmnDecisionId)
                         .decisionRequirementsKey(decisionRequirementsKey)
-                        .decisionDefinitionName(dmnDecisionName)
+                        .name(dmnDecisionName)
                         .decisionRequirementsId(dmnDecisionRequirementsId)
-                        .decisionDefinitionVersion(version)
+                        .version(version)
                         .tenantId(tenantId))
             .send()
             .join();
@@ -167,7 +167,7 @@ class DecisionQueryTest {
         zeebeClient
             .newDecisionDefinitionQuery()
             .filter(f -> f.decisionDefinitionId(dmnDecisionId))
-            .sort(s -> s.decisionDefinitionVersion().desc())
+            .sort(s -> s.version().desc())
             .send()
             .join();
 
@@ -291,7 +291,7 @@ class DecisionQueryTest {
     final var result =
         zeebeClient
             .newDecisionRequirementsQuery()
-            .filter(f -> f.dmnDecisionRequirementsId(decisionRequirementId))
+            .filter(f -> f.decisionRequirementsId(decisionRequirementId))
             .send()
             .join();
 
@@ -311,7 +311,7 @@ class DecisionQueryTest {
     final var result =
         zeebeClient
             .newDecisionRequirementsQuery()
-            .filter(f -> f.dmnDecisionRequirementsName(decisionRequirementName))
+            .filter(f -> f.name(decisionRequirementName))
             .send()
             .join();
 
@@ -371,13 +371,13 @@ class DecisionQueryTest {
     final var resultAsc =
         zeebeClient
             .newDecisionRequirementsQuery()
-            .sort(s -> s.dmnDecisionRequirementsId().asc())
+            .sort(s -> s.decisionRequirementsId().asc())
             .send()
             .join();
     final var resultDesc =
         zeebeClient
             .newDecisionRequirementsQuery()
-            .sort(s -> s.dmnDecisionRequirementsId().desc())
+            .sort(s -> s.decisionRequirementsId().desc())
             .send()
             .join();
 
@@ -410,17 +410,9 @@ class DecisionQueryTest {
   void shouldSortByDecisionRequirementsName() {
     // when
     final var resultAsc =
-        zeebeClient
-            .newDecisionRequirementsQuery()
-            .sort(s -> s.dmnDecisionRequirementsName().asc())
-            .send()
-            .join();
+        zeebeClient.newDecisionRequirementsQuery().sort(s -> s.name().asc()).send().join();
     final var resultDesc =
-        zeebeClient
-            .newDecisionRequirementsQuery()
-            .sort(s -> s.dmnDecisionRequirementsName().desc())
-            .send()
-            .join();
+        zeebeClient.newDecisionRequirementsQuery().sort(s -> s.name().desc()).send().join();
 
     // Extract unique names from the results
     final List<String> uniqueAscNames =
@@ -532,13 +524,13 @@ class DecisionQueryTest {
     final var result =
         zeebeClient
             .newDecisionInstanceQuery()
-            .filter(f -> f.decisionKey(decisionKey))
+            .filter(f -> f.decisionDefinitionKey(decisionKey))
             .send()
             .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getDecisionKey()).isEqualTo(decisionKey);
+    assertThat(result.items().get(0).getDecisionDefinitionKey()).isEqualTo(decisionKey);
     assertThat(result.items().get(0).getDecisionInstanceKey())
         .isEqualTo(EVALUATED_DECISIONS.get(0).getDecisionInstanceKey());
   }
@@ -562,12 +554,12 @@ class DecisionQueryTest {
   @Test
   public void shouldRetrieveDecisionInstanceByStateAndType() {
     // when
-    final DecisionInstanceStateEnum state = DecisionInstanceStateEnum.EVALUATED;
-    final DecisionInstanceTypeEnum type = DecisionInstanceTypeEnum.DECISION_TABLE;
+    final DecisionInstanceState state = DecisionInstanceState.EVALUATED;
+    final DecisionDefinitionType type = DecisionDefinitionType.DECISION_TABLE;
     final var result =
         zeebeClient
             .newDecisionInstanceQuery()
-            .filter(f -> f.state(state).decisionType(type))
+            .filter(f -> f.state(state).decisionDefinitionType(type))
             .send()
             .join();
 
@@ -583,7 +575,10 @@ class DecisionQueryTest {
     final var result =
         zeebeClient
             .newDecisionInstanceQuery()
-            .filter(f -> f.dmnDecisionId(dmnDecisionId).decisionVersion(decisionVersion))
+            .filter(
+                f ->
+                    f.decisionDefinitionId(dmnDecisionId)
+                        .decisionDefinitionVersion(decisionVersion))
             .send()
             .join();
 

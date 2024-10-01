@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.search.query.UserTaskQuery;
+import io.camunda.service.FormServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -29,9 +30,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class UserTaskQueryController {
 
   private final UserTaskServices userTaskServices;
+  private final FormServices formServices;
 
-  public UserTaskQueryController(final UserTaskServices userTaskServices) {
+  public UserTaskQueryController(
+      final UserTaskServices userTaskServices, final FormServices formServices) {
     this.userTaskServices = userTaskServices;
+    this.formServices = formServices;
   }
 
   @PostMapping(
@@ -74,6 +78,28 @@ public class UserTaskQueryController {
       // Success case: Return the left side with the UserTaskItem wrapped in ResponseEntity
       return ResponseEntity.ok()
           .body(SearchQueryResponseMapper.toUserTask(userTaskServices.getByKey(userTaskKey)));
+    } catch (final Exception exc) {
+      // Error case: Return the right side with ProblemDetail
+      final var problemDetail =
+          RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    }
+  }
+
+  @GetMapping(
+      path = "/{userTaskKey}/form",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public ResponseEntity<Object> getFormByUserTaskKey(
+      @PathVariable("userTaskKey") final Long userTaskKey) {
+    try {
+      final Long formKey = userTaskServices.getByKey(userTaskKey).formKey();
+
+      if (formKey == null) {
+        return ResponseEntity.noContent().build();
+      }
+
+      return ResponseEntity.ok()
+          .body(SearchQueryResponseMapper.toFormItem(formServices.getByKey(formKey)));
     } catch (final Exception exc) {
       // Error case: Return the right side with ProblemDetail
       final var problemDetail =

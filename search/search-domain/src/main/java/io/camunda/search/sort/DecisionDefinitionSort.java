@@ -36,12 +36,12 @@ public record DecisionDefinitionSort(List<FieldSorting> orderings) implements So
       return this;
     }
 
-    public Builder decisionDefinitionName() {
+    public Builder name() {
       currentOrdering = new FieldSorting("name", null);
       return this;
     }
 
-    public Builder decisionDefinitionVersion() {
+    public Builder version() {
       currentOrdering = new FieldSorting("version", null);
       return this;
     }

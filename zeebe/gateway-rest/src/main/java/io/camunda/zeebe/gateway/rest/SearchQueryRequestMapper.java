@@ -13,8 +13,8 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOW
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_ORDER;
 import static java.util.Optional.ofNullable;
 
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.IncidentEntity;
@@ -54,27 +54,7 @@ import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.search.sort.UserSort;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceVariableFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
-import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
@@ -178,12 +158,13 @@ public final class SearchQueryRequestMapper {
           .ifPresent(builder::states);
       ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionKeys);
-      ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::dmnDecisionIds);
-      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::dmnDecisionNames);
-      ofNullable(filter.getDecisionDefinitionVersion()).ifPresent(builder::decisionVersions);
+      ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionDefinitionKeys);
+      ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
+      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::decisionDefinitionNames);
+      ofNullable(filter.getDecisionDefinitionVersion())
+          .ifPresent(builder::decisionDefinitionVersions);
       ofNullable(filter.getDecisionDefinitionType())
-          .map(t -> convertEnum(t, DecisionInstanceType.class))
+          .map(t -> convertEnum(t, DecisionDefinitionType.class))
           .ifPresent(builder::decisionTypes);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
@@ -201,10 +182,10 @@ public final class SearchQueryRequestMapper {
         case "state" -> builder.state();
         case "evaluationDate" -> builder.evaluationDate();
         case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "decisionKey" -> builder.decisionKey();
-        case "dmnDecisionId" -> builder.dmnDecisionId();
-        case "dmnDecisionName" -> builder.dmnDecisionName();
-        case "decisionVersion" -> builder.decisionVersion();
+        case "decisionKey" -> builder.decisionDefinitionKey();
+        case "dmnDecisionId" -> builder.decisionDefinitionId();
+        case "dmnDecisionName" -> builder.decisionDefinitionName();
+        case "decisionVersion" -> builder.decisionDefinitionVersion();
         case "decisionType" -> builder.decisionType();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
@@ -318,8 +299,8 @@ public final class SearchQueryRequestMapper {
     if (filter != null) {
       ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
-      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::decisionDefinitionNames);
-      ofNullable(filter.getVersion()).ifPresent(builder::decisionDefinitionVersions);
+      ofNullable(filter.getName()).ifPresent(builder::names);
+      ofNullable(filter.getVersion()).ifPresent(builder::versions);
       ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
       ofNullable(filter.getDecisionRequirementsKey()).ifPresent(builder::decisionRequirementsKeys);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
@@ -337,11 +318,10 @@ public final class SearchQueryRequestMapper {
             f -> {
               Optional.ofNullable(f.getDecisionRequirementsKey())
                   .ifPresent(builder::decisionRequirementsKeys);
-              Optional.ofNullable(f.getDecisionRequirementsName())
-                  .ifPresent(builder::dmnDecisionRequirementsNames);
+              Optional.ofNullable(f.getName()).ifPresent(builder::names);
               Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
               Optional.ofNullable(f.getDecisionRequirementsId())
-                  .ifPresent(builder::dmnDecisionRequirementsIds);
+                  .ifPresent(builder::decisionRequirementsIds);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
             });
 
@@ -475,8 +455,8 @@ public final class SearchQueryRequestMapper {
       switch (field) {
         case "decisionDefinitionKey" -> builder.decisionDefinitionKey();
         case "decisionDefinitionId" -> builder.decisionDefinitionId();
-        case "decisionDefinitionName" -> builder.decisionDefinitionName();
-        case "decisionDefinitionVersion" -> builder.decisionDefinitionVersion();
+        case "name" -> builder.name();
+        case "version" -> builder.version();
         case "decisionRequirementsId" -> builder.decisionRequirementsId();
         case "decisionRequirementsKey" -> builder.decisionRequirementsKey();
         case "tenantId" -> builder.tenantId();
@@ -494,9 +474,9 @@ public final class SearchQueryRequestMapper {
     } else {
       switch (field) {
         case "decisionRequirementsKey" -> builder.decisionRequirementsKey();
-        case "dmnDecisionRequirementsName" -> builder.dmnDecisionRequirementsName();
+        case "name" -> builder.name();
         case "version" -> builder.version();
-        case "dmnDecisionRequirementsId" -> builder.dmnDecisionRequirementsId();
+        case "decisionRequirementsId" -> builder.decisionRequirementsId();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

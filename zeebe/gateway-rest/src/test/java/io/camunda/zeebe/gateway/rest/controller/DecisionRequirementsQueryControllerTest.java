@@ -43,7 +43,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                   {
                       "tenantId": "t",
                       "decisionRequirementsKey": 0,
-                      "decisionRequirementsName": "name",
+                      "name": "name",
                       "version": 1,
                       "decisionRequirementsId": "id",
                       "resourceName": "rN"
@@ -75,7 +75,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
           {
             "tenantId": "t",
             "decisionRequirementsKey": 1,
-            "decisionRequirementsName": "name",
+            "name": "name",
             "version": 1,
             "decisionRequirementsId": "id",
             "resourceName": "rN"
@@ -158,7 +158,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
               "filter":{
                 "tenantId": "t",
                 "decisionRequirementsKey": 0,
-                "decisionRequirementsName": "name",
+                "name": "name",
                 "version": 1,
                 "decisionRequirementsId": "drId"
               }
@@ -186,9 +186,9 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                     new DecisionRequirementsFilter.Builder()
                         .tenantIds("t")
                         .decisionRequirementsKeys(0L)
-                        .dmnDecisionRequirementsNames("name")
+                        .names("name")
                         .versions(1)
-                        .dmnDecisionRequirementsIds("drId")
+                        .decisionRequirementsIds("drId")
                         .build())
                 .resultConfig(b -> b.xml().exclude())
                 .build());
@@ -208,7 +208,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                         "order": "asc"
                     },
                     {
-                        "field": "dmnDecisionRequirementsName",
+                        "field": "name",
                         "order": "asc"
                     },
                     {
@@ -220,7 +220,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                         "order": "asc"
                     },
                     {
-                        "field": "dmnDecisionRequirementsId",
+                        "field": "decisionRequirementsId",
                         "order": "asc"
                     }
                 ]
@@ -247,13 +247,13 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                     new DecisionRequirementsSort.Builder()
                         .version()
                         .asc()
-                        .dmnDecisionRequirementsName()
+                        .name()
                         .asc()
                         .tenantId()
                         .desc()
                         .decisionRequirementsKey()
                         .asc()
-                        .dmnDecisionRequirementsId()
+                        .decisionRequirementsId()
                         .asc()
                         .build())
                 .resultConfig(b -> b.xml().exclude())

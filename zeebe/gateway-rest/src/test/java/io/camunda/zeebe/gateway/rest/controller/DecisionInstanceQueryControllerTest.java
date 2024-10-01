@@ -11,8 +11,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.DecisionInstanceEntity;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceType;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -81,7 +81,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                       "123456",
                       "ddn",
                       0,
-                      DecisionInstanceType.DECISION_TABLE,
+                      DecisionDefinitionType.DECISION_TABLE,
                       "result")))
           .sortValues(new Object[] {"v"})
           .build();
@@ -99,36 +99,36 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         new TestArguments("{}", q -> q),
         new TestArguments(
             """
-                {
-                    "filter": {
-                        "decisionDefinitionKey": 123456
-                    }
-                }""",
+      {
+          "filter": {
+              "decisionDefinitionKey": 123456
+          }
+      }""",
             q ->
-                q.filter(f -> f.decisionKeys(123456L))
+                q.filter(f -> f.decisionDefinitionKeys(123456L))
                     .resultConfig(r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())),
         new TestArguments(
             """
-                {
-                    "filter": {
-                        "decisionDefinitionType": "DECISION_TABLE"
-                    }
-                }""",
+      {
+          "filter": {
+              "decisionDefinitionType": "DECISION_TABLE"
+          }
+      }""",
             q ->
-                q.filter(f -> f.decisionTypes(DecisionInstanceType.DECISION_TABLE))
+                q.filter(f -> f.decisionTypes(DecisionDefinitionType.DECISION_TABLE))
                     .resultConfig(r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())),
         new TestArguments(
             """
+      {
+          "sort": [
                 {
-                    "sort": [
-                          {
-                              "field": "dmnDecisionName",
-                              "order": "desc"
-                          }
-                    ]
-                }""",
+                    "field": "dmnDecisionName",
+                    "order": "desc"
+                }
+          ]
+      }""",
             q ->
-                q.sort(s -> s.dmnDecisionName().desc())
+                q.sort(s -> s.decisionDefinitionName().desc())
                     .resultConfig(
                         r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())));
   }

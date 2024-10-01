@@ -13,8 +13,8 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceType;
 import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.transformers.ServiceTransformers;
@@ -39,11 +39,13 @@ public final class DecisionInstanceFilterTransformer
     final var processDefinitionKeysQuery =
         getProcessDefinitionKeysQuery(filter.processDefinitionKeys());
     final var processInstanceKeysQuery = getProcessInstanceKeysQuery(filter.processInstanceKeys());
-    final var decisionKeysQuery = getDecisionKeysQuery(filter.decisionKeys());
-    final var dmnDecisionIdsQuery = getDmnDecisionIdsQuery(filter.dmnDecisionIds());
-    final var dmnDecisionNamesQuery = getDmnDecisionNamesQuery(filter.dmnDecisionNames());
-    final var decisionVersionsQuery = getDecisionVersionsQuery(filter.decisionVersions());
-    final var decisionTypesQuery = getDecisionTypesQuery(filter.decisionTypes());
+    final var decisionKeysQuery = getDecisionDefinitionKeysQuery(filter.decisionDefinitionKeys());
+    final var dmnDecisionIdsQuery = getDecisionDefinitionIdsQuery(filter.decisionDefinitionIds());
+    final var dmnDecisionNamesQuery =
+        getDecisionDefinitionNamesQuery(filter.decisionDefinitionNames());
+    final var decisionVersionsQuery =
+        getDecisionDefinitionVersionsQuery(filter.decisionDefinitionVersions());
+    final var decisionTypesQuery = getDecisionDefinitionTypesQuery(filter.decisionTypes());
     final var tenantIdsQuery = getTenantIdsQuery(filter.tenantIds());
 
     return and(
@@ -94,25 +96,29 @@ public final class DecisionInstanceFilterTransformer
     return longTerms("processInstanceKey", processInstanceKeys);
   }
 
-  private SearchQuery getDecisionKeysQuery(final List<Long> decisionKeys) {
+  private SearchQuery getDecisionDefinitionKeysQuery(final List<Long> decisionDefinitionKeys) {
     return stringTerms(
         "decisionDefinitionId",
-        decisionKeys != null ? decisionKeys.stream().map(String::valueOf).toList() : null);
+        decisionDefinitionKeys != null
+            ? decisionDefinitionKeys.stream().map(String::valueOf).toList()
+            : null);
   }
 
-  private SearchQuery getDmnDecisionIdsQuery(final List<String> dmnDecisionIds) {
-    return stringTerms("decisionId", dmnDecisionIds);
+  private SearchQuery getDecisionDefinitionIdsQuery(final List<String> decisionDefinitionIds) {
+    return stringTerms("decisionId", decisionDefinitionIds);
   }
 
-  private SearchQuery getDmnDecisionNamesQuery(final List<String> dmnDecisionNames) {
-    return stringTerms("decisionName", dmnDecisionNames);
+  private SearchQuery getDecisionDefinitionNamesQuery(final List<String> decisionDefinitionNames) {
+    return stringTerms("decisionName", decisionDefinitionNames);
   }
 
-  private SearchQuery getDecisionVersionsQuery(final List<Integer> decisionVersions) {
-    return intTerms("decisionVersion", decisionVersions);
+  private SearchQuery getDecisionDefinitionVersionsQuery(
+      final List<Integer> decisionDefinitionVersions) {
+    return intTerms("decisionVersion", decisionDefinitionVersions);
   }
 
-  private SearchQuery getDecisionTypesQuery(final List<DecisionInstanceType> decisionTypes) {
+  private SearchQuery getDecisionDefinitionTypesQuery(
+      final List<DecisionDefinitionType> decisionTypes) {
     return stringTerms(
         "decisionType",
         decisionTypes != null ? decisionTypes.stream().map(Enum::name).toList() : null);

@@ -56,22 +56,22 @@ public record DecisionInstanceSort(List<FieldSorting> orderings) implements Sort
       return this;
     }
 
-    public Builder decisionKey() {
+    public Builder decisionDefinitionKey() {
       currentOrdering = new FieldSorting("decisionId", null);
       return this;
     }
 
-    public Builder dmnDecisionId() {
+    public Builder decisionDefinitionId() {
       currentOrdering = new FieldSorting("decisionDefinitionId", null);
       return this;
     }
 
-    public Builder dmnDecisionName() {
+    public Builder decisionDefinitionName() {
       currentOrdering = new FieldSorting("decisionName", null);
       return this;
     }
 
-    public Builder decisionVersion() {
+    public Builder decisionDefinitionVersion() {
       currentOrdering = new FieldSorting("decisionVersion", null);
       return this;
     }

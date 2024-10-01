@@ -13,17 +13,17 @@ import static io.camunda.util.CollectionUtil.collectValues;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 
-public record FormFilter(List<Long> keys) implements FilterBase {
+public record FormFilter(List<Long> formKey) implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<FormFilter> {
 
     private List<Long> keys;
 
-    public Builder keys(final Long value, final Long... values) {
-      return keys(collectValues(value, values));
+    public Builder formKeys(final Long value, final Long... values) {
+      return formKeys(collectValues(value, values));
     }
 
-    public Builder keys(final List<Long> values) {
+    public Builder formKeys(final List<Long> values) {
       keys = addValuesToList(keys, values);
       return this;
     }

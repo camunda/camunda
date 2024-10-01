@@ -22,7 +22,7 @@ public final class DecisionRequirementsFilterTransformer
   @Override
   public SearchQuery toSearchQuery(final DecisionRequirementsFilter filter) {
     final var keysQuery = getKeysQuery(filter.decisionRequirementsKeys());
-    final var namesQuery = getNamesQuery(filter.dmnDecisionRequirementsNames());
+    final var namesQuery = getNamesQuery(filter.names());
     final var versionsQuery = getVersionsQuery(filter.versions());
     final var decisionRequirementsIdsQuery =
         getDecisionRequirementsIdsQuery(filter.decisionRequirementsIds());
