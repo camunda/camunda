@@ -54,6 +54,7 @@ import io.camunda.zeebe.client.api.search.query.DecisionInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionRequirementsQuery;
 import io.camunda.zeebe.client.api.search.query.FlownodeInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.IncidentQuery;
+import io.camunda.zeebe.client.api.search.query.ProcessDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.UserTaskQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
@@ -684,6 +685,31 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/21647")
   ClockResetCommandStep1 newClockResetCommand();
+
+  /**
+   * Executes a search request to query process definitions.
+   *
+   * <pre>
+   * long processDefinitionKey = ...;
+   *
+   * zeebeClient
+   *  .newProcessDefinitionQuery()
+   *  .filter((f) -> f.processDefinitionKey(processDefinitionKey))
+   *  .sort((s) -> s.name().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @return a builder for the process instance query
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  ProcessDefinitionQuery newProcessDefinitionQuery();
 
   /**
    * Retrieves a process instance by key.

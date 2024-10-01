@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.api.search.response.DecisionInstance;
 import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
 import io.camunda.zeebe.client.api.search.response.Incident;
+import io.camunda.zeebe.client.api.search.response.ProcessDefinition;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.api.search.response.SearchResponsePage;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.client.impl.search.response.DecisionInstanceImpl;
 import io.camunda.zeebe.client.impl.search.response.DecisionRequirementsImpl;
 import io.camunda.zeebe.client.impl.search.response.FlowNodeInstanceImpl;
 import io.camunda.zeebe.client.impl.search.response.IncidentImpl;
+import io.camunda.zeebe.client.impl.search.response.ProcessDefinitionImpl;
 import io.camunda.zeebe.client.impl.search.response.ProcessInstanceImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchQueryResponseImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchResponsePageImpl;
@@ -43,6 +45,15 @@ import java.util.stream.Collectors;
 public final class SearchResponseMapper {
 
   private SearchResponseMapper() {}
+
+  public static SearchQueryResponse<ProcessDefinition> toProcessDefinitionSearchResponse(
+      final ProcessDefinitionSearchQueryResponse response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<ProcessDefinition> instances =
+        toSearchResponseInstances(response.getItems(), ProcessDefinitionImpl::new);
+
+    return new SearchQueryResponseImpl<>(instances, page);
+  }
 
   public static ProcessInstance toProcessInstanceGetResponse(final ProcessInstanceItem response) {
     return new ProcessInstanceImpl(response);
