@@ -1,0 +1,6 @@
+dependencies:
+- name: camunda-platform
+  repository: oci://ghcr.io/camunda/helm
+  version: 0.0.0-snapshot-alpha
+digest: sha256:e2cdeff1b4957fee80cf7ce0437fb28c995948fb21915e6432bc1a3e32653473
+generated: "2024-10-01T18:15:14.461126+02:00"

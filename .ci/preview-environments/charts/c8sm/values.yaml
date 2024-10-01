@@ -214,8 +214,8 @@ camunda-platform:
         - name: KEYCLOAK_CLIENTS_2_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-test-credentials
-              key: identity-admin-client-password
+              name: identity-secret-for-components
+              key: identity-secret
         - name: KEYCLOAK_CLIENTS_2_REDIRECT_URIS_0
           value: /dummy
         - name: KEYCLOAK_CLIENTS_2_ROOT_URL
