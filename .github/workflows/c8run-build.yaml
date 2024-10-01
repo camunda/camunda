@@ -140,7 +140,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: camunda8-run-build
+          name: camunda8-run-build-windows
           path: .\c8run\camunda8-run*
           retention-days: 1
 
