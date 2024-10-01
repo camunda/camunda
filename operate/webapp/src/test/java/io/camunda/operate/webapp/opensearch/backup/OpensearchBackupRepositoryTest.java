@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncSnapshotOperations;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchSnapshotOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -44,6 +45,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.ErrorResponse;
@@ -62,11 +64,14 @@ class OpensearchBackupRepositoryTest {
 
   @Mock private ObjectMapper objectMapper;
 
+  @Spy private OperateProperties operateProperties;
+
   private OpensearchBackupRepository repository;
 
   @BeforeEach
   public void setUp() {
-    repository = new OpensearchBackupRepository(richOpenSearchClient, objectMapper);
+    repository =
+        new OpensearchBackupRepository(richOpenSearchClient, objectMapper, operateProperties);
   }
 
   private void mockAsynchronSnapshotOperations() {
@@ -209,7 +214,8 @@ class OpensearchBackupRepositoryTest {
                     new OpenSearchSnapshotInfo()
                         .setSnapshot("snapshot")
                         .setState(SnapshotState.SUCCESS)
-                        .setStartTimeInMillis(23L))));
+                        .setStartTimeInMillis(10L)
+                        .setEndTimeInMillis(23L))));
 
     final var response = repository.getBackupState("repo", 5L);
 
@@ -220,7 +226,7 @@ class OpensearchBackupRepositoryTest {
     assertThat(snapshotDetails).hasSize(1);
     final var snapshotDetail = snapshotDetails.get(0);
     assertThat(snapshotDetail.getState()).isEqualTo(SnapshotState.SUCCESS.toString());
-    assertThat(snapshotDetail.getStartTime().toInstant().toEpochMilli()).isEqualTo(23L);
+    assertThat(snapshotDetail.getStartTime().toInstant().toEpochMilli()).isEqualTo(10L);
     assertThat(snapshotDetail.getSnapshotName()).isEqualTo("snapshot");
     assertThat(snapshotDetail.getFailures()).isNull();
   }
