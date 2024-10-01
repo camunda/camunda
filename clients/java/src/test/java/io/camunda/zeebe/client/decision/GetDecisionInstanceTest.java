@@ -22,17 +22,17 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
-public final class GetDecisionDefinitionTest extends ClientRestTest {
+public final class GetDecisionInstanceTest extends ClientRestTest {
 
   @Test
-  void shouldGetDecisionDefinition() {
+  void shouldGetDecisionInstance() {
     // when
-    final long decisionDefinitionKey = 1L;
-    client.newDecisionDefinitionGetRequest(decisionDefinitionKey).send().join();
+    final long decisionInstanceKey = 1L;
+    client.newDecisionInstanceGetRequest(decisionInstanceKey).send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo("/v2/decision-definitions/" + decisionDefinitionKey);
+    assertThat(request.getUrl()).isEqualTo("/v2/decision-instances/" + decisionInstanceKey);
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 }
