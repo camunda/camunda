@@ -73,7 +73,7 @@ final class CamundaExporterIT {
   @BeforeAll
   public void beforeAll() {
     config.elasticsearch.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-    config.elasticsearch.setIndexPrefix("");
+    config.elasticsearch.setIndexPrefix("camunda-record");
     config.bulk.setSize(1); // force flushing on the first record
 
     testClient = new ElasticsearchConnector(config.elasticsearch.getConnect()).createClient();
@@ -101,7 +101,12 @@ final class CamundaExporterIT {
             "template_name",
             "mappings.json");
 
-    index = SchemaTestUtil.mockIndex("qualified_name", "alias", "index_name", "mappings.json");
+    index =
+        SchemaTestUtil.mockIndex(
+            config.elasticsearch.getIndexPrefix() + "qualified_name",
+            "alias",
+            "index_name",
+            "mappings.json");
   }
 
   private Context getContext() {
