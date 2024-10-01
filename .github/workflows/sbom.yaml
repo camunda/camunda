@@ -82,4 +82,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-sbom
-          path: target/bom.xml
+          path: target/bom.json
