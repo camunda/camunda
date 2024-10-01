@@ -57,20 +57,19 @@ public class DbUserState implements UserState, MutableUserState {
   }
 
   @Override
-  public UserRecord getUser(final DirectBuffer username) {
+  public Optional<UserRecord> getUser(final DirectBuffer username) {
     this.username.wrapBuffer(username);
     final var key = userKeyByUsernameColumnFamily.get(this.username);
 
     if (key == null) {
-      return null;
+      return Optional.empty();
     }
 
-    final var user = userByUserKeyColumnFamily.get(key);
-    return user == null ? null : user.getUser().copy();
+    return getUser(key.inner().getValue());
   }
 
   @Override
-  public UserRecord getUser(final String username) {
+  public Optional<UserRecord> getUser(final String username) {
     return getUser(wrapString(username));
   }
 

@@ -13,9 +13,9 @@ import org.agrona.DirectBuffer;
 
 public interface UserState {
 
-  UserRecord getUser(final DirectBuffer username);
+  Optional<UserRecord> getUser(final DirectBuffer username);
 
-  UserRecord getUser(final String username);
+  Optional<UserRecord> getUser(final String username);
 
   /**
    * Returns a user by its key. If no user was found, an empty optional is returned.

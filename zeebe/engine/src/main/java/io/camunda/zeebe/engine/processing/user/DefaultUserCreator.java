@@ -66,7 +66,8 @@ public final class DefaultUserCreator implements StreamProcessorLifecycleAware, 
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    ofNullable(userState.getUser(DEFAULT_USER_USERNAME))
+    userState
+        .getUser(DEFAULT_USER_USERNAME)
         .ifPresentOrElse(
             user -> {
               LOG.debug("Default user already exists, skipping creation");

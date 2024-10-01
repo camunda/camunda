@@ -31,14 +31,14 @@ public class UserStateTest {
     userState = processingState.getUserState();
   }
 
-  @DisplayName("should return null if a user with the given username exists")
+  @DisplayName("should return empty optional if a user with the given username exists")
   @Test
-  void shouldReturnNullIfNoUserWithUsernameExists() {
+  void shouldReturnEmptyOptionalIfNoUserWithUsernameExists() {
     // when
     final var persistedUser = userState.getUser("username" + UUID.randomUUID());
 
     // then
-    assertThat(persistedUser).isNull();
+    assertThat(persistedUser).isEmpty();
   }
 
   @DisplayName("should create user if no user with the given username exists")
@@ -55,7 +55,8 @@ public class UserStateTest {
 
     // then
     final var persistedUser = userState.getUser(user.getUsername());
-    assertThat(persistedUser).isEqualTo(user);
+    assertThat(persistedUser).isPresent();
+    assertThat(persistedUser.get()).isEqualTo(user);
   }
 
   @DisplayName("should throw an exception when creating a user with a username that already exists")
@@ -103,8 +104,8 @@ public class UserStateTest {
     userState.create(userTwo);
 
     // when
-    final var persistedUserOne = userState.getUser(usernameOne);
-    final var persistedUserTwo = userState.getUser(usernameTwo);
+    final var persistedUserOne = userState.getUser(usernameOne).get();
+    final var persistedUserTwo = userState.getUser(usernameTwo).get();
 
     // then
     assertThat(persistedUserOne).isNotEqualTo(persistedUserTwo);
@@ -131,7 +132,7 @@ public class UserStateTest {
             .setEmail(email);
     userState.create(user);
 
-    final var persistedUserBeforeUpdate = userState.getUser(username);
+    final var persistedUserBeforeUpdate = userState.getUser(username).get();
     assertThat(persistedUserBeforeUpdate.getName()).isEqualTo(name);
     assertThat(persistedUserBeforeUpdate.getPassword()).isEqualTo(password);
     assertThat(persistedUserBeforeUpdate.getEmail()).isEqualTo(email);
@@ -146,7 +147,7 @@ public class UserStateTest {
 
     userState.updateUser(user);
 
-    final var persistedUserAfterUpdate = userState.getUser(username);
+    final var persistedUserAfterUpdate = userState.getUser(username).get();
     assertThat(persistedUserAfterUpdate.getName()).isEqualTo(updatedName);
     assertThat(persistedUserAfterUpdate.getPassword()).isEqualTo(updatedPassword);
     assertThat(persistedUserAfterUpdate.getEmail()).isEqualTo(updatedEmail);
