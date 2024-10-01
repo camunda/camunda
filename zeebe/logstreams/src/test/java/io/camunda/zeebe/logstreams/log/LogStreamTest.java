@@ -63,7 +63,7 @@ public final class LogStreamTest {
   @Test
   public void shouldIncreasePositionOnRestart() {
     // given
-    final var writer = logStream.newSyncLogStreamWriter();
+    final var writer = logStream.newBlockingLogStreamWriter();
     writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
     writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
     writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
@@ -87,7 +87,7 @@ public final class LogStreamTest {
   public void shouldNotifyWhenNewRecordsAreAvailable() throws InterruptedException {
     // given
     final CountDownLatch latch = new CountDownLatch(1);
-    logStream.getAsyncLogStream().registerRecordAvailableListener(latch::countDown);
+    logStream.registerRecordAvailableListener(latch::countDown);
 
     // when
     logStreamRule.getLogStreamWriter().tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
@@ -101,10 +101,10 @@ public final class LogStreamTest {
       throws InterruptedException {
     // given
     final CountDownLatch firstListener = new CountDownLatch(1);
-    logStream.getAsyncLogStream().registerRecordAvailableListener(firstListener::countDown);
+    logStream.registerRecordAvailableListener(firstListener::countDown);
 
     final CountDownLatch secondListener = new CountDownLatch(1);
-    logStream.getAsyncLogStream().registerRecordAvailableListener(secondListener::countDown);
+    logStream.registerRecordAvailableListener(secondListener::countDown);
 
     // when
     logStreamRule.getLogStreamWriter().tryWrite(WriteContext.internal(), TestEntry.ofDefaults());

@@ -81,7 +81,7 @@ public final class LogStreamRule extends ExternalResource {
   }
 
   private void openLogStream() {
-    logStream = SyncLogStream.builder(builder).build();
+    logStream = TestLogStream.builder(builder).build();
     listLogStorage.setPositionListener(logStream::setLastWrittenPosition);
   }
 

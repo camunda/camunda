@@ -48,7 +48,7 @@ public final class LogStreamReaderTest {
   @Before
   public void setUp() {
     reader = readerRule.getLogStreamReader();
-    writer = logStreamRule.getLogStream().newSyncLogStreamWriter();
+    writer = logStreamRule.getLogStream().newBlockingLogStreamWriter();
   }
 
   @Test
