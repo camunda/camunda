@@ -278,7 +278,6 @@ jobs:
               echo "Tagging optimize release docker image with \`${DOCKER_LATEST_TAG}\`"
               tags+=("${DOCKER_IMAGE_TEAM}:${DOCKER_LATEST_TAG}")
               tags+=("${DOCKER_IMAGE_DOCKER_HUB}:${DOCKER_LATEST_TAG}")
-              tags+=("${DOCKER_INTERNAL_IMAGE_DOCKER_HUB}:${DOCKER_LATEST_TAG}")
           fi
 
           printf -v tag_arguments -- "-t %s " "${tags[@]}"
