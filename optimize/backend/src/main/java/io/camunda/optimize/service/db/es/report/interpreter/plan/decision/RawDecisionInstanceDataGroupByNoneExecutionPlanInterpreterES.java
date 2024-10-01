@@ -18,22 +18,33 @@ import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.plan.decision.RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreter;
 import io.camunda.optimize.service.db.report.plan.decision.DecisionExecutionPlan;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreterES
     extends AbstractDecisionExecutionPlanInterpreterES
     implements RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreter {
-  @Getter private final DecisionDefinitionReader decisionDefinitionReader;
-  @Getter private final DecisionQueryFilterEnhancerES queryFilterEnhancer;
-  @Getter private final DecisionGroupByInterpreterFacadeES groupByInterpreter;
-  @Getter private final DecisionViewInterpreterFacadeES viewInterpreter;
-  @Getter private final OptimizeElasticsearchClient esClient;
+
+  private final DecisionDefinitionReader decisionDefinitionReader;
+  private final DecisionQueryFilterEnhancerES queryFilterEnhancer;
+  private final DecisionGroupByInterpreterFacadeES groupByInterpreter;
+  private final DecisionViewInterpreterFacadeES viewInterpreter;
+  private final OptimizeElasticsearchClient esClient;
+
+  public RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreterES(
+      DecisionDefinitionReader decisionDefinitionReader,
+      DecisionQueryFilterEnhancerES queryFilterEnhancer,
+      DecisionGroupByInterpreterFacadeES groupByInterpreter,
+      DecisionViewInterpreterFacadeES viewInterpreter,
+      OptimizeElasticsearchClient esClient) {
+    this.decisionDefinitionReader = decisionDefinitionReader;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+    this.groupByInterpreter = groupByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+    this.esClient = esClient;
+  }
 
   @Override
   public CommandEvaluationResult<Object> interpret(
@@ -41,5 +52,25 @@ public class RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreterES
     final CommandEvaluationResult<Object> commandResult = super.interpret(executionContext);
     addNewVariablesAndDtoFieldsToTableColumnConfig(executionContext, commandResult);
     return commandResult;
+  }
+
+  public DecisionDefinitionReader getDecisionDefinitionReader() {
+    return this.decisionDefinitionReader;
+  }
+
+  public DecisionQueryFilterEnhancerES getQueryFilterEnhancer() {
+    return this.queryFilterEnhancer;
+  }
+
+  public DecisionGroupByInterpreterFacadeES getGroupByInterpreter() {
+    return this.groupByInterpreter;
+  }
+
+  public DecisionViewInterpreterFacadeES getViewInterpreter() {
+    return this.viewInterpreter;
+  }
+
+  public OptimizeElasticsearchClient getEsClient() {
+    return this.esClient;
   }
 }

@@ -11,14 +11,22 @@ import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.BeanFactory;
 
-@AllArgsConstructor
 public abstract class AbstractIngestedImportMediatorFactory {
+
   protected final BeanFactory beanFactory;
   protected final ImportIndexHandlerRegistry importIndexHandlerRegistry;
   protected final ConfigurationService configurationService;
+
+  public AbstractIngestedImportMediatorFactory(
+      final BeanFactory beanFactory,
+      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final ConfigurationService configurationService) {
+    this.beanFactory = beanFactory;
+    this.importIndexHandlerRegistry = importIndexHandlerRegistry;
+    this.configurationService = configurationService;
+  }
 
   public abstract List<ImportMediator> createMediators();
 }

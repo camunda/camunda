@@ -15,11 +15,10 @@ import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNeste
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessVariableHelperES {
+
+  private ProcessVariableHelperES() {}
 
   public static BoolQuery.Builder createFilterForUndefinedOrNullQueryBuilder(
       final String variableName, final VariableType variableType) {

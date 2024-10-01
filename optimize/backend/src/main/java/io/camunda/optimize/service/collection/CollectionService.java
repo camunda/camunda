@@ -33,21 +33,34 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class CollectionService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CollectionService.class);
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionRelationService collectionRelationService;
   private final CollectionEntityService collectionEntityService;
   private final CollectionWriter collectionWriter;
   private final CollectionReader collectionReader;
   private final AbstractIdentityService identityService;
+
+  public CollectionService(
+      final AuthorizedCollectionService authorizedCollectionService,
+      final CollectionRelationService collectionRelationService,
+      final CollectionEntityService collectionEntityService,
+      final CollectionWriter collectionWriter,
+      final CollectionReader collectionReader,
+      final AbstractIdentityService identityService) {
+    this.authorizedCollectionService = authorizedCollectionService;
+    this.collectionRelationService = collectionRelationService;
+    this.collectionEntityService = collectionEntityService;
+    this.collectionWriter = collectionWriter;
+    this.collectionReader = collectionReader;
+    this.identityService = identityService;
+  }
 
   public IdResponseDto createNewCollectionAndReturnId(
       final String userId,

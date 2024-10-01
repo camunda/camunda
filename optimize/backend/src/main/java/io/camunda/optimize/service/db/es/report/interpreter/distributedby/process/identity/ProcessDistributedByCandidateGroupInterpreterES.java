@@ -19,21 +19,32 @@ import io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessDistributedByCandidateGroupInterpreterES
     extends AbstractProcessDistributedByIdentityInterpreterES {
-  @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
-  @Getter private final ConfigurationService configurationService;
-  @Getter private final LocalizationService localizationService;
-  @Getter private final DefinitionService definitionService;
-  @Getter private final AssigneeCandidateGroupService assigneeCandidateGroupService;
+
+  private final ProcessViewInterpreterFacadeES viewInterpreter;
+  private final ConfigurationService configurationService;
+  private final LocalizationService localizationService;
+  private final DefinitionService definitionService;
+  private final AssigneeCandidateGroupService assigneeCandidateGroupService;
+
+  public ProcessDistributedByCandidateGroupInterpreterES(
+      ProcessViewInterpreterFacadeES viewInterpreter,
+      ConfigurationService configurationService,
+      LocalizationService localizationService,
+      DefinitionService definitionService,
+      AssigneeCandidateGroupService assigneeCandidateGroupService) {
+    this.viewInterpreter = viewInterpreter;
+    this.configurationService = configurationService;
+    this.localizationService = localizationService;
+    this.definitionService = definitionService;
+    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
+  }
 
   @Override
   public Set<ProcessDistributedBy> getSupportedDistributedBys() {
@@ -48,5 +59,25 @@ public class ProcessDistributedByCandidateGroupInterpreterES
   @Override
   protected IdentityType getIdentityType() {
     return IdentityType.GROUP;
+  }
+
+  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return this.viewInterpreter;
+  }
+
+  public ConfigurationService getConfigurationService() {
+    return this.configurationService;
+  }
+
+  public LocalizationService getLocalizationService() {
+    return this.localizationService;
+  }
+
+  public DefinitionService getDefinitionService() {
+    return this.definitionService;
+  }
+
+  public AssigneeCandidateGroupService getAssigneeCandidateGroupService() {
+    return this.assigneeCandidateGroupService;
   }
 }

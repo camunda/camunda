@@ -16,22 +16,26 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public abstract class DatabaseMetadataService<CLIENT extends DatabaseClient> {
+
   protected static final String ERROR_MESSAGE_REQUEST =
       "Could not write Optimize metadata (version and installationID) to database.";
   protected static final String ERROR_MESSAGE_READING_METADATA_DOC =
       "Failed retrieving the Optimize metadata document from database!";
   protected static final String CURRENT_OPTIMIZE_VERSION = Version.VERSION;
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(DatabaseMetadataService.class);
 
   protected final ObjectMapper objectMapper;
+
+  public DatabaseMetadataService(final ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
 
   public abstract Optional<MetadataDto> readMetadata(final CLIENT dbClient);
 
@@ -88,7 +92,8 @@ public abstract class DatabaseMetadataService<CLIENT extends DatabaseClient> {
     return generateUpdateScript(newInstallationId);
   }
 
-  protected ScriptData generateUpdateScript(String newInstallationId, String newSchemaVersion) {
+  protected ScriptData generateUpdateScript(
+      final String newInstallationId, final String newSchemaVersion) {
     final Map<String, Object> params = new HashMap<>();
     params.put("newInstallationId", newInstallationId);
     String scriptString =
@@ -109,7 +114,7 @@ public abstract class DatabaseMetadataService<CLIENT extends DatabaseClient> {
     return new ScriptData(params, scriptString);
   }
 
-  private ScriptData generateUpdateScript(String newInstallationId) {
+  private ScriptData generateUpdateScript(final String newInstallationId) {
     return generateUpdateScript(newInstallationId, null);
   }
 }

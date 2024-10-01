@@ -29,11 +29,10 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DateHistogramFilterUtilES {
+
+  private DateHistogramFilterUtilES() {}
 
   public static BoolQuery.Builder createModelElementDateHistogramLimitingFilterFor(
       final DateAggregationContextES context, final DateTimeFormatter dateTimeFormatter) {

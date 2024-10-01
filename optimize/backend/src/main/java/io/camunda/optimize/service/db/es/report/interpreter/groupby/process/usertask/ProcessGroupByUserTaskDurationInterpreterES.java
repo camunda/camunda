@@ -35,22 +35,32 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessGroupByUserTaskDurationInterpreterES
     extends AbstractGroupByUserTaskInterpreterES {
 
   private final MinMaxStatsServiceES minMaxStatsService;
   private final DurationAggregationServiceES durationAggregationService;
-  @Getter private final DefinitionService definitionService;
-  @Getter private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
-  @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
+  private final DefinitionService definitionService;
+  private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
+  private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  public ProcessGroupByUserTaskDurationInterpreterES(
+      MinMaxStatsServiceES minMaxStatsService,
+      DurationAggregationServiceES durationAggregationService,
+      DefinitionService definitionService,
+      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      ProcessViewInterpreterFacadeES viewInterpreter) {
+    this.minMaxStatsService = minMaxStatsService;
+    this.durationAggregationService = durationAggregationService;
+    this.definitionService = definitionService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
@@ -127,5 +137,17 @@ public class ProcessGroupByUserTaskDurationInterpreterES
     return DurationScriptUtilES.getUserTaskDurationScript(
         LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
         FLOW_NODE_INSTANCES + "." + userTaskDurationTime.getDurationFieldName());
+  }
+
+  public DefinitionService getDefinitionService() {
+    return this.definitionService;
+  }
+
+  public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
+    return this.distributedByInterpreter;
+  }
+
+  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return this.viewInterpreter;
   }
 }

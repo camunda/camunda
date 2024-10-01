@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 
 public interface ProcessDistributedByProcessInterpreter {
+
   record ProcessBucket(
       String procDefKey,
       String version,

@@ -29,18 +29,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class DashboardImportService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DashboardImportService.class);
   private final DashboardWriter dashboardWriter;
   private final DashboardService dashboardService;
   private final OptimizeIndexNameService optimizeIndexNameService;
+
+  public DashboardImportService(
+      final DashboardWriter dashboardWriter,
+      final DashboardService dashboardService,
+      final OptimizeIndexNameService optimizeIndexNameService) {
+    this.dashboardWriter = dashboardWriter;
+    this.dashboardService = dashboardService;
+    this.optimizeIndexNameService = optimizeIndexNameService;
+  }
 
   public void validateAllDashboardsOrFail(
       final List<DashboardDefinitionExportDto> dashboardsToImport) {
@@ -58,7 +65,7 @@ public class DashboardImportService {
             indexVersion -> {
               try {
                 validateIndexVersionOrFail(indexVersion);
-              } catch (OptimizeImportIncorrectIndexVersionException e) {
+              } catch (final OptimizeImportIncorrectIndexVersionException e) {
                 indexMismatches.addAll(e.getMismatchingIndices());
               }
             });
@@ -138,7 +145,7 @@ public class DashboardImportService {
     try {
       dashboardService.validateDashboardFilters(
           userId, dashboardToImport.getAvailableFilters(), dashboardToImport.getTiles());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OptimizeImportFileInvalidException(
           "The provided file includes at least one dashboard with invalid filters. Error: "
               + e.getMessage());

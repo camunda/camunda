@@ -12,20 +12,17 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
-@Setter
 public abstract class DatabaseSchemaManager<CLIENT extends DatabaseClient, BUILDER> {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DatabaseSchemaManager.class);
   protected ConfigurationService configurationService;
   protected OptimizeIndexNameService indexNameService;
 
-  @Getter protected final List<IndexMappingCreator<BUILDER>> mappings;
+  protected final List<IndexMappingCreator<BUILDER>> mappings;
 
   protected DatabaseSchemaManager(
       final ConfigurationService configurationService,
@@ -85,5 +82,17 @@ public abstract class DatabaseSchemaManager<CLIENT extends DatabaseClient, BUILD
   public void createOrUpdateOptimizeIndex(
       final CLIENT dbClient, final IndexMappingCreator<BUILDER> mapping) {
     createOrUpdateOptimizeIndex(dbClient, mapping, Collections.emptySet());
+  }
+
+  public void setConfigurationService(ConfigurationService configurationService) {
+    this.configurationService = configurationService;
+  }
+
+  public void setIndexNameService(OptimizeIndexNameService indexNameService) {
+    this.indexNameService = indexNameService;
+  }
+
+  public List<IndexMappingCreator<BUILDER>> getMappings() {
+    return this.mappings;
   }
 }

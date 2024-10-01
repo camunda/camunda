@@ -14,15 +14,18 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class ProcessOverviewReader {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessOverviewReader.class);
   private final ProcessRepository processRepository;
+
+  public ProcessOverviewReader(final ProcessRepository processRepository) {
+    this.processRepository = processRepository;
+  }
 
   public Map<String, ProcessOverviewDto> getProcessOverviewsByKey(
       final Set<String> processDefinitionKeys) {

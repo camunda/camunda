@@ -12,15 +12,17 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
 @Provider
-@Slf4j
 public class ServiceUnavailableExceptionMapper
     implements ExceptionMapper<ServiceUnavailableException> {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ServiceUnavailableExceptionMapper.class);
+
   @Override
-  public Response toResponse(ServiceUnavailableException exception) {
+  public Response toResponse(final ServiceUnavailableException exception) {
     log.info("Mapping ServiceUnavailableException");
 
     return Response.status(Response.Status.SERVICE_UNAVAILABLE)

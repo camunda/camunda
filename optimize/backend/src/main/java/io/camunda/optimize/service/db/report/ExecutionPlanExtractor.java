@@ -24,13 +24,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 public class ExecutionPlanExtractor {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ExecutionPlanExtractor.class);
   final ApplicationContext applicationContext;
   final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
@@ -77,9 +78,9 @@ public class ExecutionPlanExtractor {
       log.warn(
           format(
               """
-                The following settings combination of the report data is not supported in Optimize (commandKey=%s):
-                {}
-                Therefore returning error result.""",
+                  The following settings combination of the report data is not supported in Optimize (commandKey=%s):
+                  {}
+                  Therefore returning error result.""",
               commandKey),
           objectMapper.writeValueAsString(reportDefinition));
     } catch (JsonProcessingException e) {

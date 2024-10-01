@@ -14,16 +14,18 @@ import io.camunda.optimize.service.db.es.builders.OptimizeGetRequestBuilderES;
 import io.camunda.optimize.service.db.reader.TerminatedUserSessionReader;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class TerminatedUserSessionReaderES extends TerminatedUserSessionReader {
 
   private final OptimizeElasticsearchClient esClient;
+
+  public TerminatedUserSessionReaderES(OptimizeElasticsearchClient esClient) {
+    this.esClient = esClient;
+  }
 
   @Override
   protected boolean sessionIdExists(final String sessionId) throws IOException {

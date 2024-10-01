@@ -25,17 +25,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class ProcessVariableReader {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessVariableReader.class);
   private final VariableLabelReader variableLabelReader;
   private final VariableRepository variableRepository;
+
+  public ProcessVariableReader(
+      VariableLabelReader variableLabelReader, VariableRepository variableRepository) {
+    this.variableLabelReader = variableLabelReader;
+    this.variableRepository = variableRepository;
+  }
 
   public List<ProcessVariableNameResponseDto> getVariableNames(
       final ProcessVariableNameRequestDto variableNameRequest) {

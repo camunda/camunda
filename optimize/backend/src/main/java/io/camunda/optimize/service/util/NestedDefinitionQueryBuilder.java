@@ -16,15 +16,21 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.service.DefinitionService;
 import java.util.List;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class NestedDefinitionQueryBuilder {
 
   private final String nestedField;
   private final String definitionKeyField;
   private final String versionField;
   private final String tenantIdField;
+
+  public NestedDefinitionQueryBuilder(
+      String nestedField, String definitionKeyField, String versionField, String tenantIdField) {
+    this.nestedField = nestedField;
+    this.definitionKeyField = definitionKeyField;
+    this.versionField = versionField;
+    this.tenantIdField = tenantIdField;
+  }
 
   public Query.Builder createNestedDocDefinitionQueryBuilder(
       final String definitionKey,

@@ -10,11 +10,11 @@ package io.camunda.optimize.dto.optimize.rest.report.measure;
 import io.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RawDataMeasureResponseDto extends MeasureResponseDto<List<RawDataInstanceDto>> {
+
+  protected RawDataMeasureResponseDto() {}
+
   // overridden to make sure the type is always available and correct for these classes
   @Override
   public ResultType getType() {

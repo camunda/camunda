@@ -37,21 +37,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
-@AllArgsConstructor
 public class ProcessInstanceWriter {
+
   private static final String NEW_INSTANCE = "instance";
   private static final String FORMATTER = "dateFormatPattern";
   private static final String SOURCE_EXPORT_INDEX = "sourceExportIndex";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessInstanceWriter.class);
   private final IndexRepository indexRepository;
   private final ObjectMapper objectMapper;
   private final ImportRequestDtoFactory importRequestDtoFactory;
   private final ProcessInstanceRepository processInstanceRepository;
+
+  public ProcessInstanceWriter(
+      final IndexRepository indexRepository,
+      final ObjectMapper objectMapper,
+      final ImportRequestDtoFactory importRequestDtoFactory,
+      final ProcessInstanceRepository processInstanceRepository) {
+    this.indexRepository = indexRepository;
+    this.objectMapper = objectMapper;
+    this.importRequestDtoFactory = importRequestDtoFactory;
+    this.processInstanceRepository = processInstanceRepository;
+  }
 
   public List<ImportRequestDto> generateProcessInstanceImports(
       final List<ProcessInstanceDto> processInstances, final String sourceExportIndex) {

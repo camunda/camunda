@@ -156,7 +156,6 @@
 //   }
 //
 //   @Data
-//   @AllArgsConstructor
 //   protected static class IdentityAndRole {
 //     IdentityDto identityDto;
 //     RoleType roleType;

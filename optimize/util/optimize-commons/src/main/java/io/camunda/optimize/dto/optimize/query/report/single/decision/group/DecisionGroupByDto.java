@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.camunda.optimize.dto.optimize.query.report.Combinable;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByValueDto;
 import java.util.Objects;
-import lombok.Data;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -39,32 +38,90 @@ import lombok.Data;
       name = GROUP_BY_OUTPUT_VARIABLE_TYPE),
   @JsonSubTypes.Type(value = DecisionGroupByMatchedRuleDto.class, name = GROUP_BY_MATCHED_RULE_TYPE)
 })
-@Data
 public abstract class DecisionGroupByDto<VALUE extends DecisionGroupByValueDto>
     implements Combinable {
 
   @JsonProperty protected DecisionGroupByType type;
   protected VALUE value;
 
-  @Override
-  public String toString() {
-    return type.getId();
-  }
+  public DecisionGroupByDto() {}
 
   @Override
-  public boolean isCombinable(Object o) {
+  public boolean isCombinable(final Object o) {
     if (this == o) {
       return true;
     }
     if (!(o instanceof DecisionGroupByDto)) {
       return false;
     }
-    DecisionGroupByDto<?> that = (DecisionGroupByDto<?>) o;
+    final DecisionGroupByDto<?> that = (DecisionGroupByDto<?>) o;
     return Objects.equals(type, that.type) && Combinable.isCombinable(value, that.value);
   }
 
   @JsonIgnore
   public String createCommandKey() {
+    return type.getId();
+  }
+
+  public DecisionGroupByType getType() {
+    return type;
+  }
+
+  @JsonProperty
+  public void setType(final DecisionGroupByType type) {
+    this.type = type;
+  }
+
+  public VALUE getValue() {
+    return value;
+  }
+
+  public void setValue(final VALUE value) {
+    this.value = value;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DecisionGroupByDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    final Object $type = getType();
+    result = result * PRIME + ($type == null ? 43 : $type.hashCode());
+    final Object $value = getValue();
+    result = result * PRIME + ($value == null ? 43 : $value.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof DecisionGroupByDto)) {
+      return false;
+    }
+    final DecisionGroupByDto<?> other = (DecisionGroupByDto<?>) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    final Object this$type = getType();
+    final Object other$type = other.getType();
+    if (this$type == null ? other$type != null : !this$type.equals(other$type)) {
+      return false;
+    }
+    final Object this$value = getValue();
+    final Object other$value = other.getValue();
+    if (this$value == null ? other$value != null : !this$value.equals(other$value)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
     return type.getId();
   }
 }

@@ -168,7 +168,6 @@
 //   }
 //
 //   @Data
-//   @AllArgsConstructor
 //   protected static class ReportScenario {
 //
 //     ReportType reportType;

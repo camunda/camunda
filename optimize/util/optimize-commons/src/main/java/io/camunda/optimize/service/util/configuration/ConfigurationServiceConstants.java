@@ -8,10 +8,7 @@
 package io.camunda.optimize.service.util.configuration;
 
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConfigurationServiceConstants {
 
   public static final String SECURITY = "$.security";
@@ -208,6 +205,8 @@ public class ConfigurationServiceConstants {
   public static final String ELASTICSEARCH_DATABASE_PROPERTY = "elasticsearch";
   public static final String OPENSEARCH_DATABASE_PROPERTY = "opensearch";
   public static final String MULTITENANCY_ENABLED = "$.multitenancy.enabled";
+
+  private ConfigurationServiceConstants() {}
   // @formatter:on
 
 }

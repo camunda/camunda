@@ -44,17 +44,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockserver.integration.ClientAndServer;
+import org.slf4j.Logger;
 
-@Slf4j
 public class DatabaseIntegrationTestExtension implements BeforeEachCallback, AfterEachCallback {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(DatabaseIntegrationTestExtension.class);
   private final DatabaseTestService databaseTestService;
 
   public DatabaseIntegrationTestExtension(final DatabaseType databaseType) {
@@ -158,12 +158,10 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     databaseTestService.deleteAllOptimizeData();
   }
 
-  @SneakyThrows
   public void deleteAllDecisionInstanceIndices() {
     databaseTestService.deleteAllIndicesContainingTerm(DECISION_INSTANCE_INDEX_PREFIX);
   }
 
-  @SneakyThrows
   public void deleteAllProcessInstanceIndices() {
     databaseTestService.deleteAllIndicesContainingTerm(PROCESS_INSTANCE_INDEX_PREFIX);
   }
@@ -210,30 +208,25 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class);
   }
 
-  @SneakyThrows
   public OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(
       final String dbType, final String engine) {
     return databaseTestService.getLastImportTimestampOfTimestampBasedImportIndex(dbType, engine);
   }
 
-  @SneakyThrows
   public List<VariableUpdateInstanceDto> getAllStoredVariableUpdateInstanceDtos() {
     return getAllDocumentsOfIndexAs(
         VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "_*", VariableUpdateInstanceDto.class);
   }
 
-  @SneakyThrows
   public void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix) {
     databaseTestService.deleteAllZeebeRecordsForPrefix(zeebeRecordPrefix);
   }
 
-  @SneakyThrows
   public void deleteAllOtherZeebeRecordsWithPrefix(
       final String zeebeRecordPrefix, final String recordsToKeep) {
     databaseTestService.deleteAllOtherZeebeRecordsWithPrefix(zeebeRecordPrefix, recordsToKeep);
   }
 
-  @SneakyThrows
   public void updateZeebeRecordsWithPositionForPrefix(
       final String zeebeRecordPrefix,
       final String indexName,
@@ -243,7 +236,6 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
         zeebeRecordPrefix, indexName, position, updateScript);
   }
 
-  @SneakyThrows
   public void updateZeebeProcessRecordsOfBpmnElementTypeForPrefix(
       final String zeebeRecordPrefix,
       final BpmnElementType bpmnElementType,
@@ -252,13 +244,11 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
         zeebeRecordPrefix, bpmnElementType, updateScript);
   }
 
-  @SneakyThrows
   public void updateZeebeRecordsForPrefix(
       final String zeebeRecordPrefix, final String indexName, final String updateScript) {
     databaseTestService.updateZeebeRecordsForPrefix(zeebeRecordPrefix, indexName, updateScript);
   }
 
-  @SneakyThrows
   public void updateUserTaskDurations(
       final String processInstanceId, final String processDefinitionKey, final long duration) {
     databaseTestService.updateUserTaskDurations(processInstanceId, processDefinitionKey, duration);

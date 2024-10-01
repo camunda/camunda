@@ -15,14 +15,15 @@ import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.MappingMetadataUtil;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Collection;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class MappingMetadataUtilES extends MappingMetadataUtil<IndexSettings.Builder> {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtilES.class);
 
   public MappingMetadataUtilES(OptimizeElasticsearchClient dbClient) {
     super(dbClient);

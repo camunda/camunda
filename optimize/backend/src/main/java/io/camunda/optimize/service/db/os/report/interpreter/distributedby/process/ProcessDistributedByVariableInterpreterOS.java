@@ -55,8 +55,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
@@ -72,15 +70,24 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ProcessDistributedByVariableInterpreterOS
     extends AbstractProcessDistributedByInterpreterOS {
+
   private static final String PARENT_FILTER_AGGREGATION = "matchAllFilter";
 
-  @Getter private final ProcessViewInterpreterFacadeOS viewInterpreter;
+  private final ProcessViewInterpreterFacadeOS viewInterpreter;
   private final DateAggregationServiceOS dateAggregationService;
   private final VariableAggregationServiceOS variableAggregationService;
+
+  public ProcessDistributedByVariableInterpreterOS(
+      ProcessViewInterpreterFacadeOS viewInterpreter,
+      DateAggregationServiceOS dateAggregationService,
+      VariableAggregationServiceOS variableAggregationService) {
+    this.viewInterpreter = viewInterpreter;
+    this.dateAggregationService = dateAggregationService;
+    this.variableAggregationService = variableAggregationService;
+  }
 
   @Override
   public Set<ProcessDistributedBy> getSupportedDistributedBys() {
@@ -324,5 +331,9 @@ public class ProcessDistributedByVariableInterpreterOS
   private AggregateByDateUnit getDistributeByDateUnit(
       final ExecutionContext<ProcessReportDataDto, ?> context) {
     return context.getReportData().getConfiguration().getDistributeByDateVariableUnit();
+  }
+
+  public ProcessViewInterpreterFacadeOS getViewInterpreter() {
+    return this.viewInterpreter;
   }
 }

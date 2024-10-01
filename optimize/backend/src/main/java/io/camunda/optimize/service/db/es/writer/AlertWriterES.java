@@ -37,20 +37,27 @@ import jakarta.json.JsonObject;
 import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class AlertWriterES implements AlertWriter {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(AlertWriterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final TaskRepositoryES taskRepositoryES;
+
+  public AlertWriterES(
+      OptimizeElasticsearchClient esClient,
+      ObjectMapper objectMapper,
+      TaskRepositoryES taskRepositoryES) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.taskRepositoryES = taskRepositoryES;
+  }
 
   @Override
   public AlertDefinitionDto createAlert(final AlertDefinitionDto alertDefinitionDto) {

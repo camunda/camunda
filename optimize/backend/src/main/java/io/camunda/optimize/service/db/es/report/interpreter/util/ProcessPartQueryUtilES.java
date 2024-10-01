@@ -30,12 +30,12 @@ import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.commons.text.StringSubstitutor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessPartQueryUtilES extends AbstractProcessPartQueryUtil {
+
+  private ProcessPartQueryUtilES() {}
+
   public static Map<String, Aggregate> getProcessPartAggregations(
       final Map<String, Aggregate> aggs) {
     return aggs.get(NESTED_AGGREGATION).nested().aggregations();

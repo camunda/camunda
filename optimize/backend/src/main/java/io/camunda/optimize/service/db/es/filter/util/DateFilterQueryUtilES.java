@@ -25,15 +25,15 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DateFilterQueryUtilES {
+
   private static final DateTimeFormatter formatter =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DateFilterQueryUtilES.class);
+
+  private DateFilterQueryUtilES() {}
 
   public static void addFilters(
       final BoolQuery.Builder query,

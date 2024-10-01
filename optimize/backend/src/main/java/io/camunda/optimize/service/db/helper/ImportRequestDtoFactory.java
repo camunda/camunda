@@ -17,13 +17,16 @@ import io.camunda.optimize.dto.optimize.RequestType;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class ImportRequestDtoFactory {
+
   final ObjectMapper objectMapper;
+
+  public ImportRequestDtoFactory(final ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
 
   public ImportRequestDto createImportRequestForProcessInstance(
       final ProcessInstanceDto processInstanceDto,

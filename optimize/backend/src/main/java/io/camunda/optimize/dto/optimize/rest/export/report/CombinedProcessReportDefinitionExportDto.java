@@ -14,16 +14,9 @@ import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefi
 import io.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import io.camunda.optimize.service.db.schema.index.report.CombinedReportIndex;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@NoArgsConstructor
-@EqualsAndHashCode(callSuper = true)
-@Data
 public class CombinedProcessReportDefinitionExportDto extends ReportDefinitionExportDto {
+
   @NotNull private CombinedReportDataDto data;
 
   public CombinedProcessReportDefinitionExportDto(
@@ -35,11 +28,68 @@ public class CombinedProcessReportDefinitionExportDto extends ReportDefinitionEx
         reportDefinition.getName(),
         reportDefinition.getDescription(),
         reportDefinition.getCollectionId());
-    this.data = reportDefinition.getData();
+    data = reportDefinition.getData();
   }
+
+  public CombinedProcessReportDefinitionExportDto(@NotNull final CombinedReportDataDto data) {
+    this.data = data;
+  }
+
+  public CombinedProcessReportDefinitionExportDto() {}
 
   @Override
   public ExportEntityType getExportEntityType() {
     return COMBINED_REPORT;
+  }
+
+  public @NotNull CombinedReportDataDto getData() {
+    return data;
+  }
+
+  public void setData(@NotNull final CombinedReportDataDto data) {
+    this.data = data;
+  }
+
+  @Override
+  public String toString() {
+    return "CombinedProcessReportDefinitionExportDto(data=" + getData() + ")";
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof CombinedProcessReportDefinitionExportDto)) {
+      return false;
+    }
+    final CombinedProcessReportDefinitionExportDto other =
+        (CombinedProcessReportDefinitionExportDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final Object this$data = getData();
+    final Object other$data = other.getData();
+    if (this$data == null ? other$data != null : !this$data.equals(other$data)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof CombinedProcessReportDefinitionExportDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    final Object $data = getData();
+    result = result * PRIME + ($data == null ? 43 : $data.hashCode());
+    return result;
   }
 }

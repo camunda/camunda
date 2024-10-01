@@ -16,14 +16,14 @@ import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
 import io.camunda.optimize.test.util.PropertyUtil;
 import java.util.Properties;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.springframework.context.ApplicationContext;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class IntegrationTestConfigurationUtil {
+
   private static final String DEFAULT_PROPERTIES_PATH = "integration-extensions.properties";
   private static final Properties PROPERTIES = PropertyUtil.loadProperties(DEFAULT_PROPERTIES_PATH);
+
+  private IntegrationTestConfigurationUtil() {}
 
   private static String getDefaultEngineName() {
     return PROPERTIES.getProperty("camunda.optimize.engine.default.name");

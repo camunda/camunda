@@ -22,7 +22,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +30,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ExternalVariableUpdateImportIndexHandler
     implements ImportIndexHandler<TimestampBasedImportPage, TimestampBasedImportIndexDto> {
@@ -49,6 +47,8 @@ public class ExternalVariableUpdateImportIndexHandler
 
   private OffsetDateTime timestampOfLastEntity = BEGINNING_OF_TIME;
   private OffsetDateTime persistedTimestampOfLastEntity = BEGINNING_OF_TIME;
+
+  public ExternalVariableUpdateImportIndexHandler() {}
 
   public TimestampBasedImportIndexDto getIndexStateDto() {
     TimestampBasedImportIndexDto indexToStore = new TimestampBasedImportIndexDto();

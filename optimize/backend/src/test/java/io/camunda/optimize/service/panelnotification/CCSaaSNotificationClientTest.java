@@ -18,7 +18,6 @@ import io.camunda.optimize.rest.cloud.CCSaaSM2MTokenProvider;
 import io.camunda.optimize.rest.cloud.CCSaaSNotificationClient;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class CCSaaSNotificationClientTest {
+
   @Mock private CCSaaSM2MTokenProvider m2mTokenProvider;
   private CCSaaSNotificationClient underTest;
 
@@ -40,7 +40,6 @@ public class CCSaaSNotificationClientTest {
   }
 
   @Test
-  @SneakyThrows
   public void notificationTokenIsRefreshedWhenExpired() {
     // given
     final TokenResponseDto fastExpiringToken = new TokenResponseDto();
@@ -63,7 +62,6 @@ public class CCSaaSNotificationClientTest {
   }
 
   @Test
-  @SneakyThrows
   public void notificationTokenIsNotRefreshedWhenNotExpired() {
     // given
     final TokenResponseDto notExpiredToken = new TokenResponseDto();

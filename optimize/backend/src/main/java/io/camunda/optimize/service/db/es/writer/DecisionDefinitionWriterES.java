@@ -35,17 +35,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class DecisionDefinitionWriterES implements DecisionDefinitionWriter {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(DecisionDefinitionWriterES.class);
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
@@ -54,6 +53,17 @@ public class DecisionDefinitionWriterES implements DecisionDefinitionWriter {
   private static final Script MARK_AS_DELETED_SCRIPT =
       Script.of(
           s -> s.inline(i -> i.lang(ScriptLanguage.Painless).source("ctx._source.deleted = true")));
+
+  public DecisionDefinitionWriterES(
+      ObjectMapper objectMapper,
+      OptimizeElasticsearchClient esClient,
+      ConfigurationService configurationService,
+      TaskRepositoryES taskRepositoryES) {
+    this.objectMapper = objectMapper;
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+    this.taskRepositoryES = taskRepositoryES;
+  }
 
   @Override
   public void importDecisionDefinitions(

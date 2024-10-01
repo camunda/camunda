@@ -45,17 +45,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class DurationAggregationServiceES extends DurationAggregationService {
 
   private final MinMaxStatsServiceES minMaxStatsService;
   private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
+
+  public DurationAggregationServiceES(
+      MinMaxStatsServiceES minMaxStatsService,
+      ProcessDistributedByInterpreterFacadeES distributedByInterpreter) {
+    this.minMaxStatsService = minMaxStatsService;
+    this.distributedByInterpreter = distributedByInterpreter;
+  }
 
   public Optional<Map<String, Aggregation.Builder.ContainerBuilder>>
       createLimitedGroupByScriptedDurationAggregation(

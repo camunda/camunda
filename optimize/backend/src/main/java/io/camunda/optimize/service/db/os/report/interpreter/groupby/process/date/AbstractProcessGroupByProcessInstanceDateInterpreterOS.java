@@ -35,7 +35,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
@@ -43,9 +42,10 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
-@RequiredArgsConstructor
 public abstract class AbstractProcessGroupByProcessInstanceDateInterpreterOS
     extends AbstractProcessGroupByInterpreterOS {
+
+  public AbstractProcessGroupByProcessInstanceDateInterpreterOS() {}
 
   protected abstract ConfigurationService getConfigurationService();
 

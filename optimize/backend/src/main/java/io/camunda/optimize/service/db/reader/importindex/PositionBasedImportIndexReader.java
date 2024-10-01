@@ -13,17 +13,20 @@ import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import io.camunda.optimize.service.db.repository.ImportRepository;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
-@AllArgsConstructor
 public class PositionBasedImportIndexReader
     implements ImportIndexReader<PositionBasedImportIndexDto, ZeebeDataSourceDto> {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(PositionBasedImportIndexReader.class);
   private final ImportRepository importRepository;
+
+  public PositionBasedImportIndexReader(final ImportRepository importRepository) {
+    this.importRepository = importRepository;
+  }
 
   @Override
   public Optional<PositionBasedImportIndexDto> getImportIndex(

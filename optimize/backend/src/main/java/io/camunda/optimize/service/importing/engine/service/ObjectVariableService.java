@@ -39,16 +39,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 public class ObjectVariableService {
 
   private static final String LIST_SIZE_VARIABLE_SUFFIX = "_listSize";
   private static final DateTimeFormatter OPTIMIZE_DATE_TIME_FORMATTER =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ObjectVariableService.class);
 
   private final ObjectMapper objectMapper;
 

@@ -52,11 +52,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class DateAggregationServiceES extends DateAggregationService {
@@ -64,6 +62,10 @@ public class DateAggregationServiceES extends DateAggregationService {
   private static final String DATE_AGGREGATION = "dateAggregation";
 
   private final DateTimeFormatter dateTimeFormatter;
+
+  public DateAggregationServiceES(DateTimeFormatter dateTimeFormatter) {
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
 
   public Optional<Map<String, Aggregation.Builder.ContainerBuilder>>
       createProcessInstanceDateAggregation(final DateAggregationContextES context) {

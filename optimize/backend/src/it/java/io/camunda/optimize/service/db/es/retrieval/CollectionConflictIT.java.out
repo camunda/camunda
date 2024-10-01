@@ -403,7 +403,6 @@
 //   }
 //
 //   @Data
-//   @AllArgsConstructor
 //   @NoArgsConstructor
 //   protected static class ScopeConflictScenario {
 //

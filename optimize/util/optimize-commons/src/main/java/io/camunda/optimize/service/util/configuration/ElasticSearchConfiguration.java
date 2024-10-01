@@ -21,9 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.Data;
 
-@Data
 public class ElasticSearchConfiguration {
 
   private DatabaseConnection connection;
@@ -37,6 +35,8 @@ public class ElasticSearchConfiguration {
   private DatabaseSettings settings;
 
   private Map<String, PluginConfiguration> interceptorPlugins;
+
+  public ElasticSearchConfiguration() {}
 
   @JsonIgnore
   public Integer getConnectionTimeout() {
@@ -175,5 +175,136 @@ public class ElasticSearchConfiguration {
   @JsonIgnore
   public void setIndexPrefix(final String prefix) {
     settings.getIndex().setPrefix(prefix);
+  }
+
+  public DatabaseConnection getConnection() {
+    return this.connection;
+  }
+
+  public DatabaseBackup getBackup() {
+    return this.backup;
+  }
+
+  public DatabaseSecurity getSecurity() {
+    return this.security;
+  }
+
+  public int getScrollTimeoutInSeconds() {
+    return this.scrollTimeoutInSeconds;
+  }
+
+  public DatabaseSettings getSettings() {
+    return this.settings;
+  }
+
+  public Map<String, PluginConfiguration> getInterceptorPlugins() {
+    return this.interceptorPlugins;
+  }
+
+  public void setConnection(DatabaseConnection connection) {
+    this.connection = connection;
+  }
+
+  public void setBackup(DatabaseBackup backup) {
+    this.backup = backup;
+  }
+
+  public void setSecurity(DatabaseSecurity security) {
+    this.security = security;
+  }
+
+  public void setScrollTimeoutInSeconds(int scrollTimeoutInSeconds) {
+    this.scrollTimeoutInSeconds = scrollTimeoutInSeconds;
+  }
+
+  public void setSettings(DatabaseSettings settings) {
+    this.settings = settings;
+  }
+
+  public void setInterceptorPlugins(Map<String, PluginConfiguration> interceptorPlugins) {
+    this.interceptorPlugins = interceptorPlugins;
+  }
+
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof ElasticSearchConfiguration)) {
+      return false;
+    }
+    final ElasticSearchConfiguration other = (ElasticSearchConfiguration) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    final Object this$connection = this.getConnection();
+    final Object other$connection = other.getConnection();
+    if (this$connection == null
+        ? other$connection != null
+        : !this$connection.equals(other$connection)) {
+      return false;
+    }
+    final Object this$backup = this.getBackup();
+    final Object other$backup = other.getBackup();
+    if (this$backup == null ? other$backup != null : !this$backup.equals(other$backup)) {
+      return false;
+    }
+    final Object this$security = this.getSecurity();
+    final Object other$security = other.getSecurity();
+    if (this$security == null ? other$security != null : !this$security.equals(other$security)) {
+      return false;
+    }
+    if (this.getScrollTimeoutInSeconds() != other.getScrollTimeoutInSeconds()) {
+      return false;
+    }
+    final Object this$settings = this.getSettings();
+    final Object other$settings = other.getSettings();
+    if (this$settings == null ? other$settings != null : !this$settings.equals(other$settings)) {
+      return false;
+    }
+    final Object this$interceptorPlugins = this.getInterceptorPlugins();
+    final Object other$interceptorPlugins = other.getInterceptorPlugins();
+    if (this$interceptorPlugins == null
+        ? other$interceptorPlugins != null
+        : !this$interceptorPlugins.equals(other$interceptorPlugins)) {
+      return false;
+    }
+    return true;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ElasticSearchConfiguration;
+  }
+
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    final Object $connection = this.getConnection();
+    result = result * PRIME + ($connection == null ? 43 : $connection.hashCode());
+    final Object $backup = this.getBackup();
+    result = result * PRIME + ($backup == null ? 43 : $backup.hashCode());
+    final Object $security = this.getSecurity();
+    result = result * PRIME + ($security == null ? 43 : $security.hashCode());
+    result = result * PRIME + this.getScrollTimeoutInSeconds();
+    final Object $settings = this.getSettings();
+    result = result * PRIME + ($settings == null ? 43 : $settings.hashCode());
+    final Object $interceptorPlugins = this.getInterceptorPlugins();
+    result = result * PRIME + ($interceptorPlugins == null ? 43 : $interceptorPlugins.hashCode());
+    return result;
+  }
+
+  public String toString() {
+    return "ElasticSearchConfiguration(connection="
+        + this.getConnection()
+        + ", backup="
+        + this.getBackup()
+        + ", security="
+        + this.getSecurity()
+        + ", scrollTimeoutInSeconds="
+        + this.getScrollTimeoutInSeconds()
+        + ", settings="
+        + this.getSettings()
+        + ", interceptorPlugins="
+        + this.getInterceptorPlugins()
+        + ")";
   }
 }

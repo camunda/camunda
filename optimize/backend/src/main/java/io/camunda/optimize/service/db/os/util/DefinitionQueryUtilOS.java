@@ -21,13 +21,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DefinitionQueryUtilOS {
+
+  private DefinitionQueryUtilOS() {}
 
   public static BoolQuery.Builder createDefinitionQuery(
       final String definitionKey,

@@ -11,17 +11,21 @@ import io.camunda.optimize.service.db.os.MappingMetadataUtilOS;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.MappingMetadataRepository;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class MappingMetadataRepositoryOS implements MappingMetadataRepository {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(MappingMetadataRepositoryOS.class);
   private final OptimizeOpenSearchClient osClient;
+
+  public MappingMetadataRepositoryOS(OptimizeOpenSearchClient osClient) {
+    this.osClient = osClient;
+  }
 
   @Override
   public String[] getIndexAliasesWithImportIndexFlag(boolean isImportIndex) {

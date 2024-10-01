@@ -18,14 +18,13 @@ import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNeste
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableValueField;
 
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessVariableHelperOS {
+
+  private ProcessVariableHelperOS() {}
 
   public static Query createFilterForUndefinedOrNullQuery(
       final String variableName, final VariableType variableType) {

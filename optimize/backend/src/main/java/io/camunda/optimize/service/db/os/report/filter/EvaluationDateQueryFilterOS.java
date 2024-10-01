@@ -13,13 +13,13 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Dat
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.db.os.report.filter.util.DateFilterQueryUtilOS;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class EvaluationDateQueryFilterOS implements QueryFilterOS<DateFilterDataDto<?>> {
+
+  public EvaluationDateQueryFilterOS() {}
 
   @Override
   public List<Query> filterQueries(

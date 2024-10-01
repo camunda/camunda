@@ -18,22 +18,33 @@ import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.plan.decision.RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreter;
 import io.camunda.optimize.service.db.report.plan.decision.DecisionExecutionPlan;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreterOS
     extends AbstractDecisionExecutionPlanInterpreterOS
     implements RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreter {
-  @Getter private final DecisionDefinitionReader decisionDefinitionReader;
-  @Getter private final DecisionQueryFilterEnhancerOS queryFilterEnhancer;
-  @Getter private final DecisionGroupByInterpreterFacadeOS groupByInterpreter;
-  @Getter private final DecisionViewInterpreterFacadeOS viewInterpreter;
-  @Getter private final OptimizeOpenSearchClient osClient;
+
+  private final DecisionDefinitionReader decisionDefinitionReader;
+  private final DecisionQueryFilterEnhancerOS queryFilterEnhancer;
+  private final DecisionGroupByInterpreterFacadeOS groupByInterpreter;
+  private final DecisionViewInterpreterFacadeOS viewInterpreter;
+  private final OptimizeOpenSearchClient osClient;
+
+  public RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreterOS(
+      DecisionDefinitionReader decisionDefinitionReader,
+      DecisionQueryFilterEnhancerOS queryFilterEnhancer,
+      DecisionGroupByInterpreterFacadeOS groupByInterpreter,
+      DecisionViewInterpreterFacadeOS viewInterpreter,
+      OptimizeOpenSearchClient osClient) {
+    this.decisionDefinitionReader = decisionDefinitionReader;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+    this.groupByInterpreter = groupByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+    this.osClient = osClient;
+  }
 
   @Override
   public CommandEvaluationResult<Object> interpret(
@@ -41,5 +52,25 @@ public class RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreterOS
     final CommandEvaluationResult<Object> commandResult = super.interpret(executionContext);
     addNewVariablesAndDtoFieldsToTableColumnConfig(executionContext, commandResult);
     return commandResult;
+  }
+
+  public DecisionDefinitionReader getDecisionDefinitionReader() {
+    return this.decisionDefinitionReader;
+  }
+
+  public DecisionQueryFilterEnhancerOS getQueryFilterEnhancer() {
+    return this.queryFilterEnhancer;
+  }
+
+  public DecisionGroupByInterpreterFacadeOS getGroupByInterpreter() {
+    return this.groupByInterpreter;
+  }
+
+  public DecisionViewInterpreterFacadeOS getViewInterpreter() {
+    return this.viewInterpreter;
+  }
+
+  public OptimizeOpenSearchClient getOsClient() {
+    return this.osClient;
   }
 }

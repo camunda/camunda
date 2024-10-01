@@ -25,7 +25,6 @@
 // import java.util.Optional;
 // import lombok.RequiredArgsConstructor;
 //
-// @RequiredArgsConstructor
 // public class HyperMapAsserter {
 //
 //   private final ReportResultResponseDto<List<HyperMapResultEntryDto>> expectedResult =

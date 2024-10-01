@@ -9,17 +9,16 @@ package io.camunda.optimize.service.db.os.report.interpreter.util;
 
 import java.util.Map;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FilterLimitedAggregationUtilOS {
 
   public static final String FILTER_LIMITED_AGGREGATION = "filterLimitedAggregation";
+
+  private FilterLimitedAggregationUtilOS() {}
 
   public static Pair<String, Aggregation> wrapWithFilterLimitedParentAggregation(
       final Query limitFilterQuery, final Pair<String, Aggregation> subAggregationToLimit) {

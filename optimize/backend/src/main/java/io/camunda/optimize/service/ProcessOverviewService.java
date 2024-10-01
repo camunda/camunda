@@ -36,17 +36,15 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class ProcessOverviewService {
 
   private static final String PENDING_OWNER_UPDATE_TEMPLATE = "pendingauthcheck#%s#%s";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessOverviewService.class);
 
   private final DefinitionService definitionService;
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
@@ -55,6 +53,23 @@ public class ProcessOverviewService {
   private final AbstractIdentityService identityService;
   private final KpiService kpiService;
   private final DigestService digestService;
+
+  public ProcessOverviewService(
+      final DefinitionService definitionService,
+      final DataSourceDefinitionAuthorizationService definitionAuthorizationService,
+      final ProcessOverviewWriter processOverviewWriter,
+      final ProcessOverviewReader processOverviewReader,
+      final AbstractIdentityService identityService,
+      final KpiService kpiService,
+      final DigestService digestService) {
+    this.definitionService = definitionService;
+    this.definitionAuthorizationService = definitionAuthorizationService;
+    this.processOverviewWriter = processOverviewWriter;
+    this.processOverviewReader = processOverviewReader;
+    this.identityService = identityService;
+    this.kpiService = kpiService;
+    this.digestService = digestService;
+  }
 
   public List<ProcessOverviewResponseDto> getAllProcessOverviews(
       final String userId, final String locale) {

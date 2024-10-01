@@ -15,15 +15,12 @@ import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
 
-@EqualsAndHashCode(callSuper = true)
 public class DeleteIndexTemplateIfExistsStep extends UpgradeStep {
 
   // This should be the name of the template prefix and without version suffix or optimize prefix
-  @Getter private final String templateName;
-  @Getter private final int templateVersion;
+  private final String templateName;
+  private final int templateVersion;
 
   public DeleteIndexTemplateIfExistsStep(final String templateName, final int templateVersion) {
     super(null);
@@ -57,5 +54,53 @@ public class DeleteIndexTemplateIfExistsStep extends UpgradeStep {
         "%s[Template]",
         OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion(
             templateName, String.valueOf(templateVersion)));
+  }
+
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof DeleteIndexTemplateIfExistsStep)) {
+      return false;
+    }
+    final DeleteIndexTemplateIfExistsStep other = (DeleteIndexTemplateIfExistsStep) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final Object this$templateName = this.templateName;
+    final Object other$templateName = other.templateName;
+    if (this$templateName == null
+        ? other$templateName != null
+        : !this$templateName.equals(other$templateName)) {
+      return false;
+    }
+    if (this.templateVersion != other.templateVersion) {
+      return false;
+    }
+    return true;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DeleteIndexTemplateIfExistsStep;
+  }
+
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    final Object $templateName = this.templateName;
+    result = result * PRIME + ($templateName == null ? 43 : $templateName.hashCode());
+    result = result * PRIME + this.templateVersion;
+    return result;
+  }
+
+  public String getTemplateName() {
+    return this.templateName;
+  }
+
+  public int getTemplateVersion() {
+    return this.templateVersion;
   }
 }

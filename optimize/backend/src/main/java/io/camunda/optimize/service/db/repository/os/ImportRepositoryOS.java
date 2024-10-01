@@ -29,24 +29,34 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ImportRepositoryOS implements ImportRepository {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ImportRepositoryOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
   private final DateTimeFormatter dateTimeFormatter;
+
+  public ImportRepositoryOS(
+      OptimizeOpenSearchClient osClient,
+      ConfigurationService configurationService,
+      OptimizeIndexNameService indexNameService,
+      DateTimeFormatter dateTimeFormatter) {
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+    this.indexNameService = indexNameService;
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
 
   @Override
   public List<TimestampBasedImportIndexDto> getAllTimestampBasedImportIndicesForTypes(

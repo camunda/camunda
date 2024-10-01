@@ -15,21 +15,22 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
 @Provider
-@Slf4j
 public class ForbiddenExceptionMapper implements ExceptionMapper<ForbiddenException> {
 
-  private final LocalizationService localizationService;
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ForbiddenExceptionMapper.class);
   private static final String FORBIDDEN_ERROR_CODE = "forbiddenError";
+  private final LocalizationService localizationService;
 
   public ForbiddenExceptionMapper(@Context final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 
   @Override
-  public Response toResponse(ForbiddenException forbiddenException) {
+  public Response toResponse(final ForbiddenException forbiddenException) {
     log.info("Mapping ForbiddenException");
 
     return Response.status(Response.Status.FORBIDDEN)
@@ -38,10 +39,10 @@ public class ForbiddenExceptionMapper implements ExceptionMapper<ForbiddenExcept
         .build();
   }
 
-  private ErrorResponseDto getErrorResponseDto(ForbiddenException exception) {
-    String errorMessage =
+  private ErrorResponseDto getErrorResponseDto(final ForbiddenException exception) {
+    final String errorMessage =
         localizationService.getDefaultLocaleMessageForApiErrorCode(FORBIDDEN_ERROR_CODE);
-    String detailedErrorMessage = exception.getMessage();
+    final String detailedErrorMessage = exception.getMessage();
 
     return new ErrorResponseDto(FORBIDDEN_ERROR_CODE, errorMessage, detailedErrorMessage);
   }
