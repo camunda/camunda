@@ -11,13 +11,14 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
-import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.function.Consumer;
 import org.agrona.CloseHelper;
 import org.junit.rules.ExternalResource;
 
 public final class LogStreamRule extends ExternalResource {
-  private final ControlledActorClock clock = new ControlledActorClock();
+  private final ControlledClock clock = new ControlledClock();
   private final boolean shouldStartByDefault;
 
   private final Consumer<LogStreamBuilder> streamBuilder;
@@ -116,7 +117,16 @@ public final class LogStreamRule extends ExternalResource {
     return logStream;
   }
 
-  public ControlledActorClock getClock() {
+  public ControlledClock getClock() {
     return clock;
+  }
+
+  public static final class ControlledClock implements InstantSource {
+    public InstantSource delegate;
+
+    @Override
+    public Instant instant() {
+      return delegate == null ? Instant.now() : delegate.instant();
+    }
   }
 }
