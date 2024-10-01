@@ -44,7 +44,7 @@ class AuthorizationMigrationHandlerTest {
   void tearDown() {}
 
   @Test
-  void stopWhenNorMoreRecords() {
+  void stopWhenNoMoreRecords() {
     // given
     when(managementIdentityProxy.fetchUserResourceAuthorizations(any(), anyInt()))
         .thenReturn(
