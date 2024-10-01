@@ -62,8 +62,7 @@ public final class SchemaTestUtil {
   @SuppressWarnings("unchecked")
   public static void validateMappings(final TypeMapping mapping, final String fileName)
       throws IOException {
-    try (final var expectedMappings =
-        Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName)) {
+    try (final var expectedMappings = SchemaTestUtil.class.getResourceAsStream(fileName)) {
       final var jsonMap =
           MAPPER.readValue(
               expectedMappings, new TypeReference<Map<String, Map<String, Object>>>() {});
