@@ -18,6 +18,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.OperationEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceReference;
 import io.camunda.search.entities.UserEntity;
@@ -38,6 +39,8 @@ import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.OperationItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProblemDetail;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionItem;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceReferenceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
@@ -182,10 +185,11 @@ public final class SearchQueryResponseMapper {
   public static ProcessDefinitionItem toProcessDefinition(final ProcessDefinitionEntity entity) {
     return new ProcessDefinitionItem()
         .processDefinitionKey(entity.key())
-        .processName(entity.name())
-        .processVersion(entity.version())
-        .processVersionTag(entity.versionTag())
-        .bpmnProcessId(entity.bpmnProcessId())
+        .name(entity.name())
+        .resourceName(entity.resourceName())
+        .version(entity.version())
+        .versionTag(entity.versionTag())
+        .id(entity.bpmnProcessId())
         .tenantId(entity.tenantId());
   }
 

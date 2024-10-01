@@ -7,34 +7,36 @@
  */
 package io.camunda.service;
 
-import io.camunda.search.clients.CamundaSearchClient;
-import io.camunda.service.entities.ProcessDefinitionEntity;
+import io.camunda.search.ProcessDefinitionSearchClient;
+import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.search.core.SearchQueryService;
-import io.camunda.service.search.query.ProcessDefinitionQuery;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 
 public class ProcessDefinitionServices
     extends SearchQueryService<
         ProcessDefinitionServices, ProcessDefinitionQuery, ProcessDefinitionEntity> {
 
+  private final ProcessDefinitionSearchClient processDefinitionSearchClient;
+
   public ProcessDefinitionServices(
       final BrokerClient brokerClient,
-      final CamundaSearchClient searchClient,
-      final ServiceTransformers transformers,
+      final ProcessDefinitionSearchClient processDefinitionSearchClient,
       final Authentication authentication) {
-    super(brokerClient, searchClient, transformers, authentication);
+    super(brokerClient, authentication);
+    this.processDefinitionSearchClient = processDefinitionSearchClient;
   }
 
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> search(final ProcessDefinitionQuery query) {
-    return executor.search(query, ProcessDefinitionEntity.class);
+    return processDefinitionSearchClient.searchProcessDefinitions(query, authentication);
   }
 
   @Override
   public ProcessDefinitionServices withAuthentication(final Authentication authentication) {
-    return new ProcessDefinitionServices(brokerClient, searchClient, transformers, authentication);
+    return new ProcessDefinitionServices(
+        brokerClient, processDefinitionSearchClient, authentication);
   }
 }

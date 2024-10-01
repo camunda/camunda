@@ -2396,26 +2396,25 @@ components:
           description: The key for this process definition.
           type: integer
           format: int64
-        processName:
+        name:
           description: Name of this process definition.
           type: string
-        processVersion:
+        resourceName:
+          description: Resource name of this process definition.
+          type: string
+        version:
           description: Version of this process definition.
           type: integer
           format: int32
-        processVersionTag:
+        versionTag:
           description: Version tag of this process definition.
           type: string
-        bpmnProcessId:
+        id:
           description: BPMN process id of this process definition.
           type: string
         tenantId:
           description: Tenant id of this process definition.
           type: string
-        formKey:
-          description: The key of the form related to this process definition.
-          type: integer
-          format: int64
     ProcessDefinitionSearchQueryResponse:
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -2432,26 +2431,25 @@ components:
           description: The key for this process definition.
           type: integer
           format: int64
-        processName:
+        name:
           description: Name of this process definition.
           type: string
-        processVersion:
+        resourceName:
+          description: Resource name for this process definition.
+          type: string
+        version:
           description: Version of this process definition.
           type: integer
           format: int32
-        processVersionTag:
+        versionTag:
           description: Version tag of this process definition.
           type: string
-        bpmnProcessId:
-          description: BPMN process id of this process definition.
+        id:
+          description: Id of this process definition.
           type: string
         tenantId:
           description: Tenant id of this process definition.
           type: string
-        formKey:
-          description: The key of the form related to this process definition.
-          type: integer
-          format: int64
     ProcessInstanceSearchQueryRequest:
       description: Process instance search request.
       allOf:

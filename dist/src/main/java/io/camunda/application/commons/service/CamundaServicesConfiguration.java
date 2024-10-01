@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.service;
 
+import io.camunda.search.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -73,8 +74,9 @@ public class CamundaServicesConfiguration {
 
   @Bean
   public ProcessDefinitionServices processDefinitionServices(
-      final CamundaServices camundaServices) {
-    return camundaServices.processDefinitionServices();
+      final BrokerClient brokerClient,
+      final ProcessDefinitionSearchClient processDefinitionSearchClient) {
+    return new ProcessDefinitionServices(brokerClient, processDefinitionSearchClient, null);
   }
 
   @Bean

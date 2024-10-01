@@ -11,12 +11,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.SearchQueryResult.Builder;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.ProcessDefinitionServices;
-import io.camunda.service.entities.ProcessDefinitionEntity;
-import io.camunda.service.search.query.ProcessDefinitionQuery;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.search.query.SearchQueryResult.Builder;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

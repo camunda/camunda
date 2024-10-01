@@ -27,6 +27,7 @@ import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.IncidentFilter;
+import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceVariableFilter;
 import io.camunda.search.filter.UserFilter;
@@ -38,6 +39,7 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.TypedSearchQueryBuilder;
@@ -48,6 +50,7 @@ import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.IncidentSort;
+import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOptionBuilders;
@@ -268,10 +271,11 @@ public final class SearchQueryRequestMapper {
             f -> {
               Optional.ofNullable(f.getProcessDefinitionKey())
                   .ifPresent(builder::processDefinitionKeys);
-              Optional.ofNullable(f.getProcessName()).ifPresent(builder::names);
-              Optional.ofNullable(f.getProcessVersion()).ifPresent(builder::versions);
-              Optional.ofNullable(f.getProcessVersionTag()).ifPresent(builder::versionTags);
-              Optional.ofNullable(f.getBpmnProcessId()).ifPresent(builder::bpmnProcessIds);
+              Optional.ofNullable(f.getName()).ifPresent(builder::names);
+              Optional.ofNullable(f.getResourceName()).ifPresent(builder::resourceNames);
+              Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
+              Optional.ofNullable(f.getVersionTag()).ifPresent(builder::versionTags);
+              Optional.ofNullable(f.getId()).ifPresent(builder::ids);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
             });
     return builder.build();
@@ -486,10 +490,11 @@ public final class SearchQueryRequestMapper {
     } else {
       switch (field) {
         case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "processName" -> builder.processName();
-        case "processVersion" -> builder.processVersion();
-        case "processVersionTag" -> builder.processVersionTag();
-        case "bpmnProcessId" -> builder.bpmnProcessId();
+        case "name" -> builder.name();
+        case "resourceName" -> builder.resourceName();
+        case "version" -> builder.version();
+        case "versionTag" -> builder.versionTag();
+        case "id" -> builder.id();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

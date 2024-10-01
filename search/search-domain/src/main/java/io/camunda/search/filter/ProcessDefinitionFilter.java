@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.search.filter;
+package io.camunda.search.filter;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
@@ -18,7 +18,7 @@ import java.util.Objects;
 public record ProcessDefinitionFilter(
     List<Long> processDefinitionKeys,
     List<String> names,
-    List<String> bpmnProcessIds,
+    List<String> ids,
     List<String> resourceNames,
     List<Integer> versions,
     List<String> versionTags,
@@ -30,7 +30,7 @@ public record ProcessDefinitionFilter(
     List<String> tenantIds;
     private List<Long> processDefinitionKeys;
     private List<String> names;
-    private List<String> bpmnProcessIds;
+    private List<String> ids;
     private List<String> resourceNames;
     private List<Integer> versions;
     private List<String> versionTags;
@@ -53,13 +53,13 @@ public record ProcessDefinitionFilter(
       return names(collectValues(value, values));
     }
 
-    public Builder bpmnProcessIds(final List<String> values) {
-      bpmnProcessIds = addValuesToList(bpmnProcessIds, values);
+    public Builder ids(final List<String> values) {
+      ids = addValuesToList(ids, values);
       return this;
     }
 
-    public Builder bpmnProcessIds(final String value, final String... values) {
-      return bpmnProcessIds(collectValues(value, values));
+    public Builder ids(final String value, final String... values) {
+      return ids(collectValues(value, values));
     }
 
     public Builder resourceNames(final List<String> values) {
@@ -103,7 +103,7 @@ public record ProcessDefinitionFilter(
       return new ProcessDefinitionFilter(
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(names, Collections.emptyList()),
-          Objects.requireNonNullElse(bpmnProcessIds, Collections.emptyList()),
+          Objects.requireNonNullElse(ids, Collections.emptyList()),
           Objects.requireNonNullElse(resourceNames, Collections.emptyList()),
           Objects.requireNonNullElse(versions, Collections.emptyList()),
           Objects.requireNonNullElse(versionTags, Collections.emptyList()),

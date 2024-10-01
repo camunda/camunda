@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.service.ProcessDefinitionServices;
-import io.camunda.service.search.query.ProcessDefinitionQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;

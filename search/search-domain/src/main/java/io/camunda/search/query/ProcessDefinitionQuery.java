@@ -5,13 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.search.query;
+package io.camunda.search.query;
 
-import io.camunda.service.search.filter.FilterBuilders;
-import io.camunda.service.search.filter.ProcessDefinitionFilter;
-import io.camunda.service.search.page.SearchQueryPage;
-import io.camunda.service.search.sort.ProcessDefinitionSort;
-import io.camunda.service.search.sort.SortOptionBuilders;
+import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.ProcessDefinitionFilter;
+import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.sort.ProcessDefinitionSort;
+import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;

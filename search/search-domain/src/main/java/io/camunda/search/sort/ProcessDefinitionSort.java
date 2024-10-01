@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.search.sort;
+package io.camunda.search.sort;
 
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
@@ -26,33 +26,33 @@ public record ProcessDefinitionSort(List<FieldSorting> orderings) implements Sor
       return this;
     }
 
-    public Builder processName() {
+    public Builder resourceName() {
+      currentOrdering = new FieldSorting("resourceName", null);
+      return this;
+    }
+
+    public Builder name() {
       currentOrdering = new FieldSorting("name", null);
       return this;
     }
 
-    public Builder processVersion() {
+    public Builder version() {
       currentOrdering = new FieldSorting("version", null);
       return this;
     }
 
-    public Builder processVersionTag() {
+    public Builder versionTag() {
       currentOrdering = new FieldSorting("versionTag", null);
       return this;
     }
 
-    public Builder bpmnProcessId() {
+    public Builder id() {
       currentOrdering = new FieldSorting("bpmnProcessId", null);
       return this;
     }
 
     public Builder tenantId() {
       currentOrdering = new FieldSorting("tenantId", null);
-      return this;
-    }
-
-    public Builder formKey() {
-      currentOrdering = new FieldSorting("formKey", null);
       return this;
     }
 
