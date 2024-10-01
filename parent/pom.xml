@@ -1384,8 +1384,8 @@
       <!-- between com.nimbusds:oauth2-oidc-sdk and com.microsoft.azure:msal4j -->
       <dependency>
         <groupId>net.minidev</groupId>
-	<artifactId>json-smart</artifactId>
-	<version>${version.json-smart}</version>
+        <artifactId>json-smart</artifactId>
+        <version>${version.json-smart}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
