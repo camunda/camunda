@@ -10,14 +10,14 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.DecisionInstanceEntity;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
+import io.camunda.search.query.DecisionInstanceQuery;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.DecisionInstanceServices;
-import io.camunda.service.entities.DecisionInstanceEntity;
-import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.service.entities.DecisionInstanceEntity.DecisionInstanceType;
-import io.camunda.service.search.query.DecisionInstanceQuery;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
@@ -47,11 +47,11 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                        "evaluationDate": "2024-06-05T08:29:15.027+0000",
                        "processDefinitionKey": 2251799813688736,
                        "processInstanceKey": 6755399441058457,
-                       "decisionKey": 123456,
-                       "dmnDecisionId": "di",
-                       "dmnDecisionName": "ddn",
-                       "decisionVersion": 0,
-                       "decisionType": "DECISION_TABLE",
+                       "decisionDefinitionKey": 123456,
+                       "decisionDefinitionId": "di",
+                       "decisionDefinitionName": "ddn",
+                       "decisionDefinitionVersion": 0,
+                       "decisionDefinitionType": "DECISION_TABLE",
                        "result": "result"
                    }
                ],
@@ -81,7 +81,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                       "123456",
                       "ddn",
                       0,
-                      DecisionInstanceType.DECISION_TABLE,
+                      DecisionDefinitionType.DECISION_TABLE,
                       "result")))
           .sortValues(new Object[] {"v"})
           .build();
@@ -101,21 +101,21 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
             """
       {
           "filter": {
-              "decisionKey": 123456
+              "decisionDefinitionKey": 123456
           }
       }""",
             q ->
-                q.filter(f -> f.decisionKeys(123456L))
+                q.filter(f -> f.decisionDefinitionKeys(123456L))
                     .resultConfig(r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())),
         new TestArguments(
             """
       {
           "filter": {
-              "decisionType": "DECISION_TABLE"
+              "decisionDefinitionType": "DECISION_TABLE"
           }
       }""",
             q ->
-                q.filter(f -> f.decisionTypes(DecisionInstanceType.DECISION_TABLE))
+                q.filter(f -> f.decisionTypes(DecisionDefinitionType.DECISION_TABLE))
                     .resultConfig(r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())),
         new TestArguments(
             """
@@ -128,7 +128,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
           ]
       }""",
             q ->
-                q.sort(s -> s.dmnDecisionName().desc())
+                q.sort(s -> s.decisionDefinitionName().desc())
                     .resultConfig(
                         r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())));
   }

@@ -15,55 +15,57 @@
  */
 package io.camunda.zeebe.client.impl.search.response;
 
+import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstance;
+import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
+import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceItem;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceTypeEnum;
 import java.util.Objects;
 
 public class DecisionInstanceImpl implements DecisionInstance {
 
   private final long decisionInstanceKey;
-  private final DecisionInstanceStateEnum state;
+  private final DecisionInstanceState state;
   private final String evaluationDate;
   private final String evaluationFailure;
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
   private final long decisionKey;
-  private final String dmnDecisionId;
-  private final String dmnDecisionName;
-  private final int decisionVersion;
-  private final DecisionInstanceTypeEnum decisionType;
+  private final String decisionDefinitionId;
+  private final String decisionDefinitionName;
+  private final int decisionDefinitionVersion;
+  private final DecisionDefinitionType decisionDefinitionType;
   private final String tenantId;
 
   public DecisionInstanceImpl(final DecisionInstanceItem item) {
     this(
         item.getDecisionInstanceKey(),
-        item.getState(),
+        toDecisionInstanceState(item.getState()),
         item.getEvaluationDate(),
         item.getEvaluationFailure(),
         item.getProcessDefinitionKey(),
         item.getProcessInstanceKey(),
-        item.getDecisionKey(),
-        item.getDmnDecisionId(),
-        item.getDmnDecisionName(),
-        item.getDecisionVersion(),
-        item.getDecisionType(),
+        item.getDecisionDefinitionKey(),
+        item.getDecisionDefinitionId(),
+        item.getDecisionDefinitionName(),
+        item.getDecisionDefinitionVersion(),
+        toDecisionDefinitionType(item.getDecisionDefinitionType()),
         item.getTenantId());
   }
 
   public DecisionInstanceImpl(
       final long decisionInstanceKey,
-      final DecisionInstanceStateEnum state,
+      final DecisionInstanceState state,
       final String evaluationDate,
       final String evaluationFailure,
       final Long processDefinitionKey,
       final Long processInstanceKey,
       final long decisionKey,
-      final String dmnDecisionId,
-      final String dmnDecisionName,
-      final int decisionVersion,
-      final DecisionInstanceTypeEnum decisionType,
+      final String decisionDefinitionId,
+      final String decisionDefinitionName,
+      final int decisionDefinitionVersion,
+      final DecisionDefinitionType decisionDefinitionType,
       final String tenantId) {
     this.decisionInstanceKey = decisionInstanceKey;
     this.state = state;
@@ -72,11 +74,49 @@ public class DecisionInstanceImpl implements DecisionInstance {
     this.processDefinitionKey = processDefinitionKey;
     this.processInstanceKey = processInstanceKey;
     this.decisionKey = decisionKey;
-    this.dmnDecisionId = dmnDecisionId;
-    this.dmnDecisionName = dmnDecisionName;
-    this.decisionVersion = decisionVersion;
-    this.decisionType = decisionType;
+    this.decisionDefinitionId = decisionDefinitionId;
+    this.decisionDefinitionName = decisionDefinitionName;
+    this.decisionDefinitionVersion = decisionDefinitionVersion;
+    this.decisionDefinitionType = decisionDefinitionType;
     this.tenantId = tenantId;
+  }
+
+  private static DecisionDefinitionType toDecisionDefinitionType(
+      final DecisionDefinitionTypeEnum decisionDefinitionType) {
+    if (decisionDefinitionType == null) {
+      return null;
+    }
+    switch (decisionDefinitionType) {
+      case DECISION_TABLE:
+        return DecisionDefinitionType.DECISION_TABLE;
+      case LITERAL_EXPRESSION:
+        return DecisionDefinitionType.LITERAL_EXPRESSION;
+      case UNSPECIFIED:
+        return DecisionDefinitionType.UNSPECIFIED;
+      case UNKNOWN:
+      case UNKNOWN_DEFAULT_OPEN_API:
+      default:
+        return DecisionDefinitionType.UNKNOWN;
+    }
+  }
+
+  private static DecisionInstanceState toDecisionInstanceState(
+      final DecisionInstanceStateEnum decisionInstanceState) {
+    if (decisionInstanceState == null) {
+      return null;
+    }
+    switch (decisionInstanceState) {
+      case EVALUATED:
+        return DecisionInstanceState.EVALUATED;
+      case FAILED:
+        return DecisionInstanceState.FAILED;
+      case UNSPECIFIED:
+        return DecisionInstanceState.UNSPECIFIED;
+      case UNKNOWN:
+      case UNKNOWN_DEFAULT_OPEN_API:
+      default:
+        return DecisionInstanceState.UNKNOWN;
+    }
   }
 
   @Override
@@ -85,7 +125,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
   }
 
   @Override
-  public DecisionInstanceStateEnum getState() {
+  public DecisionInstanceState getState() {
     return state;
   }
 
@@ -110,28 +150,28 @@ public class DecisionInstanceImpl implements DecisionInstance {
   }
 
   @Override
-  public long getDecisionKey() {
+  public long getDecisionDefinitionKey() {
     return decisionKey;
   }
 
   @Override
-  public String getDmnDecisionId() {
-    return dmnDecisionId;
+  public String getDecisionDefinitionId() {
+    return decisionDefinitionId;
   }
 
   @Override
-  public String getDmnDecisionName() {
-    return dmnDecisionName;
+  public String getDecisionDefinitionName() {
+    return decisionDefinitionName;
   }
 
   @Override
-  public int getDecisionVersion() {
-    return decisionVersion;
+  public int getDecisionDefinitionVersion() {
+    return decisionDefinitionVersion;
   }
 
   @Override
-  public DecisionInstanceTypeEnum getDecisionType() {
-    return decisionType;
+  public DecisionDefinitionType getDecisionDefinitionType() {
+    return decisionDefinitionType;
   }
 
   @Override
@@ -149,10 +189,10 @@ public class DecisionInstanceImpl implements DecisionInstance {
         processDefinitionKey,
         processInstanceKey,
         decisionKey,
-        dmnDecisionId,
-        dmnDecisionName,
-        decisionVersion,
-        decisionType,
+        decisionDefinitionId,
+        decisionDefinitionName,
+        decisionDefinitionVersion,
+        decisionDefinitionType,
         tenantId);
   }
 
@@ -172,10 +212,10 @@ public class DecisionInstanceImpl implements DecisionInstance {
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(decisionKey, that.decisionKey)
-        && Objects.equals(dmnDecisionId, that.dmnDecisionId)
-        && Objects.equals(dmnDecisionName, that.dmnDecisionName)
-        && Objects.equals(decisionVersion, that.decisionVersion)
-        && decisionType == that.decisionType
+        && Objects.equals(decisionDefinitionId, that.decisionDefinitionId)
+        && Objects.equals(decisionDefinitionName, that.decisionDefinitionName)
+        && Objects.equals(decisionDefinitionVersion, that.decisionDefinitionVersion)
+        && decisionDefinitionType == that.decisionDefinitionType
         && Objects.equals(tenantId, that.tenantId);
   }
 }

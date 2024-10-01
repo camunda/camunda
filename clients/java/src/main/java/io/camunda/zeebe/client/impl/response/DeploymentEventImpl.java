@@ -27,7 +27,7 @@ import io.camunda.zeebe.client.protocol.rest.DeploymentDecisionRequirements;
 import io.camunda.zeebe.client.protocol.rest.DeploymentForm;
 import io.camunda.zeebe.client.protocol.rest.DeploymentMetadata;
 import io.camunda.zeebe.client.protocol.rest.DeploymentProcess;
-import io.camunda.zeebe.client.protocol.rest.ResourceResponse;
+import io.camunda.zeebe.client.protocol.rest.DeploymentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
@@ -83,14 +83,14 @@ public final class DeploymentEventImpl implements DeploymentEvent {
     }
   }
 
-  public DeploymentEventImpl(final ResourceResponse response) {
-    key = response.getKey();
+  public DeploymentEventImpl(final DeploymentResponse response) {
+    key = response.getDeploymentKey();
     tenantId = response.getTenantId();
 
     for (final DeploymentMetadata deployment : response.getDeployments()) {
       addDeployedForm(deployment.getForm());
-      addDeployedProcess(deployment.getProcess());
-      addDeployedDecision(deployment.getDecision());
+      addDeployedProcess(deployment.getProcessDefinition());
+      addDeployedDecision(deployment.getDecisionDefinition());
       addDeployedDecisionRequirements(deployment.getDecisionRequirements());
     }
   }
@@ -115,10 +115,10 @@ public final class DeploymentEventImpl implements DeploymentEvent {
             dr ->
                 decisionRequirements.add(
                     new DecisionRequirementsImpl(
-                        dr.getDmnDecisionRequirementsId(),
-                        dr.getDmnDecisionRequirementsName(),
+                        dr.getDecisionRequirementsId(),
+                        dr.getName(),
                         dr.getVersion(),
-                        dr.getDmnDecisionRequirementsKey(),
+                        dr.getDecisionRequirementsKey(),
                         dr.getResourceName(),
                         dr.getTenantId())));
   }
@@ -129,12 +129,12 @@ public final class DeploymentEventImpl implements DeploymentEvent {
             d ->
                 decisions.add(
                     new DecisionImpl(
-                        d.getDmnDecisionId(),
-                        d.getDmnDecisionName(),
+                        d.getDecisionDefinitionId(),
+                        d.getName(),
                         d.getVersion(),
-                        d.getDecisionKey(),
-                        d.getDmnDecisionRequirementsId(),
-                        d.getDmnDecisionRequirementsKey(),
+                        d.getDecisionDefinitionKey(),
+                        d.getDecisionRequirementsId(),
+                        d.getDecisionRequirementsKey(),
                         d.getTenantId())));
   }
 
@@ -145,8 +145,8 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                 processes.add(
                     new ProcessImpl(
                         p.getProcessDefinitionKey(),
-                        p.getBpmnProcessId(),
-                        p.getVersion(),
+                        p.getProcessDefinitionId(),
+                        p.getProcessDefinitionVersion(),
                         p.getResourceName(),
                         p.getTenantId())));
   }

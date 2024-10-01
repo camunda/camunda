@@ -40,8 +40,8 @@ public class DecisionRequirementsFilterImpl
   }
 
   @Override
-  public DecisionRequirementsFilter dmnDecisionRequirementsName(final String name) {
-    filter.dmnDecisionRequirementsName(name);
+  public DecisionRequirementsFilter name(final String name) {
+    filter.name(name);
     return this;
   }
 
@@ -52,8 +52,8 @@ public class DecisionRequirementsFilterImpl
   }
 
   @Override
-  public DecisionRequirementsFilter dmnDecisionRequirementsId(final String decisionRequirementsId) {
-    filter.dmnDecisionRequirementsId(decisionRequirementsId);
+  public DecisionRequirementsFilter decisionRequirementsId(final String decisionRequirementsId) {
+    filter.decisionRequirementsId(decisionRequirementsId);
     return this;
   }
 

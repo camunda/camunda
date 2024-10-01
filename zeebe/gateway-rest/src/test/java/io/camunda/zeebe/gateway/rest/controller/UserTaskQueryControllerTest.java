@@ -9,18 +9,21 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import io.camunda.search.entities.FormEntity;
+import io.camunda.search.entities.UserTaskEntity;
+import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.SearchQueryResult.Builder;
+import io.camunda.search.query.UserTaskQuery;
+import io.camunda.search.security.auth.Authentication;
+import io.camunda.search.sort.UserTaskSort;
+import io.camunda.service.FormServices;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.entities.UserTaskEntity;
-import io.camunda.service.exception.NotFoundException;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.search.query.SearchQueryResult.Builder;
-import io.camunda.service.search.query.UserTaskQuery;
-import io.camunda.service.search.sort.UserTaskSort;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,68 +38,81 @@ import org.springframework.http.MediaType;
 @WebMvcTest(value = UserTaskQueryController.class, properties = "camunda.rest.query.enabled=true")
 public class UserTaskQueryControllerTest extends RestControllerTest {
 
-  private static final Long VALID_USER_TASK_KEY = 1L;
+  private static final Long VALID_USER_TASK_KEY = 0L;
   private static final Long INVALID_USER_TASK_KEY = 999L;
 
   private static final String EXPECTED_SEARCH_RESPONSE =
       """
-      {
-          "items": [
-              {
-                  "tenantIds": "t",
-                  "userTaskKey": 0,
-                  "processInstanceKey": 1,
-                  "processDefinitionKey": 2,
-                  "elementInstanceKey": 3,
-                  "bpmnProcessId": "b",
-                  "state": "s",
-                  "assignee": "a",
-                  "candidateUser": [],
-                  "candidateGroup": [],
-                  "formKey": 0,
-                  "elementId": "e",
-                  "creationDate": "00:00:00.000Z+00:00",
-                  "completionDate": "00:00:00.000Z+00:00",
-                  "dueDate": "00:00:00.000Z+00:00",
-                  "followUpDate": "00:00:00.000Z+00:00",
-                  "externalFormReference": "efr",
-                  "processDefinitionVersion": 1,
-                  "customHeaders": {},
-                  "priority": 50
+          {
+              "items": [
+                  {
+                      "tenantIds": "t",
+                      "userTaskKey": 0,
+                      "processInstanceKey": 1,
+                      "processDefinitionKey": 2,
+                      "elementInstanceKey": 3,
+                      "processDefinitionId": "b",
+                      "state": "s",
+                      "assignee": "a",
+                      "candidateUser": [],
+                      "candidateGroup": [],
+                      "formKey": 0,
+                      "elementId": "e",
+                      "creationDate": "00:00:00.000Z+00:00",
+                      "completionDate": "00:00:00.000Z+00:00",
+                      "dueDate": "00:00:00.000Z+00:00",
+                      "followUpDate": "00:00:00.000Z+00:00",
+                      "externalFormReference": "efr",
+                      "processDefinitionVersion": 1,
+                      "customHeaders": {},
+                      "priority": 50
+                  }
+              ],
+              "page": {
+                  "totalItems": 1,
+                  "firstSortValues": [],
+                  "lastSortValues": [
+                      "v"
+                  ]
               }
-          ],
-          "page": {
-              "totalItems": 1,
-              "firstSortValues": [],
-              "lastSortValues": [
-                  "v"
-              ]
-          }
-      }""";
+          }""";
 
   private static final String USER_TASK_ITEM_JSON =
       """
+          {
+                      "tenantIds": "t",
+                      "userTaskKey": 0,
+                      "processInstanceKey": 1,
+                      "processDefinitionKey": 2,
+                      "elementInstanceKey": 3,
+                      "processDefinitionId": "b",
+                      "state": "s",
+                      "assignee": "a",
+                      "candidateUser": [],
+                      "candidateGroup": [],
+                      "formKey": 0,
+                      "elementId": "e",
+                      "creationDate": "00:00:00.000Z+00:00",
+                      "completionDate": "00:00:00.000Z+00:00",
+                      "dueDate": "00:00:00.000Z+00:00",
+                      "followUpDate": "00:00:00.000Z+00:00",
+                      "externalFormReference": "efr",
+                      "processDefinitionVersion": 1,
+                      "customHeaders": {},
+                      "priority": 50
+          }
+          """;
+
+  private static final Long VALID_FORM_KEY = 0L;
+  private static final Long INVALID_FORM_KEY = 999L;
+  private static final String FORM_ITEM_JSON =
+      """
       {
-                  "tenantIds": "t",
-                  "userTaskKey": 0,
-                  "processInstanceKey": 1,
-                  "processDefinitionKey": 2,
-                  "elementInstanceKey": 3,
-                  "bpmnProcessId": "b",
-                  "state": "s",
-                  "assignee": "a",
-                  "candidateUser": [],
-                  "candidateGroup": [],
-                  "formKey": 0,
-                  "elementId": "e",
-                  "creationDate": "00:00:00.000Z+00:00",
-                  "completionDate": "00:00:00.000Z+00:00",
-                  "dueDate": "00:00:00.000Z+00:00",
-                  "followUpDate": "00:00:00.000Z+00:00",
-                  "externalFormReference": "efr",
-                  "processDefinitionVersion": 1,
-                  "customHeaders": {},
-                  "priority": 50
+        "formKey": 0,
+        "tenantId": "tenant-1",
+        "bpmnId": "bpmn-1",
+        "schema": "schema",
+        "version": 1
       }
       """;
 
@@ -132,10 +148,21 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
           .build();
   @MockBean UserTaskServices userTaskServices;
 
+  @MockBean private FormServices formServices;
+
   @BeforeEach
   void setupServices() {
+
+    when(formServices.getByKey(VALID_FORM_KEY))
+        .thenReturn(new FormEntity("0", "tenant-1", "bpmn-1", "schema", 1L));
+
+    when(formServices.getByKey(INVALID_FORM_KEY))
+        .thenThrow(new NotFoundException("Form not found"));
+
     when(userTaskServices.withAuthentication(any(Authentication.class)))
         .thenReturn(userTaskServices);
+
+    when(formServices.withAuthentication(any(Authentication.class))).thenReturn(formServices);
 
     // Mock the behavior of userTaskServices for a valid key
     when(userTaskServices.getByKey(VALID_USER_TASK_KEY))
@@ -216,18 +243,18 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
     when(userTaskServices.search(any(UserTaskQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
-        {
-            "sort": [
-                {
-                    "field": "creationDate",
-                    "order": "desc"
-                },
-                {
-                    "field": "completionDate",
-                    "order": "asc"
-                }
-            ]
-        }""";
+            {
+                "sort": [
+                    {
+                        "field": "creationDate",
+                        "order": "desc"
+                    },
+                    {
+                        "field": "completionDate",
+                        "order": "asc"
+                    }
+                ]
+            }""";
     // when / then
     webClient
         .post()
@@ -256,24 +283,24 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-            "sort": [
-                {
-                    "field": "creationDate",
-                    "order": "dsc"
-                }
-            ]
-        }""";
+            {
+                "sort": [
+                    {
+                        "field": "creationDate",
+                        "order": "dsc"
+                    }
+                ]
+            }""";
     final var expectedResponse =
         String.format(
             """
-        {
-          "type": "about:blank",
-          "title": "INVALID_ARGUMENT",
-          "status": 400,
-          "detail": "Unknown sortOrder: dsc.",
-          "instance": "%s"
-        }""",
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Unknown sortOrder: dsc.",
+                  "instance": "%s"
+                }""",
             USER_TASKS_SEARCH_URL);
     // when / then
     webClient
@@ -298,24 +325,24 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-            "sort": [
-                {
-                    "field": "unknownField",
-                    "order": "asc"
-                }
-            ]
-        }""";
+            {
+                "sort": [
+                    {
+                        "field": "unknownField",
+                        "order": "asc"
+                    }
+                ]
+            }""";
     final var expectedResponse =
         String.format(
             """
-        {
-          "type": "about:blank",
-          "title": "INVALID_ARGUMENT",
-          "status": 400,
-          "detail": "Unknown sortBy: unknownField.",
-          "instance": "%s"
-        }""",
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Unknown sortBy: unknownField.",
+                  "instance": "%s"
+                }""",
             USER_TASKS_SEARCH_URL);
     // when / then
     webClient
@@ -340,23 +367,23 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-            "sort": [
-                {
-                    "order": "asc"
-                }
-            ]
-        }""";
+            {
+                "sort": [
+                    {
+                        "order": "asc"
+                    }
+                ]
+            }""";
     final var expectedResponse =
         String.format(
             """
-        {
-          "type": "about:blank",
-          "title": "INVALID_ARGUMENT",
-          "status": 400,
-          "detail": "Sort field must not be null.",
-          "instance": "%s"
-        }""",
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Sort field must not be null.",
+                  "instance": "%s"
+                }""",
             USER_TASKS_SEARCH_URL);
     // when / then
     webClient
@@ -381,22 +408,22 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-            "page": {
-                "searchAfter": ["a"],
-                "searchBefore": ["b"]
-            }
-        }""";
+            {
+                "page": {
+                    "searchAfter": ["a"],
+                    "searchBefore": ["b"]
+                }
+            }""";
     final var expectedResponse =
         String.format(
             """
-        {
-          "type": "about:blank",
-          "title": "INVALID_ARGUMENT",
-          "status": 400,
-          "detail": "Both searchAfter and searchBefore cannot be set at the same time.",
-          "instance": "%s"
-        }""",
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Both searchAfter and searchBefore cannot be set at the same time.",
+                  "instance": "%s"
+                }""",
             USER_TASKS_SEARCH_URL);
     // when / then
     webClient
@@ -446,15 +473,77 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-                {
-                  "type": "about:blank",
-                  "status": 404,
-                  "title": "NOT_FOUND",
-                  "detail": "User Task with key 999 not found"
-                }
-            """);
+                    {
+                      "type": "about:blank",
+                      "status": 404,
+                      "title": "NOT_FOUND",
+                      "detail": "User Task with key 999 not found"
+                    }
+                """);
 
     // Verify that the service was called with the invalid userTaskKey
     verify(userTaskServices).getByKey(INVALID_USER_TASK_KEY);
+  }
+
+  @Test
+  public void shouldReturnFormItemForValidFormKey() throws Exception {
+    webClient
+        .get()
+        .uri("/v2/user-tasks/{userTaskKey}/form", VALID_USER_TASK_KEY)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(FORM_ITEM_JSON);
+
+    verify(formServices, times(1)).getByKey(VALID_FORM_KEY);
+  }
+
+  @Test
+  public void shouldReturn404ForFormInvalidUserTaskKey() throws Exception {
+    webClient
+        .get()
+        .uri("/v2/user-tasks/{userTaskKey}/form", INVALID_USER_TASK_KEY)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "NOT_FOUND",
+              "status": 404,
+              "detail": "User Task with key 999 not found"
+            }
+            """);
+
+    verify(formServices, times(0)).getByKey(INVALID_USER_TASK_KEY);
+  }
+
+  @Test
+  public void shouldReturn500OnUnexpectedException() throws Exception {
+    when(formServices.getByKey(VALID_FORM_KEY)).thenThrow(new RuntimeException("Unexpected error"));
+
+    webClient
+        .get()
+        .uri("/v2/user-tasks/{userTaskKey}/form", VALID_USER_TASK_KEY)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .is5xxServerError()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "java.lang.RuntimeException",
+              "status": 500,
+              "detail": "Unexpected error occurred during the request processing: Unexpected error",
+              "instance": "/v2/user-tasks/0/form"
+            }
+            """);
   }
 }

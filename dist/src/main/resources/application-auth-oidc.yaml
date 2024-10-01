@@ -1,0 +1,17 @@
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          oidcclient:
+            client-id:
+            client-secret:
+            authorization-grant-type: authorization_code
+            redirect-uri:
+            provider: oidcclient
+            scope:
+              - "openid"
+              - "profile"
+        provider:
+          oidcclient:
+            issuer-uri:

@@ -37,20 +37,20 @@ public interface DecisionInstanceSort extends SearchRequestSort<DecisionInstance
   /** Sort by processInstanceKey */
   DecisionInstanceSort processInstanceId();
 
-  /** Sort by decisionKey */
-  DecisionInstanceSort decisionKey();
+  /** Sort by decisionDefinitionKey */
+  DecisionInstanceSort decisionDefinitionKey();
 
-  /** Sort by dmnDecisionId */
-  DecisionInstanceSort dmnDecisionId();
+  /** Sort by decisionDefinitionId */
+  DecisionInstanceSort decisionDefinitionId();
 
   /** Sort by dmnDecisionName */
-  DecisionInstanceSort dmnDecisionName();
+  DecisionInstanceSort decisionDefinitionName();
 
   /** Sort by decisionVersion */
-  DecisionInstanceSort decisionVersion();
+  DecisionInstanceSort decisionDefinitionVersion();
 
   /** Sort by decisionType */
-  DecisionInstanceSort decisionType();
+  DecisionInstanceSort decisionDefinitionType();
 
   /** Sort by tenantId */
   DecisionInstanceSort tenantId();

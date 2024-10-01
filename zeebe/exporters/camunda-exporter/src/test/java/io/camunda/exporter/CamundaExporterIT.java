@@ -9,19 +9,21 @@ package io.camunda.exporter;
 
 import static io.camunda.exporter.schema.SchemaTestUtil.validateMappings;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.GetResponse;
-import io.camunda.exporter.clients.elasticsearch.ElasticsearchClientFactory;
 import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
 import io.camunda.exporter.entities.AuthorizationEntity;
 import io.camunda.exporter.entities.UserEntity;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.TestSupport;
+import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -70,11 +72,11 @@ final class CamundaExporterIT {
 
   @BeforeAll
   public void beforeAll() {
-    config.elasticsearch.setUrl(CONTAINER.getHttpHostAddress());
+    config.elasticsearch.getConnect().setUrl(CONTAINER.getHttpHostAddress());
     config.elasticsearch.setIndexPrefix("");
     config.bulk.setSize(1); // force flushing on the first record
 
-    testClient = ElasticsearchClientFactory.INSTANCE.create(config.elasticsearch);
+    testClient = new ElasticsearchConnector(config.elasticsearch.getConnect()).createClient();
   }
 
   @AfterAll
@@ -86,6 +88,9 @@ final class CamundaExporterIT {
   void beforeEach() throws IOException {
     testClient.indices().delete(req -> req.index("*"));
     testClient.indices().deleteIndexTemplate(req -> req.name("*"));
+
+    config.elasticsearch.setCreateSchema(false);
+    config.elasticsearch.getRetention().setEnabled(false);
 
     indexTemplate =
         SchemaTestUtil.mockIndexTemplate(
@@ -107,10 +112,7 @@ final class CamundaExporterIT {
   @Test
   void shouldExportUserRecord() throws IOException {
     // given
-    final var context = getContext();
-    final var exporter = new CamundaExporter();
-    exporter.configure(context);
-    exporter.open(controller);
+    final var exporter = startExporter();
     final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
 
     // when
@@ -136,14 +138,7 @@ final class CamundaExporterIT {
   void shouldCreateAllSchemasIfCreateEnabled() throws IOException {
     // given
     config.elasticsearch.setCreateSchema(true);
-
-    final var exporter =
-        new CamundaExporter(mockResourceProvider(Set.of(index), Set.of(indexTemplate)));
-
-    // when
-    final var context = getContext();
-    exporter.configure(context);
-    exporter.open(controller);
+    startExporter();
 
     // then
     final var indices = testClient.indices().get(req -> req.index("*"));
@@ -162,13 +157,7 @@ final class CamundaExporterIT {
   void shouldUpdateSchemasCorrectlyIfCreateEnabled() throws IOException {
     // given
     config.elasticsearch.setCreateSchema(true);
-
-    final var exporter =
-        new CamundaExporter(mockResourceProvider(Set.of(index), Set.of(indexTemplate)));
-
-    final var context = getContext();
-    exporter.configure(context);
-    exporter.open(controller);
+    final var exporter = startExporter();
 
     // when
     when(index.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
@@ -241,12 +230,7 @@ final class CamundaExporterIT {
     // given
     config.elasticsearch.setCreateSchema(false);
 
-    final var exporter =
-        new CamundaExporter(mockResourceProvider(Set.of(index), Set.of(indexTemplate)));
-    // when
-    final var context = getContext();
-    exporter.configure(context);
-    exporter.open(controller);
+    startExporter();
 
     // then
     final var indices = testClient.indices().get(req -> req.index("*"));
@@ -260,7 +244,7 @@ final class CamundaExporterIT {
   private ExporterResourceProvider mockResourceProvider(
       final Set<IndexDescriptor> indexDescriptors,
       final Set<IndexTemplateDescriptor> templateDescriptors) {
-    final var provider = mock(ExporterResourceProvider.class);
+    final var provider = mock(DefaultExporterResourceProvider.class, CALLS_REAL_METHODS);
     when(provider.getIndexDescriptors()).thenReturn(indexDescriptors);
     when(provider.getIndexTemplateDescriptors()).thenReturn(templateDescriptors);
 
@@ -300,6 +284,57 @@ final class CamundaExporterIT {
             record.getValue().getOwnerType(),
             record.getValue().getResourceType(),
             extractPermissions(record.getValue()));
+  }
+
+  @Test
+  void shouldCreateLifeCyclePoliciesOnStartupIfEnabled() throws IOException {
+    config.elasticsearch.setCreateSchema(true);
+    config.elasticsearch.getRetention().setEnabled(true);
+    config.elasticsearch.getRetention().setPolicyName("policy_name");
+
+    startExporter();
+
+    final var policies = testClient.ilm().getLifecycle();
+
+    assertThat(policies.get("policy_name")).isNotNull();
+  }
+
+  @Test
+  void shouldNotCreateLifeCyclePoliciesIfDisabled() throws IOException {
+    config.elasticsearch.setCreateSchema(true);
+    config.elasticsearch.getRetention().setEnabled(false);
+    config.elasticsearch.getRetention().setPolicyName("not_created_policy");
+
+    startExporter();
+    final var policies = testClient.ilm().getLifecycle();
+
+    assertThat(policies.get("not_created_policy")).isNull();
+  }
+
+  @Test
+  void shouldSetLifecyclePolicyOnCreatedIndices() throws IOException {
+    config.elasticsearch.setCreateSchema(true);
+    config.elasticsearch.getRetention().setEnabled(true);
+    config.elasticsearch.getRetention().setPolicyName("policy_name");
+
+    startExporter();
+
+    final var createdIndex =
+        testClient.indices().get(req -> req.index(index.getFullQualifiedName())).result();
+
+    assertThat(createdIndex.get(index.getFullQualifiedName()).settings().index().lifecycle().name())
+        .isEqualTo("policy_name");
+  }
+
+  private Exporter startExporter() {
+    final var exporter =
+        new CamundaExporter(mockResourceProvider(Set.of(index), Set.of(indexTemplate)));
+
+    final var context = getContext();
+    exporter.configure(context);
+    exporter.open(controller);
+
+    return exporter;
   }
 
   private Map<PermissionType, List<String>> extractPermissions(

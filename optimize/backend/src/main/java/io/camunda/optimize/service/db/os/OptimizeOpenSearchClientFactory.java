@@ -59,14 +59,19 @@ public class OptimizeOpenSearchClientFactory {
       final OpenSearchClient osClient, final BackoffCalculator backoffCalculator)
       throws IOException {
     boolean isConnected = false;
+    int connectionAttempts = 0;
     while (!isConnected) {
+      connectionAttempts++;
       try {
         isConnected = getNumberOfClusterNodes(osClient) > 0;
       } catch (final Exception e) {
-        log.error(
-            "Can't connect to any OpenSearch node {}. Please check the connection!",
-            osClient.nodes(),
-            e);
+        final String errorMessage =
+            "Can't connect to any OpenSearch node {}. Please check the connection!";
+        if (connectionAttempts < 10) {
+          log.warn(errorMessage, osClient.nodes());
+        } else {
+          log.error(errorMessage, osClient.nodes(), e);
+        }
       } finally {
         if (!isConnected) {
           final long sleepTime = backoffCalculator.calculateSleepTime();

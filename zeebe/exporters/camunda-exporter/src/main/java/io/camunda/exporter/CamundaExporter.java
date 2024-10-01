@@ -13,7 +13,6 @@ import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.util.VisibleForTesting;
-import io.camunda.exporter.clients.elasticsearch.ElasticsearchClientFactory;
 import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -29,6 +28,7 @@ import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.ElasticsearchBatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
+import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -137,6 +137,19 @@ public class CamundaExporter implements Exporter {
     //  used to update existing indices/templates
     schemaManager.updateSchema(newIndexProperties);
     schemaManager.updateSchema(newIndexTemplateProperties);
+
+    if (configuration.elasticsearch.getRetention().isEnabled()) {
+      searchEngineClient.putIndexLifeCyclePolicy(
+          configuration.elasticsearch.getRetention().getPolicyName(),
+          configuration.elasticsearch.getRetention().getMininumAge());
+
+      final var lifecycleUpdate =
+          Map.of(
+              "index.lifecycle.name", configuration.elasticsearch.getRetention().getPolicyName());
+
+      searchEngineClient.putSettings(
+          provider.getIndexDescriptors().stream().toList(), lifecycleUpdate);
+    }
   }
 
   private Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndices(
@@ -170,7 +183,8 @@ public class CamundaExporter implements Exporter {
   }
 
   private ElasticsearchClient createClient() {
-    return ElasticsearchClientFactory.INSTANCE.create(configuration.elasticsearch);
+    final var connector = new ElasticsearchConnector(configuration.elasticsearch.getConnect());
+    return connector.createClient();
   }
 
   private boolean shouldFlush() {

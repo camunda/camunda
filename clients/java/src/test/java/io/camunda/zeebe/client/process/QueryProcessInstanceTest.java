@@ -58,11 +58,11 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         .newProcessInstanceQuery()
         .filter(
             f ->
-                f.key(123L)
-                    .bpmnProcessId("bpmnProcessId")
-                    .processName("Demo process")
-                    .processVersion(7)
-                    .processVersionTag("v7")
+                f.processInstanceKey(123L)
+                    .processDefinitionId("bpmnProcessId")
+                    .processDefinitionName("Demo process")
+                    .processDefinitionVersion(7)
+                    .processDefinitionVersionTag("v7")
                     .processDefinitionKey(15L)
                     .rootProcessInstanceKey(20L)
                     .parentProcessInstanceKey(25L)
@@ -80,11 +80,11 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
     final ProcessInstanceFilterRequest filter = request.getFilter();
     assertThat(filter).isNotNull();
-    assertThat(filter.getKey()).isEqualTo(123L);
-    assertThat(filter.getBpmnProcessId()).isEqualTo("bpmnProcessId");
-    assertThat(filter.getProcessName()).isEqualTo("Demo process");
-    assertThat(filter.getProcessVersion()).isEqualTo(7);
-    assertThat(filter.getProcessVersionTag()).isEqualTo("v7");
+    assertThat(filter.getProcessInstanceKey()).isEqualTo(123L);
+    assertThat(filter.getProcessDefinitionId()).isEqualTo("bpmnProcessId");
+    assertThat(filter.getProcessDefinitionName()).isEqualTo("Demo process");
+    assertThat(filter.getProcessDefinitionVersion()).isEqualTo(7);
+    assertThat(filter.getProcessDefinitionVersionTag()).isEqualTo("v7");
     assertThat(filter.getProcessDefinitionKey()).isEqualTo(15L);
     assertThat(filter.getRootProcessInstanceKey()).isEqualTo(20L);
     assertThat(filter.getParentProcessInstanceKey()).isEqualTo(25L);
@@ -104,15 +104,15 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         .newProcessInstanceQuery()
         .sort(
             s ->
-                s.key()
+                s.processInstanceKey()
                     .asc()
-                    .bpmnProcessId()
+                    .processDefinitionId()
                     .desc()
-                    .processName()
+                    .processDefinitionName()
                     .asc()
-                    .processVersion()
+                    .processDefinitionVersion()
                     .asc()
-                    .processVersionTag()
+                    .processDefinitionVersionTag()
                     .desc()
                     .processDefinitionKey()
                     .desc()

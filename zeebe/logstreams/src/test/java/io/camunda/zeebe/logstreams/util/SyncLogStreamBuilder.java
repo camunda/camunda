@@ -12,7 +12,6 @@ import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
-import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import java.time.InstantSource;
 
 public final class SyncLogStreamBuilder implements LogStreamBuilder {
@@ -24,13 +23,6 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
 
   SyncLogStreamBuilder(final LogStreamBuilder delegate) {
     this.delegate = delegate;
-  }
-
-  @Override
-  public SyncLogStreamBuilder withActorSchedulingService(
-      final ActorSchedulingService actorSchedulingService) {
-    delegate.withActorSchedulingService(actorSchedulingService);
-    return this;
   }
 
   @Override

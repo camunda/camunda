@@ -32,6 +32,8 @@ import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUser
 
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.document.api.DocumentMetadataModel;
+import io.camunda.search.security.auth.Authentication;
+import io.camunda.search.security.auth.Authentication.Builder;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
@@ -47,8 +49,6 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.UserServices.CreateUserRequest;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
@@ -498,17 +498,29 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
-      final CreateProcessInstanceRequest request) {
-    return getResult(
-        validateCreateProcessInstanceRequest(request),
-        () ->
+      final CreateProcessInstanceRequest request, final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance")
+            .flatMap(
+                tenant ->
+                    validateAuthorization(tenant, multiTenancyEnabled, "Create Process Instance")
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenant)))
+            .flatMap(
+                tenant ->
+                    validateCreateProcessInstanceRequest(request)
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenant)));
+    return validationResponse.map(
+        tenantId ->
             new ProcessInstanceCreateRequest(
                 getLongOrDefault(
                     request, CreateProcessInstanceRequest::getProcessDefinitionKey, -1L),
-                getStringOrEmpty(request, CreateProcessInstanceRequest::getBpmnProcessId),
-                getIntOrDefault(request, CreateProcessInstanceRequest::getVersion, -1),
+                getStringOrEmpty(request, CreateProcessInstanceRequest::getProcessDefinitionId),
+                getIntOrDefault(
+                    request, CreateProcessInstanceRequest::getProcessDefinitionVersion, -1),
                 getMapOrEmpty(request, CreateProcessInstanceRequest::getVariables),
-                request.getTenantId(),
+                tenantId,
                 request.getAwaitCompletion(),
                 request.getRequestTimeout(),
                 request.getOperationReference(),
@@ -584,8 +596,8 @@ public class RequestMapper {
     return validationResponse.map(
         tenantId ->
             new DecisionEvaluationRequest(
-                getStringOrEmpty(request, EvaluateDecisionRequest::getDecisionId),
-                getLongOrDefault(request, EvaluateDecisionRequest::getDecisionKey, -1L),
+                getStringOrEmpty(request, EvaluateDecisionRequest::getDecisionDefinitionId),
+                getLongOrDefault(request, EvaluateDecisionRequest::getDecisionDefinitionKey, -1L),
                 getMapOrEmpty(request, EvaluateDecisionRequest::getVariables),
                 tenantId));
   }
