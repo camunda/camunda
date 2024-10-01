@@ -244,6 +244,7 @@
     <skipTests>${quickly}</skipTests>
     <skipUTs>${skipTests}</skipUTs>
     <skipITs>${skipTests}</skipITs>
+    <cyclonedx.skip>${quickly}</cyclonedx.skip>
     <jacoco.skip>${skipUTs}</jacoco.skip>
 
     <!--
