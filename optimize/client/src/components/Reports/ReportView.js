@@ -71,7 +71,7 @@ export default function ReportView({report, error, loadReport}) {
   }
 
   const shouldShowCSVDownload = () => {
-    return report?.data?.visualization !== 'number' && report.result?.measures.length === 1;
+    return report?.data?.view?.properties?.includes('rawData') && report.result?.measures.length === 1;
   };
 
   const constructCSVDownloadLink = () => {
