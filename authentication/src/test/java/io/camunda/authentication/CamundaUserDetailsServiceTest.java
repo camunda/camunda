@@ -13,9 +13,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.search.entities.UserEntity;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.service.UserServices;
-import io.camunda.service.entities.UserEntity;
-import io.camunda.service.search.query.SearchQueryResult;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Before;

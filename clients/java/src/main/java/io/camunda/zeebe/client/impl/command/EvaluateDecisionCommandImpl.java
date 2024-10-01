@@ -120,14 +120,14 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   @Override
   public EvaluateDecisionCommandStep2 decisionId(final String decisionId) {
     grpcRequestObjectBuilder.setDecisionId(decisionId);
-    httpRequestObject.setDecisionId(decisionId);
+    httpRequestObject.setDecisionDefinitionId(decisionId);
     return this;
   }
 
   @Override
   public EvaluateDecisionCommandStep2 decisionKey(final long decisionKey) {
     grpcRequestObjectBuilder.setDecisionKey(decisionKey);
-    httpRequestObject.setDecisionKey(decisionKey);
+    httpRequestObject.setDecisionDefinitionKey(decisionKey);
     return this;
   }
 
@@ -150,7 +150,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   private ZeebeFuture<EvaluateDecisionResponse> sendRestRequest() {
     final HttpZeebeFuture<EvaluateDecisionResponse> result = new HttpZeebeFuture<>();
     httpClient.post(
-        "/decisions/evaluation",
+        "/decision-definitions/evaluation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse.class,

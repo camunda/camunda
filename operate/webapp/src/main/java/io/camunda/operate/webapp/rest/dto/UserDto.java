@@ -35,7 +35,7 @@ public class UserDto {
     return canLogout;
   }
 
-  public UserDto setCanLogout(boolean canLogout) {
+  public UserDto setCanLogout(final boolean canLogout) {
     this.canLogout = canLogout;
     return this;
   }
@@ -79,7 +79,7 @@ public class UserDto {
     return tenants;
   }
 
-  public UserDto setTenants(List<OperateTenant> tenants) {
+  public UserDto setTenants(final List<OperateTenant> tenants) {
     this.tenants = tenants;
     return this;
   }
@@ -106,7 +106,7 @@ public class UserDto {
     return c8Links;
   }
 
-  public UserDto setC8Links(Map<ClusterMetadata.AppName, String> c8Links) {
+  public UserDto setC8Links(final Map<ClusterMetadata.AppName, String> c8Links) {
     if (c8Links != null) {
       this.c8Links = c8Links;
     }

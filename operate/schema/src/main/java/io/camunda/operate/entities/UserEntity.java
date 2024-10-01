@@ -7,10 +7,11 @@
  */
 package io.camunda.operate.entities;
 
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.util.List;
 import java.util.Objects;
 
-public class UserEntity extends OperateEntity<UserEntity> {
+public class UserEntity extends AbstractExporterEntity<UserEntity> {
   private String userId;
   private String displayName;
   private String password;
@@ -20,7 +21,7 @@ public class UserEntity extends OperateEntity<UserEntity> {
     return roles;
   }
 
-  public UserEntity setRoles(List<String> roles) {
+  public UserEntity setRoles(final List<String> roles) {
     this.roles = roles;
     return this;
   }
@@ -29,7 +30,7 @@ public class UserEntity extends OperateEntity<UserEntity> {
     return password;
   }
 
-  public UserEntity setPassword(String password) {
+  public UserEntity setPassword(final String password) {
     this.password = password;
     return this;
   }
@@ -53,6 +54,11 @@ public class UserEntity extends OperateEntity<UserEntity> {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), userId, displayName, password, roles);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -68,10 +74,5 @@ public class UserEntity extends OperateEntity<UserEntity> {
         && displayName.equals(that.displayName)
         && password.equals(that.password)
         && roles.equals(that.roles);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), userId, displayName, password, roles);
   }
 }

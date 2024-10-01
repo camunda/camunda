@@ -11,7 +11,6 @@ import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
 import io.camunda.operate.Metrics;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
@@ -22,6 +21,7 @@ import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.cache.FlowNodeInstanceTreePathCache;
 import io.camunda.operate.zeebeimport.cache.TreePathCacheMetricsImpl;
 import io.camunda.operate.zeebeimport.processors.fni.FNITransformer;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;

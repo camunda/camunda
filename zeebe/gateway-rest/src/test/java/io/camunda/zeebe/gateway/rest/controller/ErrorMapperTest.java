@@ -13,9 +13,10 @@ import static org.mockito.ArgumentMatchers.anyString;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException.ConnectionClosed;
-import io.camunda.service.CamundaServiceException;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.security.auth.Authentication;
+import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
@@ -62,7 +63,7 @@ public class ErrorMapperTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaServiceException(
+                new CamundaBrokerException(
                     new BrokerError(ErrorCode.PROCESS_NOT_FOUND, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
@@ -91,7 +92,7 @@ public class ErrorMapperTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaServiceException(
+                new CamundaBrokerException(
                     new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
@@ -120,7 +121,7 @@ public class ErrorMapperTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaServiceException(
+                new CamundaBrokerException(
                     new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
@@ -161,7 +162,7 @@ public class ErrorMapperTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaServiceException(new BrokerError(errorCode, "Just an error"))));
+                new CamundaBrokerException(new BrokerError(errorCode, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -193,7 +194,7 @@ public class ErrorMapperTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaServiceException(new NullPointerException("Just an error"))));
+                new CamundaSearchException(new NullPointerException("Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -274,7 +275,7 @@ public class ErrorMapperTest extends RestControllerTest {
   }
 
   @Test
-  public void shouldReturnGatewayTimeoutOnConnectionClosed() {
+  public void shouldReturnBadGatewayOnConnectionClosed() {
     // given
     final var errorMsg = "Oh noes, connection closed!";
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
@@ -283,7 +284,7 @@ public class ErrorMapperTest extends RestControllerTest {
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
-            HttpStatus.GATEWAY_TIMEOUT,
+            HttpStatus.BAD_GATEWAY,
             "Expected to handle REST API request, but the connection was cut prematurely with the broker; "
                 + "the request may or may not have been accepted, and may not be safe to retry");
     expectedBody.setTitle(ConnectionClosed.class.getName());
@@ -298,7 +299,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .body(Mono.just(request), UserTaskCompletionRequest.class)
         .exchange()
         .expectStatus()
-        .isEqualTo(HttpStatus.GATEWAY_TIMEOUT)
+        .isEqualTo(HttpStatus.BAD_GATEWAY)
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody(ProblemDetail.class)

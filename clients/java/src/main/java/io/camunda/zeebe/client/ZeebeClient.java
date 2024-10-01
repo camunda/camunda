@@ -41,9 +41,16 @@ import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
+import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetRequest;
+import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetXmlRequest;
+import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
+import io.camunda.zeebe.client.api.fetch.UserTaskGetFormRequest;
+import io.camunda.zeebe.client.api.fetch.UserTaskGetRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
+import io.camunda.zeebe.client.api.search.query.DecisionInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionRequirementsQuery;
 import io.camunda.zeebe.client.api.search.query.FlownodeInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.IncidentQuery;
@@ -679,6 +686,28 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   ClockResetCommandStep1 newClockResetCommand();
 
   /**
+   * Retrieves a process instance by key.
+   *
+   * <pre>
+   * long processInstanceKey = ...;
+   *
+   * zeebeClient
+   *  .newProcessInstanceGetRequest(processInstanceKey)
+   *  .send();
+   * </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @return a builder for the request to get a process instance
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  ProcessInstanceGetRequest newProcessInstanceGetRequest(long processInstanceKey);
+
+  /**
    * Executes a search request to query process instances.
    *
    * <pre>
@@ -799,14 +828,37 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   DecisionDefinitionQuery newDecisionDefinitionQuery();
 
+  /**
+   * Gets a decision definition by key.
+   *
+   * <pre>
+   *   long decisionDefinitionKey = ...;
+   *
+   *   zeebeClient
+   *   .newDecisionDefinitionGetRequest(decisionDefinitionKey)
+   *   .send();
+   *   </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @param decisionDefinitionKey the key of the decision definition
+   * @return a builder for the request to get a decision definition
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  DecisionDefinitionGetRequest newDecisionDefinitionGetRequest(long decisionDefinitionKey);
+
   /*
    * Retrieves the XML representation of a decision definition.
    *
    * <pre>
-   * long decisionKey = ...;
+   * long decisionDefinitionKey = ...;
    *
    * zeebeClient
-   *  .newDecisionDefinitionGetXmlRequest(decisionKey)
+   *  .newDecisionDefinitionGetXmlRequest(decisionDefinitionKey)
    *  .send();
    * </pre>
    *
@@ -816,10 +868,36 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * warning is removed, anything described below may not yet have taken effect, and the interface
    * and its description are subject to change.</strong>
    *
+   * @param decisionDefinitionKey the key of the decision definition
    * @return a builder for the request to get the XML of a decision definition
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
-  DecisionDefinitionGetXmlRequest newDecisionDefinitionGetXmlRequest(long decisionKey);
+  DecisionDefinitionGetXmlRequest newDecisionDefinitionGetXmlRequest(long decisionDefinitionKey);
+
+  /**
+   * Executes a search request to query decision instances.
+   *
+   * <pre>
+   * long decisionInstanceKey = ...;
+   *
+   * zeebeClient
+   *  .newDecisionInstanceQuery()
+   *  .filter((f) -> f.decisionInstanceKey(decisionInstanceKey))
+   *  .sort((s) -> s.decisionInstanceKey().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @return
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  DecisionInstanceQuery newDecisionInstanceQuery();
 
   /*
    * Executes a search request to query decision definitions.
@@ -889,4 +967,96 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   AddPermissionsCommandStep1 newAddPermissionsCommand(long ownerKey);
+
+  /*
+   * Retrieves the XML representation of a decision requirements.
+   *
+   * <pre>
+   * long decisionRequirementsKey = ...;
+   *
+   * zeebeClient
+   *  .newDecisionRequirementsGetXmlRequest(decisionRequirementsKey)
+   *  .send();
+   * </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @return a builder for the request to get the XML of a decision definition
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  DecisionRequirementsGetXmlRequest newDecisionRequirementsGetXmlRequest(
+      long decisionRequirementsKey);
+
+  /**
+   * Gets a decision requirements by key.
+   *
+   * <pre>
+   *   long decisionRequirementsKey = ...;
+   *
+   *   zeebeClient
+   *   .newDecisionRequirementsGetRequest(decisionRequirementsKey)
+   *   .send();
+   *   </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @param decisionRequirementsKey the key of the decision requirements
+   * @return a builder for the request to get a decision requirements
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  DecisionRequirementsGetRequest newDecisionRequirementsGetRequest(long decisionRequirementsKey);
+
+  /**
+   * Gets a user task form by key.
+   *
+   * <pre>
+   *   long userTaskKey = ...;
+   *
+   *   zeebeClient
+   *   .newUserTaskGetFormRequest(userTaskKey)
+   *   .send();
+   *   </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @param userTaskKey the key of the user task
+   * @return a builder for the request to get a user task form
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  UserTaskGetFormRequest newUserTaskGetFormRequest(long userTaskKey);
+
+  /**
+   * Gets a User Task by key.
+   *
+   * <pre>
+   *   long userTaskKey = ...;
+   *
+   *   zeebeClient
+   *   .newUserTaskGetRequest(userTaskKey)
+   *   .send();
+   *   </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @param userTaskKey the key of the user task
+   * @return a builder for the request to get a user task
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  UserTaskGetRequest newUserTaskGetRequest(long userTaskKey);
 }

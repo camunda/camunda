@@ -34,7 +34,7 @@ public class SortingDto {
     return sortBy;
   }
 
-  public SortingDto setSortBy(String sortBy) {
+  public SortingDto setSortBy(final String sortBy) {
     this.sortBy = sortBy;
     return this;
   }
@@ -44,7 +44,7 @@ public class SortingDto {
     return sortOrder;
   }
 
-  public SortingDto setSortOrder(String sortOrder) {
+  public SortingDto setSortOrder(final String sortOrder) {
     if (!VALID_SORT_ORDER_VALUES.contains(sortOrder)) {
       throw new InvalidRequestException("SortOrder parameter has invalid value: " + sortOrder);
     }
@@ -60,7 +60,7 @@ public class SortingDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

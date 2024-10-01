@@ -7,11 +7,8 @@
  */
 package io.camunda.service;
 
-import static java.util.Optional.ofNullable;
-
-import io.camunda.search.clients.CamundaSearchClient;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.service.transformers.ServiceTransformers;
+import io.camunda.search.security.auth.Authentication;
+import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
@@ -27,26 +24,11 @@ import org.agrona.concurrent.UnsafeBuffer;
 public abstract class ApiServices<T extends ApiServices<T>> {
 
   protected final BrokerClient brokerClient;
-  protected final CamundaSearchClient searchClient;
   protected final Authentication authentication;
-  protected final ServiceTransformers transformers;
 
-  protected ApiServices(
-      final BrokerClient brokerClient,
-      final CamundaSearchClient searchClient,
-      final Authentication authentication) {
-    this(brokerClient, searchClient, null, authentication);
-  }
-
-  protected ApiServices(
-      final BrokerClient brokerClient,
-      final CamundaSearchClient searchClient,
-      final ServiceTransformers transformers,
-      final Authentication authentication) {
+  protected ApiServices(final BrokerClient brokerClient, final Authentication authentication) {
     this.brokerClient = brokerClient;
-    this.searchClient = searchClient;
     this.authentication = authentication;
-    this.transformers = ofNullable(transformers).orElseGet(ServiceTransformers::newInstance);
   }
 
   public abstract T withAuthentication(final Authentication authentication);
@@ -68,13 +50,13 @@ public abstract class ApiServices<T extends ApiServices<T>> {
         .handleAsync(
             (response, error) -> {
               if (error != null) {
-                throw new CamundaServiceException(error);
+                throw new CamundaBrokerException(error);
               }
               if (response.isError()) {
-                throw new CamundaServiceException(response.getError());
+                throw new CamundaBrokerException(response.getError());
               }
               if (response.isRejection()) {
-                throw new CamundaServiceException(response.getRejection());
+                throw new CamundaBrokerException(response.getRejection());
               }
               return response;
             });

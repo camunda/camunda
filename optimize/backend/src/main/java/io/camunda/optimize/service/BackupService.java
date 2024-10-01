@@ -64,7 +64,7 @@ public class BackupService {
                 getSingleBackupInfo(
                     entry.getKey(),
                     entry.getValue().stream()
-                        .collect(groupingBy(s -> SnapshotState.fromValue(s.state())))))
+                        .collect(groupingBy(s -> SnapshotState.valueOf(s.state())))))
         .toList();
   }
 
@@ -73,7 +73,7 @@ public class BackupService {
     return getSingleBackupInfo(
         backupId,
         backupReader.getOptimizeSnapshotsForBackupId(backupId).stream()
-            .collect(groupingBy(s -> SnapshotState.fromValue(s.state()))));
+            .collect(groupingBy(s -> SnapshotState.valueOf(s.state()))));
   }
 
   private BackupInfoDto getSingleBackupInfo(
@@ -109,7 +109,7 @@ public class BackupService {
                 snapshotInfo ->
                     new SnapshotInfoDto(
                         snapshotInfo.snapshot(),
-                        SnapshotState.fromValue(snapshotInfo.state()),
+                        SnapshotState.valueOf(snapshotInfo.state()),
                         OffsetDateTime.ofInstant(
                             Instant.ofEpochMilli(snapshotInfo.startTime().toEpochMilli()),
                             ZoneId.systemDefault()),

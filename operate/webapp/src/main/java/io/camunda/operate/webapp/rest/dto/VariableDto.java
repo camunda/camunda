@@ -10,9 +10,9 @@ package io.camunda.operate.webapp.rest.dto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,11 +37,11 @@ public class VariableDto {
   private SortValuesWrapper[] sortValues;
 
   public static VariableDto createFrom(
-      VariableEntity variableEntity,
-      List<OperationEntity> operations,
-      boolean fullValue,
-      int variableSizeThreshold,
-      ObjectMapper objectMapper) {
+      final VariableEntity variableEntity,
+      final List<OperationEntity> operations,
+      final boolean fullValue,
+      final int variableSizeThreshold,
+      final ObjectMapper objectMapper) {
     if (variableEntity == null) {
       return null;
     }
@@ -94,10 +94,10 @@ public class VariableDto {
   }
 
   public static List<VariableDto> createFrom(
-      List<VariableEntity> variableEntities,
-      Map<String, List<OperationEntity>> operations,
-      int variableSizeThreshold,
-      ObjectMapper objectMapper) {
+      final List<VariableEntity> variableEntities,
+      final Map<String, List<OperationEntity>> operations,
+      final int variableSizeThreshold,
+      final ObjectMapper objectMapper) {
     if (variableEntities == null) {
       return new ArrayList<>();
     }
@@ -118,7 +118,7 @@ public class VariableDto {
     return id;
   }
 
-  public void setId(String id) {
+  public void setId(final String id) {
     this.id = id;
   }
 
@@ -126,7 +126,7 @@ public class VariableDto {
     return name;
   }
 
-  public void setName(String name) {
+  public void setName(final String name) {
     this.name = name;
   }
 
@@ -134,7 +134,7 @@ public class VariableDto {
     return value;
   }
 
-  public void setValue(String value) {
+  public void setValue(final String value) {
     this.value = value;
   }
 
@@ -151,7 +151,7 @@ public class VariableDto {
     return hasActiveOperation;
   }
 
-  public void setHasActiveOperation(boolean hasActiveOperation) {
+  public void setHasActiveOperation(final boolean hasActiveOperation) {
     this.hasActiveOperation = hasActiveOperation;
   }
 

@@ -7,22 +7,22 @@
  */
 package io.camunda.operate.qa.migration;
 
-import static io.camunda.operate.entities.listview.ProcessInstanceState.COMPLETED;
 import static io.camunda.operate.qa.migration.util.TestConstants.DEFAULT_TENANT_ID;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState.COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.qa.migration.util.AbstractMigrationTest;
 import io.camunda.operate.qa.migration.util.EntityReader;
 import io.camunda.operate.qa.migration.v110.BigProcessDataGenerator;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ThreadUtil;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import java.util.List;
 import org.elasticsearch.action.search.SearchRequest;
 import org.junit.Test;
@@ -30,7 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class BigProcessTest extends AbstractMigrationTest {
 
-  private String bpmnProcessId = BigProcessDataGenerator.PROCESS_BPMN_PROCESS_ID;
+  private final String bpmnProcessId = BigProcessDataGenerator.PROCESS_BPMN_PROCESS_ID;
 
   @Autowired private EntityReader entityReader;
 

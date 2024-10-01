@@ -108,7 +108,7 @@ const AvailableTasks: React.FC<Props> = ({
               orientation="horizontal"
               className={styles.emptyMessage}
             >
-              <Search size={24} alt="" className={styles.emptyListIcon} />
+              <Search size={24} aria-hidden className={styles.emptyListIcon} />
               <Stack gap={1} className={styles.emptyMessageText}>
                 <span className={styles.emptyMessageHeading}>
                   {t('availableTasksNoTasksFoundInfo')}

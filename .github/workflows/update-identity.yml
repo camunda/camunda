@@ -48,7 +48,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          go: false
           maven-cache-key-modifier: identity-update
       - name: Update identity version in ./parent/pom.xml
         id: update-identity-version

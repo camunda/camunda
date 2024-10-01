@@ -12,12 +12,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
-import io.camunda.service.security.auth.Authentication;
+import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
@@ -33,19 +34,20 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @WebMvcTest(value = ProcessInstanceController.class)
 public class ProcessInstanceControllerTest extends RestControllerTest {
 
   static final String EXPECTED_START_RESPONSE =
       """
-      {
-         "processDefinitionKey":123,
-         "bpmnProcessId":"bpmnProcessId",
-         "version":-1,
-         "processInstanceKey":123,
-         "tenantId":"tenantId"
-      }""";
+          {
+             "processDefinitionKey":123,
+             "processDefinitionId":"bpmnProcessId",
+             "processDefinitionVersion":-1,
+             "processInstanceKey":123,
+             "tenantId":"tenantId"
+          }""";
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";
   static final String CANCEL_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/cancellation";
   static final String MIGRATE_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/migration";
@@ -56,6 +58,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Captor ArgumentCaptor<ProcessInstanceMigrateRequest> migrateRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceModifyRequest> modifyRequestCaptor;
   @MockBean ProcessInstanceServices processInstanceServices;
+  @MockBean MultiTenancyCfg multiTenancyCfg;
 
   @BeforeEach
   void setupServices() {
@@ -66,6 +69,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldCreateProcessInstancesWithProcessDefinitionKey() {
     // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var mockResponse =
         new ProcessInstanceCreationRecord()
             .setProcessDefinitionKey(123L)
@@ -78,9 +82,56 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-            "processDefinitionKey": 123
-        }""";
+            {
+                "processDefinitionKey": 123,
+                "tenantId": "tenantId"
+            }""";
+
+    // when / then
+    final ResponseSpec response =
+        withMultiTenancy(
+            "tenantId",
+            client ->
+                client
+                    .post()
+                    .uri(PROCESS_INSTANCES_START_URL)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(request)
+                    .exchange()
+                    .expectStatus()
+                    .isOk());
+
+    response
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_START_RESPONSE);
+
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
+    assertThat(capturedRequest.tenantId()).isEqualTo("tenantId");
+  }
+
+  @Test
+  void shouldCreateProcessInstancesWithoutTenantId() {
+    // given
+    final var mockResponse =
+        new ProcessInstanceCreationRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(123L)
+            .setTenantId("<default>");
+
+    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+            {
+                "processDefinitionKey": 123
+            }""";
 
     // when / then
     webClient
@@ -95,16 +146,26 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_START_RESPONSE);
+        .json(
+            """
+                {
+                   "processDefinitionKey":123,
+                   "processDefinitionId":"bpmnProcessId",
+                   "processDefinitionVersion":-1,
+                   "processInstanceKey":123,
+                   "tenantId":"<default>"
+                }""");
 
     verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
+    assertThat(capturedRequest.tenantId()).isEqualTo("<default>");
   }
 
   @Test
   void shouldCreateProcessInstancesWithBpmnProcessIdAndVersion() {
     // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var mockResponse =
         new ProcessInstanceCreationRecord()
             .setProcessDefinitionKey(123L)
@@ -117,21 +178,28 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-            "bpmnProcessId": "bpmnProcessId",
-            "version": 1
-        }""";
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "processDefinitionVersion": 1,
+                "tenantId": "tenantId"
+            }""";
 
     // when / then
-    webClient
-        .post()
-        .uri(PROCESS_INSTANCES_START_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
+    final ResponseSpec response =
+        withMultiTenancy(
+            "tenantId",
+            client ->
+                client
+                    .post()
+                    .uri(PROCESS_INSTANCES_START_URL)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(request)
+                    .exchange()
+                    .expectStatus()
+                    .isOk());
+
+    response
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
@@ -146,6 +214,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldCreateProcessInstancesWithBpmnProcessIdWithoutVersion() {
     // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var mockResponse =
         new ProcessInstanceCreationRecord()
             .setProcessDefinitionKey(123L)
@@ -158,20 +227,27 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-            "bpmnProcessId": "bpmnProcessId"
-        }""";
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "tenantId": "tenantId"
+            }""";
 
     // when / then
-    webClient
-        .post()
-        .uri(PROCESS_INSTANCES_START_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
+    final ResponseSpec response =
+        withMultiTenancy(
+            "tenantId",
+            client ->
+                client
+                    .post()
+                    .uri(PROCESS_INSTANCES_START_URL)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(request)
+                    .exchange()
+                    .expectStatus()
+                    .isOk());
+
+    response
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
@@ -186,6 +262,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldCreateProcessInstancesWithResultWithProcessDefinitionKey() {
     // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var mockResponse =
         new ProcessInstanceResultRecord()
             .setProcessDefinitionKey(123L)
@@ -199,21 +276,28 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-            "processDefinitionKey": 123,
-            "awaitCompletion": true
-        }""";
+            {
+                "processDefinitionKey": 123,
+                "awaitCompletion": true,
+                "tenantId": "tenantId"
+            }""";
 
     // when / then
-    webClient
-        .post()
-        .uri(PROCESS_INSTANCES_START_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
+    final ResponseSpec response =
+        withMultiTenancy(
+            "tenantId",
+            client ->
+                client
+                    .post()
+                    .uri(PROCESS_INSTANCES_START_URL)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(request)
+                    .exchange()
+                    .expectStatus()
+                    .isOk());
+
+    response
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
@@ -228,6 +312,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldCreateProcessInstancesWithResultWithBpmnProcessIdAndVersion() {
     // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var mockResponse =
         new ProcessInstanceResultRecord()
             .setProcessDefinitionKey(123L)
@@ -241,22 +326,29 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-            "bpmnProcessId": "bpmnProcessId",
-            "version": 1,
-            "awaitCompletion": true
-        }""";
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "processDefinitionVersion": 1,
+                "awaitCompletion": true,
+                "tenantId": "tenantId"
+            }""";
 
     // when / then
-    webClient
-        .post()
-        .uri(PROCESS_INSTANCES_START_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
+    final ResponseSpec response =
+        withMultiTenancy(
+            "tenantId",
+            client ->
+                client
+                    .post()
+                    .uri(PROCESS_INSTANCES_START_URL)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(request)
+                    .exchange()
+                    .expectStatus()
+                    .isOk());
+
+    response
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
@@ -271,6 +363,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldCreateProcessInstancesWithResultWithBpmnProcessIdWithoutVersion() {
     // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var mockResponse =
         new ProcessInstanceResultRecord()
             .setProcessDefinitionKey(123L)
@@ -284,21 +377,28 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-            "bpmnProcessId": "bpmnProcessId",
-            "awaitCompletion": true
-        }""";
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "awaitCompletion": true,
+                "tenantId": "tenantId"
+            }""";
 
     // when / then
-    webClient
-        .post()
-        .uri(PROCESS_INSTANCES_START_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
+    final ResponseSpec response =
+        withMultiTenancy(
+            "tenantId",
+            client ->
+                client
+                    .post()
+                    .uri(PROCESS_INSTANCES_START_URL)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(request)
+                    .exchange()
+                    .expectStatus()
+                    .isOk());
+
+    response
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
@@ -315,20 +415,20 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-            "version": 1,
-            "awaitCompletion": true
-        }""";
+            {
+                "version": 1,
+                "awaitCompletion": true
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"At least one of [bpmnProcessId, processDefinitionKey] is required.",
-            "instance":"/v2/process-instances"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"At least one of [processDefinitionId, processDefinitionKey] is required.",
+                "instance":"/v2/process-instances"
+             }""";
 
     // when / then
     webClient
@@ -351,21 +451,21 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-            "bpmnProcessId": "bpmnProcessId",
-            "processDefinitionKey": 123,
-            "version": 1
-        }""";
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "processDefinitionKey": 123,
+                "version": 1
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"Only one of [bpmnProcessId, processDefinitionKey] is allowed.",
-            "instance":"/v2/process-instances"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"Only one of [processDefinitionId, processDefinitionKey] is allowed.",
+                "instance":"/v2/process-instances"
+             }""";
 
     // when / then
     webClient
@@ -388,20 +488,20 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-            "bpmnProcessId": "bpmnProcessId",
-            "operationReference": -1
-        }""";
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "operationReference": -1
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"The value for operationReference is '-1' but must be > 0.",
-            "instance":"/v2/process-instances"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for operationReference is '-1' but must be > 0.",
+                "instance":"/v2/process-instances"
+             }""";
 
     // when / then
     webClient
@@ -427,9 +527,9 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "operationReference": 123
-        }""";
+            {
+              "operationReference": 123
+            }""";
 
     // when/then
     webClient
@@ -478,7 +578,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {}""";
+            {}""";
 
     // when/then
     webClient
@@ -502,19 +602,19 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "operationReference": -123
-        }""";
+            {
+              "operationReference": -123
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"The value for operationReference is '-123' but must be > 0.",
-            "instance":"/v2/process-instances/1/cancellation"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for operationReference is '-123' but must be > 0.",
+                "instance":"/v2/process-instances/1/cancellation"
+             }""";
 
     // when / then
     webClient
@@ -540,20 +640,20 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "targetProcessDefinitionKey": 123456,
-          "mappingInstructions": [
             {
-              "sourceElementId": "sourceElementId1",
-              "targetElementId": "targetElementId1"
-            },
-            {
-              "sourceElementId": "sourceElementId2",
-              "targetElementId": "targetElementId2"
-            }
-          ],
-          "operationReference": 123
-        }""";
+              "targetProcessDefinitionKey": 123456,
+              "mappingInstructions": [
+                {
+                  "sourceElementId": "sourceElementId1",
+                  "targetElementId": "targetElementId1"
+                },
+                {
+                  "sourceElementId": "sourceElementId2",
+                  "targetElementId": "targetElementId2"
+                }
+              ],
+              "operationReference": 123
+            }""";
 
     // when/then
     webClient
@@ -580,29 +680,29 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "mappingInstructions": [
             {
-              "sourceElementId": "sourceElementId1",
-              "targetElementId": "targetElementId1"
-            },
-            {
-              "sourceElementId": "sourceElementId2",
-              "targetElementId": "targetElementId2"
-            }
-          ],
-          "operationReference": 123
-        }""";
+              "mappingInstructions": [
+                {
+                  "sourceElementId": "sourceElementId1",
+                  "targetElementId": "targetElementId1"
+                },
+                {
+                  "sourceElementId": "sourceElementId2",
+                  "targetElementId": "targetElementId2"
+                }
+              ],
+              "operationReference": 123
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"No targetProcessDefinitionKey provided.",
-            "instance":"/v2/process-instances/1/migration"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No targetProcessDefinitionKey provided.",
+                "instance":"/v2/process-instances/1/migration"
+             }""";
 
     // when / then
     webClient
@@ -625,20 +725,20 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "targetProcessDefinitionKey": 123456,
-          "operationReference": 123
-        }""";
+            {
+              "targetProcessDefinitionKey": 123456,
+              "operationReference": 123
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"No mappingInstructions provided.",
-            "instance":"/v2/process-instances/1/migration"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No mappingInstructions provided.",
+                "instance":"/v2/process-instances/1/migration"
+             }""";
 
     // when / then
     webClient
@@ -661,21 +761,21 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "targetProcessDefinitionKey": 123456,
-          "mappingInstructions": [],
-          "operationReference": 123
-        }""";
+            {
+              "targetProcessDefinitionKey": 123456,
+              "mappingInstructions": [],
+              "operationReference": 123
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"No mappingInstructions provided.",
-            "instance":"/v2/process-instances/1/migration"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No mappingInstructions provided.",
+                "instance":"/v2/process-instances/1/migration"
+             }""";
 
     // when / then
     webClient
@@ -698,29 +798,29 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "targetProcessDefinitionKey": 123456,
-          "mappingInstructions": [
             {
-              "sourceElementId": "sourceElementId1",
-              "targetElementId": "targetElementId1"
-            },
-            {
-              "sourceElementId": "sourceElementId2"
-            }
-          ],
-          "operationReference": 123
-        }""";
+              "targetProcessDefinitionKey": 123456,
+              "mappingInstructions": [
+                {
+                  "sourceElementId": "sourceElementId1",
+                  "targetElementId": "targetElementId1"
+                },
+                {
+                  "sourceElementId": "sourceElementId2"
+                }
+              ],
+              "operationReference": 123
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"All [sourceElementId, targetElementId] are required.",
-            "instance":"/v2/process-instances/1/migration"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"All [sourceElementId, targetElementId] are required.",
+                "instance":"/v2/process-instances/1/migration"
+             }""";
 
     // when / then
     webClient
@@ -743,30 +843,30 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "targetProcessDefinitionKey": 123456,
-          "mappingInstructions": [
             {
-              "sourceElementId": "sourceElementId1",
-              "targetElementId": "targetElementId1"
-            },
-            {
-              "sourceElementId": "sourceElementId2",
-              "targetElementId": "targetElementId2"
-            }
-          ],
-          "operationReference": -123
-        }""";
+              "targetProcessDefinitionKey": 123456,
+              "mappingInstructions": [
+                {
+                  "sourceElementId": "sourceElementId1",
+                  "targetElementId": "targetElementId1"
+                },
+                {
+                  "sourceElementId": "sourceElementId2",
+                  "targetElementId": "targetElementId2"
+                }
+              ],
+              "operationReference": -123
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"The value for operationReference is '-123' but must be > 0.",
-            "instance":"/v2/process-instances/1/migration"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for operationReference is '-123' but must be > 0.",
+                "instance":"/v2/process-instances/1/migration"
+             }""";
 
     // when / then
     webClient
@@ -792,34 +892,34 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "activateInstructions": [
             {
-              "elementId": "elementId",
-              "variableInstructions": [
+              "activateInstructions": [
                 {
-                  "variables": {
-                    "foo": "bar"
-                  }
+                  "elementId": "elementId",
+                  "variableInstructions": [
+                    {
+                      "variables": {
+                        "foo": "bar"
+                      }
+                    }
+                  ],
+                  "ancestorElementInstanceKey": 123456
+                },
+                {
+                  "elementId": "elementId2",
+                  "ancestorElementInstanceKey": 654321
                 }
               ],
-              "ancestorElementInstanceKey": 123456
-            },
-            {
-              "elementId": "elementId2",
-              "ancestorElementInstanceKey": 654321
-            }
-          ],
-          "terminateInstructions": [
-            {
-              "elementInstanceKey": 123456
-            },
-            {
-              "elementInstanceKey": 654321
-            }
-          ],
-          "operationReference": 123
-        }""";
+              "terminateInstructions": [
+                {
+                  "elementInstanceKey": 123456
+                },
+                {
+                  "elementInstanceKey": 654321
+                }
+              ],
+              "operationReference": 123
+            }""";
 
     // when/then
     webClient
@@ -850,17 +950,17 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "terminateInstructions": [
             {
-              "elementInstanceKey": 123456
-            },
-            {
-              "elementInstanceKey": 654321
-            }
-          ],
-          "operationReference": 123
-        }""";
+              "terminateInstructions": [
+                {
+                  "elementInstanceKey": 123456
+                },
+                {
+                  "elementInstanceKey": 654321
+                }
+              ],
+              "operationReference": 123
+            }""";
 
     // when/then
     webClient
@@ -889,26 +989,26 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "activateInstructions": [
             {
-              "elementId": "elementId",
-              "variableInstructions": [
+              "activateInstructions": [
                 {
-                  "variables": {
-                    "foo": "bar"
-                  }
+                  "elementId": "elementId",
+                  "variableInstructions": [
+                    {
+                      "variables": {
+                        "foo": "bar"
+                      }
+                    }
+                  ],
+                  "ancestorElementInstanceKey": 123456
+                },
+                {
+                  "elementId": "elementId2",
+                  "ancestorElementInstanceKey": 654321
                 }
               ],
-              "ancestorElementInstanceKey": 123456
-            },
-            {
-              "elementId": "elementId2",
-              "ancestorElementInstanceKey": 654321
-            }
-          ],
-          "operationReference": 123
-        }""";
+              "operationReference": 123
+            }""";
 
     // when/then
     webClient
@@ -937,25 +1037,25 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "activateInstructions": [
             {
-              "elementId": "elementId"
-            },
-            {
-              "elementId": "elementId2"
-            }
-          ],
-          "terminateInstructions": [
-            {
-              "elementInstanceKey": 123456
-            },
-            {
-              "elementInstanceKey": 654321
-            }
-          ],
-          "operationReference": 123
-        }""";
+              "activateInstructions": [
+                {
+                  "elementId": "elementId"
+                },
+                {
+                  "elementId": "elementId2"
+                }
+              ],
+              "terminateInstructions": [
+                {
+                  "elementInstanceKey": 123456
+                },
+                {
+                  "elementInstanceKey": 654321
+                }
+              ],
+              "operationReference": 123
+            }""";
 
     // when/then
     webClient
@@ -981,36 +1081,36 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "activateInstructions": [
             {
-              "ancestorElementInstanceKey": 123456
-            },
-            {
-              "elementId": "elementId2",
-              "ancestorElementInstanceKey": 654321
-            }
-          ],
-          "terminateInstructions": [
-            {
-              "elementInstanceKey": 123456
-            },
-            {
-              "elementInstanceKey": 654321
-            }
-          ],
-          "operationReference": 123
-        }""";
+              "activateInstructions": [
+                {
+                  "ancestorElementInstanceKey": 123456
+                },
+                {
+                  "elementId": "elementId2",
+                  "ancestorElementInstanceKey": 654321
+                }
+              ],
+              "terminateInstructions": [
+                {
+                  "elementInstanceKey": 123456
+                },
+                {
+                  "elementInstanceKey": 654321
+                }
+              ],
+              "operationReference": 123
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"No elementId provided.",
-            "instance":"/v2/process-instances/1/modification"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No elementId provided.",
+                "instance":"/v2/process-instances/1/modification"
+             }""";
 
     // when / then
     webClient
@@ -1033,42 +1133,42 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "activateInstructions": [
             {
-              "elementId": "elementId",
-              "variableInstructions": [
+              "activateInstructions": [
                 {
-                  "scopeId": "scopeId"
+                  "elementId": "elementId",
+                  "variableInstructions": [
+                    {
+                      "scopeId": "scopeId"
+                    }
+                  ],
+                  "ancestorElementInstanceKey": 123456
+                },
+                {
+                  "elementId": "elementId2",
+                  "ancestorElementInstanceKey": 654321
                 }
               ],
-              "ancestorElementInstanceKey": 123456
-            },
-            {
-              "elementId": "elementId2",
-              "ancestorElementInstanceKey": 654321
-            }
-          ],
-          "terminateInstructions": [
-            {
-              "elementInstanceKey": 123456
-            },
-            {
-              "elementInstanceKey": 654321
-            }
-          ],
-          "operationReference": 123
-        }""";
+              "terminateInstructions": [
+                {
+                  "elementInstanceKey": 123456
+                },
+                {
+                  "elementInstanceKey": 654321
+                }
+              ],
+              "operationReference": 123
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"No variables provided.",
-            "instance":"/v2/process-instances/1/modification"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No variables provided.",
+                "instance":"/v2/process-instances/1/modification"
+             }""";
 
     // when / then
     webClient
@@ -1091,35 +1191,35 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "activateInstructions": [
             {
-              "elementId": "elementId",
-              "ancestorElementInstanceKey": 123456
-            },
-            {
-              "elementId": "elementId2",
-              "ancestorElementInstanceKey": 654321
-            }
-          ],
-          "terminateInstructions": [
-            {},
-            {
-              "elementInstanceKey": 654321
-            }
-          ],
-          "operationReference": 123
-        }""";
+              "activateInstructions": [
+                {
+                  "elementId": "elementId",
+                  "ancestorElementInstanceKey": 123456
+                },
+                {
+                  "elementId": "elementId2",
+                  "ancestorElementInstanceKey": 654321
+                }
+              ],
+              "terminateInstructions": [
+                {},
+                {
+                  "elementInstanceKey": 654321
+                }
+              ],
+              "operationReference": 123
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"No elementInstanceKey provided.",
-            "instance":"/v2/process-instances/1/modification"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No elementInstanceKey provided.",
+                "instance":"/v2/process-instances/1/modification"
+             }""";
 
     // when / then
     webClient
@@ -1142,44 +1242,44 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "activateInstructions": [
             {
-              "elementId": "elementId",
-              "variableInstructions": [
+              "activateInstructions": [
                 {
-                  "variables": {
-                    "foo": "bar"
-                  }
+                  "elementId": "elementId",
+                  "variableInstructions": [
+                    {
+                      "variables": {
+                        "foo": "bar"
+                      }
+                    }
+                  ],
+                  "ancestorElementInstanceKey": 123456
+                },
+                {
+                  "elementId": "elementId2",
+                  "ancestorElementInstanceKey": 654321
                 }
               ],
-              "ancestorElementInstanceKey": 123456
-            },
-            {
-              "elementId": "elementId2",
-              "ancestorElementInstanceKey": 654321
-            }
-          ],
-          "terminateInstructions": [
-            {
-              "elementInstanceKey": 123456
-            },
-            {
-              "elementInstanceKey": 654321
-            }
-          ],
-          "operationReference": -123
-        }""";
+              "terminateInstructions": [
+                {
+                  "elementInstanceKey": 123456
+                },
+                {
+                  "elementInstanceKey": 654321
+                }
+              ],
+              "operationReference": -123
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"The value for operationReference is '-123' but must be > 0.",
-            "instance":"/v2/process-instances/1/modification"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for operationReference is '-123' but must be > 0.",
+                "instance":"/v2/process-instances/1/modification"
+             }""";
 
     // when / then
     webClient

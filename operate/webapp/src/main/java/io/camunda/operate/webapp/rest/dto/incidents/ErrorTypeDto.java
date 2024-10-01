@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.rest.dto.incidents;
 
-import io.camunda.operate.entities.ErrorType;
+import io.camunda.webapps.schema.entities.operate.ErrorType;
 import java.util.Objects;
 
 public class ErrorTypeDto implements Comparable<ErrorTypeDto> {
@@ -15,7 +15,7 @@ public class ErrorTypeDto implements Comparable<ErrorTypeDto> {
   private String id;
   private String name;
 
-  public static ErrorTypeDto createFrom(ErrorType errorType) {
+  public static ErrorTypeDto createFrom(final ErrorType errorType) {
     return new ErrorTypeDto().setId(errorType.name()).setName(errorType.getTitle());
   }
 

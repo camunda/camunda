@@ -30,23 +30,24 @@
   },
   "devDependencies": {
     "@types/event-source-polyfill": "1.0.5",
-    "@types/node": "20.16.5",
-    "@types/react": "18.3.7",
+    "@types/node": "20.16.10",
+    "@types/react": "18.3.10",
     "@types/react-dom": "18.3.0",
     "@types/react-transition-group": "4.4.11",
-    "@typescript-eslint/eslint-plugin": "8.6.0",
-    "@typescript-eslint/parser": "8.6.0",
-    "@vitejs/plugin-react": "4.3.1",
+    "@typescript-eslint/eslint-plugin": "8.8.0",
+    "@typescript-eslint/parser": "8.8.0",
+    "@vitejs/plugin-react": "4.3.2",
+    "@vzeta/rollup-plugin-sbom": "2.0.0",
     "eslint": "8.57.1",
     "eslint-plugin-react-hooks": "4.6.2",
     "eslint-plugin-react-refresh": "0.4.12",
     "event-source-polyfill": "1.0.31",
     "license-checker": "25.0.1",
     "prettier": "3.3.3",
-    "rollup-plugin-license": "3.5.2",
-    "sass": "1.79.1",
+    "rollup-plugin-license": "3.5.3",
+    "sass": "1.79.4",
     "typescript": "5.6.2",
-    "vite": "5.4.6"
+    "vite": "5.4.8"
   },
   "packageManager": "yarn@4.3.1"
 }

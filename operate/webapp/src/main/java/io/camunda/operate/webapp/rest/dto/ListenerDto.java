@@ -7,11 +7,11 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
-import io.camunda.operate.entities.JobEntity;
-import io.camunda.operate.entities.ListenerEventType;
-import io.camunda.operate.entities.ListenerState;
-import io.camunda.operate.entities.ListenerType;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
+import io.camunda.webapps.schema.entities.operate.JobEntity;
+import io.camunda.webapps.schema.entities.operate.ListenerEventType;
+import io.camunda.webapps.schema.entities.operate.ListenerState;
+import io.camunda.webapps.schema.entities.operate.ListenerType;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;

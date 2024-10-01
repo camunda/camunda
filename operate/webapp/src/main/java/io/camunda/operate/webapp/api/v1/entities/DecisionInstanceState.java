@@ -14,7 +14,7 @@ public enum DecisionInstanceState {
   UNSPECIFIED;
 
   public static DecisionInstanceState getState(
-      io.camunda.operate.entities.dmn.DecisionInstanceState state) {
+      io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState state) {
     if (state == null) {
       return UNSPECIFIED;
     }

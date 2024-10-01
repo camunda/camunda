@@ -12,6 +12,9 @@ import io.camunda.tasklist.entities.VariableEntity;
 
 public class VariableListViewEntity {
   @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Long key;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String id;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -41,6 +44,7 @@ public class VariableListViewEntity {
   public VariableListViewEntity() {}
 
   public VariableListViewEntity(final VariableEntity entity) {
+    setKey(entity.getKey());
     setValue(entity.getValue());
     setFullValue(entity.getFullValue());
     setName(entity.getName());
@@ -56,6 +60,15 @@ public class VariableListViewEntity {
   }
 
   // Add getter and setters
+  public Long getKey() {
+    return key;
+  }
+
+  public VariableListViewEntity setKey(final Long key) {
+    this.key = key;
+    return this;
+  }
+
   public String getId() {
     return id;
   }

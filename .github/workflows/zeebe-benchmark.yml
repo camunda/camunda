@@ -128,12 +128,10 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          go: false
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
           maven-extra-args: -PskipFrontendBuild -Dmaven.test.skip=true -am -pl :camunda-zeebe
-          go: false
       - uses: google-github-actions/auth@v2
         id: auth
         with:

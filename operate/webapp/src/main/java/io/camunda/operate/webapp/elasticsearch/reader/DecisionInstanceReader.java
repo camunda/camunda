@@ -7,8 +7,6 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import static io.camunda.operate.entities.dmn.DecisionInstanceState.EVALUATED;
-import static io.camunda.operate.entities.dmn.DecisionInstanceState.FAILED;
 import static io.camunda.operate.schema.indices.IndexDescriptor.TENANT_ID;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_DEFINITION_ID;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_ID;
@@ -31,6 +29,8 @@ import static io.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.reverseOrder;
 import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_PROCESS_INSTANCE_ID;
+import static io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState.EVALUATED;
+import static io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState.FAILED;
 import static java.util.stream.Collectors.groupingBy;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
@@ -40,8 +40,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
-import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
@@ -59,6 +57,8 @@ import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseD
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;

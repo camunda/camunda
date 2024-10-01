@@ -8,12 +8,12 @@
 package io.camunda.operate.webapp.opensearch.writer;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;

@@ -16,12 +16,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import io.camunda.operate.entities.*;
-import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
-import io.camunda.operate.entities.post.PostImporterActionType;
-import io.camunda.operate.entities.post.PostImporterQueueEntity;
 import io.camunda.operate.qa.migration.util.AbstractMigrationTest;
 import io.camunda.operate.qa.migration.v110.BasicProcessDataGenerator;
 import io.camunda.operate.schema.indices.UserIndex;
@@ -32,6 +27,17 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.entities.operate.EventEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
+import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -43,7 +49,7 @@ import org.junit.Test;
 
 public class BasicProcessTest extends AbstractMigrationTest {
 
-  private String bpmnProcessId = BasicProcessDataGenerator.PROCESS_BPMN_PROCESS_ID;
+  private final String bpmnProcessId = BasicProcessDataGenerator.PROCESS_BPMN_PROCESS_ID;
   private Set<String> processInstanceIds;
 
   @Before
@@ -61,7 +67,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
                   termQuery(ListViewTemplate.BPMN_PROCESS_ID, bpmnProcessId)));
       try {
         processInstanceIds = ElasticsearchUtil.scrollIdsToSet(searchRequest, esClient);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
       assertThat(processInstanceIds).hasSize(BasicProcessDataGenerator.PROCESS_INSTANCE_COUNT);
