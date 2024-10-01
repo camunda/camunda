@@ -106,7 +106,7 @@
     <version.jqwik>1.8.5</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
-    <version.json-smart>2.4.8</version.json-smart>
+    <version.json-smart>2.5.1</version.json-smart>
     <version.byte-buddy>1.14.19</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.resilience4j>2.2.0</version.resilience4j>
@@ -1379,6 +1379,13 @@
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna-platform</artifactId>
         <version>${version.jna-platform}</version>
+      </dependency>
+
+      <!-- between com.nimbusds:oauth2-oidc-sdk and com.microsoft.azure:msal4j -->
+      <dependency>
+        <groupId>net.minidev</groupId>
+	<artifactId>json-smart</artifactId>
+	<version>${version.json-smart}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
