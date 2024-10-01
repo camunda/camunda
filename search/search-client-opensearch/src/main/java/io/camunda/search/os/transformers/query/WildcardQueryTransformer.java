@@ -7,7 +7,7 @@
  */
 package io.camunda.search.os.transformers.query;
 
-import io.camunda.search.clients.query.SearchWildcardQuery;
+import io.camunda.search.query.SearchWildcardQuery;
 import io.camunda.search.os.transformers.OpensearchTransformer;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;

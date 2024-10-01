@@ -9,7 +9,7 @@ package io.camunda.search.es.transformers.query;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.WildcardQuery;
-import io.camunda.search.clients.query.SearchWildcardQuery;
+import io.camunda.search.query.SearchWildcardQuery;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 

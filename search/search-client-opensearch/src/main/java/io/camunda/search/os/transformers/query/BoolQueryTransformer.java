@@ -7,8 +7,8 @@
  */
 package io.camunda.search.os.transformers.query;
 
-import io.camunda.search.clients.query.SearchBoolQuery;
-import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.query.SearchBoolQuery;
+import io.camunda.search.query.SearchQuery;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import java.util.List;
 import java.util.stream.Collectors;

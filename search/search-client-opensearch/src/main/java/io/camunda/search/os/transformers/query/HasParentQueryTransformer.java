@@ -7,7 +7,7 @@
  */
 package io.camunda.search.os.transformers.query;
 
-import io.camunda.search.clients.query.SearchHasParentQuery;
+import io.camunda.search.query.SearchHasParentQuery;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import org.opensearch.client.opensearch._types.query_dsl.HasParentQuery;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;

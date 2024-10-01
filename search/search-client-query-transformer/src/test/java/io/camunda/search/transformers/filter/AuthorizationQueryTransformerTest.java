@@ -9,7 +9,7 @@ package io.camunda.search.transformers.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.query.SearchTermQuery;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.AuthorizationFilter.Builder;
 import io.camunda.search.filter.FilterBuilders;

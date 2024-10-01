@@ -10,8 +10,8 @@ package io.camunda.search.es.transformers.query;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
-import io.camunda.search.clients.query.SearchQueryBuilders;
-import io.camunda.search.clients.query.SearchRangeQuery;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchRangeQuery;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.transformers.SearchTransfomer;
 import java.util.stream.Stream;

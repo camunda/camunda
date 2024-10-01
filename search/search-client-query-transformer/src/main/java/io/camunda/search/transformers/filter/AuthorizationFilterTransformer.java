@@ -7,10 +7,10 @@
  */
 package io.camunda.search.transformers.filter;
 
-import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.search.query.SearchQueryBuilders.and;
+import static io.camunda.search.query.SearchQueryBuilders.term;
 
-import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.query.SearchQuery;
 import io.camunda.search.filter.AuthorizationFilter;
 import java.util.List;
 

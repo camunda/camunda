@@ -9,8 +9,8 @@ package io.camunda.search.os.transformers.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.clients.query.SearchQueryBuilders;
+import io.camunda.search.core.SearchQueryRequest;
+import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import io.camunda.search.os.util.OSQuerySerializer;
 import io.camunda.search.sort.SearchSortOptions;

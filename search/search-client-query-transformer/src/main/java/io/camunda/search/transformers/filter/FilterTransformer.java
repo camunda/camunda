@@ -7,7 +7,7 @@
  */
 package io.camunda.search.transformers.filter;
 
-import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.query.SearchQuery;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.transformers.ServiceTransformer;
 import java.util.List;

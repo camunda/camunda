@@ -7,18 +7,18 @@
  */
 package io.camunda.search.transformers.query;
 
-import static io.camunda.search.clients.core.RequestBuilders.searchRequest;
-import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.core.RequestBuilders.searchRequest;
+import static io.camunda.search.query.SearchQueryBuilders.and;
 
-import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.source.SearchSourceConfig;
+import io.camunda.search.core.SearchQueryRequest;
 import io.camunda.search.filter.FilterBase;
+import io.camunda.search.query.SearchQuery;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.result.QueryResultConfig;
 import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOption.FieldSorting;
+import io.camunda.search.source.SearchSourceConfig;
 import io.camunda.search.transformers.ServiceTransformer;
 import io.camunda.search.transformers.ServiceTransformers;
 import io.camunda.search.transformers.filter.FilterTransformer;

@@ -28,6 +28,14 @@ public record ProcessInstanceQuery(
     AuthorizationCheck authorizationCheck)
     implements TypedSearchQuery<ProcessInstanceFilter, ProcessInstanceSort> {
 
+  public ProcessInstanceQuery(
+      final ProcessInstanceFilter filter,
+      final ProcessInstanceSort sort,
+      final SearchQueryPage page,
+      final QueryResultConfig resultConfig) {
+    this(filter, sort, page, resultConfig, null);
+  }
+
   public static ProcessInstanceQuery of(
       final Function<Builder, ObjectBuilder<ProcessInstanceQuery>> fn) {
     return fn.apply(new Builder()).build();

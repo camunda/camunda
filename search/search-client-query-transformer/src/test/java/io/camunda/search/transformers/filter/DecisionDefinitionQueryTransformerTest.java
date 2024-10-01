@@ -9,8 +9,8 @@ package io.camunda.search.transformers.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.clients.query.SearchBoolQuery;
-import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.query.SearchBoolQuery;
+import io.camunda.search.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
 import org.junit.jupiter.api.Test;
 
