@@ -542,6 +542,66 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /user-tasks/{userTaskKey}/form:
+    get:
+      tags:
+        - User Task
+      summary: Return user task form
+      description: |
+        Get the form of a user task.
+
+        :::note
+        This endpoint will only return linked forms. This endpoint does not support embedded forms.
+        :::
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The user task key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: >
+            The form is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormItem"
+        '204':
+          description: >
+            The user task was found, but no form is associated with it.
+        "400":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Not found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /user-tasks/{userTaskKey}/assignee:
     delete:
       tags:
@@ -1987,63 +2047,6 @@ paths:
         "500":
           description: >
             An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-  /forms:
-    get:
-      tags:
-        - Form
-      summary: Return form by a Form Key.
-      description: |
-        Get the form by the form key.
-
-        :::note
-        This endpoint will return only linked forms, Embedded forms are not retrieved for this endpoint.
-        :::
-
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
-      parameters:
-        - name: formKey
-          in: path
-          required: true
-          description: The form key.
-          schema:
-            type: integer
-            format: int64
-      responses:
-        '200':
-          description: >
-            The form is successfully returned.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FormItem"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
           content:
             application/problem+json:
               schema:
@@ -3548,7 +3551,7 @@ components:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this decision requirements.
-        decisionRequirementsName:
+        name:
           type: string
           description: The DMN name of the decision requirements.
         version:
@@ -3577,7 +3580,7 @@ components:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this decision requirements.
-        decisionRequirementsName:
+        name:
           type: string
           description: The DMN name of the decision requirements.
         version:
@@ -4082,7 +4085,7 @@ components:
           type: integer
           format: int32
           description: The assigned decision requirements version.
-        decisionRequirementsName:
+        name:
           type: string
           description: The DMN name of the decision requirements, as parsed during deployment.
         tenantId:
@@ -4405,7 +4408,7 @@ components:
     FormItem:
       type: object
       properties:
-        key:
+        formKey:
           description: The key of the form.
           type: integer
           format: int64

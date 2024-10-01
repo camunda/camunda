@@ -185,7 +185,7 @@ public final class ResponseMapper {
                 new DeploymentDecisionRequirements()
                     .decisionRequirementsId(decisionRequirement.getDecisionRequirementsId())
                     .version(decisionRequirement.getDecisionRequirementsVersion())
-                    .decisionRequirementsName(decisionRequirement.getDecisionRequirementsName())
+                    .name(decisionRequirement.getDecisionRequirementsName())
                     .tenantId(decisionRequirement.getTenantId())
                     .decisionRequirementsKey(decisionRequirement.getDecisionRequirementsKey())
                     .resourceName(decisionRequirement.getResourceName()))

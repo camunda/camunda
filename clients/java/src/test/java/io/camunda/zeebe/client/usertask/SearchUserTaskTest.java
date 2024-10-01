@@ -17,6 +17,8 @@ package io.camunda.zeebe.client.usertask;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.tomakehurst.wiremock.http.RequestMethod;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
@@ -150,5 +152,17 @@ public final class SearchUserTaskTest extends ClientRestTest {
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
     assertThat(request.getFilter().getVariables()).isEqualTo(listFilter);
+  }
+
+  @Test
+  void shouldReturnFormByUserTaskKey() {
+    // when
+    final long userTaskKey = 1L;
+    client.newUserTaskGetFormRequest(userTaskKey).send().join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo("/v2/user-tasks/" + userTaskKey + "/form");
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 }

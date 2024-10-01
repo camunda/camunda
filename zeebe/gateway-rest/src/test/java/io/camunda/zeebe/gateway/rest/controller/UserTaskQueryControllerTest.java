@@ -9,10 +9,12 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.SearchQueryResult;
@@ -20,6 +22,7 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.security.auth.Authentication;
 import io.camunda.search.sort.UserTaskSort;
+import io.camunda.service.FormServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.ArrayList;
@@ -35,7 +38,7 @@ import org.springframework.http.MediaType;
 @WebMvcTest(value = UserTaskQueryController.class, properties = "camunda.rest.query.enabled=true")
 public class UserTaskQueryControllerTest extends RestControllerTest {
 
-  private static final Long VALID_USER_TASK_KEY = 1L;
+  private static final Long VALID_USER_TASK_KEY = 0L;
   private static final Long INVALID_USER_TASK_KEY = 999L;
 
   private static final String EXPECTED_SEARCH_RESPONSE =
@@ -100,6 +103,19 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
           }
           """;
 
+  private static final Long VALID_FORM_KEY = 0L;
+  private static final Long INVALID_FORM_KEY = 999L;
+  private static final String FORM_ITEM_JSON =
+      """
+      {
+        "formKey": 0,
+        "tenantId": "tenant-1",
+        "bpmnId": "bpmn-1",
+        "schema": "schema",
+        "version": 1
+      }
+      """;
+
   private static final String USER_TASKS_SEARCH_URL = "/v2/user-tasks/search";
   private static final SearchQueryResult<UserTaskEntity> SEARCH_QUERY_RESULT =
       new Builder<UserTaskEntity>()
@@ -132,10 +148,21 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
           .build();
   @MockBean UserTaskServices userTaskServices;
 
+  @MockBean private FormServices formServices;
+
   @BeforeEach
   void setupServices() {
+
+    when(formServices.getByKey(VALID_FORM_KEY))
+        .thenReturn(new FormEntity("0", "tenant-1", "bpmn-1", "schema", 1L));
+
+    when(formServices.getByKey(INVALID_FORM_KEY))
+        .thenThrow(new NotFoundException("Form not found"));
+
     when(userTaskServices.withAuthentication(any(Authentication.class)))
         .thenReturn(userTaskServices);
+
+    when(formServices.withAuthentication(any(Authentication.class))).thenReturn(formServices);
 
     // Mock the behavior of userTaskServices for a valid key
     when(userTaskServices.getByKey(VALID_USER_TASK_KEY))
@@ -456,5 +483,67 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the invalid userTaskKey
     verify(userTaskServices).getByKey(INVALID_USER_TASK_KEY);
+  }
+
+  @Test
+  public void shouldReturnFormItemForValidFormKey() throws Exception {
+    webClient
+        .get()
+        .uri("/v2/user-tasks/{userTaskKey}/form", VALID_USER_TASK_KEY)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(FORM_ITEM_JSON);
+
+    verify(formServices, times(1)).getByKey(VALID_FORM_KEY);
+  }
+
+  @Test
+  public void shouldReturn404ForFormInvalidUserTaskKey() throws Exception {
+    webClient
+        .get()
+        .uri("/v2/user-tasks/{userTaskKey}/form", INVALID_USER_TASK_KEY)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "NOT_FOUND",
+              "status": 404,
+              "detail": "User Task with key 999 not found"
+            }
+            """);
+
+    verify(formServices, times(0)).getByKey(INVALID_USER_TASK_KEY);
+  }
+
+  @Test
+  public void shouldReturn500OnUnexpectedException() throws Exception {
+    when(formServices.getByKey(VALID_FORM_KEY)).thenThrow(new RuntimeException("Unexpected error"));
+
+    webClient
+        .get()
+        .uri("/v2/user-tasks/{userTaskKey}/form", VALID_USER_TASK_KEY)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .is5xxServerError()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "java.lang.RuntimeException",
+              "status": 500,
+              "detail": "Unexpected error occurred during the request processing: Unexpected error",
+              "instance": "/v2/user-tasks/0/form"
+            }
+            """);
   }
 }

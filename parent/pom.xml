@@ -54,7 +54,7 @@
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.4.0</version.docker-java-api>
     <version.elasticsearch>8.13.4</version.elasticsearch>
-    <version.error-prone>2.32.0</version.error-prone>
+    <version.error-prone>2.33.0</version.error-prone>
     <version.grpc>1.68.0</version.grpc>
     <version.gson>2.11.0</version.gson>
     <version.guava>33.3.1-jre</version.guava>
@@ -72,7 +72,7 @@
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.24.1</version.log4j>
     <version.minlog>1.3.1</version.minlog>
-    <version.mockito>5.14.0</version.mockito>
+    <version.mockito>5.14.1</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.8</version.msgpack>
     <version.netty>4.1.113.Final</version.netty>
@@ -92,7 +92,7 @@
     <version.wiremock>3.9.1</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>1.20.1</version.testcontainers>
+    <version.testcontainers>1.20.2</version.testcontainers>
     <version.netflix.concurrency>0.5.2</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.5</version.zeebe-test-container>
     <version.feel-scala>1.18.1</version.feel-scala>
@@ -125,8 +125,8 @@
     <version.zpt>8.5.7</version.zpt>
     <version.feign>13.4</version.feign>
     <version.google-sdk>26.47.0</version.google-sdk>
-    <version.azure-sdk>1.2.27</version.azure-sdk>
-    <version.awssdk>2.28.11</version.awssdk>
+    <version.azure-sdk>1.2.28</version.azure-sdk>
+    <version.awssdk>2.28.12</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -157,8 +157,8 @@
     <version.yarn>v1.22.21</version.yarn>
 
     <version.aws-java-sdk>1.12.772</version.aws-java-sdk>
-    <version.elasticsearch-test-container>1.20.1</version.elasticsearch-test-container>
-    <version.postgres-test-container>1.20.1</version.postgres-test-container>
+    <version.elasticsearch-test-container>1.20.2</version.elasticsearch-test-container>
+    <version.postgres-test-container>1.20.2</version.postgres-test-container>
     <version.elasticsearch7>7.17.24</version.elasticsearch7>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
@@ -177,7 +177,7 @@
     <version.okio-jvm>3.9.1</version.okio-jvm>
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
-    <version.nimbus-jose-jwt>9.41.1</version.nimbus-jose-jwt>
+    <version.nimbus-jose-jwt>9.41.2</version.nimbus-jose-jwt>
     <version.keycloak>25.0.6</version.keycloak>
     <version.jna>5.15.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
@@ -2355,8 +2355,8 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${plugin.version.surefire}</version>
           <configuration>
-            <!-- by default, exclude performance tests -->
-            <groups>!performance</groups>
+            <!-- by default, exclude performance and strace tests -->
+            <excludedGroups>performance, strace</excludedGroups>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
@@ -2889,6 +2889,24 @@
     </profile>
 
     <profile>
+      <!-- Dedicated profile to run ONLY tests requiring strace. -->
+      <id>include-strace-tests</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <groups>strace</groups>
+              <!-- Reset <excludedGroups> as it take precedence over <groups> -->
+              <excludedGroups combine.self="override"></excludedGroups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
       <!-- Dedicated profile to run ONLY performance tests. The include config overwrites the default pattern-->
       <id>include-performance-tests</id>
       <build>
@@ -2898,6 +2916,8 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
               <groups>performance</groups>
+              <!-- Reset <excludedGroups> as it take precedence over <groups> -->
+              <excludedGroups combine.self="override"></excludedGroups>
             </configuration>
           </plugin>
         </plugins>

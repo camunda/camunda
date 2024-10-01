@@ -267,7 +267,7 @@ public final class SearchQueryResponseMapper {
     return new DecisionRequirementsItem()
         .tenantId(d.tenantId())
         .decisionRequirementsKey(d.key())
-        .decisionRequirementsName(d.name())
+        .name(d.name())
         .version(d.version())
         .resourceName(d.resourceName())
         .decisionRequirementsId(d.decisionRequirementsId());
@@ -324,7 +324,7 @@ public final class SearchQueryResponseMapper {
 
   public static FormItem toFormItem(final FormEntity f) {
     return new FormItem()
-        .key(Long.valueOf(f.id()))
+        .formKey(Long.valueOf(f.id()))
         .bpmnId(f.bpmnId())
         .version(f.version())
         .schema(f.schema())

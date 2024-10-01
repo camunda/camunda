@@ -22,6 +22,8 @@ public class OpenSearchSnapshotInfo {
 
   private Long startTimeInMillis;
 
+  private Long endTimeInMillis;
+
   private Map<String, Object> metadata = Map.of();
 
   public String getSnapshot() {
@@ -69,6 +71,15 @@ public class OpenSearchSnapshotInfo {
     return this;
   }
 
+  public Long getEndTimeInMillis() {
+    return endTimeInMillis;
+  }
+
+  public OpenSearchSnapshotInfo setEndTimeInMillis(final Long endTimeInMillis) {
+    this.endTimeInMillis = endTimeInMillis;
+    return this;
+  }
+
   public Map<String, Object> getMetadata() {
     return metadata;
   }
@@ -76,6 +87,12 @@ public class OpenSearchSnapshotInfo {
   public OpenSearchSnapshotInfo setMetadata(final Map<String, Object> metadata) {
     this.metadata = metadata;
     return this;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        snapshot, uuid, state, failures, startTimeInMillis, endTimeInMillis, metadata);
   }
 
   @Override
@@ -92,12 +109,8 @@ public class OpenSearchSnapshotInfo {
         && Objects.equals(state, that.state)
         && Objects.equals(failures, that.failures)
         && Objects.equals(startTimeInMillis, that.startTimeInMillis)
+        && Objects.equals(endTimeInMillis, that.endTimeInMillis)
         && Objects.equals(metadata, that.metadata);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(snapshot, uuid, state, failures, startTimeInMillis, metadata);
   }
 
   @Override
@@ -116,6 +129,8 @@ public class OpenSearchSnapshotInfo {
         + failures
         + ", startTimeInMillis="
         + startTimeInMillis
+        + ", endTimeInMillis="
+        + endTimeInMillis
         + ", metadata="
         + metadata
         + '}';

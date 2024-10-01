@@ -143,6 +143,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-backup-store-azure</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>com.nimbusds</groupId>
+          <artifactId>oauth2-oidc-sdk</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
