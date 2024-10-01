@@ -23,8 +23,8 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
-import io.camunda.zeebe.logstreams.util.SyncLogStream;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
+import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.EmptyProcessingResult;
@@ -159,7 +159,7 @@ public final class StreamPlatform {
   public LogContext createLogContext(final ListLogStorage logStorage, final int partitionId) {
     final var meterRegistry = new SimpleMeterRegistry();
     final var logStream =
-        SyncLogStream.builder()
+        TestLogStream.builder()
             .withLogName(STREAM_NAME + partitionId)
             .withLogStorage(logStorage)
             .withClock(clock)
@@ -296,7 +296,7 @@ public final class StreamPlatform {
         StreamProcessor.builder()
             .meterRegistry(new SimpleMeterRegistry())
             .clock(StreamClock.controllable(clock))
-            .logStream(stream.getAsyncLogStream())
+            .logStream(stream)
             .zeebeDb(zeebeDb)
             .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)

@@ -16,12 +16,8 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
  * <p>We do not want to pollute the real log stream interface with synchronous method's. Synchronous
  * method's would be error prone and it is likely that we use these synchronous methods in
  * production then by mistake, which would fail due to our actor model.
- *
- * <p>*Note:* Actor's are not allowed to join on a future.
  */
 public interface SynchronousLogStream extends LogStream {
-
-  LogStream getAsyncLogStream();
 
   /**
    * @return the current commit position, or a negative value if no entry is committed.
@@ -35,7 +31,7 @@ public interface SynchronousLogStream extends LogStream {
    * Returns a wrapped {@link #newLogStreamWriter()} which ensures that every write returns only
    * when the entry has been added to the underlying storage.
    */
-  SynchronousLogStreamWriter newSyncLogStreamWriter();
+  BlockingLogStreamWriter newBlockingLogStreamWriter();
 
   /**
    * Force waiting until the given position has been persisted in the underlying storage.
@@ -48,5 +44,5 @@ public interface SynchronousLogStream extends LogStream {
    * Marker interface for a {@link LogStreamWriter} implementation which only returns when the entry
    * has been written to the underlying storage.
    */
-  interface SynchronousLogStreamWriter extends LogStreamWriter {}
+  interface BlockingLogStreamWriter extends LogStreamWriter {}
 }

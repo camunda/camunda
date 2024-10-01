@@ -45,8 +45,7 @@ public final class ProcessingExporterTransistor implements StreamProcessorLifecy
         () -> {
           final int partitionId = context.getPartitionId();
           typedEvent = new TypedRecordImpl(partitionId);
-          final var asyncLogStream = synchronousLogStream.getAsyncLogStream();
-          asyncLogStream.registerRecordAvailableListener(this::onNewEventCommitted);
+          synchronousLogStream.registerRecordAvailableListener(this::onNewEventCommitted);
           logStreamReader = synchronousLogStream.newLogStreamReader();
           exportEvents();
         });

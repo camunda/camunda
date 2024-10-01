@@ -22,26 +22,21 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 
-public class SyncLogStream implements SynchronousLogStream {
+public class TestLogStream implements SynchronousLogStream {
 
   private final LogStream logStream;
   private long lastWrittenPosition = -1;
 
-  public SyncLogStream(final LogStream logStream) {
+  public TestLogStream(final LogStream logStream) {
     this.logStream = logStream;
   }
 
-  public static SyncLogStreamBuilder builder() {
-    return new SyncLogStreamBuilder();
+  public static TestLogStreamBuilder builder() {
+    return new TestLogStreamBuilder();
   }
 
-  public static SyncLogStreamBuilder builder(final LogStreamBuilder builder) {
-    return new SyncLogStreamBuilder(builder);
-  }
-
-  @Override
-  public LogStream getAsyncLogStream() {
-    return logStream;
+  public static TestLogStreamBuilder builder(final LogStreamBuilder builder) {
+    return new TestLogStreamBuilder(builder);
   }
 
   @Override
@@ -55,7 +50,7 @@ public class SyncLogStream implements SynchronousLogStream {
   }
 
   @Override
-  public SynchronousLogStreamWriter newSyncLogStreamWriter() {
+  public BlockingLogStreamWriter newBlockingLogStreamWriter() {
     return new Writer(newLogStreamWriter());
   }
 
@@ -96,17 +91,17 @@ public class SyncLogStream implements SynchronousLogStream {
 
   @Override
   public FlowControl getFlowControl() {
-    throw new UnsupportedOperationException();
+    return logStream.getFlowControl();
   }
 
   @Override
   public void registerRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
-    throw new UnsupportedOperationException();
+    logStream.registerRecordAvailableListener(recordAwaiter);
   }
 
   @Override
   public void removeRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
-    throw new UnsupportedOperationException();
+    logStream.removeRecordAvailableListener(recordAwaiter);
   }
 
   private Either<WriteFailure, Long> syncTryWrite(
@@ -127,7 +122,7 @@ public class SyncLogStream implements SynchronousLogStream {
     return written;
   }
 
-  private final class Writer implements SynchronousLogStreamWriter {
+  private final class Writer implements BlockingLogStreamWriter {
     private final LogStreamWriter delegate;
 
     private Writer(final LogStreamWriter delegate) {

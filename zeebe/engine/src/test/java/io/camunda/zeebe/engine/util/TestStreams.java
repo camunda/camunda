@@ -29,8 +29,8 @@ import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
-import io.camunda.zeebe.logstreams.util.SyncLogStream;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
+import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -153,10 +153,10 @@ public final class TestStreams {
       final String name,
       final int partitionId,
       final LogStorage logStorage,
-      final Consumer<SyncLogStream> logStreamConsumer) {
+      final Consumer<TestLogStream> logStreamConsumer) {
     final var meterRegistry = new SimpleMeterRegistry();
     final var logStream =
-        SyncLogStream.builder()
+        TestLogStream.builder()
             .withLogName(name)
             .withLogStorage(logStorage)
             .withPartitionId(partitionId)
@@ -286,7 +286,7 @@ public final class TestStreams {
 
     final var builder =
         StreamProcessor.builder()
-            .logStream(stream.getAsyncLogStream())
+            .logStream(stream)
             .zeebeDb(zeebeDb)
             .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
@@ -478,6 +478,10 @@ public final class TestStreams {
   public record LogContext(SynchronousLogStream logStream, MeterRegistry meterRegistry)
       implements AutoCloseable {
 
+
+    public static LogContext createLogContext(final TestLogStream logStream, MeterRegistry meterRegistry) {
+      return new LogContext(logStream, meterRegistry);
+    }
     @Override
     public void close() {
       logStream.close();
