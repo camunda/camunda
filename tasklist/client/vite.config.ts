@@ -14,6 +14,8 @@ import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import svgr from 'vite-plugin-svgr';
 import browserslistToEsbuild from 'browserslist-to-esbuild';
+import license from 'rollup-plugin-license';
+import path from 'node:path';
 
 export default defineConfig(({mode}) => ({
   base: mode === 'production' ? './' : undefined,
@@ -34,9 +36,35 @@ export default defineConfig(({mode}) => ({
         index:
           mode === 'visual-regression' ? './index.html' : './index.prod.html',
       },
+      plugins: license({
+        thirdParty: {
+          output:
+            mode === 'sbom'
+              ? {
+                  file: path.join(__dirname, 'build', 'dependencies.json'),
+                  encoding: 'utf-8',
+                  template(dependencies) {
+                    return JSON.stringify(
+                      dependencies.map(({name, version, license}) => ({
+                        name,
+                        version,
+                        license,
+                      })),
+                      null,
+                      2,
+                    );
+                  },
+                }
+              : path.resolve(__dirname, './build/assets/vendor.LICENSE.txt'),
+        },
+      }),
     },
     target: browserslistToEsbuild(),
     sourcemap: true,
+  },
+  esbuild: {
+    banner: '/*! licenses: /assets/vendor.LICENSE.txt */',
+    legalComments: 'none',
   },
   test: {
     globals: true,

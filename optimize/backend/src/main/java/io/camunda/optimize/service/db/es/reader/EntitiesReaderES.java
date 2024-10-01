@@ -253,7 +253,7 @@ public class EntitiesReaderES implements EntitiesReader {
                                                               .value(collectionId)))))
                           .aggregations(
                               AGG_BY_INDEX_COUNT,
-                              Aggregation.of(aa -> aa.terms(t -> t.field("_index")))));
+                              Aggregation.of(aa -> aa.terms(t -> t.field(INDEX_FIELD)))));
           searchRequestBuilder.aggregations(collectionId, aggregation);
         });
 

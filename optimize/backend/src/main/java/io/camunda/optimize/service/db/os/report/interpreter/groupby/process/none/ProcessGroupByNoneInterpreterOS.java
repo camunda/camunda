@@ -14,6 +14,7 @@ import io.camunda.optimize.service.db.os.report.interpreter.distributedby.proces
 import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterOS;
 import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.ProcessGroupByInterpreterOS;
 import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
+import io.camunda.optimize.service.db.os.util.AggregateHelperOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
@@ -26,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -58,8 +60,10 @@ public class ProcessGroupByNoneInterpreterOS extends AbstractProcessGroupByInter
       final CompositeCommandResult compositeCommandResult,
       final SearchResponse<RawResult> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    final Map<String, Aggregate> fixedAggregations =
+        AggregateHelperOS.withNullValues(response.hits().total().value(), response.aggregations());
     final List<DistributedByResult> distributions =
-        distributedByInterpreter.retrieveResult(response, response.aggregations(), context);
+        distributedByInterpreter.retrieveResult(response, fixedAggregations, context);
     GroupByResult groupByResult = GroupByResult.createGroupByNone(distributions);
     compositeCommandResult.setGroup(groupByResult);
   }

@@ -11,6 +11,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import io.camunda.optimize.service.db.os.report.interpreter.view.ViewInterpreterOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.ExecutionPlan;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 
@@ -19,6 +20,12 @@ public abstract class AbstractDistributedByInterpreterOS<
     implements DistributedByInterpreterOS<DATA, PLAN> {
 
   protected abstract ViewInterpreterOS<DATA, PLAN> getViewInterpreter();
+
+  @Override
+  public BoolQuery.Builder adjustQuery(
+      final BoolQuery.Builder queryBuilder, final ExecutionContext<DATA, PLAN> context) {
+    return getViewInterpreter().adjustQuery(queryBuilder, context);
+  }
 
   @Override
   public void adjustSearchRequest(

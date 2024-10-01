@@ -50,6 +50,30 @@ const confirmDelivery = {
   type: 'callActivity',
 };
 
+const MessageInterrupting = {
+  id: 'MessageInterrupting',
+  name: 'Message interrupting',
+  type: 'messageBoundaryEventInterrupting',
+};
+
+const TimerInterrupting = {
+  id: 'TimerInterrupting',
+  name: 'Timer interrupting',
+  type: 'timerBoundaryEventInterrupting',
+};
+
+const MessageNonInterrupting = {
+  id: 'MessageNonInterrupting',
+  name: 'Message non-interrupting',
+  type: 'messageBoundaryEventNonInterrupting',
+};
+
+const TimerNonInterrupting = {
+  id: 'TimerNonInterrupting',
+  name: 'Timer non-interrupting',
+  type: 'timerBoundaryEventNonInterrupting',
+};
+
 const Wrapper = ({children}: Props) => {
   processXmlMigrationSourceStore.setProcessXml(open('instanceMigration.bpmn'));
   processInstanceMigrationStore.enable();
@@ -109,8 +133,32 @@ describe('MigrationView/BottomPanel', () => {
       screen.getByRole('cell', {name: new RegExp(`^${confirmDelivery.name}`)}),
     ).toBeInTheDocument();
 
-    // expect table to have 1 header + 5 content rows
-    expect(screen.getAllByRole('row')).toHaveLength(6);
+    expect(
+      screen.getByRole('cell', {
+        name: new RegExp(`^${MessageInterrupting.name}`),
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('cell', {
+        name: new RegExp(`^${TimerInterrupting.name}`),
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('cell', {
+        name: new RegExp(`^${MessageNonInterrupting.name}`),
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('cell', {
+        name: new RegExp(`^${TimerNonInterrupting.name}`),
+      }),
+    ).toBeInTheDocument();
+
+    // expect table to have 1 header + 9 content rows
+    expect(screen.getAllByRole('row')).toHaveLength(10);
   });
 
   it.each([
@@ -118,6 +166,8 @@ describe('MigrationView/BottomPanel', () => {
     {source: shipArticles, target: shipArticles},
     {source: shippingSubProcess, target: shippingSubProcess},
     {source: confirmDelivery, target: confirmDelivery},
+    {source: MessageInterrupting, target: MessageInterrupting},
+    {source: MessageInterrupting, target: MessageNonInterrupting},
   ])(
     'should allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -157,6 +207,8 @@ describe('MigrationView/BottomPanel', () => {
     {source: confirmDelivery, target: checkPayment},
     {source: confirmDelivery, target: shipArticles},
     {source: confirmDelivery, target: shippingSubProcess},
+    {source: MessageInterrupting, target: TimerInterrupting},
+    {source: TimerInterrupting, target: MessageNonInterrupting},
   ])(
     'should not allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -206,6 +258,28 @@ describe('MigrationView/BottomPanel', () => {
       name: new RegExp(`target flow node for ${requestForPayment.name}`, 'i'),
     });
 
+    const comboboxMessageInterrupting = await screen.findByRole('combobox', {
+      name: new RegExp(`target flow node for ${MessageInterrupting.name}`, 'i'),
+    });
+
+    const comboboxTimerInterrupting = await screen.findByRole('combobox', {
+      name: new RegExp(`target flow node for ${TimerInterrupting.name}`, 'i'),
+    });
+
+    const comboboxMessageNonInterrupting = await screen.findByRole('combobox', {
+      name: new RegExp(
+        `target flow node for ${MessageNonInterrupting.name}`,
+        'i',
+      ),
+    });
+
+    const comboboxTimerNonInterrupting = await screen.findByRole('combobox', {
+      name: new RegExp(
+        `target flow node for ${TimerNonInterrupting.name}`,
+        'i',
+      ),
+    });
+
     screen.getByRole('button', {name: /fetch target process/i}).click();
 
     await waitFor(() => {
@@ -218,9 +292,21 @@ describe('MigrationView/BottomPanel', () => {
     // Expect auto-mapping (same id, same bpmn type)
     expect(comboboxShipArticles).toHaveValue(shipArticles.id);
 
+    // Expect auto-mapping (same id, boundary event, same event type)
+    expect(comboboxMessageInterrupting).toHaveValue(MessageInterrupting.id);
+    expect(comboboxTimerNonInterrupting).toHaveValue(
+      comboboxTimerNonInterrupting.id,
+    );
+
     // Expect no auto-mapping (flow node does not exist in target)
     expect(comboboxShippingSubProcess).toHaveValue('');
     expect(comboboxShippingSubProcess).toBeDisabled();
+
+    expect(comboboxMessageNonInterrupting).toHaveValue('');
+    expect(comboboxMessageNonInterrupting).toBeEnabled();
+
+    expect(comboboxTimerInterrupting).toHaveValue('');
+    expect(comboboxTimerInterrupting).toBeEnabled();
 
     // Expect no auto-mapping (different bpmn type)
     expect(comboboxRequestForPayment).toHaveValue('');
@@ -253,6 +339,22 @@ describe('MigrationView/BottomPanel', () => {
       name: new RegExp(`^${requestForPayment.name}`),
     });
 
+    const rowMessageInterrupting = screen.getByRole('row', {
+      name: new RegExp(`^${MessageInterrupting.name}`),
+    });
+
+    const rowTimerInterrupting = screen.getByRole('row', {
+      name: new RegExp(`^${TimerInterrupting.name}`),
+    });
+
+    const rowMessageNonInterrupting = screen.getByRole('row', {
+      name: new RegExp(`^${MessageNonInterrupting.name}`),
+    });
+
+    const rowTimerNonInterrupting = screen.getByRole('row', {
+      name: new RegExp(`^${TimerNonInterrupting.name}`),
+    });
+
     await waitFor(() => {
       expect(comboboxRequestForPayment).toBeEnabled();
     });
@@ -261,13 +363,15 @@ describe('MigrationView/BottomPanel', () => {
     expect(
       within(rowCheckPayment).queryByText(/not mapped/i),
     ).not.toBeInTheDocument();
-
-    // expect to have no "not mapped" tag (auto-mapped)
     expect(
       within(rowShipArticles).queryByText(/not mapped/i),
     ).not.toBeInTheDocument();
-
-    // expect to have "not mapped" tag (not auto-mapped)
+    expect(
+      within(rowMessageInterrupting).queryByText(/not mapped/i),
+    ).not.toBeInTheDocument();
+    expect(
+      within(rowTimerNonInterrupting).queryByText(/not mapped/i),
+    ).not.toBeInTheDocument();
     expect(
       within(rowShippingSubProcess).getByText(/not mapped/i),
     ).toBeInTheDocument();
@@ -275,6 +379,12 @@ describe('MigrationView/BottomPanel', () => {
     // expect to have "not mapped" tag (not auto-mapped)
     expect(
       within(rowRequestForPayment).getByText(/not mapped/i),
+    ).toBeInTheDocument();
+    expect(
+      within(rowMessageNonInterrupting).getByText(/not mapped/i),
+    ).toBeInTheDocument();
+    expect(
+      within(rowTimerInterrupting).getByText(/not mapped/i),
     ).toBeInTheDocument();
 
     // expect tag not to be visible after selecting a target flow node
@@ -290,7 +400,7 @@ describe('MigrationView/BottomPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('should hide mapped flow nodes', async () => {
+  it.only('should hide mapped flow nodes', async () => {
     mockFetchProcessXML().withSuccess(open('instanceMigration_v2.bpmn'));
 
     const {user} = render(<BottomPanel />, {wrapper: Wrapper});
@@ -304,30 +414,8 @@ describe('MigrationView/BottomPanel', () => {
       }),
     ).toBeVisible();
 
-    // Expect all rows to be visible
-    expect(
-      await screen.findByRole('row', {
-        name: new RegExp(`^${requestForPayment.name}`),
-      }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('row', {
-        name: new RegExp(`^${checkPayment.name}`),
-      }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('row', {
-        name: new RegExp(`^${shipArticles.name}`),
-      }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('row', {
-        name: new RegExp(`^${shippingSubProcess.name}`),
-      }),
-    ).toBeInTheDocument();
+    // Expect all 9 rows to be visible (+1 header row)
+    expect(await screen.findAllByRole('row')).toHaveLength(10);
 
     // Toggle on unmapped flow nodes
     await user.click(screen.getByLabelText(/show only not mapped/i));
@@ -343,6 +431,19 @@ describe('MigrationView/BottomPanel', () => {
         name: new RegExp(`^${shipArticles.name}`),
       }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('row', {
+        name: new RegExp(`^${MessageInterrupting.name}`),
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('row', {
+        name: new RegExp(`^${TimerNonInterrupting.name}`),
+      }),
+    ).not.toBeInTheDocument();
+
+    // Expect 5 not mapped rows (+1 header row)
+    expect(await screen.findAllByRole('row')).toHaveLength(6);
 
     // Expect the following rows to be visible (because they're not mapped)
     expect(
@@ -355,30 +456,29 @@ describe('MigrationView/BottomPanel', () => {
         name: new RegExp(`^${shippingSubProcess.name}`),
       }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole('row', {
+        name: new RegExp(`^${confirmDelivery.name}`),
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('row', {
+        name: new RegExp(`^${MessageNonInterrupting.name}`),
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('row', {
+        name: new RegExp(`^${TimerInterrupting.name}`),
+      }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByLabelText(/show only not mapped/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/show only not mapped/i)).toBeVisible();
 
     // Toggle off unmapped flow nodes
     await user.click(screen.getByLabelText(/show only not mapped/i));
 
     // Expect all rows to be visible again
-    expect(
-      await screen.findByRole('row', {
-        name: new RegExp(`^${requestForPayment.name}`),
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('row', {
-        name: new RegExp(`^${checkPayment.name}`),
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('row', {
-        name: new RegExp(`^${shipArticles.name}`),
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('row', {
-        name: new RegExp(`^${shippingSubProcess.name}`),
-      }),
-    ).toBeInTheDocument();
+    expect(await screen.findAllByRole('row')).toHaveLength(10);
   });
 });

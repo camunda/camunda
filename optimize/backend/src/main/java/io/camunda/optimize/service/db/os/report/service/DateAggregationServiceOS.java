@@ -38,6 +38,7 @@ import io.camunda.optimize.service.db.os.report.context.DateAggregationContextOS
 import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS;
 import io.camunda.optimize.service.db.report.service.DateAggregationService;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.time.Duration;
 import java.time.ZoneId;
@@ -65,7 +66,6 @@ import org.opensearch.client.opensearch._types.aggregations.DateHistogramAggrega
 import org.opensearch.client.opensearch._types.aggregations.DateHistogramBucket;
 import org.opensearch.client.opensearch._types.aggregations.DateRangeExpression;
 import org.opensearch.client.opensearch._types.aggregations.HistogramOrder;
-import org.opensearch.client.opensearch._types.aggregations.MultiBucketBase;
 import org.opensearch.client.opensearch._types.aggregations.RangeBucket;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.context.annotation.Conditional;
@@ -146,17 +146,33 @@ public class DateAggregationServiceOS extends DateAggregationService {
     return mapDateAggregationsToKeyAggregationMap(aggregations, timezone, DATE_AGGREGATION);
   }
 
-  private Map<String, Map<String, Aggregate>> multiBucketAggregation(Aggregate aggregate) {
+  private Map<String, Map<String, Aggregate>> multiBucketAggregation(final Aggregate aggregate) {
     if (aggregate.isDateHistogram()) {
       return aggregate.dateHistogram().buckets().array().stream()
-          .collect(
-              Collectors.toMap(DateHistogramBucket::keyAsString, MultiBucketBase::aggregations));
+          .collect(Collectors.toMap(DateHistogramBucket::key, DateHistogramBucket::aggregations));
     } else if (aggregate.isDateRange()) {
       return aggregate.dateRange().buckets().array().stream()
-          .collect(Collectors.toMap(RangeBucket::key, MultiBucketBase::aggregations));
+          .collect(Collectors.toMap(RangeBucket::key, RangeBucket::aggregations));
     } else {
       throw new UnsupportedOperationException(
           "Unsupported multi bucket aggregation type " + aggregate._kind().name());
+    }
+  }
+
+  private String formatToCorrectTimezoneWithFallback(
+      String dateTime, final ZoneId timezone, final DateTimeFormatter formatter) {
+    try {
+      return formatToCorrectTimezone(dateTime, timezone, formatter);
+    } catch (Exception e) {
+      try {
+        dateTime =
+            java.time.Instant.ofEpochMilli(Long.parseLong(dateTime))
+                .atZone(ZoneId.of("UTC"))
+                .format(formatter);
+        return formatToCorrectTimezone(dateTime, timezone, formatter);
+      } catch (Exception e2) {
+        throw new OptimizeRuntimeException("Failed to parse date time: " + dateTime, e2);
+      }
     }
   }
 
@@ -168,7 +184,8 @@ public class DateAggregationServiceOS extends DateAggregationService {
         .map(
             entry ->
                 Pair.of(
-                    formatToCorrectTimezone(entry.getKey(), timezone, dateTimeFormatter),
+                    formatToCorrectTimezoneWithFallback(
+                        entry.getKey(), timezone, dateTimeFormatter),
                     entry.getValue()))
         .sorted(Collections.reverseOrder(Map.Entry.comparingByKey()))
         .collect(

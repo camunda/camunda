@@ -15,48 +15,41 @@
  */
 package io.camunda.zeebe.client.impl.search.response;
 
-import io.camunda.zeebe.client.api.search.response.DecisionInstanceReference;
 import io.camunda.zeebe.client.api.search.response.Incident;
-import io.camunda.zeebe.client.api.search.response.Operation;
-import io.camunda.zeebe.client.api.search.response.ProcessInstanceReference;
 import io.camunda.zeebe.client.protocol.rest.IncidentItem;
+import io.camunda.zeebe.client.protocol.rest.IncidentItem.ErrorTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.IncidentItem.StateEnum;
 
 public class IncidentImpl implements Incident {
 
   private final Long key;
   private final Long processDefinitionKey;
+  private final String bpmnProcessId;
   private final Long processInstanceKey;
-  private final String type;
+  private final ErrorTypeEnum errorType;
+  private final String errorMessage;
   private final String flowNodeId;
-  private final String flowNodeInstanceId;
+  private final Long flowNodeInstanceKey;
   private final String creationTime;
-  private final String state;
+  private final StateEnum state;
   private final Long jobKey;
-  private final Boolean hasActiveOperation;
-  private Operation operation;
-  private ProcessInstanceReference processInstanceReference;
-  private DecisionInstanceReference decisionInstanceReference;
+  private final String treePath;
+  private final String tenantId;
 
   public IncidentImpl(final IncidentItem item) {
     key = item.getKey();
     processDefinitionKey = item.getProcessDefinitionKey();
+    bpmnProcessId = item.getBpmnProcessId();
     processInstanceKey = item.getProcessInstanceKey();
-    type = item.getType();
+    errorType = item.getErrorType();
+    errorMessage = item.getErrorMessage();
     flowNodeId = item.getFlowNodeId();
-    flowNodeInstanceId = item.getFlowNodeInstanceId();
+    flowNodeInstanceKey = item.getFlowNodeInstanceKey();
     creationTime = item.getCreationTime();
     state = item.getState();
     jobKey = item.getJobKey();
-    hasActiveOperation = item.getHasActiveOperation();
-    if (item.getLastOperation() != null) {
-      operation = new OperationImpl(item.getLastOperation());
-    }
-    if (item.getRootCauseInstance() != null) {
-      processInstanceReference = new ProcessInstanceReferenceImpl(item.getRootCauseInstance());
-    }
-    if (item.getRootCauseDecision() != null) {
-      decisionInstanceReference = new DecisionInstanceReferenceImpl(item.getRootCauseDecision());
-    }
+    treePath = item.getTreePath();
+    tenantId = item.getTenantId();
   }
 
   @Override
@@ -70,13 +63,23 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  @Override
   public Long getProcessInstanceKey() {
     return processInstanceKey;
   }
 
   @Override
-  public String getType() {
-    return type;
+  public String getErrorType() {
+    return errorType.getValue();
+  }
+
+  @Override
+  public String getErrorMessage() {
+    return errorMessage;
   }
 
   @Override
@@ -85,8 +88,8 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public String getFlowNodeInstanceId() {
-    return flowNodeInstanceId;
+  public Long getFlowNodeInstanceKey() {
+    return flowNodeInstanceKey;
   }
 
   @Override
@@ -96,7 +99,7 @@ public class IncidentImpl implements Incident {
 
   @Override
   public String getState() {
-    return state;
+    return state.getValue();
   }
 
   @Override
@@ -105,22 +108,12 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public Boolean getHasActiveOperation() {
-    return hasActiveOperation;
+  public String getTreePath() {
+    return treePath;
   }
 
   @Override
-  public Operation getOperation() {
-    return operation;
-  }
-
-  @Override
-  public ProcessInstanceReference getProcessInstanceReference() {
-    return processInstanceReference;
-  }
-
-  @Override
-  public DecisionInstanceReference getDecisionInstanceReference() {
-    return decisionInstanceReference;
+  public String getTenantId() {
+    return tenantId;
   }
 }

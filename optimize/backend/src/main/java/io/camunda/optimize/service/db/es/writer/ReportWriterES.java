@@ -44,6 +44,7 @@ import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeDeleteRequestBuilderES;
 import io.camunda.optimize.service.db.es.builders.OptimizeIndexRequestBuilderES;
 import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES;
+import io.camunda.optimize.service.db.repository.es.TaskRepositoryES;
 import io.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import io.camunda.optimize.service.db.writer.ReportWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -71,6 +72,7 @@ public class ReportWriterES implements ReportWriter {
 
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
+  private final TaskRepositoryES taskRepositoryES;
 
   @Override
   public IdResponseDto createNewCombinedReport(
@@ -249,8 +251,7 @@ public class ReportWriterES implements ReportWriter {
                             .params(
                                 Collections.singletonMap("newXml", JsonData.of(definitionXml)))));
 
-    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-        esClient,
+    taskRepositoryES.tryUpdateByQueryRequest(
         updateItem,
         updateDefinitionXmlScript,
         Query.of(q -> q.term(t -> t.field(PROCESS_DEFINITION_PROPERTY).value(definitionKey))),
@@ -259,8 +260,7 @@ public class ReportWriterES implements ReportWriter {
 
   @Override
   public void deleteAllManagementReports() {
-    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-        esClient,
+    taskRepositoryES.tryDeleteByQueryRequest(
         Query.of(q -> q.term(t -> t.field(DATA + "." + MANAGEMENT_REPORT).value(true))),
         "all management reports",
         true,
@@ -269,8 +269,7 @@ public class ReportWriterES implements ReportWriter {
 
   @Override
   public void deleteSingleReport(final String reportId) {
-    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-        esClient,
+    taskRepositoryES.tryDeleteByQueryRequest(
         Query.of(q -> q.ids(i -> i.values(reportId))),
         String.format("single report with ID [%s]", reportId),
         true,
@@ -296,8 +295,7 @@ public class ReportWriterES implements ReportWriter {
                                     + "}")
                             .params(Map.of("idToRemove", JsonData.of(reportId)))));
 
-    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-        esClient,
+    taskRepositoryES.tryUpdateByQueryRequest(
         updateItemName,
         removeReportIdFromCombinedReportsScript,
         Query.of(
@@ -358,8 +356,7 @@ public class ReportWriterES implements ReportWriter {
 
   @Override
   public void deleteAllReportsOfCollection(String collectionId) {
-    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-        esClient,
+    taskRepositoryES.tryDeleteByQueryRequest(
         Query.of(q -> q.term(t -> t.field(COLLECTION_ID).value(collectionId))),
         String.format("all reports of collection with collectionId [%s]", collectionId),
         true,

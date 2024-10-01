@@ -61,8 +61,8 @@ public class ObjectVariableService {
 
   public List<ProcessVariableDto> convertToProcessVariableDtos(
       final List<ProcessVariableUpdateDto> variables) {
-    List<ProcessVariableDto> resultList = new ArrayList<>();
-    for (ProcessVariableUpdateDto variableUpdateDto : variables) {
+    final List<ProcessVariableDto> resultList = new ArrayList<>();
+    for (final ProcessVariableUpdateDto variableUpdateDto : variables) {
       if (isNonNullNativeJsonVariable(variableUpdateDto)
           || isNonNullObjectVariable(variableUpdateDto)) {
         if (isSupportedSerializationFormat(variableUpdateDto)) {
@@ -70,12 +70,12 @@ public class ObjectVariableService {
           formatJsonObjectVariableAndAddToResult(variableUpdateDto, resultList);
         }
       } else {
-        resultList.add(
-            createSkeletonVariableDto(variableUpdateDto)
-                .setId(variableUpdateDto.getId())
-                .setName(variableUpdateDto.getName())
-                .setType(variableUpdateDto.getType())
-                .setValue(Collections.singletonList(variableUpdateDto.getValue())));
+        final ProcessVariableDto processVariableDto = createSkeletonVariableDto(variableUpdateDto);
+        processVariableDto.setId(variableUpdateDto.getId());
+        processVariableDto.setName(variableUpdateDto.getName());
+        processVariableDto.setType(variableUpdateDto.getType());
+        processVariableDto.setValue(Collections.singletonList(variableUpdateDto.getValue()));
+        resultList.add(processVariableDto);
       }
     }
     return resultList;
@@ -88,12 +88,14 @@ public class ObjectVariableService {
             variable ->
                 !isNonNullNativeJsonVariable(variable) && !isNonNullObjectVariable(variable))
         .map(
-            variable ->
-                createSkeletonVariableDto(variable)
-                    .setId(variable.getId())
-                    .setName(variable.getName())
-                    .setType(variable.getType())
-                    .setValue(Collections.singletonList(variable.getValue())))
+            variable -> {
+              final ProcessVariableDto variableDto = createSkeletonVariableDto(variable);
+              variableDto.setId(variable.getId());
+              variableDto.setName(variable.getName());
+              variableDto.setType(variable.getType());
+              variableDto.setValue(Collections.singletonList(variable.getValue()));
+              return variableDto;
+            })
         .toList();
   }
 
@@ -106,13 +108,14 @@ public class ObjectVariableService {
         // variable
         return;
       }
-      resultList.add(
-          createSkeletonVariableDto(variableUpdate)
-              .setId(variableUpdate.getId())
-              .setName(variableUpdate.getName())
-              .setType(OBJECT.getId())
-              .setValue(Collections.singletonList(objectMapper.writeValueAsString(jsonObject))));
-    } catch (JsonProcessingException e) {
+      final ProcessVariableDto processVariableDto = createSkeletonVariableDto(variableUpdate);
+      processVariableDto.setId(variableUpdate.getId());
+      processVariableDto.setName(variableUpdate.getName());
+      processVariableDto.setType(OBJECT.getId());
+      processVariableDto.setValue(
+          Collections.singletonList(objectMapper.writeValueAsString(jsonObject)));
+      resultList.add(processVariableDto);
+    } catch (final JsonProcessingException e) {
       log.error(
           "Error while formatting json object variable with name '{}'.",
           variableUpdate.getName(),
@@ -144,7 +147,7 @@ public class ObjectVariableService {
           .withFlattenMode(FlattenMode.KEEP_ARRAYS).flattenAsMap().entrySet().stream()
               .map(e -> mapToFlattenedVariable(e.getKey(), e.getValue(), variable))
               .forEach(resultList::addAll);
-    } catch (Exception exception) {
+    } catch (final Exception exception) {
       log.error(
           "Error while flattening json object variable with name '{}'.",
           variable.getName(),
@@ -162,8 +165,8 @@ public class ObjectVariableService {
       return Collections.emptyList();
     }
 
-    List<ProcessVariableDto> resultList = new ArrayList<>();
-    ProcessVariableDto newVariable = createSkeletonVariableDto(origin);
+    final List<ProcessVariableDto> resultList = new ArrayList<>();
+    final ProcessVariableDto newVariable = createSkeletonVariableDto(origin);
     addNameToSkeletonVariable(name, newVariable, origin);
 
     if (value instanceof JsonifyArrayList) {
@@ -258,14 +261,15 @@ public class ObjectVariableService {
   }
 
   private ProcessVariableDto createSkeletonVariableDto(final ProcessVariableUpdateDto origin) {
-    return new ProcessVariableDto()
-        .setEngineAlias(origin.getEngineAlias())
-        .setProcessDefinitionId(origin.getProcessDefinitionId())
-        .setProcessDefinitionKey(origin.getProcessDefinitionKey())
-        .setProcessInstanceId(origin.getProcessInstanceId())
-        .setVersion(origin.getVersion())
-        .setTimestamp(origin.getTimestamp())
-        .setTenantId(origin.getTenantId());
+    final ProcessVariableDto processVariableDto = new ProcessVariableDto();
+    processVariableDto.setEngineAlias(origin.getEngineAlias());
+    processVariableDto.setProcessDefinitionId(origin.getProcessDefinitionId());
+    processVariableDto.setProcessDefinitionKey(origin.getProcessDefinitionKey());
+    processVariableDto.setProcessInstanceId(origin.getProcessInstanceId());
+    processVariableDto.setVersion(origin.getVersion());
+    processVariableDto.setTimestamp(origin.getTimestamp());
+    processVariableDto.setTenantId(origin.getTenantId());
+    return processVariableDto;
   }
 
   private void addNameToSkeletonVariable(
@@ -298,7 +302,7 @@ public class ObjectVariableService {
   private Optional<OffsetDateTime> parsePossibleDate(final String dateAsString) {
     try {
       return Optional.of(DateParserUtils.parseOffsetDateTime(dateAsString));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       return Optional.empty();
     }
   }

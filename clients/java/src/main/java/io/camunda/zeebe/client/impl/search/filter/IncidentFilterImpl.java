@@ -18,6 +18,8 @@ package io.camunda.zeebe.client.impl.search.filter;
 import io.camunda.zeebe.client.api.search.filter.IncidentFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest;
+import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest.ErrorTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest.StateEnum;
 
 public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<IncidentFilterRequest>
     implements IncidentFilter {
@@ -41,14 +43,26 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
   }
 
   @Override
+  public IncidentFilter bpmnProcessId(final String value) {
+    filter.setBpmnProcessId(value);
+    return this;
+  }
+
+  @Override
   public IncidentFilter processInstanceKey(final Long value) {
     filter.setProcessInstanceKey(value);
     return this;
   }
 
   @Override
-  public IncidentFilter type(final String type) {
-    filter.setType(type);
+  public IncidentFilter errorType(final String errorType) {
+    filter.errorType(ErrorTypeEnum.valueOf(errorType));
+    return this;
+  }
+
+  @Override
+  public IncidentFilter errorMessage(final String errorMessage) {
+    filter.errorMessage(errorMessage);
     return this;
   }
 
@@ -59,14 +73,20 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
   }
 
   @Override
-  public IncidentFilter flowNodeInstanceId(final String value) {
-    filter.setFlowNodeInstanceId(value);
+  public IncidentFilter flowNodeInstanceKey(final Long value) {
+    filter.setFlowNodeInstanceKey(value);
+    return this;
+  }
+
+  @Override
+  public IncidentFilter creationTime(final String creationTime) {
+    filter.setCreationTime(creationTime);
     return this;
   }
 
   @Override
   public IncidentFilter state(final String value) {
-    filter.setState(value);
+    filter.setState(StateEnum.fromValue(value));
     return this;
   }
 
@@ -77,14 +97,14 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
   }
 
   @Override
-  public IncidentFilter tenantId(final String value) {
-    filter.setTenantId(value);
+  public IncidentFilter treePath(final String treePath) {
+    filter.setTreePath(treePath);
     return this;
   }
 
   @Override
-  public IncidentFilter hasActiveOperation(final Boolean value) {
-    filter.setHasActiveOperation(value);
+  public IncidentFilter tenantId(final String value) {
+    filter.setTenantId(value);
     return this;
   }
 

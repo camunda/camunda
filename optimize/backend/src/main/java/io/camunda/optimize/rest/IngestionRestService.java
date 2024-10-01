@@ -24,11 +24,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -63,11 +60,5 @@ public class IngestionRestService {
               "A given variable type is not supported. The type must always be one of: %s",
               ReportConstants.ALL_SUPPORTED_PROCESS_VARIABLE_TYPES));
     }
-  }
-
-  @Data
-  private static class ValidList<E> implements List<E> {
-
-    @Delegate private List<E> list = new ArrayList<>();
   }
 }

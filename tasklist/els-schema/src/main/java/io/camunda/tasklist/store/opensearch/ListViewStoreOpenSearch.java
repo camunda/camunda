@@ -65,9 +65,8 @@ public class ListViewStoreOpenSearch implements ListViewStore {
           osClient,
           hits -> {
             final List<BulkOperation> bulkOperations = new ArrayList<>();
-            for (final Hit hit : hits) {
-              final VariableListViewEntity variableListViewEntity =
-                  (VariableListViewEntity) hit.source();
+            for (final Hit<VariableListViewEntity> hit : hits) {
+              final VariableListViewEntity variableListViewEntity = hit.source();
               final BulkOperation bulkOperation =
                   new BulkOperation.Builder()
                       .delete(
@@ -94,6 +93,7 @@ public class ListViewStoreOpenSearch implements ListViewStore {
             }
           },
           null, // No need for an aggregation processor
+          VariableListViewEntity.class,
           null // No need for processing first response metadata
           );
 
@@ -129,7 +129,8 @@ public class ListViewStoreOpenSearch implements ListViewStore {
             }
           },
           null, // No need for an aggregation processor
-          null // No need for first response metadata processing
+          VariableListViewEntity.class,
+          null // No need for processing first response metadata
           );
 
     } catch (final IOException e) {

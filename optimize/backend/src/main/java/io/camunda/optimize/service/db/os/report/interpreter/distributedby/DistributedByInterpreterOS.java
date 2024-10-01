@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -25,6 +26,10 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 public interface DistributedByInterpreterOS<
         DATA extends SingleReportDataDto, PLAN extends ExecutionPlan>
     extends DistributedByInterpreter<DATA, PLAN> {
+
+  BoolQuery.Builder adjustQuery(
+      final BoolQuery.Builder queryBuilder, final ExecutionContext<DATA, PLAN> context);
+
   void adjustSearchRequest(
       final SearchRequest.Builder searchRequestBuilder,
       final Query baseQuery,

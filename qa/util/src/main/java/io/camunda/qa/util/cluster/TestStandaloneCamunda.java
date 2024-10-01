@@ -138,9 +138,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   public TestStandaloneCamunda stop() {
     // clean up ES/OS indices
     LOGGER.info("Stopping standalone camunda test...");
-    (bean(TestOperateElasticsearchSchemaManager.class)).deleteSchema();
-    (bean(TestTasklistElasticsearchSchemaManager.class)).deleteSchema();
-
+    esContainer.stop();
     return super.stop();
   }
 

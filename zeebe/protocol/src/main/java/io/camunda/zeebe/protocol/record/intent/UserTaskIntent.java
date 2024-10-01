@@ -15,6 +15,10 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
   CREATING(0),
   CREATED(1),
@@ -36,7 +40,9 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
   UPDATING(12),
   UPDATED(13),
 
-  MIGRATED(14);
+  MIGRATED(14),
+
+  COMPLETE_TASK_LISTENER(15);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -86,6 +92,8 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return UPDATED;
       case 14:
         return MIGRATED;
+      case 15:
+        return COMPLETE_TASK_LISTENER;
       default:
         return UNKNOWN;
     }
@@ -119,5 +127,11 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
   @Override
   public boolean shouldBanInstanceOnError() {
     return shouldBanInstance;
+  }
+
+  public static Set<UserTaskIntent> commands() {
+    return Stream.of(UserTaskIntent.values())
+        .filter(intent -> !intent.isEvent())
+        .collect(Collectors.toSet());
   }
 }

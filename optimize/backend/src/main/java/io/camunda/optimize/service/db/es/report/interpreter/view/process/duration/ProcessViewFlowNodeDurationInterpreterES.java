@@ -12,7 +12,6 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.F
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
 
-import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.report.plan.process.ProcessView;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
@@ -29,12 +28,12 @@ public class ProcessViewFlowNodeDurationInterpreterES
   }
 
   @Override
-  protected String getReferenceDateFieldName(final ProcessReportDataDto reportData) {
+  protected String getReferenceDateFieldName() {
     return FLOW_NODE_INSTANCES + "." + FLOW_NODE_START_DATE;
   }
 
   @Override
-  protected String getDurationFieldName(final ProcessReportDataDto definitionData) {
+  protected String getDurationFieldName() {
     return FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION;
   }
 }

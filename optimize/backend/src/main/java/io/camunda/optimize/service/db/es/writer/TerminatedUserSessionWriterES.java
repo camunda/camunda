@@ -16,6 +16,7 @@ import co.elastic.clients.json.JsonData;
 import io.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeIndexRequestBuilderES;
+import io.camunda.optimize.service.db.repository.es.TaskRepositoryES;
 import io.camunda.optimize.service.db.schema.index.TerminatedUserSessionIndex;
 import io.camunda.optimize.service.db.writer.TerminatedUserSessionWriter;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Component;
 public class TerminatedUserSessionWriterES extends TerminatedUserSessionWriter {
 
   private final OptimizeElasticsearchClient esClient;
+  private final TaskRepositoryES taskRepositoryES;
 
   @Override
   protected void performWritingTerminatedUserSession(final TerminatedUserSessionDto sessionDto)
@@ -59,8 +61,7 @@ public class TerminatedUserSessionWriterES extends TerminatedUserSessionWriter {
                                             .lt(JsonData.of(timestamp))
                                             .format(OPTIMIZE_DATE_FORMAT)))));
 
-    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-        esClient,
+    taskRepositoryES.tryDeleteByQueryRequest(
         filterQuery,
         String.format("terminated user sessions with timestamp older than %s", timestamp),
         true,

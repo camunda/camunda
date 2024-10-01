@@ -1564,7 +1564,56 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-
+  /incidents/{incidentKey}:
+    get:
+      tags:
+        - Incident
+      summary: |
+        Returns incident as JSON.
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: incidentKey
+          in: path
+          required: true
+          description: The assigned key of the incident, which acts as a unique identifier for this incident.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: >
+            The incident is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncidentItem"
+        "400":
+          description: >
+            The incident Get failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: >
+            The incident with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /deployments:
     post:
       tags:
@@ -2117,29 +2166,66 @@ components:
         key:
           type: integer
           format: int64
+          description: The assigned key, which acts as a unique identifier for this incident.
         processDefinitionKey:
           type: integer
           format: int64
+          description: The process definition key associated to this incident.
+        bpmnProcessId:
+          type: string
+          description: The bpmn process id associated to this incident.
         processInstanceKey:
           type: integer
           format: int64
-        type:
+          description: The process instance key associated to this incident.
+        errorType:
           type: string
-        message:
+          description: Incident error type with a defined set of values.
+          enum:
+            - UNSPECIFIED
+            - UNKNOWN
+            - IO_MAPPING_ERROR
+            - JOB_NO_RETRIES
+            - CONDITION_ERROR
+            - EXTRACT_VALUE_ERROR
+            - CALLED_ELEMENT_ERROR
+            - UNHANDLED_ERROR_EVENT
+            - MESSAGE_SIZE_EXCEEDED
+            - CALLED_DECISION_ERROR
+            - DECISION_EVALUATION_ERROR
+            - FORM_NOT_FOUND
+        errorMessage:
           type: string
+          description: Error message which describes the error in more detail.
         flowNodeId:
           type: string
-        flowNodeInstanceId:
+          description: The flow node id associated to this incident.
+        flowNodeInstanceKey:
+          type: integer
+          format: int64
+          description: The flow node instance key associated to this incident.
+        creationTime:
           type: string
+          description: Date of incident creation.
+          format: date-time
         state:
           type: string
+          description: State of this incident with a defined set of values.
+          enum:
+            - ACTIVE
+            - MIGRATED
+            - RESOLVED
+            - PENDING
         jobKey:
           type: integer
           format: int64
-        tenantId:
+          description: The job key, if exists, associated with this incident.
+        treePath:
           type: string
-        hasActiveOperation:
-          type: boolean
+          description: The path from process instance via flow node ids and flow node instance keys leading to this incident.
+        tenantId:
+          description: The tenant id of the incident.
+          type: string
     IncidentSearchQueryResponse:
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -2155,37 +2241,66 @@ components:
         key:
           type: integer
           format: int64
+          description: The assigned key, which acts as a unique identifier for this incident.
         processDefinitionKey:
           type: integer
           format: int64
+          description: The process definition key associated to this incident.
+        bpmnProcessId:
+          type: string
+          description: The bpmn process id associated to this incident.
         processInstanceKey:
           type: integer
           format: int64
-        type:
+          description: The process instance key associated to this incident.
+        errorType:
           type: string
-        message:
+          description: Incident error type with a defined set of values.
+          enum:
+            - UNSPECIFIED
+            - UNKNOWN
+            - IO_MAPPING_ERROR
+            - JOB_NO_RETRIES
+            - CONDITION_ERROR
+            - EXTRACT_VALUE_ERROR
+            - CALLED_ELEMENT_ERROR
+            - UNHANDLED_ERROR_EVENT
+            - MESSAGE_SIZE_EXCEEDED
+            - CALLED_DECISION_ERROR
+            - DECISION_EVALUATION_ERROR
+            - FORM_NOT_FOUND
+        errorMessage:
           type: string
+          description: Error message which describes the error in more detail.
         flowNodeId:
           type: string
-        flowNodeInstanceId:
-          type: string
-        creationTime:
-          type: string
-        state:
-          type: string
-        jobKey:
+          description: The flow node id associated to this incident.
+        flowNodeInstanceKey:
           type: integer
           format: int64
-        tenantId:
+          description: The flow node instance key associated to this incident.
+        creationTime:
           type: string
-        hasActiveOperation:
-          type: boolean
-        lastOperation:
-          $ref: "#/components/schemas/OperationItem"
-        rootCauseInstance:
-          $ref: "#/components/schemas/ProcessInstanceReferenceItem"
-        rootCauseDecision:
-          $ref: "#/components/schemas/DecisionInstanceReferenceItem"
+          description: Date of incident creation.
+          format: date-time
+        state:
+          type: string
+          description: State of this incident with a defined set of values.
+          enum:
+          - ACTIVE
+          - MIGRATED
+          - RESOLVED
+          - PENDING
+        jobKey:
+          type: integer
+          description: The job key, if exists, associated with this incident.
+          format: int64
+        treePath:
+          type: string
+          description: The path from process instance via flow node ids and flow node instance keys leading to this incident.
+        tenantId:
+          description: The tenant id of the incident.
+          type: string
     OperationItem:
       description: " Operation"
       type: object
@@ -2228,14 +2343,6 @@ components:
         processDefinitionId:
           type: string
         processDefinitionName:
-          type: string
-    DecisionInstanceReferenceItem:
-      description: "Decision instance reference description"
-      type: object
-      properties:
-        instanceId:
-          type: string
-        decisionName:
           type: string
     DecisionDefinitionSearchQueryResponse:
       allOf:

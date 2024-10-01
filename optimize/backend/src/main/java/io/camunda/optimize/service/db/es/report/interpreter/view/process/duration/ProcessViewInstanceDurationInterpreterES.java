@@ -9,7 +9,6 @@ package io.camunda.optimize.service.db.es.report.interpreter.view.process.durati
 
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_INSTANCE_DURATION;
 
-import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.report.plan.process.ProcessView;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -27,12 +26,12 @@ public class ProcessViewInstanceDurationInterpreterES
   }
 
   @Override
-  protected String getReferenceDateFieldName(final ProcessReportDataDto reportData) {
+  protected String getReferenceDateFieldName() {
     return ProcessInstanceIndex.START_DATE;
   }
 
   @Override
-  protected String getDurationFieldName(final ProcessReportDataDto definitionData) {
+  protected String getDurationFieldName() {
     return ProcessInstanceIndex.DURATION;
   }
 }

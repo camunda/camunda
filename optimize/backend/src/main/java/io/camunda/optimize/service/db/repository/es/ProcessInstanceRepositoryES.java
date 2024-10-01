@@ -61,6 +61,7 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
+  private final TaskRepositoryES taskRepositoryES;
 
   @Override
   public void deleteByIds(

@@ -35,6 +35,37 @@ public enum JobListenerEventType {
    */
   END,
 
-  // TODO: use this for the POC
-  COMPLETE
+  /**
+   * Represents the `create` event for a task listener. This event type is used to indicate that the
+   * listener should be triggered when a user task is created. This occurs when the task becomes
+   * available in the workflow for the first time.
+   */
+  CREATE,
+
+  /**
+   * Represents the `ASSIGNMENT` event for a task listener. This event type is used to indicate that
+   * the listener should be triggered when a user task is assigned, claimed (assigned to the current
+   * user), or unassigned.
+   */
+  ASSIGNMENT,
+
+  /**
+   * Represents the `update` event for a task listener. This event type is used to indicate that the
+   * listener should be triggered when a user task's properties are updated. This includes changes
+   * to attributes like `priority`, `due date` or other task metadata.
+   */
+  UPDATE,
+
+  /**
+   * Represents the `complete` event for a task listener. This event type is used to indicate that
+   * the listener should be triggered when a user task is completed.
+   */
+  COMPLETE,
+
+  /**
+   * Represents the `cancel` event for a task listener. This event type is used to indicate that the
+   * listener should be triggered when a user task is canceled or terminated before completion. This
+   * can occur due to workflow interruptions or exceptions.
+   */
+  CANCEL
 }

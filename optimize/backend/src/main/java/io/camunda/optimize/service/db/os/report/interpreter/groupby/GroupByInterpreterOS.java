@@ -20,10 +20,8 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 public interface GroupByInterpreterOS<D extends SingleReportDataDto, P extends ExecutionPlan> {
-  default BoolQuery.Builder adjustQuery(
-      final BoolQuery.Builder queryBuilder, final ExecutionContext<D, P> context) {
-    return queryBuilder;
-  }
+  BoolQuery.Builder adjustQuery(
+      final BoolQuery.Builder queryBuilder, final ExecutionContext<D, P> context);
 
   void adjustSearchRequest(
       final SearchRequest.Builder searchRequestBuilder,

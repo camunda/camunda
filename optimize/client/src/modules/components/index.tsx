@@ -9,7 +9,6 @@
 export {Tabs} from './Tabs';
 export {Icon} from './Icon';
 export {ActionItem} from './ActionItem';
-export {Tooltip} from './Tooltip';
 export {Modal} from './Modal';
 export {Select} from './Select';
 export {TextEditor} from './TextEditor';
@@ -46,5 +45,4 @@ export {EmptyState} from './EmptyState';
 
 export type {User} from './UserTypeahead';
 export type {Canvas, ModdleElement, RegistryElement} from './BPMNDiagram';
-export type {TooltipProps} from './Tooltip';
 export type {TableBody, TableHead} from './Table';

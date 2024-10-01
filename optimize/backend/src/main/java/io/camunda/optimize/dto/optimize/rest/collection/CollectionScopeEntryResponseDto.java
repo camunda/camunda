@@ -14,10 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Data;
-import lombok.experimental.Accessors;
 
 @Data
-@Accessors(chain = true)
 public class CollectionScopeEntryResponseDto {
 
   private String id;
@@ -35,11 +33,13 @@ public class CollectionScopeEntryResponseDto {
   }
 
   public static CollectionScopeEntryResponseDto from(
-      CollectionScopeEntryDto scope, List<TenantDto> authorizedTenantDtos) {
-    return new CollectionScopeEntryResponseDto()
-        .setId(scope.getId())
-        .setDefinitionKey(scope.getDefinitionKey())
-        .setDefinitionType(scope.getDefinitionType())
-        .setTenants(authorizedTenantDtos);
+      final CollectionScopeEntryDto scope, final List<TenantDto> authorizedTenantDtos) {
+    final CollectionScopeEntryResponseDto collectionScopeEntryResponseDto =
+        new CollectionScopeEntryResponseDto();
+    collectionScopeEntryResponseDto.setId(scope.getId());
+    collectionScopeEntryResponseDto.setDefinitionKey(scope.getDefinitionKey());
+    collectionScopeEntryResponseDto.setDefinitionType(scope.getDefinitionType());
+    collectionScopeEntryResponseDto.setTenants(authorizedTenantDtos);
+    return collectionScopeEntryResponseDto;
   }
 }

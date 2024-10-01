@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -40,6 +41,13 @@ public class ProcessGroupByInterpreterFacadeOS
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
     return interpretersMap.keySet();
+  }
+
+  @Override
+  public BoolQuery.Builder adjustQuery(
+      final BoolQuery.Builder queryBuilder,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    return interpreter(context.getPlan().getGroupBy()).adjustQuery(queryBuilder, context);
   }
 
   @Override
