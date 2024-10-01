@@ -9,6 +9,7 @@ package io.camunda.exporter;
 
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.DecisionIndex;
 import java.util.Set;
 
 /**
@@ -19,7 +20,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
   @Override
   public Set<IndexDescriptor> getIndexDescriptors() {
-    return Set.of();
+    return Set.of(new DecisionIndex("operate", true));
   }
 
   @Override

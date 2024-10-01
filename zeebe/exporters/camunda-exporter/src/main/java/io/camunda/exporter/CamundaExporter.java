@@ -17,6 +17,7 @@ import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
+import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.exporter.schema.ElasticsearchEngineClient;
 import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
@@ -197,6 +198,7 @@ public class CamundaExporter implements Exporter {
     return ExporterBatchWriter.Builder.begin()
         .withHandler(new UserRecordValueExportHandler())
         .withHandler(new AuthorizationRecordValueExportHandler())
+        .withHandler(new DecisionHandler())
         .build();
   }
 
@@ -243,7 +245,8 @@ public class CamundaExporter implements Exporter {
 
     @Override
     public boolean acceptValue(final ValueType valueType) {
-      return VALUE_TYPES_2_EXPORT.contains(valueType);
+      // return VALUE_TYPES_2_EXPORT.contains(valueType);
+      return true;
     }
   }
 }
