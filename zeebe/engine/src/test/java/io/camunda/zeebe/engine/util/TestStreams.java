@@ -162,7 +162,6 @@ public final class TestStreams {
             .withLogStorage(logStorage)
             .withPartitionId(partitionId)
             .withClock(clock)
-            .withActorSchedulingService(actorScheduler)
             .build();
 
     logStreamConsumer.accept(logStream);

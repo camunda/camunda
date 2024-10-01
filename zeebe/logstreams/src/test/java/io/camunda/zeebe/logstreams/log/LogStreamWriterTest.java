@@ -20,6 +20,7 @@ import io.camunda.zeebe.logstreams.util.TestEntry;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -226,7 +227,7 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithTimestampFromClock() {
     // given
-    logStreamRule.getClock().setCurrentTime(123456789L);
+    logStreamRule.getClock().delegate = () -> Instant.ofEpochMilli(123456789L);
     final long position = tryWrite(TestEntry.ofDefaults());
 
     // when
