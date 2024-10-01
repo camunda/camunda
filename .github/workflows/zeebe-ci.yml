@@ -42,7 +42,7 @@ jobs:
   integration-tests:
     name: "[IT] ${{ matrix.name }}"
     timeout-minutes: 45
-    runs-on: [ self-hosted, linux, amd64, "16" ]
+    runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
       matrix:
@@ -53,6 +53,7 @@ jobs:
             maven-modules: "'!zeebe/qa/integration-tests,!zeebe/qa/update-tests'"
             maven-build-threads: 2
             maven-test-fork-count: 7
+            runs-on: gcp-perf-core-8-default
             tcc-enabled: 'false'
             tcc-concurrency: 1
           - group: qa-integration
@@ -60,6 +61,7 @@ jobs:
             maven-modules: "zeebe/qa/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
+            runs-on: gcp-perf-core-16-default
             tcc-enabled: ${{ vars.TCC_ENABLED }}
             tcc-concurrency: 1
           - group: qa-update
@@ -67,6 +69,7 @@ jobs:
             maven-modules: "zeebe/qa/update-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
+            runs-on: gcp-perf-core-8-default
             tcc-enabled: ${{ vars.TCC_ENABLED }}
             tcc-concurrency: 2
     env:
@@ -147,8 +150,51 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   unit-tests:
     name: Unit tests
-    runs-on: [ self-hosted, linux, amd64, "16" ]
+    runs-on: gcp-perf-core-16-default
     timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          go: false
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - uses: ./.github/actions/build-zeebe
+        with:
+          go: false
+          maven-extra-args: -T1C
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Maven Test Build
+        # we use the verify goal here as flaky test extraction is bound to the post-integration-test
+        # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
+        run: >
+          ./mvnw -T2 -B --no-snapshot-updates
+          -D skipITs -D skipChecks -D surefire.rerunFailingTestsCount=3
+          -D junitThreadCount=16
+          -P skip-random-tests,parallel-tests,extract-flaky-tests
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "unit tests"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+  # Zeebe tests requiring strace
+  strace-tests:
+    name: Strace Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Install and allow strace tests
@@ -173,22 +219,15 @@ jobs:
         run: >
           ./mvnw -T2 -B --no-snapshot-updates
           -D skipITs -D skipChecks -D surefire.rerunFailingTestsCount=3
-          -D junitThreadCount=16
-          -P skip-random-tests,parallel-tests,extract-flaky-tests
+          -D junitThreadCount=2
+          -P include-strace-tests,extract-flaky-tests
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
-      - name: Normalize artifact name
-        run: echo "ARTIFACT_NAME=$(echo ${{ matrix.project }} | sed 's/\//-/g')" >> $GITHUB_ENV
-      - name: Analyze Test Runs
-        if: always()
-        uses: ./.github/actions/analyze-test-runs
-        with:
-          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() }}
         with:
-          name: "unit tests"
+          name: Strace Tests
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -213,7 +252,7 @@ jobs:
           - os: windows
             runner: windows-latest
           - os: linux
-            runner: [ self-hosted, linux, amd64 ]
+            runner: gcp-perf-core-8-default
           - os: linux
             runner: "aws-arm-core-4-default"
             arch: arm64
@@ -315,7 +354,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   performance-tests:
     name: Performance Tests
-    runs-on: [ self-hosted, linux, amd64, "16" ]
+    runs-on: gcp-perf-core-16-default
     timeout-minutes: 30
     env:
       ZEEBE_PERFORMANCE_TEST_RESULTS_DIR: "/tmp/jmh"
