@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.entities;
 
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -14,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 
 public class AuthorizationEntity implements ExporterEntity<AuthorizationEntity> {
+
+  public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
   private String id;
   private Long ownerKey;
   private AuthorizationOwnerType ownerType;

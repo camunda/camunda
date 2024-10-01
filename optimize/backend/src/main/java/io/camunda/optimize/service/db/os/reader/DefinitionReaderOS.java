@@ -78,6 +78,7 @@ import org.opensearch.client.opensearch._types.aggregations.CompositeAggregate;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregationSource;
 import org.opensearch.client.opensearch._types.aggregations.CompositeBucket;
+import org.opensearch.client.opensearch._types.aggregations.CompositeTermsAggregationSource;
 import org.opensearch.client.opensearch._types.aggregations.FiltersAggregation;
 import org.opensearch.client.opensearch._types.aggregations.FiltersBucket;
 import org.opensearch.client.opensearch._types.aggregations.MultiBucketAggregateBase;
@@ -249,9 +250,10 @@ public class DefinitionReaderOS implements DefinitionReader {
             TENANT_AGGREGATION,
             new CompositeAggregationSource.Builder()
                 .terms(
-                    new TermsAggregation.Builder()
+                    new CompositeTermsAggregationSource.Builder()
                         .missingBucket(true)
                         .field(DEFINITION_TENANT_ID)
+                        .order(SortOrder.Asc)
                         .build())
                 .build()));
 
@@ -259,14 +261,17 @@ public class DefinitionReaderOS implements DefinitionReader {
         Collections.singletonMap(
             DEFINITION_KEY_AGGREGATION,
             new CompositeAggregationSource.Builder()
-                .terms(new TermsAggregation.Builder().field(DEFINITION_KEY).build())
+                .terms(new CompositeTermsAggregationSource.Builder().field(DEFINITION_KEY).build())
                 .build()));
 
     keyAndTypeAndTenantSources.add(
         Collections.singletonMap(
             DEFINITION_TYPE_AGGREGATION,
             new CompositeAggregationSource.Builder()
-                .terms(new TermsAggregation.Builder().field(DatabaseConstants.INDEX).build())
+                .terms(
+                    new CompositeTermsAggregationSource.Builder()
+                        .field(DatabaseConstants.INDEX)
+                        .build())
                 .build()));
 
     final CompositeAggregation keyAndTypeAndTenantAggregation =
@@ -716,14 +721,17 @@ public class DefinitionReaderOS implements DefinitionReader {
         Collections.singletonMap(
             DEFINITION_KEY_AGGREGATION,
             new CompositeAggregationSource.Builder()
-                .terms(new TermsAggregation.Builder().field(DEFINITION_KEY).build())
+                .terms(new CompositeTermsAggregationSource.Builder().field(DEFINITION_KEY).build())
                 .build()));
 
     keyAndTypeSources.add(
         Collections.singletonMap(
             DEFINITION_TYPE_AGGREGATION,
             new CompositeAggregationSource.Builder()
-                .terms(new TermsAggregation.Builder().field(DatabaseConstants.INDEX).build())
+                .terms(
+                    new CompositeTermsAggregationSource.Builder()
+                        .field(DatabaseConstants.INDEX)
+                        .build())
                 .build()));
 
     final CompositeAggregation.Builder keyAndTypeCompositeAggregation =

@@ -9,41 +9,36 @@
 import {formatters, processResult} from 'services';
 
 import {getAxisIdx, getLabel} from '../service';
+
 import {createDatasetOptions} from './createDefaultChartOptions';
 
 const {formatReportResult} = formatters;
 
 export default function createDefaultChartData(props) {
-  const datasets = [];
-
   const {
     result: {measures = []},
     data: {
       configuration: {measureVisualizations, horizontalBar},
     },
   } = props.report;
-
   const chartData = measures.map((_, idx) => extractDefaultChartData(props, idx));
-  const labels = chartData[0].labels;
-
-  chartData.forEach(
-    ({labels: measureLabels, formattedResult, visualization, targetValue, color, isDark}, idx) => {
+  const refLablesMap = chartData[0]?.labelsMap;
+  const labels = chartData[0]?.labels;
+  const datasets = chartData.map(
+    ({formattedResult, visualization, targetValue, color, isDark}, idx) => {
       const measure = measures[idx];
       let type = visualization;
       let order;
+
       if (visualization === 'barLine') {
         type = measureVisualizations[measure.property];
         order = type === 'line' ? 0 : 1;
       }
 
-      datasets.push({
+      return {
         [horizontalBar ? 'xAxisID' : 'yAxisID']: 'axis-' + getAxisIdx(measures, idx),
         label: getLabel(measure),
-        data: sortValues(
-          labels,
-          measureLabels,
-          formattedResult.map(({value}) => value)
-        ),
+        data: getValues(refLablesMap, formattedResult),
         formatter: formatters[measure.property],
         order,
         ...createDatasetOptions({
@@ -56,7 +51,7 @@ export default function createDefaultChartData(props) {
           measureCount: measures.length,
           datasetIdx: idx,
         }),
-      });
+      };
     }
   );
 
@@ -74,10 +69,15 @@ export function extractDefaultChartData({report, theme, targetValue}, measureIdx
   const result = processResult({...report, result: report.result.measures[measureIdx]});
   const formattedResult = formatReportResult(data, result.data);
 
-  const labels = formattedResult.map(({key, label}) => formatters.formatLabel(label || key));
+  const labelsMap = formattedResult.map(({key, label}) => ({
+    key,
+    label: formatters.formatLabel(label || key),
+  }));
+  const labels = labelsMap.map(({label}) => label);
 
   return {
     labels,
+    labelsMap,
     formattedResult,
     visualization,
     targetValue,
@@ -86,12 +86,7 @@ export function extractDefaultChartData({report, theme, targetValue}, measureIdx
   };
 }
 
-// sorts values based on refLabels
-function sortValues(refLabels, labels, values) {
-  let labelValueMap = {};
-  labels.forEach((label, index) => {
-    labelValueMap[label] = values[index];
-  });
-
-  return refLabels.map((label) => labelValueMap[label]);
+// get values based on key
+function getValues(refLabelsMap, formattedResult) {
+  return refLabelsMap.map(({key}) => formattedResult.find((result) => result.key === key).value);
 }

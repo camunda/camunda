@@ -9,30 +9,30 @@ package io.camunda.optimize.service.db.es.schema.index;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
 
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
-public class DecisionInstanceIndexES extends DecisionInstanceIndex<XContentBuilder> {
+public class DecisionInstanceIndexES extends DecisionInstanceIndex<IndexSettings.Builder> {
 
   public DecisionInstanceIndexES(final String decisionDefinitionKey) {
     super(decisionDefinitionKey);
   }
 
   @Override
-  public XContentBuilder addStaticSetting(
-      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
-    return contentBuilder.field(key, value);
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder builder) throws IOException {
+    return builder.numberOfShards(String.valueOf(value));
   }
 
   @Override
-  public XContentBuilder getStaticSettings(
-      XContentBuilder xContentBuilder, ConfigurationService configurationService)
+  public IndexSettings.Builder getStaticSettings(
+      final IndexSettings.Builder builder, final ConfigurationService configurationService)
       throws IOException {
     return addStaticSetting(
         NUMBER_OF_SHARDS_SETTING,
         configurationService.getElasticSearchConfiguration().getNumberOfShards(),
-        xContentBuilder);
+        builder);
   }
 }

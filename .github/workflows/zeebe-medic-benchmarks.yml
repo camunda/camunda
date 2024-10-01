@@ -77,7 +77,7 @@ jobs:
       operate-tag: ${{ needs.benchmark-data.outputs.operate }}
       benchmark-load: >
         --set starter.rate=5
-        --set worker.replicas=1
+        --set workers.benchmark.replicas=1
         --set timer.replicas=1
         --set timer.rate=5
         --set publisher.replicas=1
@@ -102,4 +102,4 @@ jobs:
       measure: false
       benchmark-load: >
         --set starter.rate=1
-        --set worker.replicas=1
+        --set workers.benchmark.replicas=1

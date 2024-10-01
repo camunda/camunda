@@ -13,12 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import io.camunda.operate.connect.OperateDateTimeFormatter;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.SequenceFlowEntity;
-import io.camunda.operate.entities.VariableEntity;
-import io.camunda.operate.entities.listview.ListViewJoinRelation;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
@@ -30,6 +24,12 @@ import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ListViewJoinRelation;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -59,6 +59,7 @@ public class ProcessInstanceDaoIT extends OperateSearchAbstractIT {
             .setProcessDefinitionKey(2251799813685249L)
             .setProcessName("Demo process")
             .setProcessVersion(1)
+            .setProcessVersionTag("tag-v1")
             .setBpmnProcessId("demoProcess-1")
             .setStartDate(dateTimeFormatter.parseGeneralDateTime(firstInstanceStartDate))
             .setEndDate(dateTimeFormatter.parseGeneralDateTime(endDate))
@@ -132,6 +133,7 @@ public class ProcessInstanceDaoIT extends OperateSearchAbstractIT {
     final ProcessInstance result = dao.byKey(2251799813685251L);
     assertThat(result.getKey()).isEqualTo(2251799813685251L);
     assertThat(result.getBpmnProcessId()).isEqualTo("demoProcess-1");
+    assertThat(result.getProcessVersionTag()).isEqualTo("tag-v1");
     assertThat(result.getStartDate()).isEqualTo(firstInstanceStartDate);
     assertThat(result.getEndDate()).isEqualTo(endDate);
   }

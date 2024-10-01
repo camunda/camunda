@@ -9,25 +9,31 @@ package io.camunda.exporter.schema;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
+import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
+import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.JsonpDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
-import io.camunda.exporter.schema.descriptors.IndexDescriptor;
-import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,6 +123,75 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
+  @Override
+  public void putSettings(
+      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
+    final var request = putIndexSettingsRequest(indexDescriptors, toAppendSettings);
+
+    try {
+      client.indices().putSettings(request);
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format(
+              "settings PUT failed for the following indices [%s]", listIndices(indexDescriptors));
+      LOG.error(errMsg, e);
+      throw new ElasticsearchExporterException(errMsg, e);
+    }
+  }
+
+  @Override
+  public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {
+    final PutLifecycleRequest request = putLifecycleRequest(policyName, deletionMinAge);
+
+    try {
+      client.ilm().putLifecycle(request);
+    } catch (final IOException e) {
+      final var errMsg = String.format("Index lifecycle policy [%s] failed to PUT", policyName);
+      LOG.error(errMsg, e);
+      throw new ElasticsearchExporterException(errMsg, e);
+    }
+  }
+
+  private PutIndicesSettingsRequest putIndexSettingsRequest(
+      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
+    try (final var settingsStream =
+        IOUtils.toInputStream(
+            MAPPER.writeValueAsString(toAppendSettings), StandardCharsets.UTF_8)) {
+
+      return new PutIndicesSettingsRequest.Builder()
+          .index(listIndices(indexDescriptors))
+          .withJson(settingsStream)
+          .build();
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          String.format(
+              "Failed to serialise settings in PutSettingsRequest for indices %s",
+              listIndices(indexDescriptors)),
+          e);
+    }
+  }
+
+  private String listIndices(final List<IndexDescriptor> indexDescriptors) {
+    return indexDescriptors.stream()
+        .map(IndexDescriptor::getFullQualifiedName)
+        .collect(Collectors.joining(","));
+  }
+
+  public PutLifecycleRequest putLifecycleRequest(
+      final String policyName, final String deletionMinAge) {
+    return new PutLifecycleRequest.Builder()
+        .name(policyName)
+        .policy(
+            policy ->
+                policy.phases(
+                    phase ->
+                        phase.delete(
+                            del ->
+                                del.minAge(m -> m.time(deletionMinAge))
+                                    .actions(JsonData.of(Map.of("delete", Map.of()))))))
+        .build();
+  }
+
   private Map<String, TypeMapping> getCurrentMappings(
       final MappingSource mappingSource, final String namePattern) throws IOException {
     if (mappingSource == MappingSource.INDEX) {
@@ -163,7 +238,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final IndexDescriptor indexDescriptor, final Set<IndexMappingProperty> newProperties) {
 
     return new PutMappingRequest.Builder()
-        .index(indexDescriptor.getIndexName())
+        .index(indexDescriptor.getFullQualifiedName())
         .withJson(IndexMappingProperty.toPropertiesJson(newProperties, MAPPER))
         .build();
   }

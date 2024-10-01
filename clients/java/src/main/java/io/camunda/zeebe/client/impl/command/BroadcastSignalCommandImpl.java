@@ -24,7 +24,11 @@ import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1.Broadcast
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.BroadcastSignalResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.BroadcastSignalResponseImpl;
+import io.camunda.zeebe.client.protocol.rest.SignalBroadcastRequest;
+import io.camunda.zeebe.client.protocol.rest.SignalBroadcastResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
@@ -32,6 +36,7 @@ import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class BroadcastSignalCommandImpl
     extends CommandWithVariables<BroadcastSignalCommandImpl>
@@ -39,66 +44,120 @@ public final class BroadcastSignalCommandImpl
 
   private final GatewayStub asyncStub;
   private final Predicate<StatusCode> retryPredicate;
-  private final BroadcastSignalRequest.Builder builder;
+  private final BroadcastSignalRequest.Builder grpcRequestObjectBuilder;
   private Duration requestTimeout;
+  private final HttpClient httpClient;
+  private final RequestConfig.Builder httpRequestConfig;
+  private final SignalBroadcastRequest httpRequestObject;
+  private boolean useRest;
 
   public BroadcastSignalCommandImpl(
       final GatewayStub asyncStub,
-      final ZeebeClientConfiguration configuration,
+      final ZeebeClientConfiguration config,
       final JsonMapper jsonMapper,
-      final Predicate<StatusCode> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate,
+      final HttpClient httpClient) {
     super(jsonMapper);
     this.asyncStub = asyncStub;
     this.retryPredicate = retryPredicate;
-    builder = BroadcastSignalRequest.newBuilder();
-    requestTimeout = configuration.getDefaultRequestTimeout();
-    tenantId(configuration.getDefaultTenantId());
+    grpcRequestObjectBuilder = BroadcastSignalRequest.newBuilder();
+    this.httpClient = httpClient;
+    httpRequestConfig = httpClient.newRequestConfig();
+    httpRequestObject = new SignalBroadcastRequest();
+    useRest = config.preferRestOverGrpc();
+    tenantId(config.getDefaultTenantId());
+    requestTimeout(config.getDefaultRequestTimeout());
   }
 
   @Override
   protected BroadcastSignalCommandImpl setVariablesInternal(final String variables) {
-    builder.setVariables(variables);
+    grpcRequestObjectBuilder.setVariables(variables);
+    // This check is mandatory. Without it, gRPC requests can fail unnecessarily.
+    // gRPC and REST handle setting variables differently:
+    // - For gRPC commands, we only check if the JSON is valid and forward it to the engine.
+    //    The engine checks if the provided String can be transformed into a Map, if not it
+    //    throws an error.
+    // - For REST commands, users have to provide a valid JSON Object String.
+    //    Otherwise, the client throws an exception already.
+    if (useRest) {
+      httpRequestObject.setVariables(objectMapper.fromJsonAsMap(variables));
+    }
     return this;
   }
 
   @Override
   public BroadcastSignalCommandStep2 signalName(final String signalName) {
-    builder.setSignalName(signalName);
+    grpcRequestObjectBuilder.setSignalName(signalName);
+    httpRequestObject.setSignalName(signalName);
     return this;
   }
 
   @Override
   public BroadcastSignalCommandStep2 tenantId(final String tenantId) {
-    builder.setTenantId(tenantId);
+    grpcRequestObjectBuilder.setTenantId(tenantId);
+    httpRequestObject.setTenantId(tenantId);
     return this;
   }
 
   @Override
   public FinalCommandStep<BroadcastSignalResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
   public ZeebeFuture<BroadcastSignalResponse> send() {
-    final BroadcastSignalRequest request = builder.build();
+    if (useRest) {
+      return sendRestRequest();
+    } else {
+      return sendGrpcRequest();
+    }
+  }
+
+  private ZeebeFuture<BroadcastSignalResponse> sendRestRequest() {
+    final HttpZeebeFuture<BroadcastSignalResponse> result = new HttpZeebeFuture<>();
+    httpClient.post(
+        "/signals/broadcast",
+        objectMapper.toJson(httpRequestObject),
+        httpRequestConfig.build(),
+        SignalBroadcastResponse.class,
+        BroadcastSignalResponseImpl::new,
+        result);
+    return result;
+  }
+
+  public ZeebeFuture<BroadcastSignalResponse> sendGrpcRequest() {
+    final BroadcastSignalRequest request = grpcRequestObjectBuilder.build();
     final RetriableClientFutureImpl<
             BroadcastSignalResponse, GatewayOuterClass.BroadcastSignalResponse>
         future =
             new RetriableClientFutureImpl<>(
                 BroadcastSignalResponseImpl::new,
                 retryPredicate,
-                streamObserver -> send(request, streamObserver));
+                streamObserver -> sendGrpcRequest(request, streamObserver));
 
-    send(request, future);
+    sendGrpcRequest(request, future);
     return future;
   }
 
-  private void send(
+  private void sendGrpcRequest(
       final BroadcastSignalRequest request,
       final StreamObserver<GatewayOuterClass.BroadcastSignalResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .broadcastSignal(request, streamObserver);
+  }
+
+  @Override
+  public BroadcastSignalCommandStep1 useRest() {
+    useRest = true;
+    return this;
+  }
+
+  @Override
+  public BroadcastSignalCommandStep1 useGrpc() {
+    useRest = false;
+    return this;
   }
 }

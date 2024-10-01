@@ -20,9 +20,11 @@ import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.EvaluatedDecision;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionInput;
 import io.camunda.zeebe.client.api.response.MatchedDecisionRule;
+import io.camunda.zeebe.client.protocol.rest.EvaluatedDecisionItem;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class EvaluatedDecisionImpl implements EvaluatedDecision {
 
@@ -36,6 +38,20 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
   private final List<MatchedDecisionRule> matchedRules = new ArrayList<>();
   private final List<EvaluatedDecisionInput> evaluatedInputs = new ArrayList<>();
   private final String tenantId;
+
+  public EvaluatedDecisionImpl(
+      final EvaluatedDecisionItem evaluatedDecisionItem, final JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
+    decisionId = evaluatedDecisionItem.getDecisionDefinitionId();
+    decisionKey = evaluatedDecisionItem.getDecisionDefinitionKey();
+    decisionVersion = evaluatedDecisionItem.getDecisionDefinitionVersion();
+    decisionName = evaluatedDecisionItem.getDecisionDefinitionName();
+    decisionType = evaluatedDecisionItem.getDecisionDefinitionType();
+    decisionOutput = evaluatedDecisionItem.getOutput();
+    tenantId = evaluatedDecisionItem.getTenantId();
+    buildMatchedRules(evaluatedDecisionItem);
+    buildEvaluatedDecisionInput(evaluatedDecisionItem);
+  }
 
   public EvaluatedDecisionImpl(
       final JsonMapper jsonMapper, final GatewayOuterClass.EvaluatedDecision evaluatedDecision) {
@@ -56,6 +72,26 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
     evaluatedDecision.getMatchedRulesList().stream()
         .map(matchedRule -> new MatchedDecisionRuleImpl(jsonMapper, matchedRule))
         .forEach(matchedRules::add);
+  }
+
+  private void buildEvaluatedDecisionInput(final EvaluatedDecisionItem evaluatedDecisionItem) {
+    if (evaluatedDecisionItem.getEvaluatedInputs() == null) {
+      return;
+    }
+    evaluatedInputs.addAll(
+        evaluatedDecisionItem.getEvaluatedInputs().stream()
+            .map(input -> new EvaluatedDecisionInputImpl(input, jsonMapper))
+            .collect(Collectors.toList()));
+  }
+
+  private void buildMatchedRules(final EvaluatedDecisionItem evaluatedDecisionItem) {
+    if (evaluatedDecisionItem.getMatchedRules() == null) {
+      return;
+    }
+    matchedRules.addAll(
+        evaluatedDecisionItem.getMatchedRules().stream()
+            .map(rule -> new MatchedDecisionRuleImpl(rule, jsonMapper))
+            .collect(Collectors.toList()));
   }
 
   @Override
@@ -99,13 +135,13 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
   }
 
   @Override
-  public String getTenantId() {
-    return tenantId;
+  public String toJson() {
+    return jsonMapper.toJson(this);
   }
 
   @Override
-  public String toJson() {
-    return jsonMapper.toJson(this);
+  public String getTenantId() {
+    return tenantId;
   }
 
   @Override

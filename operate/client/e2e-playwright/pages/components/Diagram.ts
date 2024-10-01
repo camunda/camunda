@@ -44,10 +44,31 @@ export class Diagram {
     return this.getFlowNode(flowNodeName).click();
   }
 
+  async clickEvent(eventName: string) {
+    const event = await this.getEvent(eventName);
+    return event.click();
+  }
+
   getFlowNode(flowNodeName: string) {
     return this.diagram
       .locator('.djs-element')
       .filter({hasText: new RegExp(`^${flowNodeName}$`, 'i')});
+  }
+
+  async getEvent(eventName: string) {
+    const eventLabel = this.diagram
+      .locator('.djs-element')
+      .filter({hasText: new RegExp(`${eventName}`, 'i')});
+
+    const labelId = await eventLabel.getAttribute('data-element-id');
+    const eventId = labelId?.split(/_label$/)[0];
+    return this.diagram.locator(`[data-element-id="${eventId}"]`);
+  }
+
+  showMetaData() {
+    return this.popover
+      .getByRole('button', {name: /show more metadata/i})
+      .click();
   }
 
   getExecutionCount(elementId: string) {

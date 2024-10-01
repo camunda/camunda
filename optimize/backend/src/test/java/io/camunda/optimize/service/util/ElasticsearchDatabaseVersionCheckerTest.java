@@ -16,7 +16,7 @@ import static org.mockito.Mockito.mockStatic;
 
 import com.vdurmont.semver4j.Semver;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import io.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -32,11 +32,11 @@ public class ElasticsearchDatabaseVersionCheckerTest {
   public static final Integer PATCH_PART = MIN_SUPPORTED_ES_VERSION_SEMVER.getPatch();
   public static final Integer MINOR_PART = MIN_SUPPORTED_ES_VERSION_SEMVER.getMinor();
   public static final Integer MAJOR_PART = MIN_SUPPORTED_ES_VERSION_SEMVER.getMajor();
-  MockedStatic<ElasticsearchHighLevelRestClientBuilder> esClientBuilderMock;
+  MockedStatic<ElasticsearchClientBuilder> esClientBuilderMock;
 
   @BeforeEach
   void setUp() {
-    esClientBuilderMock = mockStatic(ElasticsearchHighLevelRestClientBuilder.class);
+    esClientBuilderMock = mockStatic(ElasticsearchClientBuilder.class);
   }
 
   @AfterEach
@@ -50,7 +50,7 @@ public class ElasticsearchDatabaseVersionCheckerTest {
       final String currentVersion) {
     // given
     esClientBuilderMock
-        .when(() -> ElasticsearchHighLevelRestClientBuilder.getCurrentESVersion(any(), any()))
+        .when(() -> ElasticsearchClientBuilder.getCurrentESVersion(any(), any()))
         .thenReturn(currentVersion);
 
     // then
@@ -63,7 +63,7 @@ public class ElasticsearchDatabaseVersionCheckerTest {
       final String currentVersion) {
     // given
     esClientBuilderMock
-        .when(() -> ElasticsearchHighLevelRestClientBuilder.getCurrentESVersion(any(), any()))
+        .when(() -> ElasticsearchClientBuilder.getCurrentESVersion(any(), any()))
         .thenReturn(currentVersion);
 
     // then

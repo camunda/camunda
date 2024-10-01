@@ -7,7 +7,6 @@
  */
 
 import {t} from 'translation';
-import {Tooltip} from 'components';
 import {useUiConfig} from 'hooks';
 
 import './Footer.scss';
@@ -20,9 +19,9 @@ export default function Footer() {
 
   return (
     <footer className="Footer">
-      <Tooltip content={timezoneInfo} overflowOnly>
-        <div className="timezone">{timezoneInfo}</div>
-      </Tooltip>
+      <div title={timezoneInfo} className="timezone">
+        {timezoneInfo}
+      </div>
       <div className="colophon">
         © Camunda Services GmbH {new Date().getFullYear()}, {t('footer.rightsReserved')} |{' '}
         {optimizeVersion}

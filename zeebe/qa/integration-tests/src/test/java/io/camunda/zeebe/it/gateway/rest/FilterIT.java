@@ -57,7 +57,7 @@ public class FilterIT {
   void shouldFailWithFirstFilterThrowingException() {
     // when / then
     assertThatThrownBy(() -> client.newTopologyRequest().useRest().send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("No topology interactions while testing");
   }
 
@@ -65,7 +65,7 @@ public class FilterIT {
   void shouldFailWithSecondFilterThrowingException() {
     // when / then
     assertThatThrownBy(() -> client.newUserTaskCompleteCommand(12345).send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("No user task interactions while testing");
   }
 

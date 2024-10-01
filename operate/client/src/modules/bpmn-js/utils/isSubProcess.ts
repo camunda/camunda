@@ -7,9 +7,13 @@
  */
 
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {hasType} from './hasType';
 
 function isSubProcess(businessObject?: BusinessObject) {
-  return businessObject?.$type === 'bpmn:SubProcess';
+  return (
+    businessObject !== undefined &&
+    hasType({businessObject, types: ['bpmn:SubProcess']})
+  );
 }
 
 export {isSubProcess};

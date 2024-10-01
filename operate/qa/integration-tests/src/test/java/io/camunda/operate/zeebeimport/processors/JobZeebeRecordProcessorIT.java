@@ -9,7 +9,6 @@ package io.camunda.operate.zeebeimport.processors;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.camunda.operate.entities.ListenerState;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.templates.JobTemplate;
@@ -20,6 +19,7 @@ import io.camunda.operate.webapp.rest.dto.ListenerDto;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import io.camunda.operate.webapp.rest.dto.ListenerResponseDto;
 import io.camunda.operate.webapp.rest.dto.SortingDto;
+import io.camunda.webapps.schema.entities.operate.ListenerState;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;

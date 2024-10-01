@@ -13,10 +13,10 @@ import static io.camunda.operate.util.ExceptionHelper.withPersistenceException;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.util.Map;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -38,13 +38,13 @@ public class OpensearchBatchRequest implements BatchRequest {
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   @Override
-  public BatchRequest add(final String index, final OperateEntity entity)
+  public BatchRequest add(final String index, final ExporterEntity entity)
       throws PersistenceException {
     return addWithId(index, entity.getId(), entity);
   }
 
   @Override
-  public BatchRequest addWithId(final String index, final String id, final OperateEntity entity)
+  public BatchRequest addWithId(final String index, final String id, final ExporterEntity entity)
       throws PersistenceException {
     LOGGER.debug("Add index request for index {} id {} and entity {} ", index, id, entity);
 
@@ -58,7 +58,7 @@ public class OpensearchBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest addWithRouting(
-      final String index, final OperateEntity entity, final String routing)
+      final String index, final ExporterEntity entity, final String routing)
       throws PersistenceException {
     LOGGER.debug(
         "Add index request with routing {} for index {} and entity {} ", routing, index, entity);
@@ -81,7 +81,7 @@ public class OpensearchBatchRequest implements BatchRequest {
   public BatchRequest upsert(
       final String index,
       final String id,
-      final OperateEntity entity,
+      final ExporterEntity entity,
       final Map<String, Object> updateFields)
       throws PersistenceException {
     LOGGER.debug(
@@ -108,7 +108,7 @@ public class OpensearchBatchRequest implements BatchRequest {
   public BatchRequest upsertWithRouting(
       final String index,
       final String id,
-      final OperateEntity entity,
+      final ExporterEntity entity,
       final Map<String, Object> updateFields,
       final String routing)
       throws PersistenceException {
@@ -142,7 +142,7 @@ public class OpensearchBatchRequest implements BatchRequest {
   public BatchRequest upsertWithScript(
       final String index,
       final String id,
-      final OperateEntity entity,
+      final ExporterEntity entity,
       final String script,
       final Map<String, Object> parameters)
       throws PersistenceException {
@@ -177,7 +177,7 @@ public class OpensearchBatchRequest implements BatchRequest {
   public BatchRequest upsertWithScriptAndRouting(
       final String index,
       final String id,
-      final OperateEntity entity,
+      final ExporterEntity entity,
       final String script,
       final Map<String, Object> parameters,
       final String routing)
@@ -235,7 +235,7 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest update(final String index, final String id, final OperateEntity entity)
+  public BatchRequest update(final String index, final String id, final ExporterEntity entity)
       throws PersistenceException {
     withPersistenceException(
         () ->

@@ -6,37 +6,56 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {defineConfig, transformWithEsbuild} from 'vite';
+import {type PluginOption, defineConfig, transformWithEsbuild} from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
-import {readdirSync} from 'fs';
+import {readdirSync} from 'node:fs';
+import license from 'rollup-plugin-license';
+import path from 'node:path';
+import sbom from '@vzeta/rollup-plugin-sbom';
 
-export default defineConfig({
+const outDir = 'dist';
+
+const plugins: PluginOption[] = [
+  {
+    name: 'treat-js-files-as-jsx',
+    async transform(code, id) {
+      if (!id.match(/src\/.*\.js$/)) return null;
+
+      // Use the exposed transform from vite, instead of directly
+      // transforming with esbuild
+      return transformWithEsbuild(code, id, {
+        loader: 'jsx',
+        jsx: 'automatic',
+      });
+    },
+  },
+  react(),
+  svgr({
+    svgrOptions: {exportType: 'default', ref: true, svgo: false, titleProp: true},
+    include: '**/*.svg',
+  }),
+];
+
+export default defineConfig(({mode}) => ({
   base: '',
   build: {
+    outDir,
     // The backend only allow public resources inside the static folder
     assetsDir: 'static',
-  },
-  plugins: [
-    {
-      name: 'treat-js-files-as-jsx',
-      async transform(code, id) {
-        if (!id.match(/src\/.*\.js$/)) return null;
-
-        // Use the exposed transform from vite, instead of directly
-        // transforming with esbuild
-        return transformWithEsbuild(code, id, {
-          loader: 'jsx',
-          jsx: 'automatic',
-        });
-      },
+    rollupOptions: {
+      plugins: license({
+        thirdParty: {
+          output: path.resolve(__dirname, `./${outDir}/static/vendor.LICENSE.txt`),
+        },
+      }) as PluginOption,
     },
-    react(),
-    svgr({
-      svgrOptions: {exportType: 'default', ref: true, svgo: false, titleProp: true},
-      include: '**/*.svg',
-    }),
-  ],
+  },
+  esbuild: {
+    banner: '/*! licenses: /static/vendor.LICENSE.txt */',
+    legalComments: 'none',
+  },
+  plugins: mode === 'sbom' ? [...plugins, sbom() as PluginOption] : plugins,
   optimizeDeps: {
     force: true,
     esbuildOptions: {
@@ -77,7 +96,7 @@ export default defineConfig({
       },
     },
   },
-});
+}));
 
 // Function to generate aliases dynamically
 function generateAliases() {

@@ -51,12 +51,17 @@
         <zeebe:ioMapping>
           <zeebe:input source="=&#34;dispute_unsuccessful&#34;" target="type" />
         </zeebe:ioMapping>
-        <zeebe:taskDefinition type="customer_notification" />
+        <zeebe:taskDefinition type="inform_about_failed_claim" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0cceqh3</bpmn:incoming>
       <bpmn:outgoing>Flow_1cvob8y</bpmn:outgoing>
     </bpmn:sendTask>
     <bpmn:subProcess id="Activity_199882v" name="Document Request Process">
+      <bpmn:extensionElements>
+        <zeebe:ioMapping>
+          <zeebe:input source="=null" target="correlationKey" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_15wpx65</bpmn:incoming>
       <bpmn:outgoing>Flow_06bdzt7</bpmn:outgoing>
       <bpmn:startEvent id="Event_1g0dyzc" name="documents required">
@@ -128,23 +133,28 @@
     <bpmn:subProcess id="Activity_02tn153" name="Fraud Claim Investigation">
       <bpmn:incoming>Flow_06bdzt7</bpmn:incoming>
       <bpmn:outgoing>Flow_1jy0gq5</bpmn:outgoing>
-      <bpmn:multiInstanceLoopCharacteristics>
-        <bpmn:extensionElements>
-          <zeebe:loopCharacteristics inputCollection="=disputeDetails.disputePositions" inputElement="disputePosition" />
-        </bpmn:extensionElements>
-      </bpmn:multiInstanceLoopCharacteristics>
       <bpmn:startEvent id="Event_1tf9brs" name="fraud claim investigation started">
         <bpmn:extensionElements>
           <zeebe:ioMapping>
-            <zeebe:output source="=1" target="vendor_claim_frequency" />
+            <zeebe:output source="=5" target="vendor_claim_frequency" />
             <zeebe:output source="=1" target="customer_claim_frequency" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:outgoing>Flow_16in312</bpmn:outgoing>
       </bpmn:startEvent>
       <bpmn:subProcess id="Activity_03cktkd" name="Vendor fraud claim validation">
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:input source="=null" target="correlationKey" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
         <bpmn:incoming>Flow_16in312</bpmn:incoming>
         <bpmn:outgoing>Flow_1y2i3of</bpmn:outgoing>
+        <bpmn:multiInstanceLoopCharacteristics>
+          <bpmn:extensionElements>
+            <zeebe:loopCharacteristics inputCollection="=disputeDetails.disputePositions" inputElement="disputePosition" />
+          </bpmn:extensionElements>
+        </bpmn:multiInstanceLoopCharacteristics>
         <bpmn:startEvent id="Event_0vl38e2" name="vendor fraud claim validation required">
           <bpmn:extensionElements>
             <zeebe:ioMapping>
@@ -210,7 +220,7 @@
         <bpmn:sequenceFlow id="Flow_1f05uvq" sourceRef="Activity_1ys0vez" targetRef="Gateway_1p7bkh1" />
         <bpmn:serviceTask id="Activity_1ys0vez" name="Get vendor info">
           <bpmn:extensionElements>
-            <zeebe:taskDefinition type="dispute_process_request_proof_from_vendor" />
+            <zeebe:taskDefinition type="dispute_process_request_get_vendor_info" />
             <zeebe:properties>
               <zeebe:property name="camundaModeler:exampleOutputJson" value="{&#10;  &#34;vendor_claim_frequency&#34;: 15&#10;}" />
             </zeebe:properties>
@@ -259,7 +269,7 @@
     </bpmn:userTask>
     <bpmn:sendTask id="Activity_1u3hrzx" name="Inform customer about successful claim">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="customer_notification" />
+        <zeebe:taskDefinition type="inform_about_successful_claim" />
         <zeebe:ioMapping>
           <zeebe:input source="=&#34;dispute_successful&#34;" target="type" />
         </zeebe:ioMapping>

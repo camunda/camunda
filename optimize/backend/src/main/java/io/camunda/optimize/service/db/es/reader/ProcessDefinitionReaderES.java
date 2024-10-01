@@ -13,32 +13,28 @@ import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionInde
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
 import static java.util.stream.Collectors.toSet;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -53,8 +49,15 @@ public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
 
   @Override
   public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {
-    final BoolQueryBuilder query = boolQuery().must(matchAllQuery());
-    query.must(termsQuery(PROCESS_DEFINITION_ID, definitionId));
+    BoolQuery.Builder query = new BoolQuery.Builder();
+    query.must(m -> m.matchAll(l -> l));
+    query.must(
+        t ->
+            t.terms(
+                l ->
+                    l.field(PROCESS_DEFINITION_ID)
+                        .terms(tt -> tt.value(List.of(FieldValue.of(definitionId))))));
+
     return definitionReader.getDefinitions(DefinitionType.PROCESS, query, true).stream()
         .findFirst()
         .map(ProcessDefinitionOptimizeDto.class::cast);
@@ -63,30 +66,53 @@ public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
   @Override
   public Set<String> getAllNonOnboardedProcessDefinitionKeys() {
     final String defKeyAgg = "keyAgg";
-    SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
-            .query(
-                boolQuery()
-                    .must(termsQuery(ProcessDefinitionIndex.ONBOARDED, false))
-                    .must(termQuery(DEFINITION_DELETED, false))
-                    .should(existsQuery(PROCESS_DEFINITION_XML)))
-            .aggregation(terms(defKeyAgg).field(ProcessDefinitionIndex.PROCESS_DEFINITION_KEY))
-            .fetchSource(false)
-            .size(MAX_RESPONSE_SIZE_LIMIT);
-    SearchRequest searchRequest =
-        new SearchRequest(PROCESS_DEFINITION_INDEX_NAME).source(searchSourceBuilder);
 
-    SearchResponse searchResponse;
+    SearchRequest searchRequest =
+        OptimizeSearchRequestBuilderES.of(
+            s ->
+                s.optimizeIndex(esClient, PROCESS_DEFINITION_INDEX_NAME)
+                    .query(
+                        q ->
+                            q.bool(
+                                b ->
+                                    b.must(
+                                            m ->
+                                                m.terms(
+                                                    t ->
+                                                        t.field(ProcessDefinitionIndex.ONBOARDED)
+                                                            .terms(
+                                                                tt ->
+                                                                    tt.value(
+                                                                        List.of(
+                                                                            FieldValue.of(
+                                                                                false))))))
+                                        .must(
+                                            m ->
+                                                m.term(
+                                                    t -> t.field(DEFINITION_DELETED).value(false)))
+                                        .should(
+                                            ss -> ss.exists(e -> e.field(PROCESS_DEFINITION_XML)))))
+                    .aggregations(
+                        defKeyAgg,
+                        Aggregation.of(
+                            a ->
+                                a.terms(
+                                    t -> t.field(ProcessDefinitionIndex.PROCESS_DEFINITION_KEY))))
+                    .source(o -> o.fetch(false))
+                    .size(MAX_RESPONSE_SIZE_LIMIT));
+
+    SearchResponse<?> searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest);
+      searchResponse = esClient.search(searchRequest, Object.class);
     } catch (IOException e) {
       String reason = "Was not able to fetch non-onboarded process definition keys.";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-    final Terms definitionKeyTerms = searchResponse.getAggregations().get(defKeyAgg);
-    return definitionKeyTerms.getBuckets().stream()
-        .map(MultiBucketsAggregation.Bucket::getKeyAsString)
+    final StringTermsAggregate definitionKeyTerms =
+        searchResponse.aggregations().get(defKeyAgg).sterms();
+    return definitionKeyTerms.buckets().array().stream()
+        .map(e -> e.key().stringValue())
         .collect(toSet());
   }
 

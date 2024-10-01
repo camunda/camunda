@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -55,7 +56,8 @@ public final class ProcessInstanceMigrationPreconditions {
           BpmnElementType.EVENT_BASED_GATEWAY,
           BpmnElementType.BUSINESS_RULE_TASK,
           BpmnElementType.SCRIPT_TASK,
-          BpmnElementType.SEND_TASK);
+          BpmnElementType.SEND_TASK,
+          BpmnElementType.MULTI_INSTANCE_BODY);
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.complementOf(SUPPORTED_ELEMENT_TYPES);
   private static final Set<BpmnEventType> SUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPES =
@@ -159,6 +161,13 @@ public final class ProcessInstanceMigrationPreconditions {
       Expected to migrate process instance '%s' \
       but a concurrent command was executed on the process instance. \
       Please retry the migration.""";
+
+  private static final String ERROR_UPDATED_LOOP_CHARACTERISTICS =
+      """
+      Expected to migrate process instance '%s' \
+      but active element with id '%s' has a different loop characteristics \
+      than the target element with id '%s'. \
+      Both elements must have either sequential or parallel loop characteristics.""";
 
   private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
   private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
@@ -443,28 +452,49 @@ public final class ProcessInstanceMigrationPreconditions {
    *
    * @param targetProcessDefinition target process definition to retrieve the target element type
    * @param targetElementId target element id
-   * @param elementInstanceRecord element instance to do the check
+   * @param elementInstance element instance to do the check
    * @param processInstanceKey process instance key to be logged
    */
   public static void requireSameElementType(
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
-      final ProcessInstanceRecord elementInstanceRecord,
+      final ElementInstance elementInstance,
       final long processInstanceKey) {
-    final BpmnElementType targetElementType =
+    final ProcessInstanceRecord elementInstanceRecord = elementInstance.getValue();
+    BpmnElementType targetElementType =
         targetProcessDefinition.getProcess().getElementById(targetElementId).getElementType();
-    if (elementInstanceRecord.getBpmnElementType() != targetElementType) {
-      final String reason =
-          String.format(
-              ERROR_ELEMENT_TYPE_CHANGED,
-              processInstanceKey,
-              elementInstanceRecord.getElementId(),
-              elementInstanceRecord.getBpmnElementType(),
-              targetElementId,
-              targetElementType);
-      throw new ProcessInstanceMigrationPreconditionFailedException(
-          reason, RejectionType.INVALID_STATE);
+
+    if (elementInstanceRecord.getBpmnElementType() == targetElementType) {
+      return;
     }
+
+    // if target element is a multi instance body, we should check the inner activity element type
+    // because the inner activity of the multi instance body can still match the source element's
+    // type. Also, multi instance loop counter indicates that the element instance is inside a multi
+    // instance body.
+    if (elementInstance.getMultiInstanceLoopCounter() > 0
+        && targetElementType == BpmnElementType.MULTI_INSTANCE_BODY) {
+      final ExecutableMultiInstanceBody targetElement =
+          targetProcessDefinition
+              .getProcess()
+              .getElementById(targetElementId, ExecutableMultiInstanceBody.class);
+
+      targetElementType = targetElement.getInnerActivity().getElementType();
+      if (elementInstanceRecord.getBpmnElementType() == targetElementType) {
+        return;
+      }
+    }
+
+    final String reason =
+        String.format(
+            ERROR_ELEMENT_TYPE_CHANGED,
+            processInstanceKey,
+            elementInstanceRecord.getElementId(),
+            elementInstanceRecord.getBpmnElementType(),
+            targetElementId,
+            targetElementType);
+    throw new ProcessInstanceMigrationPreconditionFailedException(
+        reason, RejectionType.INVALID_STATE);
   }
 
   /**
@@ -540,24 +570,39 @@ public final class ProcessInstanceMigrationPreconditions {
     if (sourceFlowScopeElement != null) {
       final DirectBuffer expectedFlowScopeId =
           sourceFlowScopeElement.getValue().getElementIdBuffer();
-      final DirectBuffer actualFlowScopeId =
-          targetProcessDefinition
-              .getProcess()
-              .getElementById(targetElementId)
-              .getFlowScope()
-              .getId();
+      final AbstractFlowElement targetFlowElement =
+          targetProcessDefinition.getProcess().getElementById(targetElementId);
+      DirectBuffer actualFlowScopeId;
 
-      if (!expectedFlowScopeId.equals(actualFlowScopeId)) {
-        final String reason =
-            String.format(
-                ERROR_MESSAGE_ELEMENT_FLOW_SCOPE_CHANGED,
-                elementInstanceRecord.getProcessInstanceKey(),
-                elementInstanceRecord.getElementId(),
-                BufferUtil.bufferAsString(expectedFlowScopeId),
-                BufferUtil.bufferAsString(actualFlowScopeId));
-        throw new ProcessInstanceMigrationPreconditionFailedException(
-            reason, RejectionType.INVALID_STATE);
+      // if target element is a multi instance body, we should check the inner activity flow scope
+      // because the inner activity of the multi instance body can still match the source element's
+      // flow scope
+      if (targetFlowElement.getElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
+        final ExecutableMultiInstanceBody targetElement =
+            targetProcessDefinition
+                .getProcess()
+                .getElementById(targetElementId, ExecutableMultiInstanceBody.class);
+
+        actualFlowScopeId = targetElement.getInnerActivity().getFlowScope().getId();
+        if (expectedFlowScopeId.equals(actualFlowScopeId)) {
+          return;
+        }
       }
+
+      actualFlowScopeId = targetFlowElement.getFlowScope().getId();
+      if (expectedFlowScopeId.equals(actualFlowScopeId)) {
+        return;
+      }
+
+      final String reason =
+          String.format(
+              ERROR_MESSAGE_ELEMENT_FLOW_SCOPE_CHANGED,
+              elementInstanceRecord.getProcessInstanceKey(),
+              elementInstanceRecord.getElementId(),
+              BufferUtil.bufferAsString(expectedFlowScopeId),
+              BufferUtil.bufferAsString(actualFlowScopeId));
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_STATE);
     }
   }
 
@@ -860,10 +905,10 @@ public final class ProcessInstanceMigrationPreconditions {
       throw new ProcessInstanceMigrationPreconditionFailedException(
           """
           Expected to migrate process instance '%s' but active element with id '%s' \
-          attempts to subscribe to a message it is already subscribed to with name '%s'. \
-          Migrating active elements that subscribe to a message they are already \
-          subscribed to is not possible yet. Please provide a mapping instruction to \
-          message catch event with id '%s' to migrate the respective message subscription.\
+          is already subscribed to the same message name '%s'. Currently, migrating message \
+          subscriptions to the same message name isn't supported without a mapping. \
+          Please provide a mapping instruction between message catch event with id '%s' \
+          and the target message catch event. \
           """
               .formatted(processInstanceKey, elementId, messageNameString, targetCatchEventId),
           RejectionType.INVALID_STATE);
@@ -889,6 +934,41 @@ public final class ProcessInstanceMigrationPreconditions {
     final String message =
         ERROR_PENDING_DISTRIBUTION.formatted(processInstanceKey, elementId, eventElementId);
     requireNoPendingMigrationDistribution(distributionState, distributionKey, message);
+  }
+
+  public static void requireSameMultiInstanceLoopCharacteristics(
+      final DeployedProcess sourceProcessDefinition,
+      final String sourceElementId,
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final long processInstanceKey) {
+    final BpmnElementType targetElementType =
+        targetProcessDefinition.getProcess().getElementById(targetElementId).getElementType();
+    final BpmnElementType sourceElementType =
+        sourceProcessDefinition.getProcess().getElementById(sourceElementId).getElementType();
+    if (sourceElementType == BpmnElementType.MULTI_INSTANCE_BODY
+        && targetElementType == BpmnElementType.MULTI_INSTANCE_BODY) {
+      final var targetElement =
+          targetProcessDefinition
+              .getProcess()
+              .getElementById(targetElementId, ExecutableMultiInstanceBody.class);
+      final var sourceElement =
+          sourceProcessDefinition
+              .getProcess()
+              .getElementById(sourceElementId, ExecutableMultiInstanceBody.class);
+
+      if (targetElement.getLoopCharacteristics().isSequential()
+          != sourceElement.getLoopCharacteristics().isSequential()) {
+        final String reason =
+            String.format(
+                ERROR_UPDATED_LOOP_CHARACTERISTICS,
+                processInstanceKey,
+                sourceElementId,
+                targetElementId);
+        throw new ProcessInstanceMigrationPreconditionFailedException(
+            reason, RejectionType.INVALID_STATE);
+      }
+    }
   }
 
   /**

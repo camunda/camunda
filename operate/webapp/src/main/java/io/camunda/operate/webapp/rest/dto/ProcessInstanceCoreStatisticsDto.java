@@ -17,7 +17,7 @@ public class ProcessInstanceCoreStatisticsDto {
     return running;
   }
 
-  public ProcessInstanceCoreStatisticsDto setRunning(Long running) {
+  public ProcessInstanceCoreStatisticsDto setRunning(final Long running) {
     this.running = running;
     return this;
   }
@@ -26,7 +26,7 @@ public class ProcessInstanceCoreStatisticsDto {
     return active;
   }
 
-  public ProcessInstanceCoreStatisticsDto setActive(Long active) {
+  public ProcessInstanceCoreStatisticsDto setActive(final Long active) {
     this.active = active;
     return this;
   }
@@ -35,7 +35,7 @@ public class ProcessInstanceCoreStatisticsDto {
     return withIncidents;
   }
 
-  public ProcessInstanceCoreStatisticsDto setWithIncidents(Long withIncidents) {
+  public ProcessInstanceCoreStatisticsDto setWithIncidents(final Long withIncidents) {
     this.withIncidents = withIncidents;
     return this;
   }
@@ -49,7 +49,7 @@ public class ProcessInstanceCoreStatisticsDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

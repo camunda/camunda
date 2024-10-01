@@ -22,18 +22,18 @@ public class DecisionDefinitionSortImpl extends SearchQuerySortBase<DecisionDefi
     implements DecisionDefinitionSort {
 
   @Override
-  public DecisionDefinitionSort decisionKey() {
-    return field("decisionKey");
+  public DecisionDefinitionSort decisionDefinitionKey() {
+    return field("decisionDefinitionKey");
   }
 
   @Override
-  public DecisionDefinitionSort dmnDecisionId() {
-    return field("dmnDecisionId");
+  public DecisionDefinitionSort decisionDefinitionId() {
+    return field("decisionDefinitionId");
   }
 
   @Override
-  public DecisionDefinitionSort dmnDecisionName() {
-    return field("dmnDecisionName");
+  public DecisionDefinitionSort name() {
+    return field("name");
   }
 
   @Override
@@ -42,8 +42,8 @@ public class DecisionDefinitionSortImpl extends SearchQuerySortBase<DecisionDefi
   }
 
   @Override
-  public DecisionDefinitionSort dmnDecisionRequirementsId() {
-    return field("dmnDecisionRequirementsId");
+  public DecisionDefinitionSort decisionRequirementsId() {
+    return field("decisionRequirementsId");
   }
 
   @Override

@@ -20,6 +20,7 @@ import io.camunda.optimize.service.db.repository.ProcessOverviewRepository;
 import io.camunda.optimize.service.db.repository.script.ProcessOverviewScriptFactory;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -44,10 +45,13 @@ public class ProcessOverviewRepositoryOS implements ProcessOverviewRepository {
   public void updateProcessConfiguration(
       final String processDefinitionKey, final ProcessOverviewDto overviewDto) {
     final Map<String, Object> params =
-        Map.of(
-            "owner", overviewDto.getOwner(),
-            "processDefinitionKey", overviewDto.getProcessDefinitionKey(),
-            "digestEnabled", overviewDto.getDigest().isEnabled());
+        new HashMap<>(
+            Map.of(
+                "processDefinitionKey", overviewDto.getProcessDefinitionKey(),
+                "digestEnabled", overviewDto.getDigest().isEnabled()));
+    if (overviewDto.getOwner() != null) {
+      params.put("owner", overviewDto.getOwner());
+    }
     final UpdateRequest.Builder<ProcessOverviewDto, ProcessOverviewDto> requestBuilder =
         new UpdateRequest.Builder<ProcessOverviewDto, ProcessOverviewDto>()
             .index(indexNameService.getOptimizeIndexAliasForIndex(PROCESS_OVERVIEW_INDEX_NAME))

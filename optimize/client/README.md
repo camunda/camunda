@@ -1,8 +1,11 @@
 # Camunda Optimize Frontend
 
+For an overview of the frontend application, please refer to the [FRONTEND_OVERVIEW.md](./FRONTEND_OVERVIEW.md) document.
+
 ## Requirements
 
-Node 14.15.4+
+Node 20.9.0+
+Yarn 1.22.19+
 Docker 17.12.0+
 Docker Compose 1.29.2+
 [Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
@@ -23,19 +26,17 @@ yarn
 
 ## Login to Docker Registry
 
-Maybe it requires an addition for the readme you mentioned on how to long in to harbor.
-docker login registry.camunda.cloud via firstname.lastname
-
-Harbor is used to store artifacts that will be downloaded automatically. You can use your Okta credentials after
-running the below command to log in to Harbor.
+Harbor is used to store artifacts that will be downloaded automatically. Use your Okta credentials to log in to Harbor by running the following command:
 
 ```bash
 docker login registry.camunda.cloud
 ```
 
+Use `firstname.lastname` as the username.
+
 ## Setup Auth0 credentials
 
-Create a file called `.env` in the root directory (client) that contains the following:
+Create a file called `.env` in the client root directory (`optimize/client`) with the following content:
 
 ```bash
 AUTH0_CLIENTSECRET=
@@ -43,61 +44,78 @@ AUTH0_USEREMAIL=
 AUTH0_USERPASSWORD=
 ```
 
-Retrieve the credentials from the [vault](https://vault.int.camunda.com/ui/vault/secrets/secret/show/products/optimize/ci/camunda-optimize) and paste them into the .env file you have just created
+Retrieve the credentials from the [vault](https://vault.int.camunda.com/ui/vault/secrets/secret/show/products/optimize/ci/camunda-optimize) and paste them into the `.env` file you just created.
 
 ## Development server
 
+To run Optimize in self-managed mode:
+
 ```bash
-yarn run start-backend
+yarn start-backend
 ```
 
-The above command will run Optimize in self managed mode.
-if you want to run Optimize in cloud mode, use the following command:
+To run Optimize in cloud mode:
 
 ```bash
-yarn run start-backend-cloud
+yarn start-backend-cloud
 ```
 
 > **Tip:**
-> Make sure you don't have any active docker containers running on the optimize ports (e.g. 8090, etc) before starting the backend.
+> Ensure no active Docker containers are running on the Optimize ports (e.g., 8090) before starting the backend.
 
-Then in new terminal
+Then, in a new terminal:
 
 ```bash
 yarn start
 ```
 
-### Problems that may happen
+### Running the frontend with OpenSearch
 
-If for some reason you are getting error try running from the root folder:
+In addition to the above commands, which run Optimize with Elasticsearch, you can run the development server with OpenSearch by executing the following commands:
+
+To run in self-managed mode:
+
+```bash
+yarn start-backend:opensearch
+```
+
+To run in cloud mode:
+
+```bash
+yarn start-backend-cloud:opensearch
+```
+
+After that, you can run the frontend with `yarn start` as mentioned above.
+
+### Troubleshooting
+
+If you encounter errors, try running the following command from the root (`optimize`) folder:
 
 ```bash
 mvn clean install -Pit
 ```
 
-process stops after elasticsearch is started - delete old data folder of ES
-
-```bash
-rm -rf ../distro/traget/distro/server/elasticsearch-6.0.0/data
-```
-
 ## Production
+
+To build the application:
 
 ```bash
 yarn build
 ```
 
-Should create ``build`` folder with built application.
+This will create a `dist` folder with the built application.
 
-## Unit Testing
+## Unit testing
+
+To run unit tests:
 
 ```bash
 yarn test
 ```
 
-### Problems with Mac
+### Mac issues
 
-If you’re running a Mac and `yarn test` fails with something like:
+If you’re using a Mac and `yarn test` fails with errors like:
 
 ```
 2017-10-24 13:57 node[16138] (FSEvents.framework) FSEventStreamStart: register_with_server: ERROR: f2d_register_rpc() => (null) (-22)
@@ -114,11 +132,11 @@ error Command failed with exit code 1.
 
 ```
 
-you can make the tests run by installing [watchman](https://facebook.github.io/watchman/docs/install.html).
+You can resolve this by installing [watchman](https://facebook.github.io/watchman/docs/install.html).
 
-### Problems with Linux
+### Linux issues
 
-If you're running a Linux system and `yarn test` fails with something like:
+If you’re using a Linux system and `yarn test` fails with errors like:
 
 ```
 fs.js:1378
@@ -132,13 +150,12 @@ Waiting...Fatal error: watch ENOSPC
     ....
 ```
 
-then you can find [here](https://stackoverflow.com/a/17437601) a solution for this.
+You can find a solution [here](https://stackoverflow.com/a/17437601).
 
-## E2E Testing
+## E2E testing
 
-Make sure you started the backend with `yarn run start-backend` and the frontend with `yarn start`.
+Ensure the backend is started with `yarn start-backend` and the frontend with `yarn start` before running the tests.
 
 ```bash
 yarn run e2e
 ```
-

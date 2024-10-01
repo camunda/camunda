@@ -126,6 +126,7 @@ public class ProcessDefinitionController extends ErrorController
   @Override
   public Results<ProcessDefinition> search(
       @RequestBody(required = false) Query<ProcessDefinition> query) {
+
     logger.debug("search for query {}", query);
     query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, ProcessDefinition.class);
@@ -163,6 +164,7 @@ public class ProcessDefinitionController extends ErrorController
   public ProcessDefinition byKey(
       @Parameter(description = "Key of process definition", required = true) @Valid @PathVariable
           final Long key) {
+
     return processDefinitionDao.byKey(key);
   }
 

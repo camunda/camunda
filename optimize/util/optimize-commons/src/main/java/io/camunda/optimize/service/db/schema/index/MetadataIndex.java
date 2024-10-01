@@ -7,11 +7,10 @@
  */
 package io.camunda.optimize.service.db.schema.index;
 
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.query.MetadataDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import java.io.IOException;
-import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class MetadataIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -32,15 +31,10 @@ public abstract class MetadataIndex<TBuilder> extends DefaultIndexMappingCreator
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return xContentBuilder
-        .startObject(SCHEMA_VERSION)
-        .field("type", "keyword")
-        .endObject()
-        .startObject(INSTALLATION_ID)
-        .field("type", "keyword")
-        .endObject();
-    // @formatter:on
+  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
+
+    return builder
+        .properties(SCHEMA_VERSION, p -> p.keyword(k -> k))
+        .properties(INSTALLATION_ID, p -> p.keyword(k -> k));
   }
 }

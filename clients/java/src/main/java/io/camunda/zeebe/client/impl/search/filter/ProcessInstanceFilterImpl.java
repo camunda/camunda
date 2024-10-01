@@ -18,7 +18,7 @@ package io.camunda.zeebe.client.impl.search.filter;
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceVariableFilterRequest;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
 
 public class ProcessInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<ProcessInstanceFilterRequest>
@@ -31,56 +31,63 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter running(final Boolean running) {
-    filter.setRunning(running);
+  public ProcessInstanceFilter processInstanceKey(final Long processInstanceKey) {
+    filter.setProcessInstanceKey(processInstanceKey);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter active(final Boolean active) {
-    filter.setActive(active);
+  public ProcessInstanceFilter processDefinitionId(final String processDefinitionId) {
+    filter.processDefinitionId(processDefinitionId);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter incidents(final Boolean incidents) {
-    filter.setIncidents(incidents);
+  public ProcessInstanceFilter processDefinitionName(final String processDefinitionName) {
+    filter.setProcessDefinitionName(processDefinitionName);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter finished(final Boolean finished) {
-    filter.setFinished(finished);
+  public ProcessInstanceFilter processDefinitionVersion(final Integer processDefinitionVersion) {
+    filter.setProcessDefinitionVersion(processDefinitionVersion);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter completed(final Boolean completed) {
-    filter.setCompleted(completed);
+  public ProcessInstanceFilter processDefinitionVersionTag(
+      final String processDefinitionVersionTag) {
+    filter.setProcessDefinitionVersionTag(processDefinitionVersionTag);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter canceled(final Boolean canceled) {
-    filter.setCanceled(canceled);
+  public ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey) {
+    filter.setProcessDefinitionKey(processDefinitionKey);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter retriesLeft(final Boolean retriesLeft) {
-    filter.setRetriesLeft(retriesLeft);
+  public ProcessInstanceFilter rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    filter.setRootProcessInstanceKey(rootProcessInstanceKey);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter errorMessage(final String errorMessage) {
-    filter.setErrorMessage(errorMessage);
+  public ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey) {
+    filter.setParentProcessInstanceKey(parentProcessInstanceKey);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter activityId(final String activityId) {
-    filter.setActivityId(activityId);
+  public ProcessInstanceFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey) {
+    filter.setParentFlowNodeInstanceKey(parentFlowNodeInstanceKey);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter treePath(final String treePath) {
+    filter.setTreePath(treePath);
     return this;
   }
 
@@ -97,32 +104,14 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter bpmnProcessId(final String bpmnProcessId) {
-    filter.setBpmnProcessId(bpmnProcessId);
+  public ProcessInstanceFilter state(final String state) {
+    filter.setState((state == null) ? null : ProcessInstanceStateEnum.fromValue(state));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processDefinitionVersion(final Integer processDefinitionVersion) {
-    filter.setProcessDefinitionVersion(processDefinitionVersion);
-    return this;
-  }
-
-  @Override
-  public ProcessInstanceFilter variable(final ProcessInstanceVariableFilterRequest variable) {
-    filter.setVariable(variable);
-    return this;
-  }
-
-  @Override
-  public ProcessInstanceFilter batchOperationId(final String batchOperationId) {
-    filter.setBatchOperationId(batchOperationId);
-    return this;
-  }
-
-  @Override
-  public ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey) {
-    filter.setParentProcessInstanceKey(parentProcessInstanceKey);
+  public ProcessInstanceFilter incident(final Boolean incident) {
+    filter.setIncident(incident);
     return this;
   }
 

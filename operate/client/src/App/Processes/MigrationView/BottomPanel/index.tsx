@@ -13,7 +13,7 @@ import {SelectItem, Stack, Tag, Toggle} from '@carbon/react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
 import {processXmlStore as processXmlMigrationTargetStore} from 'modules/stores/processXml/processXml.migration.target';
-import {autoMappingStore} from 'modules/stores/autoMapping';
+import {processInstanceMigrationMappingStore} from 'modules/stores/processInstanceMigrationMapping';
 import {ErrorMessage} from 'modules/components/ErrorMessage';
 import {
   BottomSection,
@@ -47,20 +47,22 @@ const BottomPanel: React.FC = observer(() => {
     isAutoMappable,
     toggleMappedFilter,
     state: {isMappedFilterEnabled},
-  } = autoMappingStore;
+    mappableFlowNodes,
+  } = processInstanceMigrationMappingStore;
 
-  const {
-    selectableFlowNodes: selectableSourceFlowNodes,
-    hasSelectableFlowNodes: hasSelectableSourceFlowNodes,
-  } = processXmlMigrationSourceStore;
+  const {hasSelectableFlowNodes: hasSelectableSourceFlowNodes} =
+    processXmlMigrationSourceStore;
 
   const {isTargetSelected} = processXmlMigrationTargetStore;
 
-  const selectableFilteredSourceFlowNodes = isMappedFilterEnabled
-    ? selectableSourceFlowNodes.filter(({id}) => {
-        return flowNodeMapping[id] === undefined;
-      })
-    : selectableSourceFlowNodes;
+  const filteredSourceFlowNodeMappings = mappableFlowNodes.filter(
+    ({sourceFlowNode}) => {
+      return (
+        !isMappedFilterEnabled ||
+        flowNodeMapping[sourceFlowNode.id] === undefined
+      );
+    },
+  );
 
   // Automatically map flow nodes with same id and type in source and target diagrams
   useEffect(() => {
@@ -75,7 +77,7 @@ const BottomPanel: React.FC = observer(() => {
 
   useEffect(() => {
     // reset store on unmount
-    return autoMappingStore.reset;
+    return processInstanceMigrationMappingStore.reset;
   }, []);
 
   return (
@@ -121,71 +123,72 @@ const BottomPanel: React.FC = observer(() => {
             checkIsRowSelected={handleCheckIsRowSelected(
               selectedSourceFlowNodeIds,
             )}
-            rows={selectableFilteredSourceFlowNodes.map((sourceFlowNode) => {
-              const selectableTargetFlowNodes =
-                processXmlMigrationTargetStore.selectableFlowNodes.filter(
-                  (flowNode) => {
-                    return sourceFlowNode.$type === flowNode.$type;
-                  },
-                );
-              const isMapped = flowNodeMapping[sourceFlowNode.id] !== undefined;
+            rows={filteredSourceFlowNodeMappings.map(
+              ({sourceFlowNode, selectableTargetFlowNodes}) => {
+                const isMapped =
+                  flowNodeMapping[sourceFlowNode.id] !== undefined;
 
-              return {
-                id: sourceFlowNode.id,
-                sourceFlowNode: (
-                  <LeftColumn>
-                    <SourceFlowNodeName>
-                      {sourceFlowNode.name}
-                    </SourceFlowNodeName>
-                    {isTargetSelected && !isMapped && (
-                      <Tag type="blue">Not mapped</Tag>
-                    )}
-                    <ArrowRight />
-                  </LeftColumn>
-                ),
-                targetFlowNode: (() => {
-                  const targetFlowNodeId =
-                    flowNodeMapping[sourceFlowNode.id] ?? '';
+                return {
+                  id: sourceFlowNode.id,
+                  sourceFlowNode: (
+                    <LeftColumn>
+                      <SourceFlowNodeName>
+                        {sourceFlowNode.name}
+                      </SourceFlowNodeName>
+                      {isTargetSelected && !isMapped && (
+                        <Tag type="blue">Not mapped</Tag>
+                      )}
+                      <ArrowRight />
+                    </LeftColumn>
+                  ),
+                  targetFlowNode: (() => {
+                    const targetFlowNodeId =
+                      flowNodeMapping[sourceFlowNode.id] ?? '';
 
-                  return (
-                    <Stack orientation="horizontal" gap={4}>
-                      <Select
-                        disabled={
-                          processInstanceMigrationStore.state.currentStep ===
-                            'summary' || selectableTargetFlowNodes.length === 0
-                        }
-                        size="sm"
-                        hideLabel
-                        labelText={`Target flow node for ${sourceFlowNode.name}`}
-                        id={sourceFlowNode.id}
-                        value={targetFlowNodeId}
-                        onChange={({target}) => {
-                          processInstanceMigrationStore.updateFlowNodeMapping({
-                            sourceId: sourceFlowNode.id,
-                            targetId: target.value,
-                          });
-                        }}
-                      >
-                        {[{id: '', name: ''}, ...selectableTargetFlowNodes].map(
-                          ({id, name}) => {
+                    return (
+                      <Stack orientation="horizontal" gap={4}>
+                        <Select
+                          disabled={
+                            processInstanceMigrationStore.state.currentStep ===
+                              'summary' ||
+                            selectableTargetFlowNodes.length === 0
+                          }
+                          size="sm"
+                          hideLabel
+                          labelText={`Target flow node for ${sourceFlowNode.name}`}
+                          id={sourceFlowNode.id}
+                          value={targetFlowNodeId}
+                          onChange={({target}) => {
+                            processInstanceMigrationStore.updateFlowNodeMapping(
+                              {
+                                sourceId: sourceFlowNode.id,
+                                targetId: target.value,
+                              },
+                            );
+                          }}
+                        >
+                          {[
+                            {id: '', name: ''},
+                            ...selectableTargetFlowNodes,
+                          ].map(({id, name}) => {
                             return (
                               <SelectItem key={id} value={id} text={name} />
                             );
-                          },
-                        )}
-                      </Select>
-                      {isAutoMappable(sourceFlowNode.id) &&
-                        // show icon only when target flow node is selected
-                        sourceFlowNode.id === targetFlowNodeId && (
-                          <IconContainer title="This flow node was automatically mapped">
-                            <CheckmarkFilled data-testid="select-icon" />
-                          </IconContainer>
-                        )}
-                    </Stack>
-                  );
-                })(),
-              };
-            })}
+                          })}
+                        </Select>
+                        {isAutoMappable(sourceFlowNode.id) &&
+                          // show icon only when target flow node is selected
+                          sourceFlowNode.id === targetFlowNodeId && (
+                            <IconContainer title="This flow node was automatically mapped">
+                              <CheckmarkFilled data-testid="select-icon" />
+                            </IconContainer>
+                          )}
+                      </Stack>
+                    );
+                  })(),
+                };
+              },
+            )}
           />
         </>
       )}

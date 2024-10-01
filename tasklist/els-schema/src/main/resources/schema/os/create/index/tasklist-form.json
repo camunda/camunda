@@ -1,6 +1,9 @@
 {
   "dynamic": "strict",
   "properties": {
+    "key": {
+      "type": "long"
+    },
     "id": {
       "type": "keyword"
     },

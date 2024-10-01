@@ -9,9 +9,10 @@
 import styled from 'styled-components';
 import {Stack} from '@carbon/react';
 
-const BottomPanel = styled.div`
+const BottomPanel = styled.div<{$hasExpandedPanel?: boolean}>`
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: ${({$hasExpandedPanel}) =>
+    $hasExpandedPanel ? '1.1fr 1.9fr' : '1fr 1fr'};
   height: 100%;
 `;
 

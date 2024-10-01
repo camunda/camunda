@@ -7,9 +7,9 @@
  */
 package io.camunda.exporter;
 
-import io.camunda.exporter.schema.descriptors.IndexDescriptor;
-import io.camunda.exporter.schema.descriptors.IndexTemplateDescriptor;
-import java.util.List;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import java.util.Set;
 
 /**
  * This is the class where teams should make their components such as handlers, and index/index
@@ -18,12 +18,12 @@ import java.util.List;
 public class DefaultExporterResourceProvider implements ExporterResourceProvider {
 
   @Override
-  public List<IndexDescriptor> getIndexDescriptors() {
-    return List.of();
+  public Set<IndexDescriptor> getIndexDescriptors() {
+    return Set.of();
   }
 
   @Override
-  public List<IndexTemplateDescriptor> getIndexTemplateDescriptors() {
-    return List.of();
+  public Set<IndexTemplateDescriptor> getIndexTemplateDescriptors() {
+    return Set.of();
   }
 }

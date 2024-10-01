@@ -8,9 +8,9 @@
 package io.camunda.operate.webapp.elasticsearch.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
@@ -31,8 +31,8 @@ public abstract class AbstractReader {
   @Qualifier("operateObjectMapper")
   protected ObjectMapper objectMapper;
 
-  protected <T extends OperateEntity> List<T> scroll(SearchRequest searchRequest, Class<T> clazz)
-      throws IOException {
+  protected <T extends ExporterEntity> List<T> scroll(
+      final SearchRequest searchRequest, final Class<T> clazz) throws IOException {
     return tenantAwareClient.search(
         searchRequest,
         () -> {
@@ -40,8 +40,10 @@ public abstract class AbstractReader {
         });
   }
 
-  protected <T extends OperateEntity> List<T> scroll(
-      SearchRequest searchRequest, Class<T> clazz, Consumer<Aggregations> aggsProcessor)
+  protected <T extends ExporterEntity> List<T> scroll(
+      final SearchRequest searchRequest,
+      final Class<T> clazz,
+      final Consumer<Aggregations> aggsProcessor)
       throws IOException {
     return tenantAwareClient.search(
         searchRequest,
@@ -51,11 +53,11 @@ public abstract class AbstractReader {
         });
   }
 
-  protected <T extends OperateEntity> List<T> scroll(
-      SearchRequest searchRequest,
-      Class<T> clazz,
-      Consumer<SearchHits> searchHitsProcessor,
-      Consumer<Aggregations> aggsProcessor)
+  protected <T extends ExporterEntity> List<T> scroll(
+      final SearchRequest searchRequest,
+      final Class<T> clazz,
+      final Consumer<SearchHits> searchHitsProcessor,
+      final Consumer<Aggregations> aggsProcessor)
       throws IOException {
     return tenantAwareClient.search(
         searchRequest,

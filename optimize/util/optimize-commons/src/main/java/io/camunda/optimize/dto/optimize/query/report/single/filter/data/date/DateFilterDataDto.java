@@ -21,7 +21,6 @@ import java.time.OffsetDateTime;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.experimental.Accessors;
 
 /**
  * Abstract class that contains a hidden "type" field to distinguish which filter type the jackson
@@ -39,7 +38,6 @@ import lombok.experimental.Accessors;
 @Getter
 @Setter
 @EqualsAndHashCode
-@Accessors(chain = true)
 public abstract class DateFilterDataDto<START> implements FilterDataDto {
 
   protected DateFilterType type;

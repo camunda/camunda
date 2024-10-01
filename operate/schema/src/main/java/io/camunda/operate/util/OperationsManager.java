@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.util;
 
-import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
@@ -16,6 +15,7 @@ import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.OperationStore;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -130,7 +130,7 @@ public class OperationsManager {
     final List<OperationEntity> operationEntities =
         getOperations(zeebeCommandKey, processInstanceKey, incidentKey, operationType);
     final List<String> operationIds =
-        operationEntities.stream().map(OperateEntity::getId).collect(Collectors.toList());
+        operationEntities.stream().map(ExporterEntity::getId).collect(Collectors.toList());
     final Map<String, String> ids2indexNames =
         getIndexNameForAliasAndIds(operationTemplate.getAlias(), operationIds);
     for (final OperationEntity o : operationEntities) {

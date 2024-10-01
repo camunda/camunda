@@ -8,9 +8,9 @@
 package io.camunda.operate.webapp.rest.dto.dmn.list;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceStateDto;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;

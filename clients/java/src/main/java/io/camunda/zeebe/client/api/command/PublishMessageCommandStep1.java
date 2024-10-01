@@ -20,7 +20,8 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.Map;
 
-public interface PublishMessageCommandStep1 {
+public interface PublishMessageCommandStep1
+    extends CommandWithCommunicationApiStep<PublishMessageCommandStep1> {
 
   /**
    * Set the name of the message.

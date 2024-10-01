@@ -1,0 +1,74 @@
+---
+name: chatops-command-ci-problems
+
+on:
+  repository_dispatch:
+    types: [ci-problems-command]
+
+jobs:
+  chatops-command-ci-problems:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Create URL to the run output
+      id: vars
+      run: |
+        {
+        echo "run_url=https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Generate a GitHub token
+      id: github-token
+      uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+      with:
+        github-app-id-vault-key: GITHUB_OPTIMIZE_APP_ID
+        github-app-id-vault-path: secret/data/products/optimize/ci/camunda-optimize
+        github-app-private-key-vault-key: GITHUB_OPTIMIZE_APP_KEY
+        github-app-private-key-vault-path: secret/data/products/optimize/ci/camunda-optimize
+        vault-auth-method: approle
+        vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+        vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+        vault-url: ${{ secrets.VAULT_ADDR }}
+
+    - name: Dump the client payload context
+      env:
+        PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
+      run: echo "$PAYLOAD_CONTEXT"
+
+    - uses: actions/checkout@v4
+
+    - name: Run CI problems analysis script
+      id: analyze
+      env:
+        GH_TOKEN: ${{ github.token }}
+      # stdout of the script is Markdown available in "result" output,
+      # stderr shows the progress of the script while working
+      run: |
+        printf "result<<EOF\n%s\nEOF\n" "$(bash .ci/chatops-commands/ci-problems-analyze.sh ${{ github.event.client_payload.github.payload.issue.number }})" >> "$GITHUB_OUTPUT"
+
+    - name: Print CI problems analysis results
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        token: ${{ steps.github-token.outputs.token }}
+        repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+        issue-number: ${{ github.event.client_payload.github.payload.issue.number }}
+        body: "${{ steps.analyze.outputs.result }}"
+
+    - name: Add reaction
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        token: ${{ steps.github-token.outputs.token }}
+        repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+        comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+        reactions: "+1"
+        reactions-edit-mode: replace
+
+    - name: Update comment in case of failure
+      if: failure()
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        token: ${{ steps.github-token.outputs.token }}
+        comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+        body: |
+          > Had issues fulfilling your command, check the [logs](${{ steps.vars.outputs.run_url }})
+        reactions: confused

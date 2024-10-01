@@ -166,7 +166,10 @@ function createNavBarProps(
         pathname
       ),
     },
-    {
+  ];
+
+  if (optimizeDatabase !== 'opensearch') {
+    elements.push({
       key: 'analysis',
       label: t('navigation.analysis').toString(),
       routeProps: {
@@ -176,8 +179,8 @@ function createNavBarProps(
         active: ['/analysis/', '/analysis/*'],
       },
       isCurrentPage: isCurrentPage(['/analysis/', '/analysis/*'], pathname),
-    },
-  ];
+    });
+  }
 
   const tags: C3NavigationNavBarProps['tags'] = [];
 

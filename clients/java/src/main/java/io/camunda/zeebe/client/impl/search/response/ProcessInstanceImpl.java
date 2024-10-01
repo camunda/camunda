@@ -17,74 +17,77 @@ package io.camunda.zeebe.client.impl.search.response;
 
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceItem;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class ProcessInstanceImpl implements ProcessInstance {
 
-  private final Long key;
-  private final String processName;
-  private final Integer processVersion;
-  private final String bpmnProcessId;
+  private final Long processInstanceKey;
+  private final String processDefinitionId;
+  private final String processDefinitionName;
+  private final Integer processDefinitionVersion;
+  private final String processDefinitionVersionTag;
+  private final Long processDefinitionKey;
+  private final Long rootProcessInstanceKey;
   private final Long parentProcessInstanceKey;
   private final Long parentFlowNodeInstanceKey;
+  private final String treePath;
   private final String startDate;
   private final String endDate;
   private final String state;
   private final Boolean incident;
-  private final Boolean hasActiveOperation;
-  private final Long processDefinitionKey;
   private final String tenantId;
-  private final String rootInstanceId;
-  private final List<OperationImpl> operations;
-  private final List<ProcessInstanceReferenceImpl> callHierarchy;
 
   public ProcessInstanceImpl(final ProcessInstanceItem item) {
-    this.key = item.getKey();
-    this.processName = item.getProcessName();
-    this.processVersion = item.getProcessVersion();
-    this.bpmnProcessId = item.getBpmnProcessId();
-    this.parentProcessInstanceKey = item.getParentKey();
-    this.parentFlowNodeInstanceKey = item.getParentFlowNodeInstanceKey();
-    this.startDate = item.getStartDate();
-    this.endDate = item.getEndDate();
-    this.state = Optional.ofNullable(item.getState()).map(Enum::toString).orElse(null);
-    this.incident = item.getIncident();
-    this.hasActiveOperation = item.getHasActiveOperation();
-    this.processDefinitionKey = item.getProcessDefinitionKey();
-    this.tenantId = item.getTenantId();
-    this.rootInstanceId = item.getRootInstanceId();
-    this.operations =
-        (item.getOperations() == null)
-            ? null
-            : item.getOperations().stream().map(OperationImpl::new).collect(Collectors.toList());
-    this.callHierarchy =
-        (item.getCallHierarchy() == null)
-            ? null
-            : item.getCallHierarchy().stream()
-                .map(ProcessInstanceReferenceImpl::new)
-                .collect(Collectors.toList());
+    processInstanceKey = item.getProcessInstanceKey();
+    processDefinitionId = item.getProcessDefinitionId();
+    processDefinitionName = item.getProcessDefinitionName();
+    processDefinitionVersion = item.getProcessDefinitionVersion();
+    processDefinitionVersionTag = item.getProcessDefinitionVersionTag();
+    processDefinitionKey = item.getProcessDefinitionKey();
+    rootProcessInstanceKey = item.getRootProcessInstanceKey();
+    parentProcessInstanceKey = item.getParentProcessInstanceKey();
+    parentFlowNodeInstanceKey = item.getParentFlowNodeInstanceKey();
+    treePath = item.getTreePath();
+    startDate = item.getStartDate();
+    endDate = item.getEndDate();
+    state = Optional.ofNullable(item.getState()).map(Enum::toString).orElse(null);
+    incident = item.getIncident();
+    tenantId = item.getTenantId();
   }
 
   @Override
-  public Long getKey() {
-    return key;
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
   @Override
-  public String getProcessName() {
-    return processName;
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
   }
 
   @Override
-  public Integer getProcessVersion() {
-    return processVersion;
+  public String getProcessDefinitionName() {
+    return processDefinitionName;
   }
 
   @Override
-  public String getBpmnProcessId() {
-    return bpmnProcessId;
+  public Integer getProcessDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  @Override
+  public String getProcessDefinitionVersionTag() {
+    return processDefinitionVersionTag;
+  }
+
+  @Override
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  @Override
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
   }
 
   @Override
@@ -95,6 +98,11 @@ public class ProcessInstanceImpl implements ProcessInstance {
   @Override
   public Long getParentFlowNodeInstanceKey() {
     return parentFlowNodeInstanceKey;
+  }
+
+  @Override
+  public String getTreePath() {
+    return treePath;
   }
 
   @Override
@@ -118,32 +126,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
   }
 
   @Override
-  public Boolean getHasActiveOperation() {
-    return hasActiveOperation;
-  }
-
-  @Override
-  public Long getProcessDefinitionKey() {
-    return processDefinitionKey;
-  }
-
-  @Override
   public String getTenantId() {
     return tenantId;
-  }
-
-  @Override
-  public String getRootInstanceId() {
-    return rootInstanceId;
-  }
-
-  @Override
-  public List<OperationImpl> getOperations() {
-    return operations;
-  }
-
-  @Override
-  public List<ProcessInstanceReferenceImpl> getCallHierarchy() {
-    return callHierarchy;
   }
 }

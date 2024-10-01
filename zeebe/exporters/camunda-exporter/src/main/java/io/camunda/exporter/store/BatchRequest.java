@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.store;
 
-import io.camunda.exporter.entities.ExporterEntity;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.util.Map;
 
 /** A {@link BatchRequest} contains updates to one or more {@link ExporterEntity} */

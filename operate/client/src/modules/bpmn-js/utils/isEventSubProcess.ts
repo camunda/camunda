@@ -6,13 +6,35 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {BusinessObject, EventType} from 'bpmn-js/lib/NavigatedViewer';
+import {hasType} from './hasType';
+import {hasEventType} from './hasEventType';
 
-const isEventSubProcess = (businessObject: BusinessObject) => {
-  return (
-    businessObject.$type === 'bpmn:SubProcess' &&
+const isEventSubProcess = ({
+  businessObject,
+  eventTypes,
+}: {
+  businessObject: BusinessObject;
+  eventTypes?: EventType[];
+}) => {
+  if (
+    hasType({businessObject, types: ['bpmn:SubProcess']}) &&
     businessObject.triggeredByEvent === true
-  );
+  ) {
+    if (eventTypes !== undefined) {
+      /**
+       * if event type is provided: check for event type
+       */
+      return businessObject.flowElements?.some((businessObject) => {
+        return (
+          hasType({businessObject, types: ['bpmn:StartEvent']}) &&
+          hasEventType({businessObject, types: eventTypes})
+        );
+      });
+    }
+
+    return true;
+  }
 };
 
 export {isEventSubProcess};

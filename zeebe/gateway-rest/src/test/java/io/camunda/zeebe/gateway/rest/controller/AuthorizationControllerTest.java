@@ -14,10 +14,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
-import io.camunda.service.CamundaServiceException;
-import io.camunda.service.security.auth.Authentication;
+import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest.ActionEnum;
@@ -52,6 +52,7 @@ import org.springframework.http.ProblemDetail;
 
 @WebMvcTest(AuthorizationController.class)
 public class AuthorizationControllerTest extends RestControllerTest {
+
   @MockBean private AuthorizationServices<AuthorizationRecord> authorizationServices;
 
   @BeforeEach
@@ -127,7 +128,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
     when(authorizationServices.patchAuthorization(any(PatchAuthorizationRequest.class)))
         .thenThrow(
-            new CamundaServiceException(
+            new CamundaBrokerException(
                 new BrokerRejection(
                     AuthorizationIntent.ADD_PERMISSION,
                     1L,

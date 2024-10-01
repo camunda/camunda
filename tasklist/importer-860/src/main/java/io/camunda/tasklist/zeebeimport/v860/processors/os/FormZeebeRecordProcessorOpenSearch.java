@@ -71,8 +71,7 @@ public class FormZeebeRecordProcessorOpenSearch {
       final List<BulkOperation> operations)
       throws PersistenceException {
     final FormEntity formEntity =
-        new FormEntity(
-            null, formId, schema, version, tenantId, formKey.toString(), false, isDelete);
+        new FormEntity(null, formId, schema, version, tenantId, formKey, false, isDelete);
     try {
 
       if (isDelete) {

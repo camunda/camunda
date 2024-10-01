@@ -45,24 +45,28 @@ public class IngestionClient {
   }
 
   public ExternalProcessVariableRequestDto createPrimitiveExternalVariable() {
-    return new ExternalProcessVariableRequestDto()
-        .setId("anId")
-        .setName("aName")
-        .setValue("aValue")
-        .setType(VariableType.STRING)
-        .setProcessInstanceId("anInstanceId")
-        .setProcessDefinitionKey("aDefinitionKey");
+    final ExternalProcessVariableRequestDto externalProcessVariableRequestDto =
+        new ExternalProcessVariableRequestDto();
+    externalProcessVariableRequestDto.setId("anId");
+    externalProcessVariableRequestDto.setName("aName");
+    externalProcessVariableRequestDto.setValue("aValue");
+    externalProcessVariableRequestDto.setType(VariableType.STRING);
+    externalProcessVariableRequestDto.setProcessInstanceId("anInstanceId");
+    externalProcessVariableRequestDto.setProcessDefinitionKey("aDefinitionKey");
+    return externalProcessVariableRequestDto;
   }
 
   public ExternalProcessVariableRequestDto createObjectExternalVariable(final String value) {
-    return new ExternalProcessVariableRequestDto()
-        .setId("anId")
-        .setName("objectVarName")
-        .setValue(value)
-        .setType(VariableType.OBJECT)
-        .setProcessInstanceId("anInstanceId")
-        .setProcessDefinitionKey("aDefinitionKey")
-        .setSerializationDataFormat(MediaType.APPLICATION_JSON);
+    final ExternalProcessVariableRequestDto externalProcessVariableRequestDto =
+        new ExternalProcessVariableRequestDto();
+    externalProcessVariableRequestDto.setId("anId");
+    externalProcessVariableRequestDto.setName("objectVarName");
+    externalProcessVariableRequestDto.setValue(value);
+    externalProcessVariableRequestDto.setType(VariableType.OBJECT);
+    externalProcessVariableRequestDto.setProcessInstanceId("anInstanceId");
+    externalProcessVariableRequestDto.setProcessDefinitionKey("aDefinitionKey");
+    externalProcessVariableRequestDto.setSerializationDataFormat(MediaType.APPLICATION_JSON);
+    return externalProcessVariableRequestDto;
   }
 
   public String getVariableIngestionToken() {

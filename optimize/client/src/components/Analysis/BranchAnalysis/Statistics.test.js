@@ -17,7 +17,7 @@ import Statistics from './Statistics';
 
 jest.mock('components', () => {
   return {
-    LoadingIndicator: () => <span>loading</span>,
+    Loading: () => <span>loading</span>,
   };
 });
 

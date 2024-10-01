@@ -7,11 +7,11 @@
  */
 package io.camunda.operate.webapp.reader;
 
-import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

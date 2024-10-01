@@ -11,13 +11,18 @@ import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMI
 
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
-import io.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
+import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
+import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import io.camunda.optimize.service.db.os.schema.OpenSearchMetadataService;
+import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
-import io.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder;
+import io.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
+import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,12 +35,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class UpgradeUtil {
 
-  public static UpgradeExecutionDependencies createUpgradeDependencies() {
-    return createUpgradeDependenciesWithAdditionalConfigLocation((String[]) null);
+  public static UpgradeExecutionDependencies createUpgradeDependencies(
+      final DatabaseType databaseType) {
+    return createUpgradeDependenciesWithAdditionalConfigLocation(databaseType, (String[]) null);
   }
 
   public static UpgradeExecutionDependencies createUpgradeDependenciesWithAdditionalConfigLocation(
-      final String... configLocations) {
+      final DatabaseType databaseType, final String... configLocations) {
     final ConfigurationService configurationService;
     if (configLocations == null || configLocations.length == 0) {
       configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
@@ -44,23 +50,50 @@ public class UpgradeUtil {
           ConfigurationServiceBuilder.createConfigurationWithDefaultAndAdditionalLocations(
               configLocations);
     }
-    return createUpgradeDependenciesWithAConfigurationService(configurationService);
+    return createUpgradeDependenciesWithAConfigurationService(databaseType, configurationService);
   }
 
   public static UpgradeExecutionDependencies createUpgradeDependenciesWithAConfigurationService(
-      final ConfigurationService configurationService) {
-    final OptimizeIndexNameService indexNameService =
-        new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH);
-    final OptimizeElasticsearchClient esClient =
-        new OptimizeElasticsearchClient(
-            ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-            indexNameService,
-            new RequestOptionsProvider(configurationService),
-            OPTIMIZE_MAPPER);
-    final ElasticSearchMetadataService metadataService =
-        new ElasticSearchMetadataService(OPTIMIZE_MAPPER);
-    return new UpgradeExecutionDependencies(
-        configurationService, indexNameService, esClient, OPTIMIZE_MAPPER, metadataService);
+      final DatabaseType databaseType, final ConfigurationService configurationService) {
+    OptimizeIndexNameService indexNameService =
+        new OptimizeIndexNameService(configurationService, databaseType);
+    if (databaseType.equals(DatabaseType.ELASTICSEARCH)) {
+      final OptimizeElasticsearchClient esClient =
+          new OptimizeElasticsearchClient(
+              ElasticsearchClientBuilder.restClient(configurationService, new PluginRepository()),
+              OPTIMIZE_MAPPER,
+              ElasticsearchClientBuilder.build(
+                  configurationService, OPTIMIZE_MAPPER, new PluginRepository()),
+              indexNameService,
+              new TransportOptionsProvider(configurationService));
+      final ElasticSearchMetadataService metadataService =
+          new ElasticSearchMetadataService(OPTIMIZE_MAPPER);
+      return new UpgradeExecutionDependencies(
+          databaseType,
+          configurationService,
+          indexNameService,
+          esClient,
+          OPTIMIZE_MAPPER,
+          metadataService);
+    } else {
+      // TODO Evaluate the need for OpenSearchCustomHeaderProvider with OPT-7400
+      OptimizeOpenSearchClient osClient =
+          new OptimizeOpenSearchClient(
+              OpenSearchClientBuilder.buildOpenSearchClientFromConfig(
+                  configurationService, new PluginRepository()),
+              OpenSearchClientBuilder.buildOpenSearchAsyncClientFromConfig(
+                  configurationService, new PluginRepository()),
+              indexNameService);
+      DatabaseMetadataService<OptimizeOpenSearchClient> metadataService =
+          new OpenSearchMetadataService(OPTIMIZE_MAPPER);
+      return new UpgradeExecutionDependencies(
+          databaseType,
+          configurationService,
+          indexNameService,
+          osClient,
+          OPTIMIZE_MAPPER,
+          metadataService);
+    }
   }
 
   public static String readClasspathFileAsString(final String filePath) {

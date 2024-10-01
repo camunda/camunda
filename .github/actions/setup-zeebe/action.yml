@@ -6,10 +6,6 @@ name: Setup Zeebe
 description: Sets up the required stack to build, install, and run Zeebe
 
 inputs:
-  go:
-    description: If true, will set up Golang; defaults to true
-    required: false
-    default: "true"
   java:
     description: If true, will set up Java; defaults to true
     required: false
@@ -115,9 +111,3 @@ runs:
       uses: ./.github/actions/setup-maven-cache
       with:
         maven-cache-key-modifier: ${{ inputs.maven-cache-key-modifier }}
-    - if: ${{ inputs.go == 'true' }}
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.22'
-        cache: true
-        cache-dependency-path: 'clients/go/go.sum'

@@ -8,7 +8,6 @@
 package io.camunda.operate.webapp.rest;
 
 import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.reader.DecisionReader;
@@ -18,6 +17,7 @@ import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
+import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -42,7 +42,8 @@ public class DecisionRestService extends InternalAPIErrorController {
 
   @Operation(summary = "Get decision DMN XML")
   @GetMapping(path = "/{id}/xml")
-  public String getDecisionDiagram(@ValidLongId @PathVariable("id") String decisionDefinitionId) {
+  public String getDecisionDiagram(
+      @ValidLongId @PathVariable("id") final String decisionDefinitionId) {
     final Long decisionDefinitionKey = Long.valueOf(decisionDefinitionId);
     checkIdentityReadPermission(decisionDefinitionKey);
     return decisionReader.getDiagram(decisionDefinitionKey);
@@ -59,7 +60,7 @@ public class DecisionRestService extends InternalAPIErrorController {
 
   @Operation(summary = "List decisions grouped by decisionId")
   @PostMapping(path = "/grouped")
-  public List<DecisionGroupDto> getDecisionsGrouped(@RequestBody DecisionRequestDto request) {
+  public List<DecisionGroupDto> getDecisionsGrouped(@RequestBody final DecisionRequestDto request) {
     final Map<String, List<DecisionDefinitionEntity>> decisionsGrouped =
         decisionReader.getDecisionsGrouped(request);
     return DecisionGroupDto.createFrom(decisionsGrouped, permissionsService);
@@ -69,14 +70,14 @@ public class DecisionRestService extends InternalAPIErrorController {
   @DeleteMapping(path = "/{id}")
   @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity deleteDecisionDefinition(
-      @ValidLongId @PathVariable("id") String decisionDefinitionId) {
+      @ValidLongId @PathVariable("id") final String decisionDefinitionId) {
     final DecisionDefinitionEntity decisionDefinitionEntity =
         decisionReader.getDecision(Long.valueOf(decisionDefinitionId));
     checkIdentityDeletePermission(decisionDefinitionEntity.getDecisionId());
     return batchOperationWriter.scheduleDeleteDecisionDefinition(decisionDefinitionEntity);
   }
 
-  private void checkIdentityReadPermission(Long decisionDefinitionKey) {
+  private void checkIdentityReadPermission(final Long decisionDefinitionKey) {
     if (permissionsService != null) {
       final String decisionId = decisionReader.getDecision(decisionDefinitionKey).getDecisionId();
       if (!permissionsService.hasPermissionForDecision(decisionId, IdentityPermission.READ)) {
@@ -86,7 +87,7 @@ public class DecisionRestService extends InternalAPIErrorController {
     }
   }
 
-  private void checkIdentityDeletePermission(String decisionId) {
+  private void checkIdentityDeletePermission(final String decisionId) {
     if (permissionsService != null) {
       if (!permissionsService.hasPermissionForDecision(decisionId, IdentityPermission.DELETE)) {
         throw new NotAuthorizedException(

@@ -20,7 +20,12 @@ export default function DocsLink({location, children}: DocsLinkProps): JSX.Eleme
   const {generateDocsLink} = useDocs();
 
   return (
-    <Link href={generateDocsLink(location)} target="_blank" rel="noopener noreferrer">
+    <Link
+      className="cds--link"
+      href={generateDocsLink(location)}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       {children}
     </Link>
   );

@@ -68,7 +68,11 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
               assertThat(importedDef.getKey()).isEqualTo(deployedProcess.getBpmnProcessId());
               assertThat(importedDef.getVersion())
                   .isEqualTo(String.valueOf(deployedProcess.getVersion()));
-              assertThat(importedDef.getVersionTag()).isEqualTo(ZeebeBpmnModels.VERSION_TAG);
+              if (isZeebeVersionPre86()) {
+                assertThat(importedDef.getVersionTag()).isNull();
+              } else {
+                assertThat(importedDef.getVersionTag()).isEqualTo(ZeebeBpmnModels.VERSION_TAG);
+              }
               assertThat(importedDef.getType()).isEqualTo(DefinitionType.PROCESS);
 
               assertThat(importedDef.getBpmn20Xml()).isEqualTo(Bpmn.convertToString(simpleProcess));

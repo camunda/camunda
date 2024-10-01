@@ -12,16 +12,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.search.entities.UserEntity;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.service.UserServices;
-import io.camunda.service.entities.UserEntity;
-import io.camunda.service.search.query.SearchQueryResult;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 public class CamundaUserDetailsServiceTest {
@@ -43,11 +43,16 @@ public class CamundaUserDetailsServiceTest {
     when(userService.search(any()))
         .thenReturn(
             new SearchQueryResult<>(
-                1, List.of(new UserEntity(1L, TEST_USER_ID, "", "", "password1")), null));
+                1,
+                List.of(new UserEntity(1L, TEST_USER_ID, "Foo Bar", "not@tested", "password1")),
+                null));
     // when
-    final UserDetails user = userDetailsService.loadUserByUsername(TEST_USER_ID);
+    final CamundaUser user = (CamundaUser) userDetailsService.loadUserByUsername(TEST_USER_ID);
 
     // then
+    assertThat(user).isInstanceOf(CamundaUser.class);
+    assertThat(user.getUserKey()).isEqualTo(1L);
+    assertThat(user.getName()).isEqualTo("Foo Bar");
     assertThat(user.getUsername()).isEqualTo(TEST_USER_ID);
     assertThat(user.getPassword()).isEqualTo("password1");
   }

@@ -29,9 +29,6 @@ public interface FlowNodeInstance {
   /** flow node id for flow node instance */
   String getFlowNodeId();
 
-  /** flow node name for flow node instance */
-  String getFlowNodeName();
-
   /** start date of flow node instance */
   String getStartDate();
 

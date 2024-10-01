@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.webapp.rest.dto.dmn;
 
-import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(name = "Decision object")

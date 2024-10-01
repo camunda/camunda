@@ -69,7 +69,7 @@ it('should display the key properties of a dashboard', () => {
     />
   );
 
-  expect(node.find('EntityName').prop('children')).toBe('name');
+  expect(node.find('EntityName').prop('name')).toBe('name');
 });
 
 it('should provide a link to edit mode in view mode', () => {

@@ -264,6 +264,65 @@
 //   }
 //
 //   @Test
+//   public void testCollapsedNodesAreExcludedWhenUnsavedReportViewedViewedAsHeatmap()
+//       throws IOException {
+//     // given
+//     String bpmnXml =
+//         BpmnModelUtil.getResourceFileAsString("/test/data/visible_and_collapsed_subprocess.bpmn");
+//     ProcessInstanceEngineDto processInstanceEngineDto =
+//         engineIntegrationExtension.deployAndStartProcess(BpmnModelUtil.parseBpmnModel(bpmnXml));
+//     importAllEngineEntitiesFromScratch();
+//
+//     // when
+//     final ProcessReportDataDto reportData =
+//         createReport(
+//             processInstanceEngineDto.getProcessDefinitionKey(),
+//             processInstanceEngineDto.getProcessDefinitionVersion());
+//     reportData.getConfiguration().setXml(bpmnXml);
+//     reportData.setVisualization(ProcessVisualization.HEAT);
+//     final ReportResultResponseDto<List<MapResultEntryDto>> result =
+//         reportClient.evaluateMapReport(reportData).getResult();
+//
+//     // then
+//     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
+//     assertThat(resultData).hasSize(1);
+//     final List<String> resultLabels = resultData.stream().map(MapResultEntryDto::getLabel).toList();
+//     assertThat(resultLabels).containsExactly("visibleUserTask");
+//   }
+//
+//   @Test
+//   public void testCollapsedNodesAreExcludedWhenSavedReportViewedViewedAsHeatmap()
+//       throws IOException {
+//     // given
+//     String bpmnXml =
+//         BpmnModelUtil.getResourceFileAsString("/test/data/visible_and_collapsed_subprocess.bpmn");
+//     ProcessInstanceEngineDto processInstanceEngineDto =
+//         engineIntegrationExtension.deployAndStartProcess(BpmnModelUtil.parseBpmnModel(bpmnXml));
+//     importAllEngineEntitiesFromScratch();
+//
+//     // when
+//     final ProcessReportDataDto reportData =
+//         createReport(
+//             processInstanceEngineDto.getProcessDefinitionKey(),
+//             processInstanceEngineDto.getProcessDefinitionVersion());
+//     reportData.getConfiguration().setXml(bpmnXml);
+//     reportData.setVisualization(ProcessVisualization.HEAT);
+//     String reportId = reportClient.createSingleProcessReport(reportData);
+//
+//     final ReportResultResponseDto<List<MapResultEntryDto>> result =
+//         reportClient.evaluateReport(reportId).getResult();
+//
+//     // then
+//     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
+//     assertThat(resultData).hasSize(1);
+//     // The user task from the collapsed subprocess is not included
+//     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
+//     final List<String> resultLabels = resultData.stream().map(MapResultEntryDto::getLabel).toList();
+//     assertThat(resultLabels).containsExactly("visibleUserTask");
+//   }
+//
+//
+//   @Test
 //   public void testCustomOrderOnResultValueIsApplied() {
 //     // given
 //     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();

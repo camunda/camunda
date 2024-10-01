@@ -1,5 +1,5 @@
 <configuration>
-  <conversionRule conversionWord="sanitize" converterClass="io.camunda.optimize.util.LogUtil" />
+  <conversionRule conversionWord="sanitize" class="io.camunda.optimize.util.LogUtil" />
   <if condition='property("JSON_LOGGING").contains("true")'>
     <then>
       <appender name="UPGRADE_JSON" class="ch.qos.logback.core.ConsoleAppender">

@@ -11,7 +11,7 @@ import {Form, Variable, CurrentUser, Task} from 'modules/types';
 import {useRemoveFormReference} from 'modules/queries/useTask';
 import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
-import {InlineLoadingStatus, Layer} from '@carbon/react';
+import {type InlineLoadingProps, Layer} from '@carbon/react';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {notificationsStore} from 'modules/stores/notifications';
 import {FormManager} from 'modules/formManager';
@@ -74,7 +74,7 @@ const FormJS: React.FC<Props> = ({
   const {t} = useTranslation();
   const formManagerRef = useRef<FormManager | null>(null);
   const [submissionState, setSubmissionState] =
-    useState<InlineLoadingStatus>('inactive');
+    useState<NonNullable<InlineLoadingProps['status']>>('inactive');
   const {assignee, taskState, formVersion} = task;
   const {data, isLoading} = useForm(
     {
