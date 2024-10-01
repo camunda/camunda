@@ -2354,8 +2354,8 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${plugin.version.surefire}</version>
           <configuration>
-            <!-- by default, exclude performance tests -->
-            <groups>!performance</groups>
+            <!-- by default, exclude performance and strace tests -->
+            <excludedGroups>performance, strace</excludedGroups>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
@@ -2888,6 +2888,24 @@
     </profile>
 
     <profile>
+      <!-- Dedicated profile to run ONLY tests requiring strace. -->
+      <id>include-strace-tests</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <groups>strace</groups>
+              <!-- Reset <excludedGroups> as it take precedence over <groups> -->
+              <excludedGroups combine.self="override"></excludedGroups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
       <!-- Dedicated profile to run ONLY performance tests. The include config overwrites the default pattern-->
       <id>include-performance-tests</id>
       <build>
@@ -2897,6 +2915,8 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
               <groups>performance</groups>
+              <!-- Reset <excludedGroups> as it take precedence over <groups> -->
+              <excludedGroups combine.self="override"></excludedGroups>
             </configuration>
           </plugin>
         </plugins>
