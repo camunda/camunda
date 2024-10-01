@@ -7,4 +7,11 @@
  */
 package io.camunda.service.entities;
 
-public record ProcessDefinitionEntity() {}
+public record ProcessDefinitionEntity(
+    Long key,
+    String name,
+    String bpmnProcessId,
+    String resourceName,
+    Integer version,
+    String versionTag,
+    String tenantId) {}

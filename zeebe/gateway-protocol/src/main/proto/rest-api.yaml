@@ -1957,8 +1957,7 @@ components:
           format: int32
         processVersionTag:
           description: Version tag of this process definition.
-          type: integer
-          format: int32
+          type: string
         bpmnProcessId:
           description: BPMN process id of this process definition.
           type: string
@@ -1994,8 +1993,7 @@ components:
           format: int32
         processVersionTag:
           description: Version tag of this process definition.
-          type: integer
-          format: int32
+          type: string
         bpmnProcessId:
           description: BPMN process id of this process definition.
           type: string
