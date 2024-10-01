@@ -54,7 +54,7 @@ services:
     environment:
       KEYCLOAK_ADMIN_USER: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-      KEYCLOAK_DATABASE_VENDOR: dev-mem
+      KEYCLOAK_DATABASE_VENDOR: dev-file
       KEYCLOAK_HTTP_RELATIVE_PATH: /auth
       KEYCLOAK_ENABLE_HEALTH_ENDPOINTS: true
     healthcheck:
