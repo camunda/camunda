@@ -182,11 +182,11 @@ public final class SearchQueryRequestMapper {
         case "state" -> builder.state();
         case "evaluationDate" -> builder.evaluationDate();
         case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "decisionKey" -> builder.decisionDefinitionKey();
-        case "dmnDecisionId" -> builder.decisionDefinitionId();
-        case "dmnDecisionName" -> builder.decisionDefinitionName();
-        case "decisionVersion" -> builder.decisionDefinitionVersion();
-        case "decisionType" -> builder.decisionType();
+        case "decisionDefinitionKey" -> builder.decisionDefinitionKey();
+        case "decisionDefinitionId" -> builder.decisionDefinitionId();
+        case "decisionDefinitionName" -> builder.decisionDefinitionName();
+        case "decisionDefinitionVersion" -> builder.decisionDefinitionVersion();
+        case "decisionDefinitionType" -> builder.decisionDefinitionType();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

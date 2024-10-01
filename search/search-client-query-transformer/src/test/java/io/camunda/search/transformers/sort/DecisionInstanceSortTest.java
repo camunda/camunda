@@ -29,7 +29,7 @@ class DecisionInstanceSortTest extends AbstractSortTransformerTest {
         new TestArguments(
             "decisionDefinitionId", SortOrder.DESC, s -> s.decisionDefinitionId().desc()),
         new TestArguments("decisionName", SortOrder.DESC, s -> s.decisionDefinitionName().desc()),
-        new TestArguments("decisionType", SortOrder.DESC, s -> s.decisionType().desc()),
+        new TestArguments("decisionType", SortOrder.DESC, s -> s.decisionDefinitionType().desc()),
         new TestArguments(
             "decisionVersion", SortOrder.DESC, s -> s.decisionDefinitionVersion().desc()),
         new TestArguments("evaluationDate", SortOrder.DESC, s -> s.evaluationDate().desc()),
