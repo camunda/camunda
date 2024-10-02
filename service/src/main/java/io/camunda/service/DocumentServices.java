@@ -22,18 +22,26 @@ import java.util.concurrent.CompletableFuture;
 
 public class DocumentServices extends ApiServices<DocumentServices> {
 
-  private final SimpleDocumentStoreRegistry registry = new SimpleDocumentStoreRegistry();
+  private final SimpleDocumentStoreRegistry registry;
+
+  public DocumentServices(
+      final BrokerClient brokerClient,
+      final SecurityConfiguration securityConfiguration) {
+    this(brokerClient, securityConfiguration, null, new SimpleDocumentStoreRegistry());
+  }
 
   public DocumentServices(
       final BrokerClient brokerClient,
       final SecurityConfiguration securityConfiguration,
-      final Authentication authentication) {
+      final Authentication authentication,
+      final SimpleDocumentStoreRegistry registry) {
     super(brokerClient, securityConfiguration, authentication);
+    this.registry = registry;
   }
 
   @Override
   public DocumentServices withAuthentication(final Authentication authentication) {
-    return new DocumentServices(brokerClient, securityConfiguration, authentication);
+    return new DocumentServices(brokerClient, securityConfiguration, authentication, registry);
   }
 
   public CompletableFuture<DocumentReferenceResponse> createDocument(

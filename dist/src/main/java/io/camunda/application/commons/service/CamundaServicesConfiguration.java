@@ -9,6 +9,7 @@ package io.camunda.application.commons.service;
 
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.service.ServiceSecurityConfiguration.ServiceSecurityProperties;
+import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -162,7 +163,7 @@ public class CamundaServicesConfiguration {
   @Bean
   public DocumentServices documentServices(
       final BrokerClient brokerClient, final ServiceSecurityProperties securityConfiguration) {
-    return new DocumentServices(brokerClient, securityConfiguration, null);
+    return new DocumentServices(brokerClient, securityConfiguration, null, new SimpleDocumentStoreRegistry());
   }
 
   @Bean
