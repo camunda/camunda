@@ -9,6 +9,7 @@ package io.camunda.exporter.utils;
 
 import jakarta.json.JsonValue;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Script;
@@ -17,6 +18,7 @@ public class OpensearchScriptBuilder {
   public static final String DEFAULT_SCRIPT_LANG = "painless";
 
   public Script getScriptWithParameters(final String script, final Map<String, Object> parameters) {
+    Objects.requireNonNull(parameters, "Script Parameters must not be null");
     return new Script.Builder()
         .inline(b -> b.source(script).params(jsonParams(parameters)).lang(DEFAULT_SCRIPT_LANG))
         .build();
