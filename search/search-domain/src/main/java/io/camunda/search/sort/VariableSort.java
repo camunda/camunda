@@ -30,6 +30,31 @@ public final record VariableSort(List<FieldSorting> orderings) implements SortOp
       return this;
     }
 
+    public Builder name() {
+      currentOrdering = new FieldSorting("name", null);
+      return this;
+    }
+
+    public Builder tenantId() {
+      currentOrdering = new FieldSorting("tenantId", null);
+      return this;
+    }
+
+    public Builder variableKey() {
+      currentOrdering = new FieldSorting("key", null);
+      return this;
+    }
+
+    public Builder scopeKey() {
+      currentOrdering = new FieldSorting("scopeKey", null);
+      return this;
+    }
+
+    public Builder processInstanceKey() {
+      currentOrdering = new FieldSorting("processInstanceId", null);
+      return this;
+    }
+
     @Override
     protected Builder self() {
       return this;

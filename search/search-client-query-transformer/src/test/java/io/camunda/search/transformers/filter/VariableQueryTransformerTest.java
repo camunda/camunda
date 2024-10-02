@@ -5,34 +5,30 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 package io.camunda.search.transformers.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
-import io.camunda.search.clients.query.SearchQueryOption;
+import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
-public final class VariableQueryTransformerTest extends AbstractTransformerTest {
-
+public class VariableQueryTransformerTest extends AbstractTransformerTest {
   @Test
-  public void shouldQueryOnlyByVariables() {
+  public void shouldQueryByVariableKey() {
     // given
-    final var variableFilter =
-        FilterBuilders.variable(
-            (v) -> v.variable(new VariableValueFilter.Builder().name("foo").build()));
+    final var filter = FilterBuilders.variable((f) -> f.variableKeys(12345L));
 
     // when
-    final var searchRequest = transformQuery(variableFilter);
+    final var searchRequest = transformQuery(filter);
 
     // then
-    // verify that the search request has been constructed properly
-    // depending on the actual search query
-    final SearchQueryOption queryVariant = searchRequest.queryOption();
+    final var queryVariant = searchRequest.queryOption();
     assertThat(queryVariant)
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
@@ -41,131 +37,125 @@ public final class VariableQueryTransformerTest extends AbstractTransformerTest 
                   .isInstanceOfSatisfying(
                       SearchTermQuery.class,
                       (term) -> {
-                        assertThat(term.field()).isEqualTo("name");
-                        assertThat(term.value().stringValue()).isEqualTo("foo");
+                        assertThat(term.field()).isEqualTo("key");
+                        assertThat(term.value().longValue()).isEqualTo(12345L);
                       });
             });
   }
 
   @Test
-  public void shouldQueryByVariableScopeKey() {
+  public void shouldQueryByScopeKey() {
     // given
-    final var variableFilter = FilterBuilders.variable((v) -> v.scopeKeys(4503599627370497L));
+    final var filter = FilterBuilders.variable((f) -> f.scopeKeys(67890L));
 
     // when
-    final var searchRequest = transformQuery(variableFilter);
+    final var searchRequest = transformQuery(filter);
 
     // then
     final var queryVariant = searchRequest.queryOption();
     assertThat(queryVariant)
         .isInstanceOfSatisfying(
-            SearchTermQuery.class,
+            SearchBoolQuery.class,
             (t) -> {
-              assertThat(t.field()).isEqualTo("scopeKey");
-              assertThat(t.value().longValue()).isEqualTo(4503599627370497L);
+              assertThat(t.must().get(0).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      (term) -> {
+                        assertThat(term.field()).isEqualTo("scopeKey");
+                        assertThat(term.value().longValue()).isEqualTo(67890L);
+                      });
             });
   }
 
   @Test
-  public void shouldCreateDefaultFilter() {
+  public void shouldQueryByProcessInstanceKey() {
     // given
+    final var filter = FilterBuilders.variable((f) -> f.processInstanceKeys(54321L));
 
     // when
-    final var variableFilter = new VariableFilter.Builder().build();
+    final var searchRequest = transformQuery(filter);
 
     // then
-    assertThat(variableFilter.variableFilters()).isEmpty();
-    assertThat(variableFilter.scopeKeys()).isEmpty();
-    assertThat(variableFilter.processInstanceKeys()).isEmpty();
-    assertThat(variableFilter.orConditions()).isFalse();
-    assertThat(variableFilter.onlyRuntimeVariables()).isFalse();
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (t) -> {
+              assertThat(t.must().get(0).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      (term) -> {
+                        assertThat(term.field()).isEqualTo("processInstanceId");
+                        assertThat(term.value().longValue()).isEqualTo(54321L);
+                      });
+            });
   }
 
   @Test
-  public void shouldSetFilterValuesWithGtAndGte() {
+  public void shouldQueryByTenantId() {
     // given
-    var variableFilterBuilder = new VariableFilter.Builder();
+    final var filter = FilterBuilders.variable((f) -> f.tenantIds("tenant1"));
 
     // when
-    final var variableFilterGt =
-        variableFilterBuilder
-            .scopeKeys(1L)
-            .processInstanceKeys(2L)
-            .variable(new VariableValueFilter.Builder().name("foo").gt("1000").build())
-            .orConditions(true)
-            .onlyRuntimeVariables(true)
-            .build();
+    final var searchRequest = transformQuery(filter);
 
     // then
-    assertThat(variableFilterGt.scopeKeys()).hasSize(1).contains(1L);
-    assertThat(variableFilterGt.processInstanceKeys()).hasSize(1).contains(2L);
-    assertThat(variableFilterGt.variableFilters()).hasSize(1).extracting("name").contains("foo");
-    assertThat(variableFilterGt.variableFilters()).hasSize(1).extracting("gt").contains("1000");
-    assertThat(variableFilterGt.orConditions()).isTrue();
-    assertThat(variableFilterGt.onlyRuntimeVariables()).isTrue();
-
-    variableFilterBuilder = new VariableFilter.Builder();
-
-    // when
-    final var variableFilterGte =
-        variableFilterBuilder
-            .scopeKeys(1L)
-            .processInstanceKeys(2L)
-            .variable(new VariableValueFilter.Builder().name("foo").gte("1000").build())
-            .orConditions(true)
-            .onlyRuntimeVariables(true)
-            .build();
-
-    // then
-    assertThat(variableFilterGte.scopeKeys()).hasSize(1).contains(1L);
-    assertThat(variableFilterGte.processInstanceKeys()).hasSize(1).contains(2L);
-    assertThat(variableFilterGte.variableFilters()).hasSize(1).extracting("name").contains("foo");
-    assertThat(variableFilterGte.variableFilters()).hasSize(1).extracting("gte").contains("1000");
-    assertThat(variableFilterGte.orConditions()).isTrue();
-    assertThat(variableFilterGte.onlyRuntimeVariables()).isTrue();
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (t) -> {
+              assertThat(t.must().get(0).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      (term) -> {
+                        assertThat(term.field()).isEqualTo("tenantId");
+                        assertThat(term.value().stringValue()).isEqualTo("tenant1");
+                      });
+            });
   }
 
   @Test
-  public void shouldSetFilterValuesWithLtAndLte() {
+  public void shouldQueryByVariableNameAndValue() {
     // given
-    var variableFilterBuilder = new VariableFilter.Builder();
+    final VariableValueFilter variableValueFilter =
+        new VariableValueFilter.Builder().name("test").eq("testValue").build();
+
+    final var filter = FilterBuilders.variable((f) -> f.variable(List.of(variableValueFilter)));
 
     // when
-    final var variableFilterLt =
-        variableFilterBuilder
-            .scopeKeys(1L)
-            .processInstanceKeys(2L)
-            .variable(new VariableValueFilter.Builder().name("foo").lt("1000").build())
-            .orConditions(true)
-            .onlyRuntimeVariables(true)
-            .build();
+    final var searchRequest = transformQuery(filter);
 
     // then
-    assertThat(variableFilterLt.scopeKeys()).hasSize(1).contains(1L);
-    assertThat(variableFilterLt.processInstanceKeys()).hasSize(1).contains(2L);
-    assertThat(variableFilterLt.variableFilters()).hasSize(1).extracting("name").contains("foo");
-    assertThat(variableFilterLt.variableFilters()).hasSize(1).extracting("lt").contains("1000");
-    assertThat(variableFilterLt.orConditions()).isTrue();
-    assertThat(variableFilterLt.onlyRuntimeVariables()).isTrue();
+    final var queryVariant = searchRequest.queryOption();
 
-    variableFilterBuilder = new VariableFilter.Builder();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            outerBoolQuery -> {
+              assertThat(outerBoolQuery.must()).isNotEmpty();
 
-    // when
-    final var variableFilterLte =
-        variableFilterBuilder
-            .scopeKeys(1L)
-            .processInstanceKeys(2L)
-            .variable(new VariableValueFilter.Builder().name("foo").lte("1000").build())
-            .orConditions(true)
-            .onlyRuntimeVariables(true)
-            .build();
+              final SearchQuery outerMustQuery = outerBoolQuery.must().get(0);
+              assertThat(outerMustQuery.queryOption()).isInstanceOf(SearchBoolQuery.class);
 
-    // then
-    assertThat(variableFilterLte.scopeKeys()).hasSize(1).contains(1L);
-    assertThat(variableFilterLte.processInstanceKeys()).hasSize(1).contains(2L);
-    assertThat(variableFilterLte.variableFilters()).hasSize(1).extracting("name").contains("foo");
-    assertThat(variableFilterLte.variableFilters()).hasSize(1).extracting("lte").contains("1000");
-    assertThat(variableFilterLte.orConditions()).isTrue();
-    assertThat(variableFilterLte.onlyRuntimeVariables()).isTrue();
+              final SearchBoolQuery innerBoolQuery = (SearchBoolQuery) outerMustQuery.queryOption();
+              assertThat(innerBoolQuery.must()).hasSize(2);
+
+              assertThat(innerBoolQuery.must().get(0).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      termQuery -> {
+                        assertThat(termQuery.field()).isEqualTo("name");
+                        assertThat(termQuery.value().value()).isEqualTo("test");
+                      });
+
+              assertThat(innerBoolQuery.must().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      termQuery -> {
+                        assertThat(termQuery.field()).isEqualTo("value");
+                        assertThat(termQuery.value().value()).isEqualTo("testValue");
+                      });
+            });
   }
 }

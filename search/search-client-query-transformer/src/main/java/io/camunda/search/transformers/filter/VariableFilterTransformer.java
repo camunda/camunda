@@ -8,13 +8,13 @@
 package io.camunda.search.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.query.SearchQueryBuilders;
-import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.transformers.ServiceTransformers;
@@ -41,8 +41,16 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
     final var processInstanceKeyQuery = getProcessInstanceKeyQuery(filter.processInstanceKeys());
     final var variableKeyQuery = getVariableKeyQuery(filter.variableKeys());
     final var tenantIdQuery = getTenantIdQuery(filter.tenantIds());
-
-    return and(variablesQuery, scopeKeyQuery, processInstanceKeyQuery, variableKeyQuery, tenantIdQuery);
+    final var isTruncatedQuery = getIsTruncatedQuery(filter.isTruncated());
+    final SearchQuery typeQuery = exists("scopeKey"); // Focus only in variables
+    return and(
+        variablesQuery,
+        scopeKeyQuery,
+        processInstanceKeyQuery,
+        variableKeyQuery,
+        tenantIdQuery,
+        typeQuery,
+        isTruncatedQuery);
   }
 
   @Override
@@ -50,8 +58,7 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
     return Arrays.asList("tasklist-list-view-8.6.0_");
   }
 
-  private SearchQuery getVariablesQuery(
-      final List<VariableValueFilter> variableFilters) {
+  private SearchQuery getVariablesQuery(final List<VariableValueFilter> variableFilters) {
     if (variableFilters != null && !variableFilters.isEmpty()) {
       final var queries =
           variableFilters.stream()
@@ -67,15 +74,18 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
   }
 
   private SearchQuery getProcessInstanceKeyQuery(final List<Long> processInstanceKey) {
-    return longTerms("processInstanceKey", processInstanceKey);
+    return longTerms("processInstanceId", processInstanceKey);
   }
 
   private SearchQuery getVariableKeyQuery(final List<Long> variableKeys) {
-      return longTerms("scopeKey", variableKeys);
+    return longTerms("key", variableKeys);
   }
 
   private SearchQuery getTenantIdQuery(final List<String> tenant) {
     return stringTerms("tenantId", tenant);
   }
 
+  private SearchQuery getIsTruncatedQuery(final boolean isTruncated) {
+    return term("isPreview", isTruncated);
+  }
 }

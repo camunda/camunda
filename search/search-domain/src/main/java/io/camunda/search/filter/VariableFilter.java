@@ -33,7 +33,6 @@ public final record VariableFilter(
     private List<String> tenantIds;
     private boolean isTruncated;
 
-    // Builder for variable filters
     public Builder variable(final List<VariableValueFilter> values) {
       variableFilters = addValuesToList(variableFilters, values);
       return this;
@@ -48,7 +47,6 @@ public final record VariableFilter(
       return variable(fn.apply(new VariableValueFilter.Builder()).build());
     }
 
-    // Builder for scope keys
     public Builder scopeKeys(final Long value, final Long... values) {
       return scopeKeys(collectValues(value, values));
     }
@@ -58,7 +56,6 @@ public final record VariableFilter(
       return this;
     }
 
-    // Builder for process instance keys
     public Builder processInstanceKeys(final Long value, final Long... values) {
       return processInstanceKeys(collectValues(value, values));
     }
@@ -68,7 +65,6 @@ public final record VariableFilter(
       return this;
     }
 
-    // Builder for variable keys
     public Builder variableKeys(final Long value, final Long... values) {
       return variableKeys(collectValues(value, values));
     }
@@ -78,7 +74,6 @@ public final record VariableFilter(
       return this;
     }
 
-    // Builder for tenant IDs
     public Builder tenantIds(final String value, final String... values) {
       return tenantIds(collectValues(value, values));
     }
@@ -88,7 +83,6 @@ public final record VariableFilter(
       return this;
     }
 
-    // Builder for isTruncated
     public Builder isTruncated(final boolean value) {
       isTruncated = value;
       return this;
@@ -102,8 +96,7 @@ public final record VariableFilter(
           Objects.requireNonNullElseGet(processInstanceKeys, Collections::emptyList),
           Objects.requireNonNullElseGet(variableKeys, Collections::emptyList),
           Objects.requireNonNullElseGet(tenantIds, Collections::emptyList),
-          isTruncated
-      );
+          isTruncated);
     }
   }
 }
