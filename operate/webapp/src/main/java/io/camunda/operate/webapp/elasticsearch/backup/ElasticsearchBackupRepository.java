@@ -345,7 +345,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
           LOGGER.info(String.format("Waiting for snapshot [%s] to finish.", snapshotName));
         }
       } else {
-        return handleSnapshotReceived(currentSnapshot);
+        return snapshotWentWell(currentSnapshot);
       }
     }
     LOGGER.error(
@@ -355,7 +355,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     return false;
   }
 
-  private boolean handleSnapshotReceived(final SnapshotInfo snapshotInfo) {
+  private boolean snapshotWentWell(final SnapshotInfo snapshotInfo) {
     if (snapshotInfo.state() == SUCCESS) {
       LOGGER.info("Snapshot done: " + snapshotInfo.snapshotId());
       return true;
@@ -471,7 +471,11 @@ public class ElasticsearchBackupRepository implements BackupRepository {
 
     @Override
     public void onResponse(final CreateSnapshotResponse response) {
-      handleSnapshotReceived(response.getSnapshotInfo());
+      if (snapshotWentWell(response.getSnapshotInfo())) {
+        onSuccess.run();
+      } else {
+        onFailure.run();
+      }
     }
 
     @Override

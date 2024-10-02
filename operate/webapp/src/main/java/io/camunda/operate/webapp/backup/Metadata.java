@@ -15,8 +15,7 @@ import java.util.regex.Pattern;
 public class Metadata {
 
   public static final String SNAPSHOT_NAME_PREFIX = "camunda_operate_";
-  private static final String SNAPSHOT_NAME_PATTERN =
-      "{prefix}{version}_{prefix}{version}_part_{index}_of_{count}{index}_of_{count}";
+  private static final String SNAPSHOT_NAME_PATTERN = "{prefix}{version}_part_{index}_of_{count}";
   private static final String SNAPSHOT_NAME_PREFIX_PATTERN = SNAPSHOT_NAME_PREFIX + "{backupId}_";
   private static final Pattern BACKUPID_PATTERN =
       Pattern.compile(SNAPSHOT_NAME_PREFIX + "(\\d*)_.*");
