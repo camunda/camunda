@@ -13,11 +13,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.VariableSearchClient;
+import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableFilter.Builder;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import java.util.List;
+import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -46,5 +49,13 @@ public class VariableServiceTest {
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
+  }
+
+  @Test
+  public void shouldReturnSingleVariable() {
+    // given
+    final var entity = mock(VariableEntity.class);
+    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
+    when(client.searchVariables(any(), any())).thenReturn(result);
   }
 }
