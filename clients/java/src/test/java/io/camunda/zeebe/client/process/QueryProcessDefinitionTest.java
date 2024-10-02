@@ -51,7 +51,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
                     .resourceName("usertest/complex-process.bpmn")
                     .version(2)
                     .versionTag("alpha")
-                    .id("orderProcess")
+                    .processDefinitionId("orderProcess")
                     .tenantId("<default>"))
         .send()
         .join();
@@ -65,7 +65,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     assertThat(filter.getResourceName()).isEqualTo("usertest/complex-process.bpmn");
     assertThat(filter.getVersion()).isEqualTo(2);
     assertThat(filter.getVersionTag()).isEqualTo("alpha");
-    assertThat(filter.getId()).isEqualTo("orderProcess");
+    assertThat(filter.getProcessDefinitionId()).isEqualTo("orderProcess");
     assertThat(filter.getTenantId()).isEqualTo("<default>");
   }
 
@@ -86,7 +86,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
                     .asc()
                     .versionTag()
                     .desc()
-                    .id()
+                    .processDefinitionId()
                     .desc()
                     .tenantId()
                     .asc())

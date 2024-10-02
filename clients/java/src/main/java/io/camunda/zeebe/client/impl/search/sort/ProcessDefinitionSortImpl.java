@@ -47,7 +47,7 @@ public class ProcessDefinitionSortImpl extends SearchQuerySortBase<ProcessDefini
   }
 
   @Override
-  public ProcessDefinitionSort id() {
+  public ProcessDefinitionSort processDefinitionId() {
     return field("bpmnProcessId");
   }
 

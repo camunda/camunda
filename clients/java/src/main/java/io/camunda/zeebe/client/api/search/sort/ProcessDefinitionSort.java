@@ -19,17 +19,24 @@ import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRe
 
 public interface ProcessDefinitionSort extends SearchRequestSort<ProcessDefinitionSort> {
 
+  /** Sort by process definition key. */
   ProcessDefinitionSort processDefinitionKey();
 
+  /** Sort by name. */
   ProcessDefinitionSort name();
 
+  /** Sort by resource name. */
   ProcessDefinitionSort resourceName();
 
+  /** Sort by version. */
   ProcessDefinitionSort version();
 
+  /** Sort by version tag. */
   ProcessDefinitionSort versionTag();
 
-  ProcessDefinitionSort id();
+  /** Sort by process definition id. */
+  ProcessDefinitionSort processDefinitionId();
 
+  /** Sort by tenant id. */
   ProcessDefinitionSort tenantId();
 }

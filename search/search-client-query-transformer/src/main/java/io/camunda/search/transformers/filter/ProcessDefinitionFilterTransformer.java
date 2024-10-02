@@ -31,7 +31,7 @@ public class ProcessDefinitionFilterTransformer
     return and(
         longTerms("key", filter.processDefinitionKeys()),
         stringTerms("name", filter.names()),
-        stringTerms("bpmnProcessId", filter.ids()),
+        stringTerms("bpmnProcessId", filter.processDefinitionIds()),
         stringTerms("resourceName", filter.resourceNames()),
         intTerms("version", filter.versions()),
         stringTerms("versionTag", filter.versionTags()),

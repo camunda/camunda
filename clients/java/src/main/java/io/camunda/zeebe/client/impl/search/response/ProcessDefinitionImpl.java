@@ -25,7 +25,7 @@ public class ProcessDefinitionImpl implements ProcessDefinition {
   private final String resourceName;
   private final Integer version;
   private final String versionTag;
-  private final String id;
+  private final String processDefinitionId;
   private final String tenantId;
 
   public ProcessDefinitionImpl(final ProcessDefinitionItem item) {
@@ -34,7 +34,7 @@ public class ProcessDefinitionImpl implements ProcessDefinition {
     resourceName = item.getResourceName();
     version = item.getVersion();
     versionTag = item.getVersionTag();
-    id = item.getId();
+    processDefinitionId = item.getProcessDefinitionId();
     tenantId = item.getTenantId();
   }
 
@@ -64,8 +64,8 @@ public class ProcessDefinitionImpl implements ProcessDefinition {
   }
 
   @Override
-  public String getId() {
-    return id;
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
   }
 
   @Override

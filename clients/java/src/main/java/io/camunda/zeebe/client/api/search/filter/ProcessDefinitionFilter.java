@@ -19,17 +19,59 @@ import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRe
 
 public interface ProcessDefinitionFilter extends SearchRequestFilter {
 
+  /**
+   * Filters process definitions by the specified process definition key.
+   *
+   * @param processDefinitionKey the key of the process definition
+   * @return the updated filter
+   */
   ProcessDefinitionFilter processDefinitionKey(final Long processDefinitionKey);
 
+  /**
+   * Filters process definitions by the specified name.
+   *
+   * @param name the name of the process definition
+   * @return the updated filter
+   */
   ProcessDefinitionFilter name(final String name);
 
+  /**
+   * Filters process definitions by the specified resource name.
+   *
+   * @param resourceName the resource name of the process definition
+   * @return the updated filter
+   */
   ProcessDefinitionFilter resourceName(final String resourceName);
 
+  /**
+   * Filters process definitions by the specified version.
+   *
+   * @param version the version of the process definition
+   * @return the updated filter
+   */
   ProcessDefinitionFilter version(final Integer version);
 
+  /**
+   * Filters process definitions by the specified version tag.
+   *
+   * @param versionTag the version tag of the process definition
+   * @return the updated filter
+   */
   ProcessDefinitionFilter versionTag(final String versionTag);
 
-  ProcessDefinitionFilter id(final String id);
+  /**
+   * Filters process definitions by the specified process definition id.
+   *
+   * @param processDefinitionId the id of the process definition
+   * @return the updated filter
+   */
+  ProcessDefinitionFilter processDefinitionId(final String processDefinitionId);
 
+  /**
+   * Filters process definitions by the specified tenant id.
+   *
+   * @param tenantId the tenant id of the process definition.
+   * @return the updated filter
+   */
   ProcessDefinitionFilter tenantId(final String tenantId);
 }

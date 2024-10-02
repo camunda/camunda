@@ -56,12 +56,12 @@ public final class SearchRequestBuilders {
 
   private SearchRequestBuilders() {}
 
-  /** Create a process instance filter. */
+  /** Create a process definition filter. */
   public static ProcessDefinitionFilter processDefinitionFilter() {
     return new ProcessDefinitionFilterImpl();
   }
 
-  /** Create a process instance filter by using a fluent builder. */
+  /** Create a process definition filter by using a fluent builder. */
   public static ProcessDefinitionFilter processDefinitionFilter(
       final Consumer<ProcessDefinitionFilter> fn) {
     final ProcessDefinitionFilter filter = processDefinitionFilter();
@@ -119,12 +119,12 @@ public final class SearchRequestBuilders {
     return filter;
   }
 
-  /** Create a process instance sort option. */
+  /** Create a process definition sort option. */
   public static ProcessDefinitionSort processDefinitionSort() {
     return new ProcessDefinitionSortImpl();
   }
 
-  /** Create a process instance sort option by using a fluent builder. */
+  /** Create a process definition sort option by using a fluent builder. */
   public static ProcessDefinitionSort processDefinitionSort(
       final Consumer<ProcessDefinitionSort> fn) {
     final ProcessDefinitionSort sort = processDefinitionSort();

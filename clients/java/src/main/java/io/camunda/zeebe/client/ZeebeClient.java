@@ -706,7 +706,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * warning is removed, anything described below may not yet have taken effect, and the interface
    * and its description are subject to change.</strong>
    *
-   * @return a builder for the process instance query
+   * @return a builder for the process definition query
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   ProcessDefinitionQuery newProcessDefinitionQuery();

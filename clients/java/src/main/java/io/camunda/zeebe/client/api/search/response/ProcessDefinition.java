@@ -17,17 +17,38 @@ package io.camunda.zeebe.client.api.search.response;
 
 public interface ProcessDefinition {
 
+  /**
+   * @return the key of the process definition
+   */
   Long getProcessDefinitionKey();
 
+  /**
+   * @return the name of the process definition
+   */
   String getName();
 
+  /**
+   * @return the resource name of the process definition
+   */
   String getResourceName();
 
+  /**
+   * @return the version of the process definition
+   */
   Integer getVersion();
 
+  /**
+   * @return the version tag of the process definition
+   */
   String getVersionTag();
 
-  String getId();
+  /**
+   * @return the id of the process definition
+   */
+  String getProcessDefinitionId();
 
+  /**
+   * @return the tenant id of the process definition
+   */
   String getTenantId();
 }

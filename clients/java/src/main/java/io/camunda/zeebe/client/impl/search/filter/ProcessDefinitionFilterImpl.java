@@ -60,8 +60,8 @@ public class ProcessDefinitionFilterImpl
   }
 
   @Override
-  public ProcessDefinitionFilter id(final String id) {
-    filter.setId(id);
+  public ProcessDefinitionFilter processDefinitionId(final String processDefinitionId) {
+    filter.setProcessDefinitionId(processDefinitionId);
     return this;
   }
 
