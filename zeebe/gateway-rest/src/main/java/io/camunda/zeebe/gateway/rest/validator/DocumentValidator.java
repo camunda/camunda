@@ -12,7 +12,6 @@ import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateD
 
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
-import java.time.ZonedDateTime;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
@@ -45,13 +44,9 @@ public class DocumentValidator {
     }
     return validate(
         violations -> {
-          if (request.getExpiresAt() != null) {
-            validateDate(request.getExpiresAt(), "expiresAt", violations);
-            final var now = System.currentTimeMillis();
-            final var expiresAtDate =
-                ZonedDateTime.parse(request.getExpiresAt()).toInstant().toEpochMilli();
-            if (expiresAtDate < now) {
-              violations.add("The expiration date must be in the future");
+          if (request.getTimeToLive() != null) {
+            if (request.getTimeToLive() <= 0) {
+              violations.add("The time to live must be greater than 0");
             }
           }
         });
