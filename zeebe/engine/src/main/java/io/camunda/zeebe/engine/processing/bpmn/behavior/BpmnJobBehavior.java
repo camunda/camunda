@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import static io.camunda.zeebe.util.Either.right;
+import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
+
 import com.google.common.base.Strings;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
@@ -29,6 +33,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -43,6 +48,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.agrona.DirectBuffer;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,9 +97,46 @@ public final class BpmnJobBehavior {
     return evaluateJobExpressions(jobWorkerProps, ProcessElementProperties.from(context));
   }
 
+  public Either<Failure, JobProperties> evaluateTaskListenerJobExpressions(
+      final JobWorkerProperties jobWorkerProps,
+      final ProcessElementProperties elementProps,
+      final UserTaskRecord taskRecordValue) {
+    return evaluateJobExpressions(jobWorkerProps, elementProps)
+        .map(
+            p ->
+                of(taskRecordValue.getAssignee())
+                    .map(BpmnJobBehavior::notBlankOrNull)
+                    .map(p::assignee)
+                    .orElse(p))
+        .map(
+            p ->
+                ofNullable(taskRecordValue.getCandidateGroupsList())
+                    .map(BpmnJobBehavior::asNotEmptyListLiteralOrNull)
+                    .map(p::candidateGroups)
+                    .orElse(p))
+        .map(
+            p ->
+                ofNullable(taskRecordValue.getCandidateUsersList())
+                    .map(BpmnJobBehavior::asNotEmptyListLiteralOrNull)
+                    .map(p::candidateUsers)
+                    .orElse(p))
+        .map(
+            p ->
+                of(taskRecordValue.getDueDate())
+                    .map(BpmnJobBehavior::notBlankOrNull)
+                    .map(p::dueDate)
+                    .orElse(p))
+        .map(
+            p ->
+                of(taskRecordValue.getFollowUpDate())
+                    .map(BpmnJobBehavior::notBlankOrNull)
+                    .map(p::followUpDate)
+                    .orElse(p));
+  }
+
   public Either<Failure, JobProperties> evaluateJobExpressions(
-      final JobWorkerProperties jobWorkerProps, final ProcessElementProperties elementProperties) {
-    final var scopeKey = elementProperties.getElementInstanceKey();
+      final JobWorkerProperties jobWorkerProps, final ProcessElementProperties elementProps) {
+    final var scopeKey = elementProps.getElementInstanceKey();
     return Either.<Failure, JobProperties>right(new JobProperties())
         .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey).map(p::type))
         .flatMap(p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey).map(p::retries))
@@ -132,7 +175,7 @@ public final class BpmnJobBehavior {
                         jobWorkerProps.getFormId(),
                         jobWorkerProps.getFormBindingType(),
                         jobWorkerProps.getFormVersionTag(),
-                        elementProperties,
+                        elementProps,
                         scopeKey)
                     .map(key -> Objects.toString(key, null))
                     .map(p::formKey));
@@ -140,6 +183,14 @@ public final class BpmnJobBehavior {
 
   private static String asListLiteralOrNull(final List<String> list) {
     return list == null ? null : ExpressionTransformer.asListLiteral(list);
+  }
+
+  private static String asNotEmptyListLiteralOrNull(final List<String> list) {
+    return list == null || list.isEmpty() ? null : ExpressionTransformer.asListLiteral(list);
+  }
+
+  private static String notBlankOrNull(final String input) {
+    return StringUtils.isBlank(input) ? null : input;
   }
 
   public void createNewJob(
@@ -173,14 +224,19 @@ public final class BpmnJobBehavior {
   public void createNewTaskListenerJob(
       final ProcessElementProperties elementProperties,
       final JobProperties jobProperties,
-      final TaskListener taskListener) {
+      final TaskListener taskListener,
+      final UserTaskRecord taskRecordValue) {
 
+    final var taskHeaders =
+        Collections.singletonMap(
+            Protocol.RESERVED_HEADER_NAME_PREFIX + "userTaskKey",
+            Objects.toString(taskRecordValue.getUserTaskKey()));
     writeJobCreatedEvent(
         elementProperties,
         jobProperties,
         JobKind.TASK_LISTENER,
         fromTaskListenerEventType(taskListener.getEventType()),
-        Collections.emptyMap());
+        taskHeaders);
   }
 
   private static JobListenerEventType fromExecutionListenerEventType(
@@ -215,7 +271,7 @@ public final class BpmnJobBehavior {
                                 type.getExpression()),
                             ErrorType.EXTRACT_VALUE_ERROR,
                             scopeKey))
-                    : Either.right(result));
+                    : right(result));
   }
 
   private Either<Failure, Long> evalRetriesExp(final Expression retries, final long scopeKey) {
