@@ -45,8 +45,7 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
 
   @Override
   public void processNewCommand(final TypedRecord<UserRecord> command) {
-    final var username = command.getValue().getUsernameBuffer();
-    final var persistedUser = userState.getUser(username);
+    final var persistedUser = userState.getUser(command.getValue().getUserKey());
 
     if (persistedUser.isEmpty()) {
       final var rejectionMessage =

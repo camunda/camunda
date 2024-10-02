@@ -48,7 +48,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.service.UserServices.CreateUserRequest;
+import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
@@ -287,12 +287,13 @@ public class RequestMapper {
         () -> new DocumentLinkParams(ZonedDateTime.parse(documentLinkRequest.getExpiresAt())));
   }
 
-  public static Either<ProblemDetail, CreateUserRequest> toCreateUserRequest(
-      final UserRequest request, final PasswordEncoder passwordEncoder) {
+  public static Either<ProblemDetail, UserDTO> toUserDTO(
+      final Long userKey, final UserRequest request, final PasswordEncoder passwordEncoder) {
     return getResult(
         validateUserCreateRequest(request),
         () ->
-            new CreateUserRequest(
+            new UserDTO(
+                userKey,
                 request.getUsername(),
                 request.getName(),
                 request.getEmail(),
