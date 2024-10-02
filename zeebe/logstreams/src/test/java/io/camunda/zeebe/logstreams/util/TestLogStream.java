@@ -22,7 +22,12 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 
-public class TestLogStream implements SynchronousLogStream {
+/**
+ * Wrapper of {@link LogStream} with some helpful blocking methods for testing purposes.
+ *
+ * <p>Delegates all {@link LogStream} method to the underlying {@link LogStream}
+ */
+public class TestLogStream implements LogStream {
 
   private final LogStream logStream;
   private long lastWrittenPosition = -1;
@@ -39,22 +44,31 @@ public class TestLogStream implements SynchronousLogStream {
     return new TestLogStreamBuilder(builder);
   }
 
-  @Override
+  /**
+   * @return the current commit position, or a negative value if no entry is committed.
+   */
   public long getLastWrittenPosition() {
     return lastWrittenPosition;
   }
 
-  @Override
+  /** sets the new commit position * */
   public void setLastWrittenPosition(final long position) {
     lastWrittenPosition = position;
   }
 
-  @Override
+  /**
+   * @return a wrapped {@link #newLogStreamWriter()} which ensures that every write returns only
+   *     when the entry has been added to the underlying storage.
+   */
   public BlockingLogStreamWriter newBlockingLogStreamWriter() {
-    return new Writer(newLogStreamWriter());
+    return new BlockingLogStreamWriter(newLogStreamWriter());
   }
 
-  @Override
+  /**
+   * Force waiting until the given position has been persisted in the underlying storage.
+   *
+   * @param position the written position to wait for
+   */
   public void awaitPositionWritten(final long position) {
     Awaitility.await("until position " + position + " is written")
         .atMost(Duration.ofSeconds(5))
@@ -122,10 +136,14 @@ public class TestLogStream implements SynchronousLogStream {
     return written;
   }
 
-  private final class Writer implements BlockingLogStreamWriter {
+  /**
+   * A {@link LogStreamWriter} implementation which only returns when the entry has been written to
+   * the underlying storage.
+   */
+  public final class BlockingLogStreamWriter implements LogStreamWriter {
     private final LogStreamWriter delegate;
 
-    private Writer(final LogStreamWriter delegate) {
+    private BlockingLogStreamWriter(final LogStreamWriter delegate) {
       this.delegate = delegate;
     }
 
