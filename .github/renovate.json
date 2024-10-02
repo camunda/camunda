@@ -53,6 +53,17 @@
       ],
       "enabled": false
     },
+	{
+      "description": "Skip lucene updates to avoid breaking changes.",
+      "matchManagers": ["maven"],
+      "matchPackagePrefixes": ["org.apache.lucene"],
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch"
+      ],
+      "enabled": false
+    },
     {
       "matchManagers": [
         "dockerfile"
