@@ -7,6 +7,10 @@
  */
 package io.camunda.exporter.utils;
 
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import java.time.Duration;
 import org.elasticsearch.client.RestClient;
 import org.testcontainers.containers.BindMode;
@@ -42,6 +46,14 @@ public final class TestSupport {
         .withEnv("xpack.security.enabled", "false")
         .withEnv("xpack.watcher.enabled", "false")
         .withEnv("xpack.ml.enabled", "false")
+        .withEnv("discovery.type", "single-node")
+        .withExposedPorts(9200)
+        .withCreateContainerCmdModifier(
+            cmd ->
+                cmd.withHostConfig(
+                    new HostConfig()
+                        .withPortBindings(
+                            new PortBinding(Ports.Binding.bindPort(50000), new ExposedPort(9200)))))
         .withEnv("action.destructive_requires_name", "false");
   }
 }
