@@ -1,6 +1,7 @@
 git:
   # will be set by the "preview-env-deploy" action
   branch: master
+  # dummy comment
   # Defines the repository URL to use for annotating resources
   repoUrl: https://github.com/camunda/camunda.git
 
