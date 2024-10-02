@@ -89,8 +89,41 @@
       </exclusions>
     </dependency>
     <dependency>
+      <groupId>com.nimbusds</groupId>
+      <artifactId>oauth2-oidc-sdk</artifactId>
+      <version>9.43.4</version>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-oauth2-jose</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-oauth2-resource-server</artifactId>
     </dependency>
   </dependencies>
 </project>
