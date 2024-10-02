@@ -129,6 +129,7 @@ public class AuthorizationMigrationHandler {
   }
 
   private long getOwnerKeyForUsername(final String owner) {
+    // TODO should finalize the code to return the id for mapping rule
     return 0;
   }
 }
