@@ -76,7 +76,6 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
         .withLogName("logStream-" + context.getRaftPartition().name())
         .withPartitionId(context.getPartitionId())
         .withMaxFragmentSize(context.getMaxFragmentSize())
-        .withActorSchedulingService(context.getActorSchedulingService())
         .withClock(context.getStreamClock())
         .withRequestLimit(
             flowControlCfg.getRequest() != null
