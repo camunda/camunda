@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
-import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.logstreams.util.TestEntry;
+import io.camunda.zeebe.logstreams.util.TestLogStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
@@ -28,7 +28,7 @@ public final class LogStreamTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(logStreamRule);
 
-  private SynchronousLogStream logStream;
+  private TestLogStream logStream;
 
   @Before
   public void setup() {

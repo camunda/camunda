@@ -29,7 +29,6 @@ import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
-import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
@@ -127,11 +126,11 @@ public final class TestStreams {
     return mockCommandResponseWriter;
   }
 
-  public SynchronousLogStream createLogStream(final String name) {
+  public TestLogStream createLogStream(final String name) {
     return createLogStream(name, 0);
   }
 
-  public SynchronousLogStream createLogStream(final String name, final int partitionId) {
+  public TestLogStream createLogStream(final String name, final int partitionId) {
     listLogStorage = new ListLogStorage();
     return createLogStream(
         name,
@@ -140,7 +139,7 @@ public final class TestStreams {
         logStream -> listLogStorage.setPositionListener(logStream::setLastWrittenPosition));
   }
 
-  public SynchronousLogStream createLogStream(
+  public TestLogStream createLogStream(
       final String name, final int partitionId, final ListLogStorage sharedStorage) {
     return createLogStream(
         name,
@@ -149,7 +148,7 @@ public final class TestStreams {
         logStream -> sharedStorage.setPositionListener(logStream::setLastWrittenPosition));
   }
 
-  private SynchronousLogStream createLogStream(
+  private TestLogStream createLogStream(
       final String name,
       final int partitionId,
       final LogStorage logStorage,
@@ -174,7 +173,7 @@ public final class TestStreams {
     return logStream;
   }
 
-  public SynchronousLogStream getLogStream(final String name) {
+  public TestLogStream getLogStream(final String name) {
     return logContextMap.get(name).getLogStream();
   }
 
@@ -183,7 +182,7 @@ public final class TestStreams {
   }
 
   public Stream<LoggedEvent> events(final String logName) {
-    final SynchronousLogStream logStream = getLogStream(logName);
+    final TestLogStream logStream = getLogStream(logName);
 
     final LogStreamReader reader = logStream.newLogStreamReader();
     closeables.manage(reader);
@@ -199,7 +198,7 @@ public final class TestStreams {
     return new FluentLogWriter(newLogStreamWriter(logName));
   }
 
-  public Path createRuntimeFolder(final SynchronousLogStream stream) {
+  public Path createRuntimeFolder(final TestLogStream stream) {
     final Path rootDirectory =
         dataDirectory.getRoot().toPath().resolve(stream.getLogName()).resolve("state");
 
@@ -229,7 +228,7 @@ public final class TestStreams {
       final Optional<StreamProcessorListener> streamProcessorListenerOpt,
       final Consumer<StreamProcessorBuilder> processorConfiguration,
       final boolean awaitOpening) {
-    final SynchronousLogStream stream = getLogStream(log);
+    final TestLogStream stream = getLogStream(log);
     return buildStreamProcessor(
         stream,
         zeebeDbFactory,
@@ -240,7 +239,7 @@ public final class TestStreams {
   }
 
   public StreamProcessor buildStreamProcessor(
-      final SynchronousLogStream stream,
+      final TestLogStream stream,
       final ZeebeDbFactory zeebeDbFactory,
       final Consumer<StreamProcessorBuilder> processorConfiguration,
       final TypedRecordProcessorFactory factory,
@@ -475,20 +474,21 @@ public final class TestStreams {
     }
   }
 
-  public record LogContext(SynchronousLogStream logStream, MeterRegistry meterRegistry)
+  public record LogContext(TestLogStream logStream, MeterRegistry meterRegistry)
       implements AutoCloseable {
 
-
-    public static LogContext createLogContext(final TestLogStream logStream, MeterRegistry meterRegistry) {
+    public static LogContext createLogContext(
+        final TestLogStream logStream, MeterRegistry meterRegistry) {
       return new LogContext(logStream, meterRegistry);
     }
+
     @Override
     public void close() {
       logStream.close();
       MicrometerUtil.close(meterRegistry);
     }
 
-    public SynchronousLogStream getLogStream() {
+    public TestLogStream getLogStream() {
       return logStream;
     }
 

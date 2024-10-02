@@ -65,13 +65,13 @@ public final class TestLogStreamBuilder implements LogStreamBuilder {
   }
 
   @Override
-  public LogStreamBuilder withRequestLimit(final Limit requestLimit) {
+  public TestLogStreamBuilder withRequestLimit(final Limit requestLimit) {
     delegate.withRequestLimit(requestLimit);
     return this;
   }
 
   @Override
-  public LogStreamBuilder withWriteRateLimit(final RateLimit writeRateLimiter) {
+  public TestLogStreamBuilder withWriteRateLimit(final RateLimit writeRateLimiter) {
     delegate.withWriteRateLimit(writeRateLimiter);
     return this;
   }
