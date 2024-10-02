@@ -37,8 +37,6 @@ public class JwtAuthorizationDecoder
   private final Set<String> claims = new HashSet<>();
   private String jwtToken;
 
-  public JwtAuthorizationDecoder() {}
-
   public JwtAuthorizationDecoder(final String jwtToken) {
     this.jwtToken = jwtToken;
   }
@@ -94,11 +92,10 @@ public class JwtAuthorizationDecoder
 
     claimMap.putAll(
         decodedJWT.getClaims().entrySet().stream()
-            .filter(entry -> entry.getKey().startsWith(EXTERNAL_TOKEN_CLAIM_PREFIX))
+            .filter(entry -> entry.getKey().startsWith(USER_TOKEN_CLAIM_PREFIX))
             .collect(
                 Collectors.toMap(
-                    Map.Entry::getKey,
-                    stringClaimEntry -> stringClaimEntry.getValue().as(Object.class))));
+                    Map.Entry::getKey, claimEntry -> claimEntry.getValue().as(Object.class))));
 
     return claimMap;
   }
