@@ -1,0 +1,123 @@
+---
+  name: Operate E2E Tests Manual Run (OS/ES)
+
+  on:
+    workflow_dispatch:
+      inputs:
+        version:
+          description: ElasticSearch/OpenSearch version
+          required: false
+        search_db:
+          description: Application search engine
+          type: choice
+          options:
+            - elasticsearch
+            - opensearch
+    
+  run-name: Operate E2E Tests Manual Run. ${{ inputs.search_db }} ${{ inputs.version }}
+  # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
+  # Exception for main branch: complete builds for every commit needed for confidenence
+  concurrency:
+    cancel-in-progress: true
+    group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
+  
+  jobs:
+    test:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Check out repository code
+          uses: actions/checkout@v4
+        - name: Import Secrets
+          id: secrets
+          uses: hashicorp/vault-action@v3.0.0
+          with:
+            url: ${{ secrets.VAULT_ADDR }}
+            method: approle
+            roleId: ${{ secrets.VAULT_ROLE_ID }}
+            secretId: ${{ secrets.VAULT_SECRET_ID }}
+            secrets: |
+              secret/data/github.com/organizations/camunda NEXUS_USR;
+              secret/data/github.com/organizations/camunda NEXUS_PSW;
+
+        - name: Replace Version
+          if: ${{  inputs.version != '' }}
+          working-directory: ./operate
+          run: |
+            out=$(grep -o -E "${{ inputs.search_db }}:[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}" docker-compose.yml)
+            sed -i "s/$out/${{ inputs.search_db }}:${{ inputs.version }}/g" docker-compose.yml
+
+        - name: Run services (ElasticSearch)
+          if: ${{ contains(inputs.search_db, 'elasticsearch') }}
+          working-directory: ./operate
+          run: |
+            export DATABASE=elasticsearch
+            docker compose up -d elasticsearch zeebe
+        
+        - name: Run services (OpenSearch)
+          if: ${{ contains(inputs.search_db, 'opensearch') }}
+          working-directory: ./operate
+          run: |
+            export DATABASE=opensearch
+            docker compose up -d opensearch zeebe-opensearch
+        
+        - name: Build frontend
+          uses: ./.github/actions/build-operate-fe
+        - name: Add Yarn binaries to Path
+          working-directory: ./operate/client
+          run: |
+            echo "$(yarn bin)" >> $GITHUB_PATH
+            echo "$(yarn global bin)" >> $GITHUB_PATH
+        - name: Install Playwright
+          run: yarn exec playwright install -- --with-deps chromium
+          working-directory: ./operate/client
+        - name: Setup Java
+          uses: actions/setup-java@v4
+          with:
+            distribution: "adopt"
+            java-version: "21"
+        - name: Setup Maven
+          uses: stCarolas/setup-maven@v4.5
+          with:
+            maven-version: "3.9.6"
+        # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+        - name: "Create settings.xml"
+          uses: s4u/maven-settings-action@v3.0.0
+          with:
+            githubServer: false
+            servers: |
+              [{
+                "id": "camunda-nexus",
+                "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+                "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+              }]
+            mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+        - name: Build backend
+          # Currently, the e2e environment of operate conflicts with the optimize build. For the moment,
+          # we're excluding optimize from the build, not to impact this operate's workflow.
+          run: mvn clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        - name: Start Operate
+          run: mvn -q -B spring-boot:start -pl dist -Dspring-boot.run.fork=true -Dspring-boot.run.main-class=io.camunda.application.StandaloneOperate
+          env:
+            CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED: false
+        - name: Run tests
+          working-directory: ./operate/client
+          run: yarn run test:e2e:ci
+          env:
+            ZEEBE_GATEWAY_ADDRESS: localhost:26500
+        - uses: actions/upload-artifact@v4
+          if: always()
+          with:
+            name: Playwright report
+            path: operate/client/playwright-report/
+            retention-days: 30
+  
+        - name: Observe build status
+          if: always()
+          continue-on-error: true
+          uses: ./.github/actions/observe-build-status
+          with:
+            build_status: ${{ job.status }}
+            secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+            secret_vault_address: ${{ secrets.VAULT_ADDR }}
+            secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+  
