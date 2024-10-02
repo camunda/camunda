@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.EXTERNAL_TOKEN_CLAIM_PREFIX;
+import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.USER_TOKEN_CLAIM_PREFIX;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationAssignRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
@@ -431,7 +431,7 @@ public class RequestMapper {
       if (requestAuthentication instanceof final JwtAuthenticationToken jwtAuthenticationToken) {
         jwtAuthenticationToken
             .getTokenAttributes()
-            .forEach((key, value) -> token.withClaim(EXTERNAL_TOKEN_CLAIM_PREFIX + key, value));
+            .forEach((key, value) -> token.withClaim(USER_TOKEN_CLAIM_PREFIX + key, value));
       }
     }
 

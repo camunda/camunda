@@ -10,7 +10,7 @@ package io.camunda.zeebe.auth;
 import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.DEFAULT_AUDIENCE;
 import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.DEFAULT_ISSUER;
 import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.DEFAULT_SUBJECT;
-import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.EXTERNAL_TOKEN_CLAIM_PREFIX;
+import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.USER_TOKEN_CLAIM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -88,8 +88,9 @@ public class JwtAuthorizationTest {
     // when
     final AuthorizationEncoder encoder =
         Authorization.jwtEncoder()
-            .withClaim(EXTERNAL_TOKEN_CLAIM_PREFIX + "usr", "usr1")
-            .withClaim(EXTERNAL_TOKEN_CLAIM_PREFIX + "sub", "sub1");
+            .withClaim(USER_TOKEN_CLAIM_PREFIX + "usr", "usr1")
+            .withClaim(USER_TOKEN_CLAIM_PREFIX + "sub", "sub1")
+            .withClaim(USER_TOKEN_CLAIM_PREFIX + "groups", List.of("g1", "g2"));
     final String jwtToken = encoder.encode();
 
     // then
@@ -97,10 +98,13 @@ public class JwtAuthorizationTest {
     // assert default claims are also present
     assertDefaultClaims(claims);
     // and extra claims are present
-    assertThat(claims).containsKey(EXTERNAL_TOKEN_CLAIM_PREFIX + "usr");
-    assertThat(claims).containsKey(EXTERNAL_TOKEN_CLAIM_PREFIX + "sub");
-    assertThat(claims.get(EXTERNAL_TOKEN_CLAIM_PREFIX + "usr").as(String.class)).isEqualTo("usr1");
-    assertThat(claims.get(EXTERNAL_TOKEN_CLAIM_PREFIX + "sub").as(String.class)).isEqualTo("sub1");
+    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "usr");
+    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "sub");
+    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "groups");
+    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "usr").as(String.class)).isEqualTo("usr1");
+    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "sub").as(String.class)).isEqualTo("sub1");
+    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "groups").as(List.class))
+        .containsAll(List.of("g1", "g2"));
   }
 
   @Test
@@ -111,8 +115,9 @@ public class JwtAuthorizationTest {
             .withIssuer(DEFAULT_ISSUER)
             .withAudience(DEFAULT_AUDIENCE)
             .withSubject(DEFAULT_SUBJECT)
-            .withClaim(EXTERNAL_TOKEN_CLAIM_PREFIX + "usr", "usr1")
-            .withClaim(EXTERNAL_TOKEN_CLAIM_PREFIX + "aud", "aud1")
+            .withClaim(USER_TOKEN_CLAIM_PREFIX + "usr", "usr1")
+            .withClaim(USER_TOKEN_CLAIM_PREFIX + "aud", "aud1")
+            .withClaim(USER_TOKEN_CLAIM_PREFIX + "groups", List.of("g1", "g2"))
             .sign(Algorithm.none());
 
     // when
@@ -122,8 +127,13 @@ public class JwtAuthorizationTest {
     // then
     assertDefaultClaims(claims);
 
-    assertThat(claims.get(EXTERNAL_TOKEN_CLAIM_PREFIX + "usr").as(String.class)).isEqualTo("usr1");
-    assertThat(claims.get(EXTERNAL_TOKEN_CLAIM_PREFIX + "aud").as(String.class)).isEqualTo("aud1");
+    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "usr");
+    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "sub");
+    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "groups");
+    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "usr").as(String.class)).isEqualTo("usr1");
+    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "sub").as(String.class)).isEqualTo("sub1");
+    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "groups").as(List.class))
+        .containsAll(List.of("g1", "g2"));
   }
 
   @Test
