@@ -76,7 +76,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [detect-changes]
     name: Java checks
-    timeout-minutes: 15
+    timeout-minutes: 30
     runs-on: [ self-hosted, linux, amd64, "16" ]
     steps:
       - uses: actions/checkout@v4
