@@ -254,21 +254,37 @@ camunda-platform:
         - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_6_RESOURCE_SERVER_ID
           value: optimize-api
         - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_6_DEFINITION
-          value: "write:*"
-        # Zeebe access.
+          value: "read:*"
         - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_7_RESOURCE_SERVER_ID
-          value: zeebe-api
+          value: optimize-api
         - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_7_DEFINITION
           value: "write:*"
-        # WebModeler access.
+        # Zeebe access.
         - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_8_RESOURCE_SERVER_ID
-          value: web-modeler-api
+          value: zeebe-api
         - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_8_DEFINITION
+          value: "read:*"
+        - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_9_RESOURCE_SERVER_ID
+          value: zeebe-api
+        - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_9_DEFINITION
+          value: "write:*"
+        # WebModeler access.
+        - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_10_RESOURCE_SERVER_ID
+          value: web-modeler-api
+        - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_10_DEFINITION
+          value: "read:*"
+        - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_11_RESOURCE_SERVER_ID
+          value: web-modeler-api
+        - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_11_DEFINITION
           value: "write:*"
         # Console access.
-        - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_9_RESOURCE_SERVER_ID
+        - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_12_RESOURCE_SERVER_ID
           value: console-api
-        - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_9_DEFINITION
+        - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_12_DEFINITION
+          value: "read:*"
+        - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_13_RESOURCE_SERVER_ID
+          value: console-api
+        - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_13_DEFINITION
           value: "write:*"
         - name: KEYCLOAK_CLIENTS_3_ID
           value: keycloak
@@ -313,21 +329,37 @@ camunda-platform:
         - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_6_RESOURCE_SERVER_ID
           value: optimize-api
         - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_6_DEFINITION
-          value: "write:*"
-        # Zeebe access.
+          value: "read:*"
         - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_7_RESOURCE_SERVER_ID
-          value: zeebe-api
+          value: optimize-api
         - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_7_DEFINITION
           value: "write:*"
-        # WebModeler access.
+        # Zeebe access.
         - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_8_RESOURCE_SERVER_ID
-          value: web-modeler-api
+          value: zeebe-api
+        - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_8_DEFINITION
+          value: "read:*"
+        - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_8_RESOURCE_SERVER_ID
+          value: zeebe-api
         - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_8_DEFINITION
           value: "write:*"
-        # Console access.
+        # WebModeler access.
         - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_9_RESOURCE_SERVER_ID
-          value: console-api
+          value: web-modeler-api
         - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_9_DEFINITION
+          value: "read:*"
+        - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_10_RESOURCE_SERVER_ID
+          value: web-modeler-api
+        - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_10_DEFINITION
+          value: "write:*"
+        # Console access.
+        - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_11_RESOURCE_SERVER_ID
+          value: console-api
+        - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_11_DEFINITION
+          value: "read:*"
+        - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_12_RESOURCE_SERVER_ID
+          value: console-api
+        - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_12_DEFINITION
           value: "write:*"
       contextPath: "/identity"
       # will be replaced by the preview-env-deploy workflow
