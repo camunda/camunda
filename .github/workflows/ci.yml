@@ -77,7 +77,7 @@ jobs:
     needs: [detect-changes]
     name: Java checks
     timeout-minutes: 15
-    runs-on: gcp-perf-core-8-default
+    runs-on: [ self-hosted, linux, amd64, "16" ]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
@@ -139,7 +139,7 @@ jobs:
   java-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [detect-changes]
-    runs-on: gcp-perf-core-16-default
+    runs-on: [ self-hosted, linux, amd64, "16" ]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -203,25 +203,25 @@ jobs:
             maven-modules: "'qa/integration-tests'"
             maven-build-threads: 2
             maven-test-fork-count: 7
-            runs-on: gcp-perf-core-8-default
+            runs-on: [ self-hosted, linux, amd64, "16" ]
           - group: modules
             name: "Zeebe Module Integration Tests"
             maven-modules: "'!qa/integration-tests,!qa/update-tests' -f zeebe"
             maven-build-threads: 2
             maven-test-fork-count: 7
-            runs-on: gcp-perf-core-8-default
+            runs-on: [ self-hosted, linux, amd64, "16" ]
           - group: qa-integration
             name: "Zeebe QA - Integration Tests"
             maven-modules: "zeebe/qa/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
-            runs-on: gcp-perf-core-16-default
+            runs-on: [ self-hosted, linux, amd64, "16" ]
           - group: qa-update
             name: "Zeebe QA - Update Tests"
             maven-modules: "zeebe/qa/update-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
-            runs-on: gcp-perf-core-8-default
+            runs-on: [ self-hosted, linux, amd64, "16" ]
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
