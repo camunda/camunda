@@ -11,6 +11,7 @@ import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
@@ -22,8 +23,10 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 public class CustomMethodSecurityExpressionRoot extends SecurityExpressionRoot
     implements MethodSecurityExpressionOperations {
 
-  private static final Set<String> READ_ACCESS_AUTHORITIES = Set.of("read");
-  private static final Set<String> WRITE_ACCESS_AUTHORITIES = Set.of("create", "update", "delete");
+  private static final Set<String> READ_ACCESS_AUTHORITIES = Set.of(PermissionType.READ.name());
+  private static final Set<String> WRITE_ACCESS_AUTHORITIES =
+      Set.of(
+          PermissionType.UPDATE.name(), PermissionType.CREATE.name(), PermissionType.DELETE.name());
 
   private final AuthorizationServices<AuthorizationRecord> authorizationServices;
   private Object filterObject;
@@ -49,10 +52,10 @@ public class CustomMethodSecurityExpressionRoot extends SecurityExpressionRoot
   }
 
   public boolean hasWriteAccess(final String resourceType, final String entity) {
-    return hasPermissions(resourceType, "*", WRITE_ACCESS_AUTHORITIES);
+    return hasPermissions(resourceType, entity, WRITE_ACCESS_AUTHORITIES);
   }
 
-  private boolean hasPermissions(
+  public boolean hasPermissions(
       final String resourceType, final String entity, final Set<String> permissions) {
     return extractOwner()
         .map(
