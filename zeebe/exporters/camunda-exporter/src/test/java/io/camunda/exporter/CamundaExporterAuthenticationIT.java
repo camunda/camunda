@@ -49,18 +49,23 @@ public class CamundaExporterAuthenticationIT {
 
   @Test
   void shouldConnectToElasticsearchWithUsernameAndPassword() {
+    // given
     final var exporter = new CamundaExporter();
 
     final var context =
         new ExporterTestContext()
             .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
 
+    // when
     exporter.configure(context);
+
+    // then
     assertThatNoException().isThrownBy(() -> exporter.open(controller));
   }
 
   @Test
   void shouldFailToAuthenticateForWrongCredentials() {
+    // given
     final var exporter = new CamundaExporter();
     CONFIG.elasticsearch.getConnect().setPassword("123");
 
@@ -68,7 +73,10 @@ public class CamundaExporterAuthenticationIT {
         new ExporterTestContext()
             .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
 
+    // when
     exporter.configure(context);
+
+    // then
     assertThatThrownBy(() -> exporter.open(controller))
         .isInstanceOf(ElasticsearchException.class)
         .hasMessageContaining("unable to authenticate user");

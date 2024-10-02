@@ -9,8 +9,13 @@ package io.camunda.exporter;
 
 import static io.camunda.exporter.schema.SchemaTestUtil.validateMappings;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -18,6 +23,7 @@ import co.elastic.clients.elasticsearch.core.GetResponse;
 import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
 import io.camunda.exporter.entities.AuthorizationEntity;
 import io.camunda.exporter.entities.UserEntity;
+import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -35,12 +41,15 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -110,6 +119,45 @@ final class CamundaExporterIT {
             "mappings.json");
   }
 
+  @Test
+  void shouldPeriodicallyFlushBasedOnConfiguration() {
+    // given
+    final var duration = 2;
+    config.bulk.setDelay(duration);
+
+    final var exporter = new CamundaExporter();
+
+    final var context =
+        new ExporterTestContext()
+            .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
+
+    exporter.configure(context);
+
+    // when
+    final var spiedController = spy(controller);
+    exporter.open(spiedController);
+
+    spiedController.runScheduledTasks(Duration.ofSeconds(duration));
+
+    // then
+    verify(spiedController, times(2)).scheduleCancellableTask(eq(Duration.ofSeconds(2)), any());
+  }
+
+  @Test
+  void shouldUpdateExporterPositionAfterFlushing() {
+    // given
+    final var exporter = startExporter();
+
+    // when
+    final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
+    assertThat(controller.getPosition()).isEqualTo(-1);
+
+    exporter.export(record);
+
+    // then
+    assertThat(controller.getPosition()).isEqualTo(record.getPosition());
+  }
+
   private Exporter startExporter() {
     final var exporter =
         new CamundaExporter(mockResourceProvider(Set.of(index), Set.of(indexTemplate)));
@@ -153,10 +201,6 @@ final class CamundaExporterIT {
       config.elasticsearch.setCreateSchema(true);
       startExporter();
 
-    // then
-    final var indices = testClient.indices().get(req -> req.index("*"));
-    final var indexTemplates =
-        testClient.indices().getIndexTemplate(req -> req.name("template_name"));
       // then
       final var indices = testClient.indices().get(req -> req.index("*"));
       final var indexTemplates =
@@ -363,64 +407,50 @@ final class CamundaExporterIT {
               extractPermissions(record.getValue()));
     }
 
-  @Test
-  void shouldCreateLifeCyclePoliciesOnStartupIfEnabled() throws IOException {
-    config.elasticsearch.setCreateSchema(true);
-    config.elasticsearch.getRetention().setEnabled(true);
-    config.elasticsearch.getRetention().setPolicyName("policy_name");
+    @Test
+    void shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater()
+        throws IOException {
+      // given
+      final var exporter = new CamundaExporter();
 
-    startExporter();
+      final var context =
+          new ExporterTestContext()
+              .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
 
-    final var policies = testClient.ilm().getLifecycle();
+      exporter.configure(context);
+      exporter.open(controller);
 
-    assertThat(policies.get("policy_name")).isNotNull();
-  }
+      // when
+      CONTAINER.stop();
+      Awaitility.await().until(() -> !CONTAINER.isRunning());
 
-  @Test
-  void shouldNotCreateLifeCyclePoliciesIfDisabled() throws IOException {
-    config.elasticsearch.setCreateSchema(true);
-    config.elasticsearch.getRetention().setEnabled(false);
-    config.elasticsearch.getRetention().setPolicyName("not_created_policy");
+      final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
 
-    startExporter();
-    final var policies = testClient.ilm().getLifecycle();
+      Assertions.assertThatThrownBy(() -> exporter.export(record))
+          .isInstanceOf(ElasticsearchExporterException.class)
+          .hasMessageContaining("Connection refused");
 
-    assertThat(policies.get("not_created_policy")).isNull();
-  }
+      CONTAINER.start();
+      Awaitility.await().until(CONTAINER::isRunning);
 
-  @Test
-  void shouldSetLifecyclePolicyOnCreatedIndices() throws IOException {
-    config.elasticsearch.setCreateSchema(true);
-    config.elasticsearch.getRetention().setEnabled(true);
-    config.elasticsearch.getRetention().setPolicyName("policy_name");
+      final Record<UserRecordValue> record2 = factory.generateRecord(ValueType.USER);
+      exporter.export(record2);
 
-    startExporter();
+      // then
+      final var testClient =
+          new ElasticsearchConnector(config.elasticsearch.getConnect()).createClient();
 
-    final var createdIndex =
-        testClient.indices().get(req -> req.index(index.getFullQualifiedName())).result();
+      Awaitility.await()
+          .until(
+              () ->
+                  testClient.search(s -> s.index("users"), Map.class).hits().total().value() == 2L);
 
-    assertThat(createdIndex.get(index.getFullQualifiedName()).settings().index().lifecycle().name())
-        .isEqualTo("policy_name");
-  }
-
-  private Exporter startExporter() {
-    final var exporter =
-        new CamundaExporter(mockResourceProvider(Set.of(index), Set.of(indexTemplate)));
-
-    final var context = getContext();
-    exporter.configure(context);
-    exporter.open(controller);
-
-    return exporter;
-  }
-
-  private Map<PermissionType, List<String>> extractPermissions(
-      final AuthorizationRecordValue record) {
-    return record.getPermissions().stream()
-        .collect(
-            Collectors.toMap(
-                AuthorizationRecordValue.PermissionValue::getPermissionType,
-                AuthorizationRecordValue.PermissionValue::getResourceIds));
+      final var documents =
+          testClient.search(s -> s.index("users"), Map.class).hits().hits().stream()
+              .filter(hit -> hit.id().equals(String.valueOf(record.getKey())))
+              .toList();
+      assertThat(documents).hasSize(1);
+    }
   }
 
   @Test
