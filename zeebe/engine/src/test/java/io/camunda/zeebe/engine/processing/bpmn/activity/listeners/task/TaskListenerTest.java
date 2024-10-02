@@ -16,9 +16,13 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -29,8 +33,11 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -40,7 +47,11 @@ public class TaskListenerTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
-  static final String PROCESS_ID = "process";
+  private static final String PROCESS_ID = "process";
+  private static final String FORM_ID_1 = "Form_0w7r08e";
+  private static final String TEST_FORM_1 = "/form/test-form-1.form";
+  private static final String USER_TASK_KEY_HEADER_NAME =
+      Protocol.RESERVED_HEADER_NAME_PREFIX + "userTaskKey";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -276,8 +287,7 @@ public class TaskListenerTest {
 
   @Test
   public void shouldRestrictTaskListenerVariablesToOwningElementScope() {
-    // given: Deploy process with a user task having complete TL and another service task following
-    // it
+    // given: deploy process with a user task having complete TL and service task following it
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
@@ -304,8 +314,7 @@ public class TaskListenerTest {
         .withVariable("my_listener_var", "bar")
         .complete();
 
-    // then: assert the variable 'my_listener_var' is not accessible in the subsequent service task
-    // element
+    // then: assert the variable 'my_listener_var' is not accessible in the subsequent element
     final var subsequentServiceTaskJob =
         ENGINE.jobs().withType("subsequent_service_task").activate().getValue().getJobs().stream()
             .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
@@ -319,8 +328,7 @@ public class TaskListenerTest {
 
   @Test
   public void shouldAllowTaskListenerVariablesUseInUserTaskOutputMappings() {
-    // given: Deploy process with a user task having complete TL and another service task following
-    // it
+    // given: deploy process with a user task having complete TL and service task following it
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
@@ -348,8 +356,7 @@ public class TaskListenerTest {
         .withVariable("my_listener_var", "bar")
         .complete();
 
-    // then: assert the variable 'my_listener_var' is not accessible in the subsequent service task
-    // element
+    // then: assert the variable 'userTaskOutput' is accessible in the subsequent element
     final var subsequentServiceTaskJob =
         ENGINE.jobs().withType("subsequent_service_task").activate().getValue().getJobs().stream()
             .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
@@ -359,6 +366,115 @@ public class TaskListenerTest {
         .hasValueSatisfying(
             job -> assertThat(job.getVariables()).containsEntry("userTaskOutput", "bar_abc"));
     ENGINE.job().ofInstance(processInstanceKey).withType("subsequent_service_task").complete();
+  }
+
+  @Test
+  public void shouldCreateTaskListenerJobWithUserTaskHeaders() {
+    final var form = deployForm(TEST_FORM_1);
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .userTask(
+                "my_user_task",
+                t ->
+                    t.zeebeUserTask()
+                        .zeebeAssignee("admin")
+                        .zeebeCandidateUsers("user_A, user_B")
+                        .zeebeCandidateGroups("group_A, group_C, group_F")
+                        .zeebeFormId(FORM_ID_1)
+                        .zeebeDueDate("2095-09-18T10:31:10+02:00")
+                        .zeebeTaskListener(l -> l.complete().type("my_listener")))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final var userTaskRecordValue = ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // then
+    final Optional<JobRecordValue> activatedListenerJob =
+        ENGINE.jobs().withType("my_listener").activate().getValue().getJobs().stream()
+            .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
+            .findFirst();
+
+    assertThat(activatedListenerJob)
+        .hasValueSatisfying(
+            job ->
+                assertThat(job.getCustomHeaders())
+                    .containsOnly(
+                        entry(
+                            Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME,
+                            "[\"group_A\",\"group_C\",\"group_F\"]"),
+                        entry(
+                            Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME,
+                            "[\"user_A\",\"user_B\"]"),
+                        entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "admin"),
+                        entry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "2095-09-18T10:31:10+02:00"),
+                        entry(
+                            Protocol.USER_TASK_FORM_KEY_HEADER_NAME,
+                            Objects.toString(form.getFormKey())),
+                        entry(
+                            USER_TASK_KEY_HEADER_NAME,
+                            String.valueOf(userTaskRecordValue.getKey()))));
+  }
+
+  @Test
+  public void shouldCreateCompleteTaskListenerJobWithRecentUserTaskDataAfterTaskUpdateInHeaders() {
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .userTask(
+                "my_user_task",
+                t ->
+                    t.zeebeUserTask()
+                        .zeebeAssignee("admin")
+                        .zeebeCandidateUsers("user_A, user_B")
+                        .zeebeCandidateGroups("group_A, group_C, group_F")
+                        .zeebeDueDate("2085-09-21T11:22:33+02:00")
+                        .zeebeFollowUpDate("2095-09-21T11:22:33+02:00")
+                        .zeebeTaskListener(l -> l.complete().type("my_listener")))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var changes =
+        new UserTaskRecord()
+            .setCandidateGroupsList(List.of("group_J", "group_R"))
+            .setCandidateUsersList(List.of("user_T"))
+            .setDueDate("2087-09-21T11:22:33+02:00")
+            .setFollowUpDate("2097-09-21T11:22:33+02:00");
+
+    // when
+    ENGINE.userTask().ofInstance(processInstanceKey).update(changes);
+    final var userTaskRecordValue = ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // then
+    final Optional<JobRecordValue> activatedListenerJob =
+        ENGINE.jobs().withType("my_listener").activate().getValue().getJobs().stream()
+            .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
+            .findFirst();
+
+    assertThat(activatedListenerJob)
+        .hasValueSatisfying(
+            job ->
+                assertThat(job.getCustomHeaders())
+                    .containsOnly(
+                        entry(
+                            Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME,
+                            "[\"group_J\",\"group_R\"]"),
+                        entry(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "[\"user_T\"]"),
+                        entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "admin"),
+                        entry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "2087-09-21T11:22:33+02:00"),
+                        entry(
+                            Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME,
+                            "2097-09-21T11:22:33+02:00"),
+                        entry(
+                            USER_TASK_KEY_HEADER_NAME,
+                            String.valueOf(userTaskRecordValue.getKey()))));
   }
 
   private void assertThatProcessInstanceCompleted(final long processInstanceKey) {
@@ -391,5 +507,18 @@ public class TaskListenerTest {
     for (String jobType : jobTypes) {
       ENGINE.job().ofInstance(processInstanceKey).withType(jobType).complete();
     }
+  }
+
+  private FormMetadataValue deployForm(final String formPath) {
+    final var deploymentEvent = ENGINE.deployment().withJsonClasspathResource(formPath).deploy();
+
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATED)
+        .hasValueType(ValueType.DEPLOYMENT)
+        .hasRecordType(RecordType.EVENT);
+
+    final var formMetadata = deploymentEvent.getValue().getFormMetadata();
+    assertThat(formMetadata).hasSize(1);
+    return formMetadata.getFirst();
   }
 }

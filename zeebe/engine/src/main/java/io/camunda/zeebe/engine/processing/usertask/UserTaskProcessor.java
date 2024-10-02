@@ -85,21 +85,22 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var userTaskIntent = mapLifecycleStateToIntent(lifecycleState);
     final var commandProcessor = commandProcessors.getCommandProcessor(userTaskIntent);
 
-    final var userTaskElementInstanceKey = command.getValue().getElementInstanceKey();
+    final var persistedRecord = command.getValue();
+    final var userTaskElementInstanceKey = persistedRecord.getElementInstanceKey();
     final var userTaskElementInstance =
         elementInstanceState.getInstance(userTaskElementInstanceKey);
 
     final var eventType = mapLifecycleStateToEventType(lifecycleState);
-    final var userTaskElement = getUserTaskElement(command.getValue());
+    final var userTaskElement = getUserTaskElement(persistedRecord);
     final var taskListeners = userTaskElement.getTaskListeners(eventType);
     final int taskListenerIndex = userTaskElementInstance.getTaskListenerIndex(eventType);
-    final var elementProperties = ProcessElementProperties.from(command.getValue());
+    final var elementProperties = ProcessElementProperties.from(persistedRecord);
 
     mergeVariablesOfTaskListener(elementProperties);
     findNextTaskListener(taskListeners, taskListenerIndex)
         .ifPresentOrElse(
-            listener -> createTaskListenerJob(listener, elementProperties),
-            () -> commandProcessor.onFinalizeCommand(command, command.getValue()));
+            listener -> createTaskListenerJob(listener, elementProperties, persistedRecord),
+            () -> commandProcessor.onFinalizeCommand(command, persistedRecord));
   }
 
   private void processOperationCommand(
@@ -126,10 +127,9 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var eventType = mapIntentToEventType(intent);
 
     if (userTaskElement.hasTaskListeners(eventType)) {
-      // TODO save current `command.getValue()`
       final var listener = userTaskElement.getTaskListeners(eventType).getFirst();
       final var elementProperties = ProcessElementProperties.from(persistedRecord);
-      createTaskListenerJob(listener, elementProperties);
+      createTaskListenerJob(listener, elementProperties, persistedRecord);
     } else {
       processor.onFinalizeCommand(command, persistedRecord);
     }
@@ -149,14 +149,17 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   }
 
   private void createTaskListenerJob(
-      final TaskListener listener, final ProcessElementProperties elementProperties) {
+      final TaskListener listener,
+      final ProcessElementProperties elementProps,
+      final UserTaskRecord taskRecordValue) {
     jobBehavior
-        .evaluateJobExpressions(listener.getJobWorkerProperties(), elementProperties)
+        .evaluateTaskListenerJobExpressions(
+            listener.getJobWorkerProperties(), elementProps, taskRecordValue)
         .thenDo(
             listenerJobProperties ->
                 jobBehavior.createNewTaskListenerJob(
-                    elementProperties, listenerJobProperties, listener))
-        .ifLeft(failure -> incidentBehavior.createIncident(failure, elementProperties));
+                    elementProps, listenerJobProperties, listener, taskRecordValue))
+        .ifLeft(failure -> incidentBehavior.createIncident(failure, elementProps));
   }
 
   private ExecutableUserTask getUserTaskElement(final UserTaskRecord userTaskRecord) {
