@@ -24,6 +24,7 @@ import io.camunda.document.api.DocumentStore;
 import io.camunda.zeebe.util.Either;
 import java.io.InputStream;
 import java.nio.channels.Channels;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
@@ -36,6 +37,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class GcpDocumentStore implements DocumentStore {
+
+  private static final long DEFAULT_LINK_TTL_MILLIS = 3600 * 1000L;
 
   private final String bucketName;
   private final Storage storage;
@@ -86,9 +89,9 @@ public class GcpDocumentStore implements DocumentStore {
 
   @Override
   public CompletableFuture<Either<DocumentError, DocumentLink>> createLink(
-      final String documentId, final long durationInSeconds) {
+      final String documentId, final Long durationInMillis) {
     return CompletableFuture.supplyAsync(
-        () -> createLinkInternal(documentId, durationInSeconds), executor);
+        () -> createLinkInternal(documentId, durationInMillis), executor);
   }
 
   private Either<DocumentError, DocumentReference> createDocumentInternal(
@@ -149,15 +152,17 @@ public class GcpDocumentStore implements DocumentStore {
   }
 
   private Either<DocumentError, DocumentLink> createLinkInternal(
-      final String documentId, final long durationInSeconds) {
+      final String documentId, final Long durationInMillis) {
     try {
       final Blob blob = storage.get(bucketName, documentId);
       if (blob == null) {
         return Either.left(new DocumentError.DocumentNotFound(documentId));
       }
-      final var link = blob.signUrl(durationInSeconds, TimeUnit.SECONDS);
+      final var timeToLive = durationInMillis == null ? DEFAULT_LINK_TTL_MILLIS : durationInMillis;
+      final var link = blob.signUrl(timeToLive, TimeUnit.MILLISECONDS);
       return Either.right(
-          new DocumentLink(link.toString(), ZonedDateTime.now().plusSeconds(durationInSeconds)));
+          new DocumentLink(
+              link.toString(), ZonedDateTime.now().plus(Duration.ofMillis(timeToLive))));
     } catch (final Exception e) {
       return Either.left(new UnknownDocumentError(e));
     }

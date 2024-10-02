@@ -21,5 +21,5 @@ public interface DocumentStore {
   CompletableFuture<Either<DocumentError, Void>> deleteDocument(String documentId);
 
   CompletableFuture<Either<DocumentError, DocumentLink>> createLink(
-      String documentId, long durationInSeconds);
+      String documentId, Long durationInMillis);
 }

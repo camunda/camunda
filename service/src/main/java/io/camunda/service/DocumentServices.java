@@ -16,7 +16,7 @@ import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.search.security.auth.Authentication;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.io.InputStream;
-import java.time.ZonedDateTime;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 public class DocumentServices extends ApiServices<DocumentServices> {
@@ -93,9 +93,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       final String documentId, final String storeId, final DocumentLinkParams params) {
 
     final DocumentStoreRecord storeRecord = getDocumentStore(storeId);
-    final long ttl =
-        params.expiresAt().toInstant().getEpochSecond()
-            - ZonedDateTime.now().toInstant().getEpochSecond();
+    final Long ttl = params.timeToLive() != null ? params.timeToLive.toMillis() : null;
     return storeRecord
         .instance()
         .createLink(documentId, ttl)
@@ -126,7 +124,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   public record DocumentReferenceResponse(
       String documentId, String storeId, DocumentMetadataModel metadata) {}
 
-  public record DocumentLinkParams(ZonedDateTime expiresAt) {}
+  public record DocumentLinkParams(Duration timeToLive) {}
 
   public static class DocumentException extends RuntimeException {
 
