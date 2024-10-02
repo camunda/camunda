@@ -20,8 +20,11 @@ import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.api.command.ClientException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.Map;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleRequestBuilder;
 import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
@@ -31,6 +34,7 @@ import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.Method;
+import org.apache.hc.core5.http.nio.AsyncEntityConsumer;
 import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.util.TimeValue;
@@ -104,7 +108,18 @@ public final class HttpClient implements AutoCloseable {
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpZeebeFuture<RespT> result) {
-    sendRequest(Method.GET, path, null, requestConfig, responseType, transformer, result);
+    get(path, Collections.emptyMap(), requestConfig, responseType, transformer, result);
+  }
+
+  public <HttpT, RespT> void get(
+      final String path,
+      final Map<String, String> queryParams,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpZeebeFuture<RespT> result) {
+    sendRequest(
+        Method.GET, path, queryParams, null, requestConfig, responseType, transformer, result);
   }
 
   public <RespT> void post(
@@ -122,11 +137,25 @@ public final class HttpClient implements AutoCloseable {
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpZeebeFuture<RespT> result) {
-    sendRequest(Method.POST, path, body, requestConfig, responseType, transformer, result);
+    post(path, Collections.emptyMap(), body, requestConfig, responseType, transformer, result);
+  }
+
+  public <HttpT, RespT> void post(
+      final String path,
+      final Map<String, String> queryParams,
+      final String body,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpZeebeFuture<RespT> result) {
+
+    sendRequest(
+        Method.POST, path, queryParams, body, requestConfig, responseType, transformer, result);
   }
 
   public <HttpT, RespT> void postMultipart(
       final String path,
+      final Map<String, String> queryParams,
       final MultipartEntityBuilder multipartBuilder,
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
@@ -134,7 +163,8 @@ public final class HttpClient implements AutoCloseable {
       final HttpZeebeFuture<RespT> result) {
 
     final HttpEntity entity = multipartBuilder.build();
-    sendRequest(Method.POST, path, entity, requestConfig, responseType, transformer, result);
+    sendRequest(
+        Method.POST, path, queryParams, entity, requestConfig, responseType, transformer, result);
   }
 
   public <RespT> void put(
@@ -142,7 +172,15 @@ public final class HttpClient implements AutoCloseable {
       final String body,
       final RequestConfig requestConfig,
       final HttpZeebeFuture<RespT> result) {
-    sendRequest(Method.PUT, path, body, requestConfig, Void.class, r -> null, result);
+    sendRequest(
+        Method.PUT,
+        path,
+        Collections.emptyMap(),
+        body,
+        requestConfig,
+        Void.class,
+        r -> null,
+        result);
   }
 
   public <RespT> void patch(
@@ -150,17 +188,35 @@ public final class HttpClient implements AutoCloseable {
       final String body,
       final RequestConfig requestConfig,
       final HttpZeebeFuture<RespT> result) {
-    sendRequest(Method.PATCH, path, body, requestConfig, Void.class, r -> null, result);
+    sendRequest(
+        Method.PATCH,
+        path,
+        Collections.emptyMap(),
+        body,
+        requestConfig,
+        Void.class,
+        r -> null,
+        result);
   }
 
   public <RespT> void delete(
       final String path, final RequestConfig requestConfig, final HttpZeebeFuture<RespT> result) {
-    sendRequest(Method.DELETE, path, null, requestConfig, Void.class, r -> null, result);
+    delete(path, Collections.emptyMap(), requestConfig, result);
+  }
+
+  public <RespT> void delete(
+      final String path,
+      final Map<String, String> queryParams,
+      final RequestConfig requestConfig,
+      final HttpZeebeFuture<RespT> result) {
+    sendRequest(
+        Method.DELETE, path, queryParams, null, requestConfig, Void.class, r -> null, result);
   }
 
   private <HttpT, RespT> void sendRequest(
       final Method httpMethod,
       final String path,
+      final Map<String, String> queryParams,
       final Object body, // Can be a String (for JSON) or HttpEntity (for Multipart)
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
@@ -174,11 +230,23 @@ public final class HttpClient implements AutoCloseable {
           if (result.isCancelled()) {
             return;
           }
-          sendRequest(httpMethod, path, body, requestConfig, responseType, transformer, result);
+          sendRequest(
+              httpMethod,
+              path,
+              queryParams,
+              body,
+              requestConfig,
+              responseType,
+              transformer,
+              result);
         };
 
     final SimpleRequestBuilder requestBuilder =
         SimpleRequestBuilder.create(httpMethod).setUri(target);
+
+    if (queryParams != null && !queryParams.isEmpty()) {
+      queryParams.forEach(requestBuilder::addParameter);
+    }
 
     if (body != null) {
       if (body instanceof String) {
@@ -215,10 +283,17 @@ public final class HttpClient implements AutoCloseable {
     final SimpleHttpRequest request = requestBuilder.build();
     request.setConfig(requestConfig);
 
+    final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer;
+    if (responseType == InputStream.class) {
+      entityConsumer = new DocumentDataConsumer<>(maxMessageSize, jsonMapper);
+    } else {
+      entityConsumer = new ApiEntityConsumer<>(jsonMapper, responseType, maxMessageSize);
+    }
+
     result.transportFuture(
         client.execute(
             SimpleRequestProducer.create(request),
-            new ApiResponseConsumer<>(jsonMapper, responseType, maxMessageSize),
+            new ApiResponseConsumer<>(entityConsumer),
             new ApiCallback<>(
                 result, transformer, credentialsProvider::shouldRetryRequest, retryAction)));
   }
