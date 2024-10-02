@@ -1,4 +1,6 @@
-@use "@carbon/react" as *;
+@use "@carbon/react" as * with (
+  $font-path: "@ibm/plex"
+);
 @import "@carbon/themes/scss/themes";
 
 html {

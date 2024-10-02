@@ -67,17 +67,17 @@ public class DecisionDefinitionQueryController {
   }
 
   @GetMapping(
-      path = "/{decisionKey}/xml",
+      path = "/{decisionDefinitionKey}/xml",
       produces = {MediaType.TEXT_XML_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public ResponseEntity<String> getDecisionDefinitionXml(
-      @PathVariable("decisionKey") final long decisionKey) {
+      @PathVariable("decisionDefinitionKey") final long decisionDefinitionKey) {
     try {
       return ResponseEntity.ok()
           .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
           .body(
               decisionDefinitionServices
                   .withAuthentication(RequestMapper.getAuthentication())
-                  .getDecisionDefinitionXml(decisionKey));
+                  .getDecisionDefinitionXml(decisionDefinitionKey));
     } catch (final Exception e) {
       REST_LOGGER.debug("An exception occurred in getDecisionDefinitionXml.", e);
       return mapErrorToResponse(e);

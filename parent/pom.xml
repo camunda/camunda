@@ -35,7 +35,7 @@
     <maven-profiler-report-directory>${project.build.directory}/profiler</maven-profiler-report-directory>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.23.0</version.agrona>
+    <version.agrona>1.23.1</version.agrona>
     <version.assertj>3.26.3</version.assertj>
     <version.awaitility>4.2.2</version.awaitility>
     <version.bouncycastle>1.78.1</version.bouncycastle>
@@ -64,7 +64,7 @@
     <version.httpclient5>5.3.1</version.httpclient5>
     <version.httpcore5>5.2.5</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.5.5</version.identity>
+    <version.identity>8.6.0</version.identity>
     <version.surefire>3.5.0</version.surefire>
     <version.jackson>2.18.0</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
@@ -75,7 +75,7 @@
     <version.mockito>5.14.1</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.8</version.msgpack>
-    <version.netty>4.1.113.Final</version.netty>
+    <version.netty>4.1.114.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.9.0</version.opensearch>
     <version.opensearch.testcontainers>2.1.0</version.opensearch.testcontainers>
@@ -126,7 +126,7 @@
     <version.feign>13.4</version.feign>
     <version.google-sdk>26.47.0</version.google-sdk>
     <version.azure-sdk>1.2.28</version.azure-sdk>
-    <version.awssdk>2.28.12</version.awssdk>
+    <version.awssdk>2.28.13</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -244,6 +244,7 @@
     <skipTests>${quickly}</skipTests>
     <skipUTs>${skipTests}</skipUTs>
     <skipITs>${skipTests}</skipITs>
+    <cyclonedx.skip>${quickly}</cyclonedx.skip>
     <jacoco.skip>${skipUTs}</jacoco.skip>
 
     <!--

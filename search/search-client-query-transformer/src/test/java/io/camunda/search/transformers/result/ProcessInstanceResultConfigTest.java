@@ -24,7 +24,7 @@ public class ProcessInstanceResultConfigTest extends AbstractResultConfigTest {
 
     // then
     assertThat(source.sourceFilter().includes()).containsExactly("key");
-    assertThat(source.sourceFilter().excludes()).isEmpty();
+    assertThat(source.sourceFilter().excludes()).isNull();
   }
 
   @Test
@@ -37,6 +37,6 @@ public class ProcessInstanceResultConfigTest extends AbstractResultConfigTest {
 
     // then
     assertThat(source.sourceFilter().excludes()).containsExactly("key");
-    assertThat(source.sourceFilter().includes()).isEmpty();
+    assertThat(source.sourceFilter().includes()).isNull();
   }
 }

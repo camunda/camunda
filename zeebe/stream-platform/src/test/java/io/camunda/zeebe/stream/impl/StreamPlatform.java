@@ -161,7 +161,6 @@ public final class StreamPlatform {
             .withLogStorage(logStorage)
             .withClock(clock)
             .withPartitionId(partitionId)
-            .withActorSchedulingService(actorScheduler)
             .build();
 
     logStorage.setPositionListener(logStream::setLastWrittenPosition);

@@ -24,7 +24,7 @@ public class DecisionRequirementsResultConfigTest extends AbstractResultConfigTe
 
     // then
     assertThat(source.sourceFilter().includes()).containsExactly("xml");
-    assertThat(source.sourceFilter().excludes()).isEmpty();
+    assertThat(source.sourceFilter().excludes()).isNull();
   }
 
   @Test
@@ -37,6 +37,6 @@ public class DecisionRequirementsResultConfigTest extends AbstractResultConfigTe
 
     // then
     assertThat(source.sourceFilter().excludes()).containsExactly("xml");
-    assertThat(source.sourceFilter().includes()).isEmpty();
+    assertThat(source.sourceFilter().includes()).isNull();
   }
 }
