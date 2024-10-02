@@ -191,7 +191,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[IT] ${{ matrix.name }}"
     needs: [ detect-changes ]
-    timeout-minutes: 25
+    timeout-minutes: 35
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
