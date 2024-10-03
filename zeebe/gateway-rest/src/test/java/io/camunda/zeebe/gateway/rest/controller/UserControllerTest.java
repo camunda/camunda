@@ -36,6 +36,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @WebMvcTest(UserController.class)
+@Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
 public class UserControllerTest extends RestControllerTest {
 
   private static final String USER_BASE_URL = "/v2/users";
@@ -52,7 +53,6 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
   void createUserShouldReturnAccepted() {
     // given
     final var dto = validCreateUserRequest();
@@ -82,7 +82,6 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
   void createUserThrowsExceptionWhenServiceThrowsException() {
     // given
     final String message = "message";
@@ -112,7 +111,6 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
   void shouldRejectUserCreationWithMissingUsername() {
     // given
     final var request = validUserWithPasswordRequest().username(null);
@@ -133,7 +131,6 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
   void shouldRejectUserCreationWithBlankUsername() {
     // given
     final var request = validUserWithPasswordRequest().username("");
@@ -154,7 +151,6 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
   void shouldRejectUserCreationWithEmptyName() {
     // given
     final var request = validUserWithPasswordRequest().name(null);
@@ -175,7 +171,6 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
   void shouldRejectUserCreationWithBlankName() {
     // given
     final var request = validUserWithPasswordRequest().name("");
@@ -196,7 +191,6 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
   void shouldRejectUserCreationWithEmptyPassword() {
     // given
     final var request = validUserWithPasswordRequest().password(null);
@@ -217,7 +211,6 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
   void shouldRejectUserCreationWithBlankPassword() {
     // given
     final var request = validUserWithPasswordRequest().password("");
@@ -238,7 +231,6 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
   void shouldRejectUserCreationWithEmptyEmail() {
     // given
     final var request = validUserWithPasswordRequest().email(null);
@@ -259,7 +251,6 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
   void shouldRejectUserCreationWithBlankEmail() {
     // given
     final var request = validUserWithPasswordRequest().email("");
@@ -280,7 +271,6 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
   void shouldRejectUserCreationWithInvalidEmail() {
     // given
     final var email = "invalid@email.reject";
@@ -298,26 +288,6 @@ public class UserControllerTest extends RestControllerTest {
               "instance": "%s"
             }"""
             .formatted(email, USER_BASE_URL));
-    verifyNoInteractions(userServices);
-  }
-
-  @Test
-  void createUserShouldBeNotImplemented() {
-    // given
-    final var request = validUserWithPasswordRequest();
-
-    // when then
-    assertRequestRejectedExceptionally(
-        request,
-        """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "Bad Request",
-          "detail": "User creation is not yet implemented",
-          "instance": "%s"
-        }"""
-            .formatted(USER_BASE_URL));
     verifyNoInteractions(userServices);
   }
 
