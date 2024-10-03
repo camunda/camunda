@@ -21,7 +21,9 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableDistributionProcessor.Authorizable;
+import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableDistributionProcessor.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -47,6 +49,8 @@ import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -57,8 +61,7 @@ import java.time.InstantSource;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-public final class DeploymentCreateProcessor
-    implements DistributedTypedRecordProcessor<DeploymentRecord> {
+public final class DeploymentCreateProcessor implements Authorizable<DeploymentRecord> {
 
   private static final String COULD_NOT_CREATE_TIMER_MESSAGE =
       "Expected to create timer for start event, but encountered the following error: %s";
@@ -108,6 +111,11 @@ public final class DeploymentCreateProcessor
             clock);
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
+  }
+
+  @Override
+  public AuthorizationRequest getAuthorizationRequest() {
+    return new AuthorizationRequest(AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
   }
 
   @Override
