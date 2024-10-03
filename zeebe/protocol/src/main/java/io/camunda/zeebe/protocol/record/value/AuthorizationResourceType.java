@@ -17,16 +17,17 @@ package io.camunda.zeebe.protocol.record.value;
 
 public enum AuthorizationResourceType {
   AUTHORIZATION,
+  MAPPING_RULE,
   MESSAGE,
-  JOB,
+  BATCH,
   APPLICATION,
+  SYSTEM,
   TENANT,
   DEPLOYMENT,
   PROCESS_DEFINITION,
-  USER_TASK,
   DECISION_REQUIREMENTS_DEFINITION,
   DECISION_DEFINITION,
-  USER_GROUP,
+  GROUP,
   USER,
   ROLE
 }
