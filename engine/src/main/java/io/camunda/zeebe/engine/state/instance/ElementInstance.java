@@ -63,7 +63,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(calledChildInstanceKeyProp)
         .declareProperty(recordProp)
         .declareProperty(activeSequenceFlowsProp)
-        .declareProperty(userTaskKeyProp);
+        .declareProperty(userTaskKeyProp)
+        .declareProperty(calledProcessDepthProp);
   }
 
   public ElementInstance(
@@ -238,5 +239,9 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public void setUserTaskKey(final long userTaskKey) {
     userTaskKeyProp.setValue(userTaskKey);
+  }
+
+  public int getCalledProcessDepth() {
+    return calledProcessDepthProp.getValue();
   }
 }
