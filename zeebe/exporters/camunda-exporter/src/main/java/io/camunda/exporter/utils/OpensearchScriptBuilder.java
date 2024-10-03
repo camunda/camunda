@@ -7,14 +7,14 @@
  */
 package io.camunda.exporter.utils;
 
-import co.elastic.clients.elasticsearch._types.Script;
-import co.elastic.clients.json.JsonData;
 import jakarta.json.JsonValue;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.Script;
 
-public class ElasticsearchScriptBuilder {
+public class OpensearchScriptBuilder {
   public static final String DEFAULT_SCRIPT_LANG = "painless";
 
   public Script getScriptWithParameters(final String script, final Map<String, Object> parameters) {
@@ -24,12 +24,12 @@ public class ElasticsearchScriptBuilder {
         .build();
   }
 
-  public Map<String, JsonData> jsonParams(final Map<String, Object> params) {
+  private Map<String, JsonData> jsonParams(final Map<String, Object> params) {
     return params.entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, e -> json(e.getValue())));
   }
 
-  public <V> JsonData json(final V value) {
+  private <A> JsonData json(final A value) {
     return JsonData.of(value == null ? JsonValue.NULL : value);
   }
 }
