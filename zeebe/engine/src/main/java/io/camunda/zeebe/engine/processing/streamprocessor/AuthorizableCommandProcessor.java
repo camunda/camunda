@@ -83,14 +83,16 @@ public class AuthorizableCommandProcessor<T extends UnifiedRecordValue, Resource
     boolean onCommand(
         final TypedRecord<T> command, CommandControl<T> controller, Resource resource);
 
-    boolean shouldRespond();
+    default boolean shouldRespond() {
+      return true;
+    }
 
-    void afterAccept(
+    default void afterAccept(
         final TypedCommandWriter commandWriter,
         final StateWriter stateWriter,
         final long key,
         final Intent intent,
-        final T value);
+        final T value) {}
 
     /**
      * Try to handle an error that occurred during processing.
