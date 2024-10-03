@@ -131,6 +131,7 @@
     </dependency>
 
     <!-- IDENTITY-->
+    <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-spring-boot-starter</artifactId>
@@ -899,6 +900,7 @@
             <dep>org.codehaus.janino:janino</dep>
             <dep>org.eclipse.jetty:jetty-alpn-java-client</dep>
             <dep>org.eclipse.jetty:jetty-alpn-java-server</dep>
+            <dep>io.camunda:identity-spring-boot-starter</dep>
           </ignoredUnusedDeclaredDependencies>
           <ignoredNonTestScopedDependencies>
           </ignoredNonTestScopedDependencies>
