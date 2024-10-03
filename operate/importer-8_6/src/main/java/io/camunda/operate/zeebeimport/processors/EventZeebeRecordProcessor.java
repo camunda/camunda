@@ -7,8 +7,6 @@
  */
 package io.camunda.operate.zeebeimport.processors;
 
-import static io.camunda.operate.entities.EventType.ELEMENT_ACTIVATING;
-import static io.camunda.operate.entities.EventType.ELEMENT_COMPLETING;
 import static io.camunda.operate.schema.templates.EventTemplate.BPMN_PROCESS_ID;
 import static io.camunda.operate.schema.templates.EventTemplate.CORRELATION_KEY;
 import static io.camunda.operate.schema.templates.EventTemplate.DATE_TIME;
@@ -28,14 +26,19 @@ import static io.camunda.operate.schema.templates.EventTemplate.METADATA;
 import static io.camunda.operate.schema.templates.EventTemplate.PROCESS_KEY;
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+import static io.camunda.webapps.schema.entities.operate.EventType.ELEMENT_ACTIVATING;
+import static io.camunda.webapps.schema.entities.operate.EventType.ELEMENT_COMPLETING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
-import io.camunda.operate.entities.*;
-import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.DateUtil;
+import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.operate.EventEntity;
+import io.camunda.webapps.schema.entities.operate.EventMetadataEntity;
+import io.camunda.webapps.schema.entities.operate.EventSourceType;
+import io.camunda.webapps.schema.entities.operate.EventType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;

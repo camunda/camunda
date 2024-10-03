@@ -55,6 +55,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- ELASTICSEARCH -->
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
@@ -443,6 +449,12 @@
     <dependency>
       <groupId>net.bytebuddy</groupId>
       <artifactId>byte-buddy</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-authentication</artifactId>
       <scope>test</scope>
     </dependency>
 

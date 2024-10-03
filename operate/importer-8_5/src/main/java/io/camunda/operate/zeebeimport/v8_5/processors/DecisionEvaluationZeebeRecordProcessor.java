@@ -9,12 +9,16 @@ package io.camunda.operate.zeebeimport.v8_5.processors;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
-import io.camunda.operate.entities.dmn.*;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.util.DateUtil;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceInputEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceOutputEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;

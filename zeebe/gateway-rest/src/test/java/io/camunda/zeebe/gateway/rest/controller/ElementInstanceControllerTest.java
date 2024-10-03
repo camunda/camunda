@@ -11,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import java.util.Map;
@@ -49,13 +49,13 @@ public class ElementInstanceControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "variables": {
-            "key": "value"
-          },
-          "local": true,
-          "operationReference": 123
-        }""";
+            {
+              "variables": {
+                "key": "value"
+              },
+              "local": true,
+              "operationReference": 123
+            }""";
 
     // when/then
     webClient
@@ -81,19 +81,19 @@ public class ElementInstanceControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-            "variables": null
-        }""";
+            {
+                "variables": null
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"No variables provided.",
-            "instance":"/v2/element-instances/123/variables"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No variables provided.",
+                "instance":"/v2/element-instances/123/variables"
+             }""";
 
     // when / then
     webClient
@@ -116,19 +116,19 @@ public class ElementInstanceControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-            "variables": {}
-        }""";
+            {
+                "variables": {}
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"No variables provided.",
-            "instance":"/v2/element-instances/123/variables"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No variables provided.",
+                "instance":"/v2/element-instances/123/variables"
+             }""";
 
     // when / then
     webClient
@@ -151,22 +151,22 @@ public class ElementInstanceControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "variables": {
-            "key": "value"
-          },
-          "operationReference": -123
-        }""";
+            {
+              "variables": {
+                "key": "value"
+              },
+              "operationReference": -123
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"The value for operationReference is '-123' but must be > 0.",
-            "instance":"/v2/element-instances/123/variables"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for operationReference is '-123' but must be > 0.",
+                "instance":"/v2/element-instances/123/variables"
+             }""";
 
     // when / then
     webClient

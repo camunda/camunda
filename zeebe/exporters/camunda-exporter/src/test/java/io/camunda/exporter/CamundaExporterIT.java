@@ -7,15 +7,24 @@
  */
 package io.camunda.exporter;
 
+import static io.camunda.exporter.schema.SchemaTestUtil.validateMappings;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.GetResponse;
-import io.camunda.exporter.clients.elasticsearch.ElasticsearchClientFactory;
 import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
 import io.camunda.exporter.entities.AuthorizationEntity;
 import io.camunda.exporter.entities.UserEntity;
+import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.TestSupport;
+import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -26,11 +35,15 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -51,25 +64,19 @@ final class CamundaExporterIT {
   private final ElasticsearchExporterConfiguration config =
       new ElasticsearchExporterConfiguration();
   private final ExporterTestController controller = new ExporterTestController();
-  private final CamundaExporter exporter = new CamundaExporter();
   private final ProtocolFactory factory = new ProtocolFactory();
-
-  private ExporterTestContext exporterTestContext;
+  private IndexDescriptor index;
+  private IndexTemplateDescriptor indexTemplate;
 
   private ElasticsearchClient testClient;
 
   @BeforeAll
   public void beforeAll() {
-    config.elasticsearch.setUrl(CONTAINER.getHttpHostAddress());
+    config.elasticsearch.getConnect().setUrl(CONTAINER.getHttpHostAddress());
+    config.elasticsearch.setIndexPrefix("camunda-record");
     config.bulk.setSize(1); // force flushing on the first record
 
-    exporterTestContext =
-        new ExporterTestContext()
-            .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
-    exporter.configure(exporterTestContext);
-    exporter.open(controller);
-
-    testClient = ElasticsearchClientFactory.INSTANCE.create(config.elasticsearch);
+    testClient = new ElasticsearchConnector(config.elasticsearch.getConnect()).createClient();
   }
 
   @AfterAll
@@ -77,9 +84,40 @@ final class CamundaExporterIT {
     testClient._transport().close();
   }
 
+  @BeforeEach
+  void beforeEach() throws IOException {
+    testClient.indices().delete(req -> req.index("*"));
+    testClient.indices().deleteIndexTemplate(req -> req.name("*"));
+
+    config.elasticsearch.setCreateSchema(false);
+    config.elasticsearch.getRetention().setEnabled(false);
+
+    indexTemplate =
+        SchemaTestUtil.mockIndexTemplate(
+            "template_name",
+            "test*",
+            "template_alias",
+            Collections.emptyList(),
+            "template_name",
+            "mappings.json");
+
+    index =
+        SchemaTestUtil.mockIndex(
+            config.elasticsearch.getIndexPrefix() + "qualified_name",
+            "alias",
+            "index_name",
+            "mappings.json");
+  }
+
+  private Context getContext() {
+    return new ExporterTestContext()
+        .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
+  }
+
   @Test
   void shouldExportUserRecord() throws IOException {
     // given
+    final var exporter = startExporter();
     final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
 
     // when
@@ -102,8 +140,130 @@ final class CamundaExporterIT {
   }
 
   @Test
+  void shouldCreateAllSchemasIfCreateEnabled() throws IOException {
+    // given
+    config.elasticsearch.setCreateSchema(true);
+    startExporter();
+
+    // then
+    final var indices = testClient.indices().get(req -> req.index("*"));
+    final var indexTemplates =
+        testClient.indices().getIndexTemplate(req -> req.name("template_name"));
+
+    validateMappings(
+        Objects.requireNonNull(indices.result().get(index.getFullQualifiedName()).mappings()),
+        "mappings.json");
+    validateMappings(
+        indexTemplates.indexTemplates().get(0).indexTemplate().template().mappings(),
+        "mappings.json");
+  }
+
+  @Test
+  void shouldUpdateSchemasCorrectlyIfCreateEnabled() throws IOException {
+    // given
+    config.elasticsearch.setCreateSchema(true);
+    final var exporter = startExporter();
+
+    // when
+    when(index.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
+
+    exporter.open(controller);
+
+    // then
+    final var indices = testClient.indices().get(req -> req.index("*"));
+    final var indexTemplates =
+        testClient.indices().getIndexTemplate(req -> req.name("template_name"));
+
+    validateMappings(
+        indices.result().get(index.getFullQualifiedName()).mappings(),
+        "mappings-added-property.json");
+    validateMappings(
+        indexTemplates.indexTemplates().getFirst().indexTemplate().template().mappings(),
+        "mappings-added-property.json");
+  }
+
+  @Test
+  void shouldCreateNewSchemasIfNewIndexDescriptorAddedToExistingSchemas() throws IOException {
+    // given
+    config.elasticsearch.setCreateSchema(true);
+    final var resourceProvider = mockResourceProvider(Set.of(index), Set.of(indexTemplate));
+    final var exporter = new CamundaExporter(resourceProvider);
+    final var context = getContext();
+    exporter.configure(context);
+    exporter.open(controller);
+
+    // when
+    final var newIndex =
+        SchemaTestUtil.mockIndex(
+            "new_index_qualified", "new_alias", "new_index", "mappings-added-property.json");
+    final var newIndexTemplate =
+        SchemaTestUtil.mockIndexTemplate(
+            "new_template_name",
+            "new_test*",
+            "new_template_alias",
+            Collections.emptyList(),
+            "new_template_name",
+            "mappings-added-property.json");
+
+    when(resourceProvider.getIndexDescriptors()).thenReturn(Set.of(index, newIndex));
+    when(resourceProvider.getIndexTemplateDescriptors())
+        .thenReturn(Set.of(indexTemplate, newIndexTemplate));
+
+    exporter.open(controller);
+
+    // then
+    final var indices = testClient.indices().get(req -> req.index("*"));
+    final var indexTemplates = testClient.indices().getIndexTemplate(req -> req.name("*"));
+
+    validateMappings(
+        indices.result().get(newIndex.getFullQualifiedName()).mappings(),
+        "mappings-added-property.json");
+    validateMappings(
+        indexTemplates.indexTemplates().stream()
+            .filter(template -> template.name().equals("new_template_name"))
+            .findFirst()
+            .orElseThrow()
+            .indexTemplate()
+            .template()
+            .mappings(),
+        "mappings-added-property.json");
+  }
+
+  @Test
+  void shouldNotPutAnySchemasIfCreatedDisabled() throws IOException {
+    // given
+    config.elasticsearch.setCreateSchema(false);
+
+    startExporter();
+
+    // then
+    final var indices = testClient.indices().get(req -> req.index("*"));
+    final var indexTemplates =
+        testClient.indices().getIndexTemplate(req -> req.name("template_name*"));
+
+    assertThat(indices.result().size()).isEqualTo(0);
+    assertThat(indexTemplates.indexTemplates().size()).isEqualTo(0);
+  }
+
+  private ExporterResourceProvider mockResourceProvider(
+      final Set<IndexDescriptor> indexDescriptors,
+      final Set<IndexTemplateDescriptor> templateDescriptors) {
+    final var provider = mock(DefaultExporterResourceProvider.class, CALLS_REAL_METHODS);
+    when(provider.getIndexDescriptors()).thenReturn(indexDescriptors);
+    when(provider.getIndexTemplateDescriptors()).thenReturn(templateDescriptors);
+
+    return provider;
+  }
+
+  @Test
   void shouldExportAuthorizationRecord() throws IOException {
     // given
+    final var context = getContext();
+    final var exporter = new CamundaExporter();
+    exporter.configure(context);
+    exporter.open(controller);
+
     final Record<AuthorizationRecordValue> record = factory.generateRecord(ValueType.AUTHORIZATION);
 
     // when
@@ -131,6 +291,57 @@ final class CamundaExporterIT {
             extractPermissions(record.getValue()));
   }
 
+  @Test
+  void shouldCreateLifeCyclePoliciesOnStartupIfEnabled() throws IOException {
+    config.elasticsearch.setCreateSchema(true);
+    config.elasticsearch.getRetention().setEnabled(true);
+    config.elasticsearch.getRetention().setPolicyName("policy_name");
+
+    startExporter();
+
+    final var policies = testClient.ilm().getLifecycle();
+
+    assertThat(policies.get("policy_name")).isNotNull();
+  }
+
+  @Test
+  void shouldNotCreateLifeCyclePoliciesIfDisabled() throws IOException {
+    config.elasticsearch.setCreateSchema(true);
+    config.elasticsearch.getRetention().setEnabled(false);
+    config.elasticsearch.getRetention().setPolicyName("not_created_policy");
+
+    startExporter();
+    final var policies = testClient.ilm().getLifecycle();
+
+    assertThat(policies.get("not_created_policy")).isNull();
+  }
+
+  @Test
+  void shouldSetLifecyclePolicyOnCreatedIndices() throws IOException {
+    config.elasticsearch.setCreateSchema(true);
+    config.elasticsearch.getRetention().setEnabled(true);
+    config.elasticsearch.getRetention().setPolicyName("policy_name");
+
+    startExporter();
+
+    final var createdIndex =
+        testClient.indices().get(req -> req.index(index.getFullQualifiedName())).result();
+
+    assertThat(createdIndex.get(index.getFullQualifiedName()).settings().index().lifecycle().name())
+        .isEqualTo("policy_name");
+  }
+
+  private Exporter startExporter() {
+    final var exporter =
+        new CamundaExporter(mockResourceProvider(Set.of(index), Set.of(indexTemplate)));
+
+    final var context = getContext();
+    exporter.configure(context);
+    exporter.open(controller);
+
+    return exporter;
+  }
+
   private Map<PermissionType, List<String>> extractPermissions(
       final AuthorizationRecordValue record) {
     return record.getPermissions().stream()
@@ -138,5 +349,74 @@ final class CamundaExporterIT {
             Collectors.toMap(
                 AuthorizationRecordValue.PermissionValue::getPermissionType,
                 AuthorizationRecordValue.PermissionValue::getResourceIds));
+  }
+
+  @Test
+  void shouldHaveCorrectSchemaUpdatesWithMultipleExporters() throws IOException {
+    // given
+    config.elasticsearch.setCreateSchema(true);
+
+    final var exporter1 = startExporter();
+    final var exporter2 = startExporter();
+
+    when(index.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
+
+    // when
+    exporter1.open(controller);
+    exporter2.open(controller);
+
+    // then
+    final var indices = testClient.indices().get(req -> req.index("*"));
+    final var indexTemplates = testClient.indices().getIndexTemplate(req -> req.name("*"));
+
+    validateMappings(
+        indices.result().get(index.getFullQualifiedName()).mappings(),
+        "mappings-added-property.json");
+    validateMappings(
+        indexTemplates.indexTemplates().stream()
+            .filter(template -> template.name().equals(indexTemplate.getTemplateName()))
+            .findFirst()
+            .orElseThrow()
+            .indexTemplate()
+            .template()
+            .mappings(),
+        "mappings-added-property.json");
+  }
+
+  @Test
+  void shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted() throws IOException {
+    // given
+    config.elasticsearch.setCreateSchema(true);
+    final var updatedExporter = startExporter();
+    final var oldExporter = startExporter();
+
+    // when
+    when(index.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
+
+    updatedExporter.open(controller);
+
+    when(index.getMappingsClasspathFilename()).thenReturn("mappings.json");
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("mappings.json");
+
+    oldExporter.open(controller);
+
+    // then
+    final var indices = testClient.indices().get(req -> req.index("*"));
+    final var indexTemplates = testClient.indices().getIndexTemplate(req -> req.name("*"));
+
+    validateMappings(
+        indices.result().get(index.getFullQualifiedName()).mappings(),
+        "mappings-added-property.json");
+    validateMappings(
+        indexTemplates.indexTemplates().stream()
+            .filter(template -> template.name().equals(indexTemplate.getTemplateName()))
+            .findFirst()
+            .orElseThrow()
+            .indexTemplate()
+            .template()
+            .mappings(),
+        "mappings-added-property.json");
   }
 }

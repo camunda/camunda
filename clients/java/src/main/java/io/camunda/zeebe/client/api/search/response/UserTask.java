@@ -20,7 +20,7 @@ import java.util.Map;
 
 public interface UserTask {
 
-  Long getKey();
+  Long getUserTaskKey();
 
   /** State of the task */
   String getState();

@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.webapp.rest.dto.dmn;
 
-import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
 import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceOutputEntity;
 import java.util.Objects;
 
 public class DecisionInstanceOutputDto

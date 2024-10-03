@@ -16,18 +16,18 @@ import static io.camunda.operate.util.ZeebeRecordTestUtil.createZeebeRecordFromI
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import io.camunda.operate.entities.EventEntity;
-import io.camunda.operate.entities.EventMetadataEntity;
-import io.camunda.operate.entities.EventSourceType;
-import io.camunda.operate.entities.EventType;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
+import io.camunda.webapps.schema.entities.operate.EventEntity;
+import io.camunda.webapps.schema.entities.operate.EventMetadataEntity;
+import io.camunda.webapps.schema.entities.operate.EventSourceType;
+import io.camunda.webapps.schema.entities.operate.EventType;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -637,7 +637,8 @@ public class EventZeebeRecordProcessorIT extends OperateSearchAbstractIT {
   }
 
   private void importProcessMessageSubscriptionZeebeRecord(
-      final Record<ProcessMessageSubscriptionRecordValue> zeebeRecord, boolean useConcurrencyMode)
+      final Record<ProcessMessageSubscriptionRecordValue> zeebeRecord,
+      final boolean useConcurrencyMode)
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     eventZeebeRecordProcessor.processProcessMessageSubscription(

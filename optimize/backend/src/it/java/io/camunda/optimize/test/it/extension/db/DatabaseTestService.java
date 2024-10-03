@@ -186,6 +186,13 @@ public abstract class DatabaseTestService {
 
   public abstract DatabaseType getDatabaseVendor();
 
+  public abstract void createSnapshot(
+      final String snapshotRepositoryName, final String snapshotName, final String[] indexNames);
+
+  public abstract void createRepoSnapshot(final String snapshotRepositoryName);
+
+  public abstract void cleanSnapshots(final String snapshotRepositoryName);
+
   protected abstract <T extends OptimizeDto> List<T> getInstancesById(
       final String indexName,
       final List<String> instanceIds,
@@ -315,4 +322,6 @@ public abstract class DatabaseTestService {
       throws IOException;
 
   public abstract boolean isAliasReadOnly(String readOnlyAliasForIndex) throws IOException;
+
+  public abstract List<String> getAllIndicesWithReadOnlyAlias(String aliasNameWithPrefix);
 }

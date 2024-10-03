@@ -13,10 +13,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.service.CamundaServiceException;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.CreateUserRequest;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserController;
@@ -90,7 +90,7 @@ public class UserControllerTest extends RestControllerTest {
     final var dto = validCreateUserRequest();
 
     when(userServices.createUser(dto))
-        .thenThrow(new CamundaServiceException(RejectionType.ALREADY_EXISTS.name()));
+        .thenThrow(new CamundaSearchException(RejectionType.ALREADY_EXISTS.name()));
 
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
     expectedBody.setTitle("Bad Request");
@@ -121,13 +121,13 @@ public class UserControllerTest extends RestControllerTest {
     assertRequestRejectedExceptionally(
         request,
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "No username provided.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No username provided.",
+              "instance": "%s"
+            }"""
             .formatted(USER_BASE_URL));
     verifyNoInteractions(userServices);
   }
@@ -142,13 +142,13 @@ public class UserControllerTest extends RestControllerTest {
     assertRequestRejectedExceptionally(
         request,
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "No username provided.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No username provided.",
+              "instance": "%s"
+            }"""
             .formatted(USER_BASE_URL));
     verifyNoInteractions(userServices);
   }
@@ -163,13 +163,13 @@ public class UserControllerTest extends RestControllerTest {
     assertRequestRejectedExceptionally(
         request,
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "No name provided.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No name provided.",
+              "instance": "%s"
+            }"""
             .formatted(USER_BASE_URL));
     verifyNoInteractions(userServices);
   }
@@ -184,13 +184,13 @@ public class UserControllerTest extends RestControllerTest {
     assertRequestRejectedExceptionally(
         request,
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "No name provided.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No name provided.",
+              "instance": "%s"
+            }"""
             .formatted(USER_BASE_URL));
     verifyNoInteractions(userServices);
   }
@@ -205,13 +205,13 @@ public class UserControllerTest extends RestControllerTest {
     assertRequestRejectedExceptionally(
         request,
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "No password provided.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No password provided.",
+              "instance": "%s"
+            }"""
             .formatted(USER_BASE_URL));
     verifyNoInteractions(userServices);
   }
@@ -226,13 +226,13 @@ public class UserControllerTest extends RestControllerTest {
     assertRequestRejectedExceptionally(
         request,
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "No password provided.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No password provided.",
+              "instance": "%s"
+            }"""
             .formatted(USER_BASE_URL));
     verifyNoInteractions(userServices);
   }
@@ -247,13 +247,13 @@ public class UserControllerTest extends RestControllerTest {
     assertRequestRejectedExceptionally(
         request,
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "No email provided.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No email provided.",
+              "instance": "%s"
+            }"""
             .formatted(USER_BASE_URL));
     verifyNoInteractions(userServices);
   }
@@ -268,13 +268,13 @@ public class UserControllerTest extends RestControllerTest {
     assertRequestRejectedExceptionally(
         request,
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "No email provided.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No email provided.",
+              "instance": "%s"
+            }"""
             .formatted(USER_BASE_URL));
     verifyNoInteractions(userServices);
   }
@@ -290,13 +290,13 @@ public class UserControllerTest extends RestControllerTest {
     assertRequestRejectedExceptionally(
         request,
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "The provided email '%s' is not valid.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided email '%s' is not valid.",
+              "instance": "%s"
+            }"""
             .formatted(email, USER_BASE_URL));
     verifyNoInteractions(userServices);
   }

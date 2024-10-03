@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.api.search;
 
 import io.camunda.zeebe.client.api.search.filter.DecisionDefinitionFilter;
+import io.camunda.zeebe.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.zeebe.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.zeebe.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.zeebe.client.api.search.filter.IncidentFilter;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
 import io.camunda.zeebe.client.api.search.filter.VariableValueFilter;
 import io.camunda.zeebe.client.api.search.sort.DecisionDefinitionSort;
+import io.camunda.zeebe.client.api.search.sort.DecisionInstanceSort;
 import io.camunda.zeebe.client.api.search.sort.DecisionRequirementsSort;
 import io.camunda.zeebe.client.api.search.sort.FlownodeInstanceSort;
 import io.camunda.zeebe.client.api.search.sort.IncidentSort;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
 import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.filter.DecisionDefinitionFilterImpl;
+import io.camunda.zeebe.client.impl.search.filter.DecisionInstanceFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.FlownodeInstanceFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.IncidentFilterImpl;
@@ -37,6 +40,7 @@ import io.camunda.zeebe.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.UserTaskFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.VariableValueFilterImpl;
 import io.camunda.zeebe.client.impl.search.sort.DecisionDefinitionSortImpl;
+import io.camunda.zeebe.client.impl.search.sort.DecisionInstanceSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.DecisionRequirementsSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.FlownodeInstanceSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.IncidentSortImpl;
@@ -185,6 +189,27 @@ public final class SearchRequestBuilders {
     final DecisionRequirementsSort sort = decisionRequirementsSort();
     fn.accept(sort);
     return sort;
+  }
+
+  public static DecisionInstanceFilter decisionInstanceFilter(
+      final Consumer<DecisionInstanceFilter> fn) {
+    final DecisionInstanceFilter filter = decisionInstanceFilter();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static DecisionInstanceFilter decisionInstanceFilter() {
+    return new DecisionInstanceFilterImpl();
+  }
+
+  public static DecisionInstanceSort decisionInstanceSort(final Consumer<DecisionInstanceSort> fn) {
+    final DecisionInstanceSort sort = decisionInstanceSort();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static DecisionInstanceSort decisionInstanceSort() {
+    return new DecisionInstanceSortImpl();
   }
 
   public static FlownodeInstanceFilter flowNodeInstanceFilter() {

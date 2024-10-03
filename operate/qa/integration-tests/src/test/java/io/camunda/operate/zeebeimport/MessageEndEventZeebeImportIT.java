@@ -10,9 +10,9 @@ package io.camunda.operate.zeebeimport;
 import static io.camunda.operate.util.CollectionUtil.map;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import java.util.List;
 import org.junit.Test;
 import org.springframework.test.annotation.IfProfileValue;

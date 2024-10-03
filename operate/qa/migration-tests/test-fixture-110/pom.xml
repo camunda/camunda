@@ -28,6 +28,10 @@
       <artifactId>operate-schema</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-client</artifactId>
     </dependency>

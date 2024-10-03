@@ -69,6 +69,19 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     this(null, haveToClean);
   }
 
+  public void cleanSnapshots(final String snapshotRepositoryName) {
+    databaseTestService.cleanSnapshots(snapshotRepositoryName);
+  }
+
+  public void createRepoSnapshot(final String snapshotRepositoryName) {
+    databaseTestService.createRepoSnapshot(snapshotRepositoryName);
+  }
+
+  public void createSnapshot(
+      final String snapshotRepositoryName, final String snapshotName, final String[] indexNames) {
+    databaseTestService.createSnapshot(snapshotRepositoryName, snapshotName, indexNames);
+  }
+
   public DatabaseIntegrationTestExtension(final String customIndexPrefix) {
     this(customIndexPrefix, true);
   }
@@ -262,6 +275,13 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
 
   public long countRecordsByQuery(final TermsQueryContainer queryContainer, final String index) {
     return databaseTestService.countRecordsByQuery(queryContainer, index);
+  }
+
+  public List<String> getAllIndicesWithReadOnlyAlias(
+      final String externalProcessVariableIndexName) {
+    final String aliasNameWithPrefix =
+        getIndexNameService().getOptimizeIndexAliasForIndex(externalProcessVariableIndexName);
+    return databaseTestService.getAllIndicesWithReadOnlyAlias(aliasNameWithPrefix);
   }
 
   public <T> List<T> getZeebeExportedRecordsByQuery(

@@ -19,8 +19,6 @@ import static org.opensearch.client.opensearch._types.SortOrder.Asc;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.*;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
@@ -39,6 +37,17 @@ import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.webapps.schema.entities.operate.EventEntity;
+import io.camunda.webapps.schema.entities.operate.EventType;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.IncidentState;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.UserTaskEntity;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -98,7 +107,7 @@ public class OpensearchChecks {
       try {
         final ProcessEntity process = processReader.getProcess(processDefinitionKey);
         return process != null;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -170,7 +179,7 @@ public class OpensearchChecks {
             return flowNodes.get(0).getState().equals(FlowNodeState.ACTIVE);
           }
         }
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -242,7 +251,7 @@ public class OpensearchChecks {
           return flowNodes.get(0).getState().equals(FlowNodeState.ACTIVE)
               && flowNodes.get(0).isIncident();
         }
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -275,7 +284,7 @@ public class OpensearchChecks {
           return flowNodes.stream()
               .allMatch(flowNode -> flowNode.getState().equals(FlowNodeState.TERMINATED));
         }
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -306,7 +315,7 @@ public class OpensearchChecks {
                   .count()
               >= instancesCount;
         }
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -340,7 +349,7 @@ public class OpensearchChecks {
               .map(FlowNodeInstanceEntity::getState)
               .anyMatch(fns -> fns.equals(FlowNodeState.COMPLETED));
         }
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -377,7 +386,7 @@ public class OpensearchChecks {
                   .count()
               >= instancesCount;
         }
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -406,7 +415,7 @@ public class OpensearchChecks {
           return flowNodes.stream().filter(fn -> fn.getState().equals(FlowNodeState.ACTIVE)).count()
               >= instancesCount;
         }
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -430,7 +439,7 @@ public class OpensearchChecks {
                 .filter(a -> a.getFlowNodeId().equals(flowNodeId))
                 .collect(Collectors.toList());
         return flowNodes.size() >= instancesCount;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -456,13 +465,13 @@ public class OpensearchChecks {
           return flowNodes.stream().filter(fn -> fn.getState().equals(FlowNodeState.ACTIVE)).count()
               >= instancesCount;
         }
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
   }
 
-  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey) {
+  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(final Long processInstanceKey) {
     final var searchRequestBuilder =
         searchRequestBuilder(flowNodeInstanceTemplate)
             .query(
@@ -475,7 +484,7 @@ public class OpensearchChecks {
         .scrollValues(searchRequestBuilder, FlowNodeInstanceEntity.class);
   }
 
-  public List<EventEntity> getAllEvents(Long processInstanceKey) {
+  public List<EventEntity> getAllEvents(final Long processInstanceKey) {
     return richOpenSearchClient
         .doc()
         .scrollValues(
@@ -513,7 +522,7 @@ public class OpensearchChecks {
       try {
         final List<VariableEntity> variables = getAllVariables(processInstanceKey);
         return variables.stream().anyMatch(v -> v.getName().equals(varName));
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -532,7 +541,7 @@ public class OpensearchChecks {
       try {
         return null
             != variableReader.getVariableByName(processInstanceKey + "", scopeKey + "", varName);
-      } catch (OperateRuntimeException ex) {
+      } catch (final OperateRuntimeException ex) {
         return false;
       }
     };
@@ -553,13 +562,13 @@ public class OpensearchChecks {
             variableReader
                 .getVariableByName(processInstanceKey + "", "" + scopeKey, varName)
                 .getValue());
-      } catch (OperateRuntimeException ex) {
+      } catch (final OperateRuntimeException ex) {
         return false;
       }
     };
   }
 
-  public List<VariableEntity> getAllVariables(Long processInstanceKey) {
+  public List<VariableEntity> getAllVariables(final Long processInstanceKey) {
     return richOpenSearchClient
         .doc()
         .scrollValues(
@@ -590,7 +599,7 @@ public class OpensearchChecks {
         final List<VariableDto> variables = getVariables(processInstanceKey, scopeKey);
         return variables.stream()
             .anyMatch(v -> v.getName().equals(varName) && v.getValue().equals(varValue));
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -623,7 +632,7 @@ public class OpensearchChecks {
           found = allIncidents.size() > 0;
         }
         return found;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -655,7 +664,7 @@ public class OpensearchChecks {
                   > 0;
         }
         return found;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -674,7 +683,7 @@ public class OpensearchChecks {
       final Long count = (Long) objects[0];
       try {
         return getActiveIncidentsCount() == count && getPendingIncidentsCount() == 0;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -693,7 +702,7 @@ public class OpensearchChecks {
       final Integer count = (Integer) objects[0];
       try {
         return getPostImporterQueueCount() == count;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -719,7 +728,7 @@ public class OpensearchChecks {
         .docCount(searchRequestBuilder(postImporterQueueTemplate).query(matchAll()));
   }
 
-  public long getActiveIncidentsCount(Long processInstanceKey) {
+  public long getActiveIncidentsCount(final Long processInstanceKey) {
     return richOpenSearchClient
         .doc()
         .docCount(
@@ -727,7 +736,7 @@ public class OpensearchChecks {
                 .query(and(ACTIVE_INCIDENT_QUERY, term(PROCESS_INSTANCE_KEY, processInstanceKey))));
   }
 
-  public long getIncidentsCount(Long processInstanceKey, IncidentState state) {
+  public long getIncidentsCount(final Long processInstanceKey, final IncidentState state) {
     return richOpenSearchClient
         .doc()
         .docCount(
@@ -738,7 +747,7 @@ public class OpensearchChecks {
                         term(PROCESS_INSTANCE_KEY, processInstanceKey))));
   }
 
-  public long getIncidentsCount(String bpmnProcessId, IncidentState state) {
+  public long getIncidentsCount(final String bpmnProcessId, final IncidentState state) {
     return richOpenSearchClient
         .doc()
         .docCount(
@@ -752,7 +761,7 @@ public class OpensearchChecks {
    * @param processInstanceKey
    * @return
    */
-  public long getIncidentsCount(Long processInstanceKey) {
+  public long getIncidentsCount(final Long processInstanceKey) {
     return richOpenSearchClient
         .doc()
         .docCount(
@@ -787,7 +796,7 @@ public class OpensearchChecks {
       final int incidentsCount = (int) objects[1];
       try {
         return getActiveIncidentsCount(processInstanceKey) == incidentsCount;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -809,7 +818,7 @@ public class OpensearchChecks {
       final int incidentsCount = (int) objects[1];
       try {
         return getIncidentsCount(bpmnProcessId, IncidentState.ACTIVE) == incidentsCount;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -831,7 +840,7 @@ public class OpensearchChecks {
       final int incidentsCount = (int) objects[1];
       try {
         return getIncidentsCount(processInstanceKey) == incidentsCount;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -851,7 +860,7 @@ public class OpensearchChecks {
       final int incidentsCount = (int) objects[0];
       try {
         return getIncidentsCount() == incidentsCount;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -872,7 +881,7 @@ public class OpensearchChecks {
         final List<FlowNodeInstanceEntity> allActivityInstances =
             getAllFlowNodeInstances(processInstanceKey);
         return allActivityInstances.stream().noneMatch(ai -> ai.isIncident());
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -894,7 +903,7 @@ public class OpensearchChecks {
       try {
         return getIncidentsCount(processInstanceKey, IncidentState.RESOLVED)
             == resolvedIncidentsCount;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -915,7 +924,7 @@ public class OpensearchChecks {
         final ProcessInstanceForListViewEntity instance =
             processInstanceReader.getProcessInstanceByKey(processInstanceKey);
         return instance.getState().equals(ProcessInstanceState.CANCELED);
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -935,7 +944,7 @@ public class OpensearchChecks {
       try {
         processInstanceReader.getProcessInstanceByKey(processInstanceKey);
         return true;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -956,7 +965,7 @@ public class OpensearchChecks {
         final ProcessInstanceForListViewEntity instance =
             processInstanceReader.getProcessInstanceByKey(processInstanceKey);
         return instance.getState().equals(ProcessInstanceState.COMPLETED);
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -1137,7 +1146,7 @@ public class OpensearchChecks {
       try {
         final List<UserTaskEntity> userTasks = userTaskReader.getUserTasks();
         return userTasks.size() == count;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };

@@ -78,6 +78,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- ELASTICSEARCH -->
     <dependency>
       <groupId>org.elasticsearch.client</groupId>

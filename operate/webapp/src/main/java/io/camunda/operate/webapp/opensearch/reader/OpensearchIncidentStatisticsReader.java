@@ -23,8 +23,6 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ONLY_
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
@@ -39,6 +37,8 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatistic
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

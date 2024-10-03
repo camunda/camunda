@@ -45,7 +45,7 @@ public class FlowNodeInstanceRestService extends InternalAPIErrorController {
   @Operation(summary = "Query flow node instance tree. Returns map treePath <-> list of children.")
   @PostMapping
   public Map<String, FlowNodeInstanceResponseDto> queryFlowNodeInstanceTree(
-      @RequestBody FlowNodeInstanceRequestDto request) {
+      @RequestBody final FlowNodeInstanceRequestDto request) {
     validateRequest(request);
     checkIdentityReadPermission(Long.parseLong(request.getQueries().get(0).getProcessInstanceId()));
     return flowNodeInstanceReader.getFlowNodeInstances(request);
@@ -58,7 +58,7 @@ public class FlowNodeInstanceRestService extends InternalAPIErrorController {
     }
 
     String processInstanceId = null;
-    for (FlowNodeInstanceQueryDto query : request.getQueries()) {
+    for (final FlowNodeInstanceQueryDto query : request.getQueries()) {
       if (query == null || query.getProcessInstanceId() == null || query.getTreePath() == null) {
         throw new InvalidRequestException(
             "Process instance id and tree path must be provided when requesting for flow node instance tree.");
@@ -81,7 +81,7 @@ public class FlowNodeInstanceRestService extends InternalAPIErrorController {
     }
   }
 
-  private void checkIdentityReadPermission(Long processInstanceKey) {
+  private void checkIdentityReadPermission(final Long processInstanceKey) {
     if (permissionsService != null
         && !permissionsService.hasPermissionForProcess(
             processInstanceReader.getProcessInstanceByKey(processInstanceKey).getBpmnProcessId(),

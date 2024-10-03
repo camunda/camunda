@@ -9,12 +9,16 @@ package io.camunda.exporter.schema;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
+import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
+import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplateMapping;
+import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.JsonpDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
@@ -22,12 +26,17 @@ import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,6 +126,75 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
+  @Override
+  public void putSettings(
+      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
+    final var request = putIndexSettingsRequest(indexDescriptors, toAppendSettings);
+
+    try {
+      client.indices().putSettings(request);
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format(
+              "settings PUT failed for the following indices [%s]", listIndices(indexDescriptors));
+      LOG.error(errMsg, e);
+      throw new ElasticsearchExporterException(errMsg, e);
+    }
+  }
+
+  @Override
+  public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {
+    final PutLifecycleRequest request = putLifecycleRequest(policyName, deletionMinAge);
+
+    try {
+      client.ilm().putLifecycle(request);
+    } catch (final IOException e) {
+      final var errMsg = String.format("Index lifecycle policy [%s] failed to PUT", policyName);
+      LOG.error(errMsg, e);
+      throw new ElasticsearchExporterException(errMsg, e);
+    }
+  }
+
+  private PutIndicesSettingsRequest putIndexSettingsRequest(
+      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
+    try (final var settingsStream =
+        IOUtils.toInputStream(
+            MAPPER.writeValueAsString(toAppendSettings), StandardCharsets.UTF_8)) {
+
+      return new PutIndicesSettingsRequest.Builder()
+          .index(listIndices(indexDescriptors))
+          .withJson(settingsStream)
+          .build();
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          String.format(
+              "Failed to serialise settings in PutSettingsRequest for indices %s",
+              listIndices(indexDescriptors)),
+          e);
+    }
+  }
+
+  private String listIndices(final List<IndexDescriptor> indexDescriptors) {
+    return indexDescriptors.stream()
+        .map(IndexDescriptor::getFullQualifiedName)
+        .collect(Collectors.joining(","));
+  }
+
+  public PutLifecycleRequest putLifecycleRequest(
+      final String policyName, final String deletionMinAge) {
+    return new PutLifecycleRequest.Builder()
+        .name(policyName)
+        .policy(
+            policy ->
+                policy.phases(
+                    phase ->
+                        phase.delete(
+                            del ->
+                                del.minAge(m -> m.time(deletionMinAge))
+                                    .actions(JsonData.of(Map.of("delete", Map.of()))))))
+        .build();
+  }
+
   private Map<String, TypeMapping> getCurrentMappings(
       final MappingSource mappingSource, final String namePattern) throws IOException {
     if (mappingSource == MappingSource.INDEX) {
@@ -163,7 +241,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final IndexDescriptor indexDescriptor, final Set<IndexMappingProperty> newProperties) {
 
     return new PutMappingRequest.Builder()
-        .index(indexDescriptor.getIndexName())
+        .index(indexDescriptor.getFullQualifiedName())
         .withJson(IndexMappingProperty.toPropertiesJson(newProperties, MAPPER))
         .build();
   }
@@ -178,13 +256,40 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     return Thread.currentThread().getContextClassLoader().getResourceAsStream(classpathFileName);
   }
 
+  private InputStream appendToFileSchemaSettings(
+      final InputStream file, final IndexSettings settingsToAppend) throws IOException {
+    final Map<String, Object> map = MAPPER.readValue(file, Map.class);
+
+    if (!map.containsKey("settings")) {
+      map.put("settings", new HashMap<String, Object>());
+    }
+
+    final Map<String, Object> settingsBlock = (Map<String, Object>) map.get("settings");
+
+    if (!settingsBlock.containsKey("index")) {
+      settingsBlock.put("index", new HashMap<String, Object>());
+    }
+
+    final Map<String, Object> indexBlock = (Map<String, Object>) settingsBlock.get("index");
+
+    indexBlock.put("number_of_shards", settingsToAppend.getNumberOfShards());
+    indexBlock.put("number_of_replicas", settingsToAppend.getNumberOfReplicas());
+
+    return new ByteArrayInputStream(MAPPER.writeValueAsBytes(map));
+  }
+
   private PutIndexTemplateRequest putIndexTemplateRequest(
       final IndexTemplateDescriptor indexTemplateDescriptor,
       final IndexSettings settings,
       final Boolean create) {
 
-    try (final var templateMappings =
+    try (final var templateFile =
         getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
+
+      final var templateFields =
+          deserializeJson(
+              IndexTemplateMapping._DESERIALIZER,
+              appendToFileSchemaSettings(templateFile, settings));
 
       return new PutIndexTemplateRequest.Builder()
           .name(indexTemplateDescriptor.getTemplateName())
@@ -192,16 +297,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           .template(
               t ->
                   t.aliases(indexTemplateDescriptor.getAlias(), Alias.of(a -> a))
-                      .mappings(
-                          deserializeJson(IndexTemplateSummary._DESERIALIZER, templateMappings)
-                              .mappings())
-                      .settings(
-                          s ->
-                              s.index(
-                                  i ->
-                                      i.numberOfShards(String.valueOf(settings.getNumberOfShards()))
-                                          .numberOfReplicas(
-                                              String.valueOf(settings.getNumberOfReplicas())))))
+                      .mappings(templateFields.mappings())
+                      .settings(templateFields.settings()))
           .composedOf(indexTemplateDescriptor.getComposedOf())
           .create(create)
           .build();

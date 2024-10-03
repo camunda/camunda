@@ -3,7 +3,7 @@ version: "3.6"
 
 services:
   opensearch:
-    image: opensearchproject/opensearch:2.17.0
+    image: opensearchproject/opensearch:2.17.1
     depends_on:
       - opensearch-init
     container_name: opensearch
@@ -34,7 +34,7 @@ services:
 
   postgres:
     container_name: postgres
-    image: postgres:16.4-alpine
+    image: postgres:17.0-alpine
     ports:
       - "5432:5432"
     environment:
@@ -68,7 +68,7 @@ services:
     depends_on:
       - keycloak
     container_name: identity
-    image: camunda/identity:8.5.5
+    image: camunda/identity:8.6.0
     ports:
       - "8080:8080"
     volumes:

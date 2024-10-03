@@ -235,6 +235,21 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
+  @SneakyThrows
+  public List<String> getAllIndicesWithReadOnlyAlias(final String aliasNameWithPrefix) {
+    final GetAliasResponse aliasResponse =
+        getOptimizeOpenSearchClient().getAlias(aliasNameWithPrefix);
+    final Map<String, IndexAliases> indexNameToAliasMap = aliasResponse.result();
+    return indexNameToAliasMap.entrySet().stream()
+        .filter(
+            entry ->
+                entry.getValue().aliases().values().stream()
+                    .anyMatch(alias -> alias.isWriteIndex() != null && !alias.isWriteIndex()))
+        .map(Map.Entry::getKey)
+        .toList();
+  }
+
+  @Override
   public <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> type) {
     return getAllDocumentsOfIndexAs(indexName, type, QueryDSL.matchAll());
   }
@@ -614,6 +629,12 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
+  public void createSnapshot(
+      String snapshotRepositoryName, String snapshotName, String[] indexNames) {
+    // not implemented
+  }
+
+  @Override
   protected <T extends OptimizeDto> List<T> getInstancesById(
       final String indexName,
       final List<String> instanceIds,
@@ -718,6 +739,16 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
         .collect(Collectors.toSet())
         .stream()
         .noneMatch(AliasDefinition::isWriteIndex);
+  }
+
+  @Override
+  public void createRepoSnapshot(String snapshotRepositoryName) {
+    // not implemented
+  }
+
+  @Override
+  public void cleanSnapshots(String snapshotRepositoryName) {
+    // not implemented
   }
 
   @Override

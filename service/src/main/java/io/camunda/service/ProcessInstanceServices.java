@@ -7,14 +7,15 @@
  */
 package io.camunda.service;
 
-import io.camunda.search.clients.CamundaSearchClient;
-import io.camunda.service.entities.ProcessInstanceEntity;
+import io.camunda.search.clients.ProcessInstanceSearchClient;
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.search.core.SearchQueryService;
-import io.camunda.service.search.query.ProcessInstanceQuery;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
@@ -40,32 +41,46 @@ public final class ProcessInstanceServices
     extends SearchQueryService<
         ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
 
-  public ProcessInstanceServices(
-      final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
-    this(brokerClient, dataStoreClient, null, null);
-  }
+  private final ProcessInstanceSearchClient processInstanceSearchClient;
 
   public ProcessInstanceServices(
       final BrokerClient brokerClient,
-      final CamundaSearchClient searchClient,
-      final ServiceTransformers transformers,
+      final ProcessInstanceSearchClient processInstanceSearchClient,
       final Authentication authentication) {
-    super(brokerClient, searchClient, transformers, authentication);
+    super(brokerClient, authentication);
+    this.processInstanceSearchClient = processInstanceSearchClient;
   }
 
   @Override
   public ProcessInstanceServices withAuthentication(final Authentication authentication) {
-    return new ProcessInstanceServices(brokerClient, searchClient, transformers, authentication);
+    return new ProcessInstanceServices(brokerClient, processInstanceSearchClient, authentication);
   }
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> search(final ProcessInstanceQuery query) {
-    return executor.search(query, ProcessInstanceEntity.class);
+    return processInstanceSearchClient.searchProcessInstances(query, authentication);
   }
 
   public SearchQueryResult<ProcessInstanceEntity> search(
       final Function<ProcessInstanceQuery.Builder, ObjectBuilder<ProcessInstanceQuery>> fn) {
     return search(SearchQueryBuilders.processInstanceSearchQuery(fn));
+  }
+
+  public ProcessInstanceEntity getByKey(final Long processInstanceKey) {
+    final SearchQueryResult<ProcessInstanceEntity> result =
+        search(
+            SearchQueryBuilders.processInstanceSearchQuery()
+                .filter(f -> f.processInstanceKeys(processInstanceKey))
+                .build());
+    if (result.total() < 1) {
+      throw new NotFoundException(
+          String.format("Process Instance with key %d not found", processInstanceKey));
+    } else if (result.total() > 1) {
+      throw new CamundaSearchException(
+          String.format("Found Process Instance with key %d more than once", processInstanceKey));
+    } else {
+      return result.items().stream().findFirst().orElseThrow();
+    }
   }
 
   public CompletableFuture<ProcessInstanceCreationRecord> createProcessInstance(

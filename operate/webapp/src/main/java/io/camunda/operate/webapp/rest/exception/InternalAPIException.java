@@ -26,7 +26,7 @@ public abstract class InternalAPIException extends RuntimeException {
     return instance;
   }
 
-  public InternalAPIException setInstance(String instance) {
+  public InternalAPIException setInstance(final String instance) {
     this.instance = instance;
     return this;
   }

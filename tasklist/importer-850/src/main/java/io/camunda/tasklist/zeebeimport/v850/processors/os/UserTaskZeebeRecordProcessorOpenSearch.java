@@ -14,7 +14,6 @@ import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskVariableEntity;
-import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.util.OpenSearchUtil;
@@ -55,8 +54,7 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
   @Autowired private UserTaskRecordToVariableEntityMapper userTaskRecordToVariableEntityMapper;
 
   public void processUserTaskRecord(
-      final Record<UserTaskRecordValue> record, final List<BulkOperation> operations)
-      throws PersistenceException {
+      final Record<UserTaskRecordValue> record, final List<BulkOperation> operations) {
     final Optional<TaskEntity> taskEntity = userTaskRecordToTaskEntityMapper.map(record);
     if (taskEntity.isPresent()) {
       operations.add(getTaskQuery(taskEntity.get(), record));

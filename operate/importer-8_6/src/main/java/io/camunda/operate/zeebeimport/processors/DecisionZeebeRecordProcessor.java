@@ -10,11 +10,11 @@ package io.camunda.operate.zeebeimport.processors;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
+import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;

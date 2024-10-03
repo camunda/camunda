@@ -85,8 +85,8 @@ public class CreateUserTest {
     assertThat(duplicatedUserRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to create user with username "
+            "Expected to create user with username '"
                 + username
-                + ", but a user with this username already exists");
+                + "', but a user with this username already exists");
   }
 }
