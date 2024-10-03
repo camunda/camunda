@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceCreationCreateProcessor
-    implements CommandProcessor<ProcessInstanceCreationRecord> {
+    implements Authorizable<ProcessInstanceCreationRecord, DeployedProcess> {
 
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
       "Expected at least a bpmnProcessId or a key greater than -1, but none given";
@@ -99,12 +99,12 @@ public final class ProcessInstanceCreationCreateProcessor
   @Override
   public boolean onCommand(
       final TypedRecord<ProcessInstanceCreationRecord> command,
-      final CommandControl<ProcessInstanceCreationRecord> controller) {
+      final CommandControl<ProcessInstanceCreationRecord> controller,
+      final DeployedProcess deployedProcess) {
 
     final ProcessInstanceCreationRecord record = command.getValue();
 
-    getProcess(record)
-        .flatMap(process -> validateCommand(command.getValue(), process))
+    validateCommand(command.getValue(), deployedProcess)
         .ifRightOrLeft(
             process -> createProcessInstance(controller, record, process),
             rejection -> controller.reject(rejection.type, rejection.reason));

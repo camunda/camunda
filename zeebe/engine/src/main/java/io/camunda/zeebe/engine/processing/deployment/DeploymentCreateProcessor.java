@@ -114,8 +114,8 @@ public final class DeploymentCreateProcessor implements Authorizable<DeploymentR
   }
 
   @Override
-  public AuthorizationRequest getAuthorizationRequest() {
-    return new AuthorizationRequest(AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
+  public AuthorizationRequest<?> getAuthorizationRequest() {
+    return new AuthorizationRequest<>(AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
   }
 
   @Override

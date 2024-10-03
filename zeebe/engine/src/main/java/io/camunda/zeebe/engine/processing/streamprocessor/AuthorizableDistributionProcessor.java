@@ -58,7 +58,7 @@ public final class AuthorizableDistributionProcessor<T extends UnifiedRecordValu
     } else {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.permissionType(), authorizationRequest.resourceType());
+              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
       rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
     }
@@ -79,7 +79,7 @@ public final class AuthorizableDistributionProcessor<T extends UnifiedRecordValu
   }
 
   public interface Authorizable<T extends UnifiedRecordValue> {
-    AuthorizationRequest getAuthorizationRequest();
+    AuthorizationRequest<?> getAuthorizationRequest();
 
     void processNewCommand(final TypedRecord<T> command);
 

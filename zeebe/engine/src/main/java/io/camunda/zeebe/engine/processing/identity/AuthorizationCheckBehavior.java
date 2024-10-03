@@ -16,7 +16,9 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.Optional;
 
 public final class AuthorizationCheckBehavior {
 
@@ -49,7 +51,7 @@ public final class AuthorizationCheckBehavior {
    * @return true if the user is authorized, false otherwise
    */
   public <T extends UnifiedRecordValue> boolean isAuthorized(
-      final TypedRecord<T> command, final AuthorizationRequest authorizationRequest) {
+      final TypedRecord<T> command, final AuthorizationRequest<?> authorizationRequest) {
     return isAuthorized(command, authorizationRequest, Set.of());
   }
 
@@ -73,7 +75,7 @@ public final class AuthorizationCheckBehavior {
    */
   public <T extends UnifiedRecordValue> boolean isAuthorized(
       final TypedRecord<T> command,
-      final AuthorizationRequest authorizationRequest,
+      final AuthorizationRequest<?> authorizationRequest,
       final Set<String> requiredResourceIdentifiers) {
     if (!engineConfig.isEnableAuthorization()) {
       return true;
@@ -88,7 +90,7 @@ public final class AuthorizationCheckBehavior {
 
   private boolean isAuthorized(
       final long userKey,
-      final AuthorizationRequest authorizationRequest,
+      final AuthorizationRequest<?> authorizationRequest,
       final Set<String> requiredResourceIdentifiers) {
     final var userOptional = userState.getUser(userKey);
     if (userOptional.isEmpty()) {
@@ -103,7 +105,9 @@ public final class AuthorizationCheckBehavior {
 
     final var authorizedResourceIdentifiers =
         getAuthorizedResourceIdentifiers(
-            userKey, authorizationRequest.resourceType(), authorizationRequest.permissionType());
+            userKey,
+            authorizationRequest.getResourceType(),
+            authorizationRequest.getPermissionType());
 
     // Check if authorizations contain a resource identifier that matches the required resource
     // identifiers
@@ -129,6 +133,40 @@ public final class AuthorizationCheckBehavior {
     return authorizedResourceIdentifiers.stream().anyMatch(requiredResourceIdentifiers::contains);
   }
 
-  public record AuthorizationRequest(
-      AuthorizationResourceType resourceType, PermissionType permissionType) {}
+  public static final class AuthorizationRequest<Resource> {
+    private final AuthorizationResourceType resourceType;
+    private final PermissionType permissionType;
+    private Resource resource;
+    private final Set<String> resourceIds;
+
+    public AuthorizationRequest(
+        final AuthorizationResourceType resourceType, final PermissionType permissionType) {
+      this.resourceType = resourceType;
+      this.permissionType = permissionType;
+      resourceIds = new HashSet<>();
+      resourceIds.add(WILDCARD_PERMISSION);
+    }
+
+    public AuthorizationResourceType getResourceType() {
+      return resourceType;
+    }
+
+    public PermissionType getPermissionType() {
+      return permissionType;
+    }
+
+    public Optional<Resource> getResource() {
+      return Optional.ofNullable(resource);
+    }
+
+    public AuthorizationRequest<Resource> setResource(final Resource resource) {
+      this.resource = resource;
+      return this;
+    }
+
+    public AuthorizationRequest<Resource> addResourceId(final String resourceId) {
+      resourceIds.add(resourceId);
+      return this;
+    }
+  }
 }
