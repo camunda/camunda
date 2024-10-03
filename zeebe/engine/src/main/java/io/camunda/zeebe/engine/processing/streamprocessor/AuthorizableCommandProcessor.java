@@ -49,7 +49,8 @@ public class AuthorizableCommandProcessor<T extends UnifiedRecordValue, Resource
   public boolean onCommand(final TypedRecord<T> command, final CommandControl<T> controller) {
     final var authorizationRequest = delegate.getAuthorizationRequest(command);
 
-    if (authorizationCheckBehavior.isAuthorized(command, authorizationRequest)) {
+    if (authorizationCheckBehavior.isAuthorized(
+        command, authorizationRequest, authorizationRequest.getResourceIds())) {
       final Resource resource = authorizationRequest.getResource().orElseThrow();
       return delegate.onCommand(command, controller, resource);
     } else {

@@ -168,5 +168,9 @@ public final class AuthorizationCheckBehavior {
       resourceIds.add(resourceId);
       return this;
     }
+
+    public Set<String> getResourceIds() {
+      return resourceIds;
+    }
   }
 }
