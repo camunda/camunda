@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.client.api.worker.usertask;
 
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+
 public interface UserTaskListenerJob {
 
   long getUserTaskKey();
@@ -31,6 +33,7 @@ public interface UserTaskListenerJob {
 
   String getFormKey();
 
+  ActivatedJob getJob();
   // TODO clarify if the following properties should be exposed:priority, formBindingType,
   // formVersionTag
 }

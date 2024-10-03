@@ -21,6 +21,7 @@ import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNullNor
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensurePositive;
 
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobHandler;
@@ -201,9 +202,6 @@ public final class JobWorkerBuilderImpl
     if (userTaskListenerJobHandler != null) {
       handler =
           (client, job) -> {
-            // TODO : we should filter by eventType, such as: complete, start, end. Please check
-            // JobRecord class.
-            // TODO: improve info message
             if (!job.getJobListenerEventType().equals(eventType)) {
               LOGGER.info(
                   "Expected event type: {}, actual event type: {}.",
@@ -212,11 +210,8 @@ public final class JobWorkerBuilderImpl
               return;
             }
 
-            // TODO: verify if protocol can be accessed from here in order to retrieve properties
-            // TODO: keys, ex. by adding dependency on protocol module.
             final long userTaskKey =
                 Long.parseLong(job.getCustomHeaders().get("io.camunda.zeebe:userTaskKey"));
-
             final String assignee = job.getCustomHeaders().get("io.camunda.zeebe:assignee");
             final String candidateGroups =
                 job.getCustomHeaders().get("io.camunda.zeebe:candidateGroups");
@@ -261,6 +256,11 @@ public final class JobWorkerBuilderImpl
                   @Override
                   public String getFormKey() {
                     return formKey;
+                  }
+
+                  @Override
+                  public ActivatedJob getJob() {
+                    return job;
                   }
                 };
 

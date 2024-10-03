@@ -43,6 +43,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private final int retries;
   private final long deadline;
   private final String variables;
+  private final String jobListenerEventType;
 
   private Map<String, Object> variablesAsMap;
 
@@ -68,6 +69,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
     elementId = job.getElementId();
     elementInstanceKey = job.getElementInstanceKey();
     tenantId = job.getTenantId();
+    jobListenerEventType = job.getJobListenerEventType();
   }
 
   public ActivatedJobImpl(
@@ -99,6 +101,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
     elementId = getOrEmpty(job.getElementId());
     elementInstanceKey = getOrEmpty(job.getElementInstanceKey());
     tenantId = getOrEmpty(job.getTenantId());
+    jobListenerEventType = getOrEmpty(job.getJobListenerEventType());
   }
 
   @Override
@@ -195,8 +198,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
 
   @Override
   public String getJobListenerEventType() {
-    // TODO: get Job Listener Event Type, hardcoded for the POC
-    return "complete";
+    return jobListenerEventType;
   }
 
   @Override
