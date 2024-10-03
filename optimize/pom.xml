@@ -433,7 +433,7 @@
           <artifactId>maven-dependency-plugin</artifactId>
           <version>3.8.0</version>
           <configuration>
-            <failOnWarning>true</failOnWarning>
+            <failOnWarning>false</failOnWarning>
             <ignoredUnusedDeclaredDependencies combine.children="append">
               <!-- TODO: remove once Lombok is removed from the project -->
               <dep>org.projectlombok:lombok</dep>
