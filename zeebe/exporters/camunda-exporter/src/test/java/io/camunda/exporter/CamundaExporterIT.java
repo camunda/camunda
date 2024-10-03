@@ -20,6 +20,10 @@ import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.GetResponse;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
 import io.camunda.exporter.entities.AuthorizationEntity;
 import io.camunda.exporter.entities.UserEntity;
@@ -493,6 +497,7 @@ final class CamundaExporterIT {
       exporter.open(controller);
 
       // when
+      final var currentPort = CONTAINER.getFirstMappedPort();
       CONTAINER.stop();
       Awaitility.await().until(() -> !CONTAINER.isRunning());
 
@@ -502,7 +507,18 @@ final class CamundaExporterIT {
           .isInstanceOf(ElasticsearchExporterException.class)
           .hasMessageContaining("Connection refused");
 
-      CONTAINER.start();
+      // starts the container on the same port again
+      CONTAINER
+          .withEnv("discovery.type", "single-node")
+          .withExposedPorts(9200)
+          .withCreateContainerCmdModifier(
+              cmd ->
+                  cmd.withHostConfig(
+                      new HostConfig()
+                          .withPortBindings(
+                              new PortBinding(
+                                  Ports.Binding.bindPort(currentPort), new ExposedPort(9200)))))
+          .start();
       Awaitility.await().until(CONTAINER::isRunning);
 
       final Record<UserRecordValue> record2 = factory.generateRecord(ValueType.USER);
