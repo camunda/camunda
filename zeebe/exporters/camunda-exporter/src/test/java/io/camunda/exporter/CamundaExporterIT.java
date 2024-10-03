@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -88,7 +89,6 @@ final class CamundaExporterIT {
   public void beforeAll() {
     config.elasticsearch.getConnect().setUrl(CONTAINER.getHttpHostAddress());
     config.elasticsearch.setIndexPrefix("camunda-record");
-    config.bulk.setSize(1); // force flushing on the first record
 
     testClient = new ElasticsearchConnector(config.elasticsearch.getConnect()).createClient();
   }
@@ -100,6 +100,7 @@ final class CamundaExporterIT {
 
   @BeforeEach
   void beforeEach() throws IOException {
+    config.bulk.setSize(1); // force flushing on the first record
     testClient.indices().delete(req -> req.index("*"));
     testClient.indices().deleteIndexTemplate(req -> req.name("*"));
 
@@ -481,6 +482,28 @@ final class CamundaExporterIT {
               record.getValue().getOwnerType(),
               record.getValue().getResourceType(),
               extractPermissions(record.getValue()));
+    }
+
+    @Test
+    void shouldExportRecordOnceBulkSizeReached() {
+      // given
+      config.bulk.setSize(2);
+      final var exporter = new CamundaExporter();
+
+      final var context = getContext();
+      exporter.configure(context);
+      final var controllerSpy = spy(controller);
+      exporter.open(controllerSpy);
+
+      // when
+      final var record = factory.generateRecord(ValueType.USER);
+      final var record2 = factory.generateRecord(ValueType.USER);
+
+      exporter.export(record);
+      exporter.export(record2);
+      // then
+      verify(controllerSpy, never()).updateLastExportedRecordPosition(record.getPosition());
+      verify(controllerSpy).updateLastExportedRecordPosition(record2.getPosition());
     }
 
     @Test
