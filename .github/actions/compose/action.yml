@@ -14,7 +14,7 @@ inputs:
   timeout:
     description: "Timeout for the healthcheck (in seconds)"
     required: false
-    default: "300"
+    default: "400"
 runs:
   using: composite
   steps:
