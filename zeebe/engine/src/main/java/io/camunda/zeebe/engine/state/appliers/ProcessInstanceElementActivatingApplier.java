@@ -52,11 +52,12 @@ final class ProcessInstanceElementActivatingApplier
     cleanupSequenceFlowsTaken(value);
 
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
-    elementInstanceState.newInstance(
-        flowScopeInstance, elementInstanceKey, value, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    final var elementInstance =
+        elementInstanceState.newInstance(
+            flowScopeInstance, elementInstanceKey, value, ProcessInstanceIntent.ELEMENT_ACTIVATING);
 
     if (flowScopeInstance == null) {
-      applyRootProcessState(elementInstanceKey, value);
+      applyRootProcessState(elementInstance, value);
       return;
     }
 
@@ -113,7 +114,7 @@ final class ProcessInstanceElementActivatingApplier
   }
 
   private void applyRootProcessState(
-      final long elementInstanceKey, final ProcessInstanceRecord value) {
+      final ElementInstance elementInstance, final ProcessInstanceRecord value) {
     final var parentElementInstance =
         elementInstanceState.getInstance(value.getParentElementInstanceKey());
     if (parentElementInstance != null) {
@@ -121,8 +122,14 @@ final class ProcessInstanceElementActivatingApplier
       // it should always be a call-activity, but let's try to be safe
       final var parentElementType = parentElementInstance.getValue().getBpmnElementType();
       if (parentElementType == BpmnElementType.CALL_ACTIVITY) {
-        parentElementInstance.setCalledChildInstanceKey(elementInstanceKey);
+        parentElementInstance.setCalledChildInstanceKey(elementInstance.getKey());
         elementInstanceState.updateInstance(parentElementInstance);
+
+        final var parentProcessInstance =
+            elementInstanceState.getInstance(
+                elementInstance.getValue().getParentProcessInstanceKey());
+        elementInstance.setCalledProcessDept(parentProcessInstance.getCalledProcessDepth() + 1);
+        elementInstanceState.updateInstance(elementInstance);
       }
     }
   }
