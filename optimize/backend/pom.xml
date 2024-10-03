@@ -30,6 +30,7 @@
       <version>8.0</version>
     </dependency>
 
+    <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.codehaus.janino</groupId>
       <artifactId>janino</artifactId>
@@ -902,6 +903,7 @@
         <configuration>
           <ignoredUnusedDeclaredDependencies>
             <dep>net.logstash.logback:logstash-logback-encoder</dep>
+            <dep>org.codehaus.janino:janino</dep>
           </ignoredUnusedDeclaredDependencies>
           <ignoredNonTestScopedDependencies>
           </ignoredNonTestScopedDependencies>
