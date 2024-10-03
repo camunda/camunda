@@ -25,7 +25,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -36,7 +35,6 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @WebMvcTest(UserController.class)
-@Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
 public class UserControllerTest extends RestControllerTest {
 
   private static final String USER_BASE_URL = "/v2/users";
