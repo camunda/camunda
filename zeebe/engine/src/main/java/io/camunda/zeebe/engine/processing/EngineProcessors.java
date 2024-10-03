@@ -162,7 +162,8 @@ public final class EngineProcessors {
             commandDistributionBehavior,
             partitionId,
             routingInfo,
-            clock);
+            clock,
+            config);
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
@@ -255,7 +256,8 @@ public final class EngineProcessors {
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
       final RoutingInfo routingInfo,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final EngineConfiguration config) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -267,7 +269,8 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         partitionId,
         routingInfo,
-        clock);
+        clock,
+        config);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
