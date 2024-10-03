@@ -169,11 +169,13 @@
       </exclusions>
     </dependency>
 
+    <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-jetty</artifactId>
       <version>${spring.boot.version}</version>
     </dependency>
+
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot</artifactId>
@@ -908,6 +910,7 @@
             <dep>io.camunda:identity-spring-boot-starter</dep>
             <dep>org.springframework:spring-tx</dep>
             <dep>org.springframework.boot:spring-boot-starter-web</dep>
+            <dep>org.springframework.boot:spring-boot-starter-jetty</dep>
           </ignoredUnusedDeclaredDependencies>
           <ignoredNonTestScopedDependencies>
           </ignoredNonTestScopedDependencies>
