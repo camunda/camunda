@@ -40,12 +40,6 @@
     <!-- Optimize dependencies -->
     <dependency>
       <groupId>io.camunda.optimize</groupId>
-      <artifactId>client</artifactId>
-      <version>${project.version}</version>
-      <type>pom</type>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-commons</artifactId>
       <version>${project.version}</version>
     </dependency>
