@@ -26,14 +26,6 @@ public record ProcessInstanceQuery(
     QueryResultConfig resultConfig)
     implements TypedSearchQuery<ProcessInstanceFilter, ProcessInstanceSort> {
 
-  public ProcessInstanceQuery(
-      final ProcessInstanceFilter filter,
-      final ProcessInstanceSort sort,
-      final SearchQueryPage page,
-      final QueryResultConfig resultConfig) {
-    this(filter, sort, page, resultConfig, null);
-  }
-
   public static ProcessInstanceQuery of(
       final Function<Builder, ObjectBuilder<ProcessInstanceQuery>> fn) {
     return fn.apply(new Builder()).build();
@@ -52,19 +44,21 @@ public record ProcessInstanceQuery(
     private ProcessInstanceSort sort;
     private ProcessInstanceQueryResultConfig resultConfig;
 
+    @Override
     public Builder filter(final ProcessInstanceFilter value) {
       filter = value;
+      return this;
+    }
+
+    @Override
+    public Builder sort(final ProcessInstanceSort value) {
+      sort = value;
       return this;
     }
 
     public Builder filter(
         final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
       return filter(FilterBuilders.processInstance(fn));
-    }
-
-    public Builder sort(final ProcessInstanceSort value) {
-      sort = value;
-      return this;
     }
 
     public Builder sort(

@@ -5,21 +5,23 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.clients.core;
+package io.camunda.search.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.clients.core.RequestBuilders;
 import org.junit.jupiter.api.Test;
 
-public class CamundaSearchRequestBuilderTest {
+public class CamundaSearchResponseBuilderTest {
 
   @Test
   public void shouldBuildSearchRequest() {
     // given + when
-    final var searchRequest = RequestBuilders.searchRequest().index("foo").build();
+    final var searchResponse =
+        new SearchQueryResponse.Builder<TestEntity>().totalHits(100L).build();
 
     // then
-    assertThat(searchRequest.index()).hasSize(1).contains("foo");
+    assertThat(searchResponse.totalHits()).isEqualTo(100L);
   }
+
+  private static record TestEntity() {}
 }

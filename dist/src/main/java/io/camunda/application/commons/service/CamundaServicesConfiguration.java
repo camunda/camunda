@@ -11,10 +11,12 @@ import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
+import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
+import io.camunda.search.clients.SearchClients;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
@@ -155,5 +157,10 @@ public class CamundaServicesConfiguration {
   public FormServices formServices(
       final BrokerClient brokerClient, final FormSearchClient formSearchClient) {
     return new FormServices(brokerClient, formSearchClient, null);
+  }
+
+  @Bean
+  public SearchClients searchClients(final DocumentBasedSearchClient searchClient) {
+    return new SearchClients(searchClient);
   }
 }

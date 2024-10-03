@@ -5,11 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.clients.sort;
+package io.camunda.search.sort;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.search.sort.SortOptionsBuilders;
 import org.junit.jupiter.api.Test;
 
 public class SearchSortOptionsTest {
