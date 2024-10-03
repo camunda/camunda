@@ -9,14 +9,13 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
@@ -54,8 +53,7 @@ public final class AuthorizableDistributionProcessor<T extends UnifiedRecordValu
   public void processNewCommand(final TypedRecord<T> command) {
     final var authorizationRequest = delegate.getAuthorizationRequest();
 
-    if (authorizationCheckBehavior.isAuthorized(
-        command, authorizationRequest.resourceType(), authorizationRequest.permissionType())) {
+    if (authorizationCheckBehavior.isAuthorized(command, authorizationRequest)) {
       delegate.processNewCommand(command);
     } else {
       final var errorMessage =
@@ -79,9 +77,6 @@ public final class AuthorizableDistributionProcessor<T extends UnifiedRecordValu
   public ProcessingError tryHandleError(final TypedRecord<T> command, final Throwable error) {
     return delegate.tryHandleError(command, error);
   }
-
-  public record AuthorizationRequest(
-      AuthorizationResourceType resourceType, PermissionType permissionType) {}
 
   public interface Authorizable<T extends UnifiedRecordValue> {
     AuthorizationRequest getAuthorizationRequest();

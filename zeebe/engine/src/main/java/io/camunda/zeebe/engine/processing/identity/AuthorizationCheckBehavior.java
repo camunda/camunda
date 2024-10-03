@@ -41,18 +41,16 @@ public final class AuthorizationCheckBehavior {
    * <p>This method does not take a Map of resource identifiers to check for. The user is considered
    * authorized if it is the default user, or if it has a wildcard permission for the provided
    * resource type and permission type. If you want to check for specific resource identifiers, use
-   * {@link #isAuthorized(TypedRecord, AuthorizationResourceType, PermissionType, Set)}
+   * {@link #isAuthorized(TypedRecord, AuthorizationRequest, Set)}
    *
    * @param command the command to check authorization for
-   * @param resourceType the type of resource to check authorization for
-   * @param permissionType the type of permission to check authorization for (CRUD)
+   * @param authorizationRequest the authorization request to check authorization for. This contains
+   *     the resource type and permission type
    * @return true if the user is authorized, false otherwise
    */
   public <T extends UnifiedRecordValue> boolean isAuthorized(
-      final TypedRecord<T> command,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType) {
-    return isAuthorized(command, resourceType, permissionType, Set.of());
+      final TypedRecord<T> command, final AuthorizationRequest authorizationRequest) {
+    return isAuthorized(command, authorizationRequest, Set.of());
   }
 
   /**
@@ -68,15 +66,14 @@ public final class AuthorizationCheckBehavior {
    * </ul>
    *
    * @param command the command to check authorization for
-   * @param resourceType the type of resource to check authorization for
-   * @param permissionType the type of permission to check authorization for (CRUD)
+   * @param authorizationRequest the authorization request to check authorization for. This contains
+   *     the resource type and permission type
    * @param requiredResourceIdentifiers the resource identifiers to check for
    * @return true if the user is authorized, false otherwise
    */
   public <T extends UnifiedRecordValue> boolean isAuthorized(
       final TypedRecord<T> command,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType,
+      final AuthorizationRequest authorizationRequest,
       final Set<String> requiredResourceIdentifiers) {
     if (!engineConfig.isEnableAuthorization()) {
       return true;
@@ -86,13 +83,12 @@ public final class AuthorizationCheckBehavior {
     if (userKey == null) {
       return false;
     }
-    return isAuthorized(userKey, resourceType, permissionType, requiredResourceIdentifiers);
+    return isAuthorized(userKey, authorizationRequest, requiredResourceIdentifiers);
   }
 
   private boolean isAuthorized(
       final long userKey,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType,
+      final AuthorizationRequest authorizationRequest,
       final Set<String> requiredResourceIdentifiers) {
     final var userOptional = userState.getUser(userKey);
     if (userOptional.isEmpty()) {
@@ -106,7 +102,8 @@ public final class AuthorizationCheckBehavior {
     }
 
     final var authorizedResourceIdentifiers =
-        getAuthorizedResourceIdentifiers(userKey, resourceType, permissionType);
+        getAuthorizedResourceIdentifiers(
+            userKey, authorizationRequest.resourceType(), authorizationRequest.permissionType());
 
     // Check if authorizations contain a resource identifier that matches the required resource
     // identifiers
@@ -131,4 +128,7 @@ public final class AuthorizationCheckBehavior {
       final Set<String> authorizedResourceIdentifiers) {
     return authorizedResourceIdentifiers.stream().anyMatch(requiredResourceIdentifiers::contains);
   }
+
+  public record AuthorizationRequest(
+      AuthorizationResourceType resourceType, PermissionType permissionType) {}
 }
