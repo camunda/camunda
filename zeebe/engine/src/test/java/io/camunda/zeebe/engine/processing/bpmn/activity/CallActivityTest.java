@@ -1219,7 +1219,7 @@ public final class CallActivityTest {
                             .zeebePropagateAllParentVariables(false))
                 .endEvent("done")
                 .moveToLastExclusiveGateway()
-                .conditionExpression("depth > 1000")
+                .conditionExpression("depth > 1010")
                 .userTask("inspect_failure")
                 .endEvent("failed")
                 .done())
@@ -1231,12 +1231,14 @@ public final class CallActivityTest {
 
     // then
     Assertions.assertThat(
-            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .getFirst()
-                .getValue())
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst().getValue())
         .describedAs("Expect that incident is raised due to the depth limit")
-        .hasErrorMessage("Oh noo, Durin dug too deep!");
+        .hasErrorMessage(
+            """
+        The call activity has reached the maximum depth of 1000. This is likely due to a recursive call. \
+        Cancel the root process instance if this was unintentional. Otherwise, consider increasing the \
+        maximum depth, or use process instance modification to adjust the process instance.\
+        """);
   }
 
   private void deployDefaultParentAndChildProcess() {

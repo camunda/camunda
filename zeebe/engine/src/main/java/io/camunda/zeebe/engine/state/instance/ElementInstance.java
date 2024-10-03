@@ -77,7 +77,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(activeSequenceFlowIdsProp)
         .declareProperty(userTaskKeyProp)
         .declareProperty(executionListenerIndexProp)
-        .declareProperty(taskListenerIndicesRecordProp);
+        .declareProperty(taskListenerIndicesRecordProp)
+        .declareProperty(calledProcessDepthProp);
   }
 
   public ElementInstance(
@@ -313,5 +314,9 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public int getCalledProcessDepth() {
     return calledProcessDepthProp.getValue();
+  }
+
+  public void setCalledProcessDept(final int depth) {
+    calledProcessDepthProp.setValue(depth);
   }
 }
