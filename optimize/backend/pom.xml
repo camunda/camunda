@@ -149,10 +149,13 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-context-support</artifactId>
     </dependency>
+
+    <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-tx</artifactId>
     </dependency>
+
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
@@ -901,6 +904,7 @@
             <dep>org.eclipse.jetty:jetty-alpn-java-client</dep>
             <dep>org.eclipse.jetty:jetty-alpn-java-server</dep>
             <dep>io.camunda:identity-spring-boot-starter</dep>
+            <dep>org.springframework:spring-tx</dep>
           </ignoredUnusedDeclaredDependencies>
           <ignoredNonTestScopedDependencies>
           </ignoredNonTestScopedDependencies>
