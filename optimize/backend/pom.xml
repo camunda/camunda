@@ -98,6 +98,8 @@
       <groupId>org.eclipse.jetty.http2</groupId>
       <artifactId>jetty-http2-server</artifactId>
     </dependency>
+
+    <!-- as per docomentation, we keep these for http/2. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-java-client</artifactId>
@@ -106,6 +108,7 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-java-server</artifactId>
     </dependency>
+
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-server</artifactId>
@@ -113,10 +116,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-servlet</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-servlets</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -898,6 +897,8 @@
           <ignoredUnusedDeclaredDependencies>
             <dep>net.logstash.logback:logstash-logback-encoder</dep>
             <dep>org.codehaus.janino:janino</dep>
+            <dep>org.eclipse.jetty:jetty-alpn-java-client</dep>
+            <dep>org.eclipse.jetty:jetty-alpn-java-server</dep>
           </ignoredUnusedDeclaredDependencies>
           <ignoredNonTestScopedDependencies>
           </ignoredNonTestScopedDependencies>
