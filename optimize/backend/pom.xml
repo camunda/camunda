@@ -220,11 +220,6 @@
       <artifactId>spring-security-oauth2-resource-server</artifactId>
       <version>${spring.security.version}</version>
     </dependency>
-    <dependency>
-      <groupId>com.nimbusds</groupId>
-      <artifactId>nimbus-jose-jwt</artifactId>
-      <version>${nimbus.jose.jwt.version}</version>
-    </dependency>
 
     <!-- Authentication -->
     <dependency>
