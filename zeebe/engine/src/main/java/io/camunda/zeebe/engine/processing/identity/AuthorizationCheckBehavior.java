@@ -16,12 +16,10 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 public final class AuthorizationCheckBehavior {
 
-  public static final String DELIMITER = ":";
   private static final String WILDCARD_PERMISSION = "*";
   private final AuthorizationState authorizationState;
   private final UserState userState;
@@ -43,7 +41,7 @@ public final class AuthorizationCheckBehavior {
    * <p>This method does not take a Map of resource identifiers to check for. The user is considered
    * authorized if it is the default user, or if it has a wildcard permission for the provided
    * resource type and permission type. If you want to check for specific resource identifiers, use
-   * {@link #isAuthorized(TypedRecord, AuthorizationResourceType, PermissionType, Map)}
+   * {@link #isAuthorized(TypedRecord, AuthorizationResourceType, PermissionType, Set)}
    *
    * @param command the command to check authorization for
    * @param resourceType the type of resource to check authorization for
@@ -54,7 +52,7 @@ public final class AuthorizationCheckBehavior {
       final TypedRecord<T> command,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
-    return isAuthorized(command, resourceType, permissionType, Map.of());
+    return isAuthorized(command, resourceType, permissionType, Set.of());
   }
 
   /**
@@ -79,7 +77,7 @@ public final class AuthorizationCheckBehavior {
       final TypedRecord<T> command,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
-      final Map<String, String> requiredResourceIdentifiers) {
+      final Set<String> requiredResourceIdentifiers) {
     if (!engineConfig.isEnableAuthorization()) {
       return true;
     }
@@ -95,7 +93,7 @@ public final class AuthorizationCheckBehavior {
       final long userKey,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
-      final Map<String, String> requiredResourceIdentifiers) {
+      final Set<String> requiredResourceIdentifiers) {
     final var userOptional = userState.getUser(userKey);
     if (userOptional.isEmpty()) {
       return false;
@@ -116,7 +114,7 @@ public final class AuthorizationCheckBehavior {
         || hasRequiredPermission(requiredResourceIdentifiers, authorizedResourceIdentifiers);
   }
 
-  private List<String> getAuthorizedResourceIdentifiers(
+  private Set<String> getAuthorizedResourceIdentifiers(
       final long userKey,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
@@ -124,26 +122,13 @@ public final class AuthorizationCheckBehavior {
     return authorizationState.getResourceIdentifiers(userKey, resourceType, permissionType);
   }
 
-  private boolean hasWildcardPermission(final List<String> authorizedResourceIdentifiers) {
+  private boolean hasWildcardPermission(final Set<String> authorizedResourceIdentifiers) {
     return authorizedResourceIdentifiers.stream().anyMatch(WILDCARD_PERMISSION::equals);
   }
 
   private boolean hasRequiredPermission(
-      final Map<String, String> requiredResourceIdentifiers,
-      final List<String> authorizedResourceIdentifiers) {
-    return authorizedResourceIdentifiers.stream()
-        .filter(resourceId -> resourceId.contains(DELIMITER))
-        .map(
-            resourceId -> {
-              final var splitResourceId = resourceId.split(DELIMITER, 2);
-              return new ResourceIdentifier(splitResourceId[0], splitResourceId[1]);
-            })
-        .anyMatch(
-            resourceId ->
-                requiredResourceIdentifiers
-                    .get(resourceId.resourceName)
-                    .equals(resourceId.resourceValue));
+      final Set<String> requiredResourceIdentifiers,
+      final Set<String> authorizedResourceIdentifiers) {
+    return authorizedResourceIdentifiers.stream().anyMatch(requiredResourceIdentifiers::contains);
   }
-
-  private record ResourceIdentifier(String resourceName, String resourceValue) {}
 }

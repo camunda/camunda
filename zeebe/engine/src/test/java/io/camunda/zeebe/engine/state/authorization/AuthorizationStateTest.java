@@ -58,7 +58,7 @@ public class AuthorizationStateTest {
     // then
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType);
-    assertThat(resourceIdentifiers).containsExactly("foo", "bar");
+    assertThat(resourceIdentifiers).containsExactlyInAnyOrder("foo", "bar");
   }
 
   @Test
@@ -77,7 +77,7 @@ public class AuthorizationStateTest {
     // then
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType);
-    assertThat(resourceIdentifiers).containsExactly("foo", "bar", "baz");
+    assertThat(resourceIdentifiers).containsExactlyInAnyOrder("foo", "bar", "baz");
   }
 
   @Test

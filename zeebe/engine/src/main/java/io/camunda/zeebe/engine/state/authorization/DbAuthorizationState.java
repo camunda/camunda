@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class DbAuthorizationState implements AuthorizationState, MutableAuthorizationState {
   private final PersistedAuthorization persistedAuthorization = new PersistedAuthorization();
@@ -121,7 +122,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   }
 
   @Override
-  public List<String> getResourceIdentifiers(
+  public Set<String> getResourceIdentifiers(
       final Long ownerKey,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
@@ -134,7 +135,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
             ownerKeyAndResourceTypeAndPermissionCompositeKey);
 
     return persistedPermissions == null
-        ? Collections.emptyList()
+        ? Collections.emptySet()
         : persistedPermissions.getResourceIdentifiers();
   }
 
