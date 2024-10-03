@@ -60,7 +60,7 @@ public class AuthorizableCommandProcessor<T extends UnifiedRecordValue, Resource
       controller.reject(RejectionType.UNAUTHORIZED, errorMessage);
     }
 
-    return delegate.shouldRespond();
+    return true;
   }
 
   @Override
@@ -83,10 +83,6 @@ public class AuthorizableCommandProcessor<T extends UnifiedRecordValue, Resource
 
     boolean onCommand(
         final TypedRecord<T> command, CommandControl<T> controller, Resource resource);
-
-    default boolean shouldRespond() {
-      return true;
-    }
 
     default void afterAccept(
         final TypedCommandWriter commandWriter,

@@ -60,11 +60,6 @@ public final class ProcessInstanceCreationCreateWithResultProcessor
   }
 
   @Override
-  public boolean shouldRespond() {
-    return shouldRespond;
-  }
-
-  @Override
   public void afterAccept(
       final TypedCommandWriter commandWriter,
       final StateWriter stateWriter,
@@ -75,8 +70,8 @@ public final class ProcessInstanceCreationCreateWithResultProcessor
   }
 
   @Override
-  public ProcessingError tryHandleError(final TypedRecord<ProcessInstanceCreationRecord> command,
-      final Throwable error) {
+  public ProcessingError tryHandleError(
+      final TypedRecord<ProcessInstanceCreationRecord> command, final Throwable error) {
     return createProcessor.tryHandleError(command, error);
   }
 
