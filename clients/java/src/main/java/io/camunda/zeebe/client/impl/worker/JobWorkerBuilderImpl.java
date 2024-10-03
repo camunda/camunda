@@ -220,6 +220,7 @@ public final class JobWorkerBuilderImpl
             final String dueDate = job.getCustomHeaders().get("io.camunda.zeebe:dueDate");
             final String followUpDate = job.getCustomHeaders().get("io.camunda.zeebe:followUpDate");
             final String formKey = job.getCustomHeaders().get("io.camunda.zeebe:formKey");
+            final String priority = job.getCustomHeaders().get("io.camunda.zeebe:priority");
 
             final UserTaskListenerJob listenerJob =
                 new UserTaskListenerJob() {
@@ -256,6 +257,11 @@ public final class JobWorkerBuilderImpl
                   @Override
                   public String getFormKey() {
                     return formKey;
+                  }
+
+                  @Override
+                  public String getPriority() {
+                    return priority;
                   }
 
                   @Override

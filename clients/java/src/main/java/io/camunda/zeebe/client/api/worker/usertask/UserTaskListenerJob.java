@@ -33,7 +33,7 @@ public interface UserTaskListenerJob {
 
   String getFormKey();
 
+  String getPriority();
+
   ActivatedJob getJob();
-  // TODO clarify if the following properties should be exposed:priority, formBindingType,
-  // formVersionTag
 }

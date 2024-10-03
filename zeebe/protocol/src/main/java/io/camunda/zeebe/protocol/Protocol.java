@@ -72,6 +72,10 @@ public final class Protocol {
   public static final String RESERVED_HEADER_NAME_PREFIX = "io.camunda.zeebe:";
 
   /** Task header key used for user tasks to contain user task key */
+  public static final String USER_TASK_PRIORITY_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "priority";
+
+  /** Task header key used for user tasks to contain user task key */
   public static final String USER_TASK_KEY_HEADER_NAME =
       RESERVED_HEADER_NAME_PREFIX + "userTaskKey";
 

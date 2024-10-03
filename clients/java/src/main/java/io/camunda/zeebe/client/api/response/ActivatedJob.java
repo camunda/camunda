@@ -109,6 +109,7 @@ public interface ActivatedJob {
    */
   String toJson();
 
+  // TODO: use Enum in the future
   String getJobListenerEventType();
 
   /**

@@ -307,7 +307,6 @@ public final class BpmnJobBehavior {
     jobMetrics.jobCreated(props.getType(), jobKind);
   }
 
-  // TODO: clarify with Meggle and Aleks what other properties we should expose
   private DirectBuffer encodeHeaders(
       final Map<String, String> taskHeaders, final JobProperties props) {
     final var headers = new HashMap<>(taskHeaders);
