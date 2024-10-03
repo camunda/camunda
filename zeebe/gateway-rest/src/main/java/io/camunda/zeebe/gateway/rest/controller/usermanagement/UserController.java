@@ -12,9 +12,9 @@ import io.camunda.service.UserServices.CreateUserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.concurrent.CompletableFuture;
-import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,9 +38,8 @@ public class UserController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> createUser(
       @RequestBody final UserRequest userRequest) {
-    //    return RequestMapper.toCreateUserRequest(userRequest, passwordEncoder)
-    //        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
-    throw new NotImplementedException("User creation is not yet implemented");
+    return RequestMapper.toCreateUserRequest(userRequest, passwordEncoder)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
   }
 
   private CompletableFuture<ResponseEntity<Object>> createUser(final CreateUserRequest request) {
