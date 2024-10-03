@@ -61,7 +61,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(interruptingEventKeyProp)
         .declareProperty(calledChildInstanceKeyProp)
         .declareProperty(recordProp)
-        .declareProperty(activeSequenceFlowsProp);
+        .declareProperty(activeSequenceFlowsProp)
+        .declareProperty(calledProcessDepthProp);
   }
 
   public ElementInstance(
@@ -232,5 +233,9 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public int getCalledProcessDepth() {
     return calledProcessDepthProp.getValue();
+  }
+
+  public void setCalledProcessDept(final int depth) {
+    calledProcessDepthProp.setValue(depth);
   }
 }
