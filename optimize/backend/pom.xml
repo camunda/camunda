@@ -416,6 +416,13 @@
       <artifactId>camunda-license-check</artifactId>
       <version>2.9.0</version>
     </dependency>
+
+    <!-- ClassGraph  -->
+    <dependency>
+      <groupId>io.github.classgraph</groupId>
+      <artifactId>classgraph</artifactId>
+      <version>4.8.176</version>
+    </dependency>
   </dependencies>
 
   <build>

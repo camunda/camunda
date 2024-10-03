@@ -27,7 +27,7 @@ services:
       - CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED=true
       # This should only be set if you plan to use JWTs for the public API rather than a statically configured token
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
-      - OPTIMIZE_LOG_LEVEL=DEBUG
+      - OPTIMIZE_LOG_LEVEL=ERROR
     networks:
       - optimize
       - identity-network

@@ -77,25 +77,8 @@
       <artifactId>json-path</artifactId>
       <version>${jsonpath.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.yaml</groupId>
-      <artifactId>snakeyaml</artifactId>
-      <version>2.3</version>
-    </dependency>
-
-    <!-- ClassGraph  -->
-    <dependency>
-      <groupId>io.github.classgraph</groupId>
-      <artifactId>classgraph</artifactId>
-      <version>4.8.176</version>
-    </dependency>
 
     <!-- Logging -->
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jul-to-slf4j</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
@@ -111,7 +94,8 @@
       <artifactId>slf4j-api</artifactId>
       <version>${slf4j.version}</version>
     </dependency>
-    <!-- needed for elasticsearch logs to be available over slf4j -->
+
+    <!-- needed for elasticsearch logs to be available over slf4j. Dependency:analyze error suppressed. -->
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-to-slf4j</artifactId>
@@ -133,11 +117,6 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <version>3.17.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.ethlo.time</groupId>
-      <artifactId>itu</artifactId>
-      <version>1.10.2</version>
     </dependency>
     <dependency>
       <groupId>net.jodah</groupId>
@@ -331,6 +310,25 @@
   </dependencies>
 
   <build>
+     <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>3.8.0</version>
+          <configuration>
+            <ignoredUnusedDeclaredDependencies combine.children="append">
+              <!-- TODO: remove once Zeebe's parent is Optimize's parent -->
+              <dep>org.wiremock:wiremock-jetty12</dep>
+
+              <dep>org.apache.logging.log4j:log4j-to-slf4j</dep>
+              <dep>software.amazon.awssdk:sts</dep>
+            </ignoredUnusedDeclaredDependencies>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
