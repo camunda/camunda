@@ -99,6 +99,7 @@ public class DefaultClusterEventServiceTest {
     final ManagedClusterMembershipService managedClusterMembershipService =
         new DefaultClusterMembershipService(
             localMember,
+            "testingPrefix",
             Version.from("1.0.0"),
             new DefaultNodeDiscoveryService(
                 bootstrapService1, localMember, new BootstrapDiscoveryProvider(bootstrapLocations)),
