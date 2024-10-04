@@ -42,7 +42,7 @@ public class UserController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> createUser(final CreateUserRequest request) {
+  private CompletableFuture<ResponseEntity<Object>> createUser(final UserDTO request) {
     return RequestMapper.executeServiceMethod(
         () ->
             userServices.withAuthentication(RequestMapper.getAuthentication()).createUser(request),
