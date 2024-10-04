@@ -82,10 +82,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     final var request =
         """
-            {
-                "processDefinitionKey": 123,
-                "tenantId": "tenantId"
-            }""";
+        {
+            "processDefinitionKey": 123,
+            "tenantId": "tenantId"
+        }""";
 
     // when / then
     final ResponseSpec response =
@@ -148,13 +148,13 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-                {
-                   "processDefinitionKey":123,
-                   "processDefinitionId":"bpmnProcessId",
-                   "processDefinitionVersion":-1,
-                   "processInstanceKey":123,
-                   "tenantId":"<default>"
-                }""");
+{
+   "processDefinitionKey":123,
+   "processDefinitionId":"bpmnProcessId",
+   "processDefinitionVersion":-1,
+   "processInstanceKey":123,
+   "tenantId":"<default>"
+}""");
 
     verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
     final var capturedRequest = createRequestCaptor.getValue();
@@ -181,8 +181,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
                 "processDefinitionId": "bpmnProcessId",
                 "processDefinitionVersion": 1,
-                "tenantId": "tenantId"
-            }""";
+            "tenantId": "tenantId"
+        }""";
 
     // when / then
     final ResponseSpec response =
@@ -229,7 +229,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "processDefinitionId": "bpmnProcessId",
-                "tenantId": "tenantId"
+            "tenantId": "tenantId"
             }""";
 
     // when / then
@@ -279,8 +279,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
                 "processDefinitionKey": 123,
                 "awaitCompletion": true,
-                "tenantId": "tenantId"
-            }""";
+            "tenantId": "tenantId"
+        }""";
 
     // when / then
     final ResponseSpec response =
@@ -330,8 +330,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "processDefinitionId": "bpmnProcessId",
                 "processDefinitionVersion": 1,
                 "awaitCompletion": true,
-                "tenantId": "tenantId"
-            }""";
+            "tenantId": "tenantId"
+        }""";
 
     // when / then
     final ResponseSpec response =
@@ -380,8 +380,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
                 "processDefinitionId": "bpmnProcessId",
                 "awaitCompletion": true,
-                "tenantId": "tenantId"
-            }""";
+            "tenantId": "tenantId"
+        }""";
 
     // when / then
     final ResponseSpec response =
