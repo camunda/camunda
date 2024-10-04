@@ -88,7 +88,8 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   @Override
   public boolean onCommand(
       final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
-    return defaultProcessor.onCommand(command, commandControl);
+    final var jobFromState = jobState.getJob(command.getKey(), command.getAuthorizations());
+    return defaultProcessor.onCommand(command, commandControl, jobFromState);
   }
 
   @Override
@@ -111,14 +112,10 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   }
 
   private void acceptCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
+      final TypedRecord<JobRecord> command,
+      final CommandControl<JobRecord> commandControl,
+      final JobRecord job) {
     final long jobKey = command.getKey();
-
-    final JobRecord job = jobState.getJob(jobKey, command.getAuthorizations());
-    if (job == null) {
-      commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
-      return;
-    }
 
     // Check if the job is of kind EXECUTION_LISTENER. Execution Listener jobs should not throw
     // BPMN errors because the element is not in an ACTIVATED state.
