@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableCommandProcessor.Authorizable;
+import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableCommandProcessor.Rejection;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.Either;
 
 public final class ProcessInstanceCreationCreateWithResultProcessor
     implements Authorizable<ProcessInstanceCreationRecord, DeployedProcess> {
@@ -44,9 +45,10 @@ public final class ProcessInstanceCreationCreateWithResultProcessor
   }
 
   @Override
-  public AuthorizationRequest<DeployedProcess> getAuthorizationRequest(
-      final TypedRecord<ProcessInstanceCreationRecord> command) {
-    return createProcessor.getAuthorizationRequest(command);
+  public Either<Rejection, AuthorizationRequest<DeployedProcess>> getAuthorizationRequest(
+      final TypedRecord<ProcessInstanceCreationRecord> command,
+      final CommandControl<ProcessInstanceCreationRecord> controller) {
+    return createProcessor.getAuthorizationRequest(command, controller);
   }
 
   @Override
@@ -67,12 +69,6 @@ public final class ProcessInstanceCreationCreateWithResultProcessor
       final Intent intent,
       final ProcessInstanceCreationRecord value) {
     createProcessor.afterAccept(commandWriter, stateWriter, key, intent, value);
-  }
-
-  @Override
-  public ProcessingError tryHandleError(
-      final TypedRecord<ProcessInstanceCreationRecord> command, final Throwable error) {
-    return createProcessor.tryHandleError(command, error);
   }
 
   private final class CommandControlWithAwaitResult

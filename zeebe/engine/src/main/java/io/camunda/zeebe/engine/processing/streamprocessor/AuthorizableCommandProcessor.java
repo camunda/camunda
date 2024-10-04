@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.Either;
 
 /**
  * This processor decorates processors where authorization checks are required, taking care of the
@@ -47,20 +48,29 @@ public class AuthorizableCommandProcessor<T extends UnifiedRecordValue, Resource
 
   @Override
   public boolean onCommand(final TypedRecord<T> command, final CommandControl<T> controller) {
-    final var authorizationRequest = delegate.getAuthorizationRequest(command);
-
-    if (authorizationCheckBehavior.isAuthorized(
-        command, authorizationRequest, authorizationRequest.getResourceIds())) {
-      final Resource resource = authorizationRequest.getResource().orElseThrow();
-      return delegate.onCommand(command, controller, resource);
-    } else {
-      final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
-      controller.reject(RejectionType.UNAUTHORIZED, errorMessage);
-    }
-
-    return true;
+    return delegate
+        .getAuthorizationRequest(command, controller)
+        .map(
+            authorizationRequest -> {
+              if (authorizationCheckBehavior.isAuthorized(
+                  command, authorizationRequest, authorizationRequest.getResourceIds())) {
+                final Resource resource = authorizationRequest.getResource().orElseThrow();
+                return delegate.onCommand(command, controller, resource);
+              } else {
+                final var errorMessage =
+                    UNAUTHORIZED_ERROR_MESSAGE.formatted(
+                        authorizationRequest.getPermissionType(),
+                        authorizationRequest.getResourceType());
+                controller.reject(RejectionType.UNAUTHORIZED, errorMessage);
+                return true;
+              }
+            })
+        .mapLeft(
+            rejection -> {
+              controller.reject(rejection.type(), rejection.reason());
+              return rejection;
+            })
+        .getOrElse(true);
   }
 
   @Override
@@ -78,8 +88,11 @@ public class AuthorizableCommandProcessor<T extends UnifiedRecordValue, Resource
     return delegate.tryHandleError(command, error);
   }
 
+  public record Rejection(RejectionType type, String reason) {}
+
   public interface Authorizable<T extends UnifiedRecordValue, Resource> {
-    AuthorizationRequest<Resource> getAuthorizationRequest(final TypedRecord<T> command);
+    Either<Rejection, AuthorizationRequest<Resource>> getAuthorizationRequest(
+        final TypedRecord<T> command, final CommandControl<T> controller);
 
     boolean onCommand(
         final TypedRecord<T> command, CommandControl<T> controller, Resource resource);

@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableCommandProcessor.Authorizable;
+import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableCommandProcessor.Rejection;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -101,22 +102,16 @@ public final class ProcessInstanceCreationCreateProcessor
   }
 
   @Override
-  public AuthorizationRequest<DeployedProcess> getAuthorizationRequest(
-      final TypedRecord<ProcessInstanceCreationRecord> command) {
-    final var requestEither =
-        getProcess(command.getValue())
-            .map(
-                process ->
-                    new AuthorizationRequest<DeployedProcess>(
-                            AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE)
-                        .setResource(process)
-                        .addResourceId(bufferAsString(process.getBpmnProcessId())));
-
-    if (requestEither.isRight()) {
-      return requestEither.get();
-    }
-
-    throw new ProcessNotFoundException(requestEither.getLeft());
+  public Either<Rejection, AuthorizationRequest<DeployedProcess>> getAuthorizationRequest(
+      final TypedRecord<ProcessInstanceCreationRecord> command,
+      final CommandControl<ProcessInstanceCreationRecord> controller) {
+    return getProcess(command.getValue())
+        .map(
+            process ->
+                new AuthorizationRequest<DeployedProcess>(
+                        AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE)
+                    .setResource(process)
+                    .addResourceId(bufferAsString(process.getBpmnProcessId())));
   }
 
   @Override
@@ -130,7 +125,7 @@ public final class ProcessInstanceCreationCreateProcessor
     validateCommand(command.getValue(), deployedProcess)
         .ifRightOrLeft(
             process -> createProcessInstance(controller, record, process),
-            rejection -> controller.reject(rejection.type, rejection.reason));
+            rejection -> controller.reject(rejection.type(), rejection.reason()));
 
     return true;
   }
@@ -138,13 +133,7 @@ public final class ProcessInstanceCreationCreateProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<ProcessInstanceCreationRecord> typedCommand, final Throwable error) {
-    if (error instanceof final ProcessNotFoundException exception) {
-      // This exception is only thrown for ProcessInstanceCreationRecord with start instructions
-      final var rejection = exception.getRejection();
-      rejectionWriter.appendRejection(typedCommand, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(typedCommand, rejection.type(), rejection.reason());
-      return ProcessingError.EXPECTED_ERROR;
-    } else if (error instanceof final EventSubscriptionException exception) {
+    if (error instanceof final EventSubscriptionException exception) {
       // This exception is only thrown for ProcessInstanceCreationRecord with start instructions
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
@@ -431,20 +420,5 @@ public final class ProcessInstanceCreationCreateProcessor
         });
   }
 
-  private record Rejection(RejectionType type, String reason) {}
-
   private record ElementIdAndType(String elementId, BpmnElementType elementType) {}
-
-  private static class ProcessNotFoundException extends RuntimeException {
-    private final Rejection rejection;
-
-    public ProcessNotFoundException(final Rejection rejection) {
-      super(rejection.reason());
-      this.rejection = rejection;
-    }
-
-    public Rejection getRejection() {
-      return rejection;
-    }
-  }
 }
