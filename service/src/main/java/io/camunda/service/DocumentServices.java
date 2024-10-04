@@ -97,7 +97,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       final String documentId, final String storeId, final DocumentLinkParams params) {
 
     final DocumentStoreRecord storeRecord = getDocumentStore(storeId);
-    final Long ttl = params.timeToLive() != null ? params.timeToLive.toMillis() : null;
+    final long ttl = params.timeToLive().toMillis();
     return storeRecord
         .instance()
         .createLink(documentId, ttl)

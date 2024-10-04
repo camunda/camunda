@@ -15,6 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
+
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -51,11 +54,15 @@ public class CreateDocumentCommandImpl
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public CreateDocumentCommandImpl(final JsonMapper jsonMapper, final HttpClient httpClient) {
+  public CreateDocumentCommandImpl(
+      final JsonMapper jsonMapper,
+      final HttpClient httpClient,
+      final ZeebeClientConfiguration configuration) {
     metadata = new DocumentMetadata();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
+    requestTimeout(configuration.getDefaultRequestTimeout());
   }
 
   @Override
@@ -98,18 +105,21 @@ public class CreateDocumentCommandImpl
 
   @Override
   public CreateDocumentCommandStep2 content(final InputStream content) {
+    ensureNotNull("content", content);
     this.content = content;
     return this;
   }
 
   @Override
   public CreateDocumentCommandStep2 content(final byte[] content) {
+    ensureNotNull("content", content);
     this.content = new ByteArrayInputStream(content);
     return this;
   }
 
   @Override
   public CreateDocumentCommandStep2 content(final String content) {
+    ensureNotNull("content", content);
     this.content = new ByteArrayInputStream(content.getBytes());
     return this;
   }
@@ -147,6 +157,7 @@ public class CreateDocumentCommandImpl
 
   @Override
   public CreateDocumentCommandStep2 customMetadata(final String key, final Object value) {
+    ensureNotNull("key", key);
     metadata.put(key, value);
     return this;
   }
