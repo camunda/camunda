@@ -19,7 +19,6 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
@@ -87,53 +86,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             "processDefinitionKey": 123,
             "tenantId": "tenantId"
         }""";
-
-    // when / then
-    final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(PROCESS_INSTANCES_START_URL)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isOk());
-
-    response
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(EXPECTED_START_RESPONSE);
-
-    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
-    final var capturedRequest = createRequestCaptor.getValue();
-    assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
-    assertThat(capturedRequest.tenantId()).isEqualTo("tenantId");
-  }
-
-  @Test
-  void shouldCreateProcessInstancesWithoutTenantId() {
-    // given
-    final var mockResponse =
-        new ProcessInstanceCreationRecord()
-            .setProcessDefinitionKey(123L)
-            .setBpmnProcessId("bpmnProcessId")
-            .setProcessInstanceKey(123L)
-            .setTenantId("<default>");
-
-    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
-        .thenReturn(CompletableFuture.completedFuture(mockResponse));
-
-    final var request =
-        """
-            {
-                "processDefinitionKey": 123,
-                "tenantId": "tenantId"
-            }""";
 
     // when / then
     final ResponseSpec response =
