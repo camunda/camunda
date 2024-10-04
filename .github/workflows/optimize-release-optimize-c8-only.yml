@@ -174,6 +174,8 @@ jobs:
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
 
       - name: Configure GitHub user
         run: |
