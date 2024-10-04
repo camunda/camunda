@@ -9,7 +9,7 @@ package io.camunda.search.es.transformers.query;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.IdsQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
-import io.camunda.search.clients.query.SearchIdsQuery;
+import io.camunda.search.query.SearchIdsQuery;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 
 public final class IdsQueryTransformer extends QueryOptionTransformer<SearchIdsQuery, IdsQuery> {

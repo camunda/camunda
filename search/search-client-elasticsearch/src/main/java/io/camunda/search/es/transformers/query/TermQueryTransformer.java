@@ -9,7 +9,7 @@ package io.camunda.search.es.transformers.query;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermQuery;
-import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.query.SearchTermQuery;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 
 public final class TermQueryTransformer extends QueryOptionTransformer<SearchTermQuery, TermQuery> {

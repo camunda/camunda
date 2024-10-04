@@ -8,9 +8,9 @@
 package io.camunda.search.es.transformers.types;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
-import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
+import io.camunda.search.types.TypedValue;
 
 public final class TypedValueTransformer extends ElasticsearchTransformer<TypedValue, FieldValue> {
 

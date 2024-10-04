@@ -9,7 +9,7 @@ package io.camunda.search.es.transformers.query;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.MatchAllQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
-import io.camunda.search.clients.query.SearchMatchAllQuery;
+import io.camunda.search.query.SearchMatchAllQuery;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 
 public final class MatchAllQueryTransformer

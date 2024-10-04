@@ -7,7 +7,7 @@
  */
 package io.camunda.search.os.transformers.source;
 
-import io.camunda.search.clients.source.SearchSourceConfig;
+import io.camunda.search.source.SearchSourceConfig;
 import io.camunda.search.os.transformers.OpensearchTransformer;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import org.opensearch.client.opensearch.core.search.SourceConfig;

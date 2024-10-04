@@ -12,7 +12,7 @@ import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.security.auth.Authentication;
 
-public interface FormSearchClient extends AutoCloseable {
+public interface FormSearchClient {
 
   SearchQueryResult<FormEntity> searchForms(FormQuery filter, Authentication authentication);
 }

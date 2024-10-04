@@ -7,8 +7,8 @@
  */
 package io.camunda.search.transformers;
 
-import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.core.SearchQueryRequest;
+import io.camunda.search.query.SearchQuery;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.ComparableValueFilter;
 import io.camunda.search.filter.DateValueFilter;

@@ -7,16 +7,16 @@
  */
 package io.camunda.search.transformers.filter;
 
-import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.or;
+import static io.camunda.search.query.SearchQueryBuilders.and;
+import static io.camunda.search.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.query.SearchQueryBuilders.or;
 
-import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.query.SearchQueryBuilders;
-import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.search.query.SearchQuery;
+import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.transformers.ServiceTransformers;
+import io.camunda.search.types.TypedValue;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;

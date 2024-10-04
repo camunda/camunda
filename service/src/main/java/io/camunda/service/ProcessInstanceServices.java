@@ -7,6 +7,8 @@
  */
 package io.camunda.service;
 
+import io.camunda.search.auth.AuthorizationCheck;
+import io.camunda.search.auth.PermissionCheck;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.exception.CamundaSearchException;
@@ -58,6 +60,13 @@ public final class ProcessInstanceServices
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> search(final ProcessInstanceQuery query) {
+    final var authorizationCheck =
+        new AuthorizationCheck(
+            authentication.authenticatedUserId(),
+            new PermissionCheck("READ_INSTANCE", "PROCESS_DEFINITION"));
+    final ProcessInstanceQuery authQuery =
+        new ProcessInstanceQuery(
+            query.filter(), query.sort(), query.page(), query.resultConfig(), authorizationCheck);
     return processInstanceSearchClient.searchProcessInstances(query, authentication);
   }
 

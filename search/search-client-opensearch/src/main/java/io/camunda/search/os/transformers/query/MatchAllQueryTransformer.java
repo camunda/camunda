@@ -7,7 +7,7 @@
  */
 package io.camunda.search.os.transformers.query;
 
-import io.camunda.search.clients.query.SearchMatchAllQuery;
+import io.camunda.search.query.SearchMatchAllQuery;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;

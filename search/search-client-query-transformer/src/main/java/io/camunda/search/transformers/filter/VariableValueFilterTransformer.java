@@ -7,15 +7,15 @@
  */
 package io.camunda.search.transformers.filter;
 
-import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.not;
-import static io.camunda.search.clients.query.SearchQueryBuilders.range;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.search.query.SearchQueryBuilders.and;
+import static io.camunda.search.query.SearchQueryBuilders.not;
+import static io.camunda.search.query.SearchQueryBuilders.range;
+import static io.camunda.search.query.SearchQueryBuilders.term;
 
-import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.query.SearchQueryBuilders;
-import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.search.query.SearchQuery;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.types.TypedValue;
 
 public final class VariableValueFilterTransformer
     implements FilterTransformer<VariableValueFilter> {

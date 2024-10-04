@@ -11,9 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.clients.core.SearchQueryHit;
-import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.clients.core.SearchQueryResponse;
+import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.clients.SearchClientBasedQueryExecutor;
+import io.camunda.search.core.SearchQueryHit;
+import io.camunda.search.core.SearchQueryRequest;
+import io.camunda.search.core.SearchQueryResponse;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.query.ProcessInstanceQuery;
@@ -46,7 +48,7 @@ class SearchClientBasedQueryExecutorTest {
           false,
           null);
 
-  @Mock private DocumentCamundaSearchClient searchClient;
+  @Mock private DocumentBasedSearchClient searchClient;
   private final ServiceTransformers serviceTransformers = ServiceTransformers.newInstance();
 
   private SearchClientBasedQueryExecutor queryExecutor;

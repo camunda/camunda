@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQuery;
+import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.transformers.SearchTransfomer;
 import java.util.stream.Stream;

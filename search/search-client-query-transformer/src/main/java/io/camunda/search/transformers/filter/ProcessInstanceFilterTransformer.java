@@ -7,13 +7,13 @@
  */
 package io.camunda.search.transformers.filter;
 
-import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.search.query.SearchQueryBuilders.and;
+import static io.camunda.search.query.SearchQueryBuilders.intTerms;
+import static io.camunda.search.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.query.SearchQueryBuilders.term;
 
-import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.query.SearchQuery;
 import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.transformers.ServiceTransformers;

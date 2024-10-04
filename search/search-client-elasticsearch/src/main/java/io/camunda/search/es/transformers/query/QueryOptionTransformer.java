@@ -8,7 +8,7 @@
 package io.camunda.search.es.transformers.query;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryVariant;
-import io.camunda.search.clients.query.SearchQueryOption;
+import io.camunda.search.query.SearchQueryOption;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.transformers.SearchTransfomer;

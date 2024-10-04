@@ -9,7 +9,7 @@ package io.camunda.search.es.transformers.query;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.ConstantScoreQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
-import io.camunda.search.clients.query.SearchConstantScoreQuery;
+import io.camunda.search.query.SearchConstantScoreQuery;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 
 public final class ConstantScoreQueryTransformer

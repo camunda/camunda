@@ -12,7 +12,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.security.auth.Authentication;
 
-public interface IncidentSearchClient extends AutoCloseable {
+public interface IncidentSearchClient {
 
   SearchQueryResult<IncidentEntity> searchIncidents(
       IncidentQuery filter, Authentication authentication);

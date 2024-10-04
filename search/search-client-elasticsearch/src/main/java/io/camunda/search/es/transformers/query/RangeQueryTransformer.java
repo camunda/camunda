@@ -10,7 +10,7 @@ package io.camunda.search.es.transformers.query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
 import co.elastic.clients.json.JsonData;
-import io.camunda.search.clients.query.SearchRangeQuery;
+import io.camunda.search.query.SearchRangeQuery;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 
 public final class RangeQueryTransformer
