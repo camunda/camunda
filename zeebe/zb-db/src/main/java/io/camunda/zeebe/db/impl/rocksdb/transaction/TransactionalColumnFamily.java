@@ -78,6 +78,7 @@ class TransactionalColumnFamily<
 
   @Override
   public void insert(final KeyType key, final ValueType value) {
+    System.out.println("  INSERT: " + columnFamily.name());
     try (final var timer = metrics.measurePutLatency()) {
       ensureInOpenTransaction(
           transaction -> {
@@ -98,6 +99,7 @@ class TransactionalColumnFamily<
 
   @Override
   public void update(final KeyType key, final ValueType value) {
+    System.out.println("  UPDATE: " + columnFamily.name());
     try (final var timer = metrics.measurePutLatency()) {
       ensureInOpenTransaction(
           transaction -> {
@@ -117,6 +119,7 @@ class TransactionalColumnFamily<
 
   @Override
   public void upsert(final KeyType key, final ValueType value) {
+    System.out.println("  UPSERT: " + columnFamily.name());
     try (final var timer = metrics.measurePutLatency()) {
       ensureInOpenTransaction(
           transaction -> {
@@ -135,6 +138,7 @@ class TransactionalColumnFamily<
 
   @Override
   public ValueType get(final KeyType key) {
+    System.out.println("  GET: " + columnFamily.name());
     try (final var timer = metrics.measureGetLatency()) {
       ensureInOpenTransaction(
           transaction -> {
@@ -220,6 +224,7 @@ class TransactionalColumnFamily<
 
   @Override
   public void deleteExisting(final KeyType key) {
+    System.out.println("  DELETE: " + columnFamily.name());
     try (final var timer = metrics.measureDeleteLatency()) {
       ensureInOpenTransaction(
           transaction -> {
@@ -235,6 +240,7 @@ class TransactionalColumnFamily<
 
   @Override
   public void deleteIfExists(final KeyType key) {
+    System.out.println("  DELETE: " + columnFamily.name());
     try (final var timer = metrics.measureDeleteLatency()) {
       ensureInOpenTransaction(
           transaction -> {
@@ -249,6 +255,7 @@ class TransactionalColumnFamily<
 
   @Override
   public boolean exists(final KeyType key) {
+    System.out.println("  EXISTS: " + columnFamily.name());
     try (final var timer = metrics.measureGetLatency()) {
       ensureInOpenTransaction(
           transaction -> {
@@ -374,6 +381,7 @@ class TransactionalColumnFamily<
       final DbKey startAt,
       final DbKey prefix,
       final KeyValuePairVisitor<KeyType, ValueType> visitor) {
+    System.out.println("  FOR EACH: " + columnFamily.name());
     try (final var timer = metrics.measureIterateLatency()) {
       final var seekTarget = Objects.requireNonNullElse(startAt, prefix);
       Objects.requireNonNull(prefix);
@@ -409,6 +417,7 @@ class TransactionalColumnFamily<
             }
           });
     }
+    System.out.println("  FOR EACH END: " + columnFamily.name());
   }
 
   /**
@@ -422,6 +431,7 @@ class TransactionalColumnFamily<
    *     the given startAt.
    */
   private long countEachInPrefix(final DbKey prefix) {
+    System.out.println("  COUNT: " + columnFamily.name());
     final var seekTarget = Objects.requireNonNull(prefix);
 
     final var count = new AtomicLong(0);
@@ -462,6 +472,8 @@ class TransactionalColumnFamily<
       final ValueType valueInstance,
       final KeyValuePairVisitor<KeyType, ValueType> iteratorConsumer,
       final RocksIterator iterator) {
+
+    System.out.println("    VISIT");
     final var keyBytes = iterator.key();
 
     columnFamilyContext.wrapKeyView(keyBytes);
