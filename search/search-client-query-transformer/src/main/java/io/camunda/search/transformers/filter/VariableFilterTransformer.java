@@ -55,7 +55,7 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
 
   @Override
   public List<String> toIndices(final VariableFilter filter) {
-    return Arrays.asList("tasklist-list-view-8.6.0_");
+    return Arrays.asList("operate-variable-8.3.0_alias");
   }
 
   private SearchQuery getVariablesQuery(final List<VariableValueFilter> variableFilters) {

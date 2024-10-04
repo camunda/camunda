@@ -244,6 +244,7 @@ public final class SearchQueryRequestMapper {
     ofNullable(filter.getScopeKey()).ifPresent(builder::scopeKeys);
     ofNullable(filter.getVariableKey()).ifPresent(builder::variableKeys);
     ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+    ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
 
     if (filter.getName() != null || filter.getValue() != null) {
       final VariableValueFilter VariableValueFilter =
