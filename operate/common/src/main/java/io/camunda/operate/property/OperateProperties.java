@@ -367,22 +367,11 @@ public class OperateProperties {
   }
 
   public String getIndexPrefix(final DatabaseType databaseType) {
-    switch (databaseType) {
-      case Elasticsearch:
-        if (getElasticsearch() != null) {
-          return getElasticsearch().getIndexPrefix();
-        } else {
-          return null;
-        }
-      case Opensearch:
-        if (getOpensearch() != null) {
-          return getOpensearch().getIndexPrefix();
-        } else {
-          return null;
-        }
-      default:
-        return null;
-    }
+    return switch (databaseType) {
+      case Elasticsearch -> getElasticsearch() == null ? null : getElasticsearch().getIndexPrefix();
+      case Opensearch -> getOpensearch() == null ? null : getOpensearch().getIndexPrefix();
+      default -> null;
+    };
   }
 
   public String getIndexPrefix() {
