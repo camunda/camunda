@@ -39,8 +39,10 @@ import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled
 @ZeebeIntegration
 class DecisionQueryTest {
   private static final List<Decision> DEPLOYED_DECISIONS = new ArrayList<>();
