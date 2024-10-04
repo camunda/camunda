@@ -222,7 +222,7 @@ public final class BpmnJobBehavior {
   }
 
   public void createNewTaskListenerJob(
-      final ProcessElementProperties elementProperties,
+      final ProcessElementProperties elementProps,
       final JobProperties jobProperties,
       final TaskListener taskListener,
       final UserTaskRecord taskRecordValue) {
@@ -232,7 +232,7 @@ public final class BpmnJobBehavior {
             Protocol.RESERVED_HEADER_NAME_PREFIX + "userTaskKey",
             Objects.toString(taskRecordValue.getUserTaskKey()));
     writeJobCreatedEvent(
-        elementProperties,
+        elementProps,
         jobProperties,
         JobKind.TASK_LISTENER,
         fromTaskListenerEventType(taskListener.getEventType()),
@@ -279,7 +279,7 @@ public final class BpmnJobBehavior {
   }
 
   private void writeJobCreatedEvent(
-      final ProcessElementProperties elementProperties,
+      final ProcessElementProperties elementProps,
       final JobProperties props,
       final JobKind jobKind,
       final JobListenerEventType jobListenerEventType,
@@ -293,13 +293,13 @@ public final class BpmnJobBehavior {
         .setListenerEventType(jobListenerEventType)
         .setRetries(props.getRetries().intValue())
         .setCustomHeaders(encodedHeaders)
-        .setBpmnProcessId(elementProperties.getBpmnProcessId())
-        .setProcessDefinitionVersion(elementProperties.getProcessVersion())
-        .setProcessDefinitionKey(elementProperties.getProcessDefinitionKey())
-        .setProcessInstanceKey(elementProperties.getProcessInstanceKey())
-        .setElementId(elementProperties.getElementId())
-        .setElementInstanceKey(elementProperties.getElementInstanceKey())
-        .setTenantId(elementProperties.getTenantId());
+        .setBpmnProcessId(elementProps.getBpmnProcessId())
+        .setProcessDefinitionVersion(elementProps.getProcessVersion())
+        .setProcessDefinitionKey(elementProps.getProcessDefinitionKey())
+        .setProcessInstanceKey(elementProps.getProcessInstanceKey())
+        .setElementId(elementProps.getElementId())
+        .setElementInstanceKey(elementProps.getElementInstanceKey())
+        .setTenantId(elementProps.getTenantId());
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);

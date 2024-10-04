@@ -62,31 +62,30 @@ public final class BpmnIncidentBehavior {
     createIncident(failure, ProcessElementProperties.from(context));
   }
 
-  public void createIncident(
-      final Failure failure, final ProcessElementProperties elementProperties) {
+  public void createIncident(final Failure failure, final ProcessElementProperties elementProps) {
     final var variableScopeKey =
         failure.getVariableScopeKey() > 0
             ? failure.getVariableScopeKey()
-            : elementProperties.getElementInstanceKey();
+            : elementProps.getElementInstanceKey();
 
     final var treePathProperties =
         new ElementTreePathBuilder()
             .withElementInstanceState(elementInstanceState)
             .withProcessState(processState)
-            .withElementInstanceKey(elementProperties.getElementInstanceKey())
+            .withElementInstanceKey(elementProps.getElementInstanceKey())
             .build();
 
     incidentRecord.reset();
     incidentRecord
-        .setProcessInstanceKey(elementProperties.getProcessInstanceKey())
-        .setBpmnProcessId(wrapString(elementProperties.getBpmnProcessId()))
-        .setProcessDefinitionKey(elementProperties.getProcessDefinitionKey())
-        .setElementInstanceKey(elementProperties.getElementInstanceKey())
-        .setElementId(wrapString(elementProperties.getElementId()))
+        .setProcessInstanceKey(elementProps.getProcessInstanceKey())
+        .setBpmnProcessId(wrapString(elementProps.getBpmnProcessId()))
+        .setProcessDefinitionKey(elementProps.getProcessDefinitionKey())
+        .setElementInstanceKey(elementProps.getElementInstanceKey())
+        .setElementId(wrapString(elementProps.getElementId()))
         .setVariableScopeKey(variableScopeKey)
         .setErrorType(failure.getErrorType())
         .setErrorMessage(failure.getMessage())
-        .setTenantId(elementProperties.getTenantId())
+        .setTenantId(elementProps.getTenantId())
         .setElementInstancePath(treePathProperties.elementInstancePath())
         .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
         .setCallingElementPath(treePathProperties.callingElementPath());

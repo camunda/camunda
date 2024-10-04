@@ -85,7 +85,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var userTaskIntent = mapLifecycleStateToIntent(lifecycleState);
     final var commandProcessor = commandProcessors.getCommandProcessor(userTaskIntent);
 
-    final var persistedRecord = command.getValue();
+    final var persistedRecord = userTaskState.getUserTask(command.getKey());
     final var userTaskElementInstanceKey = persistedRecord.getElementInstanceKey();
     final var userTaskElementInstance =
         elementInstanceState.getInstance(userTaskElementInstanceKey);
@@ -94,12 +94,12 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var userTaskElement = getUserTaskElement(persistedRecord);
     final var taskListeners = userTaskElement.getTaskListeners(eventType);
     final int taskListenerIndex = userTaskElementInstance.getTaskListenerIndex(eventType);
-    final var elementProperties = ProcessElementProperties.from(persistedRecord);
+    final var elementProps = ProcessElementProperties.from(persistedRecord);
 
-    mergeVariablesOfTaskListener(elementProperties);
+    mergeVariablesOfTaskListener(elementProps);
     findNextTaskListener(taskListeners, taskListenerIndex)
         .ifPresentOrElse(
-            listener -> createTaskListenerJob(listener, elementProperties, persistedRecord),
+            listener -> createTaskListenerJob(listener, elementProps, persistedRecord),
             () -> commandProcessor.onFinalizeCommand(command, persistedRecord));
   }
 
@@ -128,8 +128,8 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
     if (userTaskElement.hasTaskListeners(eventType)) {
       final var listener = userTaskElement.getTaskListeners(eventType).getFirst();
-      final var elementProperties = ProcessElementProperties.from(persistedRecord);
-      createTaskListenerJob(listener, elementProperties, persistedRecord);
+      final var elementProps = ProcessElementProperties.from(persistedRecord);
+      createTaskListenerJob(listener, elementProps, persistedRecord);
     } else {
       processor.onFinalizeCommand(command, persistedRecord);
     }
@@ -208,29 +208,29 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     };
   }
 
-  private void mergeVariablesOfTaskListener(final ProcessElementProperties elementProperties) {
+  private void mergeVariablesOfTaskListener(final ProcessElementProperties elementProps) {
     Optional.ofNullable(
-            eventScopeInstanceState.peekEventTrigger(elementProperties.getElementInstanceKey()))
+            eventScopeInstanceState.peekEventTrigger(elementProps.getElementInstanceKey()))
         .ifPresent(
             eventTrigger -> {
               if (eventTrigger.getVariables().capacity() > 0) {
-                final long scopeKey = elementProperties.getElementInstanceKey();
+                final long scopeKey = elementProps.getElementInstanceKey();
 
                 variableBehavior.mergeLocalDocument(
                     scopeKey,
-                    elementProperties.getProcessDefinitionKey(),
-                    elementProperties.getProcessInstanceKey(),
-                    BufferUtil.wrapString(elementProperties.getBpmnProcessId()),
-                    elementProperties.getTenantId(),
+                    elementProps.getProcessDefinitionKey(),
+                    elementProps.getProcessInstanceKey(),
+                    BufferUtil.wrapString(elementProps.getBpmnProcessId()),
+                    elementProps.getTenantId(),
                     eventTrigger.getVariables());
               }
 
               eventTriggerBehavior.processEventTriggered(
                   eventTrigger.getEventKey(),
-                  elementProperties.getProcessDefinitionKey(),
+                  elementProps.getProcessDefinitionKey(),
                   eventTrigger.getProcessInstanceKey(),
-                  elementProperties.getTenantId(),
-                  elementProperties.getElementInstanceKey(),
+                  elementProps.getTenantId(),
+                  elementProps.getElementInstanceKey(),
                   eventTrigger.getElementId());
             });
   }

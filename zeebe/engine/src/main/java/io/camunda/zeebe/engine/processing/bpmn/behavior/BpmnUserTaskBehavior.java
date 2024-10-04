@@ -186,7 +186,7 @@ public final class BpmnUserTaskBehavior {
       final Expression formIdExpression,
       final ZeebeBindingType bindingType,
       final String versionTag,
-      final ProcessElementProperties elementProperties,
+      final ProcessElementProperties elementProps,
       final long scopeKey) {
     if (formIdExpression == null) {
       return Either.right(null);
@@ -196,7 +196,7 @@ public final class BpmnUserTaskBehavior {
         .flatMap(
             formId -> {
               final var form =
-                  findLinkedForm(formId, bindingType, versionTag, elementProperties, scopeKey);
+                  findLinkedForm(formId, bindingType, versionTag, elementProps, scopeKey);
               return form.map(PersistedForm::getFormKey);
             });
   }
@@ -205,26 +205,25 @@ public final class BpmnUserTaskBehavior {
       final String formId,
       final ZeebeBindingType bindingType,
       final String versionTag,
-      final ProcessElementProperties elementProperties,
+      final ProcessElementProperties elementProps,
       final long scopeKey) {
     return switch (bindingType) {
-      case deployment -> findFormByIdInSameDeployment(formId, elementProperties, scopeKey);
-      case latest -> findLatestFormById(formId, elementProperties.getTenantId(), scopeKey);
+      case deployment -> findFormByIdInSameDeployment(formId, elementProps, scopeKey);
+      case latest -> findLatestFormById(formId, elementProps.getTenantId(), scopeKey);
       case versionTag ->
-          findFormByIdAndVersionTag(formId, versionTag, elementProperties.getTenantId(), scopeKey);
+          findFormByIdAndVersionTag(formId, versionTag, elementProps.getTenantId(), scopeKey);
     };
   }
 
   private Either<Failure, PersistedForm> findFormByIdInSameDeployment(
-      final String formId, final ProcessElementProperties elementProperties, final long scopeKey) {
+      final String formId, final ProcessElementProperties elementProps, final long scopeKey) {
     return stateBehavior
-        .getDeploymentKey(
-            elementProperties.getProcessDefinitionKey(), elementProperties.getTenantId())
+        .getDeploymentKey(elementProps.getProcessDefinitionKey(), elementProps.getTenantId())
         .flatMap(
             deploymentKey ->
                 formState
                     .findFormByIdAndDeploymentKey(
-                        wrapString(formId), deploymentKey, elementProperties.getTenantId())
+                        wrapString(formId), deploymentKey, elementProps.getTenantId())
                     .<Either<Failure, PersistedForm>>map(Either::right)
                     .orElseGet(
                         () ->

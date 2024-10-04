@@ -59,9 +59,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
-    userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
-    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
-
+    applyModification(command, userTaskRecord);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETING, userTaskRecord);
   }
 
@@ -70,13 +68,17 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
-    userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
-    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
-
+    applyModification(command, userTaskRecord);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
     completeElementInstance(userTaskRecord);
     responseWriter.writeEventOnCommand(
         userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord, command);
+  }
+
+  private void applyModification(
+      final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
+    userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
+    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
   }
 
   private void completeElementInstance(final UserTaskRecord userTaskRecord) {

@@ -67,7 +67,12 @@ public class TaskListenerTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    ENGINE.userTask().ofInstance(processInstanceKey).withVariable("boo", "bar").complete();
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withVariable("foo_var", "bar")
+        .withAction("my_custom_action")
+        .complete();
 
     completeJobs(processInstanceKey, "listener_1", "listener_2", "listener_3");
 
@@ -91,9 +96,8 @@ public class TaskListenerTest {
         .extracting(Record::getValue)
         .satisfies(
             recordValue -> {
-              assertThat(recordValue.getAction()).isEqualTo("complete");
-              assertThat(recordValue.getVariables()).isEmpty();
-              // assertThat(recordValue.getVariables()).containsEntry("boo", "bar");
+              assertThat(recordValue.getAction()).isEqualTo("my_custom_action");
+              assertThat(recordValue.getVariables()).containsExactly(entry("foo_var", "bar"));
             });
 
     assertThat(
