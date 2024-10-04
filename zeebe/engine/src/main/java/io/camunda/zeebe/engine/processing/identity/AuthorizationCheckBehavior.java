@@ -17,8 +17,8 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.HashSet;
-import java.util.Set;
 import java.util.Optional;
+import java.util.Set;
 
 public final class AuthorizationCheckBehavior {
 
