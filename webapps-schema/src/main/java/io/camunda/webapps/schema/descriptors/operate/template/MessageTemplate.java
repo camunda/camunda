@@ -5,12 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.schema.templates;
+package io.camunda.webapps.schema.descriptors.operate.template;
 
-import io.camunda.operate.schema.backup.Prio3Backup;
-import org.springframework.stereotype.Component;
+import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 
-@Component
 public class MessageTemplate extends AbstractTemplateDescriptor implements Prio3Backup {
 
   public static final String INDEX_NAME = "message";
@@ -25,6 +23,10 @@ public class MessageTemplate extends AbstractTemplateDescriptor implements Prio3
   public static final String TIME_TO_LIVE = "timeToLive";
   public static final String MESSAGE_ID = "messageId";
   public static final String VARIABLES = "variables";
+
+  public MessageTemplate(final String indexPrefix, final boolean isElasticsearch) {
+    super(indexPrefix, isElasticsearch);
+  }
 
   @Override
   public String getIndexName() {

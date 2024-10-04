@@ -5,16 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.schema.indices;
+package io.camunda.webapps.schema.descriptors.operate.index;
 
-import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.property.OperateProperties;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.stereotype.Component;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
-@Component
-@DependsOn("databaseInfo")
 public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   public static final String SCHEMA_FOLDER_OPENSEARCH = "/schema/opensearch/create";
@@ -24,25 +18,44 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
   private static final String SCHEMA_CREATE_INDEX_JSON_ELASTICSEARCH =
       SCHEMA_FOLDER_ELASTICSEARCH + "/index/operate-%s.json";
 
-  @Autowired protected OperateProperties operateProperties;
+  protected String indexPrefix;
+  protected boolean isElasticsearch;
+
+  public AbstractIndexDescriptor(final String indexPrefix, final boolean isElasticsearch) {
+    this.indexPrefix = indexPrefix;
+    this.isElasticsearch = isElasticsearch;
+  }
 
   @Override
   public String getFullQualifiedName() {
-    return String.format(
-        "%s-%s-%s_", operateProperties.getIndexPrefix(), getIndexName(), getVersion());
+    return String.format("%s-%s-%s_", getIndexPrefix(), getIndexName(), getVersion());
   }
 
   @Override
-  public String getAllVersionsIndexNameRegexPattern() {
-    return String.format("%s-%s-\\d.*", operateProperties.getIndexPrefix(), getIndexName());
+  public String getAlias() {
+    return getFullQualifiedName() + "alias";
   }
 
   @Override
-  public String getSchemaClasspathFilename() {
-    if (DatabaseInfo.isElasticsearch()) {
+  public String getMappingsClasspathFilename() {
+    if (isElasticsearch) {
       return String.format(SCHEMA_CREATE_INDEX_JSON_ELASTICSEARCH, getIndexName());
     } else {
       return String.format(SCHEMA_CREATE_INDEX_JSON_OPENSEARCH, getIndexName());
     }
+  }
+
+  @Override
+  public String getAllVersionsIndexNameRegexPattern() {
+    return String.format("%s-%s-\\d.*", getIndexPrefix(), getIndexName());
+  }
+
+  @Override
+  public String getVersion() {
+    return "1.0.0";
+  }
+
+  public String getIndexPrefix() {
+    return indexPrefix;
   }
 }

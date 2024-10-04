@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -16,12 +16,12 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;

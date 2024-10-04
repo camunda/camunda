@@ -8,9 +8,9 @@
 package io.camunda.operate.qa.migration;
 
 import static io.camunda.operate.qa.migration.util.TestConstants.DEFAULT_TENANT_ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState.COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -18,9 +18,9 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import io.camunda.operate.qa.migration.util.AbstractMigrationTest;
 import io.camunda.operate.qa.migration.util.EntityReader;
 import io.camunda.operate.qa.migration.v110.BigProcessDataGenerator;
-import io.camunda.operate.schema.templates.EventTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ThreadUtil;
+import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import java.util.List;

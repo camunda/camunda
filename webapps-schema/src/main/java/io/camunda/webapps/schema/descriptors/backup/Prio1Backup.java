@@ -5,14 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.schema.util;
+package io.camunda.webapps.schema.descriptors.backup;
 
-import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
-
-public class TestIndex extends AbstractIndexDescriptor {
-
-  @Override
-  public String getIndexName() {
-    return "testindex";
-  }
-}
+public interface Prio1Backup {}

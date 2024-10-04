@@ -8,8 +8,8 @@
 package io.camunda.operate.schema;
 
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
-import io.camunda.operate.schema.indices.IndexDescriptor;
-import io.camunda.operate.schema.templates.TemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Map;
 import java.util.Set;
 
@@ -30,7 +30,7 @@ public interface SchemaManager {
 
   void createIndex(IndexDescriptor indexDescriptor, String indexClasspathResource);
 
-  void createTemplate(TemplateDescriptor templateDescriptor, String templateClasspathResource);
+  void createTemplate(IndexTemplateDescriptor templateDescriptor, String templateClasspathResource);
 
   boolean setIndexSettingsFor(Map<String, ?> settings, String indexPattern);
 

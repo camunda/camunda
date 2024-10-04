@@ -20,7 +20,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
   private String bpmnXml;
   private String resourceName;
   private List<ProcessFlowNodeEntity> flowNodes = new ArrayList<>();
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_ID;
 
   public String getName() {
     return name;

@@ -5,12 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.schema.templates;
+package io.camunda.webapps.schema.descriptors.operate.template;
 
-import io.camunda.operate.schema.backup.Prio3Backup;
-import org.springframework.stereotype.Component;
+import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 
-@Component
 public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor
     implements ProcessInstanceDependant, Prio3Backup {
 
@@ -31,6 +30,10 @@ public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor
   public static final String TREE_PATH = "treePath";
   public static final String LEVEL = "level";
   public static final String INCIDENT = "incident"; // true/false
+
+  public FlowNodeInstanceTemplate(final String indexPrefix, final boolean isElasticsearch) {
+    super(indexPrefix, isElasticsearch);
+  }
 
   @Override
   public String getIndexName() {

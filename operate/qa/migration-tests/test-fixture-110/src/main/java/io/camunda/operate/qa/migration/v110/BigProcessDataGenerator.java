@@ -7,18 +7,18 @@
  */
 package io.camunda.operate.qa.migration.v110;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.BPMN_PROCESS_ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.STATE;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.STATE;
 import static io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState.COMPLETED;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ThreadUtil;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.io.IOException;
 import java.time.OffsetDateTime;

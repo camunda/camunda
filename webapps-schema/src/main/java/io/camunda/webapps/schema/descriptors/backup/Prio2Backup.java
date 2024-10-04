@@ -5,11 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.schema.templates;
+package io.camunda.webapps.schema.descriptors.backup;
 
-public interface ProcessInstanceDependant {
-
-  String PROCESS_INSTANCE_KEY = "processInstanceKey";
-
-  String getFullQualifiedName();
-}
+public interface Prio2Backup {}

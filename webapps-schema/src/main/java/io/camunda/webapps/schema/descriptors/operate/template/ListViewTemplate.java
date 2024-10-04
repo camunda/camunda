@@ -5,12 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.schema.templates;
+package io.camunda.webapps.schema.descriptors.operate.template;
 
-import io.camunda.operate.schema.backup.Prio2Backup;
-import org.springframework.stereotype.Component;
+import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 
-@Component
 public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio2Backup {
 
   public static final String INDEX_NAME = "list-view";
@@ -53,6 +51,10 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
   public static final String ACTIVITIES_JOIN_RELATION =
       "activity"; // now we call it flow node instance
   public static final String VARIABLES_JOIN_RELATION = "variable";
+
+  public ListViewTemplate(final String indexPrefix, final boolean isElasticsearch) {
+    super(indexPrefix, isElasticsearch);
+  }
 
   @Override
   public String getIndexName() {

@@ -5,12 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.schema.indices;
+package io.camunda.webapps.schema.descriptors.operate.index;
 
-import io.camunda.operate.schema.backup.Prio4Backup;
-import org.springframework.stereotype.Component;
+import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 
-@Component
 public class MetricIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
   public static final String INDEX_NAME = "metric";
@@ -18,6 +16,10 @@ public class MetricIndex extends AbstractIndexDescriptor implements Prio4Backup 
   public static final String EVENT = "event";
   public static final String VALUE = "value";
   public static final String EVENT_TIME = "eventTime";
+
+  public MetricIndex(final String indexPrefix, final boolean isElasticsearch) {
+    super(indexPrefix, isElasticsearch);
+  }
 
   @Override
   public String getIndexName() {

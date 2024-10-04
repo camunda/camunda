@@ -5,12 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.schema.templates;
+package io.camunda.webapps.schema.descriptors.operate.template;
 
-import io.camunda.operate.schema.backup.Prio3Backup;
-import org.springframework.stereotype.Component;
+import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 
-@Component
 public class IncidentTemplate extends AbstractTemplateDescriptor
     implements ProcessInstanceDependant, Prio3Backup {
 
@@ -30,6 +29,10 @@ public class IncidentTemplate extends AbstractTemplateDescriptor
   public static final String STATE = "state";
   public static final String CREATION_TIME = "creationTime";
   public static final String TREE_PATH = "treePath";
+
+  public IncidentTemplate(final String indexPrefix, final boolean isElasticsearch) {
+    super(indexPrefix, isElasticsearch);
+  }
 
   @Override
   public String getIndexName() {

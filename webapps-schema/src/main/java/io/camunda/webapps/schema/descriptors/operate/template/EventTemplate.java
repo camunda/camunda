@@ -5,12 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.schema.templates;
+package io.camunda.webapps.schema.descriptors.operate.template;
 
-import io.camunda.operate.schema.backup.Prio3Backup;
-import org.springframework.stereotype.Component;
+import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 
-@Component
 public class EventTemplate extends AbstractTemplateDescriptor
     implements ProcessInstanceDependant, Prio3Backup {
 
@@ -48,6 +47,10 @@ public class EventTemplate extends AbstractTemplateDescriptor
   public static final String POSITION_INCIDENT = "positionIncident";
   public static final String POSITION_JOB = "positionJob";
   public static final String POSITION_MESSAGE = "positionProcessMessageSubscription";
+
+  public EventTemplate(final String indexPrefix, final boolean isElasticsearch) {
+    super(indexPrefix, isElasticsearch);
+  }
 
   @Override
   public String getIndexName() {
