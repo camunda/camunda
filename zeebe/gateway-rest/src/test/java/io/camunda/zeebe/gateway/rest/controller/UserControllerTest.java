@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.UserServices;
-import io.camunda.service.UserServices.CreateUserRequest;
+import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserController;
@@ -289,8 +289,8 @@ public class UserControllerTest extends RestControllerTest {
     verifyNoInteractions(userServices);
   }
 
-  private CreateUserRequest validCreateUserRequest() {
-    return new CreateUserRequest("foo", "Foo Bar", "bar@baz.com", "zabraboof");
+  private UserDTO validCreateUserRequest() {
+    return new UserDTO(null, "foo", "Foo Bar", "bar@baz.com", "zabraboof");
   }
 
   private UserRequest validUserWithPasswordRequest() {

@@ -36,17 +36,19 @@ public class UpdateUserMultiPartitionTest {
   public void shouldDistributeUserUpdateCommand() {
     final var username = UUID.randomUUID().toString();
 
-    ENGINE
-        .user()
-        .newUser(username)
-        .withName("Foo Bar")
-        .withEmail("foo@bar.com")
-        .withPassword("password")
-        .create();
+    final var userRecord =
+        ENGINE
+            .user()
+            .newUser(username)
+            .withName("Foo Bar")
+            .withEmail("foo@bar.com")
+            .withPassword("password")
+            .create();
 
     ENGINE
         .user()
-        .updateUser(username)
+        .updateUser(userRecord.getKey())
+        .withUsername(userRecord.getValue().getUsername())
         .withName("Bar Foo")
         .withEmail("bar@foo.com")
         .withPassword("password")

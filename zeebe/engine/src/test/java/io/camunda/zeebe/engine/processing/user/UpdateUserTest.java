@@ -29,18 +29,20 @@ public class UpdateUserTest {
   @Test
   public void shouldUpdateAUser() {
     final var username = UUID.randomUUID().toString();
-    ENGINE
-        .user()
-        .newUser(username)
-        .withName("Foo Bar")
-        .withEmail("foo@bar.com")
-        .withPassword("password")
-        .create();
+    final var userRecord =
+        ENGINE
+            .user()
+            .newUser(username)
+            .withName("Foo Bar")
+            .withEmail("foo@bar.com")
+            .withPassword("password")
+            .create();
 
     final var updatedUser =
         ENGINE
             .user()
-            .updateUser(username)
+            .updateUser(userRecord.getKey())
+            .withUsername(userRecord.getValue().getUsername())
             .withName("Bar Foo")
             .withEmail("foo@bar.blah")
             .withPassword("Foo Bar")
@@ -55,14 +57,15 @@ public class UpdateUserTest {
         .hasFieldOrPropertyWithValue("password", "Foo Bar");
   }
 
-  @DisplayName("should reject user update command when username does not exist")
+  @DisplayName("should reject user update command when user key does not exist")
   @Test
-  public void shouldRejectUserUpdateCommandWhenUsernameDoesNotExist() {
+  public void shouldRejectUserUpdateCommandWhenUserKeyDoesNotExist() {
     final var username = UUID.randomUUID().toString();
     final var userNotFoundRejection =
         ENGINE
             .user()
-            .updateUser(username)
+            .updateUser(-1L)
+            .withUsername(username)
             .withName("Foo Bar")
             .withEmail("bar@foo")
             .withPassword("password")
